@@ -1,0 +1,388 @@
+<?xml version="1.0"?>
+<!-- ======================================================================
+  Builds the two-point correlation algorithm
+
+  The default target is listTargets
+
+  The directory structure of the application is:
+
+    src      Java source code (and associated resource files)
+             and junit test files.
+
+    lib      any 3rd party libraries needed by application
+
+    bin/classes  compiled code
+
+    resources resource files, including persisted for use in future runs
+
+    doc      Javadocs for developers
+
+    tests    unit tests small enough to run with every build
+
+    tests_larger  unit tests with long run times
+
+    bin      compiled classes, code coverage results, and static analysis results
+ ====================================================================== -->
+<project name="twoPointCorrelation" default="listTargets" basedir=".">
+
+    <!-- ================= set env properties ================= -->
+    <property environment="env"/>
+
+    <!-- assignment name to be used in archive -->
+    <property name="app.name"            value="${ant.project.name}"/>
+
+    <!-- =========== the application file directories ========-->
+    <property name="src.dir"             value="${basedir}/src"/>
+    <property name="lib.dir"             value="${basedir}/lib"/>
+    <property name="emma.lib.dir"        value="${lib.dir}/emma"/>
+    <property name="findbugs.home.dir"   value="${lib.dir}/findbugs"/>
+    <property name="findbugs.lib.dir"    value="${findbugs.home.dir}/lib"/>
+    <property name="classes.dir"         value="${basedir}/bin"/>
+    <property name="src.out.dir"         value="${classes.dir}/classes"/>
+    <property name="doc.dir"             value="${basedir}/doc"/>
+    <property name="tests.dir"           value="${basedir}/tests"/>
+    <property name="tests.out.dir"       value="${classes.dir}/test-classes"/>
+    <property name="instr.out.dir"       value="${classes.dir}/instr-classes" />
+    <property name="coverage.dir"        value="${classes.dir}/coverage" />
+    <property name="log.dir"             value="${basedir}/log"/>
+    <property name="logfile"             value="${log.dir}/build.log"/>
+    <property name="tests.large.dir"     value="${basedir}/tests_large"/>
+    <property name="tests.large.out.dir" value="${classes.dir}/test-large-classes"/>
+
+    <!-- set compiler options -->
+    <!--<property name="compile.debug"       value="false"/>-->
+    <property name="compile.deprecation" value="true"/>
+    <property name="compile.optimize"    value="false"/>
+    <property name="compile.target"      value="1.6"/>
+
+    <!-- print usage: prints all targets -->
+    <target name="listTargets"
+        description="prints all targets in this any file">
+        <echo message="listTargets:                prints all targets in this ant file"/>
+        <echo message="prepare:                    prepare directories"/>
+        <echo message="clean:                      deletes old classes, logs, build, and javadocs"/>
+        <echo message="compile:                    compile source files"/>
+        <echo message="compileTests:               compile test files"/>
+        <echo message="runTests:                   run tests"/>
+        <echo message="runLargeTests:              run tests in tests_large"/>
+        <echo message="runTest:                    run test with -Dtest=fqn of test"/>
+        <echo message="debugTests:                 run tests and use jdwp"/>
+        <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
+    	<echo message="runCoverage:                run code coverage tools"/>
+        <echo message="javadoc:                    create javadocs"/>
+        <echo message="runEmma                     run code coverage for non-third party classes"/>
+        <echo message="runFindbugs                 static analysis for non-third party classes"/>
+    </target>
+
+    <!-- set compile classpath  -->
+    <path id="compile.classpath">
+        <pathelement location="${src.out.dir}"/>
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- set test classpath  -->
+    <path id="test.classpath">
+        <pathelement location="${tests.dir}" />
+        <path refid="compile.classpath"/>
+    </path>
+    <path id="test.large.classpath">
+        <pathelement location="${tests.large.dir}" />
+        <path refid="compile.classpath"/>
+    </path>
+
+    <!-- emma code coverage paths and targets -->
+    <path id="emma.lib" >
+        <fileset dir="${emma.lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+    <taskdef resource="emma_ant.properties" classpathref="emma.lib" />
+
+    <path id="findbugs.lib" >
+        <fileset dir="${findbugs.lib.dir}">
+            <include name="**.jar"/>
+        </fileset>
+    </path>
+    <path id="findbugs.classpath" >
+        <path refid="findbugs.lib"/>
+        <path refid="compile.classpath"/>
+    </path>
+    <taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpathref="findbugs.classpath"/>
+
+    <target name="emma" description="turns on EMMA instrumentation/reporting" >
+        <property name="compile.debug" value="true" />
+        <property name="emma.enabled" value="true" />
+        <mkdir dir="${instr.out.dir}" />
+    </target>
+
+    <target name="debug" description="sets compile.debug to true" >
+        <property name="compile.debug" value="true" />
+    </target>
+
+    <!-- =========== clean  ========== -->
+    <target name="clean"
+        description="Delete dirs: build, doc/api, and src tree classes">
+        <delete dir="${doc.dir}/api"/>
+        <delete>
+            <fileset dir="${classes.dir}" />
+        </delete>
+        <delete>
+            <fileset dir="${log.dir}" includes="*" />
+        </delete>
+    </target>
+
+    <!-- prepare is called by compile -->
+    <target name="prepare" description="create directories">
+        <mkdir  dir="${classes.dir}"/>
+        <mkdir  dir="${src.out.dir}"/>
+        <mkdir  dir="${tests.out.dir}"/>
+        <mkdir  dir="${tests.large.out.dir}"/>
+        <mkdir  dir="${instr.out.dir}"/>
+        <mkdir  dir="${coverage.dir}"/>
+        <mkdir  dir="${log.dir}"/>
+        <mkdir  dir="tmpdata"/>
+    </target>
+
+    <!-- compile sources -->
+    <target name="compile" depends="prepare" description="Compile Java classes">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <javac srcdir="${src.dir}"
+            destdir="${src.out.dir}"
+            source="${compile.target}"
+            debug="${compile.debug}"
+            deprecation="${compile.deprecation}"
+            includeAntRuntime="false"
+            optimize="${compile.optimize}" >
+            <classpath refid="compile.classpath"/>
+            <include name="**/*.java"/>
+            <exclude name="**/*Test*.java"/>
+        </javac>
+
+        <copy file="${basedir}/resources/logging.properties" todir="${src.out.dir}" />
+
+    </target>
+
+    <!-- compile tests  -->
+    <target name="compileTests" depends="clean, debug, compile" description="Compile Java tests" >
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+    	<javac srcdir="${tests.dir}"
+    	    destdir="${tests.out.dir}"
+    	    source="${compile.target}"
+            debug="on"
+            includes="**/*Test.java"
+            includeAntRuntime="false"
+    	    deprecation="${compile.deprecation}"
+    	    optimize="${compile.optimize}" >
+    	    <classpath refid="test.classpath"/>
+            <src path="${tests.dir}"/>
+            <src path="${src.dir}"/>
+            <compilerarg value="-Xlint"/>
+    	</javac>
+    </target>
+    <target name="compileLargeTests" depends="clean, debug, compile" description="Compile Java tests" >
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+    	<javac srcdir="${tests.large.dir}"
+    	    destdir="${tests.large.out.dir}"
+    	    source="${compile.target}"
+            debug="on"
+            includes="**/*Test.java"
+            includeAntRuntime="false"
+    	    deprecation="${compile.deprecation}"
+    	    optimize="${compile.optimize}" >
+    	    <classpath refid="test.classpath"/>
+            <src path="${tests.large.dir}"/>
+            <src path="${src.dir}"/>
+            <compilerarg value="-Xlint"/>
+    	</javac>
+    </target>
+
+    <!-- javadoc -->
+    <target name="javadoc" depends="compile"
+        description="Create Javadoc API documentation">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <delete dir="${doc.dir}/api"/>
+        <mkdir dir="${doc.dir}/api"/>
+        <javadoc
+            sourcepath="${src.dir}"
+            destdir="${doc.dir}/api"
+            package="true"
+            packagenames="algorithms.*" >
+            <classpath refid="compile.classpath"/>
+        </javadoc>
+    </target>
+
+    <target name="runTests" if="junit.present" depends="clean,debug,compileTests,JUnit">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="running tests, output is in ${tests.out.dir}" />
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <batchtest fork="yes" todir="${tests.out.dir}">
+                <fileset dir="${tests.out.dir}">
+                    <include name="**/*Test*.class"/>
+                    <exclude name= "**/*$*.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="runLargeTests" if="junit.present" depends="compileLargeTests,JUnit">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="running tests, output is in ${tests.large.out.dir}" />
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            <classpath>
+                <pathelement location="${tests.large.out.dir}"/>
+                <path refid="test.large.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <batchtest fork="yes" todir="${tests.large.out.dir}">
+                <fileset dir="${tests.large.out.dir}">
+                    <include name="**/*Test*.class"/>
+                	<exclude name= "**/*$*.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="runEmma" depends="emma,compileTests" description="runs emma" >
+        <emma enabled="${emma.enabled}" >
+            <instr instrpathref="compile.classpath"
+                destdir="${instr.out.dir}"
+                metadatafile="${coverage.dir}/metadata.emma"
+                merge="true">
+                <filter includes="algorithms.*" />
+                <filter includes="algorithms.*" excludes="algorithms.*.*Plotter*, algorithms.*.*Exception, algorithms.*.*Test*" />
+            </instr>
+        </emma>
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="running tests w/ emma, output is in ${tests.out.dir}" />
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes"
+               haltonerror="true" haltonfailure="true">
+            <classpath>
+                <pathelement location="${instr.out.dir}" />
+                <path refid="emma.lib" />
+                <pathelement location="${tests.out.dir}" />
+                <fileset dir="${lib.dir}">
+                    <include name="**.jar"/>
+                </fileset>
+                <pathelement location="${src.out.dir}" />
+            </classpath>
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <batchtest fork="yes" todir="${tests.out.dir}">
+                <fileset dir="${tests.out.dir}">
+                    <include name="**/*Test*.class"/>
+                	<exclude name= "**/*$*.class"/>
+                </fileset>
+            </batchtest>
+            <jvmarg value="-Demma.coverage.out.file=${coverage.dir}/coverage.emma" />
+            <jvmarg value="-Demma.coverage.out.merge=true" />
+        </junit>
+
+        <emma enabled="${emma.enabled}" >
+            <report sourcepath="${src.dir}" >
+                <fileset dir="${coverage.dir}" >
+                    <include name="*.emma" />
+                </fileset>
+                <txt outfile="${coverage.dir}/coverage.txt" />
+                <html outfile="${coverage.dir}/coverage.html" />
+            </report>
+        </emma>
+    </target>
+
+    <target name="runTest" if="junit.present" depends="clean,prepare,debug,compile,JUnit,compileTests">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <junit fork="yes" showoutput="true" filtertrace="off">
+            <!--<jvmarg value="-ea"/>-->
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <test name="${test}" fork="yes" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+        </junit>
+    </target>
+
+    <target name="debugTests" if="junit.present" depends="clean,debug,compileTests,JUnit">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="running tests, output is in ${tests.out.dir}" />
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <batchtest fork="yes" todir="${tests.out.dir}">
+                <fileset dir="${tests.out.dir}">
+                    <include name="**/*Test*.class"/>
+                	<exclude name= "**/*$*.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="debugTest" if="junit.present" depends="clean,prepare,debug,compile,JUnit,compileTests">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <junit fork="yes" showoutput="true" filtertrace="off">
+            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <test name="${test}" fork="yes" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+        </junit>
+    </target>
+
+    <!-- set junit.present property -->
+    <target name="JUnit">
+        <available property="junit.present" classname="junit.framework.TestCase" >
+            <classpath refid="test.classpath"/>
+        </available>
+    </target>
+
+    <target name="runFindbugs" depends="compile" >
+        <!-- output="html" outputFile="${src.out.dir}/findbugs.html" -->
+        <findbugs home="${findbugs.home.dir}/"
+            output="xml:withMessages" outputFile="${src.out.dir}/findbugs.xml"
+            reportLevel="high">
+            <!-- reportLevel can be high, medium, low -->
+            <sourcePath path="${src.dir}" />
+            <sourcePath>
+                <fileset dir="${src.dir}">
+                    <include name="**/*.java" />
+                </fileset>
+            </sourcePath>
+            <class location="${src.out.dir}" />
+        </findbugs>
+        <xslt in="${src.out.dir}/findbugs.xml" out="${src.out.dir}/findbugs.html"
+            style="${findbugs.lib.dir}/fancy.xsl" />
+    </target>
+
+</project>
