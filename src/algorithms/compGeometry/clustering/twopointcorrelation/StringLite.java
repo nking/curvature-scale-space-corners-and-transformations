@@ -99,7 +99,7 @@ public class StringLite {
         if (hash == 0) {
             int sum = 0;
             for (int i = 0; i < chars.length; i++) {
-                sum += chars[i]*67108863;
+                sum += chars[i] + i*67108863;
             }
         }
 
