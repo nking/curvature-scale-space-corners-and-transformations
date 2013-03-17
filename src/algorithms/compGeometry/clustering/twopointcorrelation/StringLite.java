@@ -1,8 +1,16 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 /**
- * a fast simple character holder
+ * a fast simple character holder.
  *
+ * The hashcode is tailored
+ * to hold only the following 15 ascii characters:   0-9 ' ' '.' 'e' '-' 'f'
+ * and chars array is expected to hold up to 32 characters.
+ *
+ * This is for use with TwoPointVoidStats to speed up identity checks.
+ *
+ * It's use for characters other than those is not recommended.
+ * 
  * @author nichole
  */
 public class StringLite {
@@ -61,7 +69,22 @@ public class StringLite {
 
     @Override
     public int hashCode() {
+
         // like strings, would like to have same code for same content
+
+        // StringLite was created for use in TwoPointVoidStats specifically to hold
+        // only 15 symbols: 0-9 ' ' '.' 'e' '-' 'f'
+        // and only up to 32 of those symbols.
+        //
+        // so to hold each combination uniquely within an integer,
+        // can divide the integer into 32 slots
+        //    0 to 67108863            is slot '0'
+        //    67108863 to 134217726    is slot '1'
+        //    134217726 to 201326589   is slot '2'
+        //    ...
+        //    2080374753 to 2147483616 is slot '32'
+        // where delta = 67108863 which is 2147483647/32
+        //
 
         if (chars == null) {
             return hash;
@@ -69,11 +92,10 @@ public class StringLite {
         if (hash == 0) {
             int sum = 0;
             for (int i = 0; i < chars.length; i++) {
-                sum += chars[i]*11;
+                sum += chars[i]*67108863;
             }
-            hash = sum;
         }
+
         return hash;
     }
-
 }

@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Class to estimate a background surface density for a set of points in which
@@ -785,7 +786,9 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
             i1 = regionIndex0;
         }
 
-        char[] strFmted = String.format("%.7f %d, %d", surfaceDensity, i0, i1).toCharArray();
+        // 15 symbols to represent within up to 32 characters.  StringLite hashCode is tailored to this
+        char[] strFmted = String.format(Locale.US,
+            "%.7e %d %d", surfaceDensity, i0, i1).toCharArray();
         if (!tstrArray.containsInTStr(strFmted)) {
             tstrArray.storeInTStr(new StringLite(strFmted));
             allTwoPointSurfaceDensities[nTwoPointSurfaceDensities] = surfaceDensity;
