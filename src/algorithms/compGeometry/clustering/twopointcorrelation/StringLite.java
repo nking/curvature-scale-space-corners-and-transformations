@@ -4,13 +4,14 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
  * a fast simple character holder.
  *
  * The hashcode is tailored
- * to hold only the following 15 ascii characters:   0-9 ' ' '.' 'e' '-' 'f'
- * and chars array is expected to hold up to 32 characters.
+ * to hold the following 15 ascii characters:   0-9 ' ' '.' 'e' '-' 'f'
+ * and char[] chars is expected to hold up to 32 characters.
  *
  * This is for use with TwoPointVoidStats to speed up identity checks.
  *
- * It's use for characters other than those is not recommended.
- * 
+ * It's use for more than 32 characters is not recommended and use with
+ * character sets that extend beyond values 67108863 is not recommended.
+ *
  * @author nichole
  */
 public class StringLite {
@@ -18,7 +19,13 @@ public class StringLite {
     protected final char[] chars;
     protected int nChars = 0;
 
+    /**
+     * constructor.  value should be less than 33 characters.
+     *
+     * @param value
+     */
     public StringLite(char value[]) {
+        // value should be less than 33 in length.  not enforced.
         this.chars = value;
         nChars = value.length;
     }
