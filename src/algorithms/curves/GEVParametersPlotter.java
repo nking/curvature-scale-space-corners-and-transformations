@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import junit.framework.TestCase;
 
 /**
  * fills in data for gev_plot.html to compare a few
