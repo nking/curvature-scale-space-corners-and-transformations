@@ -101,6 +101,7 @@ public class StringLite {
             for (int i = 0; i < chars.length; i++) {
                 sum += chars[i] + i*67108863;
             }
+            hash = sum;
         }
 
         return hash;
