@@ -73,6 +73,28 @@ public class Histogram {
     }
 
     public static void createHistogram(float[] a, int nBins,
+        float aMin, float aMax, float[] xHist, int[] yHist, float binWidth) {
+
+        if (xHist == null || xHist.length != nBins) {
+            throw new IllegalArgumentException("xHist has to be of size nBins and initialized");
+        }
+        if (yHist == null || yHist.length != nBins) {
+            throw new IllegalArgumentException("yHist has to be of size nBins and initialized");
+        }
+
+        for (int i = 0; i < nBins; i++) {
+            xHist[i] = aMin + i*binWidth + (binWidth/2.f);
+        }
+
+        for (int i = 0; i < a.length; i++) {
+            int bin = (int) ((a[i] - aMin)/binWidth);
+            if (bin < nBins) {
+                yHist[bin]++;
+            }
+        }
+    }
+
+    public static void createHistogram(float[] a, int nBins,
         float aMin, float aMax, float[] xHist, int[] yHist) {
 
         if (xHist == null || xHist.length != nBins) {
@@ -86,16 +108,7 @@ public class Histogram {
 
         float xInterval = calculateBinWidth(aMin, aMax, nBins);
 
-        for (int i = 0; i < nBins; i++) {
-            xHist[i] = aMin + i*xInterval + (xInterval/2.f);
-        }
-
-        for (int i = 0; i < a.length; i++) {
-            int bin = (int) ((a[i] - aMin)/xInterval);
-            if (bin < nBins) {
-                yHist[bin]++;
-            }
-        }
+        createHistogram(a, nBins, aMin, aMax, xHist, yHist, xInterval);
     }
 
     /**
@@ -133,6 +146,7 @@ public class Histogram {
      * @param values
      * @param valueErrors if null, the root mean square of values are used for the
      * point errors in order to calculate the histogram errors.
+     * @param minValue
      * @param maxValue maximum value
      * @return
      */
@@ -143,112 +157,60 @@ public class Histogram {
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
         }
 
-        int nBins = preferredNumberOfBins;
-        float[] xHist = null;
-        int[] yHist = null;
-        float xmax = maxValue;
+        //float binWidth = calculateSturgesBinWidth(values, 0.25f);
 
-        /*
-        Sturges:
-                               stdev of the n data values
-           bin width = 3.49 * ----------------------------
-                                        n^(1/3)
+        float binWidth = calculateFreedmanDraconisBinWidth(values, 0.85f);
 
-        Freedman-Diaconis:
-           IQR is interquartile range
-           Q1 = 1/4 of data
-           Q3 = 3/4 of data
-           IQR = Q3 - Q1
-           fdBinWidth = 2*( xHist[q3Index] - xHist[q1Index])
-               / (float)(Math.pow(values.length, (1.0/3.0)));
-        */
-
-        int nIter = 0;
-        int nIterMax = 10;
-
-        boolean go = true;
-        while (go && (nIter < nIterMax)) {
-
-            xHist = new float[nBins];
-            yHist = new int[nBins];
-
-            float total = 0;
-            Histogram.createHistogram(values, nBins, minValue, xmax, xHist, yHist);
-            for (int i = 0; i < nBins; i++) {
-                total += (float) yHist[i];
-            }
-            // use Freedman-Diaconis choice to see match with this distr
-            int q1Index = -1;
-            int q2Index = -1;
-            int q3Index = -1;
-
-            float total2 = 0;
-            for (int i = 0; i < nBins; i++) {
-                float frac = total2 / total;
-                if (frac < 0.25) {
-                    q1Index = i;
-                }
-                if (frac < 0.5) {
-                    q2Index = i;
-                }
-                if (frac < 0.75) {
-                    q3Index = i;
-                }
-                total2 += (float) yHist[i];
-            }
-
-            float binWidth = xmax/nBins;
-            float fdBinWidth = 2*( xHist[q3Index] - xHist[q1Index])/(float)(Math.pow(values.length, (1.0/3.0)));
-
-            if (fdBinWidth == 0) {
-
-                xmax = 0.1f*xmax;
-                // try reduction one more time
-
-            } else if (q3Index < (nBins)/4.f) {
-
-                xmax = 0.5f*xmax;
-
-            } else if (q3Index < (nBins)/3.f) {
-
-                // subtract 3 or 4 bins or mult by 0.9
-                xmax = 0.9f*xmax;
-
-            } else if (fdBinWidth < binWidth) {
-
-                xmax = nBins * fdBinWidth;
-
-                Histogram.createHistogram(values, nBins, minValue, xmax, xHist, yHist);
-
-                go = false;
-
-            } else {
-
-                go = false;
-            }
-
-            nIter++;
+        int nBins = (int)((maxValue - minValue)/binWidth);
+        if (nBins < 5) {
+            nBins = preferredNumberOfBins;
         }
+
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
 
         // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred
-        int lessThan5Counts = 0;
-        for (int i = 0; i < yHist.length; i++) {
-            if (yHist[i] < 5) {
-                lessThan5Counts ++;
+        boolean go = true;
+
+        int lowerLimit = (int)(preferredNumberOfBins/2.0f);
+        if (lowerLimit < 5) {
+            lowerLimit = preferredNumberOfBins;
+        }
+
+        while (go) {
+            int lessThan5Counts = 0;
+            for (int i = 0; i < yHist.length; i++) {
+                if (yHist[i] < 5) {
+                    lessThan5Counts ++;
+                }
+            }
+            if (lessThan5Counts >= (0.3*nBins)) {
+                int tNBins = (int)(nBins/1.5f);
+                if (tNBins >= lowerLimit) {
+
+                    nBins = tNBins;
+
+                    xHist = new float[nBins];
+                    yHist = new int[nBins];
+                    Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
+
+                } else {
+                    go = false;
+                }
+            } else {
+                go = false;
             }
         }
-        if (lessThan5Counts >= (0.3*nBins)) {
-            int lowerLimit = (int)(preferredNumberOfBins/2.0f);
-            int tNBins = nBins/2;
-            if (tNBins >= lowerLimit) {
 
-                nBins = tNBins;
-
-                xHist = new float[nBins];
-                yHist = new int[nBins];
-                Histogram.createHistogram(values, nBins, minValue, xmax, xHist, yHist);
-            }
+        // change bin size so that preferredNumberOfBins is used.
+        float factor = nBins/preferredNumberOfBins;
+        if (factor > 1) {
+            nBins = preferredNumberOfBins;
+            binWidth *= factor;
         }
+        xHist = new float[nBins];
+        yHist = new int[nBins];
+        Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
 
         float[] yHistFloat = new float[yHist.length];
         for (int i = 0; i < yHist.length; i++) {
@@ -271,6 +233,52 @@ public class Histogram {
         histogram.setXErrors(xErrors);
 
         return histogram;
+    }
+
+    protected static float calculateSturgesBinWidth(float[] values, float binWidthFactor) {
+
+        if (values == null ) {
+            throw new IllegalArgumentException("values cannot be null and must be the same length");
+        }
+        /*
+        Sturges:
+                               stdev of the n data values
+           bin width = 3.49 * ----------------------------
+                                        n^(1/3)
+        */
+        float[] meanStdev = MiscMath.findMeanAndStDev(values);
+
+        float binWidth = (float) (binWidthFactor*3.49f* meanStdev[1]/Math.pow(values.length, (1./3.)));
+
+        return binWidth;
+    }
+
+    public static float calculateFreedmanDraconisBinWidth(float[] values, float binWidthFactor) {
+
+        if (values == null) {
+            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        }
+
+        /*
+        Freedman-Diaconis:
+           IQR is interquartile range
+           Q1 = 1/4 of data
+           Q3 = 3/4 of data
+           IQR = Q3 - Q1
+           fdBinWidth = 2*( xHist[q3Index] - xHist[q1Index])
+               / (float)(Math.pow(values.length, (1.0/3.0)));
+        */
+        // use Freedman-Diaconis choice to see match with this distr
+
+        float[] tmp = Arrays.copyOf(values, values.length);
+        Arrays.sort(tmp);
+        float q1 = tmp[ values.length/4];
+        float q2 = tmp[ values.length/2];
+        float q3 = tmp[ 3*values.length/4];
+
+        float binWidth = (float) (binWidthFactor*2.0f*(q3-q1)/Math.pow(values.length, (1./3.)));
+
+        return binWidth;
     }
 
     /**
@@ -339,7 +347,7 @@ public class Histogram {
 
                 sumErrorAllPoints += a;
 
-                float b = valueErrors[i]/values[i];
+                //float b = valueErrors[i]/values[i];
                 //sumPercentErrorAllPoints += (b*b);
             }
         }
