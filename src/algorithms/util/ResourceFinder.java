@@ -59,6 +59,15 @@ public class ResourceFinder {
         return filePath;
     }
 
+    public static String getAFilePathInTestResources(String fileName) throws IOException {
+
+        String dirPath = findDirectory("testresources");
+
+        String filePath = dirPath + sep + fileName;
+
+        return filePath;
+    }
+
     public static String findFileInTestResources(String fileName) throws IOException {
 
         try {
@@ -113,9 +122,28 @@ public class ResourceFinder {
         return filePath;
     }
 
+    public static String writeToTestResources(String fileContent, String fileName) throws IOException {
+
+        String filePath = getAFilePathInTestResources(fileName);
+
+        return writeDataToDirectory(fileContent, filePath);
+    }
+
     public static String writeToCWD(String fileContent, String fileName) throws IOException {
 
         String filePath = getAFilePathInCWD(fileName);
+
+        return writeDataToDirectory(fileContent, filePath);
+    }
+
+    public static String writeToTmpData(String fileContent, String fileName) throws IOException {
+
+        String filePath = getAFilePathInTmpData(fileName);
+
+        return writeDataToDirectory(fileContent, filePath);
+    }
+
+    protected static String writeDataToDirectory(String fileContent, String filePath) throws IOException {
 
         FileWriter fw = null;
         BufferedWriter writer = null;

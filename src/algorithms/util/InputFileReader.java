@@ -91,10 +91,7 @@ public class InputFileReader {
 
     protected void expandArraysIfNecessary() {
         if (nPoints > (x.length - 2)) {
-            int expand = (int)1.3f*x.length;
-            if (expand == x.length) {
-                expand = 2*x.length;
-            }
+            int expand = (int)(1.3f*x.length);
             x = Arrays.copyOf(x, expand);
             y = Arrays.copyOf(y, expand);
             xErrors = Arrays.copyOf(xErrors, expand);
