@@ -13,7 +13,7 @@ public class FindClustersTest extends BaseTwoPointTest {
     boolean debug = true;
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
-    
+
     public void test_Find_Clusters_Stats() throws Exception {
 
         log.info("test_Find_Clusters_Stats()");
@@ -30,8 +30,8 @@ public class FindClustersTest extends BaseTwoPointTest {
         long seed = srr.nextLong();
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        //sr.setSeed(seed);
-        sr.setSeed(6236290033146721436l);
+        sr.setSeed(seed);
+        //sr.setSeed(6236290033146721436l);
 
         // a long running test to calculcate and print the stats of fits
         //  for sparse, moderate, and densely populated backgrounds,
@@ -202,7 +202,8 @@ public class FindClustersTest extends BaseTwoPointTest {
                     "   (%d) peak=%.4f mean=%.4f median=%.4f x05=%.4f x10=%.4f x80=%.4f x95=%.4f mean/peak=%.2f median/mean=%.2f x80/median=%.2f x80/mean=%.2f chist=%.1f",
                     j, peak, mean, median, x05, x10, x80, x95, meanDivPeak, medianDivMean, x80DivMedian, x80DivMean, chiSqStats[n]
                 );
-                log.info(line);
+                //log.info(line);
+                System.out.println(line);
 
                 meanDivPeakSum += meanDivPeak;
                 medianDivMeanSum += medianDivMean;
@@ -268,7 +269,8 @@ public class FindClustersTest extends BaseTwoPointTest {
                 x80DivMedians[i], x80DivMediansSD[i],
                 x80DivMeans[i], x80DivMeansSD[i]
             );
-            log.info(line);
+            //log.info(line);
+            System.out.println(line);
         }
 
         log.info("SEED=" + seed);

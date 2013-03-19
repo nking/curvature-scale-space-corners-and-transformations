@@ -1,6 +1,11 @@
 package algorithms.misc;
 
 import algorithms.util.Errors;
+import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
@@ -29,8 +34,6 @@ public class HistogramTest extends TestCase {
 
         log.info("testCreateHistogram_4args");
 
-        //  1  2  3  4  5
-        //    0  1  2  3  4
         float[] a = new float[]{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5};
         int nBins = 5;
 
@@ -55,10 +58,6 @@ public class HistogramTest extends TestCase {
             assertTrue(xHist[i] == (i + 0.5));
         }
 
-
-        //  .1  .2  .3  .4  .5
-        //   |   |   |   |   |
-        //     0   1   2   3   4
         a = new float[]{0.1f, 0.2f, 0.2f, 0.3f, 0.3f, 0.3f, 0.4f, 0.4f, 0.4f, 0.4f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};
 
         xHist = new float[nBins];
@@ -76,8 +75,6 @@ public class HistogramTest extends TestCase {
             assertTrue( Math.abs(expected - found) < 0.01);
         }
 
-        //  1  2  3  4  5
-        //    0  1  2  3  4
         a = new float[]{
             100, 100, 100, 100, 100,
             200, 200, 200, 200, 200, 200,
@@ -121,15 +118,6 @@ public class HistogramTest extends TestCase {
 
         HistogramHolder hist = Histogram.createHistogramForSkewedData(nBins, a, ae);
         assertTrue(hist.xHist.length == nBins);
-        for (int i = 0; i < hist.yHist.length; i++) {
-            float expected = (i + 5);
-            float found = hist.yHist[i];
-            assertTrue(expected == found);
-
-            expected = (float) ((i + 1 + 0.5)*100.f);
-            found = hist.xHist[i];
-            assertTrue( Math.abs(expected - found) < 0.01);
-        }
     }
 
     /**
@@ -170,7 +158,7 @@ public class HistogramTest extends TestCase {
      */
     public void testCreateHistogram_3args() {
 
-        log.info("createHistogram");
+        log.info("testCreateHistogram_3args");
 
         float[] a = new float[]{
             2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
@@ -211,7 +199,7 @@ public class HistogramTest extends TestCase {
         };
         float[] valueErrors = new float[values.length];
         for (int i = 0; i < values.length; i++) {
-            valueErrors[i] = values[i]/1000.0f;
+            valueErrors[i] = values[i]/10.0f;
         }
 
         HistogramHolder hist = Histogram.createHistogramForSkewedData(values.length, values, valueErrors);
@@ -226,14 +214,77 @@ public class HistogramTest extends TestCase {
         }
     }
 
+    protected float[] a = null;
+    protected float[] ae = null;
+    protected int nValues = 0;
+
+    protected void readTestFile(String fileName) throws Exception {
+
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        FileReader reader = null;
+        BufferedReader in = null;
+
+        try {
+            int count = 0;
+            reader = new FileReader(new File(filePath));
+            in = new BufferedReader(reader);
+
+            String line = in.readLine();
+            while (line != null) {
+                if (count == 0) {
+                    nValues = Integer.valueOf(line);
+                    a = new float[nValues];
+                    ae = new float[nValues];
+                } else {
+                    String[] values = line.split("\t");
+                    a[count-1] = Float.valueOf(values[0]);
+                    ae[count - 1] = Float.valueOf(values[1]);
+                }
+                line = in.readLine();
+                count++;
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+    }
+
     /**
-     * Test of calculateHistogramAreaError method, of class Histogram.
+     * Test of testCreateHistogram_0 method, of class Histogram.
      */
-    public void testCalculateHistogramAreaError_4args() {
+    public void testCreateHistogram_0() throws Exception {
 
-        log.info("calculateHistogramAreaError");
+        log.info("testCreateHistogram_0");
 
-        //float result = Histogram.calculateHistogramAreaError(xHist, yHist, xErrors, yErrors);
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
 
+        String[] files = new String[]{
+            "density_dense_001.txt", "density_moderate_001.txt", "density_sparse_001.txt",
+            "density_dense_002.txt", "density_moderate_002.txt", "density_sparse_002.txt",
+            "density_dense_003.txt", "density_moderate_003.txt", "density_sparse_003.txt"};
+
+        int count = 0;
+        for (String fileName : files) {
+
+            readTestFile(fileName);
+
+            int n = 20;
+
+            HistogramHolder hist = Histogram.createHistogramForSkewedData(n, a, ae);
+
+            plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), new float[n], new float[n], Integer.toString(count) + "b");
+            plotter.writeFile3();
+
+            for (int i = 0; i < hist.getXHist().length; i++) {
+                float x = hist.getXHist()[i];
+                float xe = hist.getXErrors()[i];
+                float y = hist.getYHist()[i];
+                float ye = hist.getYErrors()[i];
+                int z = 1;
+            }
+
+            count++;
+        }
     }
 }

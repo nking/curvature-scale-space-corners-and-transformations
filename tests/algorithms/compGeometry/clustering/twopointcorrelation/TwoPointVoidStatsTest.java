@@ -2,12 +2,11 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.misc.HistogramHolder;
 import algorithms.util.Errors;
-import algorithms.util.PolygonAndPointPlotter;
 import java.io.File;
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.logging.Logger;
+import static junit.framework.Assert.assertNotNull;
 
 /**
  *
@@ -19,7 +18,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void estCalc_0() throws Exception {
+    public void testCalc_0() throws Exception {
 
         log.info("testCalc_0()");
 
@@ -133,7 +132,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
-        stats.setUseCompleteSampling(true);
+        stats.setUseCompleteSampling(false);
 
         stats.calc();
 
@@ -196,6 +195,40 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         assertNotNull(stats.getBestFit());
 
+    }
+
+    public void testCalc_3() throws Exception {
+
+        log.info("testCalc_3");
+
+        SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
+        srr.setSeed( System.currentTimeMillis() );
+        long seed = srr.nextLong();
+
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        //sr.setSeed( seed );
+        sr.setSeed(-2384802679227907254l);
+
+        log.info("using SEED=" + seed);
+
+        float xmin = 0;
+        float xmax = 300;
+        float ymin = 0;
+        float ymax = 300;
+
+        createPoints((30+40+60), new int[]{30, 40, 60}, CLUSTER_SEPARATION.LARGE,
+            xmin, xmax, ymin, ymax, sr, false);
+
+        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+
+        TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
+        stats.setDebug(debug);
+        stats.setUseCompleteSampling(false);
+
+        stats.calc();
+
+        assertNotNull(stats.getBestFit());
     }
 
     public void checkRuntimes() throws Exception {
