@@ -80,10 +80,51 @@ public class StringLite {
         if (chars == null) {
             return hash;
         }
+
+        return fnvHashCode();
+    }
+
+    protected int simpleHashCode() {
+
         if (hash == 0) {
             int sum = 0;
             for (int i = 0; i < chars.length; i++) {
                 sum += chars[i];
+            }
+            hash = sum;
+        }
+
+        return hash;
+    }
+
+    protected int fnv321aInit = 0x811c9dc5;
+    protected int fnv32Prime = 0x01000193;
+
+    protected int fnvHashCode() {
+
+        /*
+         * hash = offset_basis
+         * for each octet_of_data to be hashed
+         *     hash = hash xor octet_of_data
+         *     hash = hash * FNV_prime
+         * return hash
+         *
+         * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+         */
+
+        if (hash == 0) {
+
+            int sum = fnv321aInit;
+
+            for (int i = 0; i < chars.length; i++) {
+                // xor the bottom with the current octet.
+                // chars[i] is 16 bits, but StringLite should be holding only
+                //      low number ascii characters,
+                //      so resulting value of chars[i] is same as extracted for 8 bit
+	            sum ^= chars[i];
+
+                // multiply by the 32 bit FNV magic prime mod 2^32
+                sum *= fnv32Prime;
             }
             hash = sum;
         }
