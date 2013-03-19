@@ -4,13 +4,10 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
  * a fast simple character holder.
  *
  * The hashcode is tailored
- * to hold the following 15 ascii characters:   0-9 ' ' '.' 'e' '-' 'f'
- * and char[] chars is expected to hold up to 32 characters.
+ * to hold the following 11 ascii characters:   0-9 ' '
+ * and char[] chars is expected to hold up to 20 characters.
  *
  * This is for use with TwoPointVoidStats to speed up identity checks.
- *
- * It's use for more than 32 characters is not recommended and use with
- * character sets that extend beyond values 67108863 is not recommended.
  *
  * @author nichole
  */
@@ -25,7 +22,6 @@ public class StringLite {
      * @param value
      */
     public StringLite(char value[]) {
-        // value should be less than 33 in length.  not enforced.
         this.chars = value;
         nChars = value.length;
     }
@@ -79,19 +75,7 @@ public class StringLite {
 
         // like strings, would like to have same code for same content
 
-        // StringLite was created for use in TwoPointVoidStats specifically to hold
-        // only 15 symbols: 0-9 ' ' '.' 'e' '-' 'f'
-        // and only up to 32 of those symbols.
-        //
-        // so to hold each combination uniquely within an integer,
-        // can divide the integer into 32 slots
-        //    0 to 67108863            is slot '0'
-        //    67108863 to 134217726    is slot '1'
-        //    134217726 to 201326589   is slot '2'
-        //    ...
-        //    2080374753 to 2147483616 is slot '32'
-        // where delta = 67108863 which is 2147483647/32
-        //
+        // chars holds up to 20 characters of 11 possible symbols
 
         if (chars == null) {
             return hash;
@@ -99,7 +83,7 @@ public class StringLite {
         if (hash == 0) {
             int sum = 0;
             for (int i = 0; i < chars.length; i++) {
-                sum += chars[i] + i*67108863;
+                sum += chars[i];
             }
             hash = sum;
         }

@@ -85,7 +85,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected int nTwoPointSurfaceDensities = 0;
     protected int[] point1 = null;
     protected int[] point2 = null;
-    protected StringArrayLite tstrArray = null;
+    protected StringArrayLite twoPointIdentities = null;
 
     protected int defaultNBins = 20;
 
@@ -157,7 +157,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         calculateSurfaceDensities();
 
-        tstrArray = null;
+        twoPointIdentities = null;
 
         calculateStats();
     }
@@ -167,7 +167,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         allTwoPointSurfaceDensities = new float[100];
         point1 = new int[100];
         point2 = new int[100];
-        tstrArray = new StringArrayLite();
+        twoPointIdentities = new StringArrayLite(100);
 
 
         findVoids();
@@ -240,18 +240,19 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             int pt1 = point1[i];
             int pt2 = point2[i];
 
-            double xe1 = xpe[pt1];
-            double xe2 = xpe[pt2];
-            double ye1 = ype[pt1];
-            double ye2 = ype[pt2];
+            double xe1 = xpe[pt1] ; // xp[pt1];
+            double xe2 = xpe[pt2] ; // xp[pt2];
+            double ye1 = ype[pt1] ; // yp[pt1];
+            double ye2 = ype[pt2] ; // yp[pt2];
 
             double xsigmasq = ( xe1 * xe1 ) + ( xe2 * xe2 );
             double ysigmasq = ( ye1 * ye1 ) + ( ye2 * ye2 );
             double xysigmasq = xsigmasq + ysigmasq;
 
             double linearDensity = allTwoPointSurfaceDensities[i];
+            double linearDensitySq = Math.pow(linearDensity, 2);
 
-            double err = Math.sqrt(xysigmasq * Math.pow(linearDensity, 2));
+            double err = Math.sqrt(xysigmasq * linearDensitySq);
 
             densityErrors[i] = (float)err;
         }
@@ -413,13 +414,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                     increaseThreshold2 = true;
                 } else if ((chistat > 2) && (medDivMean) > 15.0f) {
                     increaseThreshold2 = true;
+                } else if ((chistat > 2) && (yfit.getOriginalScaleYFit()[yfit.getXPeakIndex()] < 100)) {
+                    decreaseThreshold = true;
                 } else if ((chistat > 2) && (medDivMean < 4.0f)) {
-                    if (yfit.getOriginalScaleYFit()[yfit.getXPeakIndex()] < 100) {
-                        // low density correction for fitting past peak
-                        decreaseThreshold = true;
-                    } else {
-                        increaseThreshold2 = true;
-                    }
+                    increaseThreshold2 = true;
                 }
             }
 
@@ -751,23 +749,20 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
      */
     protected void processIndexedPair(float[] x, float[] y, int regionIndex0, int regionIndex1) {
 
-        // TODO: consider removing sets with same x or same y because they don't represent a rectangle.
-        // Currently, the density is 1-D rather than 2-D so keeping them is fine.
-        // Note: use 1-D instead of 2-D rectangles seems to be a better choice because it is not
+        // Note: using 1-D instead of 2-D rectangles seems to be a better choice because it is not
         // dependent on rotation of the reference frame
 
-        // instead of surface density, temporarily use linear density, since this is strictly 2 points.
-        float surfaceArea = (float) Math.sqrt(LinesAndAngles.distSquared( x[regionIndex0], y[regionIndex0],
+        float d = (float) Math.sqrt(LinesAndAngles.distSquared( x[regionIndex0], y[regionIndex0],
             x[regionIndex1], y[regionIndex1]));
 
-        if (surfaceArea == 0) {
+        if (d == 0) {
             return;
         }
 
         //float xc = (x[regionIndexes[0]] + x[regionIndexes[1]]) / 2.f;
         //float yc = (y[regionIndexes[0]] + y[regionIndexes[1]]) / 2.f;
 
-        float surfaceDensity = 2.f / surfaceArea;
+        float linearDensity = 2.f / d;
 
         // expand arrays by 100 if needed
         if ((nTwoPointSurfaceDensities + 2) > allTwoPointSurfaceDensities.length) {
@@ -776,22 +771,8 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
             point2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities + 100);
         }
 
-        // order the indexes to avoid double counting.
-        int i0, i1;
-        if (regionIndex0 < regionIndex1) {
-            i0 = regionIndex0;
-            i1 = regionIndex1;
-        } else {
-            i0 = regionIndex1;
-            i1 = regionIndex0;
-        }
-
-        // 15 symbols to represent within up to 32 characters.  StringLite hashCode is tailored to this
-        char[] strFmted = String.format(Locale.US,
-            "%.7e %d %d", surfaceDensity, i0, i1).toCharArray();
-        if (!tstrArray.containsInTStr(strFmted)) {
-            tstrArray.storeInTStr(new StringLite(strFmted));
-            allTwoPointSurfaceDensities[nTwoPointSurfaceDensities] = surfaceDensity;
+        if (twoPointIdentities.storeIfDoesNotContain(regionIndex0, regionIndex1)) {
+            allTwoPointSurfaceDensities[nTwoPointSurfaceDensities] = linearDensity;
             point1[nTwoPointSurfaceDensities] = regionIndex0;
             point2[nTwoPointSurfaceDensities] = regionIndex1;
             nTwoPointSurfaceDensities++;
