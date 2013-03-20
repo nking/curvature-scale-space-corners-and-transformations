@@ -31,7 +31,14 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(seed);
-        //sr.setSeed(6236290033146721436l);
+        //sr.setSeed(-1993887065899734688l);
+        //sr.setSeed(-6886733535826319879l);
+        //sr.setSeed(-3765842324512485314l);
+        //sr.setSeed(1152752110035096347l);
+        //sr.setSeed(-6221198867223436351l);
+        //sr.setSeed(6899554926901724961l);
+
+        log.info("SEED=" + seed);
 
         // a long running test to calculcate and print the stats of fits
         //  for sparse, moderate, and densely populated backgrounds,
@@ -116,8 +123,8 @@ public class FindClustersTest extends BaseTwoPointTest {
                     chiSqStats[count] = bestFit.getChiSqStatistic();
                     // label needs:  x10, peak,  mean/peak, median/mean and x80/median
                     plotLabel = String.format(
-                        "  (%d %d) x05=%.4f x10=%.4f peak=%.4f mean/peak=%.2f med/mean=%.2f x80/med=%.2f",
-                        i, ii, x05, x10, peak, meanDivPeak, medianDivMean, x80DivMedian
+                        "  (%d %d) x10=%.4f peak=%.4f av/peak=%.2f med/av=%.2f chst=%.1f",
+                        i, ii, x10, peak, meanDivPeak, medianDivMean, chiSqStats[count]
                     );
                     if (debug) {
                         log.info(plotLabel);

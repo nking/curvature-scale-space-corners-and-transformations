@@ -26,43 +26,47 @@ public class ATest extends TestCase {
     public void testCalculateChiSqSumForCurve_0() throws Exception {
 
         // not a test.  this is a way to fit a curve by eye if needed.
-
-        x = new float[]{0.017533371f, 0.052600116f, 0.087666854f, 0.1227336f, 0.15780035f,
-            0.19286709f, 0.22793384f, 0.26300058f, 0.2980673f, 0.33313406f, 0.36820078f,
-            0.40326753f, 0.4383343f, 0.473401f, 0.5084678f, 0.5435345f, 0.57860124f,
-            0.61366796f, 0.64873475f, 0.6838015f};
-        y = new float[]{0.0f, 0.0f, 50.0f, 220.0f, 340.0f, 357.0f, 339.0f, 295.0f,
-            217.0f, 199.0f, 163.0f, 135.0f, 113.0f, 87.0f, 85.0f, 48.0f, 47.0f,
-            44.0f, 31.0f, 40.0f};
+        x = new float[]{0.04042134f, 0.121264026f, 0.2021067f, 0.2829494f, 0.36379206f, 0.44463474f, 0.52547747f, 0.60632014f, 0.6871628f, 0.7680055f, 0.84884816f, 0.92969084f, 1.0105336f, 1.0913762f, 1.1722189f, 1.2530615f, 1.3339043f, 1.414747f, 1.4955896f, 1.5764323f, 1.657275f};
+        y = new float[]{18.0f, 32.0f, 39.0f, 23.0f, 18.0f, 10.0f, 7.0f, 6.0f, 6.0f, 5.0f, 3.0f, 2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f};
 
         dy = Errors.populateYErrorsBySqrt(y);
         dx = Errors.populateXErrorsByPointSeparation(x);
 
         /*
-         * k=1.7483624E-4 sigma=0.10408807 mu=0.2820513 chiSqSum=859361.06 chiSqStatistic=53710.066
-         *
-         * k=4.2631186E-4 sigma=0.13125233 mu=0.28205 chiSqSum=364.20374 chiSqStatistic=22.762733
+         * k=1.5e-04 s=9.2e-02 m=1.2e-01 chisq=2284.0 yerrsq=200.8
+         * k=1.2529743E-4 sigma=0.0803195 mu=0.09756097 chiSqSum=16.608713 chiSqStatistic=0.97698313
          */
-        float k = 0.00034782593f;
-        float sigma = 0.1070881f;
-        int yConstIndex = 1;
-        float mu = 0.28205f;
+
+        //        0.00001f;
+        float k = 0.000058f;
+        float sigma = 0.14f;
+        float mu = 0.1f;
         float yNorm = 1.0f;
+        int yConstIndex = 2;
 
         GEVChiSquareMinimization chiSqMin = new GEVChiSquareMinimization(x, y, dx, dy);
 
         GEVYFit yfit = null;
 
-        //yfit = chiSqMin.calculateChiSqSumAndCurve(k, sigma, mu, GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yConstIndex);
+        //yfit = chiSqMin.calculateChiSqSumAndCurve(k, sigma, mu,
+        //    GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
-        yfit = chiSqMin.fitCurve(k/2.f, k*2.f, sigma/2.f, sigma*2.f, mu, 808.0f,
-            GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yNorm);
+        //yfit = chiSqMin.fitCurve(k/2.f, k*2.f, sigma/2.f, sigma*2.f, mu, 808.0f,
+        //    GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yNorm);
 
         //yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
+        chiSqMin.setDebug(true);
+        yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
+            GEVChiSquareMinimization.kMinDefault, GEVChiSquareMinimization.kMaxDefault,
+            GEVChiSquareMinimization.sigmaMinDefault, GEVChiSquareMinimization.sigmaMaxDefault);
+
+        yfit.setChiSqStatistic(chiSqMin.calculateChiSquareStatistic(yfit.getYFit(),
+            GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS));
+
         if (debug) {
 
-            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0, 0.7f, 0, 360);
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
             plotter.addPlot(x, y, yfit.getOriginalScaleX(), yfit.getOriginalScaleYFit(), "");
             plotter.writeFile();
 
