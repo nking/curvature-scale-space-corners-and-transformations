@@ -45,7 +45,7 @@ class StringArrayLite {
             i1 = index0;
         }
 
-        byte[] identity = StringLite.createIdentity(index0, index1);
+        byte[] identity = createIdentity(index0, index1);
 
         int sumChars = sum(identity);
 
@@ -81,4 +81,51 @@ class StringArrayLite {
         }
         return sum;
     }
+
+     static byte[] createIdentity(int index0, int index1) {
+
+        int nB = 8; // 2 integers
+
+        byte[] bytes = new byte[nB];
+
+        System.arraycopy( writeIntegerToBytes(index0, 4), 0, bytes, 0, 4);
+        System.arraycopy( writeIntegerToBytes(index1, 4), 0, bytes, 4, 4);
+
+        return bytes;
+    }
+
+    /**
+     * write the integer num to 4 bytes
+     *
+     * @param num
+     * @param numBytes
+     * @return
+     */
+    protected static byte[] writeIntegerToBytes(int num, int numBytes) {
+
+        /*
+         *  byte          int
+         *  -----        -----
+         *  0            0
+         *  127          127    0111 1111
+         * -128          128    1000 0000
+         * -1            255    1111 1111
+         */
+
+        byte[] bytes = new byte[numBytes];
+
+        for (int i = 0; i < numBytes; i++) {
+            int shift = i * 8;
+            int a = (num >> shift) & 255;
+            byte b = (byte) a;
+
+            // write in reverse order as most numbers will be small, and this results
+            //   in comparing low order digits first instead of zeros
+            int index = i;
+            bytes[index] = b;
+        }
+
+        return bytes;
+    }
+
 }

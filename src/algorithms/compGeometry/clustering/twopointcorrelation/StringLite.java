@@ -1,13 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 /**
- * a fast simple character holder.
- *
- * The hashcode is tailored
- * to hold the following 11 ascii characters:   0-9 ' '
- * and byte[] bytes is expected to hold up to 20 characters.
- *
- * This is for use with TwoPointVoidStats to speed up identity checks.
+ * a fast simple character holder for use with TwoPointVoidStats to speed up identity checks.
  *
  * @author nichole
  */
@@ -17,7 +11,7 @@ class StringLite {
     protected int nBytes = 0;
 
     /**
-     * constructor.  value should be less than 33 characters.
+     * constructor
      *
      * @param value
      */
@@ -81,26 +75,11 @@ class StringLite {
 
         // like strings, would like to have same code for same content
 
-        // bytes holds up to 20 characters of 11 possible symbols
-
         if (bytes == null) {
             return hash;
         }
 
         return fnvHashCode();
-    }
-
-    protected int simpleHashCode() {
-
-        if (hash == 0) {
-            int sum = 0;
-            for (int i = 0; i < bytes.length; i++) {
-                sum += bytes[i];
-            }
-            hash = sum;
-        }
-
-        return hash;
     }
 
     protected static int fnv321aInit = 0x811c9dc5;
@@ -133,52 +112,6 @@ class StringLite {
         }
 
         return hash;
-    }
-
-    static byte[] createIdentity(int index0, int index1) {
-
-        int nB = 8; // 2 integers
-
-        byte[] bytes = new byte[nB];
-
-        System.arraycopy( writeIntegerToBytes(index0, 4), 0, bytes, 0, 4);
-        System.arraycopy( writeIntegerToBytes(index1, 4), 0, bytes, 4, 4);
-
-        return bytes;
-    }
-
-    /**
-     * write the unsigned integer num to 4 bytes
-     *
-     * @param num
-     * @param numBytes
-     * @return
-     */
-    protected static byte[] writeIntegerToBytes(int num, int numBytes) {
-
-        /*
-         *  byte          int
-         *  -----        -----
-         *  0            0
-         *  127          127    0111 1111
-         * -128          128    1000 0000
-         * -1            255    1111 1111
-         */
-
-        byte[] bytes = new byte[numBytes];
-
-        for (int i = 0; i < numBytes; i++) {
-            int shift = i * 8;
-            int a = (num >> shift) & 255;
-            byte b = (byte) a;
-
-            // write in reverse order as most numbers will be small, and this results
-            //   in comparing low order digits first
-            int index = i;
-            bytes[index] = b;
-        }
-
-        return bytes;
     }
 
 }
