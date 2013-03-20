@@ -5,25 +5,29 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
  *
  * The hashcode is tailored
  * to hold the following 11 ascii characters:   0-9 ' '
- * and char[] chars is expected to hold up to 20 characters.
+ * and byte[] bytes is expected to hold up to 20 characters.
  *
  * This is for use with TwoPointVoidStats to speed up identity checks.
  *
  * @author nichole
  */
-public class StringLite {
+class StringLite {
 
-    protected final char[] chars;
-    protected int nChars = 0;
+    protected final byte[] bytes;
+    protected int nBytes = 0;
 
     /**
      * constructor.  value should be less than 33 characters.
      *
      * @param value
      */
-    public StringLite(char value[]) {
-        this.chars = value;
-        nChars = value.length;
+    StringLite(byte[] value) {
+        this.bytes = value;
+        nBytes = value.length;
+    }
+
+    public int length() {
+        return nBytes;
     }
 
     /**
@@ -36,7 +40,7 @@ public class StringLite {
         if (other == null) {
             return false;
         }
-        return equals(other.chars);
+        return equals(other.bytes);
     }
     /**
      * fast check that contents are the same. assumes that they are never null
@@ -44,15 +48,15 @@ public class StringLite {
      * @param other
      * @return
      */
-    public boolean equals(char[] other) {
+    public boolean equals(byte[] other) {
         if (other == null) {
             return false;
         }
-        if (chars.length != other.length) {
+        if (bytes.length != other.length) {
             return false;
         }
-        for (int i = 0; i < nChars; i++) {
-            if (chars[i] != other[i]) {
+        for (int i = 0; i < nBytes; i++) {
+            if (bytes[i] != other[i]) {
                 return false;
             }
         }
@@ -63,6 +67,8 @@ public class StringLite {
     public boolean equals(Object o) {
         if (o instanceof StringLite) {
             return equals((StringLite)o);
+        } else if (o instanceof byte[]) {
+            return equals(o);
         } else {
             return false;
         }
@@ -75,9 +81,9 @@ public class StringLite {
 
         // like strings, would like to have same code for same content
 
-        // chars holds up to 20 characters of 11 possible symbols
+        // bytes holds up to 20 characters of 11 possible symbols
 
-        if (chars == null) {
+        if (bytes == null) {
             return hash;
         }
 
@@ -88,8 +94,8 @@ public class StringLite {
 
         if (hash == 0) {
             int sum = 0;
-            for (int i = 0; i < chars.length; i++) {
-                sum += chars[i];
+            for (int i = 0; i < bytes.length; i++) {
+                sum += bytes[i];
             }
             hash = sum;
         }
@@ -97,8 +103,8 @@ public class StringLite {
         return hash;
     }
 
-    protected int fnv321aInit = 0x811c9dc5;
-    protected int fnv32Prime = 0x01000193;
+    protected static int fnv321aInit = 0x811c9dc5;
+    protected static int fnv32Prime = 0x01000193;
 
     protected int fnvHashCode() {
 
@@ -116,12 +122,9 @@ public class StringLite {
 
             int sum = fnv321aInit;
 
-            for (int i = 0; i < chars.length; i++) {
+            for (int i = 0; i < bytes.length; i++) {
                 // xor the bottom with the current octet.
-                // chars[i] is 16 bits, but StringLite should be holding only
-                //      low number ascii characters,
-                //      so resulting value of chars[i] is same as extracted for 8 bit
-	            sum ^= chars[i];
+	            sum ^= bytes[i];
 
                 // multiply by the 32 bit FNV magic prime mod 2^32
                 sum *= fnv32Prime;
@@ -131,4 +134,51 @@ public class StringLite {
 
         return hash;
     }
+
+    static byte[] createIdentity(int index0, int index1) {
+
+        int nB = 8; // 2 integers
+
+        byte[] bytes = new byte[nB];
+
+        System.arraycopy( writeIntegerToBytes(index0, 4), 0, bytes, 0, 4);
+        System.arraycopy( writeIntegerToBytes(index1, 4), 0, bytes, 4, 4);
+
+        return bytes;
+    }
+
+    /**
+     * write the unsigned integer num to 4 bytes
+     *
+     * @param num
+     * @param numBytes
+     * @return
+     */
+    protected static byte[] writeIntegerToBytes(int num, int numBytes) {
+
+        /*
+         *  byte          int
+         *  -----        -----
+         *  0            0
+         *  127          127    0111 1111
+         * -128          128    1000 0000
+         * -1            255    1111 1111
+         */
+
+        byte[] bytes = new byte[numBytes];
+
+        for (int i = 0; i < numBytes; i++) {
+            int shift = i * 8;
+            int a = (num >> shift) & 255;
+            byte b = (byte) a;
+
+            // write in reverse order as most numbers will be small, and this results
+            //   in comparing low order digits first
+            int index = i;
+            bytes[index] = b;
+        }
+
+        return bytes;
+    }
+
 }

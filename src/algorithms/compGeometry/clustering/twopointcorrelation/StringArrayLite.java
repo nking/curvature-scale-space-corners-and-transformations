@@ -1,26 +1,25 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import java.util.Arrays;
-import java.util.Locale;
 
 /**
  * a holder for StringLite objects
  *
  * @author nichole
  */
-public class StringArrayLite {
+class StringArrayLite {
 
     protected StringLite[] tstr;
     protected int[] sumTStrChars;
     protected int nTStr = 0;
 
-    public StringArrayLite() {
+    StringArrayLite() {
         tstr = new StringLite[100];
         sumTStrChars = new int[100];
         nTStr = 0;
     }
 
-    public StringArrayLite(int initialCapacity) {
+    StringArrayLite(int initialCapacity) {
         tstr = new StringLite[initialCapacity];
         sumTStrChars = new int[initialCapacity];
         nTStr = 0;
@@ -46,22 +45,23 @@ public class StringArrayLite {
             i1 = index0;
         }
 
-        char[] strFmted = String.format(Locale.US, "%d %d", i0, i1).toCharArray();
+        byte[] identity = StringLite.createIdentity(index0, index1);
 
-        int sumChars = sumAsciiChars(strFmted);
+        int sumChars = sum(identity);
+
         for (int i = 0; i < nTStr; i++) {
             int tsum = sumTStrChars[i];
             if (sumChars == tsum) {
-                if (tstr[i].equals(strFmted)) {
+                if (tstr[i].equals(identity)) {
                     return false;
                 }
             }
         }
 
-        expandIfNeeded(strFmted.length);
+        expandIfNeeded(identity.length);
 
         sumTStrChars[nTStr] = sumChars;
-        tstr[nTStr] = new StringLite(strFmted);
+        tstr[nTStr] = new StringLite(identity);
         nTStr++;
 
         return true;
@@ -73,11 +73,11 @@ public class StringArrayLite {
             sumTStrChars = Arrays.copyOf(sumTStrChars, nTStr + 100);
         }
     }
-    
-    protected int sumAsciiChars(char[] str) {
+
+    protected int sum(byte[] bytes) {
         int sum = 0;
-        for (int i = 0; i < str.length; i++) {
-            sum += str[i];
+        for (int i = 0; i < bytes.length; i++) {
+            sum += bytes[i];
         }
         return sum;
     }
