@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 /**
  *
@@ -18,10 +19,15 @@ public class InputFileReader {
     protected float[] yErrors = null;
     protected int nPoints = 0;
 
+    protected Logger log = null;
+
     protected final String filePath;
 
     public InputFileReader(String pathToFile) {
+
         this.filePath = pathToFile;
+
+        log = Logger.getLogger(this.getClass().getName());
     }
 
     protected void initArrays() {
@@ -40,10 +46,18 @@ public class InputFileReader {
         BufferedReader in = null;
 
         try {
-            reader = new FileReader(new File(filePath));
+            File fl = new File(filePath);
+
+            if (!fl.exists()) {
+                throw new IOException("file " + filePath + " does not exist");
+            }
+
+            reader = new FileReader(fl);
             in = new BufferedReader(reader);
 
             String line = in.readLine();
+
+            log.info("loading " + filePath);
 
             while (line != null) {
 
@@ -86,6 +100,7 @@ public class InputFileReader {
                 reader.close();
             }
             condenseArrays();
+            log.info("finished loading file");
         }
     }
 

@@ -1,0 +1,6 @@
+Implementation-Title: Two-Point-Correlation
+Implementation-Version: 1.0
+Implementation-Vendor: NicholeKing
+Implementation-URL: http://code.google.com/p/two-point-correlation/
+Main-Class: 
+ algorithms.compGeometry.clustering.twopointcorrelation.Main

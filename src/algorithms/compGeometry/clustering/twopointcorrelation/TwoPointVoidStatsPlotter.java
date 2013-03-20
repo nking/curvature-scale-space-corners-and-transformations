@@ -6,6 +6,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 
 /**
    quick code to visualize data in TwoPointVoidStats.
@@ -183,15 +186,16 @@ public class TwoPointVoidStatsPlotter {
 
     protected StringBuffer getTemplateHtmlPlot(String fileName) throws FileNotFoundException, IOException {
 
-        String path = ResourceFinder.findFileInResources(fileName);
-
         StringBuffer sb = new StringBuffer();
 
-        FileReader reader = null;
+        Reader reader = null;
         BufferedReader in = null;
 
         try {
-            in = new BufferedReader(new FileReader(new File(path)));
+            String path = ResourceFinder.findFileInResources(fileName);
+
+            reader = new FileReader(new File(path));
+            in = new BufferedReader(reader);
 
             String line = in.readLine();
 
@@ -199,6 +203,27 @@ public class TwoPointVoidStatsPlotter {
                 sb.append(line).append("\n");
                 line = in.readLine();
             }
+
+        } catch(IOException e) {
+
+            ClassLoader cls = ResourceFinder.class.getClassLoader();
+
+            InputStream input = cls.getResourceAsStream("resources/" + fileName);
+
+            if (input == null) {
+                throw new IOException("could not find file " + " resources/" + fileName);
+            }
+
+            reader = new InputStreamReader(input);
+            in = new BufferedReader(reader);
+
+            String line = in.readLine();
+
+            while (line != null) {
+                sb.append(line).append("\n");
+                line = in.readLine();
+            }
+
         } finally {
             if (in != null) {
                 in.close();

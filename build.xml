@@ -72,6 +72,7 @@
         <echo message="javadoc:                    create javadocs"/>
         <echo message="runEmma                     run code coverage for non-third party classes"/>
         <echo message="runFindbugs                 static analysis for non-third party classes"/>
+        <echo message="package                     build jar"/>
     </target>
 
     <!-- set compile classpath  -->
@@ -385,4 +386,12 @@
             style="${findbugs.lib.dir}/fancy.xsl" />
     </target>
 
+    <target name="package" depends="compile">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="making jar file of class files, output is in ${classes.dir}/two-point-correlation.jar" />
+        <jar destfile="${classes.dir}/two-point-correlation.jar" manifest="${basedir}/resources/two-point-correlation.mf">
+            <fileset dir="${src.out.dir}" includes="**"/>
+            <fileset dir="${basedir}" includes="resources/**"/>
+        </jar>
+    </target>
 </project>
