@@ -86,7 +86,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected int[] point2 = null;
     protected StringArrayLite twoPointIdentities = null;
 
-    protected int defaultNBins = 20;
+    protected int defaultNBins = 30;
 
     //for debugging, hold on to intermediate data
     protected HistogramHolder statsHistogram = null;
@@ -338,6 +338,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                     plotPairSeparations();
                 }
                 throw new TwoPointVoidStatsException("histogram of linear densities was not fittable");
+            } else {
+                if (debug) {
+                    System.out.println(yfit.toString());
+                }
             }
 
             boolean didCalculateFitStats = yfit.calculateStatsAsStepFunction();
@@ -350,6 +354,29 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             float chsqdiverr = yfit.getChiSqSum() / yfit.getYDataErrSq();
             float chsqstatdiverr = yfit.getChiSqStatistic() / yfit.getYDataErrSq();
+
+
+            // ======= create residual between fit and histogram =======
+            float[] yResidual = new float[yfit.getX().length];
+            float q0sum = 0;
+            float q1sum = 0;
+            for (int i = 0; i < yResidual.length; i++) {
+                yResidual[i] = histogram.getYHistFloat()[i] - yfit.getOriginalScaleYFit()[i];
+                if (i < (yResidual.length/2)) {
+                    q0sum += yResidual[i];
+                } else {
+                    q1sum += yResidual[i];
+                }
+                if (debug) {
+                    System.out.println("**x=" + yfit.getOriginalScaleX()[i] + " y=" + yResidual[i]);
+                }
+            }
+            if (debug) {
+                System.out.println("===> q0=" + q0sum + " q1===>" + q1sum
+                    + "  div=" + (q0sum/q1sum)
+                    + "  q0/peak=" + (q0sum/yfit.getOriginalScaleYFit()[yfit.getXPeakIndex()]));
+            }
+
 
             /*
              * We are assigning the threshold based upon one of 3 different cases:
@@ -408,15 +435,28 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             float medDivMean = yfit.getXMedian()/yfit.getXMean();
             float chistat = yfit.getChiSqStatistic();
 
+            // instead of iteratively fitting for background distr and a clustered distr,
+            //   will do a quick check to see if the residual in tail of distr is far larger
+            //   than the fit.  if so, it implies that the threshold needs to be increased.
+            float tailResidDivFit = calculateForTheTailResidualOverFit(yfit, histogram);
+
             if (allowTuningForThresholdDensity) {
-                if (chistat > 100000) {
-                    increaseThreshold2 = true;
-                } else if ((chistat > 2) && (medDivMean) > 15.0f) {
-                    increaseThreshold2 = true;
-                } else if ((chistat > 2) && (yfit.getOriginalScaleYFit()[yfit.getXPeakIndex()] < 100)) {
-                    decreaseThreshold = true;
-                } else if ((chistat > 2) && (medDivMean < 4.0f)) {
-                    increaseThreshold2 = true;
+
+                float ypeak = yfit.getOriginalScaleYFit()[yfit.getXPeakIndex()];
+
+                if ((chistat > 100) && (tailResidDivFit > 1) ) {
+                    if ((chistat > 400) && (tailResidDivFit > 1)
+                        && (((q0sum/ypeak) > 0.1) || ((q0sum/ypeak) < 0.0))) {
+
+                        increaseThreshold = true;
+
+                    } else {
+                        if (((q0sum/q1sum) < 1) && ((q0sum/ypeak) < 0.5) ) {
+                            increaseThreshold = true;
+                        }
+                    }
+                } else {
+
                 }
             }
 
@@ -425,9 +465,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             // x% works well for sparsely populated backgrounds (number of background points < points in clusters)
             // and moderately populated backgrounds (number of background points approx equal to points in clusters)
 
-            String limitStr = "10%";
+            String limitStr = "5%";
             float limit, limitError;
-            limit = yfit.getX10Percent();
+            limit = 0.5f*yfit.getX10Percent();
             int limitIndex = yfit.getX10PercentIndex();
             limitError = histogram.getXErrors()[limitIndex];
 
@@ -456,9 +496,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                     limitError = histogram.getXErrors()[xPeakIndex];
                 }
             } else if (decreaseThreshold) {
-                limitStr = "0.5*10%";
-                limit = 0.5f*yfit.getX10Percent();
+                limitStr = "0.4*10%";
+                limit = 0.4f*yfit.getX10Percent();
             }
+
+            float firstBin = yfit.getOriginalScaleX()[0];
+            float div = firstBin/limit;//0.7 okay  2.0
+            int z = 1;
+
 
             //if (limitIndex == -1) {
             //    System.out.println("WARNING:  solution was not found");
@@ -968,4 +1013,32 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
             plotter.addHistogram(tmp, max, statsHistogram.getXHist().length);
         }
     }
+
+    protected float calculateForTheTailResidualOverFit(GEVYFit yfit, HistogramHolder histogram) {
+
+        // find index at or just beyond Peak/3.3
+        int limitIndex = yfit.findIndexForPeakFraction((1.0f/7.0f), true);
+
+        if (limitIndex == -1) {
+            return 0;
+        }
+
+        float[] yf = yfit.getOriginalScaleYFit();
+        float[] yh = histogram.getYHistFloat();
+
+        float resid = 0;
+        for (int i = limitIndex; i < yf.length; i++) {
+            resid += (yh[i] - yf[i]);
+        }
+
+        float tail = 0;
+        for (int i = limitIndex; i < yf.length; i++) {
+            tail += yf[i];
+        }
+
+        float resDivTotal = resid / tail;
+
+        return resDivTotal;
+    }
+
 }

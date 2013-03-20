@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
-
   Find clusters in data by looking for regions whose density is
       2 or 3 times the background density (that is 2 or 3 sigma above 'error').
       The default is 3.
