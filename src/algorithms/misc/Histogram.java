@@ -172,7 +172,7 @@ public class Histogram {
         // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred
         boolean go = true;
 
-        int lowerLimit = (int)(preferredNumberOfBins/2.0f);
+        int lowerLimit = (int)(preferredNumberOfBins/2.5f);
         if (lowerLimit < 5) {
             lowerLimit = preferredNumberOfBins;
         }
@@ -184,7 +184,8 @@ public class Histogram {
                     lessThan5Counts ++;
                 }
             }
-            if (lessThan5Counts >= (0.3*nBins)) {
+            int chk = (int)(0.25*nBins);
+            if (lessThan5Counts >= chk) {
                 int tNBins = (int)(nBins/1.5f);
                 if (tNBins >= lowerLimit) {
 

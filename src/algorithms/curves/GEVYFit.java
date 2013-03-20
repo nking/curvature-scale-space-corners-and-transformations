@@ -111,6 +111,25 @@ public class GEVYFit implements IYFit {
         return calcStats(false);
     }
 
+    public int findIndexForPeakFraction(float peakFraction, boolean isStepFunction) {
+        if (yfit == null) {
+            return -1;
+        }
+        if (!statsHaveBeenCalculated()) {
+            calcStats(isStepFunction);;
+        }
+
+        float findY = peakFraction * yScale * yfit[xPeakIndex];
+        int index = -1;
+        for (int i = (xPeakIndex + 1); i < yfit.length; i++) {
+            float y = yScale * yfit[i];
+            if ( y > findY) {
+                index = i;
+            }
+        }
+        return index;
+    }
+
     protected boolean calcStats(boolean isStepFunction) {
 
         float ymax = Float.MIN_VALUE;

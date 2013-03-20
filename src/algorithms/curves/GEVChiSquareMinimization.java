@@ -622,21 +622,22 @@ public class GEVChiSquareMinimization {
             end = y.length - 1;
         }
 
+        float nDmu = 2;
         for (int i = 0; i <= end; i++) {
 
-            float yNorm = y[i];
+            //float yNorm = y[i];
 
-            for (int ii = 0; ii < 2; ii++) {
+            for (int ii = 0; ii < nDmu; ii++) {
 
                 float dmu;
                 if (i < (y.length - 1)) {
-                    dmu = (x[i] - x[i + 1])/2.0f;
+                    dmu = (x[i+1] - x[i])/nDmu;
                 } else {
-                    dmu = (x[0] - x[1])/2.0f;
+                    dmu = (x[1] - x[0])/nDmu;
                 }
                 mu = x[i] + ii*dmu;
 
-                GEVYFit yfit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+                GEVYFit yfit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yPeak);
 
                 if (debug && (yfit != null)) {
                     String label = String.format("k=%.1e s=%.1e m=%.1e chisq=%.1f yerrsq=%.1f",
@@ -658,7 +659,7 @@ public class GEVChiSquareMinimization {
             plotFit(bestFit, label);
 
             if (debug) {
-                System.out.println("fitted gev has chisqsum=" + bestFit.getChiSqSum() + " while curve yerrsqsum=" + yErrSquareSum);
+                System.out.println(label);
             }
         }
 
@@ -1121,7 +1122,9 @@ public class GEVChiSquareMinimization {
 
         float yNorm = MiscMath.findMax(y);
 
-        return calculateChiSqSumAndCurve(k, sigma, mu, wdc, yNorm);
+        GEVYFit yfit = calculateChiSqSumAndCurve(k, sigma, mu, wdc, yNorm);
+
+        return yfit;
     }
 
     public GEVYFit calculateChiSqSumAndCurve(float k, float sigma, float mu, WEIGHTS_DURING_CHISQSUM wdc, float yNorm) {
@@ -1199,10 +1202,10 @@ public class GEVChiSquareMinimization {
     private GEVYFit fitCurveForKGreaterThanZeroWithDownhillSimplex(float kMin, float kMax, float sigmaMin, float sigmaMax,
         float mu, float yErrSquareSum, WEIGHTS_DURING_CHISQSUM weightMethod, float yNorm) {
 
-        int nK = 100;
+        int nK = 1000;
         float deltaK = (kMax - kMin)/(float)nK;
 
-        int nSigma = 100;
+        int nSigma = 1000;
         float deltaSigma = (sigmaMax - sigmaMin)/(float)nSigma;
 
         float k = kMin;
