@@ -236,7 +236,7 @@
         </junit>
     </target>
 
-    <target name="runLargeTests" if="junit.present" depends="compileLargeTests,JUnit">
+    <target name="runLargeTests" if="junit.present" depends="clean,debug,compileLargeTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.large.out.dir}" />
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
