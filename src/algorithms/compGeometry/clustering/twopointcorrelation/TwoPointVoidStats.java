@@ -17,7 +17,7 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 
 /**
- * Class to estimate a background surface density for a set of points in which
+ * Class to estimate a background density for a set of points in which
  * the background surface density will be used by the calling program to find
  * clusters in the data.
  *
@@ -698,7 +698,36 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
                 }
             }
         }
+    }
 
+    /**
+     * A divide and conquer approach to finding the rectangular areas
+     * containing only two points.  it's a recursion with pattern
+     * T(n) = 4T(n/2) + n  so the runtime is O(n^2).  It does not completely
+     * sample every pair of points.
+     *
+     * The range search within void findVoids() is preferred even though slower
+     * than this divide and conquer because the range search has a more
+     * complete solution, that is a higher number of pairs bounding rectangular
+     * voids are learned from the range search.
+     */
+    protected void findVoids(float[] x, float[] y, int xIndexLo, int xIndexHi,
+        int yIndexLo, int yIndexHi) {
+                                                                                 // cost     number of times
+        if ((xIndexLo < xIndexHi) && (yIndexLo < yIndexHi)) {                    //
+
+            int xIndexMid = (xIndexLo + xIndexHi)/2;                             //
+
+            int yIndexMid = (yIndexLo + yIndexHi)/2;                             //
+
+            findVoids(x, y, xIndexLo, xIndexMid, yIndexLo, yIndexMid);           // c4           N/2
+            findVoids(x, y, xIndexLo, xIndexMid, yIndexMid + 1, yIndexHi);       // c5           N/2
+
+            findVoids(x, y, xIndexMid + 1, xIndexHi, yIndexLo, yIndexMid);       // c6           N/2
+            findVoids(x, y, xIndexMid + 1, xIndexHi, yIndexMid + 1, yIndexHi);   // c7           N/2
+
+            processIndexedRegion(x, y, xIndexLo, xIndexHi, yIndexLo, yIndexHi);  //              N/2
+        }
     }
 
     /**
@@ -925,7 +954,6 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
             point2[i] = ois.readInt();
         }
     }
-
 
     void plotFit(PolygonAndPointPlotter plotter) {
 
