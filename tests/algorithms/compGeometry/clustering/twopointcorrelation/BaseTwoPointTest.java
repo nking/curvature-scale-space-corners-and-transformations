@@ -193,11 +193,12 @@ public class BaseTwoPointTest extends TestCase {
             boolean sepIsLarger = false;
 
             while (!sepIsLarger) {
-                xx = sr.nextFloat()*xWidth;
-                yy = sr.nextFloat()*yHeight;
+                xx = xmin + sr.nextFloat()*xWidth;
+                yy = ymin + sr.nextFloat()*yHeight;
 
                 sepIsLarger = separationBetweenExistingPointsIsLargerThanMin(
                     xPoints, yPoints, i, xx, yy, minSeparationBetweenPoints);
+
             }
             xPoints[i] = xx;
             yPoints[i] = yy;
@@ -274,7 +275,7 @@ public class BaseTwoPointTest extends TestCase {
          *             d=max/2*n               .  |
          *                                     r=max/4*n
          */
-        float maxClusterRadius = xmax / (4.0f * nClusters);
+        float maxClusterRadius = (xmax - xmin) / (4.0f * nClusters);
         float minDistanceBetweenClusterCenters;
         float factor;
         if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.LARGE.ordinal()) {
@@ -284,8 +285,9 @@ public class BaseTwoPointTest extends TestCase {
         } else {
             factor = 3.0f;
         }
-        maxClusterRadius = xmax / (factor * nClusters);
-        minDistanceBetweenClusterCenters = (float) (factor * Math.sqrt(2) * maxClusterRadius);
+        maxClusterRadius = (xmax - xmin) / (factor * nClusters);
+        minDistanceBetweenClusterCenters = (factor * maxClusterRadius);
+
 
         createRandomSeparatedPoints(sr, xmin + maxClusterRadius, xmax - maxClusterRadius,
             ymin + maxClusterRadius, ymax - maxClusterRadius,
