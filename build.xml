@@ -302,7 +302,7 @@
         </emma>
     </target>
 
-    <target name="runTest" if="junit.present" depends="clean,prepare,debug,compile,JUnit,compileTests">
+    <target name="runTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileTests">
         <record name="${logfile}" append="yes" loglevel="info"/>
         <fail unless="test">
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
