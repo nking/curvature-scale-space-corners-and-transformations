@@ -161,13 +161,31 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         calculateStats();
     }
 
+    @Override
+    protected void calculateStats() throws TwoPointVoidStatsException {
+
+        statsHistogram = createHistogram();
+
+        //int yMaxBin = Histogram.findMax(histogram.getYHist());
+
+        int yMaxBin = -1;
+        float ymax = Float.MIN_VALUE;
+        for (int i = 0; i < (statsHistogram.getYHist().length/2.); i++) {
+            if (statsHistogram.getYHist()[i] > ymax) {
+                ymax = statsHistogram.getYHist()[i];
+                yMaxBin = i;
+            }
+        }
+
+        calculateStatsForBackground(statsHistogram, yMaxBin);
+    }
+
     protected void calculateSurfaceDensities() throws TwoPointVoidStatsException {
 
         allTwoPointSurfaceDensities = new float[100];
         point1 = new int[100];
         point2 = new int[100];
         twoPointIdentities = new StringArrayLite(100);
-
 
         findVoids();
 
@@ -258,32 +276,19 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         return densityErrors;
     }
 
-    protected void calculateStats() throws TwoPointVoidStatsException {
+    protected HistogramHolder createHistogram() throws TwoPointVoidStatsException {
 
-        //HistogramHolder histogram = Histogram.createHistogramForSkewedData(20, allTwoPointSurfaceDensities,
-        //    allTwoPointSurfaceDensitiesErrors);
+        int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
 
-        int nBins = (indexer.getNumberOfPoints() < 100) ? 10 : defaultNBins;
+        //HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, allTwoPointSurfaceDensities,
+        //    allTwoPointSurfaceDensitiesErrors, false);
 
         HistogramHolder histogram = Histogram.createHistogramForSkewedData(
-            nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors);
-
-        statsHistogram = histogram;
+            nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors, true);
 
         plotPairSeparations();
 
-        //int yMaxBin = Histogram.findMax(histogram.getYHist());
-
-        int yMaxBin = -1;
-        float ymax = Float.MIN_VALUE;
-        for (int i = 0; i < (histogram.getYHist().length/2.); i++) {
-            if (histogram.getYHist()[i] > ymax) {
-                ymax = histogram.getYHist()[i];
-                yMaxBin = i;
-            }
-        }
-
-        calculateStatsForBackground(histogram, yMaxBin);
+        return histogram;
     }
 
     /**

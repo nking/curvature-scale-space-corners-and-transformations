@@ -126,6 +126,21 @@ public class MiscMath {
         return index;
     }
 
+    public static int findYMaxIndex(int[] a) {
+        if (a == null) {
+            return -1;
+        }
+        int max = Integer.MIN_VALUE;
+        int index = -1;
+        for (int i = 0; i < a.length; i++) {
+            if ((a[i] > max) && (a[i] < Integer.MAX_VALUE)) {
+                max = a[i];
+                index = i;
+            }
+        }
+        return index;
+    }
+
     /**
      * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
      * @param a
@@ -266,4 +281,5 @@ public class MiscMath {
 
         return new float[]{mean, stdev};
     }
+
 }

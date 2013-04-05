@@ -275,33 +275,36 @@ public class BaseTwoPointTest extends TestCase {
          *             d=max/2*n               .  |
          *                                     r=max/4*n
          */
-        float maxClusterRadius = (xmax - xmin) / (4.0f * nClusters);
-        float minDistanceBetweenClusterCenters;
-        float factor;
-        if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.LARGE.ordinal()) {
-            factor = 4.0f;
-        } else if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.SMALL.ordinal()) {
-            factor = 2.0f;
-        } else {
-            factor = 3.0f;
-        }
-        maxClusterRadius = (xmax - xmin) / (factor * nClusters);
-        minDistanceBetweenClusterCenters = (factor * maxClusterRadius);
+        if (nClusters > 0) {
+
+            float maxClusterRadius = (xmax - xmin) / (4.0f * nClusters);
+            float minDistanceBetweenClusterCenters;
+            float factor;
+            if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.LARGE.ordinal()) {
+                factor = 4.0f;
+            } else if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.SMALL.ordinal()) {
+                factor = 2.0f;
+            } else {
+                factor = 3.0f;
+            }
+            maxClusterRadius = 0.8f*(xmax - xmin) / (factor * nClusters);
+            minDistanceBetweenClusterCenters = (factor * maxClusterRadius);
 
 
-        createRandomSeparatedPoints(sr, xmin + maxClusterRadius, xmax - maxClusterRadius,
-            ymin + maxClusterRadius, ymax - maxClusterRadius,
-            nClusters, xc, yc, minDistanceBetweenClusterCenters);
+            createRandomSeparatedPoints(sr, xmin + maxClusterRadius, xmax - maxClusterRadius,
+                ymin + maxClusterRadius, ymax - maxClusterRadius,
+                nClusters, xc, yc, minDistanceBetweenClusterCenters);
 
-        int startOffset = numberOfBackgroundPoints;
+            int startOffset = numberOfBackgroundPoints;
 
-        for (int i = 0; i < nClusters; i++) {
+            for (int i = 0; i < nClusters; i++) {
 
-            int n = numberOfClusterPoints[i];
+                int n = numberOfClusterPoints[i];
 
-            createRandomPointsAroundCenter(sr, maxClusterRadius, n, xc[i], yc[i], x, y, startOffset);
+                createRandomPointsAroundCenter(sr, maxClusterRadius, n, xc[i], yc[i], x, y, startOffset);
 
-            startOffset += n;
+                startOffset += n;
+            }
         }
 
         xErrors = new float[nTotalPoints];

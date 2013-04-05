@@ -1,9 +1,16 @@
 package algorithms.misc;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
 /**
  * @author nichole
  */
-public class HistogramHolder {
+public class HistogramHolder implements Externalizable {
+
+    private static final long serialVersionUID = -7105371701539621066L;
 
     protected float[] xHist = null;
     protected int[] yHist = null;
@@ -100,4 +107,65 @@ public class HistogramHolder {
         this.xErrors = xErrors;
     }
 
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+
+        if (xHist == null) {
+            return;
+        }
+
+        out.writeInt(xHist.length);
+
+        for (int i = 0; i < xHist.length; i++) {
+
+            out.writeFloat(xHist[i]);
+            out.writeInt(yHist[i]);
+            out.writeFloat(yHistFloat[i]);
+
+            out.flush();
+        }
+
+        if (xErrors == null) {
+            out.writeInt(0);
+        } else {
+            out.writeInt(xErrors.length);
+        }
+        for (int i = 0; i < xErrors.length; i++) {
+
+            out.writeFloat(xErrors[i]);
+            out.writeFloat(yErrors[i]);
+
+            out.flush();
+        }
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException {
+
+        int n = in.readInt();
+
+        xHist = new float[n];
+        yHist = new int[n];
+        yHistFloat = new float[n];
+
+        for (int i = 0; i < n; i++) {
+            xHist[i] = in.readFloat();
+            yHist[i] = in.readInt();
+            yHistFloat[i] = in.readFloat();
+        }
+
+        int ne = in.readInt();
+
+        if (ne == 0) {
+            return;
+        }
+
+        xErrors = new float[ne];
+        yErrors = new float[ne];
+
+        for (int i = 0; i < ne; i++) {
+            xErrors[i] = in.readFloat();
+            yErrors[i] = in.readFloat();
+        }
+    }
 }

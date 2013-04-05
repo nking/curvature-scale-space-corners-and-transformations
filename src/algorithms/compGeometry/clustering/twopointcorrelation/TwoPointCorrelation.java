@@ -217,7 +217,29 @@ public class TwoPointCorrelation {
      */
     public void calculateBackground() throws TwoPointVoidStatsException, IOException {
         if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
-            calculateBackgroundVia2PtVoidFit(false);
+
+            boolean useCompleteBackgroundSampling = false;
+
+            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, null);
+        }
+    }
+
+    /**
+     * calculate background using the default method.  The defualt method is
+     * the 2two-point void and GEV fitting method.  If there are < 100 points, the
+     * method is used with full sampling, else the faster incomplete sampling is used.
+     *
+     * @param allowTuning use the factors learned from simulated clusters to adjust
+     * the estimated background density
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
+    public void calculateBackground(boolean allowTuning) throws TwoPointVoidStatsException, IOException {
+        if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
+
+            boolean useCompleteBackgroundSampling = false;
+
+            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, allowTuning);
         }
     }
 
@@ -242,7 +264,8 @@ public class TwoPointCorrelation {
         bMethod = BACKGROUND_METHOD.DESERIALIZED;
     }
 
-    protected void calculateBackgroundVia2PtVoidFit(boolean useCompleteBackgroundSampling) throws TwoPointVoidStatsException, IOException {
+    protected void calculateBackgroundVia2PtVoidFit(boolean useCompleteBackgroundSampling,
+        Boolean allowTuning) throws TwoPointVoidStatsException, IOException {
 
         if ((bMethod != null) && (bMethod.ordinal() == BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
             return;
@@ -256,6 +279,9 @@ public class TwoPointCorrelation {
         TwoPointVoidStats minStats = new TwoPointVoidStats(indexer);
         minStats.setDebug(debug);
         minStats.setUseCompleteSampling(useCompleteBackgroundSampling);
+        if (allowTuning != null) {
+            minStats.setAllowTuningForThresholdDensity(allowTuning);
+        }
         minStats.calc();
 
         backgroundStats = minStats;
@@ -277,10 +303,25 @@ public class TwoPointCorrelation {
         bMethod = BACKGROUND_METHOD.FIT_TWO_POINT_VOIDS;
     }
 
+    /**
+     * @param allowTuning use the factors learned from simulated clusters to adjust
+     * the estimated background density
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
+    public void findClusters(boolean allowTuning) throws TwoPointVoidStatsException, IOException {
+
+        if (state.ordinal() < STATE.BACKGROUND_SET.ordinal()) {
+            calculateBackgroundVia2PtVoidFit(false, allowTuning);
+        }
+
+        bruteForceCalculateGroups();
+    }
+
     public void findClusters() throws TwoPointVoidStatsException, IOException {
 
         if (state.ordinal() < STATE.BACKGROUND_SET.ordinal()) {
-            calculateBackgroundVia2PtVoidFit(false);
+            calculateBackgroundVia2PtVoidFit(false, null);
         }
 
         bruteForceCalculateGroups();

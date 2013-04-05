@@ -82,8 +82,8 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, x.length);
                 twoPtC.setDebug(true);
-                twoPtC.calculateBackgroundVia2PtVoidFit(false);
-
+                boolean allowTuning = false;
+                twoPtC.findClusters(allowTuning);
 
                 TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
                 HistogramHolder histogram = stats.statsHistogram;

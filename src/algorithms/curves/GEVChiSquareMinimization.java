@@ -41,7 +41,12 @@ public class GEVChiSquareMinimization {
 
     public static final float kMinDefault = 0.00001f;
     public static final float kMaxDefault = 0.001f;
+    public static final float kMinDefault2 = 0.001f;
+    public static final float kMaxDefault2 = 0.1f;
+    public static final float kMinDefault3 = 0.1f;
+    public static final float kMaxDefault3 = 2.0f;
     public static final float sigmaMinDefault = 0.025f;
+    public static final float sigmaMinDefault2 = 0.1f;
     public static final float sigmaMaxDefault = 0.5f;
 
     protected final GeneralizedExtremeValue gev;
@@ -351,12 +356,12 @@ public class GEVChiSquareMinimization {
         throws FailedToConvergeException, IOException {
 
         // start with ranges useful for EV Type I and II for the two-point correlation functions
-        float deltaX = x[1] - x[0];
-
         float kMin = kMinDefault;
         float kMax = kMaxDefault;
         float sigmaMin = sigmaMinDefault;
         float sigmaMax = sigmaMaxDefault;
+
+        float chiSqStatisticLimit = 1000f;
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
@@ -365,15 +370,153 @@ public class GEVChiSquareMinimization {
 
         float yErrSquareSum = calcYErrSquareSum();
 
-        GEVYFit bestFit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+        GEVYFit bestFit;
 
-        if (debug) {
+        bestFit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+
+        if (debug && (bestFit != null)) {
 
             String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                 bestFit.getChiSqStatistic());
 
             System.out.println(str);
+        }
+
+        if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
+
+            GEVYFit yfit;
+
+            yfit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+
+            if (debug && (yfit != null)) {
+
+                String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
+                    yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
+                    yfit.getChiSqStatistic());
+
+                System.out.println(str);
+            }
+
+            if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
+                bestFit = yfit;
+            }
+
+            if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
+
+                kMin = kMinDefault2;
+                kMax = kMaxDefault2;
+
+                yfit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+
+                if (debug && (yfit != null)) {
+
+                    String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
+                    yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
+                    yfit.getChiSqStatistic());
+
+                    System.out.println(str);
+                }
+            }
+
+            if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
+                bestFit = yfit;
+            }
+
+            if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
+
+                kMin = kMinDefault3;
+                kMax = kMaxDefault3;
+
+                yfit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+
+                if (debug && (yfit != null)) {
+
+                    String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
+                    yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
+                    yfit.getChiSqStatistic());
+
+                    System.out.println(str);
+                }
+            }
+
+            if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
+                bestFit = yfit;
+            }
+
+            if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
+
+                kMin = kMinDefault3;
+                kMax = kMaxDefault3;
+
+                sigmaMin = sigmaMinDefault2;
+
+                yfit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+
+                if (debug && (yfit != null)) {
+
+                    String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
+                    yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
+                    yfit.getChiSqStatistic());
+
+                    System.out.println(str);
+                }
+            }
+
+            if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
+                bestFit = yfit;
+            }
+        }
+
+        return bestFit;
+    }
+
+     /**
+     * Fit curve within range of given parameters.  Internally, uses the Neder-Meade downhill
+     * simplex method and no additional iterations combined with range reduction such as
+     * is used by the fitCurveKGreaterThanZero method without min and max arguments.
+     *
+     * The mu parameter is fit for x[0] through x[yConstIndex] only.
+     *
+     * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
+     *    the best choice if errors are available.
+     * @return yfit the best fitting curve
+     * @throws FailedToConvergeException
+     * @throws IOException
+     */
+    public GEVYFit fitCurveKGreaterThanZeroAndMu(WEIGHTS_DURING_CHISQSUM weightMethod) throws FailedToConvergeException, IOException {
+
+        GEVYFit bestFit = null;
+
+        float muMax = x[x.length-1];
+        float mu = x[0];
+        float dmu = (muMax-mu)/10;
+
+        float yNorm = MiscMath.findMax(y);
+
+        float yErrSquareSum = calcYErrSquareSum();
+        //k=1.7627291E-4 sigma=0.10477745 mu=0.16       chiSqSum=1273319.6 chiSqStatistic=115756.33
+        //k=3.3318784E-4 sigma=0.1800648  mu=0.22758621 chiSqSum=3149609.2 chiSqStatistic=286328.12
+
+        while (mu < muMax) {
+
+            GEVYFit yfit = fitCurveKGreaterThanZero(weightMethod, mu, yNorm);
+
+            if (debug && (yfit != null)) {
+
+                String label = String.format("k=%.1e s=%.1e m=%.1e chisq=%.1f yerrsq=%.1f",
+                    yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum);
+
+                plotFit(yfit, label);
+
+                System.out.println(label);
+            }
+
+            if ( (bestFit == null) || (yfit.getChiSqSum() < bestFit.getChiSqSum()) ) {
+                bestFit = yfit;
+            }
+
+            mu += dmu;
         }
 
         return bestFit;

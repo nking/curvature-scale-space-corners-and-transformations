@@ -90,6 +90,9 @@ public class GEVYFit implements IYFit {
 
     public float getChiSqStatistic() {
         // minus one if mean was computed from the data
+        if (yfit == null) {
+            return chiSqStatistic;
+        }
         return chiSqSum / (yfit.length - 3 - 1);
     }
 

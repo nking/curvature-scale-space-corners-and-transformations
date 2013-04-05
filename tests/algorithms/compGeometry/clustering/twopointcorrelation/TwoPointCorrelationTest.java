@@ -130,9 +130,9 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
 
             twoPtC.setDebug(debug);
-            twoPtC.calculateBackgroundVia2PtVoidFit(false);
 
-            twoPtC.findClusters();
+            boolean allowTuning = false;
+            twoPtC.findClusters(allowTuning);
             twoPtC.calculateHullsOfClusters();
 
 
@@ -200,9 +200,10 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
             twoPtC.setDebug(debug);
-            twoPtC.calculateBackgroundVia2PtVoidFit(false);
 
-            twoPtC.findClusters();
+            boolean allowTuning = false;
+            twoPtC.findClusters(allowTuning);
+
             twoPtC.calculateHullsOfClusters();
 
 
@@ -271,11 +272,11 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
             twoPtC.setDebug(debug);
-            twoPtC.calculateBackgroundVia2PtVoidFit(false);
 
-            twoPtC.findClusters();
+            boolean allowTuning = false;
+            twoPtC.findClusters(allowTuning);
+
             twoPtC.calculateHullsOfClusters();
-
 
             log.info("[nIter= " + nIter + "] found " + twoPtC.nGroups
                 + " clusters.  created " + getExpectedNumberOfClusters() + " clusters");
@@ -322,11 +323,11 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
             twoPtC.setDebug(debug);
-            twoPtC.calculateBackgroundVia2PtVoidFit(false);
 
-            twoPtC.findClusters();
+            boolean allowTuning = false;
+            twoPtC.findClusters(allowTuning);
+
             twoPtC.calculateHullsOfClusters();
-
 
             log.info("[nIter= " + nIter + "] found " + twoPtC.nGroups
                 + " clusters.  created " + getExpectedNumberOfClusters() + " clusters");

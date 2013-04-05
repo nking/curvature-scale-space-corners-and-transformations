@@ -43,7 +43,8 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
 
             twoPtC.setDebug(true);
-            twoPtC.calculateBackgroundVia2PtVoidFit(false);
+            boolean allowTuning = false;
+            twoPtC.findClusters(allowTuning);
 
             twoPtC.findClusters();
             twoPtC.calculateHullsOfClusters();
@@ -94,7 +95,8 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
 
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
-            twoPtC.calculateBackgroundVia2PtVoidFit(false);
+            boolean allowTuning = false;
+            twoPtC.findClusters(allowTuning);
 
             twoPtC.findClusters();
             twoPtC.calculateHullsOfClusters();
@@ -145,7 +147,8 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
 
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
-            twoPtC.calculateBackgroundVia2PtVoidFit(false);
+            boolean allowTuning = false;
+            twoPtC.findClusters(allowTuning);
 
             twoPtC.findClusters();
             twoPtC.calculateHullsOfClusters();
@@ -195,7 +198,8 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
 
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
-            twoPtC.calculateBackgroundVia2PtVoidFit(false);
+            boolean allowTuning = false;
+            twoPtC.findClusters(allowTuning);
 
             twoPtC.findClusters();
             twoPtC.calculateHullsOfClusters();

@@ -31,8 +31,6 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(seed);
-        //sr.setSeed(-112206639240941657l);
-        //sr.setSeed(310357278571620991l);
         //sr.setSeed(-1993887065899734688l);
         //sr.setSeed(-6886733535826319879l);
         //sr.setSeed(-3765842324512485314l);
@@ -91,9 +89,8 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, x.length);
                 twoPtC.setDebug(true);
+                twoPtC.calculateBackgroundVia2PtVoidFit(false);
 
-                boolean allowTuning = false;
-                twoPtC.findClusters(allowTuning);
 
                 TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
                 HistogramHolder histogram = stats.statsHistogram;
@@ -134,6 +131,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     }
                 }
 
+                twoPtC.findClusters();
                 twoPtC.calculateHullsOfClusters();
 
                 plotter.addPlot(twoPtC, plotLabel);

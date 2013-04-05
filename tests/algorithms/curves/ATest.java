@@ -1,5 +1,6 @@
 package algorithms.curves;
 
+import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
 import junit.framework.TestCase;
@@ -23,7 +24,7 @@ public class ATest extends TestCase {
         super.tearDown();
     }
 
-    public void testCalculateChiSqSumForCurve_0() throws Exception {
+    public void estCalculateChiSqSumForCurve_0() throws Exception {
 
         // not a test.  this is a way to fit a curve by eye if needed.
         x = new float[]{0.04042134f, 0.121264026f, 0.2021067f, 0.2829494f, 0.36379206f, 0.44463474f, 0.52547747f, 0.60632014f, 0.6871628f, 0.7680055f, 0.84884816f, 0.92969084f, 1.0105336f, 1.0913762f, 1.1722189f, 1.2530615f, 1.3339043f, 1.414747f, 1.4955896f, 1.5764323f, 1.657275f};
@@ -74,7 +75,7 @@ public class ATest extends TestCase {
         }
     }
 
-    public void estCalculateChiSqSumForCurve_1() throws Exception {
+    public void testCalculateChiSqSumForCurve_1() throws Exception {
 
         float[] x = new float[20];
         float xDelta = 1.0f/x.length;
@@ -92,8 +93,9 @@ public class ATest extends TestCase {
         //float mu = x[1];
 
         float kMin = 0.00001f;
-        float kMax = 0.001f;
+        float kMax = 2.0f; // 0.001f;
         float mu = x[1];
+        float muMax = x[x.length/2];
 
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.0f, 1.0f, 0.0f, 1.0f);
         //  1 + k*(-0.5)/sigma <=== if k == (1/(|x1-x0|))*sigma, total is zero
@@ -103,22 +105,29 @@ public class ATest extends TestCase {
         float sigma = 0.025f;
         float s = sigma;
         float sMax = 20.0f*s;
-        System.out.println("k={" + kMin + ":" + kMax + "} sigma=" + sigma);
-        while (k < kMax) {
+        System.out.println(String.format("k={%.7f : %.7f} sigma=%.7f mu=%.4f", kMin, kMax, sigma, mu));
+        while (mu < muMax) {
 
-            while (s < sMax) {
-                float[] y = GeneralizedExtremeValue.generateNormalizedCurve(x, k, s, mu);
+            while (k < kMax) {
 
-                if (y != null) {
-                    String str = String.format("k=%.7f s=%.7f", k, s);
-                    plotter.addPlot(x, y, x, y, str);
-                    plotter.writeFile();
-                    System.out.println(str);
+                while (s < sMax) {
+                    float[] y = GeneralizedExtremeValue.generateNormalizedCurve(x, k, s, mu);
+
+                    if (y != null) {
+                        String str = String.format("k=%.7f s=%.7f m=%.4f", k, s, mu);
+                        plotter.addPlot(x, y, x, y, str);
+                        plotter.writeFile();
+                        System.out.println(str);
+                    }
+                    s*=1.5f;
                 }
-                s*=1.1f;
-            }
 
-            k*=1.1f;
+                k *= 1.5f;
+                s = sigma;
+            }
+            k = kMin;
+            s = sigma;
+            mu = mu*=1.1f;
         }
     }
 }

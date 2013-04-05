@@ -6,6 +6,13 @@ import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
@@ -116,7 +123,7 @@ public class HistogramTest extends TestCase {
             assertTrue(yhe < yh);
         }
 
-        HistogramHolder hist = Histogram.createHistogramForSkewedData(nBins, a, ae);
+        HistogramHolder hist = Histogram.createHistogramForSkewedData(nBins, a, ae, false);
         assertTrue(hist.xHist.length == nBins);
     }
 
@@ -169,7 +176,7 @@ public class HistogramTest extends TestCase {
 
         int nBins = 12;
 
-        HistogramHolder result = Histogram.createHistogramForSkewedData(nBins, a, ae);
+        HistogramHolder result = Histogram.createHistogramForSkewedData(nBins, a, ae, false);
 
         assertTrue(result.getXHist().length >= 6);
     }
@@ -202,7 +209,8 @@ public class HistogramTest extends TestCase {
             valueErrors[i] = values[i]/10.0f;
         }
 
-        HistogramHolder hist = Histogram.createHistogramForSkewedData(values.length, values, valueErrors);
+        HistogramHolder hist = Histogram.createHistogramForSkewedData(values.length,
+            values, valueErrors, false);
 
         for (int i = 0; i < hist.xHist.length; i++) {
             float xh = hist.xHist[i];
@@ -271,7 +279,7 @@ public class HistogramTest extends TestCase {
 
             int n = 20;
 
-            HistogramHolder hist = Histogram.createHistogramForSkewedData(n, a, ae);
+            HistogramHolder hist = Histogram.createHistogramForSkewedData(n, a, ae, false);
 
             plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), new float[n], new float[n], Integer.toString(count) + "b");
             plotter.writeFile3();
@@ -287,4 +295,118 @@ public class HistogramTest extends TestCase {
             count++;
         }
     }
+
+    public void testReadWriteExternal() throws Exception {
+
+        float[] a = new float[]{
+            2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
+            7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11,
+            12, 13, 14, 15
+        };
+        float[] ae = Errors.populateYErrorsBySqrt(a);
+
+        int nBins = 12;
+
+        HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, a, ae, false);
+
+
+        PipedOutputStream pipedOut = null;
+        PipedInputStream pipedIn = null;
+
+        ObjectOutputStream oos = null;
+
+        try {
+
+            pipedIn = new PipedInputStream(1024);
+            pipedOut = new PipedOutputStream(pipedIn);
+
+
+            final CountDownLatch writeLatch = new CountDownLatch(1);
+            final CountDownLatch doneLatch = new CountDownLatch(1);
+
+            Reader reader = new Reader(writeLatch, doneLatch, pipedIn);
+            reader.start();
+
+            oos = new ObjectOutputStream(pipedOut);
+
+            histogram.writeExternal(oos);
+
+            pipedOut.close();
+            pipedOut = null;
+            writeLatch.countDown();
+
+            doneLatch.await();
+
+            HistogramHolder rHistogram = reader.getHistogramHolder();
+
+            assertTrue( Arrays.equals(histogram.xHist, rHistogram.xHist));
+
+            assertTrue( Arrays.equals(histogram.yHist, rHistogram.yHist));
+
+            assertTrue( Arrays.equals(histogram.yHistFloat, rHistogram.yHistFloat));
+
+            assertTrue( Arrays.equals(histogram.xErrors, rHistogram.xErrors));
+
+            assertTrue( Arrays.equals(histogram.yErrors, rHistogram.yErrors));
+
+        } finally {
+
+            if (oos != null) {
+                oos.close();
+            }
+            if (pipedOut != null) {
+                pipedOut.close();
+            }
+            if (pipedIn != null) {
+                pipedIn.close();
+            }
+        }
+
+    }
+
+    private class Reader extends Thread {
+
+        private final CountDownLatch writeLatch;
+        private final CountDownLatch doneLatch;
+
+        protected HistogramHolder histogram = null;
+
+        protected final PipedInputStream pipedIn;
+
+        Reader(CountDownLatch writeLatch, CountDownLatch doneLatch, PipedInputStream pipedInputStream) {
+            this.writeLatch = writeLatch;
+            this.doneLatch = doneLatch;
+            this.pipedIn = pipedInputStream;
+        }
+        @Override
+        public void run() {
+
+            ObjectInputStream in = null;
+
+            try {
+                writeLatch.await();
+
+                in = new ObjectInputStream(pipedIn);
+
+                histogram = new HistogramHolder();
+
+                histogram.readExternal(in);
+
+            } catch (Exception e) {
+                fail(e.getMessage());
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {}
+                }
+                doneLatch.countDown();
+            }
+        }
+
+        public HistogramHolder getHistogramHolder() {
+            return histogram;
+        }
+    }
+
 }

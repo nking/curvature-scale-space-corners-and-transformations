@@ -121,11 +121,14 @@ public class Histogram {
      * @param values
      * @param valueErrors if null, the root mean square of values are used for the
      * point errors in order to calculate the histogram errors.
-     *
+     * @param useAMinimumFromPeakResolution decide a minimum number of bins based upon
+     *   having n bins across the peak profile. more specifically, n bins across
+     *   the region x=0 to x=max(values) to x=max(values)/2, where n
+     *   is min(10, 0.1*values.length)
      * @return
      */
     public static HistogramHolder createHistogramForSkewedData(int preferredNumberOfBins,
-        float[] values, float[] valueErrors) {
+        float[] values, float[] valueErrors, boolean useAMinimumFromPeakResolution) {
 
         if (values == null || valueErrors == null || values.length != valueErrors.length) {
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
@@ -133,7 +136,8 @@ public class Histogram {
 
         float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
 
-        return createHistogramForSkewedData(preferredNumberOfBins, values, valueErrors, minMax[0], minMax[1]);
+        return createHistogramForSkewedData(preferredNumberOfBins, values, valueErrors,
+            minMax[0], minMax[1], useAMinimumFromPeakResolution);
     }
 
     /**
@@ -148,18 +152,26 @@ public class Histogram {
      * point errors in order to calculate the histogram errors.
      * @param minValue
      * @param maxValue maximum value
+     * @param useAMinimumFromPeakResolution decide a minimum number of bins based upon
+     *   having n bins across the peak profile. more specifically, n bins across
+     *   the region x=0 to x=max(values) to x=max(values)/2, where n
+     *   is min(10, 0.1*values.length)
      * @return
      */
     public static HistogramHolder createHistogramForSkewedData(int preferredNumberOfBins,
-        float[] values, float[] valueErrors, float minValue, float maxValue) {
+        float[] values, float[] valueErrors, float minValue, float maxValue, boolean useAMinimumFromPeakResolution) {
 
         if (values == null || valueErrors == null || values.length != valueErrors.length) {
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
         }
 
-        //float binWidth = calculateSturgesBinWidth(values, 0.25f);
+        if (useAMinimumFromPeakResolution) {
+            return createHistogramForSkewedDataForPeakResolution(preferredNumberOfBins, values, valueErrors, minValue, maxValue);
+        }
 
-        float binWidth = calculateFreedmanDraconisBinWidth(values, 0.85f);
+        float binWidth = calculateSturgesBinWidth(values, 0.25f);
+
+        //float binWidth = calculateFreedmanDraconisBinWidth(values, 0.85f, maxValue);
 
         int nBins = (int)((maxValue - minValue)/binWidth);
         if (nBins < 5) {
@@ -236,6 +248,167 @@ public class Histogram {
         return histogram;
     }
 
+    /**
+     * create a histogram adjusted to have a range
+     * representing most of the data and a number of bins which attempts to have
+     * counts per bin above 5.  The number of bins returned will be between
+     * (preferredNumberOfBins)/2 and preferredNumberOfBins, inclusively.
+     *
+     * decide a minimum number of bins based upon
+     *   having n bins across the peak profile. more specifically, n bins across
+     *   the region x=0 to x=max(values) to x=max(values)/2, where n
+     *   is min(10, 0.1*values.length)
+     *
+     * @param preferredNumberOfBins
+     * @param values
+     * @param valueErrors if null, the root mean square of values are used for the
+     * point errors in order to calculate the histogram errors.
+     * @param minValue
+     * @param maxValue maximum value
+     * @return
+     */
+    public static HistogramHolder createHistogramForSkewedDataForPeakResolution(int preferredNumberOfBins,
+        float[] values, float[] valueErrors, float minValue, float maxValue) {
+
+        if (values == null || valueErrors == null || values.length != valueErrors.length) {
+            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        }
+
+        // -- start with a histogram based upon sturges or draconis.
+        // -- then reduce the bin width if necessary such that there are 10 or
+        //    so bins across the width of half max of the profile.
+        // -- reduce nbins until the last bins hold values > 5
+
+        float binWidth = calculateSturgesBinWidth(values, 0.25f);
+
+        //float binWidth = calculateFreedmanDraconisBinWidth(values, 0.85f, maxValue);
+
+        int nBins = (int)((maxValue - minValue)/binWidth);
+
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+
+        float xMax = maxValue;
+
+        Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
+
+        // calculate a minimum number of bins based upon resolving the peak if useAMinimumFromPeakResolution=true
+        float peakResBinWidth = calculateBinWidthForPeakResolution(xHist, yHist);
+
+        if (binWidth > peakResBinWidth) {
+            binWidth = peakResBinWidth;
+        }
+
+        nBins = (int)((xMax - minValue)/binWidth);
+
+        int minNumberOfBins = preferredNumberOfBins/2;
+
+        // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred
+        boolean go = true;
+
+        int yPeakIndex = MiscMath.findYMaxIndex(yHist);
+
+        while (go) {
+            int lessThan5Counts = 0;
+            int indexStartingConsecutiveLowCounts = -1;
+            int prevIndexStartingConsecutiveLowCounts = yHist.length;
+            for (int i = (yHist.length - 1); i > -1; i--) {
+                if (yHist[i] < 5) {
+
+                    lessThan5Counts++;
+
+                    // avoid using points with x < x at ypeak
+                    if ( (i > yPeakIndex) &&
+                        ((i == (prevIndexStartingConsecutiveLowCounts - 1)) ||
+                        (i == (prevIndexStartingConsecutiveLowCounts - 2)))) {
+
+                        indexStartingConsecutiveLowCounts = i;
+                        prevIndexStartingConsecutiveLowCounts = indexStartingConsecutiveLowCounts;
+                    } else {
+                        prevIndexStartingConsecutiveLowCounts = i;
+                    }
+                }
+            }
+            int chk = (int)(0.1*nBins);
+            chk = 4;
+
+            if (indexStartingConsecutiveLowCounts > -1) {
+
+                if ((indexStartingConsecutiveLowCounts + 1) < yHist.length) {
+                    indexStartingConsecutiveLowCounts++;
+                }
+
+                // reduce xMax
+                xMax = xHist[indexStartingConsecutiveLowCounts];
+
+                // only the histograms with nBins > min should be repeated to remove empty bins at tail
+                nBins = (int)((xMax - minValue)/binWidth);
+                if (nBins < minNumberOfBins) {
+                    nBins = minNumberOfBins;
+                    binWidth = (xMax - minValue)/nBins;
+                }
+
+                xHist = new float[nBins];
+                yHist = new int[nBins];
+                Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
+
+                go = false;
+
+            } else if (lessThan5Counts >= chk) {
+
+                int tNBins = (int)(nBins/1.5f);
+                if (tNBins >= minNumberOfBins) {
+
+                    // reduce the number of bins
+                    nBins = tNBins;
+
+                    xMax = (nBins*binWidth) + minValue;
+
+                    xHist = new float[nBins];
+                    yHist = new int[nBins];
+                    Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
+
+                } else {
+                    go = false;
+                }
+            } else {
+                go = false;
+            }
+        }
+
+        // change bin size so that preferredNumberOfBins or minNumberOfBins is used.
+        float factor = (float)nBins/preferredNumberOfBins;
+        if (factor > 1) {
+            nBins = preferredNumberOfBins;
+            binWidth *= factor;
+        }
+        xHist = new float[nBins];
+        yHist = new int[nBins];
+        Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
+
+        float[] yHistFloat = new float[yHist.length];
+        for (int i = 0; i < yHist.length; i++) {
+            yHistFloat[i] = (float) yHist[i];
+        }
+
+        if (valueErrors == null) {
+            valueErrors = Errors.populateYErrorsBySqrt(yHistFloat);
+        }
+        float[] yErrors = new float[xHist.length];
+        float[] xErrors = new float[xHist.length];
+
+        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);
+
+        HistogramHolder histogram = new HistogramHolder();
+        histogram.setXHist(xHist);
+        histogram.setYHist(yHist);
+        histogram.setYHistFloat(yHistFloat);
+        histogram.setYErrors(yErrors);
+        histogram.setXErrors(xErrors);
+
+        return histogram;
+    }
+
     protected static float calculateSturgesBinWidth(float[] values, float binWidthFactor) {
 
         if (values == null ) {
@@ -273,6 +446,41 @@ public class Histogram {
 
         float[] tmp = Arrays.copyOf(values, values.length);
         Arrays.sort(tmp);
+        float q1 = tmp[ values.length/4];
+        float q2 = tmp[ values.length/2];
+        float q3 = tmp[ 3*values.length/4];
+
+        float binWidth = (float) (binWidthFactor*2.0f*(q3-q1)/Math.pow(values.length, (1./3.)));
+
+        return binWidth;
+    }
+
+    public static float calculateFreedmanDraconisBinWidth(float[] values, float binWidthFactor, float maxValue) {
+
+        if (values == null) {
+            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        }
+
+        /*
+        Freedman-Diaconis:
+           IQR is interquartile range
+           Q1 = 1/4 of data
+           Q3 = 3/4 of data
+           IQR = Q3 - Q1
+           fdBinWidth = 2*( xHist[q3Index] - xHist[q1Index])
+               / (float)(Math.pow(values.length, (1.0/3.0)));
+        */
+        // use Freedman-Diaconis choice to see match with this distr
+
+        float[] tmp = Arrays.copyOf(values, values.length);
+        Arrays.sort(tmp);
+        for (int i = 0; i < tmp.length; i++) {
+            if (tmp[i] > maxValue) {
+                tmp = Arrays.copyOf(tmp, i);
+                break;
+            }
+        }
+
         float q1 = tmp[ values.length/4];
         float q2 = tmp[ values.length/2];
         float q3 = tmp[ 3*values.length/4];
@@ -467,5 +675,52 @@ public class Histogram {
         float x = (float) (xc + dx);
         float y = (float) (yc - dy);
         return new float[]{x, y};
+    }
+
+    /**
+     * decide a minimum number of bins based upon
+     *   having n bins across the peak profile. more specifically, n bins across
+     *   the region x=0 to x=max(values) to x=max(values)/2, where n
+     *   is min(10, 0.1*values.length)
+     *
+     * @param xHist
+     * @param yHist
+     * @return
+     */
+    public static float calculateBinWidthForPeakResolution(float[] xHist, int[] yHist) {
+
+        int nBins;
+        if ( (int)(0.1*yHist.length) < 10 ) {
+            if ( (int)(0.1*yHist.length) < 3 ) {
+                nBins = 3;
+            } else {
+                nBins = (int)(0.1*yHist.length);
+            }
+        } else {
+            nBins = 10;
+        }
+
+        // find value max(values)/2 beyond peak
+        int maxValueIndex = MiscMath.findYMaxIndex(yHist);
+
+        float halfMaxValue = yHist[maxValueIndex]/2.0f;
+        int halfMaxValueIndex = -1;
+
+        for (int i = maxValueIndex; i < yHist.length; i++) {
+
+            float value = yHist[i];
+
+            if (value > halfMaxValue) {
+
+                halfMaxValueIndex = i;
+
+            } else {
+                break;
+            }
+        }
+
+        float binWidth = (xHist[halfMaxValueIndex])/nBins;
+
+        return binWidth;
     }
 }

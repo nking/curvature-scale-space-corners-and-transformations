@@ -1,5 +1,7 @@
 package algorithms.curves;
 
+import algorithms.compGeometry.clustering.twopointcorrelation.CreateClusterDataTest;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
@@ -15,7 +17,7 @@ import junit.framework.TestCase;
 public class GEVChiSquareMinimizationTest extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
-    
+
     protected float[] x = null;
     protected float[] y = null;
     protected float[] dx = null;
@@ -24,6 +26,8 @@ public class GEVChiSquareMinimizationTest extends TestCase {
     protected boolean debug = true;
 
     protected GEVChiSquareMinimization chiSqMin = null;
+
+    protected boolean enable = false;
 
     @Override
     protected void setUp() throws Exception {
@@ -36,6 +40,10 @@ public class GEVChiSquareMinimizationTest extends TestCase {
     }
 
     public void testSortFromMinToMax() throws Exception {
+
+        if (!enable) {
+            return;
+        }
 
         // placeholders, they don't resemble real data
         x = new float[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -68,6 +76,10 @@ public class GEVChiSquareMinimizationTest extends TestCase {
     }
 
     public void testGetSectionBoundariesFromGrid() throws Exception {
+
+        if (!enable) {
+            return;
+        }
 
         float[] minMaxOut = new float[4];
         float kMin = 0;
@@ -122,6 +134,10 @@ public class GEVChiSquareMinimizationTest extends TestCase {
     }
 
     public void testGetSectionParametersFromGrid() throws Exception {
+
+        if (!enable) {
+            return;
+        }
 
         float[] parametersOut = new float[2];
         float[] minMaxOut = new float[4];
@@ -193,6 +209,10 @@ public class GEVChiSquareMinimizationTest extends TestCase {
 
     public void testCalculateChiSqSumForCurve_0() throws Exception {
 
+        if (!enable) {
+            return;
+        }
+
         useTestData1();
 
         float k = 0.000198f;    // 1E-5 to 1E-3
@@ -226,6 +246,10 @@ public class GEVChiSquareMinimizationTest extends TestCase {
     }
 
     public void testFitCurve_WEIGHTED_BY_ERRORS_SIM_DATA_00() throws Exception {
+
+        if (!enable) {
+            return;
+        }
 
         useTestData1();
 
@@ -267,6 +291,10 @@ public class GEVChiSquareMinimizationTest extends TestCase {
     }
 
     public void testFitCurve_WEIGHTED_BY_ERRORS_RANDOM_DATA_00() throws Exception {
+
+        if (!enable) {
+            return;
+        }
 
         SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
         srr.setSeed( System.currentTimeMillis() );
@@ -471,4 +499,66 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         return new float[]{k, sigma, mu, normFactor};
     }
 
+    public void testUsingRandomClusters() throws Exception {
+
+        log.info("testUsingRandomClusters()");
+
+        if (enable) {
+            return;
+        }
+
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+
+        String[] filePaths = CreateClusterDataTest.getHistogramFilePaths();
+
+        for (int i = 0; i < filePaths.length; i++) {
+        //for (int i = 7; i < 8; i++) {
+
+            HistogramHolder histogram = CreateClusterDataTest.readHistogram(filePaths[i]);
+
+            chiSqMin = new GEVChiSquareMinimization(histogram.getXHist(), histogram.getYHistFloat(),
+                histogram.getXErrors(), histogram.getYErrors());
+
+            //float kMin, float kMax, float sigmaMin, float sigmaMax, float mu, float yErrSquareSum,
+            //     WEIGHTS_DURING_CHISQSUM weightMethod, float yNorm
+            float kMin = 0.00011246394f/1.1f;
+            float kMax = 0.00011246394f*1.1f;
+            float sMin = 0.07416199f/2;
+            float sMax = 2.0f*0.07416199f;
+
+            float mu = 0.10344828f;
+            float yNorm = 1.0f;
+            float yErrSqSum = chiSqMin.calcYErrSquareSum();
+
+            float k = 1.05f;  // 0.00011
+            float s = 0.33f;//0.24
+            mu = 0.3f;
+
+            //GEVYFit yfit = chiSqMin.fitCurve(kMin, kMax, sMin, sMax, mu, yErrSqSum, GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yNorm);
+
+            //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, k, s, mu, yNorm);
+
+            //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+
+            GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+
+            float[] xf = yfit.getOriginalScaleX();
+            float[] yf = yfit.getOriginalScaleYFit();
+
+            plotter.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
+                histogram.getXErrors(), histogram.getYErrors(), xf, yf, String.valueOf(i));
+            plotter.writeFile();
+
+            System.out.println(yfit.toString());
+
+            log.info("see plot for " + i);
+/*
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+            } finally {
+                log.info("next");
+            }*/
+        }
+    }
 }
