@@ -312,7 +312,7 @@ public class BaseTwoPointTest extends TestCase {
         for (int i = 0; i < nTotalPoints; i++) {
             // simulate x error as a percent error of 0.03 for each bin
             xErrors[i] = x[i] * 0.03f;
-            yErrors[i] = (float) (0.1*Math.sqrt(y[i]));
+            yErrors[i] = (float) (Math.sqrt(y[i]));
         }
     }
 

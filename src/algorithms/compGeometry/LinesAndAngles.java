@@ -1070,9 +1070,9 @@ public class LinesAndAngles {
     }
 
 
-    public static float[] calcAreaAndCentroidOfSimplePolygon(float[] xHull, float[] yHull) {
+    public static float[] calcAreaAndCentroidOfSimplePolygon(float[] xPolygon, float[] yPolygon) {
 
-        if (xHull.length < 3) {
+        if (xPolygon.length < 3) {
             return null;
         }
 
@@ -1081,16 +1081,16 @@ public class LinesAndAngles {
         boolean allPointsArePositive = true;
 
         // from wikipedia
-        for (int i = 0; i < (xHull.length - 1); i++) {
-            float a = xHull[i] * yHull[i+1];
-            float b = xHull[i+1] * yHull[i];
+        for (int i = 0; i < (xPolygon.length - 1); i++) {
+            float a = xPolygon[i] * yPolygon[i+1];
+            float b = xPolygon[i+1] * yPolygon[i];
             area += (a-b);
 
-            if ((xHull[i] < 0) || (yHull[i] < 0)) {
+            if ((xPolygon[i] < 0) || (yPolygon[i] < 0)) {
                 allPointsArePositive = false;
             }
         }
-        if ((xHull[xHull.length - 1] < 0) || (yHull[xHull.length - 1] < 0)) {
+        if ((xPolygon[xPolygon.length - 1] < 0) || (yPolygon[xPolygon.length - 1] < 0)) {
             allPointsArePositive = false;
         }
         if ((area < 0) && allPointsArePositive) {
@@ -1100,11 +1100,11 @@ public class LinesAndAngles {
 
 
         float xc = 0;
-        for (int i = 0; i < (xHull.length - 1); i++) {
-            float a = xHull[i] * yHull[i+1];
-            float b = xHull[i+1] * yHull[i];
+        for (int i = 0; i < (xPolygon.length - 1); i++) {
+            float a = xPolygon[i] * yPolygon[i+1];
+            float b = xPolygon[i+1] * yPolygon[i];
 
-            xc += ( (xHull[i] + xHull[i+1]) * (a - b) );
+            xc += ( (xPolygon[i] + xPolygon[i+1]) * (a - b) );
         }
         xc *= (1./(6.*area));
         if ((xc < 0) && allPointsArePositive) {
@@ -1113,13 +1113,13 @@ public class LinesAndAngles {
 
 
         float yc = 0;
-        for (int i = 0; i < (xHull.length - 1); i++) {
-            float a = xHull[i] * yHull[i+1];
-            float b = xHull[i+1] * yHull[i];
+        for (int i = 0; i < (xPolygon.length - 1); i++) {
+            float a = xPolygon[i] * yPolygon[i+1];
+            float b = xPolygon[i+1] * yPolygon[i];
 
-            yc += ( (yHull[i] + yHull[i+1]) * (a - b) );
+            yc += ( (yPolygon[i] + yPolygon[i+1]) * (a - b) );
         }
-        //yc = yHull[0] - yc; // make it relative to zero point
+        //yc = yPolygon[0] - yc; // make it relative to zero point
         yc *= (1./(6.*area));
         if ((yc < 0) && allPointsArePositive) {
             yc *= -1;

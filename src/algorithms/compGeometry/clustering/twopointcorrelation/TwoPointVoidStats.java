@@ -77,7 +77,7 @@ import java.util.Arrays;
 public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected boolean useCompleteSampling = false;
-    protected boolean allowTuningForThresholdDensity = true;
+    protected boolean allowTuningForThresholdDensity = false;
 
     protected float[] allTwoPointSurfaceDensities = null;
     protected float[] allTwoPointSurfaceDensitiesErrors = null;
@@ -86,7 +86,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected int[] point2 = null;
     protected StringArrayLite twoPointIdentities = null;
 
-    protected int defaultNBins = 30;
+    protected int defaultNBins = 60;
 
     //for debugging, hold on to intermediate data
     protected HistogramHolder statsHistogram = null;
@@ -316,27 +316,16 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             GEVYFit yfit = null;
 
-            float kMin;
-            float kMax;
-            float sigmaMin;
-            float sigmaMax;
-
             if (gevRangeFittingParameters != null) {
-                kMin = gevRangeFittingParameters[0];
-                kMax = gevRangeFittingParameters[1];
-                sigmaMin = gevRangeFittingParameters[2];
-                sigmaMax = gevRangeFittingParameters[3];
-            } else {
-                kMin = GEVChiSquareMinimization.kMinDefault;
-                kMax = GEVChiSquareMinimization.kMaxDefault;
-                sigmaMin = GEVChiSquareMinimization.sigmaMinDefault;
-                sigmaMax = GEVChiSquareMinimization.sigmaMaxDefault;
-            }
 
-            yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(
-                GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
-                kMin, kMax, sigmaMin, sigmaMax
-            );
+                yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
+                    gevRangeFittingParameters[0], gevRangeFittingParameters[1],
+                    gevRangeFittingParameters[2], gevRangeFittingParameters[3]
+                );
+
+            } else {
+                yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+            }
 
             if (yfit == null) {
                 if (debug) {
@@ -356,32 +345,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 }
                 throw new TwoPointVoidStatsException("histogram of linear densities was not fittable");
             }
-
-            float chsqdiverr = yfit.getChiSqSum() / yfit.getYDataErrSq();
-            float chsqstatdiverr = yfit.getChiSqStatistic() / yfit.getYDataErrSq();
-
-
-            // ======= create residual between fit and histogram =======
-            float[] yResidual = new float[yfit.getX().length];
-            float q0sum = 0;
-            float q1sum = 0;
-            for (int i = 0; i < yResidual.length; i++) {
-                yResidual[i] = histogram.getYHistFloat()[i] - yfit.getOriginalScaleYFit()[i];
-                if (i < (yResidual.length/2)) {
-                    q0sum += yResidual[i];
-                } else {
-                    q1sum += yResidual[i];
-                }
-                if (debug) {
-                    System.out.println("**x=" + yfit.getOriginalScaleX()[i] + " y=" + yResidual[i]);
-                }
-            }
-            if (debug) {
-                System.out.println("===> q0=" + q0sum + " q1===>" + q1sum
-                    + "  div=" + (q0sum/q1sum)
-                    + "  q0/peak=" + (q0sum/yfit.getOriginalScaleYFit()[yfit.getXPeakIndex()]));
-            }
-
 
             /*
              * We are assigning the threshold based upon one of 3 different cases:
@@ -432,83 +395,18 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 plotter.writeFile3();
             }
 
+            // centroid of area defined by the top portion of the fit where y >= ypeak/2
+            float[] areaAndXYTopCentroid = calculateCentroidOfTop(yfit.getOriginalScaleX(), yfit.getOriginalScaleYFit(), 0.5f);
 
-            boolean increaseThreshold = false;
-            boolean increaseThreshold2 = false;
-            boolean decreaseThreshold = false;
-
-            float medDivMean = yfit.getXMedian()/yfit.getXMean();
-            float chistat = yfit.getChiSqStatistic();
-
-            // instead of iteratively fitting for background distr and a clustered distr,
-            //   will do a quick check to see if the residual in tail of distr is far larger
-            //   than the fit.  if so, it implies that the threshold needs to be increased.
-            float tailResidDivFit = calculateForTheTailResidualOverFit(yfit, histogram);
-
-            if (allowTuningForThresholdDensity) {
-
-                float ypeak = yfit.getOriginalScaleYFit()[yfit.getXPeakIndex()];
-
-                if ((chistat > 100) && (tailResidDivFit > 1) ) {
-                    if ((chistat > 400) && (tailResidDivFit > 1)
-                        && (((q0sum/ypeak) > 0.1) || ((q0sum/ypeak) < 0.0))) {
-
-                        increaseThreshold = true;
-
-                    } else {
-                        if (((q0sum/q1sum) < 1) && ((q0sum/ypeak) < 0.5) ) {
-                            increaseThreshold = true;
-                        }
-                    }
-                } else {
-
-                }
-            }
-
-            // Note, the following portion could be altered or improved for different uses.  One could fit more than one
-            //   component, etc.
-            // x% works well for sparsely populated backgrounds (number of background points < points in clusters)
-            // and moderately populated backgrounds (number of background points approx equal to points in clusters)
-
-            String limitStr = "5%";
+            String limitStr = "top centroid";
             float limit, limitError;
-            limit = 0.5f*yfit.getX10Percent();
-            int limitIndex = yfit.getX10PercentIndex();
+            limit = (areaAndXYTopCentroid != null) ? areaAndXYTopCentroid[1] : yfit.getXPeak();
+            int limitIndex = yfit.getXPeakIndex();
             limitError = histogram.getXErrors()[limitIndex];
 
-            if (increaseThreshold) {
-                limitStr = "peak+0.1";
-                float xPeak = yfit.getXPeak();
-                int xPeakIndex = yfit.getXPeakIndex();
-                if ((xPeakIndex + 1) < yfit.getX().length) {
-                    float delta = (yfit.getOriginalScaleX()[xPeakIndex + 1] - xPeak)/10.0f;
-                    limit = xPeak + delta;
-                    limitError = histogram.getXErrors()[xPeakIndex];
-                } else {
-                    limit = xPeak;
-                    limitError = histogram.getXErrors()[xPeakIndex];
-                }
-            } else if (increaseThreshold2) {
-                limitStr = "peak+0.25";
-                float xPeak = yfit.getXPeak();
-                int xPeakIndex = yfit.getXPeakIndex();
-                if ((xPeakIndex + 1) < yfit.getX().length) {
-                    float delta = (yfit.getOriginalScaleX()[xPeakIndex + 1] - xPeak)/4.0f;
-                    limit = xPeak + delta;
-                    limitError = histogram.getXErrors()[xPeakIndex];
-                } else {
-                    limit = xPeak;
-                    limitError = histogram.getXErrors()[xPeakIndex];
-                }
-            } else if (decreaseThreshold) {
-                limitStr = "0.4*10%";
-                limit = 0.4f*yfit.getX10Percent();
+            if (allowTuningForThresholdDensity) {
+                limit = 0.8f*limit;
             }
-
-            float firstBin = yfit.getOriginalScaleX()[0];
-            float div = firstBin/limit;//0.7 okay  2.0
-            int z = 1;
-
 
             //if (limitIndex == -1) {
             //    System.out.println("WARNING:  solution was not found");
@@ -582,8 +480,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 System.out.println("estimating background minimum as location of " + limitStr + " of background profile counts = "
                 + this.backgroundSurfaceDensity
                 + " w/ x error in histogram bin =" + errorInEstimateFromHistogram
-                + " gev fitting error for one point =" + errorInFitting + " combined error ===> "
-                + this.backgroundSurfaceDensityError);
+                + " gev fitting error for one point =" + errorInFitting);
             }
 
             if (debug && (yfit.getChiSqSum() > chiSqMin.calcYErrSquareSum())) {
@@ -715,6 +612,12 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
      * than this divide and conquer because the range search has a more
      * complete solution, that is a higher number of pairs bounding rectangular
      * voids are learned from the range search.
+     * @param x
+     * @param y
+     * @param xIndexLo
+     * @param xIndexHi
+     * @param yIndexLo
+     * @param yIndexHi
      */
     protected void findVoids(float[] x, float[] y, int xIndexLo, int xIndexHi,
         int yIndexLo, int yIndexHi) {
@@ -790,9 +693,8 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
                 }
             }
             if (uniqueYIndex == -1) {
-                StringBuffer err = new StringBuffer("ERROR: intersecting region contained more than 2 points, but unique y wasn't found");
+                StringBuilder err = new StringBuilder("ERROR: intersecting region contained more than 2 points, but unique y wasn't found");
                 for (int i = 0; i < regionIndexes.length; i++) {
-                    float ypi = y[ regionIndexes[i] ];
                     err.append("\n  (").append( x[ regionIndexes[i] ] ).append(", ").append( y[ regionIndexes[i] ] ).append(")");
                 }
                 throw new IllegalStateException(err.toString());
@@ -906,6 +808,100 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
 
             return null;
         }
+    }
+
+    static float[] calculateCentroidOfTop(float[] xfit, float[] yfit, float topFraction) {
+
+        float[] x = new float[xfit.length + 2];
+        float[] y = new float[yfit.length + 2];
+
+        int yPeakIndex = MiscMath.findYMaxIndex(yfit);
+
+        float yLimit = yfit[yPeakIndex]*topFraction;
+
+        int count = 1; // leave space for the interpolated 1st point
+        int i = 0;
+        int firstIndex = -1;
+        for (i = 0; i < xfit.length; i++) {
+            if (i <= yPeakIndex) {
+                if (yfit[i] >= yLimit) {
+                    x[count] = xfit[i];
+                    y[count] = yfit[i];
+                    if (firstIndex == -1) {
+                        firstIndex = i;
+                    }
+                    count++;
+                }
+            } else if (yfit[i] >= yLimit) {
+                x[count] = xfit[i];
+                y[count] = yfit[i];
+                if (firstIndex == -1) {
+                    firstIndex = i;
+                }
+                count++;
+            } else {
+                break;
+            }
+        }
+
+        // interpolate or extrapolate first and last points to meet y=yLimit
+        /*         *peak
+         *
+         *   *1st
+         *
+         *   ...........
+         *             *last
+         *
+         *   (y_peak - y_1st)     (y_peak - yLimit)
+         *   ----------------  =  ------------------
+         *   (x_peak - x_1st)     (x_peak - x_interp)
+         *
+         *   (x_peak - x_interp) = (y_peak - yLimit)*(x_peak - x_1st)/(y_peak - y_1st)
+         *   x_interp =  x_peak - ((y_peak - yLimit)*(x_peak - x_1st)/(y_peak - y_1st))
+         *
+         */
+        if (yPeakIndex == 0) {
+            // move up all by 1
+            System.arraycopy(x, 1, x, 0, count);
+            System.arraycopy(y, 1, y, 0, count);
+            count--;
+        } else if (yPeakIndex == 1) {
+            float xLimit = xfit[yPeakIndex] - ((yfit[yPeakIndex] - yLimit)*(xfit[yPeakIndex] - xfit[0])/(yfit[yPeakIndex] - yfit[0]));
+            x[0] = xLimit;
+            y[0] = yLimit;
+        } else if (firstIndex == 0) {
+            float xLimit = xfit[1] - ((yfit[1] - yLimit)*(xfit[1] - xfit[0])/(yfit[1] - yfit[0]));
+            x[0] = xLimit;
+            y[0] = yLimit;
+        } else {
+            float xLimit = xfit[firstIndex-1] - ((yfit[firstIndex-1] - yLimit)*(xfit[firstIndex-1] - x[1])/(yfit[firstIndex-1] - y[1]));
+            x[0] = xLimit;
+            y[0] = yLimit;
+        }
+
+        /*     *
+         *       *
+         * ----------
+         *
+         */
+        if ((yPeakIndex == (yfit.length - 1)) || (i == yfit.length)) {
+            // cannot interpolate.  the curve doesn't fit a GEV.  draw a straight line below peak
+            x[count] = xfit[yfit.length - 1];
+            y[count] = yLimit;
+        } else {
+            //x_interp =  x_peak - ((y_peak - yLimit)*(x_peak - x_1st)/(y_peak - y_1st))
+            float xLimit = x[count-1] - ((y[count-1] - yLimit)*(x[count-1] - xfit[i])/(y[count-1] - yfit[i]));
+            x[count] = xLimit;
+            y[count] = yLimit;
+        }
+
+        x = Arrays.copyOf(x, count + 1);
+        y = Arrays.copyOf(y, count + 1);
+
+        x[count] = x[0];
+        y[count] = y[0];
+
+        return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(x, y);
     }
 
     public String persistTwoPointBackground() throws IOException {
@@ -1046,32 +1042,4 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
             plotter.addHistogram(tmp, max, statsHistogram.getXHist().length);
         }
     }
-
-    protected float calculateForTheTailResidualOverFit(GEVYFit yfit, HistogramHolder histogram) {
-
-        // find index at or just beyond Peak/3.3
-        int limitIndex = yfit.findIndexForPeakFraction((1.0f/7.0f), true);
-
-        if (limitIndex == -1) {
-            return 0;
-        }
-
-        float[] yf = yfit.getOriginalScaleYFit();
-        float[] yh = histogram.getYHistFloat();
-
-        float resid = 0;
-        for (int i = limitIndex; i < yf.length; i++) {
-            resid += (yh[i] - yf[i]);
-        }
-
-        float tail = 0;
-        for (int i = limitIndex; i < yf.length; i++) {
-            tail += yf[i];
-        }
-
-        float resDivTotal = resid / tail;
-
-        return resDivTotal;
-    }
-
 }

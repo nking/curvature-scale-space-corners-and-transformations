@@ -27,7 +27,7 @@ public class GEVChiSquareMinimizationTest extends TestCase {
 
     protected GEVChiSquareMinimization chiSqMin = null;
 
-    protected boolean enable = false;
+    protected boolean enable = true;
 
     @Override
     protected void setUp() throws Exception {
@@ -512,9 +512,14 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         String[] filePaths = CreateClusterDataTest.getHistogramFilePaths();
 
         for (int i = 0; i < filePaths.length; i++) {
-        //for (int i = 7; i < 8; i++) {
+        //for (int i = 17; i < 18; i++) {
 
-            HistogramHolder histogram = CreateClusterDataTest.readHistogram(filePaths[i]);
+            //String filePath = filePaths[i];
+            String filePath =
+                "/Volumes/portable/data/projects/github/algorithms/algorithms/algorithms_in_java/submodules/two-point-correlation/bin/test-classes/../../tmpdata/"
+                + "histogram_random_background_with_0_clusters_017.dat";
+
+            HistogramHolder histogram = CreateClusterDataTest.readHistogram(filePath);
 
             chiSqMin = new GEVChiSquareMinimization(histogram.getXHist(), histogram.getYHistFloat(),
                 histogram.getXErrors(), histogram.getYErrors());
@@ -530,9 +535,16 @@ public class GEVChiSquareMinimizationTest extends TestCase {
             float yNorm = 1.0f;
             float yErrSqSum = chiSqMin.calcYErrSquareSum();
 
-            float k = 1.05f;  // 0.00011
-            float s = 0.33f;//0.24
-            mu = 0.3f;
+            float k = 1.4f;// changes sharpness of left side slope
+            float s = 0.35f;
+            mu = 0.26f;
+
+            //k = 0.0000811f;
+            //mu = 0.1176f;
+            //s = 0.059f;
+
+            // k=8.110986E-5 sigma=0.059118375 mu=0.11764706 chiSqSum=11968.323 chiSqStatistic=544.0147
+            // k=1.4         sigma=0.35        mu=0.26       chiSqSum=5268.0234 chiSqStatistic=239.45561
 
             //GEVYFit yfit = chiSqMin.fitCurve(kMin, kMax, sMin, sMax, mu, yErrSqSum, GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yNorm);
 
@@ -540,6 +552,7 @@ public class GEVChiSquareMinimizationTest extends TestCase {
 
             //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
+            chiSqMin.setDebug(true);
             GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
             float[] xf = yfit.getOriginalScaleX();

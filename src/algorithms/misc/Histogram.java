@@ -306,9 +306,10 @@ public class Histogram {
         // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred
         boolean go = true;
 
-        int yPeakIndex = MiscMath.findYMaxIndex(yHist);
+        int nLowCountIter = 0;
 
         while (go) {
+            int yPeakIndex = MiscMath.findYMaxIndex(yHist);
             int lessThan5Counts = 0;
             int indexStartingConsecutiveLowCounts = -1;
             int prevIndexStartingConsecutiveLowCounts = yHist.length;
@@ -334,6 +335,15 @@ public class Histogram {
 
             if (indexStartingConsecutiveLowCounts > -1) {
 
+                nLowCountIter++;
+
+                float retry = (float)indexStartingConsecutiveLowCounts/(yHist.length - 1);
+                if ((nLowCountIter == 2) || ((retry > 0.05f) && (indexStartingConsecutiveLowCounts > 4))) {
+                    go = false;
+                } else {
+                    go = true;
+                }
+
                 if ((indexStartingConsecutiveLowCounts + 1) < yHist.length) {
                     indexStartingConsecutiveLowCounts++;
                 }
@@ -351,8 +361,6 @@ public class Histogram {
                 xHist = new float[nBins];
                 yHist = new int[nBins];
                 Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
-
-                go = false;
 
             } else if (lessThan5Counts >= chk) {
 

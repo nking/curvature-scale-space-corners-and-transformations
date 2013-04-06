@@ -131,7 +131,7 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             twoPtC.setDebug(debug);
 
-            boolean allowTuning = false;
+            boolean allowTuning = true;
             twoPtC.findClusters(allowTuning);
             twoPtC.calculateHullsOfClusters();
 

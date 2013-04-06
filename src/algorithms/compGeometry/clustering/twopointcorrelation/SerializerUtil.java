@@ -43,8 +43,16 @@ public class SerializerUtil {
             fileName = sep + "indexer_" + number + "_with_errors.bin";
         }
 
-        String path = resDirectory + fileName;
-        File file = new File(path);
+        String filePath = resDirectory + fileName;
+
+        return serializeIndexer(dain, filePath);
+    }
+
+    public static String serializeIndexer(DoubleAxisIndexer dain, String filePath) throws IOException {
+
+        File file = new File(filePath);
+
+        boolean includeErrors = (dain.getXErrors() != null);
 
         OutputStream fos = null;
         ObjectOutputStream oos = null;
@@ -74,9 +82,9 @@ public class SerializerUtil {
 
             oos.flush();
 
-            System.out.println("wrote indexer to " + fileName);
+            System.out.println("wrote indexer to " + filePath);
 
-            return path;
+            return filePath;
 
         } finally {
             try {
@@ -91,6 +99,11 @@ public class SerializerUtil {
     }
 
     public static DoubleAxisIndexer readPersistedPoints(String persistedPointsFilePath) throws IOException {
+        return readPersistedPoints(persistedPointsFilePath, persistedPointsFilePath.contains("with_errors"));
+    }
+
+    public static DoubleAxisIndexer readPersistedPoints(String persistedPointsFilePath,
+        boolean containsErrorArrays) throws IOException {
 
         File file = new File(persistedPointsFilePath);
         if (!file.exists()) {
@@ -112,7 +125,7 @@ public class SerializerUtil {
             float[] x = new float[nXY];
             float[] y = new float[nXY];
 
-            if (persistedPointsFilePath.contains("with_errors")) {
+            if (containsErrorArrays) {
 
                 float[] ex = new float[nXY];
                 float[] ey = new float[nXY];

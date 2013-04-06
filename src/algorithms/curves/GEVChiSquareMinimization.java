@@ -49,6 +49,10 @@ public class GEVChiSquareMinimization {
     public static final float sigmaMinDefault2 = 0.1f;
     public static final float sigmaMaxDefault = 0.5f;
 
+    public static final int downhillSimplexStartDivisionsDefault = 1000;
+    public static final int downhillSimplexStartDivisionsDefault2 = 3;
+    protected int downhillSimplexStartDivisions = downhillSimplexStartDivisionsDefault;
+
     protected final GeneralizedExtremeValue gev;
 
     protected boolean debug = false;
@@ -328,6 +332,8 @@ public class GEVChiSquareMinimization {
 
         GEVYFit bestFit = calculateChiSqSumAndCurve(k, sigma, mu, weightMethod, yNorm);
 
+        bestFit.setChiSqStatistic(calculateChiSquareStatistic(bestFit.getYFit(), weightMethod));
+
         return bestFit;
     }
 
@@ -353,6 +359,59 @@ public class GEVChiSquareMinimization {
      * @throws IOException
      */
     public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod, float mu, float yNorm)
+        throws FailedToConvergeException, IOException {
+
+        // start with ranges useful for EV Type I and II for the two-point correlation functions
+        float kMin = kMinDefault;
+        float kMax = kMaxDefault;
+        float sigmaMin = sigmaMinDefault;
+        float sigmaMax = sigmaMaxDefault;
+
+        if (debug) {
+            String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
+            System.out.println(str);
+        }
+
+        float yErrSquareSum = calcYErrSquareSum();
+
+        GEVYFit bestFit;
+
+        bestFit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+
+        if (debug && (bestFit != null)) {
+
+            String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
+                bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
+                bestFit.getChiSqStatistic());
+
+            System.out.println(str);
+        }
+
+        return bestFit;
+    }
+
+    /**
+     * Fit the curve using a simple constraint for mu and a narrow range of possible values
+     * for k and sigma.
+     *
+     * Mu is usually found to be the maximum of the y array of the data because the
+     * code is intended to be used on GEV distributions, more specifically, those of
+     * EV Type I and Type II with k > 0.
+     *
+     * The initial k range is 0.001f to 10.f
+     * and the initial sigma range is kMin * x[0] to kMax * x[x.length - 1];
+     *
+     * The method uses one iteration of a downhill simplex method for fitting.
+     *
+     * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
+     *    the best choice if errors are available.
+     * @param mu
+     * @param yNorm
+     * @return yfit the best fitting curve
+     * @throws FailedToConvergeException
+     * @throws IOException
+     */
+    public GEVYFit fitCurveKGreaterThanZeroWithExtendedRanges(WEIGHTS_DURING_CHISQSUM weightMethod, float mu, float yNorm)
         throws FailedToConvergeException, IOException {
 
         // start with ranges useful for EV Type I and II for the two-point correlation functions
@@ -473,10 +532,9 @@ public class GEVChiSquareMinimization {
 
      /**
      * Fit curve within range of given parameters.  Internally, uses the Neder-Meade downhill
-     * simplex method and no additional iterations combined with range reduction such as
-     * is used by the fitCurveKGreaterThanZero method without min and max arguments.
-     *
-     * The mu parameter is fit for x[0] through x[yConstIndex] only.
+     * simplex method and ranges of k, sigma and mu.  If the best fitting chi-square statistic
+     * is larger than 100, it repeats the process using different start conditions for
+     * the simplex method and keeps the best result.
      *
      * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
      *    the best choice if errors are available.
@@ -488,35 +546,58 @@ public class GEVChiSquareMinimization {
 
         GEVYFit bestFit = null;
 
-        float muMax = x[x.length-1];
-        float mu = x[0];
-        float dmu = (muMax-mu)/10;
-
         float yNorm = MiscMath.findMax(y);
 
         float yErrSquareSum = calcYErrSquareSum();
-        //k=1.7627291E-4 sigma=0.10477745 mu=0.16       chiSqSum=1273319.6 chiSqStatistic=115756.33
-        //k=3.3318784E-4 sigma=0.1800648  mu=0.22758621 chiSqSum=3149609.2 chiSqStatistic=286328.12
 
-        while (mu < muMax) {
 
-            GEVYFit yfit = fitCurveKGreaterThanZero(weightMethod, mu, yNorm);
+        int yMaxIndex = MiscMath.findYMaxIndex(y);
 
-            if (debug && (yfit != null)) {
+        if (yMaxIndex == -1) {
+            // all y's were zero in y
+            return null;
+        }
+        float mu = x[yMaxIndex];
+        float yPeak = y[yMaxIndex];
 
-                String label = String.format("k=%.1e s=%.1e m=%.1e chisq=%.1f yerrsq=%.1f",
-                    yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum);
+        int end = (yMaxIndex + 5);
+        if (end > (y.length - 1)) {
+            end = y.length - 1;
+        }
 
-                plotFit(yfit, label);
+        float nDmu = 2;
+        for (int i = 0; i <= end; i++) {
 
-                System.out.println(label);
+            //float yNorm = y[i];
+
+            for (int ii = 0; ii < nDmu; ii++) {
+
+                float dmu;
+                if (i < (y.length - 1)) {
+                    dmu = (x[i+1] - x[i])/nDmu;
+                } else {
+                    dmu = (x[1] - x[0])/nDmu;
+                }
+                mu = x[i] + ii*dmu;
+
+                //GEVYFit yfit = fitCurveKGreaterThanZero(weightMethod, mu, yNorm);
+                GEVYFit yfit = fitCurveKGreaterThanZeroWithExtendedRanges(weightMethod, mu, yNorm);
+
+                if (debug && (yfit != null)) {
+
+                    String label = String.format("k=%.2e s=%.2e m=%.2e chisq=%.2f yerrsq=%.2f",
+                        yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum);
+
+                    plotFit(yfit, label);
+
+                    System.out.println(label);
+                }
+
+                if ( (bestFit == null) || (yfit.getChiSqSum() < bestFit.getChiSqSum()) ) {
+                    bestFit = yfit;
+                }
+
             }
-
-            if ( (bestFit == null) || (yfit.getChiSqSum() < bestFit.getChiSqSum()) ) {
-                bestFit = yfit;
-            }
-
-            mu += dmu;
         }
 
         return bestFit;
@@ -599,6 +680,8 @@ public class GEVChiSquareMinimization {
      *
      * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
      *    the best choice if errors are available.
+     * @param mu
+     * @param yNorm
      * @return yfit the best fitting curve
      * @throws FailedToConvergeException
      * @throws IOException
@@ -815,10 +898,13 @@ public class GEVChiSquareMinimization {
      * In general, this algorithm tends not to find the best fit for the GEV curve.
      *
      * @param weightMethod
+     * @param mu
      * @param yErrSquareSum
+     * @param yNorm
      * @return
      * @throws FailedToConvergeException
      * @throws IOException
+     * @throws NoSuchAlgorithmException
      */
     protected GEVYFit fitCurveKGreaterThanZeroUsingRandomParameters(WEIGHTS_DURING_CHISQSUM weightMethod, float mu,
         float yErrSquareSum, float yNorm) throws FailedToConvergeException, IOException, NoSuchAlgorithmException {
@@ -865,6 +951,7 @@ public class GEVChiSquareMinimization {
      * @param sigmaMax
      * @param mu
      * @param yErrSquareSum
+     * @param yNorm
      * @return
      * @throws FailedToConvergeException
      * @throws IOException
@@ -895,6 +982,7 @@ public class GEVChiSquareMinimization {
      * @param mu
      * @param yErrSquareSum
      * @param nDimension the number of divisions along one axis
+     * @param yNorm
      * @return
      * @throws FailedToConvergeException
      * @throws IOException
@@ -1009,6 +1097,7 @@ public class GEVChiSquareMinimization {
      * @param mu
      * @param nDimension
      * @param yErrSquareSum
+     * @param yNorm
      * @return
      * @throws FailedToConvergeException
      * @throws IOException
@@ -1111,7 +1200,6 @@ public class GEVChiSquareMinimization {
      float sMax = 20.0f*sigmaMin;
 
      * @param sr
-     * @param xmax
      * @param mu
      * @return an array of k and sigma, respectively
      */
@@ -1126,6 +1214,12 @@ public class GEVChiSquareMinimization {
     /**
      * generate randomly values for k and sigma
      *
+     * @param sr
+     * @param kMin
+     * @param kMax
+     * @param sigmaMin
+     * @param sigmaMax
+     * @param mu
      * @return an array of k and sigma, respectively
      */
     public static float[] generateRandomParameters(SecureRandom sr, float kMin, float kMax, float sigmaMin, float sigmaMax, float mu) {
@@ -1150,7 +1244,6 @@ public class GEVChiSquareMinimization {
         return new float[]{k, sigma};
     }
 
-
     /**
      * divides the ranges into small steps and uses the simplex method to fit the
      * curve within each of those small steps.  returns the best fit.
@@ -1162,10 +1255,11 @@ public class GEVChiSquareMinimization {
      * @param kMax
      * @param sigmaMin
      * @param sigmaMax
+     * @param mu
      * @param kStepDelta
      * @param sigmaStepFactor
-     * @param yConstIndex
      * @param yErrSquareSum
+     * @param yNorm
      * @return
      * @throws FailedToConvergeException
      * @throws IOException
@@ -1261,6 +1355,12 @@ public class GEVChiSquareMinimization {
             weightMethod, yNorm);
     }
 
+    protected GEVYFit fitCurve2(float kMin, float kMax, float sigmaMin, float sigmaMax, float mu, float yErrSquareSum,
+        WEIGHTS_DURING_CHISQSUM weightMethod, float yNorm) throws FailedToConvergeException, IOException {
+
+        return fitCurveKGreaterThanZeroUsingGrid(weightMethod, kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, yNorm);
+    }
+
     public GEVYFit calculateChiSqSumAndCurve(float k, float sigma, float mu, WEIGHTS_DURING_CHISQSUM wdc) {
 
         float yNorm = MiscMath.findMax(y);
@@ -1345,10 +1445,10 @@ public class GEVChiSquareMinimization {
     private GEVYFit fitCurveForKGreaterThanZeroWithDownhillSimplex(float kMin, float kMax, float sigmaMin, float sigmaMax,
         float mu, float yErrSquareSum, WEIGHTS_DURING_CHISQSUM weightMethod, float yNorm) {
 
-        int nK = 1000;
+        int nK = this.downhillSimplexStartDivisions;
         float deltaK = (kMax - kMin)/(float)nK;
 
-        int nSigma = 1000;
+        int nSigma = this.downhillSimplexStartDivisions;
         float deltaSigma = (sigmaMax - sigmaMin)/(float)nSigma;
 
         float k = kMin;

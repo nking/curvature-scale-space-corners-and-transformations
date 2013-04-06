@@ -1,36 +1,61 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
+import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FilterInputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 /**
+ * This persists the cluster data in files for use elsewhere.  the test
+ * that generates the data is disabled when not needed.
+ *
  * @author nichole
  */
-public class FindClustersTest extends BaseTwoPointTest {
+public class CreateClusterDataTest extends BaseTwoPointTest {
 
-    boolean debug = true;
+    protected static String histogramFileNamePrefix = "histogram_random_background_with_";
+
+    protected static String indexerFileNamePrefix = "indexer_random_background_with_";
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void test_Find_Clusters_Stats() throws Exception {
+    protected boolean enable = false;
 
-        log.info("test_Find_Clusters_Stats()");
+    public void testCreateData() throws Exception {
+
+        if (!enable) {
+            return;
+        }
+
+        log.info("testCreateData()");
 
         float xmin = 0;
         float xmax = 300;
         float ymin = 0;
         float ymax = 300;
 
-        TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
 
         SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
         srr.setSeed(System.currentTimeMillis());
         long seed = srr.nextLong();
 
+        seed = 310357278571620991l;
+
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(seed);
+        //sr.setSeed(4066852271294423764l);
+        //sr.setSeed(310357278571620991l);
         //sr.setSeed(-1993887065899734688l);
         //sr.setSeed(-6886733535826319879l);
         //sr.setSeed(-3765842324512485314l);
@@ -45,37 +70,53 @@ public class FindClustersTest extends BaseTwoPointTest {
         //  all with the same number of clusters and cluster points, though
         //  randomly distributed.
 
-        int nIterPerBackground = 10;
+        int nIterPerBackground = 30;
 
-        int m = nIterPerBackground*3;
-
-        float[] means = new float[m];
-        float[] medians = new float[m];
-        float[] peaks = new float[m];
-        float[] x05s = new float[m];
-        float[] x10s = new float[m];
-        float[] x80s = new float[m];
-        float[] x95s = new float[m];
-        float[] chiSqStats = new float[m];
+        int m = nIterPerBackground*6;
 
         DoubleAxisIndexer indexer = null;
 
         int count = 0;
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 6; i++) {
 
             for (int ii = 0; ii < nIterPerBackground; ii++) {
 
+                String numberOfClusters = "";
+                String str = String.valueOf(count);
+                while (str.length() < 3) {
+                    str = "0" + str;
+                }
+                String fileNamePostfix = "_clusters_" + str + ".dat";
+
                 switch(i) {
                     case 0:
+                        numberOfClusters = "0";
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            new int[0], 100, null);
+                        break;
+                    case 1:
+                        numberOfClusters = "3";
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 0.1f);
                         break;
-                    case 1:
+                    case 2:
+                        numberOfClusters = "1";
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            1, 30, 60, 1f);
+                        break;
+                    case 3:
+                        numberOfClusters = "2";
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            2, 30, 60, 1f);
+                        break;
+                    case 4:
+                        numberOfClusters = "3";
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 1f);
                         break;
-                    case 2:
+                    case 5:
+                        numberOfClusters = "3";
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 10.0f);
                         break;
@@ -85,202 +126,177 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
 
-                log.info(" " + count + " (" + indexer.nXY + " points) ... ");
+                String fileName = indexerFileNamePrefix + numberOfClusters + fileNamePostfix;
+                String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
 
-                TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, x.length);
+
+                writeIndexer(filePath, indexer);
+
+
+                log.info(" " + count + " " + i + " number of clusters=" + numberOfClusters + " (" + indexer.nXY + " points) ... ");
+
+                TwoPointVoidStatsExt twoPtC = new TwoPointVoidStatsExt(indexer);
                 twoPtC.setDebug(true);
-                twoPtC.calculateBackgroundVia2PtVoidFit(false);
 
-
-                TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
-                HistogramHolder histogram = stats.statsHistogram;
-
-                String plotLabel = null;
-
-                System.out.print(" storing statistics ");
-                GEVYFit bestFit = stats.bestFit;
-                if (bestFit != null) {
-                    float mean = bestFit.getXMean();
-                    float median = bestFit.getXMedian();
-                    float peak = bestFit.getXPeak();
-                    float x05 = bestFit.getX05Percent();
-                    float x10 = bestFit.getX10Percent();
-                    float x80 = bestFit.getX80Percent();
-                    float x95 = bestFit.getX95Percent();
-
-                    means[count] = mean;
-                    medians[count] = median;
-                    peaks[count] = peak;
-                    x05s[count] = x05;
-                    x10s[count] = x10;
-                    x80s[count] = x80;
-                    x95s[count] = x95;
-
-                    // === stats for plot labels =====
-                    float meanDivPeak = mean/peak;
-                    float medianDivMean = median/mean;
-                    float x80DivMedian = x80/median;
-                    chiSqStats[count] = bestFit.getChiSqStatistic();
-                    // label needs:  x10, peak,  mean/peak, median/mean and x80/median
-                    plotLabel = String.format(
-                        "  (%d %d) x10=%.4f peak=%.4f av/peak=%.2f med/av=%.2f chst=%.1f",
-                        i, ii, x10, peak, meanDivPeak, medianDivMean, chiSqStats[count]
-                    );
-                    if (debug) {
-                        log.info(plotLabel);
-                    }
+                float[] xf = null;
+                float[] yf = null;
+                HistogramHolder histogram = twoPtC.constructAndFitHistogram();
+                if (twoPtC.bestFit != null) {
+                    xf = twoPtC.bestFit.getOriginalScaleX();
+                    yf = twoPtC.bestFit.getOriginalScaleYFit();
                 }
 
-                twoPtC.findClusters();
-                twoPtC.calculateHullsOfClusters();
+                fileName = histogramFileNamePrefix + numberOfClusters + fileNamePostfix;
+                filePath = ResourceFinder.getAFilePathInTmpData(fileName);
 
-                plotter.addPlot(twoPtC, plotLabel);
+
+                writeHistogram(filePath, histogram);
+
+
+                plotter.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
+                    histogram.getXErrors(), histogram.getYErrors(), xf, yf,
+                    String.valueOf(count) + " : " + i + " : " + numberOfClusters + " => " + twoPtC.bestFit.getChiSqStatistic());
+
                 plotter.writeFile();
-
-                if (debug) {
-
-                    if (twoPtC.backgroundStats instanceof TwoPointVoidStats) {
-
-                        HistogramHolder hist = ((TwoPointVoidStats)twoPtC.backgroundStats).statsHistogram;
-
-                        log.info("\n   (" + i + " " + ii + ")");
-                        StringBuffer s0 = new StringBuffer("  x = new float[]{");
-                        StringBuffer s1 = new StringBuffer("  y = new float[]{");
-                        for (int iii = 0; iii < hist.getXHist().length; iii++) {
-                            if (iii > 0) {
-                                s0.append(", ");
-                                s1.append(", ");
-                            }
-                            s0.append(hist.getXHist()[iii]).append("f");
-                            s1.append(hist.getYHistFloat()[iii]).append("f");
-                        }
-                        s0.append("};");
-                        s1.append("};");
-                        log.info(s0.toString());
-                        log.info(s1.toString());
-                    }
-                }
 
                 count++;
             }
         }
 
-        log.info("\n start computing stats for all sets");
-
-        count = 0;
-        float[] meanDivPeaks = new float[3];
-        float[] medianDivMeans = new float[3];
-        float[] x80DivMedians = new float[3];
-        float[] x80DivMeans = new float[3];
-
-        float[] meanDivPeaksSD = new float[3];
-        float[] medianDivMeansSD = new float[3];
-        float[] x80DivMediansSD = new float[3];
-        float[] x80DivMeansSD = new float[3];
-
-        for (int i = 0; i < 3; i++) {
-
-            float meanDivPeakSum = 0;
-            float medianDivMeanSum = 0;
-            float x80DivMedianSum = 0;
-            float x80DivMeanSum = 0;
-
-            log.info("[" + i + "]");
-
-            for (int j = 0; j < nIterPerBackground; j++) {
-
-                int n = i*nIterPerBackground + j;
-
-                float peak = peaks[n];
-                float mean = means[n];
-                float median = medians[n];
-
-                float x05 = x05s[n];
-                float x10 = x10s[n];
-                float x80 = x80s[n];
-                float x95 = x95s[n];
-
-                float meanDivPeak = mean/peak;
-                float medianDivMean = median/mean;
-                float x80DivMedian = x80/median;
-                float x80DivMean = x80/mean;
-
-                String line = String.format(
-                    "   (%d) peak=%.4f mean=%.4f median=%.4f x05=%.4f x10=%.4f x80=%.4f x95=%.4f mean/peak=%.2f median/mean=%.2f x80/median=%.2f x80/mean=%.2f chist=%.1f",
-                    j, peak, mean, median, x05, x10, x80, x95, meanDivPeak, medianDivMean, x80DivMedian, x80DivMean, chiSqStats[n]
-                );
-                //log.info(line);
-                System.out.println(line);
-
-                meanDivPeakSum += meanDivPeak;
-                medianDivMeanSum += medianDivMean;
-                x80DivMedianSum += x80DivMedian;
-                x80DivMeanSum += x80DivMean;
-            }
-            meanDivPeakSum /= nIterPerBackground;
-            medianDivMeanSum /= nIterPerBackground;
-            x80DivMedianSum /= nIterPerBackground;
-            x80DivMeanSum /= nIterPerBackground;
-
-            meanDivPeaks[i] = meanDivPeakSum;
-            medianDivMeans[i] = medianDivMeanSum;
-            x80DivMedians[i] = x80DivMedianSum;
-            x80DivMeans[i] = x80DivMeanSum;
-
-            double meanDivPeakSumSD = 0;
-            double medianDivMeanSumSD = 0;
-            double x80DivMedianSumSD = 0;
-            double x80DivMeanSumSD = 0;
-
-            for (int j = 0; j < nIterPerBackground; j++) {
-
-                float peak = peaks[i*nIterPerBackground + j];
-
-                float mean = means[i*nIterPerBackground + j];
-                float median = medians[i*nIterPerBackground + j];
-
-                float x05 = x05s[i*nIterPerBackground + j];
-                float x10 = x10s[i*nIterPerBackground + j];
-                float x80 = x80s[i*nIterPerBackground + j];
-                float x95 = x95s[i*nIterPerBackground + j];
-
-                double meanDivPeak = mean/peak;
-                double medianDivMean = median/mean;
-                double x80DivMedian = x80/median;
-                double x80DivMean = x80/mean;
-
-                meanDivPeakSumSD +=  Math.pow((meanDivPeak - meanDivPeakSum), 2);
-                medianDivMeanSumSD += Math.pow((medianDivMean - medianDivMeanSum), 2);
-                x80DivMedianSumSD += Math.pow((x80DivMedian - x80DivMedianSum), 2);
-                x80DivMeanSumSD += Math.pow((x80DivMean -x80DivMeanSum), 2);
-            }
-
-            meanDivPeakSumSD = (float) Math.sqrt(meanDivPeakSumSD/(nIterPerBackground - 1.0f));
-            medianDivMeanSumSD = (float) Math.sqrt(medianDivMeanSumSD/(nIterPerBackground - 1.0f));
-            x80DivMedianSumSD = (float) Math.sqrt(x80DivMedianSumSD/(nIterPerBackground - 1.0f));
-            x80DivMeanSumSD = (float) Math.sqrt(x80DivMeanSumSD/(nIterPerBackground - 1.0f));
-
-            meanDivPeaksSD[i] = (float)meanDivPeakSumSD;
-            medianDivMeansSD[i] = (float)medianDivMeanSumSD;
-            x80DivMediansSD[i] = (float)x80DivMedianSumSD;
-            x80DivMeansSD[i] = (float)x80DivMeanSumSD;
-        }
-
-        log.info("Final stats:");
-        for (int i = 0; i < 3; i++) {
-
-            String line = String.format(
-                "    mean/peak=%.2f +- %.4f   median/mean=%.2f +- %.4f    x80/median=%.2f +- %.4f    x80/median=%.2f +- %.4f",
-                meanDivPeaks[i], meanDivPeaksSD[i],
-                medianDivMeans[i], medianDivMeansSD[i],
-                x80DivMedians[i], x80DivMediansSD[i],
-                x80DivMeans[i], x80DivMeansSD[i]
-            );
-            //log.info(line);
-            System.out.println(line);
-        }
-
         log.info("SEED=" + seed);
     }
 
+    public static String[] getHistogramFilePaths() throws IOException {
+
+        String tmpDataDirPath = ResourceFinder.findTmpDataDirectory();
+
+        File tmpDataDir = new File(tmpDataDirPath);
+
+        File[] histogramFiles = tmpDataDir.listFiles(new HistogramFileFilter());
+
+        String[] filePaths = new String[histogramFiles.length];
+
+        for (int i = 0; i < histogramFiles.length; i++) {
+            filePaths[i] = histogramFiles[i].getPath();
+        }
+
+        return filePaths;
+    }
+
+    public static String[] getIndexerFilePaths() throws IOException {
+
+        String tmpDataDirPath = ResourceFinder.findTmpDataDirectory();
+
+        File tmpDataDir = new File(tmpDataDirPath);
+
+        File[] indexerFiles = tmpDataDir.listFiles(new IndexerFileFilter());
+
+        String[] filePaths = new String[indexerFiles.length];
+
+        for (int i = 0; i < indexerFiles.length; i++) {
+            filePaths[i] = indexerFiles[i].getPath();
+        }
+
+        return filePaths;
+    }
+
+    protected static class HistogramFileFilter implements FileFilter {
+        @Override
+        public boolean accept(File pathname) {
+            if (pathname.getName().startsWith(histogramFileNamePrefix)) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    protected static class IndexerFileFilter implements FileFilter {
+        @Override
+        public boolean accept(File pathname) {
+            if (pathname.getName().startsWith(indexerFileNamePrefix)) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public static DoubleAxisIndexer readIndexer(String filePath) throws IOException {
+        return SerializerUtil.readPersistedPoints(filePath, true);
+    }
+
+    public static HistogramHolder readHistogram(String filePath) throws IOException {
+
+        HistogramHolder histogram = new HistogramHolder();
+
+        FileInputStream fileInputStream = null;
+        FilterInputStream filterInputStream = null;
+        ObjectInputStream objectInputStream = null;
+
+        try {
+
+            fileInputStream = new FileInputStream(filePath);
+
+            objectInputStream = new ObjectInputStream(fileInputStream);
+
+            histogram.readExternal(objectInputStream);
+
+            return histogram;
+
+        } finally {
+            if (fileInputStream != null) {
+                fileInputStream.close();
+            }
+            if (filterInputStream != null) {
+                filterInputStream.close();
+            }
+            if (objectInputStream != null) {
+                objectInputStream.close();
+            }
+        }
+    }
+
+    protected static void writeIndexer(String filePath, DoubleAxisIndexer indexer) throws IOException {
+        SerializerUtil.serializeIndexer(indexer, filePath);
+    }
+
+    protected static void writeHistogram(String filePath, HistogramHolder histogram) throws IOException {
+
+        FileOutputStream fileOutputStream = null;
+        FilterOutputStream filterOutputStream = null;
+        ObjectOutputStream objectOutputStream = null;
+
+        try {
+
+            fileOutputStream = new FileOutputStream(filePath);
+
+            objectOutputStream = new ObjectOutputStream(fileOutputStream);
+
+            histogram.writeExternal(objectOutputStream);
+
+        } finally {
+            if (fileOutputStream != null) {
+                fileOutputStream.close();
+            }
+            if (filterOutputStream != null) {
+                filterOutputStream.close();
+            }
+            if (objectOutputStream != null) {
+                objectOutputStream.close();
+            }
+        }
+    }
+
+    protected class TwoPointVoidStatsExt extends TwoPointVoidStats {
+
+        public TwoPointVoidStatsExt(DoubleAxisIndexer indexer) {
+            super(indexer);
+        }
+
+        public HistogramHolder constructAndFitHistogram() throws TwoPointVoidStatsException {
+
+            calc();
+
+            return statsHistogram;
+        }
+    }
 }

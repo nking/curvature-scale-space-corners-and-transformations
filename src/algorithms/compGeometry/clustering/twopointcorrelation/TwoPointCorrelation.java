@@ -47,6 +47,11 @@ import java.util.Arrays;
      float[] xSeeds = clusterFinder.getXHullCentroids();
      float[] ySeeds = clusterFinder.getYHullCentroids();
 
+  Also:  if your data has already been reduced so that there are few to no outliers
+     outside of clusters, you should use:
+         clusterFinder.calculateBackground(true);
+     to allow tuning for that (it uses a smaller value than found via GEV fits to
+     the voids due to fewer points for calculation).
 
   Usage from the command line:
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
@@ -72,7 +77,7 @@ public class TwoPointCorrelation {
     protected float[] rCluster = null;
     private float backgroundSurfaceDensity;
     private float backgroundError;
-    private float sigmaFactor = 3;
+    private float sigmaFactor = 2.5f;
     // we are looking for points which have surface density > sigmaFactor*backgroundAverage
 
     protected int minimumNumberInCluster = 10;
@@ -168,6 +173,21 @@ public class TwoPointCorrelation {
     public TwoPointCorrelation(String indexerFilePath) throws IOException {
 
         this.indexer = SerializerUtil.readPersistedPoints(indexerFilePath);
+
+        pointToGroupIndex = new int[this.indexer.nXY];
+        Arrays.fill(pointToGroupIndex, -1);
+
+        groupMembership = new SimpleLinkedListNode[10];
+        for (int i = 0; i < groupMembership.length; i++) {
+            groupMembership[i] = new SimpleLinkedListNode();
+        }
+
+        state = STATE.INITIALIZED;
+    }
+
+    public TwoPointCorrelation(DoubleAxisIndexer doubleAxisIndexer) throws IOException {
+
+        this.indexer = doubleAxisIndexer;
 
         pointToGroupIndex = new int[this.indexer.nXY];
         Arrays.fill(pointToGroupIndex, -1);
