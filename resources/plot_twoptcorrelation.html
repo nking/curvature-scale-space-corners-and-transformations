@@ -137,10 +137,12 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 .attr("stroke-width", 2)
                 .attr("fill", "orange")
                 .attr("fill-opacity", .30);
-            pointGroupDetails.append("svg:text").attr("class", "label").attr("text-anchor", "middle")
-                .attr("x",function(d) { return x(d.x); })
-                .attr("y",function(d) { return y(d.y); })
-                .text(function(d,i){return d.name});
+            if (points.length < 2000) {
+                pointGroupDetails.append("svg:text").attr("class", "label").attr("text-anchor", "middle")
+                    .attr("x",function(d) { return x(d.x); })
+                    .attr("y",function(d) { return y(d.y); })
+                    .text(function(d,i){return d.name});
+            }
 
             var pointRadius = (points.length < 2000) ? 3 : 1;
 
@@ -156,26 +158,30 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 .attr("fill", "black")
                 .attr("fill-opacity", .30);
 
-            for (i = 0; i < groupPolygons.length; i++) {
-                var pointGroup2 = svg.append("svg:g").attr("class","points");
-                pointGroup2.selectAll("circle.points").data(groupPolygons[i])
-                    .enter().append("svg:circle")
-                    .attr("class", "point")
-                    .attr("cx",function(d) { return x(d.x); })
-                    .attr("cy",function(d) { return y(d.y); })
-                    .attr("r", 3)
-                    .attr("stroke", "#dddddd")
-                    .attr("fill", "black")
-                    .attr("fill-opacity", 1.0);
+            if (points.length < 2000) {
+                for (i = 0; i < groupPolygons.length; i++) {
+                    var pointGroup2 = svg.append("svg:g").attr("class","points");
+                    pointGroup2.selectAll("circle.points").data(groupPolygons[i])
+                        .enter().append("svg:circle")
+                        .attr("class", "point")
+                        .attr("cx",function(d) { return x(d.x); })
+                        .attr("cy",function(d) { return y(d.y); })
+                        .attr("r", 3)
+                        .attr("stroke", "#dddddd")
+                        .attr("fill", "black")
+                        .attr("fill-opacity", 1.0);
+                }
             }
 
-            var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
-            for (i = 0; i < groupPolygons.length; i++) {
-                svg.append("svg:path")
-                    .attr("d", line(groupPolygons[i]))
-                    .style("stroke-width", 2)
-                    .style("stroke", "steelblue")
-                    .style("fill", "none");
+            if (points.length < 2000) {
+                var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
+                for (i = 0; i < groupPolygons.length; i++) {
+                    svg.append("svg:path")
+                        .attr("d", line(groupPolygons[i]))
+                        .style("stroke-width", 2)
+                        .style("stroke", "steelblue")
+                        .style("fill", "none");
+                }
             }
 
             svg.append("svg:g").attr("class", "text")
