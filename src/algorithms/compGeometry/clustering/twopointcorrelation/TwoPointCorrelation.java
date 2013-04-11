@@ -277,7 +277,7 @@ public class TwoPointCorrelation {
      * @param allowTuning use the factors learned from simulated clusters to adjust
      * the estimated background density
      * @param useLeastCompleteSampling use the faster, but least complete sampling for the
-     *     two-point void calculation.  this can only be used if n > 999 and will be
+     *     two-point void calculation.  this can only be used if n > 9999 and will be
      *     overridden to false if not.
      * @throws TwoPointVoidStatsException
      * @throws IOException
@@ -334,7 +334,7 @@ public class TwoPointCorrelation {
 
             voidStats.setUseLeastCompleteSampling(doUseLeastCompleteSampling);
 
-        } if (!useCompleteBackgroundSampling && (indexer.nXY < 100)) {
+        } else if (!useCompleteBackgroundSampling && (indexer.nXY < 100)) {
 
             useCompleteBackgroundSampling = true;
         }
@@ -377,7 +377,7 @@ public class TwoPointCorrelation {
 
     protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName) {
 
-        long diffSec = (stopTimeMillis - startTimeMillis)/100;
+        long diffSec = (stopTimeMillis - startTimeMillis)/1000;
 
         MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heapUsage = mbean.getHeapMemoryUsage();
@@ -425,8 +425,6 @@ public class TwoPointCorrelation {
         long padding = (sumBytes % 8);
 
         sumBytes += padding;
-
-        // could instead use MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
 
         return sumBytes;
     }

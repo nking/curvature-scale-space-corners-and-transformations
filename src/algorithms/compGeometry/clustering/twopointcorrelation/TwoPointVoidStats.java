@@ -155,7 +155,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName, String bigOh) {
 
-        long diffSec = (stopTimeMillis - startTimeMillis)/100;
+        long diffSec = (stopTimeMillis - startTimeMillis)/1000;
 
         MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heapUsage = mbean.getHeapMemoryUsage();
