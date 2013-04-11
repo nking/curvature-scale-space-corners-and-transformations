@@ -407,6 +407,8 @@
         <jar destfile="${classes.dir}/two-point-correlation_${TS}.jar" manifest="${basedir}/resources/two-point-correlation.mf">
             <fileset dir="${src.out.dir}" includes="**"/>
             <fileset dir="${basedir}" includes="resources/**"/>
+            <fileset dir="${basedir}" includes="LICENSE.txt"/>
+            <fileset dir="${basedir}" includes="README.txt"/>
         </jar>
     </target>
 </project>
