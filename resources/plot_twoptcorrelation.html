@@ -142,13 +142,15 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 .attr("y",function(d) { return y(d.y); })
                 .text(function(d,i){return d.name});
 
+            var pointRadius = (points.length < 2000) ? 3 : 1;
+
             var pointGroup0 = svg.append("svg:g").attr("class","points");
             var pointGroup0Details = pointGroup0.selectAll("circle.points").data(points).enter();
             pointGroup0Details.append("svg:circle")
                 .attr("class", "point")
                 .attr("cx",function(d) { return x(d.x); })
                 .attr("cy",function(d) { return y(d.y); })
-                .attr("r", 3)
+                .attr("r", pointRadius)
                 .attr("stroke", "black")
                 .attr("stroke-width", 1)
                 .attr("fill", "black")
