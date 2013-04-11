@@ -73,7 +73,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                 switch(i) {
                     case 0:
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                            3, 30, 60, 100.0f /*0.1f*/);
+                            3, 30, 60, /*100.0f*/ 0.1f);
                         break;
                     case 1:
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
