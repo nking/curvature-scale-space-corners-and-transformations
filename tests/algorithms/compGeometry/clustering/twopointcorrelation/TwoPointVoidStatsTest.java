@@ -40,7 +40,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
          * where the 100's are where points are and the 10's are where points are not (==voids)
          */
 
-        x = new float[] {
+        generator.x = new float[] {
             0,  1,  2,  3,  4,  5,  6,  7,  8,
             0,              4,  5,  6,  7,  8,
             0,              4,  5,  6,  7,  8,
@@ -53,7 +53,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             0,  1,          4,  5,  6,  7,  8,
             0,  1,  2,  3,  4,  5,  6,  7,  8
         };
-        y = new float[] {
+        generator.y = new float[] {
             0,  0,  0,  0,  0,  0,  0,  0,  0,
             1,              1,  1,  1,  1,  1,
             2,              2,  2,  2,  2,  2,
@@ -68,13 +68,14 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         };
 
         // make uniform errors for x and y
-        xErrors = new float[x.length];
-        yErrors = new float[x.length];
-        Arrays.fill(xErrors, 0.1f);
-        Arrays.fill(yErrors, 0.1f);
+        generator.xErrors = new float[generator.x.length];
+        generator.yErrors = new float[generator.x.length];
+        Arrays.fill(generator.xErrors, 0.1f);
+        Arrays.fill(generator.yErrors, 0.1f);
 
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+        indexer.sortAndIndexXThenY(generator.x, generator.y,
+            generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
@@ -112,23 +113,24 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
          *       0   1
          */
         int nX = 2;
-        x = new float[nX*nX];
-        y = new float[nX*nX];
+        generator.x = new float[nX*nX];
+        generator.y = new float[nX*nX];
         int count = 0;
         for (int i = 0 ; i < nX; i++) {
             for (int j = 0; j < nX; j++) {
-                x[count] = i*100;
-                y[count] = j*100;
+                generator.x[count] = i*100;
+                generator.y[count] = j*100;
                 count++;
             }
         }
 
         // make uniform errors for x and y
-        xErrors = Errors.populateXErrorsByPointSeparation(x);
-        yErrors = Errors.populateYErrorsBySqrt(y);
+        generator.xErrors = Errors.populateXErrorsByPointSeparation(generator.x);
+        generator.yErrors = Errors.populateYErrorsBySqrt(generator.y);
 
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+        indexer.sortAndIndexXThenY(generator.x, generator.y,
+            generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
@@ -167,25 +169,26 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
          *       0   1
          */
         int nX = 2;
-        x = new float[nX*nX];
-        y = new float[nX*nX];
+        generator.x = new float[nX*nX];
+        generator.y = new float[nX*nX];
         int count = 0;
         for (int i = 0 ; i < nX; i++) {
             for (int j = 0; j < nX; j++) {
-                x[count] = i ;//+ count*0.01f;
-                y[count] = j ;//+ count*0.01f;
+                generator.x[count] = i ;//+ count*0.01f;
+                generator.y[count] = j ;//+ count*0.01f;
                 count++;
             }
         }
 
         // make uniform errors for x and y
-        xErrors = new float[x.length];
-        yErrors = new float[y.length];
-        Arrays.fill(xErrors, 0.1f);
-        Arrays.fill(yErrors, 0.1f);
+        generator.xErrors = new float[generator.x.length];
+        generator.yErrors = new float[generator.y.length];
+        Arrays.fill(generator.xErrors, 0.1f);
+        Arrays.fill(generator.yErrors, 0.1f);
 
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+        indexer.sortAndIndexXThenY(generator.x, generator.y,
+            generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
@@ -216,11 +219,13 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         float ymin = 0;
         float ymax = 300;
 
-        createPoints((30+40+60), new int[]{30, 40, 60}, CLUSTER_SEPARATION.LARGE,
+        createPoints((30+40+60), new int[]{30, 40, 60},
+            RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
             xmin, xmax, ymin, ymax, sr, false);
 
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+        indexer.sortAndIndexXThenY(generator.x, generator.y,
+            generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);

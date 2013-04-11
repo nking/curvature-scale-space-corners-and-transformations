@@ -1,5 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
@@ -17,7 +19,7 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
         log.info("testSmallData");
 
-        x = new float[] {
+        generator.x = new float[] {
             0,  1,  2,  3,  4,  5,  6,  7,  8,
             0,              4,  5,  6,  7,  8,
             0,              4,  5,  6,  7,  8,
@@ -31,7 +33,7 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
             0,  1,  2,  3,  4,  5,  6,  7,  8,
             5.5f, 6.5f, 6.0f, 6.0f, 6.5f, 5.5f, 5.5f // <==== adding small cluster
         };
-        y = new float[] {
+        generator.y = new float[] {
             0,  0,  0,  0,  0,  0,  0,  0,  0,
             1,              1,  1,  1,  1,  1,
             2,              2,  2,  2,  2,  2,
@@ -52,16 +54,19 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
         float ymax = 10;
 
         // make uniform errors for x and y
-        xErrors = new float[x.length];
-        yErrors = new float[y.length];
-        for (int i = 0; i < xErrors.length; i++) {
-            xErrors[i] = x[i]/100.0f;
-            yErrors[i] = y[i]/100.0f;
+        generator.xErrors = new float[generator.x.length];
+        generator.yErrors = new float[generator.y.length];
+        for (int i = 0; i < generator.xErrors.length; i++) {
+            generator.xErrors[i] = generator.x[i]/100.0f;
+            generator.yErrors[i] = generator.y[i]/100.0f;
         }
 
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
 
-        TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, x.length);
+        TwoPointCorrelation twoPtC = new TwoPointCorrelation(
+            generator.x, generator.y,
+            generator.xErrors, generator.yErrors, generator.x.length);
+
         twoPtC.setDebug(true);
     //twoPtC.setBackground(1.f, 0.01f);
         twoPtC.calculateBackground();
@@ -123,11 +128,14 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
         for (int nIter = 0; nIter < nIterations; nIter++) {
 
-            createPoints((int)0.1f*(30+40+60), new int[]{30, 40, 60}, CLUSTER_SEPARATION.LARGE,
+            createPoints((int)0.1f*(30+40+60), new int[]{30, 40, 60},
+                RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
                 xmin, xmax, ymin, ymax, sr, false);
 
 
-            TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
+            TwoPointCorrelation twoPtC = new TwoPointCorrelation(
+                generator.x, generator.y,
+                generator.xErrors, generator.yErrors, generator.x.length);
 
             twoPtC.setDebug(debug);
 
@@ -146,23 +154,24 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             assertTrue(foundAll);
 
-/*
+
             // to create a file to test the methods in main:
             String path = this.getClass().getClassLoader().getResource(".").getPath() + "/file.txt";
 
             File fl = new File(path);
             FileWriter writer = new FileWriter(fl);
 
-            for (int i = 0; i < this.x.length; i++) {
+            for (int i = 0; i < this.generator.x.length; i++) {
 
                 StringBuffer sb = new StringBuffer();
-                sb.append(x[i]).append("\t").append(y[i]).append("\t")
-                    .append(xErrors[i]).append("\t").append(yErrors[i]).append("\n");
+                sb.append(generator.x[i]).append("\t").append(generator.y[i]).append("\t")
+                    .append(generator.xErrors[i]).append("\t").append(generator.yErrors[i]).append("\n");
 
                writer.write(sb.toString());
             }
             writer.close();
-*/
+            System.out.println("wrote: " + path);
+
         }
 
         log.info("SEED=" + seed);
@@ -194,11 +203,15 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
         for (int nIter = 0; nIter < nIterations; nIter++) {
 
-            createPoints((30+40+60), new int[]{30, 40, 60}, CLUSTER_SEPARATION.MODERATE,
+            createPoints((30+40+60), new int[]{30, 40, 60},
+                RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.MODERATE,
                 xmin, xmax, ymin, ymax, sr, false);
 
 
-            TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
+            TwoPointCorrelation twoPtC = new TwoPointCorrelation(
+                generator.x, generator.y,
+                generator.xErrors, generator.yErrors, generator.x.length);
+
             twoPtC.setDebug(debug);
 
             boolean allowTuning = false;
@@ -266,11 +279,15 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
         for (int nIter = 0; nIter < nIterations; nIter++) {
 
-            createPoints((30+40+60), new int[]{30, 40, 60}, CLUSTER_SEPARATION.LARGE,
+            createPoints((30+40+60), new int[]{30, 40, 60},
+                RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
                 xmin, xmax, ymin, ymax, sr, false);
 
 
-            TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
+            TwoPointCorrelation twoPtC = new TwoPointCorrelation(
+                generator.x, generator.y,
+                generator.xErrors, generator.yErrors, generator.x.length);
+
             twoPtC.setDebug(debug);
 
             boolean allowTuning = false;
@@ -317,11 +334,15 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
         for (int nIter = 0; nIter < nIterations; nIter++) {
 
-            createPoints(10*(30+40+60), new int[]{30, 40, 60}, CLUSTER_SEPARATION.LARGE,
+            createPoints(10*(30+40+60), new int[]{30, 40, 60},
+                RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
                 xmin, xmax, ymin, ymax, sr, false);
 
 
-            TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
+            TwoPointCorrelation twoPtC = new TwoPointCorrelation(
+                generator.x, generator.y,
+                generator.xErrors, generator.yErrors, generator.x.length);
+
             twoPtC.setDebug(debug);
 
             boolean allowTuning = false;

@@ -24,6 +24,17 @@ import java.util.logging.Logger;
 
           java -jar two-point-correlation.jar --file /path/to/file/fileName.txt
 
+
+  Optional flags not yet included:
+          -- debugOff
+          -- background x.yz --backgrounderror e.fg
+          -- tuningOn
+      *debug is on by default and prints intermediate steps to the logger and creates
+             more plots.  setting debugOff prevents most of the log writting and most of the plots.
+      *If background and backgrounderror are set, the 2-point voids are not calculated.
+      *If tuningOn is set, a smaller value than the calculated background from the 2-point
+      *      void rectangles is used.
+
   @author nichole
  */
 public class Main {

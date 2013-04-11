@@ -14,7 +14,11 @@ import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 /**
  * Class to estimate a background density for a set of points in which
@@ -77,6 +81,7 @@ import java.util.Arrays;
 public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected boolean useCompleteSampling = false;
+    protected boolean useLeastCompleteSampling = false;
     protected boolean allowTuningForThresholdDensity = false;
 
     protected float[] allTwoPointSurfaceDensities = null;
@@ -93,6 +98,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected GEVYFit bestFit = null;
 
     protected boolean adjustMuForDensity = true;
+
+    protected boolean doLogPerformanceMetrics = false;
 
     //
     public HistogramHolder getStatsHistogram() {
@@ -117,6 +124,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         super(persistedIndexerFileName);
     }
 
+    public void setUseLeastCompleteSampling(boolean doUseLeastCompleteSampling) {
+        this.useLeastCompleteSampling = doUseLeastCompleteSampling;
+    }
+
     /**
      * Use complete sampling, else the default sampling.
      * the runtime for the complete sampling is N!/(2!(N-2)! * N!/(2!(N-2) which
@@ -136,6 +147,55 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             useCompleteSampling = doUseCompleteSampling;
         }
+    }
+
+    protected void logPerformanceMetrics() {
+        this.doLogPerformanceMetrics = true;
+    }
+
+    protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName, String bigOh) {
+
+        long diffSec = (stopTimeMillis - startTimeMillis)/100;
+
+        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+        MemoryUsage heapUsage = mbean.getHeapMemoryUsage();
+        MemoryUsage nonHeapUsage = mbean.getNonHeapMemoryUsage();
+
+        String str = String.format("%35s:  N=%9d  %s  RT(sec)=%8d  instance estimates(bytes)=%9d   heapUsed(bytes)=%9d   memoryPoolsSum(bytes)=%9d",
+            methodName,
+            indexer.nXY, bigOh, diffSec, approximateMemoryUsed(),
+            heapUsage.getUsed(), nonHeapUsage.getUsed() );
+
+        Logger.getLogger(this.getClass().getSimpleName()).info(str);
+    }
+
+    // note:  not yet tested
+    public long approximateMemoryUsed() {
+
+        int n = (allTwoPointSurfaceDensities == null) ? 0 : allTwoPointSurfaceDensities.length;
+
+        long sumBytes = 4*16 + (3*8);
+
+        if (statsHistogram != null) {
+            sumBytes += statsHistogram.approximateMemoryUsed();
+        }
+        if (bestFit != null) {
+            sumBytes += bestFit.approximateMemoryUsed();
+        }
+        if (twoPointIdentities != null) {
+            sumBytes += twoPointIdentities.approximateMemoryUsed();
+        }
+
+        long sumBits = 3*(2) + (4*n*32) + 32 + 32;
+
+        sumBytes += (sumBits/8);
+
+        // amount of padding needed to make it a round 8 bytes
+        long padding = (sumBytes % 8);
+
+        sumBytes += padding;
+
+        return sumBytes;
     }
 
     public void setAllowTuningForThresholdDensity(boolean allowTuning) {
@@ -182,6 +242,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected void calculateSurfaceDensities() throws TwoPointVoidStatsException {
 
+        long startTimeMillis = System.currentTimeMillis();
+
         allTwoPointSurfaceDensities = new float[100];
         point1 = new int[100];
         point2 = new int[100];
@@ -201,6 +263,26 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         allTwoPointSurfaceDensitiesErrors =
             calulateTwoPointDensityErrors(allTwoPointSurfaceDensities, point1, point2,
             indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors());
+
+        if (doLogPerformanceMetrics) {
+
+            long stopTimeMillis = System.currentTimeMillis();
+
+            String str;
+            if (useLeastCompleteSampling) {
+                str = "O(n lg(n)) with n=";
+            } else if (useCompleteSampling) {
+                str = "O(n^4) with n=";
+            } else {
+                str = "O(n^2 - n) with n=";
+            }
+            if (allTwoPointSurfaceDensities == null) {
+                str = str + "0";
+            } else {
+                str = str + this.allTwoPointSurfaceDensities.length;
+            }
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateSurfaceDensities", str);
+        }
     }
 
     /**
@@ -519,13 +601,22 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      */
     protected void findVoids() {
 
-        if (useCompleteSampling) {
+        if (useLeastCompleteSampling) {
+
+            float[] x = indexer.getX();
+            float[] y = indexer.getY();
+
+            findVoids(x, y, 0, x.length-1, 0, y.length-1);
+
+        } if (useCompleteSampling) {
 
             float[] x = indexer.getX();
             float[] y = indexer.getY();
                                                                                 // cost     number of times
             for (int i = 0; i < indexer.nXY; i++) {
-                System.out.println("findVoids i=" + i + "/" + indexer.nXY);
+                if (debug) {
+                    System.out.println("findVoids i=" + i + "/" + indexer.nXY);
+                }
                 for (int ii = (i + 1); ii < indexer.nXY; ii++) {
                     for (int j = 0; j < indexer.nXY; j++) {
                         for (int jj = (j + 1); jj < indexer.nXY; jj++) {        //           N!/(2!(N-2)! * N!/(2!(N-2)!
@@ -1024,7 +1115,7 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
         plotter.addTwoPointPlot(indexer.getX(), indexer.getY(), t1, t2,
             xmin, xmax, ymin, ymax);
 
-        if (this.statsHistogram != null) {
+        if (this.statsHistogram != null && allTwoPointSurfaceDensities != null) {
 
             float min = statsHistogram.getXHist()[0];
             float max = statsHistogram.getXHist()[statsHistogram.getXHist().length - 1] +

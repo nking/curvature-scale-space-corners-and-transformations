@@ -321,6 +321,18 @@
         </junit>
     </target>
 
+    <target name="runPerformanceMetrics" depends="compile">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <java classname="algorithms.compGeometry.clustering.twopointcorrelation.PerformanceMetricsRunner"
+            fork="true" failonerror="true">
+        <!-- maxmemory="1024m -->
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <path refid="compile.classpath"/>
+            </classpath>
+        </java>
+    </target>
+
     <target name="debugTests" if="junit.present" depends="clean,debug,compileTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.out.dir}" />
@@ -389,7 +401,10 @@
     <target name="package" depends="compile">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="making jar file of class files, output is in ${classes.dir}/two-point-correlation.jar" />
-        <jar destfile="${classes.dir}/two-point-correlation.jar" manifest="${basedir}/resources/two-point-correlation.mf">
+        <tstamp>
+            <format property="TS" pattern="yyyy-MM-dd" locale="en,US"/>
+        </tstamp>
+        <jar destfile="${classes.dir}/two-point-correlation_${TS}.jar" manifest="${basedir}/resources/two-point-correlation.mf">
             <fileset dir="${src.out.dir}" includes="**"/>
             <fileset dir="${basedir}" includes="resources/**"/>
         </jar>

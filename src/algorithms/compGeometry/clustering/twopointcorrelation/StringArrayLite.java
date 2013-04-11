@@ -25,6 +25,23 @@ class StringArrayLite {
         nTStr = 0;
     }
 
+    public long approximateMemoryUsed() {
+
+        int n = (tstr == null) ? 0 : tstr.length;
+
+        long sumBytes = 8 + 16 + (n*(16 + 8 + 8));
+        long sumBits = (n*32) + 32;
+
+        sumBytes += (sumBits/8);
+
+        // amount of padding needed to make it a round 8 bytes
+        long padding = (sumBytes % 8);
+
+        sumBytes += padding;
+
+        return sumBytes;
+    }
+
     /**
      * check if combination is already stored, if not add it and return true, else
      * return false

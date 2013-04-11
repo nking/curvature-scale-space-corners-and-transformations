@@ -18,6 +18,24 @@ public class HistogramHolder implements Externalizable {
     protected float[] yErrors = null;
     protected float[] xErrors = null;
 
+    public long approximateMemoryUsed() {
+
+        int n = (xHist == null) ? 0 : xHist.length;
+
+        // for this object and IYFit
+        long sumBytes = 5*16;
+        long sumBits = 5*(n*32) + 64;
+
+        sumBytes += (sumBits/8);
+
+        // amount of padding needed to make it a round 8 bytes
+        long padding = (sumBytes % 8);
+
+        sumBytes += padding;
+
+        return sumBytes;
+    }
+
     public int calculateHalfYMaxIndexPastYMax() {
 
         if (yHistFloat == null) {

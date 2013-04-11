@@ -47,9 +47,11 @@ public class FindClustersTest extends BaseTwoPointTest {
         //  all with the same number of clusters and cluster points, though
         //  randomly distributed.
 
+        int nSwitches = 3;
+
         int nIterPerBackground = 10;
 
-        int m = nIterPerBackground*3;
+        int m = nIterPerBackground*nSwitches;
 
         float[] means = new float[m];
         float[] medians = new float[m];
@@ -64,14 +66,14 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         int count = 0;
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < nSwitches; i++) {
 
             for (int ii = 0; ii < nIterPerBackground; ii++) {
 
                 switch(i) {
                     case 0:
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                            3, 30, 60, 0.1f);
+                            3, 30, 60, 100.0f /*0.1f*/);
                         break;
                     case 1:
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
@@ -85,15 +87,28 @@ public class FindClustersTest extends BaseTwoPointTest {
                         break;
                 }
 
-                indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+                indexer.sortAndIndexXThenY(generator.x, generator.y,
+                    generator.xErrors, generator.yErrors, generator.x.length);
 
                 log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
-                TwoPointCorrelation twoPtC = new TwoPointCorrelation(x, y, xErrors, yErrors, x.length);
+                System.out.println(" " + count + " (" + indexer.nXY + " points) ... ");
+
+                TwoPointCorrelation twoPtC = new TwoPointCorrelation(
+                    generator.x, generator.y,
+                    generator.xErrors, generator.yErrors, generator.x.length);
+
                 twoPtC.setDebug(true);
 
                 boolean allowTuning = false;
-                twoPtC.findClusters(allowTuning);
+                if (indexer.nXY < 1000) {
+                    twoPtC.findClusters(allowTuning);
+                } else {
+                    twoPtC.setDebug(true);
+                    twoPtC.logPerformanceMetrics();
+                    twoPtC.calculateBackground(allowTuning, true);
+                    twoPtC.findClusters();
+                }
 
                 TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
                 HistogramHolder histogram = stats.statsHistogram;
@@ -180,7 +195,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         float[] x80DivMediansSD = new float[3];
         float[] x80DivMeansSD = new float[3];
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < nSwitches; i++) {
 
             float meanDivPeakSum = 0;
             float medianDivMeanSum = 0;

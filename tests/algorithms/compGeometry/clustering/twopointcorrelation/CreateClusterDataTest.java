@@ -124,7 +124,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
                         break;
                 }
 
-                indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+                indexer.sortAndIndexXThenY(generator.x, generator.y, generator.xErrors, generator.yErrors, generator.x.length);
 
                 String fileName = indexerFileNamePrefix + numberOfClusters + fileNamePostfix;
                 String filePath = ResourceFinder.getAFilePathInTmpData(fileName);

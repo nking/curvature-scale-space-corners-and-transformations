@@ -28,6 +28,24 @@ public class GEVYFit implements IYFit {
         "k", "sigma", "mu"
     };
 
+    public long approximateMemoryUsed() {
+
+        int n = (yfit == null) ? 0 : yfit.length;
+
+        // for this object and IYFit
+        long sumBytes = (2*16) + (2*16) + 16 + (3*8);
+        long sumBits = (2*n*32) + (17*32) + (3*65535);
+
+        sumBytes += (sumBits/8);
+
+        // amount of padding needed to make it a round 8 bytes
+        long padding = (sumBytes % 8);
+
+        sumBytes += padding;
+
+        return sumBytes;
+    }
+
     public String[] getParameterNames() {
         return parameterNames;
     }

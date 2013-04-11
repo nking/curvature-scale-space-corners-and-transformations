@@ -6,11 +6,14 @@ import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.curves.GEVYFit;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
-import algorithms.util.InputFileReader;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 /**
   Find clusters in data by looking for regions whose density is
@@ -72,9 +75,6 @@ public class TwoPointCorrelation {
 
     protected final DoubleAxisIndexer indexer;
 
-    protected float[] xCluster = null;
-    protected float[] yCluster = null;
-    protected float[] rCluster = null;
     private float backgroundSurfaceDensity;
     private float backgroundError;
     private float sigmaFactor = 2.5f;
@@ -123,6 +123,8 @@ public class TwoPointCorrelation {
     public IPointBackgroundStats backgroundStats = null;
 
     protected boolean debug = false;
+
+    protected boolean doLogPerformanceMetrics = false;
 
     /**
      * construct without errors on xPoints and yPoints.  Note that internally,
@@ -204,6 +206,10 @@ public class TwoPointCorrelation {
         this.debug = turnDebugOn;
     }
 
+    protected void logPerformanceMetrics() {
+        this.doLogPerformanceMetrics = true;
+    }
+
     public void persistIndexer(boolean doPersistIndexer) throws IOException {
         indexerFilePath = SerializerUtil.serializeIndexer(indexer);
     }
@@ -240,7 +246,7 @@ public class TwoPointCorrelation {
 
             boolean useCompleteBackgroundSampling = false;
 
-            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, null);
+            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, null, null);
         }
     }
 
@@ -259,7 +265,29 @@ public class TwoPointCorrelation {
 
             boolean useCompleteBackgroundSampling = false;
 
-            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, allowTuning);
+            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, allowTuning, null);
+        }
+    }
+
+    /**
+     * calculate background using the default method.  The defualt method is
+     * the 2two-point void and GEV fitting method.  If there are < 100 points, the
+     * method is used with full sampling, else the faster incomplete sampling is used.
+     *
+     * @param allowTuning use the factors learned from simulated clusters to adjust
+     * the estimated background density
+     * @param useLeastCompleteSampling use the faster, but least complete sampling for the
+     *     two-point void calculation.  this can only be used if n > 999 and will be
+     *     overridden to false if not.
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
+    void calculateBackground(boolean allowTuning, boolean useLeastCompleteSampling) throws TwoPointVoidStatsException, IOException {
+        if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
+
+            boolean useCompleteBackgroundSampling = false;
+
+            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, allowTuning, useLeastCompleteSampling);
         }
     }
 
@@ -269,7 +297,9 @@ public class TwoPointCorrelation {
         minStats.setDebug(debug);
         minStats.calc(minimaFilePath);
 
-        backgroundStats = minStats;
+        if (debug) {
+            backgroundStats = minStats;
+        }
 
         this.backgroundSurfaceDensity = minStats.getBackgroundSurfaceDensity();
         this.backgroundError = minStats.getBackgroundSurfaceDensityError();
@@ -284,34 +314,47 @@ public class TwoPointCorrelation {
         bMethod = BACKGROUND_METHOD.DESERIALIZED;
     }
 
-    protected void calculateBackgroundVia2PtVoidFit(boolean useCompleteBackgroundSampling,
-        Boolean allowTuning) throws TwoPointVoidStatsException, IOException {
+    protected void calculateBackgroundVia2PtVoidFit(Boolean useCompleteBackgroundSampling,
+        Boolean allowTuning, Boolean doUseLeastCompleteSampling) throws TwoPointVoidStatsException, IOException {
+
+        long startTimeMillis = System.currentTimeMillis();
 
         if ((bMethod != null) && (bMethod.ordinal() == BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
             return;
         }
 
-        if (!useCompleteBackgroundSampling && (indexer.nXY < 100)) {
+        TwoPointVoidStats voidStats = new TwoPointVoidStats(indexer);
+        voidStats.setDebug(debug);
+
+        if (doLogPerformanceMetrics) {
+            voidStats.logPerformanceMetrics();
+        }
+
+        if (doUseLeastCompleteSampling != null) {
+
+            voidStats.setUseLeastCompleteSampling(doUseLeastCompleteSampling);
+
+        } if (!useCompleteBackgroundSampling && (indexer.nXY < 100)) {
 
             useCompleteBackgroundSampling = true;
         }
 
-        TwoPointVoidStats minStats = new TwoPointVoidStats(indexer);
-        minStats.setDebug(debug);
-        minStats.setUseCompleteSampling(useCompleteBackgroundSampling);
+        voidStats.setUseCompleteSampling(useCompleteBackgroundSampling);
         if (allowTuning != null) {
-            minStats.setAllowTuningForThresholdDensity(allowTuning);
+            voidStats.setAllowTuningForThresholdDensity(allowTuning);
         }
-        minStats.calc();
+        voidStats.calc();
 
-        backgroundStats = minStats;
+        if (debug) {
+            backgroundStats = voidStats;
+        }
 
         if (persistTheMinimaStats) {
-            minimaStatsFilePath = minStats.persistTwoPointBackground();
+            minimaStatsFilePath = voidStats.persistTwoPointBackground();
         }
 
-        this.backgroundSurfaceDensity = minStats.getBackgroundSurfaceDensity();
-        this.backgroundError = minStats.getBackgroundSurfaceDensityError();
+        this.backgroundSurfaceDensity = voidStats.getBackgroundSurfaceDensity();
+        this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
 
         if (debug) {
             System.out.println("==>background surface density ="
@@ -321,6 +364,71 @@ public class TwoPointCorrelation {
         state = STATE.BACKGROUND_SET;
 
         bMethod = BACKGROUND_METHOD.FIT_TWO_POINT_VOIDS;
+
+        if (doLogPerformanceMetrics) {
+
+            long stopTimeMillis = System.currentTimeMillis();
+
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis,
+                "calculateBackgroundVia2PtVoidFit");
+        }
+    }
+
+
+    protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName) {
+
+        long diffSec = (stopTimeMillis - startTimeMillis)/100;
+
+        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+        MemoryUsage heapUsage = mbean.getHeapMemoryUsage();
+        MemoryUsage nonHeapUsage = mbean.getNonHeapMemoryUsage();
+
+        String str = String.format("%35s:  N=%9d  RT(sec)=%8d  instance estimates(bytes)=%9d   heapUsed(bytes)=%9d   memoryPoolsSum(bytes)=%9d",
+            methodName,
+            indexer.nXY, diffSec, approximateMemoryUsed(),
+            heapUsage.getUsed(), nonHeapUsage.getUsed() );
+
+        Logger.getLogger(this.getClass().getSimpleName()).info(str);
+    }
+
+    public long approximateMemoryUsed() {
+
+        long sumBytes = 16 + 16 + indexer.approximateMemoryUsed() + (2*8);
+
+        long sumBits = (5*32) + (2*2);
+
+        if (groupMembership != null) {
+            sumBytes += (16 + (groupMembership.length*(8+4)));
+        }
+        if (groupHullIndexes != null) {
+            sumBytes += (16 + (groupHullIndexes.length*(8+4)));
+        }
+        if (xGroupHullCentroids != null) {
+            sumBytes += 3*(16 + (xGroupHullCentroids.length*4));
+        }
+        if (pointToGroupIndex != null) {
+            sumBytes += (16 + (pointToGroupIndex.length*4));
+        }
+        if (backgroundStats != null) {
+            sumBytes += backgroundStats.approximateMemoryUsed();
+        }
+        if (indexerFilePath != null) {
+            sumBytes += (16 + (indexerFilePath.length()*16));
+        }
+        if (minimaStatsFilePath != null) {
+            sumBytes += (16 + (minimaStatsFilePath.length()*16));
+        }
+
+        sumBytes += (sumBits/8);
+
+        // amount of padding needed to make it a round 8 bytes
+        long padding = (sumBytes % 8);
+
+        sumBytes += padding;
+
+        // could instead use MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+
+        return sumBytes;
     }
 
     /**
@@ -332,7 +440,7 @@ public class TwoPointCorrelation {
     public void findClusters(boolean allowTuning) throws TwoPointVoidStatsException, IOException {
 
         if (state.ordinal() < STATE.BACKGROUND_SET.ordinal()) {
-            calculateBackgroundVia2PtVoidFit(false, allowTuning);
+            calculateBackgroundVia2PtVoidFit(false, allowTuning, null);
         }
 
         bruteForceCalculateGroups();
@@ -341,7 +449,7 @@ public class TwoPointCorrelation {
     public void findClusters() throws TwoPointVoidStatsException, IOException {
 
         if (state.ordinal() < STATE.BACKGROUND_SET.ordinal()) {
-            calculateBackgroundVia2PtVoidFit(false, null);
+            calculateBackgroundVia2PtVoidFit(false, null, null);
         }
 
         bruteForceCalculateGroups();
@@ -383,6 +491,8 @@ public class TwoPointCorrelation {
     }
 
     public void bruteForceCalculateGroups() {
+
+        long startTimeMillis = System.currentTimeMillis();
 
         // use temporary variables first to prune groups with less than 3 members
 
@@ -562,6 +672,13 @@ public class TwoPointCorrelation {
         }
 
         state = STATE.CLUSTERS_FOUND;
+
+        if (doLogPerformanceMetrics) {
+
+            long stopTimeMillis = System.currentTimeMillis();
+
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "bruteForceCalculateGroups");
+        }
     }
 
     /**
@@ -575,6 +692,8 @@ public class TwoPointCorrelation {
         if (state.ordinal() < STATE.CLUSTERS_FOUND.ordinal()) {
             findClusters();
         }
+
+        long startTimeMillis = System.currentTimeMillis();
 
         groupHullIndexes = new SimpleLinkedListNode[nGroups];
 
@@ -679,6 +798,13 @@ public class TwoPointCorrelation {
         }
 
         state = STATE.CLUSTER_HULLS_CALCULATED;
+
+        if (doLogPerformanceMetrics) {
+
+            long stopTimeMillis = System.currentTimeMillis();
+
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateHullsOfClusters");
+        }
     }
 
     public float[] calculateGroupCentroidUsingAllPointsEquallyWeighted(int groupNumber) {
@@ -837,45 +963,5 @@ public class TwoPointCorrelation {
     }
     DoubleAxisIndexer getIndexer() {
         return indexer;
-    }
-
-    public static void main(String[] args) {
-
-        if (args == null || args.length < 2) {
-            System.out.println("Requires file:  --file /path/to/file/fileName.txt");
-            return;
-        }
-
-        String filePath = null;
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].equals("--file")) {
-                if ( (i+1) < args.length) {
-                    filePath = args[i+1];
-                }
-            }
-        }
-        if (filePath == null) {
-            System.out.println("Requires file:  --file /path/to/file/fileName.txt");
-            return;
-        }
-
-        try {
-
-            InputFileReader reader = new InputFileReader(filePath);
-            reader.read();
-
-            TwoPointCorrelation clusterFinder = new TwoPointCorrelation(
-                reader.getX(), reader.getY(), reader.getXErrors(), reader.getYErrors(), reader.getX().length);
-
-            clusterFinder.setDebug(false);
-            clusterFinder.calculateBackground();
-            clusterFinder.findClusters();
-            clusterFinder.calculateHullsOfClusters();
-
-            String plotFilePath = clusterFinder.plotClusters();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }

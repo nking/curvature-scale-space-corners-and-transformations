@@ -87,6 +87,28 @@ public class DoubleAxisIndexer {
     public DoubleAxisIndexer() {
     }
 
+    public long approximateMemoryUsed() {
+
+        int n = (x == null) ? 0 : x.length;
+
+        long sumBytes = 6*16;
+
+        long sumBits = (6*n*32) + 32;
+
+        if (xErrors != null) {
+            sumBits += (2*xErrors.length * 32);
+        }
+
+        sumBytes += (sumBits/8);
+
+        // amount of padding needed to make it a round 8 bytes
+        long padding = (sumBytes % 8);
+
+        sumBytes += padding;
+
+        return sumBytes;
+    }
+
     /**
      * sort the pair (xPoints, yPoints) by x and index them then sort by y and
      * index them for both sorts.
