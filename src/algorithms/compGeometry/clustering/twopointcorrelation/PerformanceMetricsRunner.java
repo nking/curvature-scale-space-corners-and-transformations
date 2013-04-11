@@ -58,7 +58,7 @@ public class PerformanceMetricsRunner {
         clusterFinder.setDebug(false);
         clusterFinder.logPerformanceMetrics();
 
-        if (indexer.nXY > 999) {
+        if (indexer.nXY > 9999) {
             clusterFinder.calculateBackground(false, true);
         } else {
             clusterFinder.calculateBackground();
@@ -71,8 +71,6 @@ public class PerformanceMetricsRunner {
 
     public static void main(String[] args) throws Exception {
 
-        printSystemStats();
-
         // generator background and stars with nPoints = 100, 1000, 10000, 100000 pausing in between
 
         float xmin = 0;
@@ -80,53 +78,60 @@ public class PerformanceMetricsRunner {
         float ymin = 0;
         float ymax = 300;
 
-        for (int i = 0; i < 4; i++) {
+        int nIter = 10;
 
-            RandomClusterAndBackgroundGenerator generator = new RandomClusterAndBackgroundGenerator();
+        for (int ii = 0; ii < nIter; ii++) {
 
-            SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
-            srr.setSeed( System.currentTimeMillis() );
-            long seed = srr.nextLong();
+            for (int i = 0; i < 3; i++) {
 
-            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-            sr.setSeed( seed );
-            //sr.setSeed(-2384802679227907254l);
+                printSystemStats();
 
-            DoubleAxisIndexer indexer = null;
+                RandomClusterAndBackgroundGenerator generator = new RandomClusterAndBackgroundGenerator();
 
-            int count = 0;
+                SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
+                srr.setSeed( System.currentTimeMillis() );
+                long seed = srr.nextLong();
 
-            switch(i) {
-                case 0:
-                    //~100
-                    indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                        3, 33, 33, 0.1f);
-                    break;
-                case 1:
-                    //~1000
-                    indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                        3, 33, 33, 10f);
-                    break;
-                case 2:
-                    // 100*100
-                    indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                        3, 30, 60, 100.0f);
-                    break;
-                case 3:
-                    // 100*1000
-                    indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                        3, 30, 60, 1000.0f);
-                    break;
-                default:
-                    break;
+                SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+                sr.setSeed( seed );
+                //sr.setSeed(-2384802679227907254l);
+
+                DoubleAxisIndexer indexer = null;
+
+                int count = 0;
+
+                switch(i) {
+                    case 0:
+                        //~100
+                        indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            3, 33, 33, 0.1f);
+                        break;
+                    case 1:
+                        //~1000
+                        indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            3, 33, 33, 10f);
+                        break;
+                    case 2:
+                        // 100*100
+                        indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            3, 30, 60, 100.0f);
+                        break;
+                    case 3:
+                        // 100*1000
+                        indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            3, 30, 60, 1000.0f);
+                        break;
+                    default:
+                        break;
+                }
+
+                indexer.sortAndIndexXThenY(generator.x, generator.y,
+                    generator.xErrors, generator.yErrors, generator.x.length);
+
+                generator = null;
+
+                run(indexer);
             }
-
-            indexer.sortAndIndexXThenY(generator.x, generator.y,
-                generator.xErrors, generator.yErrors, generator.x.length);
-
-            generator = null;
-
-            run(indexer);
         }
     }
 }
