@@ -6,8 +6,7 @@ import java.security.SecureRandom;
 
 /**
  * utility class for unit tests which need to create random background points and
- * points in clusters.  It's meant to be extended.
- * TODO: change to use composition instead of inheritance?
+ * points in clusters.
  *
  * @author nichole
  */

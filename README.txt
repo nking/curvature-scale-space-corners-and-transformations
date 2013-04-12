@@ -135,4 +135,4 @@ to construct a histogram and perform a fit.
   10807 |    2457  O(N*lg_2(N))  1392.4 | 2458      26717    389.3  |     8          |   1.06   |   4923  = 82 min
         |                               |                           |                |          |
 
-  Extrapolating to N=100,000 points, expect RT ~ 511 minutes ~ 8.5 hours using similar architecture and system load.
+  Extrapolating to N=100,000 points, expect RT ~ 300 * 180 min using similar architecture and system load.
