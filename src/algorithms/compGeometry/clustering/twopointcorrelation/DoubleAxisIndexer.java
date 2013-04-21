@@ -547,6 +547,7 @@ public class DoubleAxisIndexer {
     }
 
     /**
+     * get the errors in x.  this array is parallel to that returned by getX()
      * @return the xErrors
      */
     public float[] getXErrors() {
@@ -554,6 +555,8 @@ public class DoubleAxisIndexer {
     }
 
     /**
+     * get the errors in y.  this array is parallel to that returned by getY()
+     *
      * @return the yErrors
      */
     public float[] getYErrors() {
