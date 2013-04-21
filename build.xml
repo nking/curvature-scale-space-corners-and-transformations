@@ -410,5 +410,7 @@
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
         </jar>
+        <mkdir dir="dist" />
+        <copy file="${classes.dir}/two-point-correlation_${TS}.jar" tofile="dist/two-point-correlation.jar" />
     </target>
 </project>
