@@ -80,7 +80,6 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
         stats.setGEVRangeParameters(0.0001f, 1.0f, 0.00001f, 0.002f);
-        stats.setUseCompleteSampling(false);
         stats.calc();
 
         float bSurfDens    = stats.getBackgroundSurfaceDensity();
@@ -134,7 +133,6 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
-        stats.setUseCompleteSampling(false);
 
         stats.calc();
 
@@ -192,7 +190,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
-        stats.setUseCompleteSampling(true);
+        stats.setUseCompleteSampling();
 
         stats.calc();
 
@@ -229,7 +227,6 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
-        stats.setUseCompleteSampling(false);
 
         stats.calc();
 

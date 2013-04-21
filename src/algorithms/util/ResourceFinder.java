@@ -32,6 +32,24 @@ public class ResourceFinder {
         return filePath;
     }
 
+    public static String findFileInResources(String subDir, String fileName) throws IOException {
+
+        String dirPath = findResourcesDirectory(subDir);
+
+        String filePath = dirPath + sep + fileName;
+
+        File f = new File(filePath);
+        if (!f.exists()) {
+            throw new IOException("could not find file at " + filePath);
+        }
+        return filePath;
+    }
+
+    public static String findResourcesDirectory(String subDir) throws IOException {
+
+        return findDirectory(subDir + sep + "resources");
+    }
+
     public static String findResourcesDirectory() throws IOException {
 
         return findDirectory("resources");

@@ -11,7 +11,7 @@ import junit.framework.TestCase;
 public class MiscMathTest extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
-    
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -21,7 +21,6 @@ public class MiscMathTest extends TestCase {
     protected void tearDown() throws Exception {
         super.tearDown();
     }
-
 
     /**
      * Test of findPowerOf10 method, of class MiscMath.
@@ -113,6 +112,27 @@ public class MiscMathTest extends TestCase {
         assertTrue(MiscMath.roundUpByLargestPower(10.0f) == 10.0f);
 
         assertTrue(MiscMath.roundUpByLargestPower(5.0f) == 5.0f);
+    }
+
+    public void testFindMeanAndStDev() {
+
+        int[][] data = new int[2][2];
+        data[0] = new int[]{1,1};
+        data[1] = new int[]{1,1};
+
+        float[] meanStDv = MiscMath.findMeanAndStDev(data);
+
+        assertTrue(meanStDv[0] == 1);
+        assertTrue(meanStDv[1] == 0);
+
+        data = new int[2][2];
+        data[0] = new int[]{2,4};
+        data[1] = new int[]{2,4};
+
+        meanStDv = MiscMath.findMeanAndStDev(data);
+
+        assertTrue(Math.abs(meanStDv[0] - 3) < 0.01);
+        assertTrue(Math.abs(meanStDv[1] - 1.155) < 0.01);//1+1+1+1 ==> sqrt(4/3)
     }
 
     /**

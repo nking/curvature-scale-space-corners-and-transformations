@@ -80,9 +80,15 @@ import java.util.logging.Logger;
  */
 public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
-    protected boolean useCompleteSampling = false;
-    protected boolean useLeastCompleteSampling = false;
-    protected boolean allowTuningForThresholdDensity = false;
+    // TODO:  REPLACE these with enums. if !useCompleteSampling && !useLeastCompleteSampling
+    //            need a way to read structure of data to decide between
+    //            range search and completeSamplingAlgWtihIncompleteSampling
+
+    public enum Sampling {
+        COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH /*default*/
+    }
+
+    protected Sampling sampling = null;
 
     protected float[] allTwoPointSurfaceDensities = null;
     protected float[] allTwoPointSurfaceDensitiesErrors = null;
@@ -124,29 +130,56 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         super(persistedIndexerFileName);
     }
 
-    public void setUseLeastCompleteSampling(boolean doUseLeastCompleteSampling) {
-        this.useLeastCompleteSampling = doUseLeastCompleteSampling;
+    /**
+     * Use the least complete sampling.  This is fine for datasets with many many outliers,
+     * especially compared to the number within clusters.  It's the fastest, but
+     * should not be used for datasets in which there are few to no-outliers as there
+     * will be very few two-point voids that get sampled.
+     * The runtime is O(N*log_2(N)) as it uses divide and conquer.
+     */
+    public void setUseLeastCompleteSampling() {
+        this.sampling = Sampling.LEAST_COMPLETE;
     }
 
     /**
-     * Use complete sampling, else the default sampling.
-     * the runtime for the complete sampling is N!/(2!(N-2)! * N!/(2!(N-2) which
-     * is effectively N^4.  The runtime for the default sampling is N^2 - N.
+     * Use complete sampling.
+     * The runtime for the complete sampling is N!/(2!(N-2)! * N!/(2!(N-2) which
+     * is effectively N^4.
      *
-     * Complete sampling should be used and is used when there are less than 100 points.
+     * Note: complete sampling is always used when there are less than 100 points.
      *
-     * @param doUseCompleteSampling
      */
-    public void setUseCompleteSampling(boolean doUseCompleteSampling) {
+    public void setUseCompleteSampling() {
+        this.sampling = Sampling.COMPLETE;
+    }
 
-        if (indexer.nXY < 100) {
+    /**
+     * Use semi-complete range sampling.  This is good to use when the number of background
+     * points, that is the number of outliers, is expected to be moderately dense or dense.
+     * It performs poorly for datasets in which all points are expected to be in
+     * clusters.
+     * The runtime is O(n^2 - n).
+     */
+    public void setUseSemiCompleteRangeSampling() {
+        this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
+    }
 
-            useCompleteSampling = true;
+    /**
+     * Use the algorithm for Sampling.COMPLETE, but sample the 2nd index over a larger range to reduce the
+     * runtime.  This algorithm is very good to use when Sampling.COMPLETE is needed,
+     * but there are a large enough number of points to sample the background very
+     * well even when we decrease the sampling by a large amount.  This works well
+     * for datasets which have few to no background points, that is few to no outliers.
+     *
+     * The runtime is expected to be
+     *
+     */
+    public void setUseSemiCompleteSampling() {
+        this.sampling = Sampling.SEMI_COMPLETE;
+    }
 
-        } else {
-
-            useCompleteSampling = doUseCompleteSampling;
-        }
+    public Sampling getSampling() {
+        return Sampling.valueOf(sampling.name());
     }
 
     protected void logPerformanceMetrics() {
@@ -169,7 +202,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         Logger.getLogger(this.getClass().getSimpleName()).info(str);
     }
 
-    // note:  not yet tested
+    // TODO:  replace with estimation using reflection one day
     public long approximateMemoryUsed() {
 
         int n = (allTwoPointSurfaceDensities == null) ? 0 : allTwoPointSurfaceDensities.length;
@@ -186,7 +219,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             sumBytes += twoPointIdentities.approximateMemoryUsed();
         }
 
-        long sumBits = 3*(2) + (4*n*32) + 32 + 32;
+        sumBytes += (8 + 16);//enum reference + class
+
+        long sumBits = (4*n*32) + 32 + 32 + 2 + (Sampling.values().length * (32));
 
         sumBytes += (sumBits/8);
 
@@ -198,23 +233,25 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         return sumBytes;
     }
 
-    public void setAllowTuningForThresholdDensity(boolean allowTuning) {
-        this.allowTuningForThresholdDensity = allowTuning;
-    }
-
     public void setGEVRangeParameters(float kMin, float kMax, float sigmaMin, float sigmaMax) {
         this.gevRangeFittingParameters = new float[]{kMin, kMax, sigmaMin, sigmaMax};
     }
 
     /**
-     * calculate the 2-point void surface densities and then calculate the
+     * calculate the 2-point void densities and then calculate the
      * statistics of those points.
+     *
+     * More specifically:
+     * @see #findVoids()
+     *
+     * The sampled background is then fit with a GEV curve, and the peak centroid
+     * is the background density estimate.
      *
      * @throws TwoPointVoidStatsException
      */
     public void calc() throws TwoPointVoidStatsException {
 
-        calculateSurfaceDensities();
+        calculateTwoPointVoidDensities();
 
         twoPointIdentities = null;
 
@@ -240,7 +277,15 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         calculateStatsForBackground(statsHistogram, yMaxBin);
     }
 
-    protected void calculateSurfaceDensities() throws TwoPointVoidStatsException {
+    /**
+     * Sample the two-point voids to calculate their density.
+     *
+     * More specifically:
+     * @see #findVoids()
+     *
+     * @throws TwoPointVoidStatsException
+     */
+    protected void calculateTwoPointVoidDensities() throws TwoPointVoidStatsException {
 
         long startTimeMillis = System.currentTimeMillis();
 
@@ -268,13 +313,15 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             long stopTimeMillis = System.currentTimeMillis();
 
-            String str;
-            if (useLeastCompleteSampling) {
+            String str = "";
+            if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
                 str = "O(n lg(n)) with n=";
-            } else if (useCompleteSampling) {
+            } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
                 str = "O(n^4) with n=";
-            } else {
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
                 str = "O(n^2 - n) with n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
+                str = "not yet est with n=";
             }
             if (allTwoPointSurfaceDensities == null) {
                 str = str + "0";
@@ -486,10 +533,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             int limitIndex = yfit.getXPeakIndex();
             limitError = histogram.getXErrors()[limitIndex];
 
-            if (allowTuningForThresholdDensity) {
-                limit = 0.8f*limit;
-            }
-
             //if (limitIndex == -1) {
             //    System.out.println("WARNING:  solution was not found");
             //    return;
@@ -578,118 +621,88 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     /**
-     * find the rectangular 2 point surface densities using either complete
-     * sampling or the default partial sampling via a range division
-     * (default).
+     * find the rectangular 2 point densities using the method already set.
+     * If the method has not yet been set, the following rules are used to
+     * determine sampling:
      *
-     * The runtime for the complete sampling uses N!/(2!(N-2)! * N!/(2!(N-2) iterations
-     *      N    number of iterations
-     *      10       2   E3
-     *    1000       2.5 E11
-     * 1000000       2.5 E23
+     *     if (indexer.nXY < 100) {
+     *         sampling = Sampling.COMPLETE;
+     *     } else {
+     *         if (indexer.nXY > 999) {
+     *             sampling = Sampling.Sampling.LEAST_COMPLETE;
+     *         } else if (data are somewhat evenly distributed, in other words, expecting outliers) {
+     *             sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
+     *         } else {
+     *             sampling = Sampling.SEMI_COMPLETE;
+     *         }
+     *     }
      *
-     * The default method uses N^2 - N for number of iterations
-     *      N    number of iterations
-     *      10       2.8 E1
-     *    1000       3.7 E5
-     * 1000000       3.7 E11
-     *
-     * Roughly, the complete method runtime is proportional to N^4 and the incomplete
-     * range sampling is proportional to N^2.
-     * Simulations produce similar number density distributions within errors for
-     * the smaller sample, so it's fine to use the default method.
      */
     protected void findVoids() {
 
-        if (useLeastCompleteSampling) {
+        float[] x = indexer.getX();
+        float[] y = indexer.getY();
 
-            float[] x = indexer.getX();
-            float[] y = indexer.getY();
+        if (sampling == null) {
 
+            // we need to decide between SEMI_COMPLETE and SEMI_COMPLETE_RANGE_SEARCH.
+
+
+            // ***** NOTE ********
+            // This method is not implemented yet, so until then, will solve first SEMI_COMPLETE
+            //    and if many points are outliers or all points are in one cluster, will resolve it
+            //    using SEMI_COMPLETE_RANGE_SEARCH.
+            // This is unfortunately, logic built into the invokee, TwoPointCorrelation for now.
+
+
+
+            /*boolean pointsAreSemiEvenlyDistributed = PointsUtil.pointsAreSemiEvenlyDistributed(indexer.getX(), indexer.getY());
+            if (pointsAreSemiEvenlyDistributed) {
+                // the rough range search works well with semi-even background points
+                sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
+            } else {
+                // use the algorithm for complete sampling because it handles
+                //    "no background points" and non-circular clusters, but use
+                //    it with much less sampling to allow faster completion
+                sampling = Sampling.SEMI_COMPLETE;
+            }*/
+
+            if (indexer.nXY > 999) {
+                this.sampling = Sampling.LEAST_COMPLETE;
+            } else {
+                this.sampling = Sampling.SEMI_COMPLETE;
+            }
+        }
+
+        if (debug) {
+            System.out.println("findVoid sampling=" + sampling.name());
+        }
+
+        if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
+
+            // uses divide and conquer
             findVoids(x, y, 0, x.length-1, 0, y.length-1);
 
-        } if (useCompleteSampling) {
+        } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
 
-            float[] x = indexer.getX();
-            float[] y = indexer.getY();
-                                                                                // cost     number of times
-            for (int i = 0; i < indexer.nXY; i++) {
-                if (debug) {
-                    System.out.println("findVoids i=" + i + "/" + indexer.nXY);
-                }
-                for (int ii = (i + 1); ii < indexer.nXY; ii++) {
-                    for (int j = 0; j < indexer.nXY; j++) {
-                        for (int jj = (j + 1); jj < indexer.nXY; jj++) {        //           N!/(2!(N-2)! * N!/(2!(N-2)!
-/*
-System.out.println(" xsi=[" + i + ":" + ii + "] "
- + " ysi=[" + j + ":" + jj + "]  ==> "
- + " xi=[" + indexer.sortedXIndexes[i] + ":" + indexer.sortedXIndexes[ii] + "]"
- + " yi=[" + indexer.sortedYIndexes[j] + ":" + indexer.sortedYIndexes[jj] + "]"
- );
-*/
-                            processIndexedRegion(x, y, i, ii, j, jj);
-                        }
-                    }
-                }
-            }
+            int incr = 1;
 
-        } else {
+            findVoidsUsingDoubleIndexes(incr);
 
-            /* Divide y interval in half and execute the same size intervals in x over the full range
+        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
 
-             Exaample, for array w/ 8 elements:
-             y    x
-             0:7  0:7
+            // uses a very rough range search
+            findVoids(x, y, 0, x.length-1, 0, y.length-1);
 
-             0:3  4:7
-             0:3  0:3
-             4:7  0:3
-             4:7  4:7
+        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 
-             0:1  0:1
-             0:1  2:3
-             0:1  4:5
-             0:1  6:7
+            // for datasets not evenly distributed, and with clusters >> outliers
+            //  For this case, complete sampling works, but we want something faster.
 
-             2:3  0:1
-             2:3  2:3
-             2:3  4:5
-             2:3  6:7
-             ...
+            // N!/(2!( (N/8)-2)! * N!/(2!( (N/8) -2) ??  TODO: estimate this
+            int incr = 8;
 
-             start w/ smallest intervals of y and march across range.
-             * increase by 2 units and march across range
-             *
-             * length is 8
-             *   2's
-             *   4's
-             *   6's
-             *   8's
-             */
-            float[] x = indexer.getX();
-            float[] y = indexer.getY();
-            int n = indexer.getNumberOfPoints();
-
-            int nYIntervals = n / 2;                                            // cost     number of times
-
-            for (int k = 0; k < nYIntervals; k++) {                             //               2
-
-                int binSz = (k + 1) * 2;                                        // c10
-
-                int yLo = 0;
-                while ((yLo + binSz) < n) {                                     //              (N/2)-1, (N/2)-2
-
-                    int nXIntervals = n / binSz;
-
-                    for (int j = 0; j < nXIntervals; j++) {                     //              N/2, N/4
-                        int startX = j * binSz;
-                        int endX = startX + binSz - 1;
- //System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + (yLo + binSz));
-                        processIndexedRegion(x, y, startX, endX, yLo, yLo + binSz);
-                    }
-                    yLo += 2;
-                }
-            }
+            findVoidsUsingDoubleIndexes(incr);
         }
     }
 
@@ -729,6 +742,87 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
         }
     }
 
+    protected void findVoidsUsingDoubleIndexes(int incr) {
+        // N!/(2!(N-2)! * N!/(2!(N-2)!
+
+        float[] x = indexer.getX();
+        float[] y = indexer.getY();
+
+        for (int i = 0; i < indexer.nXY; i++) {
+            if (debug) {
+                System.out.println("findVoids i=" + i + "/" + indexer.nXY);
+            }
+            for (int ii = (i + 1); ii < indexer.nXY; ii+=incr) {
+                for (int j = 0; j < indexer.nXY; j++) {
+                    for (int jj = (j + 1); jj < indexer.nXY; jj+=incr) {
+                        processIndexedRegion(x, y, i, ii, j, jj);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     * @param x
+     * @param y
+     */
+    protected void findVoidsRoughRangeSearch(float[] x, float[] y) {
+
+        /* Divide y interval in half and execute the same size intervals in x over the full range
+
+         Exaample, for array w/ 8 elements:
+         y    x
+         0:7  0:7
+
+         0:3  4:7
+         0:3  0:3
+         4:7  0:3
+         4:7  4:7
+
+         0:1  0:1
+         0:1  2:3
+         0:1  4:5
+         0:1  6:7
+
+         2:3  0:1
+         2:3  2:3
+         2:3  4:5
+         2:3  6:7
+         ...
+
+         start w/ smallest intervals of y and march across range.
+         * increase by 2 units and march across range
+         *
+         * length is 8
+         *   2's
+         *   4's
+         *   6's
+         *   8's
+         */
+        int n = indexer.getNumberOfPoints();
+
+        int nYIntervals = n / 2;                                            // cost     number of times
+
+        for (int k = 0; k < nYIntervals; k++) {                             //               2
+            int binSz = (k + 1) * 2;                                        // c10
+
+            int yLo = 0;
+            while ((yLo + binSz) < n) {                                     //              (N/2)-1, (N/2)-2
+
+                int nXIntervals = n / binSz;
+
+                for (int j = 0; j < nXIntervals; j++) {                     //              N/2, N/4
+                    int startX = j * binSz;
+                    int endX = startX + binSz - 1;
+//System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + (yLo + binSz));
+                    processIndexedRegion(x, y, startX, endX, yLo, yLo + binSz);
+                }
+                yLo += 2;
+            }
+        }
+    }
+
     /**
      * this returns the intersection of points within the area defined by the x
      * range and yrange where those are given in the reference frame of the
@@ -743,7 +837,10 @@ System.out.println(" xsi=[" + i + ":" + ii + "] "
      */
     private void processIndexedRegion(float[] x, float[] y, int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi) {
 
-        int[] regionIndexes = indexer.findIntersectingRegionIndexesIfOnlyTwo(xIndexLo, xIndexHi, yIndexLo, yIndexHi, useCompleteSampling);
+        boolean useCompleteSampling = (sampling.ordinal() == Sampling.COMPLETE.ordinal());
+
+        int[] regionIndexes = indexer.findIntersectingRegionIndexesIfOnlyTwo(
+            xIndexLo, xIndexHi, yIndexLo, yIndexHi, useCompleteSampling);
 
         int nPointsInRegion = regionIndexes.length;
 

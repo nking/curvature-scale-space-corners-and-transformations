@@ -46,7 +46,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
                 TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
                 stats.setDebug(debug);
-                stats.setUseCompleteSampling(true);
+                stats.setUseCompleteSampling();
                 if (debug) {
                     log.info("run for complete sampling");
                 }
@@ -62,9 +62,9 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
                 assertTrue(bSurfDensCErr > 0.0f);
 
 
+                // this time, don't use complete sampling
                 stats = new TwoPointVoidStats(indexer);
                 stats.setDebug(debug);
-                stats.setUseCompleteSampling(false);
                 if (debug) {
                     log.info("run for default incomplete sampling");
                 }

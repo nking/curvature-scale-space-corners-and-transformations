@@ -282,4 +282,32 @@ public class MiscMath {
         return new float[]{mean, stdev};
     }
 
+    public static float[] findMeanAndStDev(int[][] values) {
+
+        float mean = 0;
+
+        int count = 0;
+
+        for (int i = 0; i < values.length; i++) {
+            for (int j = 0; j < values.length; j++) {
+                mean += values[i][j];
+                count++;
+            }
+        }
+        mean /= (float)count;
+
+        float stdev = 0;
+        for (int i = 0; i < values.length; i++) {
+
+            for (int j = 0; j < values.length; j++) {
+
+                float a = (values[i][j] - mean);
+                stdev += ( a*a );
+            }
+        }
+        stdev = (float) Math.sqrt(stdev/(float)(count - 1));
+
+        return new float[]{mean, stdev};
+    }
+
 }

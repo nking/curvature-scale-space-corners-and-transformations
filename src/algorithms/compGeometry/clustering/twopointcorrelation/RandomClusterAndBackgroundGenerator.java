@@ -147,6 +147,30 @@ public class RandomClusterAndBackgroundGenerator {
         return indexer;
     }
 
+    protected DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+        int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
+        float backgroundPointFractionToClusters, CLUSTER_SEPARATION clusterSeparation) {
+
+        int dn = maximumNumberOfPointsPerCluster - minimumNumberOfPointsPerCluster;
+
+        int count = 0;
+        int[] nClusters = new int[numberOfClusters];
+        for (int i = 0; i < numberOfClusters; i++) {
+            int add = (dn == 0) ? 0 : sr.nextInt(dn);
+            nClusters[i] = + minimumNumberOfPointsPerCluster + add;
+            count += nClusters[i];
+        }
+
+        int nBackgroundPoints = (int)backgroundPointFractionToClusters*count;
+
+        createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);
+
+        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+
+        return indexer;
+    }
+
     protected void createRandomPointsAroundCenter(SecureRandom sr, float maxRadius,
         int numberOfPoints, float xc, float yc, float[] x, float[] y, int xyStartOffset) {
 

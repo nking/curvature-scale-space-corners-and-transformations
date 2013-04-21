@@ -2,6 +2,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
+import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
@@ -11,6 +12,8 @@ import java.util.logging.Logger;
 public class FindClustersTest extends BaseTwoPointTest {
 
     boolean debug = true;
+
+    boolean writeToTmpData = false;
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
@@ -30,15 +33,8 @@ public class FindClustersTest extends BaseTwoPointTest {
         long seed = srr.nextLong();
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(seed);
-        //sr.setSeed(-112206639240941657l);
-        //sr.setSeed(310357278571620991l);
-        //sr.setSeed(-1993887065899734688l);
-        //sr.setSeed(-6886733535826319879l);
-        //sr.setSeed(-3765842324512485314l);
-        //sr.setSeed(1152752110035096347l);
-        //sr.setSeed(-6221198867223436351l);
-        //sr.setSeed(6899554926901724961l);
+        //sr.setSeed(seed);
+        sr.setSeed(7202122544352439191l);
 
         log.info("SEED=" + seed);
 
@@ -97,6 +93,19 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
+
+                if (writeToTmpData) {
+                    // write to tmpdata if need to use in tests improve fits, histogram etc
+                    String str = String.valueOf(count);
+                    while (str.length() < 3) {
+                        str = "0" + str;
+                    }
+                    String fileNamePostfix = "_clusters_" + str + ".dat";
+                    String fileName = CreateClusterDataTest.indexerFileNamePrefix + fileNamePostfix;
+                    String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
+                    CreateClusterDataTest.writeIndexer(filePath, indexer);
+                }
+
                 System.out.println(" " + count + " (" + indexer.nXY + " points) ... ");
 
                 TwoPointCorrelation twoPtC = new TwoPointCorrelation(
@@ -105,15 +114,9 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 twoPtC.setDebug(true);
 
-                boolean allowTuning = false;
-                if (indexer.nXY < 1000) {
-                    twoPtC.findClusters(allowTuning);
-                } else {
-                    twoPtC.setDebug(true);
-                    twoPtC.logPerformanceMetrics();
-                    twoPtC.calculateBackground(allowTuning, true);
-                    twoPtC.findClusters();
-                }
+                twoPtC.logPerformanceMetrics();
+                twoPtC.calculateBackground();
+                twoPtC.findClusters();
 
                 TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
                 HistogramHolder histogram = stats.statsHistogram;
@@ -150,7 +153,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                         i, ii, x10, peak, meanDivPeak, medianDivMean, chiSqStats[count]
                     );
                     if (debug) {
-                        log.info(plotLabel);
+                        System.out.println(plotLabel + " findVoid sampling=" + stats.getSampling().name());
                     }
                 }
 

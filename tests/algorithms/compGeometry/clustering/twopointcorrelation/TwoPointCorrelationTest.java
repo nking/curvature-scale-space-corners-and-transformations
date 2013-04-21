@@ -139,8 +139,7 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             twoPtC.setDebug(debug);
 
-            boolean allowTuning = true;
-            twoPtC.findClusters(allowTuning);
+            twoPtC.findClusters();
             twoPtC.calculateHullsOfClusters();
 
 
@@ -214,8 +213,7 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             twoPtC.setDebug(debug);
 
-            boolean allowTuning = false;
-            twoPtC.findClusters(allowTuning);
+            twoPtC.findClusters();
 
             twoPtC.calculateHullsOfClusters();
 
@@ -290,8 +288,7 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             twoPtC.setDebug(debug);
 
-            boolean allowTuning = false;
-            twoPtC.findClusters(allowTuning);
+            twoPtC.findClusters();
 
             twoPtC.calculateHullsOfClusters();
 
@@ -345,8 +342,7 @@ public class TwoPointCorrelationTest extends BaseTwoPointTest {
 
             twoPtC.setDebug(debug);
 
-            boolean allowTuning = false;
-            twoPtC.findClusters(allowTuning);
+            twoPtC.findClusters();
 
             twoPtC.calculateHullsOfClusters();
 

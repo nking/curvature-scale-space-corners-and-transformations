@@ -58,11 +58,7 @@ public class PerformanceMetricsRunner {
         clusterFinder.setDebug(false);
         clusterFinder.logPerformanceMetrics();
 
-        if (indexer.nXY > 9999) {
-            clusterFinder.calculateBackground(false, true);
-        } else {
-            clusterFinder.calculateBackground();
-        }
+        clusterFinder.calculateBackground();
 
         clusterFinder.findClusters();
 

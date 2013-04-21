@@ -1,6 +1,5 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.curves.GEVYFit;
 import java.util.logging.Logger;
 
 /**
@@ -25,8 +24,12 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
         String[] filePaths = CreateClusterDataTest.getIndexerFilePaths();
 
-        for (int i = 0; i < filePaths.length; i++) {
-        //for (int i = 134; i < 135; i++) {
+        if (filePaths == null || filePaths.length == 0) {
+            return;
+        }
+
+        //for (int i = 0; i < filePaths.length; i++) {
+        for (int i = 0; i < 1; i++) {
 
             DoubleAxisIndexer indexer = CreateClusterDataTest.readIndexer(filePaths[i]);
 
@@ -42,8 +45,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
             log.info(" " + i + " (" + twoPtC.indexer.nXY + " points) ... ");
 
             //twoPtC.setBackground(0.035f, 0.00994f/10);
-            boolean allowTuning = false;
-            twoPtC.findClusters(allowTuning);
+            twoPtC.findClusters();
 
             TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
 

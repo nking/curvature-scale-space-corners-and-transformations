@@ -80,7 +80,6 @@ public class FittingStatsTest extends BaseTwoPointTest {
 
                 TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
                 stats.setDebug(false);
-                stats.setUseCompleteSampling(false);
                 stats.calc();
 
                 stats.plotFit(plotter2);

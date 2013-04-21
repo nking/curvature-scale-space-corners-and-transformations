@@ -50,12 +50,6 @@ import java.util.logging.Logger;
      float[] xSeeds = clusterFinder.getXHullCentroids();
      float[] ySeeds = clusterFinder.getYHullCentroids();
 
-  Also:  if your data has already been reduced so that there are few to no outliers
-     outside of clusters, you should use:
-         clusterFinder.calculateBackground(true);
-     to allow tuning for that (it uses a smaller value than found via GEV fits to
-     the voids due to fewer points for calculation).
-
   Usage from the command line:
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
 
@@ -126,6 +120,8 @@ public class TwoPointCorrelation {
 
     protected boolean doLogPerformanceMetrics = false;
 
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+
     /**
      * construct without errors on xPoints and yPoints.  Note that internally,
      * RMS errors, that is 'shot noise' is used which may be larger than your
@@ -144,15 +140,23 @@ public class TwoPointCorrelation {
 
         indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
 
-        pointToGroupIndex = new int[xPoints.length];
+        initializeClusterVariables();
+
+        state = STATE.INITIALIZED;
+    }
+
+    private void initializeClusterVariables() {
+
+        nGroups = 0;
+
+        pointToGroupIndex = new int[indexer.getNumberOfPoints()];
         Arrays.fill(pointToGroupIndex, -1);
 
         groupMembership = new SimpleLinkedListNode[10];
+
         for (int i = 0; i < groupMembership.length; i++) {
             groupMembership[i] = new SimpleLinkedListNode();
         }
-
-        state = STATE.INITIALIZED;
     }
 
     public TwoPointCorrelation(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nXYPoints) {
@@ -234,60 +238,36 @@ public class TwoPointCorrelation {
     }
 
     /**
-     * calculate background using the default method.  The defualt method is
-     * the 2two-point void and GEV fitting method.  If there are < 100 points, the
-     * method is used with full sampling, else the faster incomplete sampling is used.
+     * calculate background using complete sampling.  warning, this method takes longer than all other methods.
+     *
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
+    public void calculateBackgroundUsingCompleteSampling() throws TwoPointVoidStatsException, IOException {
+
+        if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
+
+            boolean useCompleteBackgroundSampling = true;
+
+            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling);
+        }
+    }
+
+    /**
+     * calculate background using the default method.
+     *
+     * @see TwoPointVoidStats.calc()
      *
      * @throws TwoPointVoidStatsException
      * @throws IOException
      */
     public void calculateBackground() throws TwoPointVoidStatsException, IOException {
+
         if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
 
             boolean useCompleteBackgroundSampling = false;
 
-            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, null, null);
-        }
-    }
-
-    /**
-     * calculate background using the default method.  The defualt method is
-     * the 2two-point void and GEV fitting method.  If there are < 100 points, the
-     * method is used with full sampling, else the faster incomplete sampling is used.
-     *
-     * @param allowTuning use the factors learned from simulated clusters to adjust
-     * the estimated background density
-     * @throws TwoPointVoidStatsException
-     * @throws IOException
-     */
-    public void calculateBackground(boolean allowTuning) throws TwoPointVoidStatsException, IOException {
-        if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
-
-            boolean useCompleteBackgroundSampling = false;
-
-            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, allowTuning, null);
-        }
-    }
-
-    /**
-     * calculate background using the default method.  The defualt method is
-     * the 2two-point void and GEV fitting method.  If there are < 100 points, the
-     * method is used with full sampling, else the faster incomplete sampling is used.
-     *
-     * @param allowTuning use the factors learned from simulated clusters to adjust
-     * the estimated background density
-     * @param useLeastCompleteSampling use the faster, but least complete sampling for the
-     *     two-point void calculation.  this can only be used if n > 9999 and will be
-     *     overridden to false if not.
-     * @throws TwoPointVoidStatsException
-     * @throws IOException
-     */
-    void calculateBackground(boolean allowTuning, boolean useLeastCompleteSampling) throws TwoPointVoidStatsException, IOException {
-        if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
-
-            boolean useCompleteBackgroundSampling = false;
-
-            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling, allowTuning, useLeastCompleteSampling);
+            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling);
         }
     }
 
@@ -305,7 +285,7 @@ public class TwoPointCorrelation {
         this.backgroundError = minStats.getBackgroundSurfaceDensityError();
 
         if (debug) {
-            System.out.println("background surface density ="
+            log.info("background surface density ="
                 + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
         }
 
@@ -314,8 +294,7 @@ public class TwoPointCorrelation {
         bMethod = BACKGROUND_METHOD.DESERIALIZED;
     }
 
-    protected void calculateBackgroundVia2PtVoidFit(Boolean useCompleteBackgroundSampling,
-        Boolean allowTuning, Boolean doUseLeastCompleteSampling) throws TwoPointVoidStatsException, IOException {
+    protected void calculateBackgroundVia2PtVoidFit(Boolean useCompleteBackgroundSampling) throws TwoPointVoidStatsException, IOException {
 
         long startTimeMillis = System.currentTimeMillis();
 
@@ -330,24 +309,15 @@ public class TwoPointCorrelation {
             voidStats.logPerformanceMetrics();
         }
 
-        if (doUseLeastCompleteSampling != null) {
-
-            voidStats.setUseLeastCompleteSampling(doUseLeastCompleteSampling);
-
-        } else if (!useCompleteBackgroundSampling && (indexer.nXY < 100)) {
-
-            useCompleteBackgroundSampling = true;
+        if ((useCompleteBackgroundSampling != null) && useCompleteBackgroundSampling) {
+            voidStats.setUseCompleteSampling();
         }
 
-        voidStats.setUseCompleteSampling(useCompleteBackgroundSampling);
-        if (allowTuning != null) {
-            voidStats.setAllowTuningForThresholdDensity(allowTuning);
-        }
         voidStats.calc();
 
-        if (debug) {
+        //if (debug) {
             backgroundStats = voidStats;
-        }
+        //}
 
         if (persistTheMinimaStats) {
             minimaStatsFilePath = voidStats.persistTwoPointBackground();
@@ -357,7 +327,7 @@ public class TwoPointCorrelation {
         this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
 
         if (debug) {
-            System.out.println("==>background surface density ="
+            log.info("==>background surface density ="
                 + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
         }
 
@@ -429,25 +399,10 @@ public class TwoPointCorrelation {
         return sumBytes;
     }
 
-    /**
-     * @param allowTuning use the factors learned from simulated clusters to adjust
-     * the estimated background density
-     * @throws TwoPointVoidStatsException
-     * @throws IOException
-     */
-    public void findClusters(boolean allowTuning) throws TwoPointVoidStatsException, IOException {
-
-        if (state.ordinal() < STATE.BACKGROUND_SET.ordinal()) {
-            calculateBackgroundVia2PtVoidFit(false, allowTuning, null);
-        }
-
-        bruteForceCalculateGroups();
-    }
-
     public void findClusters() throws TwoPointVoidStatsException, IOException {
 
         if (state.ordinal() < STATE.BACKGROUND_SET.ordinal()) {
-            calculateBackgroundVia2PtVoidFit(false, null, null);
+            calculateBackgroundVia2PtVoidFit(false);
         }
 
         bruteForceCalculateGroups();
@@ -510,7 +465,7 @@ public class TwoPointCorrelation {
         float densityThreshold = sigmaFactor*backgroundSurfaceDensity;
         // 2 or 3 times the background surface density
         if (debug) {
-            System.out.println("For clusters, using densityThreshold=" + densityThreshold);
+            log.info("For clusters, using densityThreshold=" + densityThreshold);
         }
 
         SimpleLinkedListNode tmpPointsInMoreThanOneGroup = new SimpleLinkedListNode();
@@ -677,7 +632,99 @@ public class TwoPointCorrelation {
 
             printPerformanceMetrics(startTimeMillis, stopTimeMillis, "bruteForceCalculateGroups");
         }
+
+        try {
+            temporaryWorkaroundForSampling();
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        } catch (TwoPointVoidStatsException e) {
+            log.severe(e.getMessage());
+        }
     }
+
+    protected float calculateFractionOfPointsOutsideOfClusters() {
+
+        boolean[] insideClusters = new boolean[indexer.nXY];
+
+        for (int i = 0; i < nGroups; i++) {
+
+            SimpleLinkedListNode groupNode = groupMembership[i];
+
+            while ((groupNode != null) && (groupNode.key != -1)) {
+
+                int pointIndex = groupNode.key;
+
+                insideClusters[pointIndex] = true;
+
+                groupNode = groupNode.next;
+            }
+        }
+
+        // count number outside
+        int count = 0;
+        for (int i = 0; i < insideClusters.length; i++) {
+            if (!insideClusters[i]) {
+                count++;
+            }
+        }
+
+        return (float)(count/indexer.nXY);
+    }
+
+    protected void temporaryWorkaroundForSampling() throws TwoPointVoidStatsException, IOException {
+
+        // This is a temporary work around to account for not being able to distinguish yet for the default case
+        //   of sampling.  If we used TwoPointVoidStats.Sampling.SEMI_COMPLETE,
+        //   and if there are many points are outliers or all points are in one cluster
+        //   we have to redo-the analysis with TwoPointVoidStats.Sampling.SEMI_COMPLETE_RANGE_SEARCH
+
+        if (backgroundStats == null) {
+            return;
+        }
+
+        if (((TwoPointVoidStats)backgroundStats).getSampling().ordinal() == TwoPointVoidStats.Sampling.SEMI_COMPLETE.ordinal()) {
+
+            float frac = calculateFractionOfPointsOutsideOfClusters();
+            if (frac <= (11.f * indexer.getNumberOfPoints())) {
+                if (nGroups > 1) {
+                    return;
+                }
+            }
+
+            TwoPointVoidStats voidStats = new TwoPointVoidStats(indexer);
+            voidStats.setDebug(debug);
+
+            voidStats = new TwoPointVoidStats(indexer);
+            voidStats.setDebug(debug);
+
+            if (doLogPerformanceMetrics) {
+                voidStats.logPerformanceMetrics();
+            }
+
+            voidStats.setUseSemiCompleteRangeSampling();
+
+            voidStats.calc();
+
+            backgroundStats = voidStats;
+
+            if (persistTheMinimaStats) {
+                minimaStatsFilePath = voidStats.persistTwoPointBackground();
+            }
+
+            this.backgroundSurfaceDensity = voidStats.getBackgroundSurfaceDensity();
+            this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
+
+            if (debug) {
+                log.info("==>background surface density ="
+                    + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
+            }
+
+            initializeClusterVariables();
+
+            bruteForceCalculateGroups();
+        }
+    }
+
 
     /**
      * calculate convex hulls of clusters and calculate the hull centroids and area
@@ -962,4 +1009,46 @@ public class TwoPointCorrelation {
     DoubleAxisIndexer getIndexer() {
         return indexer;
     }
+
+    public float[] getXGroup(int groupNumber) {
+
+        return getGroupArray(groupNumber, indexer.getXSortedByY());
+    }
+
+    public float[] getYGroup(int groupNumber) {
+
+        return getGroupArray(groupNumber, indexer.getYSortedByY());
+    }
+
+    protected float[] getGroupArray(int groupNumber, float[] array) {
+
+        int count = 0;
+
+        float[] a = new float[10];
+
+        SimpleLinkedListNode groupNode = groupMembership[groupNumber];
+
+        while ((groupNode != null) && (groupNode.key != -1)) {
+
+            int pointIndex = groupNode.key;
+
+            if (a.length < (count + 1)) {
+                int oldN = a.length;
+                int n = (int) (1.5f * oldN);
+                if (n < (oldN + 1)) {
+                    n = oldN + 1;
+                }
+                a = Arrays.copyOf(a, n);
+            }
+
+            a[count] = array[pointIndex];
+
+            count++;
+
+            groupNode = groupNode.next;
+        }
+
+        return Arrays.copyOf(a, count);
+    }
+
 }
