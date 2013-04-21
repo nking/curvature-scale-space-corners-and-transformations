@@ -199,8 +199,8 @@ public class GEVChiSquareMinimization {
 
         for (int i = 0; i < yModel.length; i++) {
 
-            float z = yScale*(yModel[i] - y[i])/w[i];
-            z *= z;
+            float z = yScale*(yModel[i] - y[i]);
+            z *= z*w[i];
 
             chiSum += z;
         }
