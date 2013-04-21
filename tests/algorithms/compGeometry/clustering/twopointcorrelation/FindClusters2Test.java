@@ -28,10 +28,12 @@ public class FindClusters2Test extends BaseTwoPointTest {
             return;
         }
 
-        //for (int i = 0; i < filePaths.length; i++) {
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < filePaths.length; i++) {
+        //for (int i = 80; i < 81; i++) {
 
-            DoubleAxisIndexer indexer = CreateClusterDataTest.readIndexer(filePaths[i]);
+            String filePath = filePaths[i];
+
+            DoubleAxisIndexer indexer = CreateClusterDataTest.readIndexer(filePath);
 
             String srchFor = "indexer_random_background_with_";
             int i0 = filePaths[i].indexOf(srchFor);
