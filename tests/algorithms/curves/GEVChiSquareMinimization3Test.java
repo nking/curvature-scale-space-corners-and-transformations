@@ -3,10 +3,11 @@ package algorithms.curves;
 import algorithms.compGeometry.clustering.twopointcorrelation.CreateClusterDataTest;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
-public class GEVChiSquareMinimization2Test extends TestCase {
+public class GEVChiSquareMinimization3Test extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
@@ -41,12 +42,10 @@ public class GEVChiSquareMinimization2Test extends TestCase {
 
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
 
-        String[] filePaths = CreateClusterDataTest.getHistogramFilePaths();
+        String fileNamePostfix = "wikipedia_dbscan.dat";
+        String fileName = CreateClusterDataTest.histogramFileNamePrefix + fileNamePostfix;
+        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
 
-        //for (int i = 0; i < filePaths.length; i++) {
-        for (int i = 67; i < 68; i++) {//120
-
-            String filePath = filePaths[i];//ndexer_random_background_with_3_clusters_130.dat"
 
             HistogramHolder histogram = CreateClusterDataTest.readHistogram(filePath);
 
@@ -54,26 +53,26 @@ public class GEVChiSquareMinimization2Test extends TestCase {
                 histogram.getXErrors(), histogram.getYErrors());
 
 
-            float k = 1.1f;// changes sharpness of left side slope
-            float s = 0.27f;
+            float k = 1.04f;// changes sharpness of left side slope
+            float s = 0.195f;
             float kMin = k/2.f;
             float kMax = k*2.f;
             float sMin = s/2;
             float sMax = s*2.0f;
 
-            float mu = 0.26f;
+            float mu = 0.06f;
             float yNorm = 1.0f;
             float yErrSqSum = chiSqMin.calcYErrSquareSum();
 
             chiSqMin.setDebug(true);
 
-            // k=1.798601 sigma=0.45760158 mu=0.010309278 chiSqSum=286.08374 chiSqStatistic=6.3574166
+            // k=0.67109966 sigma=0.16777492 mu=0.016949153 chiSqSum=96.46002 chiSqStatistic=3.7100008
             //  trial and error:
-            //    k=1.1 sigma=0.23 mu=0.25 chiSqSum=372.00134 chiSqStatistic=8.266697
+            //   k=1.0402603 sigma=0.19504745 mu=0.06 chiSqSum=86.89037 chiSqStatistic=3.3419375
 
-            //GEVYFit yfit = chiSqMin.fitCurve(kMin, kMax, sMin, sMax, mu, yErrSqSum, GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yNorm);
+            GEVYFit yfit = chiSqMin.fitCurve(kMin, kMax, sMin, sMax, mu, yErrSqSum, GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yNorm);
 
-            GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, k, s, mu, yNorm);
+            //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, k, s, mu, yNorm);
 
             //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
@@ -83,12 +82,11 @@ public class GEVChiSquareMinimization2Test extends TestCase {
             float[] yf = yfit.getOriginalScaleYFit();
 
             plotter.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
-                histogram.getXErrors(), histogram.getYErrors(), xf, yf, String.valueOf(i));
+                histogram.getXErrors(), histogram.getYErrors(), xf, yf, "");
             plotter.writeFile();
 
             System.out.println(yfit.toString());
 
-            log.info("see plot for " + i);
 /*
             try {
                 Thread.sleep(5000);
@@ -96,6 +94,5 @@ public class GEVChiSquareMinimization2Test extends TestCase {
             } finally {
                 log.info("next");
             }*/
-        }
     }
 }

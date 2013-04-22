@@ -1,7 +1,9 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.curves.GEVYFit;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
+import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -82,6 +84,14 @@ public class FindClusters3Test extends TestCase {
 
         plotter.addPlotWithoutHull(twoPtC, plotLabel);
         plotter.writeFile();
+
+        float[] xf = null;
+        float[] yf = null;
+        HistogramHolder histogram = stats.getStatsHistogram();
+        String fileNamePostfix = "wikipedia_dbscan.dat";
+        String fileName = CreateClusterDataTest.histogramFileNamePrefix + fileNamePostfix;
+        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
+        CreateClusterDataTest.writeHistogram(filePath, histogram);
 
         log.info( twoPtC.indexer.nXY + " points ... ");
 

@@ -30,8 +30,8 @@ public class FindClusters2Test extends BaseTwoPointTest {
             return;
         }
 
-        for (int i = 0; i < filePaths.length; i++) {
-        //for (int i = 67; i < 68; i++) {
+        //for (int i = 0; i < filePaths.length; i++) {
+        for (int i = 61; i < filePaths.length; i++) {
 
             String filePath = filePaths[i];
 
@@ -69,13 +69,29 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
                 if (areaAndXYTopCentroid != null) {
 
+                    String samplingAbbrev = "";
+                    switch(((TwoPointVoidStats)twoPtC.backgroundStats).getSampling().ordinal()) {
+                        case 0:
+                            samplingAbbrev = "C";
+                            break;
+                        case 1:
+                            samplingAbbrev = "L_C";
+                            break;
+                        case 2:
+                            samplingAbbrev = "S_C";
+                            break;
+                        case 3:
+                            samplingAbbrev = "S_C_R_S";
+                            break;
+                    }
+
                     plotLabel = String.format(
                     "  (%3d %s %4d)  peak=%.4f  xcen=%.4f  chst=%.1f  %s",
                     i, numberOfClusters, twoPtC.indexer.nXY,
                     ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getXPeak(),
                     areaAndXYTopCentroid[1],
                     ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getChiSqStatistic(),
-                    ((TwoPointVoidStats)twoPtC.backgroundStats).getSampling().name()
+                    samplingAbbrev
                     );
                 }
 

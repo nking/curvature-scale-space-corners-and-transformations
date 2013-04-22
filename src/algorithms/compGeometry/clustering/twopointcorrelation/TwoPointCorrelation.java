@@ -711,6 +711,14 @@ public class TwoPointCorrelation {
             // this is very roughly trying to determine whether there are many
             //   outliers, and if so, we should use the range search because
             //   it samples between the clusters better.
+            // Caveat is should not reduce the sampling to 'range search' if there are few points already.
+
+            int nDensities = ((TwoPointVoidStats)backgroundStats).nTwoPointSurfaceDensities;
+
+            if (nDensities < 1001) {
+                return;
+            }
+
             float fracPoints = calculateFractionOfPointsOutsideOfClusters();
 
             float fracArea = calculateFractionOfAreaOutsideOfClusters();

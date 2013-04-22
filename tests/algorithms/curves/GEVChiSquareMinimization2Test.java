@@ -44,7 +44,7 @@ public class GEVChiSquareMinimization2Test extends TestCase {
         String[] filePaths = CreateClusterDataTest.getHistogramFilePaths();
 
         //for (int i = 0; i < filePaths.length; i++) {
-        for (int i = 67; i < 68; i++) {//120
+        for (int i = 61; i < 62; i++) {//120
 
             String filePath = filePaths[i];//ndexer_random_background_with_3_clusters_130.dat"
 
@@ -73,11 +73,11 @@ public class GEVChiSquareMinimization2Test extends TestCase {
 
             //GEVYFit yfit = chiSqMin.fitCurve(kMin, kMax, sMin, sMax, mu, yErrSqSum, GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yNorm);
 
-            GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, k, s, mu, yNorm);
+            //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, k, s, mu, yNorm);
 
             //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
-            //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+            GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
             float[] xf = yfit.getOriginalScaleX();
             float[] yf = yfit.getOriginalScaleYFit();
