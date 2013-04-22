@@ -215,7 +215,7 @@ public class Histogram {
         // also, if there are many empty bins at start of histogram, increase the bin size.
         boolean go = true;
 
-
+/*
 algorithms.util.PolygonAndPointPlotter plotter = null;
 try {
 plotter = new algorithms.util.PolygonAndPointPlotter();
@@ -224,7 +224,7 @@ String str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
 
         while (go) {
 
@@ -379,12 +379,12 @@ plotter.writeFile();
                 xHist = new float[nBins];
                 yHist = new int[nBins];
                 Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
-
+/*
 str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
             }
         }
 
@@ -411,12 +411,12 @@ plotter.writeFile();
         histogram.setYHistFloat(yHistFloat);
         histogram.setYErrors(yErrors);
         histogram.setXErrors(xErrors);
-
+/*
 str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
 
         return histogram;
     }
@@ -479,7 +479,7 @@ plotter.writeFile();
         // also, if there are many empty bins at start of histogram, increase the bin size.
         boolean go = true;
 
-
+/*
 algorithms.util.PolygonAndPointPlotter plotter = null;
 try {
 plotter = new algorithms.util.PolygonAndPointPlotter();
@@ -488,7 +488,7 @@ String str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
 
         while (go) {
 
@@ -621,12 +621,12 @@ plotter.writeFile();
                 xHist = new float[nBins];
                 yHist = new int[nBins];
                 Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
-
+/*
 str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
             }
 
         }
@@ -654,12 +654,12 @@ plotter.writeFile();
         histogram.setYHistFloat(yHistFloat);
         histogram.setYErrors(yErrors);
         histogram.setXErrors(xErrors);
-
+/*
 str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
 
         return histogram;
     }
@@ -735,7 +735,7 @@ plotter.writeFile();
 
         // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred.
         // also, if there are many empty bins at start of histogram, increase the bin size.
-
+/*
 algorithms.util.PolygonAndPointPlotter plotter = null;
 try {
 plotter = new algorithms.util.PolygonAndPointPlotter();
@@ -744,7 +744,7 @@ String str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
 
         boolean retry = true;
 
@@ -908,12 +908,12 @@ plotter.writeFile();
             xHist = new float[nBins];
             yHist = new int[nBins];
             Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
-
+/*
 str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
 
             xHist = new float[nBins];
             yHist = new int[nBins];
@@ -938,12 +938,12 @@ plotter.writeFile();
             histogram.setYHistFloat(yHistFloat);
             histogram.setYErrors(yErrors);
             histogram.setXErrors(xErrors);
-
+/*
 str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
-} catch (Exception e) {}
+} catch (Exception e) {}*/
 
             return histogram;
         }
