@@ -693,7 +693,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
 
             // uses a very rough range search
-            findVoids(x, y, 0, x.length-1, 0, y.length-1);
+            findVoidsRoughRangeSearch(x, y);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 

@@ -715,9 +715,9 @@ public class TwoPointCorrelation {
 
             int nDensities = ((TwoPointVoidStats)backgroundStats).nTwoPointSurfaceDensities;
 
-            if (nDensities < 1001) {
-                return;
-            }
+            //if (nDensities < 1001) {
+            //    return;
+            //}
 
             float fracPoints = calculateFractionOfPointsOutsideOfClusters();
 
@@ -740,9 +740,6 @@ public class TwoPointCorrelation {
             }
 
             TwoPointVoidStats voidStats = new TwoPointVoidStats(indexer);
-            voidStats.setDebug(debug);
-
-            voidStats = new TwoPointVoidStats(indexer);
             voidStats.setDebug(debug);
 
             if (doLogPerformanceMetrics) {
