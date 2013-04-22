@@ -30,8 +30,8 @@ public class FindClusters2Test extends BaseTwoPointTest {
             return;
         }
 
-        //for (int i = 0; i < filePaths.length; i++) {
-        for (int i = 61; i < filePaths.length; i++) {
+        for (int i = 0; i < filePaths.length; i++) {
+        //for (int i = 150; i < filePaths.length; i++) {
 
             String filePath = filePaths[i];
 

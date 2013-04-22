@@ -1,12 +1,10 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
 /**
  * @author nichole
@@ -29,6 +27,8 @@ public class FindClusters3Test extends TestCase {
 
     boolean debug = true;
 
+    boolean persistHistogram = false;
+
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
     public void test_Find_Clusters() throws Exception {
@@ -47,7 +47,7 @@ public class FindClusters3Test extends TestCase {
 
         // generates fake errors when errors not present:
         TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
-        twoPtC.setDebug(true);
+        twoPtC.setDebug(debug);
 
         // 390 points
 
@@ -85,13 +85,15 @@ public class FindClusters3Test extends TestCase {
         plotter.addPlotWithoutHull(twoPtC, plotLabel);
         plotter.writeFile();
 
-        float[] xf = null;
-        float[] yf = null;
-        HistogramHolder histogram = stats.getStatsHistogram();
-        String fileNamePostfix = "wikipedia_dbscan.dat";
-        String fileName = CreateClusterDataTest.histogramFileNamePrefix + fileNamePostfix;
-        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
-        CreateClusterDataTest.writeHistogram(filePath, histogram);
+        if (persistHistogram) {
+            float[] xf = null;
+            float[] yf = null;
+            HistogramHolder histogram = stats.getStatsHistogram();
+            String fileNamePostfix = "wikipedia_dbscan.dat";
+            String fileName = CreateClusterDataTest.histogramFileNamePrefix + fileNamePostfix;
+            String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
+            CreateClusterDataTest.writeHistogram(filePath, histogram);
+        }
 
         log.info( twoPtC.indexer.nXY + " points ... ");
 

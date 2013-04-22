@@ -1,6 +1,8 @@
 package algorithms.curves;
 
-import algorithms.misc.MiscMath;
+import algorithms.curves.GEVChiSquareMinimization;
+import algorithms.curves.GEVYFit;
+import algorithms.curves.GeneralizedExtremeValue;
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
 import junit.framework.TestCase;
@@ -23,6 +25,8 @@ public class ATest extends TestCase {
     protected void tearDown() throws Exception {
         super.tearDown();
     }
+
+    public void test() {}
 
     public void estCalculateChiSqSumForCurve_0() throws Exception {
 
@@ -75,7 +79,7 @@ public class ATest extends TestCase {
         }
     }
 
-    public void testCalculateChiSqSumForCurve_1() throws Exception {
+    public void estCalculateChiSqSumForCurve_1() throws Exception {
 
         float[] x = new float[20];
         float xDelta = 1.0f/x.length;

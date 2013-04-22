@@ -1,6 +1,8 @@
 package algorithms.curves;
 
 import algorithms.compGeometry.clustering.twopointcorrelation.CreateClusterDataTest;
+import algorithms.curves.GEVChiSquareMinimization;
+import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.PolygonAndPointPlotter;
 import java.util.logging.Logger;

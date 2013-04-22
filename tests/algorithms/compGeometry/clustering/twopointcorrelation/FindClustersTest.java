@@ -33,8 +33,8 @@ public class FindClustersTest extends BaseTwoPointTest {
         long seed = srr.nextLong();
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        //sr.setSeed(seed);
-        sr.setSeed(7202122544352439191l);
+        sr.setSeed(seed);
+        //sr.setSeed(7202122544352439191l);
 
         log.info("SEED=" + seed);
 
@@ -45,7 +45,7 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         int nSwitches = 3;
 
-        int nIterPerBackground = 10;
+        int nIterPerBackground = 1;
 
         int m = nIterPerBackground*nSwitches;
 

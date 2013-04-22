@@ -218,7 +218,7 @@
 
     <target name="runTests" if="junit.present" depends="clean,debug,compileTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
-        <echo message="running tests, output is in ${tests.out.dir}" />
+        <echo message="running tests.  also see tests_large target in runLargeTests" />
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
             <classpath>
                 <pathelement location="${tests.out.dir}"/>

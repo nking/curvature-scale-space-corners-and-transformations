@@ -1,7 +1,5 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.compGeometry.LinesAndAngles;
-import algorithms.compGeometry.XY;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.Errors;
 import java.io.File;
