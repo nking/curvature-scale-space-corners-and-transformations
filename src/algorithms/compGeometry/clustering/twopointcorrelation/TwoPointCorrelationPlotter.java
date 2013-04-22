@@ -486,6 +486,9 @@ public class TwoPointCorrelationPlotter {
     public String writeFile() throws IOException {
         return writeToFile(this.plotContent.toString(), "twoptcorrelation.html");
     }
+    public String writeFile3() throws IOException {
+        return writeToFile(this.plotContent.toString(), "twoptcorrelation3.html");
+    }
 
     protected String writeToFile(String fileContent, String fileName) throws IOException {
 
