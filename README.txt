@@ -93,7 +93,7 @@ Uses the default parameters at this time.
 
 
 -------------------
-Performance Metrics
+Performance Metrics  (NOTE these are from the Apr 11, 2013 build and not yet updated to current date)
 -------------------
 Roughly determined by estimation and measured with a very small number of iterations
 on computer with characteristics:
