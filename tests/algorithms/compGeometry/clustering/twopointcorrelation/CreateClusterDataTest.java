@@ -24,13 +24,13 @@ import java.util.logging.Logger;
  */
 public class CreateClusterDataTest extends BaseTwoPointTest {
 
-    protected static String histogramFileNamePrefix = "histogram_random_background_with_";
+    public static final String histogramFileNamePrefix = "histogram_random_background_with_";
 
-    public static String indexerFileNamePrefix = "indexer_random_background_with_";
+    public static final String indexerFileNamePrefix = "indexer_random_background_with_";
 
-    public static String indexerSpatialDistrFileNamePrefix = "indexer_spatial_distr_with_";
-    protected static String spatialDistrFewOutliers = "_few_outliers";
-    protected static String spatialDistrManyOutliers = "_many_outliers";
+    public static final String indexerSpatialDistrFileNamePrefix = "indexer_spatial_distr_with_";
+    public static final String spatialDistrFewOutliers = "_few_outliers";
+    public static final String spatialDistrManyOutliers = "_many_outliers";
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 

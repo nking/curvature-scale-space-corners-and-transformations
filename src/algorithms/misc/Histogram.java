@@ -165,65 +165,226 @@ public class Histogram {
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
         }
 
-        if (useAMinimumFromPeakResolution) {
+        /*if (useAMinimumFromPeakResolution) {
             return createHistogramForSkewedDataForPeakResolution(preferredNumberOfBins, values, valueErrors, minValue, maxValue);
+            //return createHistogramForSkewedDataForPeakResolution2(preferredNumberOfBins, values, valueErrors, minValue, maxValue, 1);
+        }*/
+
+        return createHistogramForSkewedDataIgnorePeakResolution(preferredNumberOfBins,
+            values, valueErrors, minValue, maxValue);
+    }
+
+    private static HistogramHolder createHistogramForSkewedDataIgnorePeakResolution(int preferredNumberOfBins,
+        float[] values, float[] valueErrors, float minValue, float maxValue) {
+
+        if (values == null || valueErrors == null || values.length != valueErrors.length) {
+            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
         }
 
+        // -- start with a histogram based upon sturges or draconis.
+        // -- then reduce the bin width if necessary such that there are 10 or
+        //    so bins across the width of half max of the profile.
+        // -- reduce nbins until the last bins hold values > 5
+
         float binWidth = calculateSturgesBinWidth(values, 0.25f);
+
+        int minNumberOfBins = (preferredNumberOfBins > 30) ? 30 : ((preferredNumberOfBins > 20) ? 20 : preferredNumberOfBins/2);
 
         //float binWidth = calculateFreedmanDraconisBinWidth(values, 0.85f, maxValue);
 
         int nBins = (int)((maxValue - minValue)/binWidth);
-        if (nBins < 5) {
-            nBins = preferredNumberOfBins;
+
+        if (nBins > (2*preferredNumberOfBins)) {
+            nBins = 2*preferredNumberOfBins;
+            binWidth = (maxValue - minValue)/nBins;
+        } else if (nBins < minNumberOfBins) {
+            nBins = minNumberOfBins;
+            binWidth = (maxValue - minValue)/nBins;
         }
 
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
 
-        // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred
+        float xMax = maxValue;
+
+        Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
+
+
+
+        // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred.
+        // also, if there are many empty bins at start of histogram, increase the bin size.
         boolean go = true;
 
-        int lowerLimit = (int)(preferredNumberOfBins/2.5f);
-        if (lowerLimit < 5) {
-            lowerLimit = preferredNumberOfBins;
-        }
+
+algorithms.util.PolygonAndPointPlotter plotter = null;
+try {
+plotter = new algorithms.util.PolygonAndPointPlotter();
+} catch (Exception e) {}
+String str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
 
         while (go) {
-            int lessThan5Counts = 0;
-            for (int i = 0; i < yHist.length; i++) {
+
+            int yPeakIndex = MiscMath.findYMaxIndex(yHist);
+
+            int startsWithLessThan5Counts = 0;
+            int indexStartingConsecutiveStartLowCounts = -1;
+
+            int endsWithLessThan5Counts = 0;
+            int indexStartingConsecutiveEndLowCounts = -1;
+            int prevIndexStartingConsecutiveEndLowCounts = yHist.length;
+            for (int i = (yHist.length - 1); i > -1; i--) {
+
                 if (yHist[i] < 5) {
-                    lessThan5Counts ++;
+
+                    // count the consecutive low counts at the end of the histogram:
+                    endsWithLessThan5Counts++;
+                    // avoid using points with x < x at ypeak
+                    if ( (i > yPeakIndex) && ((i == (prevIndexStartingConsecutiveEndLowCounts - 1)) ||
+                    (i == (prevIndexStartingConsecutiveEndLowCounts - 2)))) {
+                        indexStartingConsecutiveEndLowCounts = i;
+                        prevIndexStartingConsecutiveEndLowCounts = indexStartingConsecutiveEndLowCounts;
+                    } else {
+                        prevIndexStartingConsecutiveEndLowCounts = i;
+                    }
+
+                    // count the consecutive low counts at start of histogram
+                    if (i > 0) {
+                        // if there is a low count in i-1 too, increment this one, else reset it to zero (no skips)
+                        if (yHist[i-1] < 5) {
+                            startsWithLessThan5Counts++;
+                            indexStartingConsecutiveStartLowCounts = i-1;
+                        } else {
+                            startsWithLessThan5Counts = 0;
+                            indexStartingConsecutiveStartLowCounts = -1;
+                        }
+                    }
                 }
             }
-            int chk = (int)(0.25*nBins);
-            if (lessThan5Counts >= chk) {
-                int tNBins = (int)(nBins/1.5f);
-                if (tNBins >= lowerLimit) {
 
-                    nBins = tNBins;
+            /*
+             * Handle cases:
+             *
+             * (0) zeros at start  && zeros at end
+             *     -- reduce xmax
+             *        --> reduce nBins
+             *
+             * (1) zeros at start  only
+             *        --> reduce nBins
+             *
+             * (2) zeros at end only
+             *     -- reduce xmax
+             *        --> reduce nBins
+             *
+             * Note, don't want cases to undo each others work upon iteration, so chose
+             * to reduce the number of bins (rather than increase and decrease the bin width).
+             */
 
-                    xHist = new float[nBins];
-                    yHist = new int[nBins];
-                    Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
+            int chk = (int)(0.1*nBins);
+            chk = 4;
+
+            if ((indexStartingConsecutiveStartLowCounts == 0) && (indexStartingConsecutiveEndLowCounts > -1)) {
+                // case 0
+
+                // reduce xMax
+                float tmpXMax = xHist[indexStartingConsecutiveEndLowCounts];;
+
+                int tmpNBins = (int)((tmpXMax - minValue)/binWidth);
+
+                if (tmpNBins >= minNumberOfBins) {
+
+                    xMax = tmpXMax;
+
+                    nBins = tmpNBins;
+
+                } else if (nBins == minNumberOfBins) {
+                    go = false;
+
+                } else {
+                    xMax = tmpXMax;
+                    nBins = minNumberOfBins;
+                    binWidth = (maxValue - minValue)/nBins;
+                }
+
+            } else if (indexStartingConsecutiveStartLowCounts == 0) {
+                // case 1
+
+                if (startsWithLessThan5Counts > 2) {
+
+                    // reduce nBins
+                    float firstNonZero = xHist[startsWithLessThan5Counts];
+                    float minBinWidth = firstNonZero - minValue;
+
+                    int tmpNBins = (int)((xMax - minValue)/minBinWidth);
+
+                    if (tmpNBins >= minNumberOfBins) {
+
+                        nBins = tmpNBins;
+
+                        binWidth = minBinWidth;
+
+                    } else if (nBins == minNumberOfBins) {
+                        go = false;
+
+                    } else {
+                        nBins = minNumberOfBins;
+                        binWidth = (maxValue - minValue)/nBins;
+                    }
 
                 } else {
                     go = false;
                 }
+
+            } else if (indexStartingConsecutiveEndLowCounts > -1) {
+                // case 2
+
+                // reduce xMax
+                float tmpXMax = xHist[indexStartingConsecutiveEndLowCounts];;
+
+                int tmpNBins = (int)((tmpXMax - minValue)/binWidth);
+
+                if (tmpNBins >= minNumberOfBins) {
+
+                    xMax = tmpXMax;
+
+                    nBins = tmpNBins;
+
+                } else if (nBins == minNumberOfBins) {
+                    go = false;
+
+                } else {
+                    xMax = tmpXMax;
+                    nBins = minNumberOfBins;
+                    binWidth = (maxValue - minValue)/nBins;
+                }
+
             } else {
                 go = false;
             }
+
+
+            if (go) {
+
+                binWidth = calculateBinWidth(minValue, xMax, nBins);
+
+                xHist = new float[nBins];
+                yHist = new int[nBins];
+                Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
+
+str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
+            }
         }
 
-        // change bin size so that preferredNumberOfBins is used.
-        float factor = nBins/preferredNumberOfBins;
-        if (factor > 1) {
-            nBins = preferredNumberOfBins;
-            binWidth *= factor;
-        }
         xHist = new float[nBins];
         yHist = new int[nBins];
-        Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
+        Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
 
         float[] yHistFloat = new float[yHist.length];
         for (int i = 0; i < yHist.length; i++) {
@@ -244,6 +405,12 @@ public class Histogram {
         histogram.setYHistFloat(yHistFloat);
         histogram.setYErrors(yErrors);
         histogram.setXErrors(xErrors);
+
+str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
 
         return histogram;
     }
@@ -295,101 +462,169 @@ public class Histogram {
         // calculate a minimum number of bins based upon resolving the peak if useAMinimumFromPeakResolution=true
         float peakResBinWidth = calculateBinWidthForPeakResolution(xHist, yHist);
 
+        int minNumberOfBins = (preferredNumberOfBins > 30) ? 20 : ((preferredNumberOfBins > 20) ? 10 : preferredNumberOfBins/2);
+
         if (binWidth > peakResBinWidth) {
             binWidth = peakResBinWidth;
+            nBins = (int)((xMax - minValue)/binWidth);
         }
 
-        nBins = (int)((xMax - minValue)/binWidth);
-
-        int minNumberOfBins = preferredNumberOfBins/2;
-
-        // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred
+        // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred.
+        // also, if there are many empty bins at start of histogram, increase the bin size.
         boolean go = true;
 
-        int nLowCountIter = 0;
+
+algorithms.util.PolygonAndPointPlotter plotter = null;
+try {
+plotter = new algorithms.util.PolygonAndPointPlotter();
+} catch (Exception e) {}
+String str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
 
         while (go) {
+
             int yPeakIndex = MiscMath.findYMaxIndex(yHist);
-            int lessThan5Counts = 0;
-            int indexStartingConsecutiveLowCounts = -1;
-            int prevIndexStartingConsecutiveLowCounts = yHist.length;
+
+            int startsWithLessThan5Counts = 0;
+            int indexStartingConsecutiveStartLowCounts = -1;
+
+            int endsWithLessThan5Counts = 0;
+            int indexStartingConsecutiveEndLowCounts = -1;
+            int prevIndexStartingConsecutiveEndLowCounts = yHist.length;
             for (int i = (yHist.length - 1); i > -1; i--) {
+
                 if (yHist[i] < 5) {
 
-                    lessThan5Counts++;
-
+                    // count the consecutive low counts at the end of the histogram:
+                    endsWithLessThan5Counts++;
                     // avoid using points with x < x at ypeak
-                    if ( (i > yPeakIndex) &&
-                        ((i == (prevIndexStartingConsecutiveLowCounts - 1)) ||
-                        (i == (prevIndexStartingConsecutiveLowCounts - 2)))) {
-
-                        indexStartingConsecutiveLowCounts = i;
-                        prevIndexStartingConsecutiveLowCounts = indexStartingConsecutiveLowCounts;
+                    if ( (i > yPeakIndex) && ((i == (prevIndexStartingConsecutiveEndLowCounts - 1)) ||
+                    (i == (prevIndexStartingConsecutiveEndLowCounts - 2)))) {
+                        indexStartingConsecutiveEndLowCounts = i;
+                        prevIndexStartingConsecutiveEndLowCounts = indexStartingConsecutiveEndLowCounts;
                     } else {
-                        prevIndexStartingConsecutiveLowCounts = i;
+                        prevIndexStartingConsecutiveEndLowCounts = i;
+                    }
+
+                    // count the consecutive low counts at start of histogram
+                    if (i > 0) {
+                        // if there is a low count in i-1 too, increment this one, else reset it to zero (no skips)
+                        if (yHist[i-1] < 5) {
+                            startsWithLessThan5Counts++;
+                            indexStartingConsecutiveStartLowCounts = i-1;
+                        } else {
+                            startsWithLessThan5Counts = 0;
+                            indexStartingConsecutiveStartLowCounts = -1;
+                        }
                     }
                 }
             }
+
+            /*
+             * Handle cases:
+             *
+             * (0) zeros at start  && zeros at end
+             *     -- reduce xmax
+             *        --> reduce nBins
+             *
+             * (1) zeros at start  only
+             *        --> reduce nBins
+             *
+             * (2) zeros at end only
+             *     -- reduce xmax
+             *        --> reduce nBins
+             *
+             * Note, don't want cases to undo each others work upon iteration, so chose
+             * to reduce the number of bins (rather than increase and decrease the bin width).
+             */
+
             int chk = (int)(0.1*nBins);
             chk = 4;
 
-            if (indexStartingConsecutiveLowCounts > -1) {
-
-                nLowCountIter++;
-
-                float retry = (float)indexStartingConsecutiveLowCounts/(yHist.length - 1);
-                if ((nLowCountIter == 2) || ((retry > 0.05f) && (indexStartingConsecutiveLowCounts > 4))) {
-                    go = false;
-                } else {
-                    go = true;
-                }
-
-                if ((indexStartingConsecutiveLowCounts + 1) < yHist.length) {
-                    indexStartingConsecutiveLowCounts++;
-                }
+            if ((indexStartingConsecutiveStartLowCounts == 0) && (indexStartingConsecutiveEndLowCounts > -1)) {
+                // case 0
 
                 // reduce xMax
-                xMax = xHist[indexStartingConsecutiveLowCounts];
+                float tmpXMax = xHist[indexStartingConsecutiveEndLowCounts];;
 
-                // only the histograms with nBins > min should be repeated to remove empty bins at tail
-                nBins = (int)((xMax - minValue)/binWidth);
-                if (nBins < minNumberOfBins) {
-                    nBins = minNumberOfBins;
-                    binWidth = (xMax - minValue)/nBins;
+                int tmpNBins = (int)((tmpXMax - minValue)/binWidth);
+
+                if (tmpNBins >= minNumberOfBins) {
+
+                    xMax = tmpXMax;
+
+                    nBins = tmpNBins;
+
+                    //binWidth = calculateBinWidth(minValue, xMax, nBins);
+                } else {
+                    go = false;
                 }
+
+            } else if (indexStartingConsecutiveStartLowCounts == 0) {
+                // case 1
+
+                if (startsWithLessThan5Counts > 2) {
+
+                    // reduce nBins
+                    float firstNonZero = xHist[startsWithLessThan5Counts];
+                    float minBinWidth = firstNonZero - minValue;
+
+                    int tmpNBins = (int)((xMax - minValue)/minBinWidth);
+
+                    if (tmpNBins >= minNumberOfBins) {
+
+                        nBins = tmpNBins;
+
+                        binWidth = minBinWidth;
+
+                    } else {
+                        go = false;
+                    }
+
+                } else {
+                    go = false;
+                }
+
+            } else if (indexStartingConsecutiveEndLowCounts > -1) {
+                // case 2
+
+                // reduce xMax
+                float tmpXMax = xHist[indexStartingConsecutiveEndLowCounts];;
+
+                int tmpNBins = (int)((tmpXMax - minValue)/binWidth);
+
+                if (tmpNBins >= minNumberOfBins) {
+
+                    xMax = tmpXMax;
+
+                    nBins = tmpNBins;
+
+                } else {
+                    go = false;
+                }
+
+            } else {
+                go = false;
+            }
+
+            if (go) {
 
                 xHist = new float[nBins];
                 yHist = new int[nBins];
                 Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
 
-            } else if (lessThan5Counts >= chk) {
-
-                int tNBins = (int)(nBins/1.5f);
-                if (tNBins >= minNumberOfBins) {
-
-                    // reduce the number of bins
-                    nBins = tNBins;
-
-                    xMax = (nBins*binWidth) + minValue;
-
-                    xHist = new float[nBins];
-                    yHist = new int[nBins];
-                    Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
-
-                } else {
-                    go = false;
-                }
-            } else {
-                go = false;
+str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
             }
+
         }
 
-        // change bin size so that preferredNumberOfBins or minNumberOfBins is used.
-        float factor = (float)nBins/preferredNumberOfBins;
-        if (factor > 1) {
-            nBins = preferredNumberOfBins;
-            binWidth *= factor;
-        }
         xHist = new float[nBins];
         yHist = new int[nBins];
         Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
@@ -414,7 +649,298 @@ public class Histogram {
         histogram.setYErrors(yErrors);
         histogram.setXErrors(xErrors);
 
+str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
+
         return histogram;
+    }
+
+     /**
+     * create a histogram adjusted to have a range
+     * representing most of the data and a number of bins which attempts to have
+     * counts per bin above 5.  The number of bins returned will be between
+     * (preferredNumberOfBins)/2 and preferredNumberOfBins, inclusively.
+     *
+     * decide a minimum number of bins based upon
+     *   having n bins across the peak profile. more specifically, n bins across
+     *   the region x=0 to x=max(values) to x=max(values)/2, where n
+     *   is min(10, 0.1*values.length)
+     *
+     * @param preferredNumberOfBins
+     * @param values
+     * @param valueErrors if null, the root mean square of values are used for the
+     * point errors in order to calculate the histogram errors.
+     * @param minValue
+     * @param maxValue maximum value
+     * @return
+     */
+    public static HistogramHolder createHistogramForSkewedDataForPeakResolution2(int preferredNumberOfBins,
+        float[] values, float[] valueErrors, float minValue, float maxValue, int nIter) {
+
+        if (values == null || valueErrors == null || values.length != valueErrors.length) {
+            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        }
+
+        // -- start with a histogram based upon sturges or draconis.
+        // -- then reduce the bin width if necessary such that there are 10 or
+        //    so bins across the width of half max of the profile.
+        // -- reduce nbins until the last bins hold values > 5
+
+        float binWidth = calculateSturgesBinWidth(values, 0.25f);
+
+        //float binWidth = calculateFreedmanDraconisBinWidth(values, 0.85f, maxValue);
+
+        int nBins = (int)((maxValue - minValue)/binWidth);
+
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+
+        float xMax = maxValue;
+
+        Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
+
+        // calculate a minimum number of bins based upon resolving the peak if useAMinimumFromPeakResolution=true
+        float peakResBinWidth = calculateBinWidthForPeakResolution(xHist, yHist);
+
+        int minNumberOfBins = (preferredNumberOfBins > 30) ? 30 : ((preferredNumberOfBins > 20) ? 20 : preferredNumberOfBins/2);
+
+        if (binWidth > peakResBinWidth) {
+
+            float tmpBinWidth = peakResBinWidth;
+
+            int tmpNBins = (int)((xMax - minValue)/tmpBinWidth);
+
+            if ((nIter == 1) || (tmpNBins < (2*nBins) )) {
+                nBins = tmpNBins;
+                binWidth = tmpBinWidth;
+
+            } else if (tmpNBins < minNumberOfBins) {
+                nBins = minNumberOfBins;
+                binWidth = (maxValue - minValue)/nBins;
+
+            } else {
+                nBins = preferredNumberOfBins;
+                binWidth = (xMax - minValue)/nBins;
+            }
+        }
+
+        // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred.
+        // also, if there are many empty bins at start of histogram, increase the bin size.
+
+algorithms.util.PolygonAndPointPlotter plotter = null;
+try {
+plotter = new algorithms.util.PolygonAndPointPlotter();
+} catch (Exception e) {}
+String str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
+
+        boolean retry = true;
+
+        int yPeakIndex = MiscMath.findYMaxIndex(yHist);
+
+        int startsWithLessThan5Counts = 0;
+        int indexStartingConsecutiveStartLowCounts = -1;
+
+        int endsWithLessThan5Counts = 0;
+        int indexStartingConsecutiveEndLowCounts = -1;
+        int prevIndexStartingConsecutiveEndLowCounts = yHist.length;
+        for (int i = (yHist.length - 1); i > -1; i--) {
+
+            if (yHist[i] < 5) {
+
+                // count the consecutive low counts at the end of the histogram:
+                endsWithLessThan5Counts++;
+                // avoid using points with x < x at ypeak
+                if ( (i > yPeakIndex) && ((i == (prevIndexStartingConsecutiveEndLowCounts - 1)) ||
+                (i == (prevIndexStartingConsecutiveEndLowCounts - 2)))) {
+                    indexStartingConsecutiveEndLowCounts = i;
+                    prevIndexStartingConsecutiveEndLowCounts = indexStartingConsecutiveEndLowCounts;
+                } else {
+                    prevIndexStartingConsecutiveEndLowCounts = i;
+                }
+
+                // count the consecutive low counts at start of histogram
+                if (i > 0) {
+                    // if there is a low count in i-1 too, increment this one, else reset it to zero (no skips)
+                    if (yHist[i-1] < 5) {
+                        startsWithLessThan5Counts++;
+                        indexStartingConsecutiveStartLowCounts = i-1;
+                    } else {
+                        startsWithLessThan5Counts = 0;
+                        indexStartingConsecutiveStartLowCounts = -1;
+                    }
+                }
+            }
+        }
+
+        /*
+         * Handle cases:
+         *
+         * (0) zeros at start  && zeros at end
+         *     -- reduce xmax
+         *        --> reduce nBins
+         *
+         * (1) zeros at start  only
+         *        --> reduce nBins
+         *
+         * (2) zeros at end only
+         *     -- reduce xmax
+         *        --> reduce nBins
+         *
+         * Note, don't want cases to undo each others work upon iteration, so chose
+         * to reduce the number of bins (rather than increase and decrease the bin width).
+         */
+
+        int chk = (int)(0.1*nBins);
+        chk = 4;
+
+        if ((indexStartingConsecutiveStartLowCounts == 0) && (indexStartingConsecutiveEndLowCounts > -1)) {
+            // case 0
+
+            // reduce xMax
+            xMax = xHist[indexStartingConsecutiveEndLowCounts];;
+
+            int tmpNBins = (int)((xMax - minValue)/binWidth);
+
+            if (tmpNBins >= minNumberOfBins) {
+
+                nBins = tmpNBins;
+
+            } else {
+
+                nBins = minNumberOfBins;
+
+                binWidth = (xMax - minValue)/nBins;
+
+                retry = false;
+            }
+
+        } else if (indexStartingConsecutiveStartLowCounts == 0) {
+            // case 1
+
+            if (startsWithLessThan5Counts > 2) {
+
+                // reduce nBins
+                float firstNonZero = xHist[startsWithLessThan5Counts];
+                float minBinWidth = firstNonZero - minValue;
+
+                int tmpNBins = (int)((xMax - minValue)/minBinWidth);
+
+                if (tmpNBins >= minNumberOfBins) {
+
+                    nBins = tmpNBins;
+
+                    binWidth = minBinWidth;
+
+                } else {
+
+                    nBins = minNumberOfBins;
+
+                    binWidth = (xMax - minValue)/nBins;
+
+                    retry = false;
+                }
+
+            } else {
+                retry = false;
+            }
+
+        } else if (indexStartingConsecutiveEndLowCounts > -1) {
+            // case 2
+
+            // reduce xMax
+            xMax = xHist[indexStartingConsecutiveEndLowCounts];;
+
+            int tmpNBins = (int)((xMax - minValue)/binWidth);
+
+            if (tmpNBins >= minNumberOfBins) {
+
+                nBins = tmpNBins;
+
+                binWidth = minNumberOfBins;
+
+            } else {
+                nBins = minNumberOfBins;
+
+                binWidth = (xMax - minValue)/nBins;
+
+                retry = false;
+          }
+
+        } else {
+            retry = false;
+        }
+
+        if (retry) {
+
+            float[] tmpValues = new float[values.length];
+            float[] tmpValueErrors = new float[values.length];
+            int count = 0;
+            for (int i = 0; i < tmpValues.length; i++) {
+                if (values[i] <= xMax) {
+                    tmpValues[count] = values[i];
+                    tmpValueErrors[count] = valueErrors[i];
+                    count++;
+                }
+            }
+            tmpValues = Arrays.copyOf(tmpValues, count);
+            tmpValueErrors = Arrays.copyOf(tmpValueErrors, count);
+
+            nIter++;
+
+            return createHistogramForSkewedDataForPeakResolution2(preferredNumberOfBins,
+                tmpValues, tmpValueErrors, minValue, xMax, nIter);
+
+        } else {
+
+            xHist = new float[nBins];
+            yHist = new int[nBins];
+            Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
+
+str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
+
+            xHist = new float[nBins];
+            yHist = new int[nBins];
+            Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
+
+            float[] yHistFloat = new float[yHist.length];
+            for (int i = 0; i < yHist.length; i++) {
+                yHistFloat[i] = (float) yHist[i];
+            }
+
+            if (valueErrors == null) {
+                valueErrors = Errors.populateYErrorsBySqrt(yHistFloat);
+            }
+            float[] yErrors = new float[xHist.length];
+            float[] xErrors = new float[xHist.length];
+
+            calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);
+
+            HistogramHolder histogram = new HistogramHolder();
+            histogram.setXHist(xHist);
+            histogram.setYHist(yHist);
+            histogram.setYHistFloat(yHistFloat);
+            histogram.setYErrors(yErrors);
+            histogram.setXErrors(xErrors);
+
+str = String.format("n=%10d w=%.5f", nBins, binWidth);
+plotter.addPlot(xHist, yHist, null, null, str);
+try {
+plotter.writeFile();
+} catch (Exception e) {}
+
+            return histogram;
+        }
     }
 
     protected static float calculateSturgesBinWidth(float[] values, float binWidthFactor) {

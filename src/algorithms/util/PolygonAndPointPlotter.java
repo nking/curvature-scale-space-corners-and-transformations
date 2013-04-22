@@ -62,14 +62,12 @@ public class PolygonAndPointPlotter {
         addPlot(xPoints, yPoints, xPolygon, yPolygon, plotLabel);
     }
 
-    public void addPlot(int[] xPoints, float[] yPoints, int[] xPolygon, float[] yPolygon, String plotLabel) {
-    	float[] xx = new float[xPoints.length];
-    	float[] xp = new float[xPoints.length];
-    	for (int i = 0; i < xx.length; i++) {
-    		xx[i] = (float)xPoints[i];
-    		xp[i] = (float)xPolygon[i];
+    public void addPlot(float[] xPoints, int[] yPoints, float[] xPolygon, float[] yPolygon, String plotLabel) {
+    	float[] yp = new float[yPoints.length];
+    	for (int i = 0; i < yp.length; i++) {
+    		yp[i] = (float)yPoints[i];
     	}
-    	addPlot(xx, yPoints, xp, yPolygon, plotLabel);
+    	addPlot(xPoints, yp, xPolygon, yPolygon, plotLabel);
     }
 
     public void addPlot(float[] xPoints, float[] yPoints, float[] xPolygon, float[] yPolygon, String plotLabel) {
@@ -99,20 +97,21 @@ public class PolygonAndPointPlotter {
         dataSB.append("\n];\n");
 
 
-          //  ===== add polygon =====
         dataSB.append("\n").append("var data_polygon = [\n");
         dataSB.append("    [");
-        for (int ii = 0; ii < xPolygon.length; ii++) {
-            String xStr = String.format("%.7f", xPolygon[ii]);
-            String yStr = String.format("%.7f", yPolygon[ii]);
-            if (ii > 0) {
-                dataSB.append(", ");
+        if (xPolygon != null) {
+            //  ===== add polygon =====
+            for (int ii = 0; ii < xPolygon.length; ii++) {
+                String xStr = String.format("%.7f", xPolygon[ii]);
+                String yStr = String.format("%.7f", yPolygon[ii]);
+                if (ii > 0) {
+                    dataSB.append(", ");
+                }
+                dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
             }
-            dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
         }
         dataSB.append("],\n ");
         dataSB.append("];\n");
-
 
         // TODO: need the scatter plot for distances from center... for each group
 
@@ -200,16 +199,18 @@ public class PolygonAndPointPlotter {
         dataSB.append("\n];\n");
 
 
-          //  ===== add polygon =====
         dataSB.append("\n").append("var data_polygon = [\n");
         dataSB.append("    [");
-        for (int ii = 0; ii < xPolygon.length; ii++) {
-            String xStr = String.format("%.1f", xPolygon[ii]);
-            String yStr = String.format("%.1f", yPolygon[ii]);
-            if (ii > 0) {
-                dataSB.append(", ");
+        if (xPolygon != null) {
+            //  ===== add polygon =====
+            for (int ii = 0; ii < xPolygon.length; ii++) {
+                String xStr = String.format("%.7f", xPolygon[ii]);
+                String yStr = String.format("%.7f", yPolygon[ii]);
+                if (ii > 0) {
+                    dataSB.append(", ");
+                }
+                dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
             }
-            dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
         }
         dataSB.append("],\n ");
         dataSB.append("];\n");

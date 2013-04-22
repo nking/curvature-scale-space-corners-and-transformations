@@ -98,7 +98,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected int[] point2 = null;
     protected StringArrayLite twoPointIdentities = null;
 
-    protected int defaultNBins = 60;
+    protected int defaultNBins = 40;
 
     //for debugging, hold on to intermediate data
     protected HistogramHolder statsHistogram = null;
