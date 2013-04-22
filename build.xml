@@ -63,11 +63,14 @@
         <echo message="clean:                      deletes old classes, logs, build, and javadocs"/>
         <echo message="compile:                    compile source files"/>
         <echo message="compileTests:               compile test files"/>
+        <echo message="compileLargeTests:          compile large test files"/>
         <echo message="runTests:                   run tests"/>
         <echo message="runLargeTests:              run tests in tests_large"/>
         <echo message="runTest:                    run test with -Dtest=fqn of test"/>
+        <echo message="runLargeTest:               run large test with -Dtest=fqn of test"/>
         <echo message="debugTests:                 run tests and use jdwp"/>
         <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
+        <echo message="debugLargeTest:             debug test with -Dtest= fqn of test and jdwp"/>
     	<echo message="runCoverage:                run code coverage tools"/>
         <echo message="javadoc:                    create javadocs"/>
         <echo message="runEmma                     run code coverage for non-third party classes"/>
@@ -321,6 +324,25 @@
         </junit>
     </target>
 
+    <target name="runLargeTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileLargeTests">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <junit fork="yes" showoutput="true" filtertrace="off">
+            <!--<jvmarg value="-ea"/>-->
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${tests.large.out.dir}"/>
+                <path refid="test.large.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <test name="${test}" fork="yes" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+        </junit>
+    </target>
+
     <target name="runPerformanceMetrics" depends="compile">
         <record name="${logfile}" append="yes" loglevel="info"/>
         <java classname="algorithms.compGeometry.clustering.twopointcorrelation.PerformanceMetricsRunner"
@@ -365,6 +387,25 @@
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <test name="${test}" fork="yes" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+        </junit>
+    </target>
+
+    <target name="debugLargeTest" if="junit.present" depends="clean,prepare,debug,compile,JUnit,compileLargeTests">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <junit fork="yes" showoutput="true" filtertrace="off">
+            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${tests.large.out.dir}"/>
+                <path refid="test.large.classpath"/>
                 <pathelement location="${src.out.dir}"/>
             </classpath>
             <test name="${test}" fork="yes" haltonfailure="yes">
