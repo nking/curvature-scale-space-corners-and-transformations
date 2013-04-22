@@ -140,24 +140,26 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 .text("X");
 
             if (points != undefined) {
+                var pointRadius = (points.length < 2000) ? 3 : 1;
                 var pointGroup2 = svg.append("svg:g").attr("class","points");
                 pointGroup2.selectAll("circle.points").data(points)
                     .enter().append("svg:circle")
                     .attr("class", "point")
                     .attr("cx",function(d) { return x(d.x); })
                     .attr("cy",function(d) { return y(d.y); })
-                    .attr("r", 3)
+                    .attr("r", pointRadius)
                     .attr("stroke", "#dddddd")
                     .attr("fill", "black")
                     .attr("fill-opacity", 1.0);
             }
 
             if (lines != undefined) {
+                var lineWidth = (points.length < 10000) ? 1 : 2;
                 var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
                 for (i = 0; i < lines.length; i++) {
                     svg.append("svg:path")
                         .attr("d", line(lines[i]))
-                        .style("stroke-width", 1)
+                        .style("stroke-width", lineWidth)
                         .style("stroke", "steelblue")
                         .style("fill", "none");
                 }
