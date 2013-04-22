@@ -1,6 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.compGeometry.XY;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.curves.FailedToConvergeException;
@@ -806,6 +807,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         for (int k = 0; k < nYIntervals; k++) {                             //               2
             int binSz = (k + 1) * 2;                                        // c10
+            binSz = (int)((k + 1) * 1.5f);
 
             int yLo = 0;
             while ((yLo + binSz) < n) {                                     //              (N/2)-1, (N/2)-2
@@ -947,6 +949,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
     }
 
+    static float[] calculateCentroidOfTop(float[] xfit, float[] yfit, float frac) {
+
+        XY xy = LinesAndAngles.createPolygonOfTopFWFractionMax(xfit, yfit, frac);
+
+        return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xy.getX(), xy.getY());
+    }
+
     protected float[] calcAreaAndCentroid(float[] x, float[] y, int[] regionIndexes) {
 
         if (regionIndexes.length == 1) {
@@ -996,100 +1005,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             return null;
         }
-    }
-
-    static float[] calculateCentroidOfTop(float[] xfit, float[] yfit, float topFraction) {
-
-        float[] x = new float[xfit.length + 2];
-        float[] y = new float[yfit.length + 2];
-
-        int yPeakIndex = MiscMath.findYMaxIndex(yfit);
-
-        float yLimit = yfit[yPeakIndex]*topFraction;
-
-        int count = 1; // leave space for the interpolated 1st point
-        int i = 0;
-        int firstIndex = -1;
-        for (i = 0; i < xfit.length; i++) {
-            if (i <= yPeakIndex) {
-                if (yfit[i] >= yLimit) {
-                    x[count] = xfit[i];
-                    y[count] = yfit[i];
-                    if (firstIndex == -1) {
-                        firstIndex = i;
-                    }
-                    count++;
-                }
-            } else if (yfit[i] >= yLimit) {
-                x[count] = xfit[i];
-                y[count] = yfit[i];
-                if (firstIndex == -1) {
-                    firstIndex = i;
-                }
-                count++;
-            } else {
-                break;
-            }
-        }
-
-        // interpolate or extrapolate first and last points to meet y=yLimit
-        /*         *peak
-         *
-         *   *1st
-         *
-         *   ...........
-         *             *last
-         *
-         *   (y_peak - y_1st)     (y_peak - yLimit)
-         *   ----------------  =  ------------------
-         *   (x_peak - x_1st)     (x_peak - x_interp)
-         *
-         *   (x_peak - x_interp) = (y_peak - yLimit)*(x_peak - x_1st)/(y_peak - y_1st)
-         *   x_interp =  x_peak - ((y_peak - yLimit)*(x_peak - x_1st)/(y_peak - y_1st))
-         *
-         */
-        if (yPeakIndex == 0) {
-            // move up all by 1
-            System.arraycopy(x, 1, x, 0, count);
-            System.arraycopy(y, 1, y, 0, count);
-            count--;
-        } else if (yPeakIndex == 1) {
-            float xLimit = xfit[yPeakIndex] - ((yfit[yPeakIndex] - yLimit)*(xfit[yPeakIndex] - xfit[0])/(yfit[yPeakIndex] - yfit[0]));
-            x[0] = xLimit;
-            y[0] = yLimit;
-        } else if (firstIndex == 0) {
-            float xLimit = xfit[1] - ((yfit[1] - yLimit)*(xfit[1] - xfit[0])/(yfit[1] - yfit[0]));
-            x[0] = xLimit;
-            y[0] = yLimit;
-        } else {
-            float xLimit = xfit[firstIndex-1] - ((yfit[firstIndex-1] - yLimit)*(xfit[firstIndex-1] - x[1])/(yfit[firstIndex-1] - y[1]));
-            x[0] = xLimit;
-            y[0] = yLimit;
-        }
-
-        /*     *
-         *       *
-         * ----------
-         *
-         */
-        if ((yPeakIndex == (yfit.length - 1)) || (i == yfit.length)) {
-            // cannot interpolate.  the curve doesn't fit a GEV.  draw a straight line below peak
-            x[count] = xfit[yfit.length - 1];
-            y[count] = yLimit;
-        } else {
-            //x_interp =  x_peak - ((y_peak - yLimit)*(x_peak - x_1st)/(y_peak - y_1st))
-            float xLimit = x[count-1] - ((y[count-1] - yLimit)*(x[count-1] - xfit[i])/(y[count-1] - yfit[i]));
-            x[count] = xLimit;
-            y[count] = yLimit;
-        }
-
-        x = Arrays.copyOf(x, count + 1);
-        y = Arrays.copyOf(y, count + 1);
-
-        x[count] = x[0];
-        y[count] = y[0];
-
-        return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(x, y);
     }
 
     public String persistTwoPointBackground() throws IOException {

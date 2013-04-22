@@ -440,7 +440,7 @@ public class TwoPointCorrelation {
         }
         plotter.addPlot(this, label);
 
-        return plotter.writeFile();
+        return plotter.writeFile3();
     }
 
     public void bruteForceCalculateGroups() {
@@ -642,6 +642,28 @@ public class TwoPointCorrelation {
         }
     }
 
+    protected float calculateFractionOfAreaOutsideOfClusters() throws IOException, TwoPointVoidStatsException {
+
+        if (state.ordinal() < STATE.CLUSTER_HULLS_CALCULATED.ordinal()) {
+            calculateHullsOfClusters();
+        }
+
+        // ignore overlapping clusters at this point:
+        float groupAreaSum = 0;
+
+        for (int i = 0; i < nGroups; i++) {
+            groupAreaSum += groupHullSurfaceAreas[i];
+        }
+
+        //xmin, xmax, ymin, ymax
+        float[] xyMinMax = this.indexer.findXYMinMax();
+        float dataPointsArea = (xyMinMax[3] - xyMinMax[2])*(xyMinMax[1] - xyMinMax[0]);
+
+        float frac = (dataPointsArea - groupAreaSum)/dataPointsArea;
+
+        return frac;
+    }
+
     protected float calculateFractionOfPointsOutsideOfClusters() {
 
         boolean[] insideClusters = new boolean[indexer.nXY];
@@ -668,7 +690,9 @@ public class TwoPointCorrelation {
             }
         }
 
-        return (float)(count/indexer.nXY);
+        float frac = (float)count/(float)indexer.nXY;
+
+        return frac;
     }
 
     protected void temporaryWorkaroundForSampling() throws TwoPointVoidStatsException, IOException {
@@ -684,11 +708,27 @@ public class TwoPointCorrelation {
 
         if (((TwoPointVoidStats)backgroundStats).getSampling().ordinal() == TwoPointVoidStats.Sampling.SEMI_COMPLETE.ordinal()) {
 
-            float frac = calculateFractionOfPointsOutsideOfClusters();
-            if (frac <= (11.f * indexer.getNumberOfPoints())) {
-                if (nGroups > 1) {
+            // this is very roughly trying to determine whether there are many
+            //   outliers, and if so, we should use the range search because
+            //   it samples between the clusters better.
+            float fracPoints = calculateFractionOfPointsOutsideOfClusters();
+
+            float fracArea = calculateFractionOfAreaOutsideOfClusters();
+
+            int n = nGroups;
+
+            if (fracPoints <= 0.11f) {
+                if (fracArea > 0.33f) {
+                    System.out.println("KEEP " + TwoPointVoidStats.Sampling.SEMI_COMPLETE.name()
+                        + " fracPoints=" + fracPoints + " fracArea=" + fracArea + " nGroups=" + n);
                     return;
                 }
+            }
+            System.out.println("CHANGE TO " + TwoPointVoidStats.Sampling.SEMI_COMPLETE_RANGE_SEARCH.name()
+                + " fracPoints=" + fracPoints + " fracArea=" + fracArea + " nGroups=" + n);
+
+            if (debug) {
+                plotClusters();
             }
 
             TwoPointVoidStats voidStats = new TwoPointVoidStats(indexer);

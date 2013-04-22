@@ -1,5 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.compGeometry.LinesAndAngles;
+import algorithms.compGeometry.XY;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.Errors;
 import java.io.File;
@@ -7,6 +9,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 
 /**
  *

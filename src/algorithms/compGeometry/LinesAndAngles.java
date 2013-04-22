@@ -1,5 +1,8 @@
 package algorithms.compGeometry;
 
+import algorithms.misc.MiscMath;
+import java.util.Arrays;
+
 /**
  *
  * @author nichole
@@ -250,7 +253,7 @@ public class LinesAndAngles {
          * @param y3
          * @param x4
          * @param y4
-         * @return the intersection of the 2 lines as a 2 item double array holding x then y, else
+         * @return the intersection of the 2 lines as a 2 item double array holding xTopPolygon then yTopPolygon, else
          * if lines do not intersect, will return null;
          */
     public static double[] intersectionOf2Lines(float x1, float y1, float x2, float y2,
@@ -436,7 +439,7 @@ public class LinesAndAngles {
         return ( x0 + ((y - y0)/slope) );
     }
 
-    //  (y-y0)/(x-x0) = slope
+    //  (yTopPolygon-y0)/(xTopPolygon-x0) = slope
     public static float calculateY(float x0, float y0, float x, float slope) {
         return ( y0 + slope*(x - x0) );
     }
@@ -626,9 +629,9 @@ public class LinesAndAngles {
      *   Right triangle cosine and sine
      *     r /
      *      /
-     *     /theta    x = r * cos(theta)
+     *     /theta    xTopPolygon = r * cos(theta)
      *    -------
-     *       x
+     *       xTopPolygon
      *
      * @param x0
      * @param y0
@@ -669,9 +672,9 @@ public class LinesAndAngles {
        /*   Right triangle cosine and sine
         *     r /
         *      /
-        *     /theta    x = r * cos(theta)
+        *     /theta    xTopPolygon = r * cos(theta)
         *    -------
-        *       x
+        *       xTopPolygon
         */
         if (x0 == x1) {
         	thetaTransformCW = -90.;
@@ -681,8 +684,8 @@ public class LinesAndAngles {
         	thetaTransformCW = -1*Math.atan2((y1-y0), (x1-x0));
         }
 
-        // P'_x = origin_x + ((x-origin_x)*math.cos(theta) - (y-origin_y)*math.sin(theta))
-        // P'_y = origin_y + ((y-origin_y)*math.cos(theta) + (x-origin_x)*math.sin(theta))
+        // P'_x = origin_x + ((xTopPolygon-origin_x)*math.cos(theta) - (yTopPolygon-origin_y)*math.sin(theta))
+        // P'_y = origin_y + ((yTopPolygon-origin_y)*math.cos(theta) + (xTopPolygon-origin_x)*math.sin(theta))
         float x00 = x0;
         float y00 = y0;
 
@@ -786,7 +789,7 @@ public class LinesAndAngles {
                         return 2.*Math.PI;
                     }
                 }
-                // can use  sine(theta) = y/r and complement or cosine(theta) = x/r
+                // can use  sine(theta) = yTopPolygon/r and complement or cosine(theta) = xTopPolygon/r
                 double r = Math.sqrt(distSquared(x0, y0, x1, y1));
                 double y =  (y0 - y1);
 
@@ -812,7 +815,7 @@ public class LinesAndAngles {
                     return angle;
                 }
             } else if (slope01 == 0) {
-                // can use cosine(theta) = x/r and complement
+                // can use cosine(theta) = xTopPolygon/r and complement
                 double r = Math.sqrt(distSquared(xPoint, yPoint, x1, y1));
                 double x = (xPoint - x1);
                 if ((xPoint < x1) && (yPoint > y1)) {// COVERAGE HERE?
@@ -890,7 +893,7 @@ public class LinesAndAngles {
                     }
                 }
 
-                // can use  sine(theta) = y/r and complement or cosine(theta) = x/r
+                // can use  sine(theta) = yTopPolygon/r and complement or cosine(theta) = xTopPolygon/r
                 double r = Math.sqrt(distSquared(x0, y0, x1, y1));
                 double y =  (y0 - y1);
 
@@ -987,7 +990,7 @@ public class LinesAndAngles {
         float xL, float yL, float xR, float yR, double epsilon) {
 
         // determine slope for line and plugin xPoint.
-        //    does the resulting y = yPoint within epsilon?
+        //    does the resulting yTopPolygon = yPoint within epsilon?
 
         /*
          *   yL - yR            yL - yPoint
@@ -1021,7 +1024,7 @@ public class LinesAndAngles {
             return false;
         }
 
-        //re-order by incr x and y
+        //re-order by incr xTopPolygon and yTopPolygon
         if ( (x0 > x1) || ((x0 == x1) && (y0 > y1)) ) {
             float tmp = x0;
             x0 = x1;
@@ -1041,7 +1044,7 @@ public class LinesAndAngles {
         // Now we have x0 < x1   and   x2 < x3
 
 
-        //  look for  0  2  3  1  in x  and matching pattern in y
+        //  look for  0  2  3  1  in xTopPolygon  and matching pattern in yTopPolygon
 
         if ( (x0 <= x2) && (x3 <= x1) ) {
             if ( (y0 <= y1) && (y2 <= y3) && (y0 <= y2) && (y3 <= y1) ) {
@@ -1050,7 +1053,7 @@ public class LinesAndAngles {
                 return true;
             }
         } else {
-            //  look for  2  0  1  3  in x  and matching pattern in y
+            //  look for  2  0  1  3  in xTopPolygon  and matching pattern in yTopPolygon
             if (segment01Slope > 0) {
                 if ( (x2 <= x0) && (x1 <= x3) ) {
                     if ( (y1 <= y0) && (y3 <= y2) && (y2 <= y0) && (y1 <= y3) ) {
@@ -1127,4 +1130,175 @@ public class LinesAndAngles {
 
         return new float[]{area, xc, yc};
     }
+
+    /**
+     * create an interpolated polygon of area around the peak for the top full width topFraction of max
+     * immediately surrounding the peak.
+     * For example, this is used to find the centroid of the peak of a Generalized Extreme Value distribution.
+     *
+     * @param x
+     * @param y
+     * @param topFraction
+     * @return
+     */
+    public static XY createPolygonOfTopFWFractionMax(float[] x, float[] y, float topFraction) {
+
+        float[] xTopPolygon = new float[x.length + 3];
+        float[] yTopPolygon = new float[y.length + 3];
+
+        int yPeakIndex = MiscMath.findYMaxIndex(y);
+
+        float yFractionLimit = y[yPeakIndex]*topFraction;
+
+        int polygonCount = 1; // leave space for the interpolated 1st point
+
+        // these are w.r.t. x and y
+        int firstIndex = -1;
+        int lastIndex = -1;
+
+        for (int i = 0; i < x.length; i++) {
+
+            if (i <= yPeakIndex) {
+
+                if (y[i] >= yFractionLimit) {
+
+                    if (firstIndex == -1) {
+                        firstIndex = i;
+                    }
+
+                    xTopPolygon[polygonCount] = x[i];
+                    yTopPolygon[polygonCount] = y[i];
+                    polygonCount++;
+                }
+            } else if (y[i] >= yFractionLimit) {
+
+                xTopPolygon[polygonCount] = x[i];
+                yTopPolygon[polygonCount] = y[i];
+                polygonCount++;
+
+            } else {
+                // we are below the yFractionLimit
+                lastIndex = i - 1;
+                break;
+            }
+        }
+        if (lastIndex == -1) {
+            lastIndex = x.length - 1;
+        }
+
+        // compress the array.  we will add two items beyond polygonCount.
+        //    one for the interpolated yFractionLimit, and the other for a
+        //    copy of the first point to close the polygon
+        if ( (polygonCount + 1) < xTopPolygon.length) {
+            xTopPolygon = Arrays.copyOf(xTopPolygon, (polygonCount + 2));
+            yTopPolygon = Arrays.copyOf(yTopPolygon, (polygonCount + 2));
+        }
+
+        /* (0)                     | (1)                     | (2)                   | (3)
+         *           peak          |           peak          |         peak          |            peak
+         *                         |                         |                       |
+         *                         |     pt_i+1    pt_j-1    |                       |
+         *     pt_i        pt_j    |   pt_i           pt_j   |                       |
+         *    ------------------   |  ---------------------  |  -------------------  |  ----------------------
+         *                         |                         |                       |
+         *   pt_0             pt_k | pt_0              pt_k  |   pt_0      pt_k      |  <no point>      <no point>
+         *                         |                         |                       |
+         *
+         *                                                                           | (4)     peak
+         *                                                                           |
+         *                                                                           |      pt_i       pt_j
+         *                                                                           |  ----------------------
+         *                                                                           |
+         *                                                                           | <no point>      <no point>
+         */
+
+        // interpolate first point
+        yTopPolygon[0] = yFractionLimit;
+
+        if (firstIndex > 0) {
+            /* case (0), case (1), and case (2)
+             *  y[pt_i] - y[pt_0]    y[pt_i] - y[limit]                               y[pt_i] - y[limit]
+             *  ----------------- =  ------------------  ====>  x[pt_i] - x[limit] =  ------------------ * x[pt_i] - x[pt_0]
+             *  x[pt_i] - x[pt_0]    x[pt_i] - x[limit]                               y[pt_i] - y[pt_0]
+             */
+            float tmp = (y[firstIndex] - yFractionLimit)/(y[firstIndex] - y[firstIndex - 1]);
+            xTopPolygon[0] = x[firstIndex] - (tmp * (x[firstIndex] - x[firstIndex - 1]));
+
+        } else if ((firstIndex == 0) && (yPeakIndex == 0)) {
+            /* case (3)
+             * there is no point before the peak, so we create a point right below as a straight line
+             */
+             xTopPolygon[0] = x[yPeakIndex];
+
+        } else if ((firstIndex == 0) && (yPeakIndex > 0)) {
+            /* case (4)
+             * There is a point before the peak, so we extend line.
+             *   y[firstIndex+1] - y[firstIndex]     y[firstIndex] - y[limit]
+             *   -------------------------------  = -------------------------
+             *   x[firstIndex+1] - x[firstIndex]     x[firstIndex] - x[limit]
+             *
+             *                                 y[firstIndex] - y[limit]
+             * x[firstIndex] - x[limit] =  ------------------------------- * x[firstIndex+1] - x[firstIndex]
+             *                             y[firstIndex+1] - y[firstIndex]
+             *
+             *                                  y[firstIndex] - y[limit]
+             * x[limit] = x[firstIndex] -   ------------------------------ * x[firstIndex+1] - x[firstIndex]
+             *                              y[firstIndex+1] - y[firstIndex]
+             */
+            float tmp = (y[firstIndex] - yFractionLimit)/(y[firstIndex + 1] - y[firstIndex]);
+            xTopPolygon[0] = x[firstIndex] - (tmp * (x[firstIndex + 1] - x[firstIndex]));
+
+        } else {
+            throw new IllegalStateException("have not solved for this first point! ");
+        }
+
+        // interpolate the point after lastIndex
+
+        yTopPolygon[polygonCount] = yFractionLimit;
+
+        if (lastIndex < (x.length - 1)) {
+            /* case (0), case (1), and case (2)
+             *  y[pt_j] - y[pt_k]    y[pt_j] - y[limit]                               y[pt_j] - y[limit]
+             *  ----------------- =  ------------------  ====>  x[pt_j] - x[limit] =  ------------------ * x[pt_j] - x[pt_k]
+             *  x[pt_j] - x[pt_k]    x[pt_j] - x[limit]                               y[pt_j] - y[pt_k]
+             */
+            float slope = (y[lastIndex] - yFractionLimit)/(y[lastIndex] - y[lastIndex + 1]);
+            xTopPolygon[polygonCount] = x[lastIndex] - (slope * (x[lastIndex] - x[lastIndex + 1]));
+
+        } else if ((lastIndex == (x.length - 1)) && (lastIndex == yPeakIndex)) {
+            /* case (3)
+             * there is no point after the peak, so we create a point right below as a straight line
+             */
+             xTopPolygon[polygonCount] = x[yPeakIndex];
+
+        } else if ((lastIndex == (x.length - 1)) && (yPeakIndex < lastIndex)) {
+            /* case (4)
+             * There is a point after the peak, so we extend line.
+             *   y[lastIndex-1] - y[lastIndex]     y[lastIndex] - y[limit]
+             *   -------------------------------  = -------------------------
+             *   x[lastIndex-1] - x[lastIndex]     x[lastIndex] - x[limit]
+             *
+             *                                y[lastIndex] - y[limit]
+             * x[lastIndex] - x[limit] =  ------------------------------- * x[lastIndex-1] - x[lastIndex]
+             *                             y[lastIndex-1] - y[lastIndex]
+             *
+             *                                  y[lastIndex] - y[limit]
+             * x[limit] = x[lastIndex] -   ------------------------------ * x[lastIndex-1] - x[lastIndex]
+             *                              y[lastIndex-1] - y[lastIndex]
+             */
+            float tmp = (y[lastIndex] - yFractionLimit)/(y[lastIndex - 1] - y[lastIndex]);
+            xTopPolygon[polygonCount] = x[lastIndex] - (tmp * (x[lastIndex - 1] - x[lastIndex]));
+
+        } else {
+            throw new IllegalStateException("have not solved for this later point! ");
+        }
+
+        xTopPolygon[xTopPolygon.length - 1] = xTopPolygon[0];
+        yTopPolygon[xTopPolygon.length - 1] = yTopPolygon[0];
+
+        XY xy = new XY(xTopPolygon, yTopPolygon);
+
+        return xy;
+    }
+
 }

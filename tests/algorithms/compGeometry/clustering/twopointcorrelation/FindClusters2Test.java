@@ -1,5 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.misc.HistogramHolder;
+import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 
 /**
@@ -29,20 +31,26 @@ public class FindClusters2Test extends BaseTwoPointTest {
         }
 
         for (int i = 0; i < filePaths.length; i++) {
-        //for (int i = 80; i < 81; i++) {
+        //for (int i = 67; i < 68; i++) {
 
             String filePath = filePaths[i];
 
             DoubleAxisIndexer indexer = CreateClusterDataTest.readIndexer(filePath);
 
             String srchFor = "indexer_random_background_with_";
-            int i0 = filePaths[i].indexOf(srchFor);
+            int i0 = filePath.indexOf(srchFor);
             String numberOfClusters = filePaths[i].substring(i0 + srchFor.length());
             i0 = numberOfClusters.indexOf("_clusters_");
             numberOfClusters = numberOfClusters.substring(0, i0);
 
+            String strCount;
+            i0 = filePath.indexOf("clusters_");
+            i0 += "clusters_".length();
+            int i1 = filePath.indexOf(".dat");
+            strCount = filePath.substring(i0, i1);
+
             TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
-            twoPtC.setDebug(true);
+            twoPtC.setDebug(false);
 
             log.info(" " + i + " (" + twoPtC.indexer.nXY + " points) ... ");
 
@@ -62,11 +70,13 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 if (areaAndXYTopCentroid != null) {
 
                     plotLabel = String.format(
-                    "  (%3d %s %4d)  peak=%.4f  xcen=%.4f  chst=%.1f",
+                    "  (%3d %s %4d)  peak=%.4f  xcen=%.4f  chst=%.1f  %s",
                     i, numberOfClusters, twoPtC.indexer.nXY,
                     ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getXPeak(),
                     areaAndXYTopCentroid[1],
-                    ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getChiSqStatistic());
+                    ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getChiSqStatistic(),
+                    ((TwoPointVoidStats)twoPtC.backgroundStats).getSampling().name()
+                    );
                 }
 
             } else {
@@ -77,6 +87,14 @@ public class FindClusters2Test extends BaseTwoPointTest {
             }
 
             twoPtC.calculateHullsOfClusters();
+
+            float[] xf = null;
+            float[] yf = null;
+            HistogramHolder histogram = stats.getStatsHistogram();
+            String fileNamePostfix = "_clusters_" + strCount + ".dat";
+            String fileName = CreateClusterDataTest.histogramFileNamePrefix + numberOfClusters + fileNamePostfix;
+            filePath = ResourceFinder.getAFilePathInTmpData(fileName);
+            CreateClusterDataTest.writeHistogram(filePath, histogram);
 
             plotter.addPlot(twoPtC, plotLabel);
             plotter.writeFile();
