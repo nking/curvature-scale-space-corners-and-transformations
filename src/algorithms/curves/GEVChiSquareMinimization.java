@@ -420,7 +420,7 @@ public class GEVChiSquareMinimization {
         float sigmaMin = sigmaMinDefault;
         float sigmaMax = sigmaMaxDefault;
 
-        float chiSqStatisticLimit = 1000f;
+        float chiSqStatisticLimit = 3f;//1000f;
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
@@ -476,10 +476,10 @@ public class GEVChiSquareMinimization {
 
                     System.out.println(str);
                 }
-            }
 
-            if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
-                bestFit = yfit;
+                if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
+                    bestFit = yfit;
+                }
             }
 
             if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
@@ -497,10 +497,10 @@ public class GEVChiSquareMinimization {
 
                     System.out.println(str);
                 }
-            }
 
-            if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
-                bestFit = yfit;
+                if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
+                    bestFit = yfit;
+                }
             }
 
             if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
@@ -520,10 +520,34 @@ public class GEVChiSquareMinimization {
 
                     System.out.println(str);
                 }
+
+                if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
+                    bestFit = yfit;
+                }
             }
 
-            if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
-                bestFit = yfit;
+            if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
+
+                kMin = kMinDefault3;
+                kMax = 1.0f;
+
+                sigmaMin = sigmaMinDefault;
+                sigmaMax = 0.1f;
+
+                yfit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
+
+                if (debug && (yfit != null)) {
+
+                    String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
+                    yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
+                    yfit.getChiSqStatistic());
+
+                    System.out.println(str);
+                }
+
+                if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
+                    bestFit = yfit;
+                }
             }
         }
 
