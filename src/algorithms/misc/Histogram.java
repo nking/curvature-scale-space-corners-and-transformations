@@ -301,7 +301,10 @@ plotter.writeFile();
                     nBins = tmpNBins;
 
                 } else if (nBins == minNumberOfBins) {
+
                     go = false;
+
+                    nBins = 10; // absolute min number...
 
                 } else {
                     xMax = tmpXMax;
@@ -329,6 +332,8 @@ plotter.writeFile();
                     } else if (nBins == minNumberOfBins) {
                         go = false;
 
+                        nBins = 10; // absolute min number...
+
                     } else {
                         nBins = minNumberOfBins;
                         binWidth = (maxValue - minValue)/nBins;
@@ -355,6 +360,7 @@ plotter.writeFile();
                 } else if (nBins == minNumberOfBins) {
                     go = false;
 
+                    nBins = 10; // absolute min number...
                 } else {
                     xMax = tmpXMax;
                     nBins = minNumberOfBins;
