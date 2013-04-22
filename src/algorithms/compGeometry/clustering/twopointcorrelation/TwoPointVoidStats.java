@@ -668,10 +668,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 sampling = Sampling.SEMI_COMPLETE;
             }*/
 
-            // NOTE: with further tests, may find >9999 is SEMI_COMPLETE_RANGE_SEARCH
-            //                            else if > 999 is LEAST_COMPLETE
-            if (indexer.nXY > 999) {
-                //this.sampling = Sampling.LEAST_COMPLETE;
+            if (indexer.nXY > 9999) {
+                this.sampling = Sampling.LEAST_COMPLETE;
+            } else if (indexer.nXY > 999) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
             } else {
                 this.sampling = Sampling.SEMI_COMPLETE;
