@@ -55,7 +55,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         srr.setSeed(System.currentTimeMillis());
         long seed = srr.nextLong();
 
-        seed = 310357278571620991l;
+        //seed = 310357278571620991l;
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(seed);
@@ -137,10 +137,11 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
                 writeIndexer(filePath, indexer);
 
+                plotter.addPlot(indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors(), null, null, String.valueOf(i));
 
                 log.info(" " + count + " " + i + " number of clusters=" + numberOfClusters + " (" + indexer.nXY + " points) ... ");
 
-                TwoPointVoidStatsExt twoPtC = new TwoPointVoidStatsExt(indexer);
+                /*TwoPointVoidStatsExt twoPtC = new TwoPointVoidStatsExt(indexer);
                 twoPtC.setDebug(true);
 
                 float[] xf = null;
@@ -160,9 +161,13 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
                 plotter.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
                     histogram.getXErrors(), histogram.getYErrors(), xf, yf,
-                    String.valueOf(count) + " : " + i + " : " + numberOfClusters + " => " + twoPtC.bestFit.getChiSqStatistic());
+                    String.valueOf(count) + " : " + i + " : " + numberOfClusters + " => " + twoPtC.bestFit.getChiSqStatistic());*/
+
+                //addPlot(float[] xPoints, float[] yPoints, float[] xErrPoints, float[] yErrPoints,
+                //float[] xPolygon, float[] yPolygon, String plotLabel)
 
                 plotter.writeFile();
+
 
                 count++;
             }

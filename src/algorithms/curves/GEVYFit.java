@@ -294,6 +294,9 @@ public class GEVYFit implements IYFit {
      * @return the xMeanIndex
      */
     public int getxMeanIndex() {
+        if (!statsHaveBeenCalculated()) {
+            calcStats(true);;
+        }
         return xMeanIndex;
     }
 
@@ -301,6 +304,9 @@ public class GEVYFit implements IYFit {
      * @return the xPeakIndex
      */
     public int getXPeakIndex() {
+        if (!statsHaveBeenCalculated()) {
+            calcStats(true);;
+        }
         return xPeakIndex;
     }
 

@@ -164,8 +164,8 @@ public class MiscMath {
     public static float[] calculateOuterRoundedMinAndMax(float[] a) {
 
         // find the powers of 10 for the data min and max
-        float xmin = a[0];
-        float xmax = a[0];
+        float xmin = Float.MAX_VALUE;
+        float xmax = Float.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
             if (a[i] > xmax) {
                 xmax = a[i];
