@@ -4,6 +4,7 @@ import algorithms.compGeometry.clustering.twopointcorrelation.CreateClusterDataT
 import algorithms.misc.HistogramHolder;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
+import java.io.File;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -46,6 +47,9 @@ public class GEVChiSquareMinimization3Test extends TestCase {
         String fileName = CreateClusterDataTest.histogramFileNamePrefix + fileNamePostfix;
         String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
 
+        if (!(new File(filePath)).exists()) {
+            return;
+        }
 
             HistogramHolder histogram = CreateClusterDataTest.readHistogram(filePath);
 
