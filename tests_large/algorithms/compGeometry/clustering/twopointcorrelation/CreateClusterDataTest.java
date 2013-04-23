@@ -34,7 +34,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    protected boolean enable = false;
+    protected boolean enable = true;
 
     public void testCreateData() throws Exception {
 
@@ -77,13 +77,11 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
         int nIterPerBackground = 30;
 
-        int m = nIterPerBackground*6;
-
         DoubleAxisIndexer indexer = null;
 
         int count = 0;
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 7; i++) {
 
             for (int ii = 0; ii < nIterPerBackground; ii++) {
 
@@ -125,6 +123,11 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 10.0f);
                         break;
+                    case 6:
+                        numberOfClusters = "3";
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            3, 30, 60, 100.0f);
+                        break;
                     default:
                         break;
                 }
@@ -137,7 +140,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
                 writeIndexer(filePath, indexer);
 
-                plotter.addPlot(indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors(), null, null, String.valueOf(i));
+                //plotter.addPlot(indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors(), null, null, String.valueOf(i));
 
                 log.info(" " + count + " " + i + " number of clusters=" + numberOfClusters + " (" + indexer.nXY + " points) ... ");
 
@@ -166,7 +169,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
                 //addPlot(float[] xPoints, float[] yPoints, float[] xErrPoints, float[] yErrPoints,
                 //float[] xPolygon, float[] yPolygon, String plotLabel)
 
-                plotter.writeFile();
+                //plotter.writeFile();
 
 
                 count++;
@@ -179,8 +182,6 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
     static void createSpatialDistributionTestFiles() throws NoSuchAlgorithmException, IOException {
 
         int nIterPerBackground = 10;
-
-        int m = nIterPerBackground*6;
 
         DoubleAxisIndexer indexer = null;
 
@@ -207,7 +208,11 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
         RandomClusterAndBackgroundGenerator generator = new RandomClusterAndBackgroundGenerator();
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 7; i++) {
+
+            if (i != 6) {
+                continue;
+            }
 
             for (int ii = 0; ii < nIterPerBackground; ii++) {
 
