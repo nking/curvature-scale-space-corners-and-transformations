@@ -89,7 +89,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH /*default*/
     }
 
+    public enum State {
+        POINTS_LOADED, DENSITIES_CALCULATED, HISTOGRAM_CREATED, HISTOGRAM_FITTED, STATS_FINALIZED
+    }
+
     protected Sampling sampling = null;
+
+    protected State state = null;
 
     protected float[] allTwoPointSurfaceDensities = null;
     protected float[] allTwoPointSurfaceDensitiesErrors = null;
@@ -125,10 +131,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      */
     public TwoPointVoidStats(DoubleAxisIndexer indexedSortedPoints) {
         super(indexedSortedPoints);
+
+        state = State.POINTS_LOADED;
     }
 
-    public TwoPointVoidStats(String persistedIndexerFileName) throws IOException {
-        super(persistedIndexerFileName);
+    public TwoPointVoidStats(String persistedIndexerFilePath) throws IOException {
+        super(persistedIndexerFilePath);
+
+        state = State.POINTS_LOADED;
     }
 
     /**
@@ -220,9 +230,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             sumBytes += twoPointIdentities.approximateMemoryUsed();
         }
 
-        sumBytes += (8 + 16);//enum reference + class
+        sumBytes += 2*(8 + 16);//enum reference + class
 
-        long sumBits = (4*n*32) + 32 + 32 + 2 + (Sampling.values().length * (32));
+        long sumBits = (4*n*32) + 32 + 32 + 2 + (Sampling.values().length * (32))
+            + (State.values().length * (32));
 
         sumBytes += (sumBits/8);
 
@@ -262,7 +273,17 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     @Override
     protected void calculateStats() throws TwoPointVoidStatsException {
 
-        statsHistogram = createHistogram();
+        if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
+            calculateTwoPointVoidDensities();
+        }
+
+        if (indexer.nXY > 999) {
+            statsHistogram = createHistogramWithHigherPeakResolution();
+        } else {
+            statsHistogram = createHistogram();
+        }
+
+        state = State.HISTOGRAM_CREATED;
 
         //int yMaxBin = Histogram.findMax(histogram.getYHist());
 
@@ -288,6 +309,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      */
     protected void calculateTwoPointVoidDensities() throws TwoPointVoidStatsException {
 
+        if (state.ordinal() >= State.DENSITIES_CALCULATED.ordinal()) {
+            return;
+        }
+
         long startTimeMillis = System.currentTimeMillis();
 
         allTwoPointSurfaceDensities = new float[100];
@@ -309,6 +334,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         allTwoPointSurfaceDensitiesErrors =
             calulateTwoPointDensityErrors(allTwoPointSurfaceDensities, point1, point2,
             indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors());
+
+        state = State.DENSITIES_CALCULATED;
 
         if (doLogPerformanceMetrics) {
 
@@ -408,6 +435,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected HistogramHolder createHistogram() throws TwoPointVoidStatsException {
 
+        if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
+            calculateTwoPointVoidDensities();
+        }
+
         int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
 
         //HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, allTwoPointSurfaceDensities,
@@ -415,6 +446,29 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         HistogramHolder histogram = Histogram.createHistogramForSkewedData(
             nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors, true);
+
+        plotPairSeparations();
+
+        return histogram;
+    }
+
+    protected HistogramHolder createHistogramWithHigherPeakResolution() throws TwoPointVoidStatsException {
+
+        if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
+            calculateTwoPointVoidDensities();
+        }
+
+        int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
+
+        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(allTwoPointSurfaceDensities);
+
+        HistogramHolder histogram = Histogram.createHistogramForSkewedDataForPeakResolution2(
+            nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors,
+            minMax[0], minMax[1], 0);
+
+        //HistogramHolder histogram = Histogram.createHistogramForSkewedDataForPeakResolution(
+        //    nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors,
+        //    minMax[0], minMax[1]);
 
         plotPairSeparations();
 
@@ -433,9 +487,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      */
     protected void calculateStatsForBackground(HistogramHolder histogram, int yMaxBin) throws TwoPointVoidStatsException {
 
-        statsHistogram = histogram;
+        GEVYFit yfit = fitBackgroundHistogram(histogram, yMaxBin);
 
-        int muBin = yMaxBin;
+        state = State.HISTOGRAM_FITTED;
+
+        finalizeStats(histogram, yfit);
+    }
+
+    protected GEVYFit fitBackgroundHistogram(HistogramHolder histogram, int yMaxBin) throws TwoPointVoidStatsException {
 
         try {
 
@@ -505,7 +564,22 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 throw new TwoPointVoidStatsException("did not find a solution");
             }
 
-            bestFit = yfit;
+            return yfit;
+
+        } catch (FailedToConvergeException e) {
+            throw new TwoPointVoidStatsException(e);
+        } catch (IOException e2) {
+            throw new TwoPointVoidStatsException(e2);
+        }
+    }
+
+    protected void finalizeStats(HistogramHolder histogram, GEVYFit yfit) throws TwoPointVoidStatsException {
+
+        this.statsHistogram = histogram;
+
+        this.bestFit = yfit;
+
+        try {
 
             if (debug) {
                 if (bestFit != null) {
@@ -517,8 +591,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 float ymin = 0;
                 float ymax = MiscMath.findMax(histogram.getYHistFloat());
 
-                float[] xf = yfit.getOriginalScaleX();
-                float[] yf = yfit.getOriginalScaleYFit();
+                float[] xf = bestFit.getOriginalScaleX();
+                float[] yf = bestFit.getOriginalScaleYFit();
                 PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
                 plotter.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
                     histogram.getXErrors(), histogram.getYErrors(), xf, yf, "");
@@ -526,12 +600,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             }
 
             // centroid of area defined by the top portion of the fit where y >= ypeak/2
-            float[] areaAndXYTopCentroid = calculateCentroidOfTop(yfit.getOriginalScaleX(), yfit.getOriginalScaleYFit(), 0.5f);
+            float[] areaAndXYTopCentroid = calculateCentroidOfTop(bestFit.getOriginalScaleX(), bestFit.getOriginalScaleYFit(), 0.5f);
 
             String limitStr = "top centroid";
             float limit, limitError;
-            limit = (areaAndXYTopCentroid != null) ? areaAndXYTopCentroid[1] : yfit.getXPeak();
-            int limitIndex = yfit.getXPeakIndex();
+            limit = (areaAndXYTopCentroid != null) ? areaAndXYTopCentroid[1] : bestFit.getXPeak();
+            int limitIndex = bestFit.getXPeakIndex();
             limitError = histogram.getXErrors()[limitIndex];
 
             //if (limitIndex == -1) {
@@ -542,7 +616,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             this.backgroundSurfaceDensity = limit;
 
             if (debug) {
-                System.out.println(yfit.toString());
+                System.out.println(bestFit.toString());
             }
 
             /* Errors add in quadrature:
@@ -594,7 +668,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             float errorInEstimateFromHistogram = limitError;
 
             float gevTotalMeanFittingError =
-                GeneralizedExtremeValue.calculateTotalMeanFittingError(yfit.getX(), yfit.getYFit());
+                GeneralizedExtremeValue.calculateTotalMeanFittingError(bestFit.getX(), bestFit.getYFit());
 
             float errorInFitting = gevTotalMeanFittingError / histogram.getYHist().length;
 
@@ -609,15 +683,15 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 + " gev fitting error for one point =" + errorInFitting);
             }
 
-            if (debug && (yfit.getChiSqSum() > chiSqMin.calcYErrSquareSum())) {
+            if (debug && (bestFit.getChiSqSum() > bestFit.getYDataErrSq())) {
                 System.out.println("WARNING:  chisq is larger than errors: "
-                    + yfit.getChiSqSum() + " (errsqsum=" + chiSqMin.calcYErrSquareSum() + ")");
+                    + bestFit.getChiSqSum() + " (errsqsum=" + bestFit.getYDataErrSq() + ")");
             }
 
-        } catch (FailedToConvergeException e) {
+            state = State.STATS_FINALIZED;
+
+        } catch (IOException e) {
             throw new TwoPointVoidStatsException(e);
-        } catch (IOException e2) {
-            throw new TwoPointVoidStatsException(e2);
         }
     }
 
@@ -629,9 +703,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      *     if (indexer.nXY < 100) {
      *         sampling = Sampling.COMPLETE;
      *     } else {
-     *         if (indexer.nXY > 999) {
-     *             sampling = Sampling.Sampling.LEAST_COMPLETE;
-     *         } else if (data are somewhat evenly distributed, in other words, expecting outliers) {
+     *         if (data are somewhat evenly distributed, in other words, expecting outliers) {
      *             sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
      *         } else {
      *             sampling = Sampling.SEMI_COMPLETE;
@@ -669,8 +741,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             }*/
 
             if (indexer.nXY > 999) {
-                //this.sampling = Sampling.LEAST_COMPLETE;
-            //} else if (indexer.nXY > 999) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
             } else {
                 this.sampling = Sampling.SEMI_COMPLETE;
@@ -1024,6 +1094,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             oos.writeInt(point1[i]);
             oos.writeInt(point2[i]);
         }
+        for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
+            oos.writeFloat(allTwoPointSurfaceDensitiesErrors[i]);
+        }
 
         oos.flush();
     }
@@ -1039,6 +1112,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         if (nTwoPointSurfaceDensities == 0) {
             throw new IOException("No pairs were found isolated within an area");
+        } else {
+            if (didDeserialize) {
+                state = State.DENSITIES_CALCULATED;
+            }
         }
 
         return didDeserialize;
@@ -1046,18 +1123,22 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected void deserializeTwoPointBackground(ObjectInputStream ois) throws IOException {
 
-        nTwoPointSurfaceDensities = ois.readInt();
+        this.nTwoPointSurfaceDensities = ois.readInt();
 
-        allTwoPointSurfaceDensities = new float[nTwoPointSurfaceDensities];
-        point1 = new int[nTwoPointSurfaceDensities];
-        point2 = new int[nTwoPointSurfaceDensities];
+        this.allTwoPointSurfaceDensities = new float[nTwoPointSurfaceDensities];
+        this.allTwoPointSurfaceDensitiesErrors = new float[nTwoPointSurfaceDensities];
+        this.point1 = new int[nTwoPointSurfaceDensities];
+        this.point2 = new int[nTwoPointSurfaceDensities];
 
         for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
-            allTwoPointSurfaceDensities[i] = ois.readFloat();
+            this.allTwoPointSurfaceDensities[i] = ois.readFloat();
         }
         for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
-            point1[i] = ois.readInt();
-            point2[i] = ois.readInt();
+            this.point1[i] = ois.readInt();
+            this.point2[i] = ois.readInt();
+        }
+        for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
+            this.allTwoPointSurfaceDensitiesErrors[i] = ois.readFloat();
         }
     }
 

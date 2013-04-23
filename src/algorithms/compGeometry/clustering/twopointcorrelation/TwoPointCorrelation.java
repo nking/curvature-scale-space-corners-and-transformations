@@ -178,7 +178,7 @@ public class TwoPointCorrelation {
 
     public TwoPointCorrelation(String indexerFilePath) throws IOException {
 
-        this.indexer = SerializerUtil.readPersistedPoints(indexerFilePath);
+        this.indexer = SerializerUtil.readPersistedPoints(indexerFilePath, true);
 
         pointToGroupIndex = new int[this.indexer.nXY];
         Arrays.fill(pointToGroupIndex, -1);
@@ -271,7 +271,7 @@ public class TwoPointCorrelation {
         }
     }
 
-    public void reuseMinimaStatsForBackgroundCalculation(String minimaFilePath) throws TwoPointVoidStatsException, IOException {
+    public void reuseStatsForBackgroundCalculation(String minimaFilePath) throws TwoPointVoidStatsException, IOException {
 
         TwoPointVoidStats minStats = new TwoPointVoidStats(indexer);
         minStats.setDebug(debug);

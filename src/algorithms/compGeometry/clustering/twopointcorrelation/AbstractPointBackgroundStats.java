@@ -32,8 +32,13 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
         }
         this.indexer = indexedSortedPoints;
     }
-    public AbstractPointBackgroundStats(String persistedIndexerFileName) throws IOException {
-        indexer = SerializerUtil.readPersistedPoints(persistedIndexerFileName);
+    /**
+     * load the indexer from the file and note that point errors are expected to be in the file
+     * @param persistedIndexerFilePath
+     * @throws IOException
+     */
+    public AbstractPointBackgroundStats(String persistedIndexerFilePath) throws IOException {
+        indexer = SerializerUtil.readPersistedPoints(persistedIndexerFilePath, true);
         didReadPerisistedIndexer = true;
     }
 
@@ -70,7 +75,7 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
 
     public abstract String persistTwoPointBackground() throws IOException;
 
-    public abstract boolean readTwoPointBackground(String persistedFileName) throws IOException;
+    public abstract boolean readTwoPointBackground(String persistedFilePath) throws IOException;
 
     public String persistIndexer() throws IOException {
         return SerializerUtil.serializeIndexer(indexer);
@@ -87,7 +92,7 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
         String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
 
         File file = new File(filePath);
-        
+
         OutputStream fos = null;
         ObjectOutputStream oos = null;
 
