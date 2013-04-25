@@ -18,6 +18,8 @@ import java.io.ObjectOutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
@@ -86,7 +88,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     //            range search and completeSamplingAlgWtihIncompleteSampling
 
     public enum Sampling {
-        COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH /*default*/, SEMI_COMPLETE_RANGE_SEARCH_2
+        COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH /*default*/,
+        SEMI_COMPLETE_RANGE_SEARCH_2, SEMI_COMPLETE_RANGE_SEARCH_3
     }
 
     public enum State {
@@ -211,6 +214,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             heapUsage.getUsed(), nonHeapUsage.getUsed() );
 
         Logger.getLogger(this.getClass().getSimpleName()).info(str);
+        System.out.println(str);
     }
 
     // TODO:  replace with estimation using reflection one day
@@ -348,6 +352,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 str = "O(n^4) with n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
                 str = "O(n^2 - n) with n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
+                str = "? n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
+                str = "? n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
                 str = "not yet est with n=";
             }
@@ -792,8 +800,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 sampling = Sampling.SEMI_COMPLETE;
             }*/
 
-            if (indexer.nXY > 9999) {
-                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_2;
+            if (indexer.nXY > 5000) {
+                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
             } else if (indexer.nXY > 999) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
             } else {
@@ -801,9 +809,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             }
         }
 
-        if (debug) {
-            System.out.println("findVoid sampling=" + sampling.name());
-        }
+        //if (debug) {
+            System.out.println("findVoid sampling=" + sampling.name() + " for " + indexer.nXY + " points");
+        //}
 
         if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
 
@@ -819,12 +827,18 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
 
             // uses a very rough range search
-            findVoidsRoughRangeSearch(x, y, 2);
+            findVoidsRoughRangeSearch(0, indexer.nXY - 1, 0, indexer.nXY - 1, 2, 1.5f);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
 
             // uses a very rough range search
-            findVoidsRoughRangeSearch(x, y, 10);
+            findVoidsRoughRangeSearch(0, indexer.nXY - 1, 0, indexer.nXY - 1, 10, 4);
+
+        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
+
+            // for area of data so large that randomly chosen patches are neccessary
+            //   to reduce sample to decrease runtime
+            findVoidsRandomSamples(x, y, 10);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 
@@ -896,12 +910,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     /**
      *
-     * @param x
-     * @param y
      * @param nDiv used to form the number of intervals = nPoints/nDiv
      *        which should usually be 2 or so
+     * @param bFactor
      */
-    protected void findVoidsRoughRangeSearch(float[] x, float[] y, int nDiv) {
+    protected void findVoidsRoughRangeSearch(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int nDiv, float bFactor) {
 
         /* Divide y interval in half and execute the same size intervals in x over the full range
 
@@ -934,27 +947,100 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
          *   6's
          *   8's
          */
-        int n = indexer.getNumberOfPoints();
+        //int n = indexer.getNumberOfPoints();
 
-        int nYIntervals = n / nDiv;                                          // cost     number of times
+        int nYIntervals = (yIndexHi - yIndexLo) / nDiv;                     // cost     number of times
 
         for (int k = 0; k < nYIntervals; k++) {                             //               nDiv
-            int binSz = (k + 1) * 2;                                        // c10
-            binSz = (int)((k + 1) * 1.5f);
+            int binSz = (int)((k + 1) * bFactor);                           // c10
 
-            int yLo = 0;
-            while ((yLo + binSz) < n) {                                     //              (N/2)-1, (N/2)-2
+            int yLo = xIndexLo;
+            while ((yLo + binSz) < yIndexHi) {                              //              (N/2)-1, (N/2)-2
 
-                int nXIntervals = n / binSz;
+                int nXIntervals = (xIndexHi - xIndexLo)/ binSz;
 
                 for (int j = 0; j < nXIntervals; j++) {                     //              N/2, N/4
-                    int startX = j * binSz;
+                    int startX = xIndexLo + (j * binSz);
                     int endX = startX + binSz - 1;
 //System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + (yLo + binSz));
-                    processIndexedRegion(x, y, startX, endX, yLo, yLo + binSz);
+                    processIndexedRegion(indexer.getX(), indexer.getY(), startX, endX, yLo, yLo + binSz);
                 }
                 yLo += 2;
             }
+        }
+    }
+
+    /**
+     *
+     * runtime estimation  is O(n^2) + O(n)
+     *     where if evenly distributed, n = N/nSamples;
+     *     ==>   10*( (N/10)^2 + (N/10) )
+     *
+     * @param x
+     * @param y
+     * @param nSamples the number of samples to take
+     */
+    protected void findVoidsRandomSamples(float[] x, float[] y, int nSamples) {
+
+        try {
+            int n = indexer.getNumberOfPoints();
+
+            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+            sr.setSeed(System.currentTimeMillis());
+
+            // find nSamples non-overlapping regions to sample the area
+
+            /*
+             * divide into a grid of nSamples by nSamples and choose nSamples randomly from them
+             *
+             * Note that the division is in index space rather than value space to
+             * use the indexer.
+             *
+             */
+            int binSize = indexer.nXY/nSamples;
+
+            /*    col 0
+             *     ||
+             *     \/
+             *      0 |  1 | 2     <=== row 0
+             *    ---------------
+             *        |    |
+             *      3 |  4 | 5
+             *    ---------------
+             *        |    |
+             *      6 |  7 | 8
+             */
+
+            int nSSq = nSamples*nSamples;
+
+            // choices are 0 through nSamples-1
+            boolean[] selected = new boolean[nSSq];
+
+            for (int i = 0; i < nSamples; i++) {
+
+                int bin = sr.nextInt(nSSq);
+                while (selected[bin]) {
+                    bin = sr.nextInt(nSSq);
+                }
+                selected[bin] = true;
+
+                int row = (bin/nSamples);// rounds down
+
+                int col = (bin % nSamples);
+
+                int startX = col*binSize;
+                int endX = startX + binSize;
+                int yLo = row*binSize;
+                int yHi = yLo + binSize;
+
+                //if (debug) {
+                    System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + yHi);
+                //}
+
+                findVoidsRoughRangeSearch(startX, endX, yLo, yHi, 2, 2);
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
         }
     }
 

@@ -207,12 +207,15 @@ public class TwoPointCorrelation {
     }
 
     public void setSigmaFactorToTwo() {
+        System.out.println("threshhold=2.0");
         sigmaFactor = 2.0f;
     }
     public void setSigmaFactorToTwoPointFive() {
+        System.out.println("threshhold=2.5");
         sigmaFactor = 2.5f;
     }
     public void setSigmaFactorToThree() {
+        System.out.println("threshhold=3.0");
         sigmaFactor = 3.0f;
     }
 
@@ -908,6 +911,10 @@ public class TwoPointCorrelation {
         }
     }
 
+    public int getNumberOfGroups() {
+        return nGroups;
+    }
+    
     public float[] calculateGroupCentroidUsingAllPointsEquallyWeighted(int groupNumber) {
 
         if (groupNumber >= nGroups) {

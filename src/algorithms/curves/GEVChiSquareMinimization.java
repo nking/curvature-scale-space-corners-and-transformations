@@ -420,7 +420,7 @@ public class GEVChiSquareMinimization {
         float sigmaMin = sigmaMinDefault;
         float sigmaMax = sigmaMaxDefault;
 
-        float chiSqStatisticLimit = 0f;
+        float chiSqStatisticLimit = 0f;//1000f;
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
@@ -506,7 +506,7 @@ public class GEVChiSquareMinimization {
             if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
 
                 kMin = kMinDefault3;
-                kMax = kMaxDefault3;
+                kMax = kMaxDefault3;// might need kMinDefault3*10
 
                 sigmaMin = sigmaMinDefault2;
 

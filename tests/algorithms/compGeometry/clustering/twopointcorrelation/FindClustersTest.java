@@ -43,9 +43,9 @@ public class FindClustersTest extends BaseTwoPointTest {
         //  all with the same number of clusters and cluster points, though
         //  randomly distributed.
 
-        int nSwitches = 3;
+        int nSwitches = 4;
 
-        int nIterPerBackground = 1;
+        int nIterPerBackground = 3;
 
         int m = nIterPerBackground*nSwitches;
 
