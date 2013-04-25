@@ -86,7 +86,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     //            range search and completeSamplingAlgWtihIncompleteSampling
 
     public enum Sampling {
-        COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH /*default*/
+        COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH /*default*/, SEMI_COMPLETE_RANGE_SEARCH_2
     }
 
     public enum State {
@@ -599,25 +599,77 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 plotter.writeFile3();
             }
 
-            // centroid of area defined by the top portion of the fit where y >= ypeak/2
-            float[] areaAndXYTopCentroid = calculateCentroidOfTop(bestFit.getOriginalScaleX(), bestFit.getOriginalScaleYFit(), 0.5f);
+            String limitStr = "";
 
-            String limitStr = "top centroid";
+            boolean isSmallNumberHist = false;
+
+            // for histograms with small number of points and small peak, need to use
+            //   a pattern observed for just those and that is that the minimum before
+            //   yPeak is the answer if lower than the first point.
+            int yPeakIndex = MiscMath.findYMaxIndex(histogram.getYHist());
+            if ((yPeakIndex > 0) && (histogram.getYHist()[yPeakIndex] < 100)) {
+                float min = Float.MAX_VALUE;
+                int minIndex = -1;
+                for (int i = yPeakIndex; i > -1; i--) {
+                    float a = histogram.getYHistFloat()[i];
+                    if ((a < min) && !Float.isInfinite(a)) {
+                        min = a;
+                        minIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+                if (minIndex > 0) {
+                    isSmallNumberHist = true;
+                    this.backgroundSurfaceDensity = histogram.getXHist()[minIndex];
+                }
+            }
+
             float limit, limitError;
-            limit = (areaAndXYTopCentroid != null) ? areaAndXYTopCentroid[1] : bestFit.getXPeak();
-            int limitIndex = bestFit.getXPeakIndex();
-            limitError = histogram.getXErrors()[limitIndex];
 
-            //if (limitIndex == -1) {
-            //    System.out.println("WARNING:  solution was not found");
-            //    return;
-            //}
+            if (!isSmallNumberHist) {
 
-            this.backgroundSurfaceDensity = limit;
+                // centroid of area defined by the top portion of the fit where y >= ypeak/2
+                float[] areaAndXYTopCentroid = calculateCentroidOfTop(bestFit.getOriginalScaleX(), bestFit.getOriginalScaleYFit(), 0.5f);
+
+                limitStr = "top centroid";
+
+                limit = (areaAndXYTopCentroid != null) ? areaAndXYTopCentroid[1] : bestFit.getXPeak();
+
+                //if (limitIndex == -1) {
+                //    System.out.println("WARNING:  solution was not found");
+                //    return;
+                //}
+
+                if (limit < 0) {
+                    float min = Float.MAX_VALUE;
+                    int minIndex = -1;
+                    for (int i = yPeakIndex; i < histogram.getXHist().length; i++) {
+                        float a = histogram.getYHistFloat()[i];
+                        if ((a < min) && !Float.isInfinite(a)) {
+                            min = a;
+                            minIndex = i;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (minIndex > 0) {
+                        isSmallNumberHist = true;
+                        this.backgroundSurfaceDensity = histogram.getXHist()[minIndex];
+                    }
+                } else {
+
+                    this.backgroundSurfaceDensity = limit;
+                }
+            }
 
             if (debug) {
                 System.out.println(bestFit.toString());
             }
+
+            int limitIndex = bestFit.getXPeakIndex();
+            limitError = histogram.getXErrors()[limitIndex];
+
 
             /* Errors add in quadrature:
              *
@@ -740,7 +792,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 sampling = Sampling.SEMI_COMPLETE;
             }*/
 
-            if (indexer.nXY > 999) {
+            if (indexer.nXY > 9999) {
+                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_2;
+            } else if (indexer.nXY > 999) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
             } else {
                 this.sampling = Sampling.SEMI_COMPLETE;
@@ -765,7 +819,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
 
             // uses a very rough range search
-            findVoidsRoughRangeSearch(x, y);
+            findVoidsRoughRangeSearch(x, y, 2);
+
+        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
+
+            // uses a very rough range search
+            findVoidsRoughRangeSearch(x, y, 10);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 
@@ -839,8 +898,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      *
      * @param x
      * @param y
+     * @param nDiv used to form the number of intervals = nPoints/nDiv
+     *        which should usually be 2 or so
      */
-    protected void findVoidsRoughRangeSearch(float[] x, float[] y) {
+    protected void findVoidsRoughRangeSearch(float[] x, float[] y, int nDiv) {
 
         /* Divide y interval in half and execute the same size intervals in x over the full range
 
@@ -875,9 +936,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
          */
         int n = indexer.getNumberOfPoints();
 
-        int nYIntervals = n / 2;                                            // cost     number of times
+        int nYIntervals = n / nDiv;                                          // cost     number of times
 
-        for (int k = 0; k < nYIntervals; k++) {                             //               2
+        for (int k = 0; k < nYIntervals; k++) {                             //               nDiv
             int binSz = (k + 1) * 2;                                        // c10
             binSz = (int)((k + 1) * 1.5f);
 
