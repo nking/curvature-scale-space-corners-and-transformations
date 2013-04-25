@@ -206,6 +206,16 @@ public class TwoPointCorrelation {
         state = STATE.INITIALIZED;
     }
 
+    public void setSigmaFactorToTwo() {
+        sigmaFactor = 2.0f;
+    }
+    public void setSigmaFactorToTwoPointFive() {
+        sigmaFactor = 2.5f;
+    }
+    public void setSigmaFactorToThree() {
+        sigmaFactor = 3.0f;
+    }
+
     public void setDebug(boolean turnDebugOn) {
         this.debug = turnDebugOn;
     }
@@ -359,6 +369,7 @@ public class TwoPointCorrelation {
             heapUsage.getUsed(), nonHeapUsage.getUsed() );
 
         Logger.getLogger(this.getClass().getSimpleName()).info(str);
+        System.out.println(str);
     }
 
     public long approximateMemoryUsed() {

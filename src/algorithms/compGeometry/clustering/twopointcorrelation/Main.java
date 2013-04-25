@@ -1,6 +1,12 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.misc.HistogramHolder;
 import algorithms.util.InputFileReader;
+import algorithms.util.ResourceFinder;
+import java.io.FileOutputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.logging.Logger;
 
 /**
@@ -43,17 +49,30 @@ public class Main {
 
         if (args == null || args.length < 2) {
             System.out.println("Requires file:  --file /path/to/file/fileName.txt");
+            System.out.println("     optional:  --thresholdtwo");
+            System.out.println("     optional:  --thresholdthree");
             return;
         }
+
+        boolean useTwo = false;
+        boolean useThree = false;
 
         String filePath = null;
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--file")) {
                 if ( (i+1) < args.length) {
                     filePath = args[i+1];
+                    i++;
                 }
+            } else if (args[i].equals("--thresholdtwo")) {
+                useTwo = true;
+            } else if (args[i].equals("--thresholdthree")) {
+                useThree = true;
+            } else {
+                System.out.println("WARNING, not an option: " + args[i]);
             }
         }
+        
         if (filePath == null) {
             System.out.println("Requires file:  --file /path/to/file/fileName.txt");
             return;
@@ -70,6 +89,14 @@ public class Main {
                 reader.getX(), reader.getY(), reader.getXErrors(), reader.getYErrors(), reader.getX().length);
 
             clusterFinder.setDebug(false);
+
+
+            // default is 2.5
+            if (useTwo) {
+                clusterFinder.setSigmaFactorToTwo();
+            } else if (useThree) {
+                clusterFinder.setSigmaFactorToThree();
+            }
 
             Logger.getLogger(Main.class.getName()).info("calculate background");
 

@@ -127,17 +127,17 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
 
             /* dots */
             var pointGroup = svg.append("svg:g").attr("class","points");
-            var pointGroupDetails = pointGroup.selectAll("circle.points").data(groupCenters).enter();
-            pointGroupDetails.append("svg:circle")
-                .attr("class", "point")
-                .attr("cx",function(d) { return x(d.x); })
-                .attr("cy",function(d) { return y(d.y); })
-                .attr("r", 9)
-                .attr("stroke", "#9a9d32")
-                .attr("stroke-width", 2)
-                .attr("fill", "orange")
-                .attr("fill-opacity", .30);
             if (points.length < 2000) {
+                var pointGroupDetails = pointGroup.selectAll("circle.points").data(groupCenters).enter();
+                pointGroupDetails.append("svg:circle")
+                    .attr("class", "point")
+                    .attr("cx",function(d) { return x(d.x); })
+                    .attr("cy",function(d) { return y(d.y); })
+                    .attr("r", 9)
+                    .attr("stroke", "#9a9d32")
+                    .attr("stroke-width", 2)
+                    .attr("fill", "orange")
+                    .attr("fill-opacity", .30);
                 pointGroupDetails.append("svg:text").attr("class", "label").attr("text-anchor", "middle")
                     .attr("x",function(d) { return x(d.x); })
                     .attr("y",function(d) { return y(d.y); })
@@ -173,18 +173,14 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 }
             }
 
-            var lineWidth = (points.length < 2000) ? 2 : 1;
-
-            //if (points.length < 2000) {
-                var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
-                for (i = 0; i < groupPolygons.length; i++) {
-                    svg.append("svg:path")
-                        .attr("d", line(groupPolygons[i]))
-                        .style("stroke-width", lineWidth)
-                        .style("stroke", "red")
-                        .style("fill", "none");
-                }
-            //}
+            var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
+            for (i = 0; i < groupPolygons.length; i++) {
+                svg.append("svg:path")
+                    .attr("d", line(groupPolygons[i]))
+                    .style("stroke-width", 2)
+                    .style("stroke", "red")
+                    .style("fill", "none");
+            }
 
             svg.append("svg:g").attr("class", "text")
                 .append("svg:text").attr("class", "label").attr("text-anchor", "middle")
