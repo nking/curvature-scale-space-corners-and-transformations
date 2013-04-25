@@ -173,16 +173,18 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 }
             }
 
-            if (points.length < 2000) {
+            var lineWidth = (points.length < 2000) ? 2 : 1;
+
+            //if (points.length < 2000) {
                 var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
                 for (i = 0; i < groupPolygons.length; i++) {
                     svg.append("svg:path")
                         .attr("d", line(groupPolygons[i]))
-                        .style("stroke-width", 2)
-                        .style("stroke", "steelblue")
+                        .style("stroke-width", lineWidth)
+                        .style("stroke", "red")
                         .style("fill", "none");
                 }
-            }
+            //}
 
             svg.append("svg:g").attr("class", "text")
                 .append("svg:text").attr("class", "label").attr("text-anchor", "middle")
