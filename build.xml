@@ -6,20 +6,20 @@
 
   The directory structure of the application is:
 
-    src      Java source code (and associated resource files)
-             and junit test files.
+    src                Java source code (and associated resource files)
+                       and junit test files.
 
-    lib      any 3rd party libraries needed by application
+    lib                any 3rd party libraries needed by application
 
-    bin/classes  compiled code
+    bin/classes        compiled code
 
-    resources resource files, including persisted for use in future runs
+    src/main/resources resource files, including persisted for use in future runs
 
-    doc      Javadocs for developers
+    doc                Javadocs for developers
 
-    tests    unit tests small enough to run with every build
+    src/test           unit tests small enough to run with every build
 
-    tests_larger  unit tests with long run times
+    src/test-large     unit tests with long run times
 
     bin      compiled classes, code coverage results, and static analysis results
  ====================================================================== -->
@@ -32,25 +32,26 @@
     <property name="app.name"            value="${ant.project.name}"/>
 
     <!-- =========== the application file directories ========-->
-    <property name="src.dir"             value="${basedir}/src"/>
+    <property name="src.dir"             value="${basedir}/src/main/java"/>
     <property name="lib.dir"             value="${basedir}/lib"/>
     <property name="emma.lib.dir"        value="${lib.dir}/emma"/>
     <property name="findbugs.home.dir"   value="${lib.dir}/findbugs"/>
     <property name="findbugs.lib.dir"    value="${findbugs.home.dir}/lib"/>
     <property name="classes.dir"         value="${basedir}/bin"/>
+    <property name="resources.dir"       value="${basedir}/src/main/resources"/>
     <property name="src.out.dir"         value="${classes.dir}/classes"/>
     <property name="doc.dir"             value="${basedir}/doc"/>
-    <property name="tests.dir"           value="${basedir}/tests"/>
+    <property name="tests.dir"           value="${basedir}/src/test/java"/>
     <property name="tests.out.dir"       value="${classes.dir}/test-classes"/>
     <property name="instr.out.dir"       value="${classes.dir}/instr-classes" />
     <property name="coverage.dir"        value="${classes.dir}/coverage" />
     <property name="log.dir"             value="${basedir}/log"/>
     <property name="logfile"             value="${log.dir}/build.log"/>
-    <property name="tests.large.dir"     value="${basedir}/tests_large"/>
+    <property name="tests.large.dir"     value="${basedir}/src/test-large/java"/>
     <property name="tests.large.out.dir" value="${classes.dir}/test-large-classes"/>
 
     <!-- set compiler options -->
-    <!--<property name="compile.debug"       value="false"/>-->
+    <!--<property name="compile.debug"   value="false"/>-->
     <property name="compile.deprecation" value="true"/>
     <property name="compile.optimize"    value="false"/>
     <property name="compile.target"      value="1.6"/>
@@ -164,7 +165,10 @@
             <exclude name="**/*Test*.java"/>
         </javac>
 
-        <copy file="${basedir}/resources/logging.properties" todir="${src.out.dir}" />
+        <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
+        <copy file="${resources.dir}/plot_minima_stats.html" todir="${src.out.dir}" />
+        <copy file="${resources.dir}/plot_points_and_polygon.html" todir="${src.out.dir}" />
+        <copy file="${resources.dir}/plot_twoptcorrelation.html" todir="${src.out.dir}" />
 
     </target>
 
@@ -445,9 +449,9 @@
         <tstamp>
             <format property="TS" pattern="yyyy-MM-dd" locale="en,US"/>
         </tstamp>
-        <jar destfile="${classes.dir}/two-point-correlation_${TS}.jar" manifest="${basedir}/resources/two-point-correlation.mf">
+        <jar destfile="${classes.dir}/two-point-correlation_${TS}.jar" manifest="${resources.dir}/two-point-correlation.mf">
             <fileset dir="${src.out.dir}" includes="**"/>
-            <fileset dir="${basedir}" includes="resources/**"/>
+            <fileset dir="${resources.dir}" includes="**"/>
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
         </jar>

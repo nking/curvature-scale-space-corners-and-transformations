@@ -455,10 +455,10 @@ public class TwoPointCorrelationPlotter {
 
             ClassLoader cls = ResourceFinder.class.getClassLoader();
 
-            InputStream input = cls.getResourceAsStream("resources/" + fileName);
+            InputStream input = cls.getResourceAsStream(fileName);
 
             if (input == null) {
-                throw new IOException("could not find file " + " resources/" + fileName);
+                throw new IOException("could not find file " + fileName);
             }
 
             reader = new InputStreamReader(input);

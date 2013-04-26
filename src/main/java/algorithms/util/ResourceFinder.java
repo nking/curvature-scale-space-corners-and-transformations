@@ -52,7 +52,15 @@ public class ResourceFinder {
 
     public static String findResourcesDirectory() throws IOException {
 
-        return findDirectory("resources");
+        String srcPath = findDirectory("src");
+
+        String path = srcPath + sep + "main" + sep + "resources";
+
+        File f = new File(path);
+        if (!f.exists()) {
+            throw new IOException("could not find directory named src/main/resources");
+        }
+        return path;
     }
 
     public static String findDirectory(String dirName) throws IOException {
@@ -81,39 +89,36 @@ public class ResourceFinder {
         return filePath;
     }
 
+    public static String findTestDirectory() throws IOException {
+
+        String srcPath = findDirectory("src");
+
+        String filePath = srcPath + sep + "test";
+
+        File f = new File(filePath);
+        if (!f.exists()) {
+            throw new IOException("could not find directory named src/test");
+        }
+        return filePath;
+    }
+
     public static String getAFilePathInTestResources(String fileName) throws IOException {
 
-        String dirPath = findDirectory("testresources");
-
-        String filePath = dirPath + sep + fileName;
+        String dirPath = findTestDirectory();
+        String filePath = dirPath + sep + "resources" + sep + fileName;
 
         return filePath;
     }
 
     public static String findFileInTestResources(String fileName) throws IOException {
 
-        try {
+        String filePath = getAFilePathInTestResources(fileName);
 
-            String dirPath = findDirectory("testresources");
-            String filePath = dirPath + sep + fileName;
-
-            File f = new File(filePath);
-            if (!f.exists()) {
-                throw new IOException("could not find file at " + filePath);
-            }
-            return filePath;
-
-        } catch (IOException e) {
-
-            String dirPath = findDirectory("tests");
-            String filePath = dirPath + sep + fileName;
-
-            File f = new File(filePath);
-            if (!f.exists()) {
-                throw new IOException("could not find file at " + filePath);
-            }
-            return filePath;
+        File f = new File(filePath);
+        if (!f.exists()) {
+            throw new IOException("could not find file at " + filePath);
         }
+        return filePath;
     }
 
     public static String findFileInCWD(String serializationFileName) throws IOException {
