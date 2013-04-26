@@ -193,7 +193,11 @@ public class DoubleAxisIndexer {
      * @param yIndexLo y index w.r.t the sortedYIndexes. used to lookup the
      * index w.r.t. the original unsorted array
      * @param yIndexHi
-     * @return
+     *
+     * @return array of indexes of points within the intersection of boundaries
+     *    of x[sortedXIndexes[xIndexLo]]:x[sortedXIndexes[xIndexHi]] and
+     *       x[sortedYIndexes[yIndexLo]]:y[sortedYIndexes[yIndexHi]].
+     *    the resulting array of indexes are w.r.t. the original arrays indexer.x and indexer.y
      */
     protected int[] findIntersectingRegionIndexes(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi) {
 
@@ -238,9 +242,14 @@ public class DoubleAxisIndexer {
      * @param useCompleteSampling if set to true, an exception to returning only
      *     2 point intersecting regions is made and the method might return 3 points
      *     if 2 of the points have the same y.
-     * @return
+     *
+     * @return array of indexes of points within the intersection of boundaries
+     *    of x[sortedXIndexes[xIndexLo]]:x[sortedXIndexes[xIndexHi]] and
+     *       x[sortedYIndexes[yIndexLo]]:y[sortedYIndexes[yIndexHi]].
+     *    the resulting array of indexes are w.r.t. the original arrays indexer.x and indexer.y
      */
-    protected int[] findIntersectingRegionIndexesIfOnlyTwo(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, boolean useCompleteSampling) {
+    protected int[] findIntersectingRegionIndexesIfOnlyTwo(int xIndexLo, int xIndexHi,
+        int yIndexLo, int yIndexHi, boolean useCompleteSampling) {
 
         // since these points are sorted by Y can pick out the x first, and use binary search to find y points
         int n = (xIndexHi - xIndexLo) + (yIndexHi - yIndexLo) + 2;

@@ -820,7 +820,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
 
             // uses divide and conquer
-            findVoids(x, y, 0, x.length-1, 0, y.length-1);
+            findVoids(0, x.length-1, 0, y.length-1);
 
         } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
 
@@ -842,13 +842,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             // for area of data so large that randomly chosen patches are neccessary
             //   to reduce sample to decrease runtime
-            findVoidsRandomSamples(x, y, 10, 10);
+            findVoidsRandomSamples(10, 10);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
 
             // for area of data so large that randomly chosen patches are neccessary
             //   to reduce sample to decrease runtime
-            findVoidsRandomSamples(x, y, 10, 15);
+            findVoidsRandomSamples(10, 15);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 
@@ -872,14 +872,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * than this divide and conquer because the range search has a more
      * complete solution, that is a higher number of pairs bounding rectangular
      * voids are learned from the range search.
-     * @param x
-     * @param y
      * @param xIndexLo
      * @param xIndexHi
      * @param yIndexLo
      * @param yIndexHi
      */
-    protected void findVoids(float[] x, float[] y, int xIndexLo, int xIndexHi,
+    protected void findVoids(int xIndexLo, int xIndexHi,
         int yIndexLo, int yIndexHi) {
                                                                                  // cost     number of times
         if ((xIndexLo < xIndexHi) && (yIndexLo < yIndexHi)) {                    //
@@ -888,13 +886,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             int yIndexMid = (yIndexLo + yIndexHi)/2;                             //
 
-            findVoids(x, y, xIndexLo, xIndexMid, yIndexLo, yIndexMid);           // c4           N/2
-            findVoids(x, y, xIndexLo, xIndexMid, yIndexMid + 1, yIndexHi);       // c5           N/2
+            findVoids(xIndexLo, xIndexMid, yIndexLo, yIndexMid);           // c4           N/2
+            findVoids(xIndexLo, xIndexMid, yIndexMid + 1, yIndexHi);       // c5           N/2
 
-            findVoids(x, y, xIndexMid + 1, xIndexHi, yIndexLo, yIndexMid);       // c6           N/2
-            findVoids(x, y, xIndexMid + 1, xIndexHi, yIndexMid + 1, yIndexHi);   // c7           N/2
+            findVoids(xIndexMid + 1, xIndexHi, yIndexLo, yIndexMid);       // c6           N/2
+            findVoids(xIndexMid + 1, xIndexHi, yIndexMid + 1, yIndexHi);   // c7           N/2
 
-            processIndexedRegion(x, y, xIndexLo, xIndexHi, yIndexLo, yIndexHi);  //              N/2
+            processIndexedRegion(xIndexLo, xIndexHi, yIndexLo, yIndexHi);  //              N/2
         }
     }
 
@@ -911,7 +909,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             for (int ii = (i + 1); ii < indexer.nXY; ii+=incr) {
                 for (int j = 0; j < indexer.nXY; j++) {
                     for (int jj = (j + 1); jj < indexer.nXY; jj+=incr) {
-                        processIndexedRegion(x, y, i, ii, j, jj);
+                        processIndexedRegion(i, ii, j, jj);
                     }
                 }
             }
@@ -919,45 +917,17 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     /**
-     *
+     * @param xIndexLo index given w.r.t. indexer.sortedXIndexes
+     * @param xIndexHi index given w.r.t. indexer.sortedXIndexes
+     * @param yIndexLo index given w.r.t. indexer.sortedYIndexes
+     * @param yIndexHi index given w.r.t. indexer.sortedYIndexes
      * @param nDiv used to form the number of intervals = nPoints/nDiv
      *        which should usually be 2 or so
      * @param bFactor
      */
     protected void findVoidsRoughRangeSearch(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int nDiv, float bFactor) {
 
-        /* Divide y interval in half and execute the same size intervals in x over the full range
-
-         Exaample, for array w/ 8 elements:
-         y    x
-         0:7  0:7
-
-         0:3  4:7
-         0:3  0:3
-         4:7  0:3
-         4:7  4:7
-
-         0:1  0:1
-         0:1  2:3
-         0:1  4:5
-         0:1  6:7
-
-         2:3  0:1
-         2:3  2:3
-         2:3  4:5
-         2:3  6:7
-         ...
-
-         start w/ smallest intervals of y and march across range.
-         * increase by 2 units and march across range
-         *
-         * length is 8
-         *   2's
-         *   4's
-         *   6's
-         *   8's
-         */
-        //int n = indexer.getNumberOfPoints();
+        //Divide y interval in half and execute the same size intervals in x over the full range
 
         int nYIntervals = (yIndexHi - yIndexLo) / nDiv;                     // cost     number of times
 
@@ -973,7 +943,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                     int startX = xIndexLo + (j * binSz);
                     int endX = startX + binSz - 1;
 //System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + (yLo + binSz));
-                    processIndexedRegion(indexer.getX(), indexer.getY(), startX, endX, yLo, yLo + binSz);
+                    processIndexedRegion(startX, endX, yLo, yLo + binSz);
                 }
                 yLo += 2;
             }
@@ -986,11 +956,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      *     where if evenly distributed, n = N/nSamples;
      *     ==>   10*( (N/10)^2 + (N/10) )
      *
-     * @param x
-     * @param y
      * @param nSamples the number of samples to take
+     * @param nDivisionsPerSide
      */
-    protected void findVoidsRandomSamples(float[] x, float[] y, int nSamples, int nDivisionsPerSide) {
+    protected void findVoidsRandomSamples(int nSamples, int nDivisionsPerSide) {
 
         try {
             int n = indexer.getNumberOfPoints();
@@ -1033,10 +1002,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                     bin = sr.nextInt(nSSq);
                 }
                 selected[bin] = true;
-
-                int row = (bin/nDivisionsPerSide);// rounds down
-
+                int row = (bin/nDivisionsPerSide);
                 int col = (bin % nDivisionsPerSide);
+
 
                 int startX = col*binSize;
                 int endX = startX + binSize;
@@ -1061,15 +1029,16 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      *
      * @param x
      * @param y
-     * @param xIndexLo
-     * @param xIndexHi
-     * @param yIndexLo
-     * @param yIndexHi
+     * @param xIndexLo index given w.r.t. indexer.sortedXIndexes
+     * @param xIndexHi index given w.r.t. indexer.sortedXIndexes
+     * @param yIndexLo index given w.r.t. indexer.sortedYIndexes
+     * @param yIndexHi index given w.r.t. indexer.sortedYIndexes
      */
-    private void processIndexedRegion(float[] x, float[] y, int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi) {
+    private void processIndexedRegion(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi) {
 
         boolean useCompleteSampling = (sampling.ordinal() == Sampling.COMPLETE.ordinal());
 
+        // returns indexes w.r.t. indexer.x and indexer.y
         int[] regionIndexes = indexer.findIntersectingRegionIndexesIfOnlyTwo(
             xIndexLo, xIndexHi, yIndexLo, yIndexHi, useCompleteSampling);
 
@@ -1086,7 +1055,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         if (nPointsInRegion == 2) {
 
-            processIndexedPair(x, y, regionIndexes[0], regionIndexes[1]);
+            processIndexedPair(regionIndexes[0], regionIndexes[1]);
 
         } else if (nPointsInRegion == 3) {
 
@@ -1094,12 +1063,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             int uniqueYIndex = -1;
             for (int i = 0; i < regionIndexes.length; i++) {
                 boolean foundSameYAsI = false;
-                float ypi = y[ regionIndexes[i] ];
+                float ypi = indexer.y[ regionIndexes[i] ];
                 for (int j = 0; j < regionIndexes.length; j++) {
                     if (i == j) {
                         continue;
                     }
-                    float ypj = y[ regionIndexes[j] ];
+                    float ypj = indexer.y[ regionIndexes[j] ];
                     if (ypj == ypi) {
                         foundSameYAsI = true;
                         break;
@@ -1114,7 +1083,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             if (uniqueYIndex == -1) {
                 StringBuilder err = new StringBuilder("ERROR: intersecting region contained more than 2 points, but unique y wasn't found");
                 for (int i = 0; i < regionIndexes.length; i++) {
-                    err.append("\n  (").append( x[ regionIndexes[i] ] ).append(", ").append( y[ regionIndexes[i] ] ).append(")");
+                    err.append("\n  (").append( indexer.x[ regionIndexes[i] ] )
+                        .append(", ").append( indexer.y[ regionIndexes[i] ] ).append(")");
                 }
                 throw new IllegalStateException(err.toString());
             }
@@ -1122,7 +1092,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             for (int i = 0; i < regionIndexes.length; i++) {
                 if (i != uniqueYIndex) {
                     int regionIndex1 = regionIndexes[i];
-                    processIndexedPair(x, y, regionIndex0, regionIndex1);
+                    processIndexedPair(regionIndex0, regionIndex1);
                 }
             }
         } else if (nPointsInRegion == 4) {
@@ -1131,7 +1101,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 int regionIndex0 = regionIndexes[i];
                 for (int j = (i + 1); j < regionIndexes.length; j++) {
                     int regionIndex1 = regionIndexes[j];
-                    processIndexedPair(x, y, regionIndex0, regionIndex1);
+                    processIndexedPair(regionIndex0, regionIndex1);
                 }
             }
         }
@@ -1141,18 +1111,17 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * process the pair of points by calculating the linear density and storing it
      * in the instance arrays if not already stored.
      *
-     * @param x
-     * @param y
-     * @param regionIndex0
-     * @param regionIndex1
+     * @param regionIndex0 index w.r.t. indexer.x and indexer.y
+     * @param regionIndex1 index w.r.t. indexer.x and indexer.y
      */
-    protected void processIndexedPair(float[] x, float[] y, int regionIndex0, int regionIndex1) {
+    protected void processIndexedPair(int regionIndex0, int regionIndex1) {
 
         // Note: using 1-D instead of 2-D rectangles seems to be a better choice because it is not
         // dependent on rotation of the reference frame
 
-        float d = (float) Math.sqrt(LinesAndAngles.distSquared( x[regionIndex0], y[regionIndex0],
-            x[regionIndex1], y[regionIndex1]));
+        float d = (float) Math.sqrt(LinesAndAngles.distSquared(
+            indexer.x[regionIndex0], indexer.y[regionIndex0],
+            indexer.x[regionIndex1], indexer.y[regionIndex1]));
 
         if (d == 0) {
             return;
