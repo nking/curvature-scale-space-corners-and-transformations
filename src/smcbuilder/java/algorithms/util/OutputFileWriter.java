@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -15,7 +16,7 @@ import java.util.logging.Logger;
  */
 public class OutputFileWriter {
 
-    protected Logger log = null;
+    protected final Logger log;
 
     public OutputFileWriter(String pathToFile) {
 
@@ -49,20 +50,18 @@ public class OutputFileWriter {
                 }
             }
 
-            // copy html file
-
-            //photfiles/smc118.1_clusters.txt
             String htmlFilePath = clusterFinder.plotClusters();
+
             String htmlFile = filePath.replace(".txt", ".html");
 
             // base directory
-            String baseDir = getBaseDirectory();
+            String baseDir = System.getProperty("user.dir");
             String voidStatsInFile = baseDir + "/"+ "twoptvoid_stats.html";
             String voidStatsOutFile = htmlFile.replace("clusters", "twoptvoid_stats");
 
             Runtime runtime = Runtime.getRuntime();
             try {
-                StringBuffer sb = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
 
                 String cp = "cp " + htmlFilePath + " " + htmlFile;
                 Process proc = runtime.exec(cp);
@@ -74,7 +73,7 @@ public class OutputFileWriter {
                         sb.append(content.substring(0, index + 1) );
                     }
                 }
-                System.out.println(sb.toString());
+                System.out.println(cp + "==> " + sb.toString());
 
                 if ( (new File(voidStatsInFile)).exists()) {
 
@@ -88,7 +87,7 @@ public class OutputFileWriter {
                             sb.append(content.substring(0, index + 1) );
                         }
                     }
-                    System.out.println(sb.toString());
+                    System.out.println(cp + "==> " + sb.toString());
                 }
 
             } catch (IOException e) {
@@ -102,29 +101,20 @@ public class OutputFileWriter {
                 writer.close();
             }
 
-            log.info("finished writing file: " + filePath);
+            log.log(Level.INFO, "finished writing file: {0}", filePath);
         }
     }
 
-    public static String getContent(InputStream input) throws
-        IOException {
+    public static String getContent(InputStream input) throws IOException {
         if (input == null) {
             return null;
         }
         byte[] b = new byte[1024];
         int readBytes = 0;
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         while ((readBytes = input.read(b)) >= 0) {
             result.append(new String(b, 0, readBytes));
         }
         return result.toString();
     }
-
-    private String getBaseDirectory() {
-
-        ClassLoader cls = this.getClass().getClassLoader();
-
-        return cls.getResource(".").getPath();
-    }
-
 }

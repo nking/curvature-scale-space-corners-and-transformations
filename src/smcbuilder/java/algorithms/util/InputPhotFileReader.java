@@ -75,8 +75,6 @@ public class InputPhotFileReader implements IInputFileReader{
 
                 if (m.matches()) {
 
-                    //log.info("==>" + String.valueOf(m.group(1)) + ":" + String.valueOf(m.group(2)) + ":" + String.valueOf(m.group(3)));
-
                     float xp = Float.valueOf(m.group(1));
                     float yp = Float.valueOf(m.group(2));
                     float mI = Float.valueOf(m.group(3));
@@ -87,6 +85,15 @@ public class InputPhotFileReader implements IInputFileReader{
                         t2 = (xp < 2050);
                     } else if (filePath.contains("smc115.5")) {
                         t2 = (xp < 2100);
+                    } else if (filePath.contains("smc110.3")) {
+                        t2 = (yp < 4050);
+                    } else if (filePath.contains("smc125.4")) {
+                        t2 = (xp < 2050);
+                    } else if (filePath.contains("smc100.5")) {
+                        t2 = (yp < 4050);
+                    } else if (filePath.contains("smc100.1")) {
+                        t2 = (yp < 4050);
+                        t2 = (xp < 2050);
                     }
 
                     if (t1 && t2){

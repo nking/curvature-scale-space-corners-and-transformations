@@ -3,12 +3,15 @@ package algorithms.util;
 import algorithms.compGeometry.clustering.twopointcorrelation.TwoPointVoidStatsException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 
 /**
   Usage from the command line:
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
 
-          java -jar two-point-correlation.jar --file /path/to/file/fileName.txt
+          java -jar two-point-correlation.jar
 
   @author nichole
  */
@@ -19,23 +22,23 @@ public class Main {
         String dir = System.getProperty("user.dir") + "/photfiles";
 
         String[] files = new String[]{
-            //"smc118.1.phot",
-            //"smc118.6.phot",
-            //"smc118.8.phot",
-            //"smc118.7.phot",
+            "smc118.1.phot",
+            "smc118.6.phot",
+            "smc118.8.phot",
+            "smc118.7.phot",
             "smc115.5.phot",
-            //"smc116.3.phot",
-            "smc111.4.phot"
-            //"smc110.3.phot",
-            //"smc110.2.phot",
-            //"smc114.7.phot",
-            //"smc101.4.phot",
-            //"smc125.4.phot",
-            //"smc100.1.phot",
-            //"smc100.5.phot",
-            //"smc125.3.phot",
-            //"smc108.7.phot",
-            //"smc108.8.phot"
+            "smc116.3.phot",
+            "smc111.4.phot",
+            "smc110.3.phot",
+            "smc110.2.phot",
+            "smc114.7.phot",
+            "smc101.4.phot",
+            "smc125.4.phot",
+            "smc100.1.phot",
+            "smc100.5.phot",
+            "smc125.3.phot",
+            "smc108.7.phot",
+            "smc108.8.phot"
         };
 
         try {
@@ -45,8 +48,7 @@ public class Main {
                 String filePath = dir + "/" + files[i];
 
                 String[] args2 = new String[] {
-                    "--file",
-                    filePath,
+                    "--file", filePath,
                     "--twosigma"
                 };
 
@@ -67,10 +69,17 @@ public class Main {
 
         runner.run(reader, args);
 
-        String filePath = runner.getArguments().get("filePath");
+        HashMap<String, String> arguments = runner.getArguments();
+        String filePath = arguments.get("filePath");
 
-        //photfiles/smc118.1.phot ==> photfiles/smc118.1_clusters.txt
+        Iterator<Entry<String,String>> iter = arguments.entrySet().iterator();
+        while (iter.hasNext()) {
+            Entry<String, String> entry = iter.next();
+            System.out.println("key=" + entry.getKey() + " value=" + entry.getValue());
+        }
+
         String outFilePath = filePath.replace(".phot", "_clusters.txt");
+
         outFilePath = outFilePath.replace("photfiles", "clusterfiles");
 
         OutputFileWriter writer = new OutputFileWriter(outFilePath);
