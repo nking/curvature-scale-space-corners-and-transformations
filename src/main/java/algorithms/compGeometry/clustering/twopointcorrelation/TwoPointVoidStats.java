@@ -996,9 +996,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             int n = indexer.getNumberOfPoints();
 
             SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-            sr.setSeed(System.currentTimeMillis());
-            byte[] seed = sr.generateSeed(10);
-            sr.setSeed(seed);
+            sr.setSeed(System.nanoTime());
 
             // find nSamples non-overlapping regions to sample the area
 
@@ -1031,6 +1029,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             for (int i = 0; i < nSamples; i++) {
 
                 int bin = sr.nextInt(nSSq);
+                int be = bin;
+                for (int j=0;j<be;j++) {
+                    bin = sr.nextInt(nSSq);
+                }
+
                 while (selected[bin]) {
                     bin = sr.nextInt(nSSq);
                 }
