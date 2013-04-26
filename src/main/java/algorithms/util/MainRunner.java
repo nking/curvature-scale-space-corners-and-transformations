@@ -59,7 +59,7 @@ public class MainRunner {
                 if ( (i+1) < args.length) {
                     filePath = args[i+1];
                     i++;
-                    arguments.put("filePath", "filePath");
+                    arguments.put("filePath", filePath);
                 }
             } else if (args[i].equals("--twosigma")) {
                 useTwo = true;
@@ -72,14 +72,14 @@ public class MainRunner {
                     String tmp = args[i+1];
                     bckgnd = Float.valueOf(tmp);
                     i++;
-                    arguments.put("background", "tmp");
+                    arguments.put("background", tmp);
                 }
             } else if (args[i].equals("--backgrounderror")) {
                 if ( (i+1) < args.length) {
                     String tmp = args[i+1];
                     bckgndErr = Float.valueOf(tmp);
                     i++;
-                    arguments.put("backgrounderror", "tmp");
+                    arguments.put("backgrounderror", tmp);
                 }
             } else {
                 System.out.println("WARNING, not an option: " + args[i]);
