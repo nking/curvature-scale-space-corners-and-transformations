@@ -43,20 +43,11 @@ public class FindClustersTest extends BaseTwoPointTest {
         //  all with the same number of clusters and cluster points, though
         //  randomly distributed.
 
-        int nSwitches = 4;
+        int nSwitches = 3;
 
         int nIterPerBackground = 3;
 
         int m = nIterPerBackground*nSwitches;
-
-        float[] means = new float[m];
-        float[] medians = new float[m];
-        float[] peaks = new float[m];
-        float[] x05s = new float[m];
-        float[] x10s = new float[m];
-        float[] x80s = new float[m];
-        float[] x95s = new float[m];
-        float[] chiSqStats = new float[m];
 
         DoubleAxisIndexer indexer = null;
 
@@ -134,23 +125,14 @@ public class FindClustersTest extends BaseTwoPointTest {
                     float x80 = bestFit.getX80Percent();
                     float x95 = bestFit.getX95Percent();
 
-                    means[count] = mean;
-                    medians[count] = median;
-                    peaks[count] = peak;
-                    x05s[count] = x05;
-                    x10s[count] = x10;
-                    x80s[count] = x80;
-                    x95s[count] = x95;
-
                     // === stats for plot labels =====
                     float meanDivPeak = mean/peak;
                     float medianDivMean = median/mean;
                     float x80DivMedian = x80/median;
-                    chiSqStats[count] = bestFit.getChiSqStatistic();
                     // label needs:  x10, peak,  mean/peak, median/mean and x80/median
                     plotLabel = String.format(
                         "  (%d %d) x10=%.4f peak=%.4f av/peak=%.2f med/av=%.2f chst=%.1f",
-                        i, ii, x10, peak, meanDivPeak, medianDivMean, chiSqStats[count]
+                        i, ii, x10, peak, meanDivPeak, medianDivMean, bestFit.getChiSqStatistic()
                     );
                     if (debug) {
                         System.out.println(plotLabel + " findVoid sampling=" + stats.getSampling().name());
@@ -193,119 +175,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         log.info("\n start computing stats for all sets");
 
         count = 0;
-        float[] meanDivPeaks = new float[3];
-        float[] medianDivMeans = new float[3];
-        float[] x80DivMedians = new float[3];
-        float[] x80DivMeans = new float[3];
-
-        float[] meanDivPeaksSD = new float[3];
-        float[] medianDivMeansSD = new float[3];
-        float[] x80DivMediansSD = new float[3];
-        float[] x80DivMeansSD = new float[3];
-
-        for (int i = 0; i < nSwitches; i++) {
-
-            float meanDivPeakSum = 0;
-            float medianDivMeanSum = 0;
-            float x80DivMedianSum = 0;
-            float x80DivMeanSum = 0;
-
-            log.info("[" + i + "]");
-
-            for (int j = 0; j < nIterPerBackground; j++) {
-
-                int n = i*nIterPerBackground + j;
-
-                float peak = peaks[n];
-                float mean = means[n];
-                float median = medians[n];
-
-                float x05 = x05s[n];
-                float x10 = x10s[n];
-                float x80 = x80s[n];
-                float x95 = x95s[n];
-
-                float meanDivPeak = mean/peak;
-                float medianDivMean = median/mean;
-                float x80DivMedian = x80/median;
-                float x80DivMean = x80/mean;
-
-                String line = String.format(
-                    "   (%d) peak=%.4f mean=%.4f median=%.4f x05=%.4f x10=%.4f x80=%.4f x95=%.4f mean/peak=%.2f median/mean=%.2f x80/median=%.2f x80/mean=%.2f chist=%.1f",
-                    j, peak, mean, median, x05, x10, x80, x95, meanDivPeak, medianDivMean, x80DivMedian, x80DivMean, chiSqStats[n]
-                );
-                //log.info(line);
-                System.out.println(line);
-
-                meanDivPeakSum += meanDivPeak;
-                medianDivMeanSum += medianDivMean;
-                x80DivMedianSum += x80DivMedian;
-                x80DivMeanSum += x80DivMean;
-            }
-            meanDivPeakSum /= nIterPerBackground;
-            medianDivMeanSum /= nIterPerBackground;
-            x80DivMedianSum /= nIterPerBackground;
-            x80DivMeanSum /= nIterPerBackground;
-
-            meanDivPeaks[i] = meanDivPeakSum;
-            medianDivMeans[i] = medianDivMeanSum;
-            x80DivMedians[i] = x80DivMedianSum;
-            x80DivMeans[i] = x80DivMeanSum;
-
-            double meanDivPeakSumSD = 0;
-            double medianDivMeanSumSD = 0;
-            double x80DivMedianSumSD = 0;
-            double x80DivMeanSumSD = 0;
-
-            for (int j = 0; j < nIterPerBackground; j++) {
-
-                float peak = peaks[i*nIterPerBackground + j];
-
-                float mean = means[i*nIterPerBackground + j];
-                float median = medians[i*nIterPerBackground + j];
-
-                float x05 = x05s[i*nIterPerBackground + j];
-                float x10 = x10s[i*nIterPerBackground + j];
-                float x80 = x80s[i*nIterPerBackground + j];
-                float x95 = x95s[i*nIterPerBackground + j];
-
-                double meanDivPeak = mean/peak;
-                double medianDivMean = median/mean;
-                double x80DivMedian = x80/median;
-                double x80DivMean = x80/mean;
-
-                meanDivPeakSumSD +=  Math.pow((meanDivPeak - meanDivPeakSum), 2);
-                medianDivMeanSumSD += Math.pow((medianDivMean - medianDivMeanSum), 2);
-                x80DivMedianSumSD += Math.pow((x80DivMedian - x80DivMedianSum), 2);
-                x80DivMeanSumSD += Math.pow((x80DivMean -x80DivMeanSum), 2);
-            }
-
-            meanDivPeakSumSD = (float) Math.sqrt(meanDivPeakSumSD/(nIterPerBackground - 1.0f));
-            medianDivMeanSumSD = (float) Math.sqrt(medianDivMeanSumSD/(nIterPerBackground - 1.0f));
-            x80DivMedianSumSD = (float) Math.sqrt(x80DivMedianSumSD/(nIterPerBackground - 1.0f));
-            x80DivMeanSumSD = (float) Math.sqrt(x80DivMeanSumSD/(nIterPerBackground - 1.0f));
-
-            meanDivPeaksSD[i] = (float)meanDivPeakSumSD;
-            medianDivMeansSD[i] = (float)medianDivMeanSumSD;
-            x80DivMediansSD[i] = (float)x80DivMedianSumSD;
-            x80DivMeansSD[i] = (float)x80DivMeanSumSD;
-        }
-
-        log.info("Final stats:");
-        for (int i = 0; i < 3; i++) {
-
-            String line = String.format(
-                "    mean/peak=%.2f +- %.4f   median/mean=%.2f +- %.4f    x80/median=%.2f +- %.4f    x80/median=%.2f +- %.4f",
-                meanDivPeaks[i], meanDivPeaksSD[i],
-                medianDivMeans[i], medianDivMeansSD[i],
-                x80DivMedians[i], x80DivMediansSD[i],
-                x80DivMeans[i], x80DivMeansSD[i]
-            );
-            //log.info(line);
-            System.out.println(line);
-        }
 
         log.info("SEED=" + seed);
     }
-
 }
