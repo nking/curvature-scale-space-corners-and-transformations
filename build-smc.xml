@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="two-point-correlation-smc" basedir=".">
+
+    <property name="extra.src" value="${basedir}/src/smcbuilder/java"/>
+
+    <property name="package.mf" value="${basedir}/src/smcbuilder/resources/smc.mf"/>
+
+    <echo message="extra.src=${extra.src}"/>
+    <import file="build.xml" />
+
+</project>

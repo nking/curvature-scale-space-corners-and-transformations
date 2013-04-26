@@ -79,6 +79,14 @@
         <echo message="package                     build jar"/>
     </target>
 
+    <condition property="extra.src.dir" value="${extra.src}" else="${basedir}/src/placeholder">
+        <isset property="extra.src" />
+    </condition>
+
+    <condition property="jar.mf" value="${package.mf}" else="${resources.dir}/two-point-correlation.mf">
+        <isset property="package.mf" />
+    </condition>
+
     <!-- set compile classpath  -->
     <path id="compile.classpath">
         <pathelement location="${src.out.dir}"/>
@@ -153,13 +161,22 @@
     <!-- compile sources -->
     <target name="compile" depends="prepare" description="Compile Java classes">
         <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <!--
+        <property name="printclasspath" refid="compile.classpath"/>
+        <echo message="classpath=${printclasspath}" />
+        -->
+
         <javac srcdir="${src.dir}"
             destdir="${src.out.dir}"
             source="${compile.target}"
             debug="${compile.debug}"
             deprecation="${compile.deprecation}"
             includeAntRuntime="false"
-            optimize="${compile.optimize}" >
+            optimize="${compile.optimize}"
+            >
+            <src path="${src.dir}"/>
+            <src path="${extra.src.dir}"/>
             <classpath refid="compile.classpath"/>
             <include name="**/*.java"/>
             <exclude name="**/*Test*.java"/>
@@ -449,9 +466,9 @@
         <tstamp>
             <format property="TS" pattern="yyyy-MM-dd" locale="en,US"/>
         </tstamp>
-        <jar destfile="${classes.dir}/two-point-correlation_${TS}.jar" manifest="${resources.dir}/two-point-correlation.mf">
+        <jar destfile="${classes.dir}/two-point-correlation_${TS}.jar" manifest="${jar.mf}">
             <fileset dir="${src.out.dir}" includes="**"/>
-            <fileset dir="${resources.dir}" includes="**"/>
+            <fileset dir="${resources.dir}" includes="*.html"/>
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
         </jar>
