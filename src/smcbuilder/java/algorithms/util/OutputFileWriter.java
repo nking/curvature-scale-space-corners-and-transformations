@@ -35,6 +35,8 @@ public class OutputFileWriter {
 
             int nGroups = clusterFinder.getNumberOfGroups();
 
+            System.out.println("Begin writing " + nGroups + " to file " + filePath);
+
             for (int i = 0; i < nGroups; i++) {
 
                 float[] x = clusterFinder.getXGroup(i);
