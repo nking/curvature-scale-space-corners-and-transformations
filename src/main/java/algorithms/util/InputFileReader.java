@@ -11,7 +11,7 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public class InputFileReader {
+public class InputFileReader implements IInputFileReader {
 
     protected float[] x = null;
     protected float[] y = null;
@@ -21,12 +21,9 @@ public class InputFileReader {
 
     protected Logger log = null;
 
-    protected final String filePath;
+    protected String filePath = null;
 
-    public InputFileReader(String pathToFile) {
-
-        this.filePath = pathToFile;
-
+    public InputFileReader(){
         log = Logger.getLogger(this.getClass().getName());
     }
 
@@ -38,7 +35,9 @@ public class InputFileReader {
         yErrors = new float[n];
     }
 
-    public void read() throws IOException {
+    public void read(String pathToFile) throws IOException {
+
+        this.filePath = pathToFile;
 
         initArrays();
 
@@ -120,15 +119,19 @@ public class InputFileReader {
         yErrors = Arrays.copyOf(yErrors, nPoints);
     }
 
+    @Override
     public float[] getX() {
         return x;
     }
+    @Override
     public float[] getY() {
         return y;
     }
+    @Override
     public float[] getXErrors() {
         return xErrors;
     }
+    @Override
     public float[] getYErrors() {
         return yErrors;
     }

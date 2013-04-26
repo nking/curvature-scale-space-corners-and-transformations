@@ -30,7 +30,7 @@ public class MainRunner {
         return clusterFinder;
     }
 
-    public void run(String[] args) {
+    public void run(IInputFileReader reader, String[] args) {
 
         for (int i = 0; i < args.length; i++) {
             System.out.println(args[i]);
@@ -98,8 +98,7 @@ public class MainRunner {
 
         try {
 
-            InputFileReader reader = new InputFileReader(filePath);
-            reader.read();
+            reader.read(filePath);
 
             Logger.getLogger(MainRunner.class.getName()).info("begin TwoPointCorrelation");
 

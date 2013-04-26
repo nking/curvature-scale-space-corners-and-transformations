@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  *
  * @author nichole
  */
-public class InputPhotFileReader {
+public class InputPhotFileReader implements IInputFileReader{
 
     protected float[] x = null;
     protected float[] y = null;
@@ -23,13 +23,9 @@ public class InputPhotFileReader {
 
     protected Logger log = null;
 
-    protected final String filePath;
+    protected String filePath = null;
 
-    public InputPhotFileReader(String pathToFile) {
-
-        this.filePath = pathToFile;
-
-        log = Logger.getLogger(this.getClass().getName());
+    public InputPhotFileReader(){
     }
 
     protected void initArrays() {
@@ -44,7 +40,11 @@ public class InputPhotFileReader {
         return filePath;
     }
 
-    public void read() throws IOException {
+    public void read(String pathToFile) throws IOException {
+
+        this.filePath = pathToFile;
+
+        log = Logger.getLogger(this.getClass().getName());
 
         initArrays();
 
@@ -83,11 +83,11 @@ public class InputPhotFileReader {
 
                     boolean t1 = (mI < 20.5f);
                     boolean t2 = true;
-                    /*if (filePath.contains("smc114.1")) {
-                        t2 = (xp < 2090);
-                    } else if (filePath.contains("smc110.3")) {
-                        t2 = (yp < 4000);
-                    }*/
+                    if (filePath.contains("smc111.4")) {
+                        t2 = (xp < 2050);
+                    } else if (filePath.contains("smc115.5")) {
+                        t2 = (xp < 2100);
+                    }
 
                     if (t1 && t2){
 

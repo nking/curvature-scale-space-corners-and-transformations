@@ -1,5 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.util.IInputFileReader;
+import algorithms.util.InputFileReader;
 import algorithms.util.MainRunner;
 
 /**
@@ -17,6 +19,8 @@ public class Main {
 
         MainRunner runner = new MainRunner();
 
-        runner.run(args);
+        IInputFileReader reader = new InputFileReader();
+
+        runner.run(reader, args);
     }
 }
