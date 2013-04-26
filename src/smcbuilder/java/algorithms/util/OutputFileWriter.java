@@ -73,7 +73,7 @@ public class OutputFileWriter {
                         sb.append(content.substring(0, index + 1) );
                     }
                 }
-                System.out.println(cp + "==> " + sb.toString());
+                System.out.println(sb.toString());
 
                 if ( (new File(voidStatsInFile)).exists()) {
 
@@ -87,7 +87,7 @@ public class OutputFileWriter {
                             sb.append(content.substring(0, index + 1) );
                         }
                     }
-                    System.out.println(cp + "==> " + sb.toString());
+                    System.out.println(sb.toString());
                 }
 
             } catch (IOException e) {

@@ -87,13 +87,16 @@ public class InputPhotFileReader implements IInputFileReader{
                         t2 = (xp < 2100);
                     } else if (filePath.contains("smc110.3")) {
                         t2 = (yp < 4050);
+                    } else if (filePath.contains("smc110.2")) {
+                        t2 = (yp < 4050);
                     } else if (filePath.contains("smc125.4")) {
                         t2 = (xp < 2050);
                     } else if (filePath.contains("smc100.5")) {
                         t2 = (yp < 4050);
                     } else if (filePath.contains("smc100.1")) {
-                        t2 = (yp < 4050);
-                        t2 = (xp < 2050);
+                        t2 = (yp < 4050) && (xp < 2050);
+                    } else if (filePath.contains("smc108.7")) {
+                        t2 = (xp > 100) && (xp < 2050);
                     }
 
                     if (t1 && t2){
