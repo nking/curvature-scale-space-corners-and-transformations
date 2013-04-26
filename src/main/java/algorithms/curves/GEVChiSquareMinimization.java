@@ -57,6 +57,8 @@ public class GEVChiSquareMinimization {
 
     protected boolean debug = false;
 
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+
     public enum WEIGHTS_DURING_CHISQSUM {
         ERRORS, INVERSE_Y, MODEL_Y
     }
@@ -306,7 +308,7 @@ public class GEVChiSquareMinimization {
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                 bestFit.getChiSqStatistic());
 
-            System.out.println(str);
+            log.info(str);
         }
 
         return bestFit;
@@ -369,7 +371,7 @@ public class GEVChiSquareMinimization {
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
-            System.out.println(str);
+            log.info(str);
         }
 
         float yErrSquareSum = calcYErrSquareSum();
@@ -384,7 +386,7 @@ public class GEVChiSquareMinimization {
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                 bestFit.getChiSqStatistic());
 
-            System.out.println(str);
+            log.info(str);
         }
 
         return bestFit;
@@ -424,7 +426,7 @@ public class GEVChiSquareMinimization {
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
-            System.out.println(str);
+            log.info(str);
         }
 
         float yErrSquareSum = calcYErrSquareSum();
@@ -439,7 +441,7 @@ public class GEVChiSquareMinimization {
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                 bestFit.getChiSqStatistic());
 
-            System.out.println(str);
+            log.info(str);
         }
 
         if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
@@ -454,7 +456,7 @@ public class GEVChiSquareMinimization {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                System.out.println(str);
+                log.info(str);
             }
 
             if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -474,7 +476,7 @@ public class GEVChiSquareMinimization {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                    System.out.println(str);
+                    log.info(str);
                 }
 
                 if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -495,7 +497,7 @@ public class GEVChiSquareMinimization {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                    System.out.println(str);
+                    log.info(str);
                 }
 
                 if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -518,7 +520,7 @@ public class GEVChiSquareMinimization {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                    System.out.println(str);
+                    log.info(str);
                 }
 
                 if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -542,7 +544,7 @@ public class GEVChiSquareMinimization {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                    System.out.println(str);
+                    log.info(str);
                 }
 
                 if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -614,7 +616,7 @@ public class GEVChiSquareMinimization {
 
                     plotFit(yfit, label);
 
-                    System.out.println(label);
+                    log.info(label);
                 }
 
                 if ( (bestFit == null) || (yfit.getChiSqSum() < bestFit.getChiSqSum()) ) {
@@ -723,7 +725,7 @@ public class GEVChiSquareMinimization {
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f mu=%.7f", kMin, kMax, sigmaMin, sigmaMax, mu);
-            System.out.println(str);
+            log.info(str);
         }
 
         float yErrSquareSum = calcYErrSquareSum();
@@ -739,7 +741,7 @@ public class GEVChiSquareMinimization {
         if (debug) {
             String str2 = String.format("reduced=> kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f",
                 kMin, kMax, sigmaMin, sigmaMax);
-            System.out.println(str2);
+            log.info(str2);
         }
 
         GEVYFit bestFit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
@@ -748,7 +750,7 @@ public class GEVChiSquareMinimization {
             String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(),
                 yErrSquareSum, bestFit.getChiSqStatistic());
-            System.out.println(str);
+            log.info(str);
         }
 
         boolean statisticIsHigh = (bestFit.getChiSqStatistic() > 10);
@@ -772,8 +774,8 @@ public class GEVChiSquareMinimization {
             if (debug) {
                 String str = String.format("reduced=> kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f mu=%.7f",
                     kMin, kMax, sigmaMin, sigmaMax, mu);
-                System.out.println(str);
-                System.out.println("switch to fine grid of ranges + downhill simplex for each");
+                log.info(str);
+                log.info("switch to fine grid of ranges + downhill simplex for each");
             }
 
             int kPower = MiscMath.findPowerOf10(bestFit.getK());
@@ -788,7 +790,7 @@ public class GEVChiSquareMinimization {
                 if (debug) {
                     String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
                         yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum, yfit.getChiSqStatistic());
-                    System.out.println(str);
+                    log.info(str);
                 }
 
                 if (yfit.getChiSqSum() < bestFit.getChiSqSum()) {
@@ -799,11 +801,11 @@ public class GEVChiSquareMinimization {
                         String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
                             bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                             bestFit.getChiSqStatistic());
-                        System.out.println(str);
+                        log.info(str);
                     }
 
                     if (bestFit.getChiSqStatistic() > 2) {
-                        System.out.println("statistic is too high!");
+                        log.info("statistic is too high!");
                     } else {
                         break;
                     }
@@ -821,7 +823,7 @@ public class GEVChiSquareMinimization {
 
             plotFit(bestFit, label);
 
-            System.out.println("fitted gev has chisqsum=" + bestFit.getChiSqSum() + " while curve yerrsqsum=" + yErrSquareSum);
+            log.info("fitted gev has chisqsum=" + bestFit.getChiSqSum() + " while curve yerrsqsum=" + yErrSquareSum);
         }
 
         return bestFit;
@@ -851,7 +853,7 @@ public class GEVChiSquareMinimization {
 
         if (debug) {
             String str = String.format("*kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
-            System.out.println(str);
+            log.info(str);
         }
 
         float yErrSquareSum = calcYErrSquareSum();
@@ -892,7 +894,7 @@ public class GEVChiSquareMinimization {
                 if (debug && (yfit != null)) {
                     String label = String.format("k=%.1e s=%.1e m=%.1e chisq=%.1f yerrsq=%.1f",
                         yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum);
-                    System.out.println(label);
+                    log.info(label);
                 }
 
                 if ( (bestFit == null) || (yfit.getChiSqSum() < bestFit.getChiSqSum()) ) {
@@ -909,7 +911,7 @@ public class GEVChiSquareMinimization {
             plotFit(bestFit, label);
 
             if (debug) {
-                System.out.println(label);
+                log.info(label);
             }
         }
 
@@ -1048,7 +1050,7 @@ public class GEVChiSquareMinimization {
                 getSectionBoundariesFromGrid(kMin, kMax, sigmaMin, sigmaMax, i, tmp, nDimension);
                 String dstr = String.format("[%d] next krange=[%.7f : %.7f] srange=[%.7f : %.7f] chiSqSum=%.1f k=%.7f s=%.7f",
                     i, tmp[0], tmp[1], tmp[2], tmp[3], yfit.getChiSqSum(), parameters[0], parameters[1]);
-                System.out.println(dstr);
+                log.info(dstr);
 */
 
                 if ( (currentBestFit == null) || (yfit.getChiSqSum() < currentBestFit.getChiSqSum()) ) {
@@ -1063,7 +1065,7 @@ public class GEVChiSquareMinimization {
 
                 /*String dstr = String.format("===> choosing [%d] with chiSqSum=%.1f yerrsqsum=%.1f",
                     currentBestFitNumber, currentBestFit.getChiSqSum(), currentBestFit.yDataErrSq);
-                System.out.println(dstr);*/
+                log.info(dstr);*/
 
                 getSectionBoundariesFromGrid(kMin, kMax, sigmaMin, sigmaMax, currentBestFitNumber, minMax, nDimension);
 
@@ -1159,7 +1161,7 @@ public class GEVChiSquareMinimization {
                 getSectionBoundariesFromGrid(kMin, kMax, sigmaMin, sigmaMax, i, tmp, nDimension);
                 String dstr = String.format("[%d] next krange=[%.7f : %.7f] srange=[%.7f : %.7f] chiSqSum=%.1f k=%.7f s=%.7f",
                     i, tmp[0], tmp[1], tmp[2], tmp[3], yfit.getChiSqSum(), parameters[0], parameters[1]);
-                System.out.println(dstr);
+                log.info(dstr);
 */
 
                 if ( (currentBestFit == null) || (yfit.getChiSqSum() < currentBestFit.getChiSqSum()) ) {
@@ -1175,7 +1177,7 @@ public class GEVChiSquareMinimization {
 
                 String dstr = String.format("  <==> same chisqsum=%.1f yerrsqsum=%.1f",
                     currentBestFit.getChiSqSum(), currentBestFit.getYDataErrSq());
-                System.out.println(dstr);
+                log.info(dstr);
 
 
                 nLoIter++;
@@ -1186,7 +1188,7 @@ public class GEVChiSquareMinimization {
 /*
                 String dstr = String.format("===> choosing [%d] with chiSqSum=%.1f yerrsqsum=%.1f",
                     currentBestFitNumber, currentBestFit.getChiSqSum(), currentBestFit.yDataErrSq);
-                System.out.println(dstr);
+                log.info(dstr);
 */
 
                 getSectionBoundariesFromGrid(kMin, kMax, sigmaMin, sigmaMax, currentBestFitNumber, minMax, nDimension);
@@ -1294,7 +1296,7 @@ public class GEVChiSquareMinimization {
         float yErrSquareSum, float yNorm) throws FailedToConvergeException, IOException {
 
         //String str = String.format("**kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
-        //System.out.println(str);
+        //log.info(str);
 
         GEVYFit bestFit = null;
 
@@ -1308,7 +1310,7 @@ public class GEVChiSquareMinimization {
 
                 /*String dstr = String.format("krange=[%.7f : %.7f] srange=[%.7f : %.7f] chiSqSum=%.1f k=%.7f s=%.7f",
                     kMin2, kMax2, sigmaMin2, sigmaMax2, fit.getChiSqSum(), fit.getK(), fit.getSigma());
-                System.out.println(dstr);*/
+                log.info(dstr);*/
 
                 if ((bestFit == null) || (fit.getK() > 0) && (fit.getChiSqSum() < bestFit.getChiSqSum())) {
 
@@ -1347,21 +1349,21 @@ public class GEVChiSquareMinimization {
 
         if (debug) {
             // print the x and y array points for debugging
-            System.out.println("x=");
+            log.info("x=");
             for (int i = 0; i < x.length; i++) {
                 if (i > 0) {
                     System.out.print(", ");
                 }
                 System.out.print(x[i] + "f");
             }
-            System.out.println("\ny=");
+            log.info("\ny=");
             for (int i = 0; i < y.length; i++) {
                 if (i > 0) {
                     System.out.print(", ");
                 }
                 System.out.print(y[i] + "f");
             }
-            System.out.println("");
+            log.info("");
         }
     }
 

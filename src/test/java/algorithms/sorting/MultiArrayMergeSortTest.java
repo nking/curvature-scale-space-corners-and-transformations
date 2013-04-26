@@ -1,6 +1,7 @@
 package algorithms.sorting;
 
 import java.security.SecureRandom;
+import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -160,7 +161,6 @@ public class MultiArrayMergeSortTest extends TestCase {
      * @return static Test
     */
     public static Test suite(){
-        System.out.println("Creating a TestSuite for MultiArrayMergeSortTest");
         return new TestSuite(MultiArrayMergeSortTest.class);
     }
 

@@ -290,7 +290,6 @@ public class PolarAngleMergeSortTest extends TestCase {
      * @return static Test
     */
     public static Test suite(){
-        System.out.println("Creating a TestSuite for PolarAngleMergeSort");
         return new TestSuite(PolarAngleMergeSortTest.class);
     }
 

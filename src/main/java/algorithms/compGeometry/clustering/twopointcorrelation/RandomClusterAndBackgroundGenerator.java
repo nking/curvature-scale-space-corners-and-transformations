@@ -3,6 +3,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import algorithms.compGeometry.LinesAndAngles;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.logging.Logger;
 
 /**
  * utility class for unit tests which need to create random background points and
@@ -18,6 +19,8 @@ public class RandomClusterAndBackgroundGenerator {
     float[] yc = null;
     float[] xErrors = null;
     float[] yErrors = null;
+
+    Logger log = Logger.getLogger(this.getClass().getName());
 
     static enum CLUSTER_SEPARATION {
         SMALL, MODERATE, LARGE
@@ -103,7 +106,7 @@ public class RandomClusterAndBackgroundGenerator {
                 break;
         }
 
-        System.out.println("Creating points: " + nClusters.length + " clusters, "
+        log.info("Creating points: " + nClusters.length + " clusters, "
             + nBackgroundPoints + " background points, " + clusterSep.name());
 
         return createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax, nClusters, nBackgroundPoints, clusterSep);

@@ -5,6 +5,7 @@ import algorithms.curves.GEVYFit;
 import algorithms.curves.GeneralizedExtremeValue;
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 public class ATest extends TestCase {
@@ -16,6 +17,8 @@ public class ATest extends TestCase {
 
     protected boolean debug = true;
 
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+    
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -75,7 +78,7 @@ public class ATest extends TestCase {
             plotter.addPlot(x, y, yfit.getOriginalScaleX(), yfit.getOriginalScaleYFit(), "");
             plotter.writeFile();
 
-            System.out.println(yfit.toString());
+            log.info(yfit.toString());
         }
     }
 
@@ -109,7 +112,7 @@ public class ATest extends TestCase {
         float sigma = 0.025f;
         float s = sigma;
         float sMax = 20.0f*s;
-        System.out.println(String.format("k={%.7f : %.7f} sigma=%.7f mu=%.4f", kMin, kMax, sigma, mu));
+        log.info(String.format("k={%.7f : %.7f} sigma=%.7f mu=%.4f", kMin, kMax, sigma, mu));
         while (mu < muMax) {
 
             while (k < kMax) {
@@ -121,7 +124,7 @@ public class ATest extends TestCase {
                         String str = String.format("k=%.7f s=%.7f m=%.4f", k, s, mu);
                         plotter.addPlot(x, y, x, y, str);
                         plotter.writeFile();
-                        System.out.println(str);
+                        log.info(str);
                     }
                     s*=1.5f;
                 }

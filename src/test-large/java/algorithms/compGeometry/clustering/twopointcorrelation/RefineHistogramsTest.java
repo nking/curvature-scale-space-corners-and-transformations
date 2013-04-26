@@ -21,7 +21,7 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
 
     boolean findClusters = true;
 
-    protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
+    protected Logger log = Logger.getLogger(this.getClass().getName());
 
     public void testWriteDensityFiles() throws Exception {
 
@@ -74,7 +74,7 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
             voidStats.calculateTwoPointVoidDensities();
             statsFilePath =
                 voidStats.serializeTwoPointBackground(fileRootNameIndiv);
-            System.out.println("writing " + statsFilePath);
+            log.info("writing " + statsFilePath);
 
 
             fileRootNameIndiv = fileRootName + "_" + TwoPointVoidStats.Sampling.SEMI_COMPLETE_RANGE_SEARCH.name() + "_";
@@ -84,7 +84,7 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
             voidStats.calculateTwoPointVoidDensities();
             statsFilePath =
                 voidStats.serializeTwoPointBackground(fileRootNameIndiv);
-            System.out.println("writing " + statsFilePath);
+            log.info("writing " + statsFilePath);
 
 /*
             fileRootNameIndiv = fileRootName + "_" + TwoPointVoidStats.Sampling.SEMI_COMPLETE.name() + "_";
@@ -94,7 +94,7 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
             voidStats.calculateTwoPointVoidDensities();
             statsFilePath =
                 voidStats.serializeTwoPointBackground(fileRootNameIndiv);
-            System.out.println("writing " + statsFilePath);
+            log.info("writing " + statsFilePath);
 */
             log.info("  END " + i);
         }
@@ -176,7 +176,7 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
                 histogram.getXErrors(), histogram.getYErrors(), xf, yf, "");
             plotter.writeFile();
 
-            System.out.println(yfit.toString());
+            log.info(yfit.toString());
 
             if (findClusters) {
 

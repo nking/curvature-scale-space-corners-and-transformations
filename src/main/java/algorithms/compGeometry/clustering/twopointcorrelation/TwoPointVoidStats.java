@@ -117,6 +117,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected boolean doLogPerformanceMetrics = false;
 
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+
     //
     public HistogramHolder getStatsHistogram() {
         return statsHistogram;
@@ -214,7 +216,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             heapUsage.getUsed(), nonHeapUsage.getUsed() );
 
         Logger.getLogger(this.getClass().getSimpleName()).info(str);
-        System.out.println(str);
     }
 
     // TODO:  replace with estimation using reflection one day
@@ -533,7 +534,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 throw new TwoPointVoidStatsException("histogram of linear densities was not fittable");
             } else {
                 if (debug) {
-                    System.out.println(yfit.toString());
+                    log.info(yfit.toString());
                 }
             }
 
@@ -593,7 +594,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             if (debug) {
                 if (bestFit != null) {
-                    System.out.println(bestFit.toString());
+                    log.info(bestFit.toString());
                 }
                 float xHalfInterval = (histogram.getXHist()[1] - histogram.getXHist()[0]) / 2.0f;
                 float xmin = 0;
@@ -674,7 +675,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             }
 
             if (debug) {
-                System.out.println(bestFit.toString());
+                log.info(bestFit.toString());
             }
 
             int limitIndex = bestFit.getXPeakIndex();
@@ -739,14 +740,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 errorInEstimateFromHistogram * errorInEstimateFromHistogram + errorInFitting * errorInFitting));
 
             if (debug) {
-                System.out.println("estimating background minimum as location of " + limitStr + " of background profile counts = "
+                log.info("estimating background minimum as location of " + limitStr + " of background profile counts = "
                 + this.backgroundSurfaceDensity
                 + " w/ x error in histogram bin =" + errorInEstimateFromHistogram
                 + " gev fitting error for one point =" + errorInFitting);
             }
 
             if (debug && (bestFit.getChiSqSum() > bestFit.getYDataErrSq())) {
-                System.out.println("WARNING:  chisq is larger than errors: "
+                log.info("WARNING:  chisq is larger than errors: "
                     + bestFit.getChiSqSum() + " (errsqsum=" + bestFit.getYDataErrSq() + ")");
             }
 
@@ -782,14 +783,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             // we need to decide between SEMI_COMPLETE and SEMI_COMPLETE_RANGE_SEARCH.
 
-
             // ***** NOTE ********
             // This method is not implemented yet, so until then, will solve first SEMI_COMPLETE
             //    and if many points are outliers or all points are in one cluster, will resolve it
             //    using SEMI_COMPLETE_RANGE_SEARCH.
             // This is unfortunately, logic built into the invokee, TwoPointCorrelation for now.
-
-
 
             /*boolean pointsAreSemiEvenlyDistributed = PointsUtil.pointsAreSemiEvenlyDistributed(indexer.getX(), indexer.getY());
             if (pointsAreSemiEvenlyDistributed) {
@@ -814,7 +812,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
 
         //if (debug) {
-            System.out.println("findVoid sampling=" + sampling.name() + " for " + indexer.nXY + " points");
+            log.info("findVoid sampling=" + sampling.name() + " for " + indexer.nXY + " points");
         //}
 
         if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
@@ -904,7 +902,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         for (int i = 0; i < indexer.nXY; i++) {
             if (debug) {
-                System.out.println("findVoids i=" + i + "/" + indexer.nXY);
+                log.info("findVoids i=" + i + "/" + indexer.nXY);
             }
             for (int ii = (i + 1); ii < indexer.nXY; ii+=incr) {
                 for (int j = 0; j < indexer.nXY; j++) {
@@ -928,7 +926,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected void findVoidsRoughRangeSearch(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int nDiv, float bFactor) {
 
         //Divide y interval in half and execute the same size intervals in x over the full range
-
         int nYIntervals = (yIndexHi - yIndexLo) / nDiv;                     // cost     number of times
 
         for (int k = 0; k < nYIntervals; k++) {                             //               nDiv
@@ -941,7 +938,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 for (int j = 0; j < nXIntervals; j++) {                     //              N/2, N/4
                     int startX = xIndexLo + (j * binSz);
-                    int endX = startX + binSz - 1;
+                    int endX = startX + binSz;
 //System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + (yLo + binSz));
                     processIndexedRegion(startX, endX, yLo, yLo + binSz);
                 }
@@ -1012,7 +1009,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 int yHi = yLo + binSize;
 
                 //if (debug) {
-                    System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + yHi);
+                    log.info("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + yHi);
                 //}
 
                 findVoidsRoughRangeSearch(startX, endX, yLo, yHi, 2, 1.5f);
@@ -1024,7 +1021,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     /**
      * this returns the intersection of points within the area defined by the x
-     * range and yrange where those are given in the reference frame of the
+     * range and y range where those are given in the reference frame of the
      * indexes sorted by each axis.
      *
      * @param x

@@ -78,7 +78,6 @@ public class XYStackTest extends TestCase {
      * @return static Test
     */
     public static Test suite(){
-        System.out.println("Creating a TestSuite for XYStack");
         return new TestSuite(XYStackTest.class);
     }
 

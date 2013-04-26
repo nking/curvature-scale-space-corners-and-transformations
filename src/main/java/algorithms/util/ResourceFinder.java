@@ -200,7 +200,7 @@ public class ResourceFinder {
             if (fw != null) {
                 fw.close();
             }
-            System.out.println( "wrote to file: " + filePath );
+            log.info( "wrote to file: " + filePath );
         }
         return filePath;
     }

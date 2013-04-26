@@ -207,15 +207,21 @@ public class TwoPointCorrelation {
     }
 
     public void setSigmaFactorToTwo() {
-        System.out.println("threshhold=2.0");
+        if (debug) {
+            log.info("threshhold=2.0");
+        }
         sigmaFactor = 2.0f;
     }
     public void setSigmaFactorToTwoPointFive() {
-        System.out.println("threshhold=2.5");
+        if (debug) {
+            log.info("threshhold=2.5");
+        }
         sigmaFactor = 2.5f;
     }
     public void setSigmaFactorToThree() {
-        System.out.println("threshhold=3.0");
+        if (debug) {
+            log.info("threshhold=3.0");
+        }
         sigmaFactor = 3.0f;
     }
 
@@ -372,7 +378,6 @@ public class TwoPointCorrelation {
             heapUsage.getUsed(), nonHeapUsage.getUsed() );
 
         Logger.getLogger(this.getClass().getSimpleName()).info(str);
-        System.out.println(str);
     }
 
     public long approximateMemoryUsed() {
@@ -741,12 +746,12 @@ public class TwoPointCorrelation {
 
             if (fracPoints <= 0.11f) {
                 if (fracArea > 0.33f) {
-                    System.out.println("KEEP " + TwoPointVoidStats.Sampling.SEMI_COMPLETE.name()
+                    log.info("KEEP " + TwoPointVoidStats.Sampling.SEMI_COMPLETE.name()
                         + " fracPoints=" + fracPoints + " fracArea=" + fracArea + " nGroups=" + n);
                     return;
                 }
             }
-            System.out.println("CHANGE TO " + TwoPointVoidStats.Sampling.SEMI_COMPLETE_RANGE_SEARCH.name()
+            log.info("CHANGE TO " + TwoPointVoidStats.Sampling.SEMI_COMPLETE_RANGE_SEARCH.name()
                 + " fracPoints=" + fracPoints + " fracArea=" + fracArea + " nGroups=" + n);
 
             if (debug) {
@@ -914,7 +919,7 @@ public class TwoPointCorrelation {
     public int getNumberOfGroups() {
         return nGroups;
     }
-    
+
     public float[] calculateGroupCentroidUsingAllPointsEquallyWeighted(int groupNumber) {
 
         if (groupNumber >= nGroups) {

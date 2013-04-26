@@ -109,7 +109,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     CreateClusterDataTest.writeIndexer(filePath, indexer);
                 }
 
-                System.out.println(" " + count + " (" + indexer.nXY + " points) ... ");
+                log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
                 TwoPointCorrelation twoPtC = new TwoPointCorrelation(
                     generator.x, generator.y,
@@ -156,7 +156,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                         i, ii, x10, peak, meanDivPeak, medianDivMean, chiSqStats[count]
                     );
                     if (debug) {
-                        System.out.println(plotLabel + " findVoid sampling=" + stats.getSampling().name());
+                        log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
                     }
                 }
 
@@ -238,7 +238,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     j, peak, mean, median, x05, x10, x80, x95, meanDivPeak, medianDivMean, x80DivMedian, x80DivMean, chiSqStats[n]
                 );
                 //log.info(line);
-                System.out.println(line);
+                log.info(line);
 
                 meanDivPeakSum += meanDivPeak;
                 medianDivMeanSum += medianDivMean;
@@ -305,7 +305,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                 x80DivMeans[i], x80DivMeansSD[i]
             );
             //log.info(line);
-            System.out.println(line);
+            log.info(line);
         }
 
         log.info("SEED=" + seed);

@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.Calendar;
+import java.util.logging.Logger;
 
 /**
  *
@@ -82,7 +83,7 @@ public class SerializerUtil {
 
             oos.flush();
 
-            System.out.println("wrote indexer to " + filePath);
+            Logger.getLogger(SerializerUtil.class.getName()).info("wrote indexer to " + filePath);
 
             return filePath;
 

@@ -22,7 +22,7 @@ public class Main {
         String dir = System.getProperty("user.dir") + "/photfiles";
 
         String[] files = new String[]{
-            "smc118.1.phot", // 4108 points
+            /*"smc118.1.phot", // 4108 points
             "smc118.6.phot",
             "smc118.8.phot",
             "smc118.7.phot",
@@ -38,7 +38,8 @@ public class Main {
             "smc100.5.phot",
             "smc125.3.phot",
             "smc108.7.phot",
-            "smc108.8.phot"
+            "smc108.8.phot"*/
+            "smc110.3.phot"
         };
 
         try {

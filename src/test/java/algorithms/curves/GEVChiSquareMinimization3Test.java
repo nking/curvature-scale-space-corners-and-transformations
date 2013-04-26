@@ -10,7 +10,7 @@ import junit.framework.TestCase;
 
 public class GEVChiSquareMinimization3Test extends TestCase {
 
-    protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
+    protected Logger log = Logger.getLogger(this.getClass().getName());
 
     protected float[] x = null;
     protected float[] y = null;
@@ -89,7 +89,7 @@ public class GEVChiSquareMinimization3Test extends TestCase {
                 histogram.getXErrors(), histogram.getYErrors(), xf, yf, "");
             plotter.writeFile();
 
-            System.out.println(yfit.toString());
+            log.info(yfit.toString());
 
 /*
             try {
