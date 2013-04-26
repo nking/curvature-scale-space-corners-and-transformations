@@ -154,7 +154,7 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             }
 
             if (lines != undefined) {
-                var lineWidth = (points.length < 10000) ? 2 : 1;
+                var lineWidth = 1;
                 var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
                 for (i = 0; i < lines.length; i++) {
                     svg.append("svg:path")
