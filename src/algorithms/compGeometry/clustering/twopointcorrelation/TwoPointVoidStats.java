@@ -89,7 +89,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     public enum Sampling {
         COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH /*default*/,
-        SEMI_COMPLETE_RANGE_SEARCH_2, SEMI_COMPLETE_RANGE_SEARCH_3
+        SEMI_COMPLETE_RANGE_SEARCH_2, SEMI_COMPLETE_RANGE_SEARCH_3, SEMI_COMPLETE_RANGE_SEARCH_4
     }
 
     public enum State {
@@ -355,7 +355,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
                 str = "? n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
-                str = "? n=";
+                str = "10 * O( (n/10)^2 + (n/10) ) n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
+                str = "10 * O( (n/20)^2 + (n/20) ) n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
                 str = "not yet est with n=";
             }
@@ -800,7 +802,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 sampling = Sampling.SEMI_COMPLETE;
             }*/
 
-            if (indexer.nXY > 5000) {
+            if (indexer.nXY > 10000) {
+                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
+            } else if (indexer.nXY > 3000) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
             } else if (indexer.nXY > 999) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
@@ -838,7 +842,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             // for area of data so large that randomly chosen patches are neccessary
             //   to reduce sample to decrease runtime
-            findVoidsRandomSamples(x, y, 10);
+            findVoidsRandomSamples(x, y, 10, 10);
+
+        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
+
+            // for area of data so large that randomly chosen patches are neccessary
+            //   to reduce sample to decrease runtime
+            findVoidsRandomSamples(x, y, 10, 20);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 
@@ -980,24 +990,26 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * @param y
      * @param nSamples the number of samples to take
      */
-    protected void findVoidsRandomSamples(float[] x, float[] y, int nSamples) {
+    protected void findVoidsRandomSamples(float[] x, float[] y, int nSamples, int nDivisionsPerSide) {
 
         try {
             int n = indexer.getNumberOfPoints();
 
             SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
             sr.setSeed(System.currentTimeMillis());
+            byte[] seed = sr.generateSeed(10);
+            sr.setSeed(seed);
 
             // find nSamples non-overlapping regions to sample the area
 
             /*
-             * divide into a grid of nSamples by nSamples and choose nSamples randomly from them
+             * divide into a grid of nDivisionsPerSide by nDivisionsPerSide and choose nSamples randomly from them
              *
              * Note that the division is in index space rather than value space to
              * use the indexer.
              *
              */
-            int binSize = indexer.nXY/nSamples;
+            int binSize = indexer.nXY/nDivisionsPerSide;
 
             /*    col 0
              *     ||
@@ -1011,7 +1023,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
              *      6 |  7 | 8
              */
 
-            int nSSq = nSamples*nSamples;
+            int nSSq = nDivisionsPerSide*nDivisionsPerSide;
 
             // choices are 0 through nSamples-1
             boolean[] selected = new boolean[nSSq];
@@ -1024,9 +1036,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 }
                 selected[bin] = true;
 
-                int row = (bin/nSamples);// rounds down
+                int row = (bin/nDivisionsPerSide);// rounds down
 
-                int col = (bin % nSamples);
+                int col = (bin % nDivisionsPerSide);
 
                 int startX = col*binSize;
                 int endX = startX + binSize;
