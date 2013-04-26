@@ -804,7 +804,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             if (indexer.nXY > 10000) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
-            } else if (indexer.nXY > 3000) {
+            } else if (indexer.nXY > 8000) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
             } else if (indexer.nXY > 999) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
@@ -848,7 +848,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             // for area of data so large that randomly chosen patches are neccessary
             //   to reduce sample to decrease runtime
-            findVoidsRandomSamples(x, y, 10, 20);
+            findVoidsRandomSamples(x, y, 10, 15);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 
@@ -1029,11 +1029,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             for (int i = 0; i < nSamples; i++) {
 
                 int bin = sr.nextInt(nSSq);
-                int be = bin;
-                for (int j=0;j<be;j++) {
-                    bin = sr.nextInt(nSSq);
-                }
-
                 while (selected[bin]) {
                     bin = sr.nextInt(nSSq);
                 }
@@ -1052,7 +1047,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                     System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + yHi);
                 //}
 
-                findVoidsRoughRangeSearch(startX, endX, yLo, yHi, 2, 2);
+                findVoidsRoughRangeSearch(startX, endX, yLo, yHi, 2, 1.5f);
             }
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
