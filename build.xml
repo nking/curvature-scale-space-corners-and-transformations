@@ -260,6 +260,26 @@
         </junit>
     </target>
 
+    <target name="runTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileTests">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            <!--<jvmarg value="-ea"/>-->
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <test name="${test}" fork="yes" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+        </junit>
+    </target>
+
     <target name="runLargeTests" if="junit.present" depends="clean,debug,compileLargeTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.large.out.dir}" />
@@ -326,32 +346,14 @@
         </emma>
     </target>
 
-    <target name="runTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileTests">
-        <record name="${logfile}" append="yes" loglevel="info"/>
-        <fail unless="test">
-            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
-        </fail>
-        <junit fork="yes" showoutput="true" filtertrace="off">
-            <!--<jvmarg value="-ea"/>-->
-            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
-            <classpath>
-                <pathelement location="${tests.out.dir}"/>
-                <path refid="test.classpath"/>
-                <pathelement location="${src.out.dir}"/>
-            </classpath>
-            <test name="${test}" fork="yes" haltonfailure="yes">
-                <formatter type="plain" usefile="false"/>
-            </test>
-        </junit>
-    </target>
-
     <target name="runLargeTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileLargeTests">
-        <record name="${logfile}" append="yes" loglevel="info"/>
+        <record name="${logfile}" append="yes" loglevel="debug"/>
         <fail unless="test">
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
-        <junit fork="yes" showoutput="true" filtertrace="off">
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
             <!--<jvmarg value="-ea"/>-->
+            <formatter type="plain" usefile="true"/>
             <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.large.out.dir}"/>
@@ -365,7 +367,7 @@
     </target>
 
     <target name="runPerformanceMetrics" depends="compile">
-        <record name="${logfile}" append="yes" loglevel="info"/>
+        <record name="${logfile}" append="yes" loglevel="debug"/>
         <java classname="algorithms.compGeometry.clustering.twopointcorrelation.PerformanceMetricsRunner"
             fork="true" failonerror="true">
         <!-- maxmemory="1024m -->
