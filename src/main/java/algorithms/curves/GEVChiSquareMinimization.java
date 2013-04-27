@@ -1645,12 +1645,12 @@ public class GEVChiSquareMinimization {
      */
     int partition(GEVYFit[] yfits, int p, int r) {
 
-        float x = yfits[r].getChiSqSum();
+        float xxp = yfits[r].getChiSqSum();
 
         int i = p - 1;
 
         for (int j = p; j < r ; j++ ) {
-            if (yfits[j].getChiSqSum() <= x) {
+            if (yfits[j].getChiSqSum() <= xxp) {
 
                 i++;
 

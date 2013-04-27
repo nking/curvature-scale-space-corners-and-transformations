@@ -182,15 +182,15 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
 
                 voidStats.finalizeStats(histogram, yfit);
 
-                TwoPointCorrelation findClusters = new TwoPointCorrelation(indexerFilePath);
+                TwoPointCorrelation clusterFinder = new TwoPointCorrelation(indexerFilePath);
 
-                findClusters.setBackground(voidStats.getBackgroundSurfaceDensity(), voidStats.getBackgroundSurfaceDensityError());
+                clusterFinder.setBackground(voidStats.getBackgroundSurfaceDensity(), voidStats.getBackgroundSurfaceDensityError());
 
-                findClusters.findClusters();
+                clusterFinder.findClusters();
 
-                findClusters.calculateHullsOfClusters();
+                clusterFinder.calculateHullsOfClusters();
 
-                findClusters.plotClusters();
+                clusterFinder.plotClusters();
             }
 
             log.info("  END " + i);

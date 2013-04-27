@@ -84,10 +84,10 @@ public class ATest extends TestCase {
 
     public void estCalculateChiSqSumForCurve_1() throws Exception {
 
-        float[] x = new float[20];
-        float xDelta = 1.0f/x.length;
-        for (int i = 0; i < x.length; i++) {
-            x[i] = xDelta*i;
+        float[] xp = new float[20];
+        float xDelta = 1.0f/xp.length;
+        for (int i = 0; i < xp.length; i++) {
+            xp[i] = xDelta*i;
         }
 
         //* sigma range:    0.025 at       50000.0f*kMin * x[1];  where k={1.0E-5:100.0}  first several
@@ -101,8 +101,8 @@ public class ATest extends TestCase {
 
         float kMin = 0.00001f;
         float kMax = 2.0f; // 0.001f;
-        float mu = x[1];
-        float muMax = x[x.length/2];
+        float mu = xp[1];
+        float muMax = xp[xp.length/2];
 
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.0f, 1.0f, 0.0f, 1.0f);
         //  1 + k*(-0.5)/sigma <=== if k == (1/(|x1-x0|))*sigma, total is zero
@@ -118,11 +118,11 @@ public class ATest extends TestCase {
             while (k < kMax) {
 
                 while (s < sMax) {
-                    float[] y = GeneralizedExtremeValue.generateNormalizedCurve(x, k, s, mu);
+                    float[] yp = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, s, mu);
 
-                    if (y != null) {
+                    if (yp != null) {
                         String str = String.format("k=%.7f s=%.7f m=%.4f", k, s, mu);
-                        plotter.addPlot(x, y, x, y, str);
+                        plotter.addPlot(xp, yp, xp, yp, str);
                         plotter.writeFile();
                         log.info(str);
                     }

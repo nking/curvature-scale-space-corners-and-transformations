@@ -175,18 +175,18 @@ public class RandomClusterAndBackgroundGenerator {
     }
 
     protected void createRandomPointsAroundCenter(SecureRandom sr, float maxRadius,
-        int numberOfPoints, float xc, float yc, float[] x, float[] y, int xyStartOffset) {
+        int numberOfPoints, float xc0, float yc0, float[] x0, float[] y0, int xyStartOffset) {
 
         for (int i = 0; i < numberOfPoints; i++) {
 
             float radius = maxRadius * sr.nextFloat();
             double angle = 360. * sr.nextDouble();
 
-            float[] xy = calculateXAndYFromXcYcAndRadius(xc, yc, radius, angle);
+            float[] xy = calculateXAndYFromXcYcAndRadius(xc0, yc0, radius, angle);
 
             if ((xy[0] > 0) && (xy[1] > 0)) {
-                x[xyStartOffset + i] = xy[0];
-                y[xyStartOffset + i] = xy[1];
+                x0[xyStartOffset + i] = xy[0];
+                y0[xyStartOffset + i] = xy[1];
             } else {
                 i--;
             }
@@ -219,7 +219,7 @@ public class RandomClusterAndBackgroundGenerator {
         }
     }
 
-    protected boolean separationBetweenExistingPointsIsLargerThanMin(float[] x, float[] y, int nXY,
+    protected boolean separationBetweenExistingPointsIsLargerThanMin(float[] x0, float[] y0, int nXY,
         float xp, float yp, float minimumSeparation) {
 
         if (nXY == 0) {
@@ -232,7 +232,7 @@ public class RandomClusterAndBackgroundGenerator {
 
         for (int i = 0; i < nXY; i++) {
 
-            double distSq = LinesAndAngles.distSquared(x[i], y[i], xp, yp) + eps;
+            double distSq = LinesAndAngles.distSquared(x0[i], y0[i], xp, yp) + eps;
 
             if (distSq < minSq) {
                 return false;
@@ -243,14 +243,14 @@ public class RandomClusterAndBackgroundGenerator {
 
     protected void createRandomPointsInRectangle(SecureRandom sr, int nBackgroundPoints,
         float xmin, float xmax, float ymin, float ymax,
-        float[] x, float[] y,  int xyStartOffset) {
+        float[] x0, float[] y0,  int xyStartOffset) {
 
         float xWidth = xmax - xmin;
         float yHeight = ymax - ymin;
 
         for (int i = 0; i < nBackgroundPoints; i++) {
-            x[xyStartOffset + i] = sr.nextFloat()*xWidth;
-            y[xyStartOffset + i] = sr.nextFloat()*yHeight;
+            x0[xyStartOffset + i] = sr.nextFloat()*xWidth;
+            y0[xyStartOffset + i] = sr.nextFloat()*yHeight;
         }
     }
 

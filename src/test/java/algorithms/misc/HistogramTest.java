@@ -41,36 +41,36 @@ public class HistogramTest extends TestCase {
 
         log.info("testCreateHistogram_4args");
 
-        float[] a = new float[]{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5};
+        float[] aa = new float[]{1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5};
         int nBins = 5;
 
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
 
-        Histogram.createHistogram(a, nBins, xHist, yHist);
+        Histogram.createHistogram(aa, nBins, xHist, yHist);
 
         for (int i = 0; i < yHist.length; i++) {
             assertTrue(yHist[i] == (i + 1));
             assertTrue(xHist[i] == (i + 1 + 0.5));
         }
 
-        a = new float[]{0, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+        aa = new float[]{0, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4};
         xHist = new float[nBins];
         yHist = new int[nBins];
 
-        Histogram.createHistogram(a, nBins, xHist, yHist);
+        Histogram.createHistogram(aa, nBins, xHist, yHist);
 
         for (int i = 0; i < yHist.length; i++) {
             assertTrue(yHist[i] == (i + 1));
             assertTrue(xHist[i] == (i + 0.5));
         }
 
-        a = new float[]{0.1f, 0.2f, 0.2f, 0.3f, 0.3f, 0.3f, 0.4f, 0.4f, 0.4f, 0.4f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};
+        aa = new float[]{0.1f, 0.2f, 0.2f, 0.3f, 0.3f, 0.3f, 0.4f, 0.4f, 0.4f, 0.4f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};
 
         xHist = new float[nBins];
         yHist = new int[nBins];
 
-        Histogram.createHistogram(a, nBins, xHist, yHist);
+        Histogram.createHistogram(aa, nBins, xHist, yHist);
 
         for (int i = 0; i < yHist.length; i++) {
             float expected = (i + 1);
@@ -82,7 +82,7 @@ public class HistogramTest extends TestCase {
             assertTrue( Math.abs(expected - found) < 0.01);
         }
 
-        a = new float[]{
+        aa = new float[]{
             100, 100, 100, 100, 100,
             200, 200, 200, 200, 200, 200,
             300, 300, 300, 300, 300, 300, 300,
@@ -90,15 +90,15 @@ public class HistogramTest extends TestCase {
             500, 500, 500, 500, 500, 500, 500, 500, 500,
         };
 
-        float[] ae = new float[a.length];
-        for (int i = 0; i < a.length; i++) {
-            ae[i] = 0.1f*(float)Math.sqrt(a[i]);
+        float[] aae = new float[aa.length];
+        for (int i = 0; i < aa.length; i++) {
+            aae[i] = 0.1f*(float)Math.sqrt(aa[i]);
         }
 
         xHist = new float[nBins];
         yHist = new int[nBins];
 
-        Histogram.createHistogram(a, nBins, xHist, yHist);
+        Histogram.createHistogram(aa, nBins, xHist, yHist);
         for (int i = 0; i < yHist.length; i++) {
             float expected = (i + 5);
             float found = yHist[i];
@@ -112,7 +112,7 @@ public class HistogramTest extends TestCase {
         float[] xHistErrorsOutput = new float[xHist.length];
         float[] yHistErrorsOutput = new float[xHist.length];
 
-        Histogram.calulateHistogramBinErrors(xHist, yHist, a, ae, xHistErrorsOutput, yHistErrorsOutput);
+        Histogram.calulateHistogramBinErrors(xHist, yHist, aa, aae, xHistErrorsOutput, yHistErrorsOutput);
         for (int i = 0; i < yHist.length; i++) {
             float yh = yHist[i];
             float xh = xHist[i];
@@ -123,7 +123,7 @@ public class HistogramTest extends TestCase {
             assertTrue(yhe < yh);
         }
 
-        HistogramHolder hist = Histogram.createHistogramForSkewedData(nBins, a, ae, false);
+        HistogramHolder hist = Histogram.createHistogramForSkewedData(nBins, aa, aae, false);
         //assertTrue(hist.xHist.length == nBins);
     }
 
@@ -136,13 +136,13 @@ public class HistogramTest extends TestCase {
 
         //  2   3   4   5   6
         //    0   1   2   3   4
-        float[] a = new float[]{2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6};
+        float[] aa = new float[]{2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6};
         int nBins = 5;
 
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
 
-        Histogram.createHistogram(a, nBins, 2, 6, xHist, yHist);
+        Histogram.createHistogram(aa, nBins, 2, 6, xHist, yHist);
 
         for (int i = 0; i < yHist.length; i++) {
             assertTrue(yHist[i] == (i + 2));
@@ -152,7 +152,7 @@ public class HistogramTest extends TestCase {
         nBins = 4;
         xHist = new float[nBins];
         yHist = new int[nBins];
-        Histogram.createHistogram(a, nBins, 2, 5, xHist, yHist);
+        Histogram.createHistogram(aa, nBins, 2, 5, xHist, yHist);
 
         for (int i = 0; i < yHist.length; i++) {
             assertTrue(yHist[i] == (i + 2));
@@ -167,16 +167,16 @@ public class HistogramTest extends TestCase {
 
         log.info("testCreateHistogram_3args");
 
-        float[] a = new float[]{
+        float[] aa = new float[]{
             2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
             7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11,
             12, 13, 14, 15
         };
-        float[] ae = Errors.populateYErrorsBySqrt(a);
+        float[] aae = Errors.populateYErrorsBySqrt(aa);
 
         int nBins = 12;
 
-        HistogramHolder result = Histogram.createHistogramForSkewedData(nBins, a, ae, false);
+        HistogramHolder result = Histogram.createHistogramForSkewedData(nBins, aa, aae, false);
 
         assertTrue(result.getXHist().length >= 6);
     }
@@ -298,16 +298,16 @@ public class HistogramTest extends TestCase {
 
     public void testReadWriteExternal() throws Exception {
 
-        float[] a = new float[]{
+        float[] aa = new float[]{
             2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
             7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11,
             12, 13, 14, 15
         };
-        float[] ae = Errors.populateYErrorsBySqrt(a);
+        float[] aae = Errors.populateYErrorsBySqrt(aa);
 
         int nBins = 12;
 
-        HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, a, ae, false);
+        HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, aa, aae, false);
 
 
         PipedOutputStream pipedOut = null;

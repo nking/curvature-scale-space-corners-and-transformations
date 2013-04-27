@@ -1,7 +1,5 @@
 package algorithms.curves;
 
-import algorithms.compGeometry.clustering.twopointcorrelation.CreateClusterDataTest;
-import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
@@ -100,7 +98,7 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         dx = new float[x.length];
         dy = new float[x.length];
 
-        GEVChiSquareMinimization chiSqMin = new GEVChiSquareMinimization(x, y, dx, dx);
+        chiSqMin = new GEVChiSquareMinimization(x, y, dx, dx);
 
         for (int position = 0; position < nDimension*nDimension; position++) {
 
@@ -155,7 +153,7 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         dx = new float[x.length];
         dy = new float[x.length];
 
-        GEVChiSquareMinimization chiSqMin = new GEVChiSquareMinimization(x, y, dx, dx);
+        chiSqMin = new GEVChiSquareMinimization(x, y, dx, dx);
 
         float nDimension = 10;
 
