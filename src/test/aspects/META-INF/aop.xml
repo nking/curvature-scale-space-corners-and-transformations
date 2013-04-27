@@ -1,0 +1,13 @@
+<aspectj>
+    
+    <weaver options="-verbose -showWeaveInfo -debug -Xreweavable"> <!-- add -debug to print every class [not] woven  -->
+        <include within="algorithms.compGeometry.clustering.twopointcorrelation.*"/> <!-- pckage..* 2 dots to include also subpackages -->
+        <dump within="algorithms.compGeometry.clustering.twopointcorrelation.*" beforeandafter="true"/> 
+    </weaver>
+    
+    <aspects>
+        <aspect name="algorithms.compGeometry.clustering.twopointcorrelation.TwoPointVoidStatsAspect"/>
+    </aspects>
+    
+</aspectj>
+

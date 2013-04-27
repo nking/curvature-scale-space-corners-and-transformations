@@ -42,6 +42,7 @@
     <property name="src.out.dir"         value="${classes.dir}/classes"/>
     <property name="doc.dir"             value="${basedir}/doc"/>
     <property name="tests.dir"           value="${basedir}/src/test/java"/>
+    <property name="aspects.dir"         value="${basedir}/src/test/aspects"/>
     <property name="tests.out.dir"       value="${classes.dir}/test-classes"/>
     <property name="instr.out.dir"       value="${classes.dir}/instr-classes" />
     <property name="coverage.dir"        value="${classes.dir}/coverage" />
@@ -66,6 +67,7 @@
         <echo message="compileTests:               compile test files"/>
         <echo message="compileLargeTests:          compile large test files"/>
         <echo message="runTests:                   run tests"/>
+        <echo message="runTestsWithAspects:        run tests that have aspects"/>
         <echo message="runLargeTests:              run tests in tests_large"/>
         <echo message="runTest:                    run test with -Dtest=fqn of test"/>
         <echo message="runLargeTest:               run large test with -Dtest=fqn of test"/>
@@ -97,12 +99,18 @@
 
     <!-- set test classpath  -->
     <path id="test.classpath">
+        <pathelement location="${src.out.dir}"/>
         <pathelement location="${tests.dir}" />
         <path refid="compile.classpath"/>
     </path>
     <path id="test.large.classpath">
         <pathelement location="${tests.large.dir}" />
         <path refid="compile.classpath"/>
+    </path>
+    <path id="aspect.classpath">
+        <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+        <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
+        <pathelement location="${aspects.dir}/META-INF/"/>
     </path>
 
     <!-- emma code coverage paths and targets -->
@@ -190,7 +198,7 @@
     </target>
 
     <!-- compile tests  -->
-    <target name="compileTests" depends="clean, debug, compile" description="Compile Java tests" >
+    <target name="compileTests" depends="debug,compile" description="Compile Java tests" >
         <record name="${logfile}" append="yes" loglevel="info"/>
 
     	<javac srcdir="${tests.dir}"
@@ -258,6 +266,40 @@
                 </fileset>
             </batchtest>
         </junit>
+        <antcall target="runTestsWithAspects" />
+    </target>
+    
+    <target name="compileTestAspects" description="Compile aspects for tests" >
+        
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+
+        <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
+            classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
+        
+        <!-- compile aspect .aj files -->
+        <fileset id="ajFileSet" dir="${aspects.dir}" includes="**/*.aj"/>
+        <pathconvert pathsep="${line.separator}" property="ajFiles" refid="ajFileSet"/>
+        <echo file="${aspects.dir}/aj-files.txt" >${ajFiles}</echo>
+
+        <path id="weave.path">
+            <pathelement path="${src.out.dir}"/>
+        </path>
+    
+        <!--
+        compile aspects alone to classes binary directory
+        -->
+        <iajc source="1.6" destDir="${src.out.dir}"  verbose="false" >
+            <argfiles>
+                <pathelement location="${aspects.dir}/aj-files.txt"/>
+            </argfiles>
+            <inpath>
+                <path refid="weave.path"/>
+            </inpath>
+            <classpath>
+                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+            </classpath>
+        </iajc>
+             
     </target>
 
     <target name="runTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileTests">
@@ -266,20 +308,51 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
-            <!--<jvmarg value="-ea"/>-->
-            <formatter type="plain" usefile="true"/>
-            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
                 <pathelement location="${src.out.dir}"/>
             </classpath>
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <test name="${test}" fork="yes" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
             </test>
         </junit>
     </target>
-
+    
+    <target name="runTestsWithAspects" if="junit.present" depends="runAspectTest1">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="ran tests that have aspects" />
+    </target>
+    
+    <target name="runAspectTest1" if="junit.present" depends="compileTestAspects,compileTests,JUnit">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        
+        <condition property="aspect.exists">
+            <available file="${src.out.dir}/algorithms/compGeometry/clustering/twopointcorrelation/TwoPointVoidStatsAspect.class" type="file"/>
+        </condition>
+        <echo message="${aspect.exists}" />        
+        <fail unless="aspect.exists">
+            did not find compiled TwoPointVoidStatsAspect
+        </fail>
+        
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="aspect.classpath"/>
+                <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <test name="algorithms.compGeometry.clustering.twopointcorrelation.TwoPointVoidStats3Test" fork="yes" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+        </junit>
+    </target>
+    
     <target name="runLargeTests" if="junit.present" depends="clean,debug,compileLargeTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.large.out.dir}" />
