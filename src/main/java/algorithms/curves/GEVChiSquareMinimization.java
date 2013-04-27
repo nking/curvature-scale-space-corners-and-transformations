@@ -1347,6 +1347,7 @@ public class GEVChiSquareMinimization {
             Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());
         }
 
+        /*
         if (debug) {
             // print the x and y array points for debugging
             log.info("x=");
@@ -1364,7 +1365,7 @@ public class GEVChiSquareMinimization {
                 System.out.print(y[i] + "f");
             }
             log.info("");
-        }
+        }*/
     }
 
     public GEVYFit fitCurve(float kMin, float kMax, float sigmaMin, float sigmaMax, float mu, float yErrSquareSum,
