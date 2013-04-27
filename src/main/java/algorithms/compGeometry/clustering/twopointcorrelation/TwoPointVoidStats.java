@@ -358,7 +358,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
                 str = "10 * O( (n/10)^2 + (n/10) ) n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
-                str = "10 * O( (n/20)^2 + (n/20) ) n=";
+                str = "10 * O( (n/15)^2 + (n/15) ) n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
                 str = "not yet est with n=";
             }
@@ -818,7 +818,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
 
             // uses divide and conquer
-            findVoids(0, x.length-1, 0, y.length-1);
+            findVoids(0, x.length - 1, 0, y.length - 1);
 
         } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
 
@@ -834,7 +834,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
 
             // uses a very rough range search
-            findVoidsRoughRangeSearch(0, indexer.nXY - 1, 0, indexer.nXY - 1, 10, 4);
+            int nDiv = 10;
+            float bFactor = 4;
+            findVoidsRoughRangeSearch(0, indexer.nXY - 1, 0, indexer.nXY - 1, nDiv, bFactor);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
 
@@ -846,7 +848,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             // for area of data so large that randomly chosen patches are neccessary
             //   to reduce sample to decrease runtime
-            findVoidsRandomSamples(10, 15);
+            //findVoidsRandomSamples(20, 10);
+            findVoidsRoughRangeSearch(0, indexer.nXY - 1, 0, indexer.nXY - 1, 10, 4f);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 
@@ -897,15 +900,18 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected void findVoidsUsingDoubleIndexes(int incr) {
         // N!/(2!(N-2)! * N!/(2!(N-2)!
 
-        float[] x = indexer.getX();
-        float[] y = indexer.getY();
+        findVoidsUsingDoubleIndexes(0, indexer.nXY - 1, 0, indexer.nXY - 1, incr);
+    }
 
-        for (int i = 0; i < indexer.nXY; i++) {
+    protected void findVoidsUsingDoubleIndexes(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int incr) {
+        // N!/(2!(N-2)! * N!/(2!(N-2)!
+
+        for (int i = xIndexLo; i < xIndexHi; i++) {
             if (debug) {
                 log.info("findVoids i=" + i + "/" + indexer.nXY);
             }
             for (int ii = (i + 1); ii < indexer.nXY; ii+=incr) {
-                for (int j = 0; j < indexer.nXY; j++) {
+                for (int j = yIndexLo; j < yIndexHi; j++) {
                     for (int jj = (j + 1); jj < indexer.nXY; jj+=incr) {
                         processIndexedRegion(i, ii, j, jj);
                     }
@@ -931,7 +937,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         for (int k = 0; k < nYIntervals; k++) {                             //               nDiv
             int binSz = (int)((k + 1) * bFactor);                           // c10
 
-            int yLo = xIndexLo;
+            int yLo = yIndexLo;
             while ((yLo + binSz) < yIndexHi) {                              //              (N/2)-1, (N/2)-2
 
                 int nXIntervals = (xIndexHi - xIndexLo)/ binSz;
@@ -942,7 +948,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 //System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + (yLo + binSz));
                     processIndexedRegion(startX, endX, yLo, yLo + binSz);
                 }
-                yLo += 2;
+                yLo += binSz;
             }
         }
     }
@@ -992,28 +998,98 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             // choices are 0 through nSamples-1
             boolean[] selected = new boolean[nSSq];
 
+            // q=0,1,2,3
+            int quadNumber = 0;
+
             for (int i = 0; i < nSamples; i++) {
 
-                int bin = sr.nextInt(nSSq);
+                quadNumber++;
+                if (quadNumber > 4) {
+                    quadNumber = 0;
+                }
+
+                // to create more evenly distributed random sampling,
+                //     will try for each quadrant
+                //   3*nDiv:4*nDiv
+                //
+                //   2*nDiv:3*nDiv
+                //
+                //   nDiv:2*nDiv
+                //
+                //   0:nDiv         nDiv:2*nDiv       2*nDiv:3*nDiv       3*nDiv:4*nDiv
+                //
+                //   0,1   1,1
+                //   0,0   1,0
+
+                /*int bin = sr.nextInt(nSSq);
                 while (selected[bin]) {
                     bin = sr.nextInt(nSSq);
                 }
                 selected[bin] = true;
                 int row = (bin/nDivisionsPerSide);
                 int col = (bin % nDivisionsPerSide);
+                */
 
+                int row = 0;
+                int col = 0;
+                int bin = 0;
+
+                /*
+                 *
+                 *
+                 *
+                 *
+                 *
+                 *   0:nDiv   nDiv:2*nDiv   2*nDiv:3*nDiv  3*nDiv:4*nDiv  | 4*nDiv:5*nDiv     5*nDiv:6*nDiv     6*nDiv:7*nDiv     7*nDiv:8*nDiv
+                 *                                                        |
+                 *                      QUAD 0                            |              QUAD 1
+                 */
+
+                boolean draw = true;
+                while (draw) {
+                    int dCol = sr.nextInt(nDivisionsPerSide/2);
+                    int dRow = sr.nextInt(nDivisionsPerSide/2);
+                    switch(quadNumber) {
+                        case 0:
+                            col = dCol;
+                            row = dRow;
+                            break;
+                        case 1:
+                            col = 2*dCol;
+                            row = dRow;
+                            break;
+                        case 2:
+                            col = dCol;
+                            row = 2*dRow;
+                            break;
+                        default:
+                            col = 2*dCol;
+                            row = 2*dRow;
+                            break;
+                    }
+                    bin = col + (row*nDivisionsPerSide);
+                    draw = (selected[bin]);
+                }
+                selected[bin] = true;
 
                 int startX = col*binSize;
                 int endX = startX + binSize;
                 int yLo = row*binSize;
                 int yHi = yLo + binSize;
 
-                //if (debug) {
-                    log.info("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + yHi);
-                //}
+                if (debug) {
+                    /*log.info("[" + quadNumber + "] " + " bin =" + bin + " nDiv=" + nDivisionsPerSide
+                        + " " + String.format("  %4d : %4d", col, row)
+                        + " " + String.format("  [X %.4f : %.4f] [Y %.4f : %.4f]",
+                        indexer.x[indexer.sortedXIndexes[startX]], indexer.x[indexer.sortedXIndexes[endX]],
+                        indexer.y[yLo], indexer.y[yHi])  );*/
 
-                findVoidsRoughRangeSearch(startX, endX, yLo, yHi, 2, 1.5f);
+                    log.info("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + yHi);
+                }
+
+                findVoidsRoughRangeSearch(startX, endX, yLo, yHi, 2, 2);
             }
+            
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
@@ -1046,7 +1122,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         // we won't be finding the furthest pair because that 'rectangular area' would presumably
         // contain other points too.
         //    *an exception is made for useCompleteSampling if more than one same y is present
-        if ( (nPointsInRegion < 2) || ((nPointsInRegion != 2) && !useCompleteSampling)) {
+        if ( (nPointsInRegion < 2) || ((nPointsInRegion != 2) && !useCompleteSampling) ) {
             return;
         }
 
