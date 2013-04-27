@@ -1,7 +1,7 @@
 two-point-correlation 
 ================================================================
 finds clusters in data by looking for regions 
-whose density is 3 times the background density (that is 3 sigma 
+whose density is 2.5 times the background density (that is 2.5 sigma 
 above 'noise').
 
 Given x, y, xerror, and yerror data points, the code calculates 
@@ -60,13 +60,6 @@ Use the API
     clusterFinder.calculateHullsOfClusters();
     String plotFilePath = clusterFinder.plotClusters();
 
-If you have data that has already been reduced so that there are few to 
-no outliers between clusters, use:
-    TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, n);
-    clusterFinder.calculateBackground(true); <=====
-    clusterFinder.findClusters();
-    clusterFinder.calculateHullsOfClusters();
-    String plotFilePath = clusterFinder.plotClusters();
 This adjusts the the background calculation to be a smaller value to 
 compensate for the sparsity of background points that were needed in 
 the two point void calculation.
@@ -91,48 +84,51 @@ Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
 Uses the default parameters at this time.
     java -jar bin/two-point-correlation.jar --file /path/to/file/fileName.txt
 
+    optional flags:
+       --twosigma
+       --threesigma
+       --background <value> (requires backgrounderror guesstimate at least)
+       --backgrounderror <value>
 
 -------------------
-Performance Metrics  (NOTE these are from the Apr 11, 2013 build and not yet updated to current date)
+Performance Metrics  
 -------------------
+
 Roughly determined by estimation and measured with a very small number of iterations
-on computer with characteristics:
+on a computer with characteristics:
    64-bit Intel Core 2 Duo processor w/ speed 2 GHz w/ 4 MB L2 Cache
    3GB RAM and a bus speed of 800 MHz
 
 JVM characteristics:
-    J2SE 1.6, 64-bit HotSpot Server w/ initial heap size 512 MB and max heap size 1024 MB.
+    J2SE 1.6, 64-bit HotSpot server w/ initial heap size 512 MB and max heap size 1024 MB.
 
-Measurements are from build from April 11, 2013
+Measurements are from the April 27, 2013 code version tagged as v20130427.
 
-Note that the runtime (RT) dependency of voidFits is not well constrained due to the iterations needed
+Note that the runtime (RT) dependency of voidFits on M is not well constrained due to the iterations needed
 to construct a histogram and perform a fit.
 
-    N   |  voidDens  big-oh        mem  | voidFits    M       mem   | Find Clusters  | Sys load |  Total RT
- points |  RT[sec]                 [kB] |  RT[sec]  density   [kB]  |    RT[sec]     | at start |    [sec]
-        |                               |           points          |                |          |
+    N   |  voidDens  big-oh              mem  | voidFits    M       mem   | Find Clusters  | Sys load |  Total RT
+ points |  RT[sec]                       [kB] |  RT[sec]  density   [kB]  |    RT[sec]     | at start |    [sec]
+        |                                     |           points          |                |          |
 --------------------------------------------------------------------------------------------------------------------------
-     99 |      30    O(N^4)        30.4 |   30        539     38.9  |     0          |   0.27   |     60
-        |                               |                           |                |          |
+     99 |      22    O(N^4)              31.2 |   23        589     38.6  |     0          |   1.09   |     60
+        |                                     |                           |                |          |
 
-   1089 |       4  O(N*lg_2(N))   114.5 |    5       2199     39.5  |     0          |   0.56   |      9
-        |                               |                           |                |          |
-   1089 |       4  O(N^2 - N)     113.9 |    4       2159     39.5  |     0          |   1.45   |      8
-        |                               |                           |                |          |
+     99 |      25    O(N^4)              26.1 |   25        494     37.1  |     0          |   1.09   |     60
+        |                                     |                           |                |          |
 
-  14544 |    5502  O(N*lg_2(N))  1913.1 | 5507      36761    523.9  |    14          |   0.59   |  11023  = 184 min
-        |                               |                           |                |          |
-  13433 |    4513  O(N*lg_2(N))  1752.3 | 4515      33685    483.9  |    12          |   1.04   |   9040  = 151 min
-        |                               |                           |                |          |
-  13130 |    4163  O(N*lg_2(N))  1705.7 | 4165      32797    473.0  |    11          |   1.14   |   8339  = 139 min
-        |                               |                           |                |          |
-  13130 |    4208  O(N*lg_2(N))  1715.0 | 4210      32929    473.0  |    11          |   1.10   |   8429  = 140 min
-        |                               |                           |                |          |
-  12524 |    3739  O(N*lg_2(N))  1632.4 | 3741      31365    451.2  |    10          |   1.03   |   7490  = 125 min
-        |                               |                           |                |          |
-  12019 |    3271  O(N*lg_2(N))  1554.7 | 3273      29888    433.0  |    10          |   1.10   |   6554  = 109 min
-        |                               |                           |                |          |
-  10807 |    2457  O(N*lg_2(N))  1392.4 | 2458      26717    389.3  |     8          |   1.06   |   4923  = 82 min
-        |                               |                           |                |          |
+   1089 |       0  O((1.5*N/2)^1.8)      72.7 |    1       1380     87.5  |     0          |   1.32   |      1
+        |                                     |                           |                |          |
 
-  Extrapolating to N=100,000 points, expect RT ~ 300 * 180 min using similar architecture and system load.
+   1089 |       0  O((1.5*N/2)^1.8)      72.2 |    1       1351     87.0  |     0          |   1.14   |      1
+        |                                     |                           |                |          |
+
+  12625 |      39  O(N^2.2)             909.3 |   40      17442    909.3  |     5          |   1.14   |     84
+        |                                     |                           |                |          |
+
+  13635 |      46  O(N^2.2)            1008.7 |   47      19317    826.1  |     6          |   1.32   |    103
+        |                                     |                           |                |          |
+
+  Extrapolating to N=100,000 points, expect roughly RT ~ 110 * 100 sec ~ 183 min ~ 3hr and will 
+  need 10 MB of memory using similar architecture, system load, and jvm properties.
+  (Note, the N relationships are *very* roughly approximated and will be improved at a later date.)
