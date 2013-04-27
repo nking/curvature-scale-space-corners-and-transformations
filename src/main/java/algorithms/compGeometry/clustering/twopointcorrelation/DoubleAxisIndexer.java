@@ -217,7 +217,6 @@ public class DoubleAxisIndexer {
             float yp = y[xIndex];
 
             // find the corresponding y index and see if it is in range yIndexLo to yIndexHi
-            // where is xIndex in ySortedIndexes?
             int yIndexSorted = Arrays.binarySearch(ySortedByY, yp);
 
             if ((yIndexSorted >= yIndexLo) && (yIndexSorted <= yIndexHi)) {

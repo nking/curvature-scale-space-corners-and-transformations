@@ -67,14 +67,14 @@ import java.util.logging.Logger;
  *     stats.setUseCompleteSampling(true);
  *     stats.calc();
  *
- * The runtime for the default incomplete sampling method is N^2 - N
- * while the complete sampling method is N!/(2!(N-2)! * N!/(2!(N-2) which
- * is effectively N^4.  Note that for datasets smaller than 100 points,
- * the complete sampling is used even if the default was requested.
+ * The value returned by the code is used by TwoPointCorrelation as an estimate
+ * of the background density.  That density is "noise" which TwoPointCorrelation
+ * looks for clusters in the signal higher it (densities > threshold*noise).
  *
- * The value returned by the code is used by TwoPointCorrelation as an error of
- * the background density which is then used to calculate a threshold to find
- * clusters.
+ * The runtimes for the code are still in progress, but roughly approximated
+ * in 2 stages:  (1) calculating and fitting the background voids
+ * @see #findVoids@see(), and (2) finding the groups within the data using
+ * a threshold from the background density.
  *
  * If debugging is turned on, a plot is generated and the path is printed to
  * standard out, and statements are printed to standard out.
@@ -83,12 +83,8 @@ import java.util.logging.Logger;
  */
 public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
-    // TODO:  REPLACE these with enums. if !useCompleteSampling && !useLeastCompleteSampling
-    //            need a way to read structure of data to decide between
-    //            range search and completeSamplingAlgWtihIncompleteSampling
-
     public enum Sampling {
-        COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH /*default*/,
+        COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH,
         SEMI_COMPLETE_RANGE_SEARCH_2, SEMI_COMPLETE_RANGE_SEARCH_3, SEMI_COMPLETE_RANGE_SEARCH_4
     }
 
@@ -109,7 +105,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected int defaultNBins = 40;
 
-    //for debugging, hold on to intermediate data
+    //for debugging, hold on to intermediate data:  histogram and bestFit
     protected HistogramHolder statsHistogram = null;
     protected GEVYFit bestFit = null;
 
@@ -159,22 +155,26 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     /**
      * Use complete sampling.
-     * The runtime for the complete sampling is N!/(2!(N-2)! * N!/(2!(N-2) which
-     * is effectively N^4.
+     * The runtime for the complete sampling is N!/(2!(N-2)! * N!/(2!(N-2) from
+     * permutations of iterating over x and y, and the result is effectively N^4.
      *
-     * Note: complete sampling is always used when there are less than 100 points.
-     *
+     * Complete sampling takes quite awhile, so other sampling methods are usually
+     * used by default if this is not set by the user, with the exception of
+     * datasets with less than 100 points.  For those, complete sampling is
+     * used by default.
      */
     public void setUseCompleteSampling() {
         this.sampling = Sampling.COMPLETE;
     }
 
     /**
-     * Use semi-complete range sampling.  This is good to use when the number of background
-     * points, that is the number of outliers, is expected to be moderately dense or dense.
-     * It performs poorly for datasets in which all points are expected to be in
-     * clusters.
-     * The runtime is O(n^2 - n).
+     * Use semi-complete range sampling.  This is a sampling method which scans
+     * over a range of values with varying bin sizes.  Its good to use for
+     * datasets in which there are outliers, that is data outside of "clusters".
+     *
+     * Note, if using this method, you may want to consider instead letting the code find it by default instead,
+     * as the code will vary the bin size and its factor of change
+     * depending upon data size.
      */
     public void setUseSemiCompleteRangeSampling() {
         this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
@@ -187,8 +187,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * well even when we decrease the sampling by a large amount.  This works well
      * for datasets which have few to no background points, that is few to no outliers.
      *
-     * The runtime is expected to be
-     *
+     * The runtime is not yet estimated, but first look suggests
+     * that it is N!/(2!( (N/8)-2)! * N!/(2!( (N/8) -2)
      */
     public void setUseSemiCompleteSampling() {
         this.sampling = Sampling.SEMI_COMPLETE;
@@ -352,13 +352,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
                 str = "O(n^4) with n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
-                str = "(n*bf/nDiv)1.8) or O(n^2 - n) with n=";
+                str = "(n*bf/nDiv)^1.8) or O(n^2 - n) with n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
                 str = "? n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
                 str = "? n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
-                str = "(n*bf/nDiv)1.8) n=";
+                str = "(n*bf/nDiv)^2.2) n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
                 str = "(n/8)^(2.25) n=";
             }
@@ -546,31 +546,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 throw new TwoPointVoidStatsException("histogram of linear densities was not fittable");
             }
 
-            /*
-             * We are assigning the threshold based upon one of 3 different cases:
-             *   (1) a sparsely populated background + clusters.  In this case, the distribution is
-             *       almost all clusters.  The histogram width will be wider and there
-             *       will be little to no tail.
-             *       If there are many points, the distribution should approach Gaussian.
-             *       The histogram shape is GEV w/ k > 0.
-             *
-             *   (2) a moderately populated background + clusters.
-             *       The distribution will be GEV with k > 0 with small peaks in the tail.
-             *
-             *   (3) a densely populate background + clusters.
-             *       The distribution will be a
-             *
-             */
-
-            /*boolean increaseThreshhold = (chsqdiverr < 200.f) && (chsqstatdiverr < 100.f);
-
-            if (increaseThreshhold) {
-                // for higher background surface densities, should fit further down the distribution
-                GEVYFit yfit2 = chiSqMin.fitCurveKGreaterThanZero(
-                    GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, (histogram.yHist.length / 2));
-                yfit = yfit2;
-            }*/
-
             if (yfit == null) {
                 throw new TwoPointVoidStatsException("did not find a solution");
             }
@@ -617,6 +592,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             // for histograms with small number of points and small peak, need to use
             //   a pattern observed for just those and that is that the minimum before
             //   yPeak is the answer if lower than the first point.
+            // TODO:  when the histograms are improved for small number datasets, perhaps this won't be necessary
             int yPeakIndex = MiscMath.findYMaxIndex(histogram.getYHist());
             if ((yPeakIndex > 0) && (histogram.getYHist()[yPeakIndex] < 100)) {
                 float min = Float.MAX_VALUE;
@@ -760,19 +736,43 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     /**
      * find the rectangular 2 point densities using the method already set.
-     * If the method has not yet been set, the following rules are used to
+     *
+     * If the method has not yet been set, the following information is used to
      * determine sampling:
      *
-     *     if (indexer.nXY < 100) {
-     *         sampling = Sampling.COMPLETE;
-     *     } else {
-     *         if (data are somewhat evenly distributed, in other words, expecting outliers) {
-     *             sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
-     *         } else {
-     *             sampling = Sampling.SEMI_COMPLETE;
-     *         }
-     *     }
+     * When no sampling has been set, the method attempts to assign least amount
+     * of sampling needed to build a decent histogram.
+     * (One day it should quickly look at the overall structure of the data
+     * to learn if outliers are likely, and hence choose between a default
+     * sampling pattern similar to Sampling.COMPLETE for
+     * no outliers, or sampling pattern similar to Sampling.SEMI_COMPLETE_RANGE_SEARCH
+     * when outliers are expected, but it does not at this time.)
+     * Until then, the number of data points are used to decide sampling.
+     * If SEMI_COMPLETE was used, the ability to improve the sampling is done
+     * in the invoker @see TwoPointCorrelation#bruteForceCalculateGroups() which uses
+     * @see TwoPointCorrelation#temporaryWorkaroundForSampling().
+     * There if SEMI_COMPLETE was used and there are outliers, the background fit
+     * is redone using SEMI_COMPLETE_RANGE_SEARCH
      *
+     * The rules when sampling has not been set are as follows (along with the
+     * "refit" logic just described above):
+
+            if (indexer.nXY > 10000) {
+                // RT (n^1.8) to (n^2.2) roughly...
+                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
+            } else if (indexer.nXY > 8000) {
+                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
+            } else if (indexer.nXY > 999) {
+                // RT (n^1.8) roughly...
+                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
+            } else if (indexer.nXY < 100) {
+                // RT O(n^4)
+                this.sampling = Sampling.COMPLETE;
+            } else {
+                // RT O(n lg(n))
+                this.sampling = Sampling.SEMI_COMPLETE;
+            }
+
      */
     protected void findVoids() {
 
@@ -781,24 +781,20 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         if (sampling == null) {
 
-            // we need to decide between SEMI_COMPLETE and SEMI_COMPLETE_RANGE_SEARCH.
-
             // ***** NOTE ********
-            // This method is not implemented yet, so until then, will solve first SEMI_COMPLETE
-            //    and if many points are outliers or all points are in one cluster, will resolve it
-            //    using SEMI_COMPLETE_RANGE_SEARCH.
-            // This is unfortunately, logic built into the invokee, TwoPointCorrelation for now.
-
-            /*boolean pointsAreSemiEvenlyDistributed = PointsUtil.pointsAreSemiEvenlyDistributed(indexer.getX(), indexer.getY());
-            if (pointsAreSemiEvenlyDistributed) {
-                // the rough range search works well with semi-even background points
-                sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
-            } else {
-                // use the algorithm for complete sampling because it handles
-                //    "no background points" and non-circular clusters, but use
-                //    it with much less sampling to allow faster completion
-                sampling = Sampling.SEMI_COMPLETE;
-            }*/
+            // This block attempts to assign least amount of sampling needed to build a decent
+            // histogram.  One day it should quickly look at the overall structure of the data
+            // to learn if outliers are likely, and hence choose
+            // between a default sampling pattern similar to Sampling.COMPLETE for
+            // no outliers, or sampling pattern similar to Sampling.SEMI_COMPLETE_RANGE_SEARCH
+            // when outliers are expected.
+            // Until then, the number of data points are used below and then
+            // one style of sampling is used and the other is attempted if it
+            // looks like that was not a good choice.  Note that the "try again" behavior
+            // is pushed up to @see TwoPointCorrelation#bruteForceCalculateGroups() use
+            // of @see TwoPointCorrelation#temporaryWorkaroundForSampling() for now.
+            // There if SEMI_COMPLETE was used and there are outliers, the background fit
+            // is redone using SEMI_COMPLETE_RANGE_SEARCH
 
             if (indexer.nXY > 10000) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
@@ -813,9 +809,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             }
         }
 
-        //if (debug) {
+        if (debug) {
             log.info("findVoid sampling=" + sampling.name() + " for " + indexer.nXY + " points");
-        //}
+        }
 
         if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
 
@@ -958,8 +954,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     /**
      *
      * runtime estimation  is O(n^2) + O(n)
-     *     where if evenly distributed, n = N/nSamples;
-     *     ==>   10*( (N/10)^2 + (N/10) )
+     *     where if evenly distributed, n = N/nSamples, 10*( (N/10)^2 + (N/10) ) ?  not yet checked...
      *
      * @param nSamples the number of samples to take
      * @param nDivisionsPerSide
@@ -1035,17 +1030,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 int row = 0;
                 int col = 0;
                 int bin = 0;
-
-                /*
-                 *
-                 *
-                 *
-                 *
-                 *
-                 *   0:nDiv   nDiv:2*nDiv   2*nDiv:3*nDiv  3*nDiv:4*nDiv  | 4*nDiv:5*nDiv     5*nDiv:6*nDiv     6*nDiv:7*nDiv     7*nDiv:8*nDiv
-                 *                                                        |
-                 *                      QUAD 0                            |              QUAD 1
-                 */
 
                 boolean draw = true;
                 while (draw) {
@@ -1201,9 +1185,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (d == 0) {
             return;
         }
-
-        //float xc = (x[regionIndexes[0]] + x[regionIndexes[1]]) / 2.f;
-        //float yc = (y[regionIndexes[0]] + y[regionIndexes[1]]) / 2.f;
 
         float linearDensity = 2.f / d;
 
