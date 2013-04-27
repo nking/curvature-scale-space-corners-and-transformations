@@ -352,15 +352,15 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
                 str = "O(n^4) with n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
-                str = "O(n^2 - n) with n=";
+                str = "(n*bf/nDiv)1.8) or O(n^2 - n) with n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
                 str = "? n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
-                str = "10 * O( (n/10)^2 + (n/10) ) n=";
+                str = "? n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
-                str = "10 * O( (n/15)^2 + (n/15) ) n=";
+                str = "(n*bf/nDiv)1.8) n=";
             } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
-                str = "not yet est with n=";
+                str = "(n/8)^(2.25) n=";
             }
             if (allTwoPointSurfaceDensities == null) {
                 str = str + "0";
@@ -806,6 +806,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
             } else if (indexer.nXY > 999) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
+            } else if (indexer.nXY < 100) {
+                this.sampling = Sampling.COMPLETE;
             } else {
                 this.sampling = Sampling.SEMI_COMPLETE;
             }
@@ -938,11 +940,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             int binSz = (int)((k + 1) * bFactor);                           // c10
 
             int yLo = yIndexLo;
-            while ((yLo + binSz) < yIndexHi) {                              //              (N/2)-1, (N/2)-2
+            while ((yLo + binSz) < yIndexHi) {                              //               nDiv
 
                 int nXIntervals = (xIndexHi - xIndexLo)/ binSz;
 
-                for (int j = 0; j < nXIntervals; j++) {                     //              N/2, N/4
+                for (int j = 0; j < nXIntervals; j++) {                     //              nDiv/bfactor
                     int startX = xIndexLo + (j * binSz);
                     int endX = startX + binSz;
 //System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + (yLo + binSz));
@@ -1089,7 +1091,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 findVoidsRoughRangeSearch(startX, endX, yLo, yHi, 2, 2);
             }
-            
+
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
