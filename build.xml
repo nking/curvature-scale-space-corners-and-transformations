@@ -145,11 +145,11 @@
     <!-- =========== clean  ========== -->
     <target name="clean"
         description="Delete dirs: build, doc/api, and src tree classes">
-        <delete dir="${doc.dir}/api"/>
-        <delete>
+        <delete dir="${doc.dir}/api" failonerror="false"/>
+        <delete failonerror="false">
             <fileset dir="${classes.dir}" />
         </delete>
-        <delete>
+        <delete failonerror="false">
             <fileset dir="${log.dir}" includes="*" />
         </delete>
     </target>
@@ -164,6 +164,7 @@
         <mkdir  dir="${coverage.dir}"/>
         <mkdir  dir="${log.dir}"/>
         <mkdir  dir="tmpdata"/>
+        <mkdir  dir="src/placeholder"/>
     </target>
 
     <!-- compile sources -->
