@@ -35,20 +35,20 @@ public class HistogramHolder implements Externalizable {
 
         if (xHist != null) {
 
-            sumBytes += (arrayBytes + (xHist.length*intBytes));
+            sumBytes += (arrayBytes + (xHist.length*arrayBytes));
 
-            sumBytes += (arrayBytes + (yHist.length*intBytes));
+            sumBytes += (arrayBytes + (yHist.length*arrayBytes));
         }
 
         if (yHistFloat != null) {
-            sumBytes += (arrayBytes + (yHistFloat.length*intBytes));
+            sumBytes += (arrayBytes + (yHistFloat.length*arrayBytes));
         }
 
         if (yErrors != null) {
 
-            sumBytes += (arrayBytes + (xErrors.length*intBytes));
+            sumBytes += (arrayBytes + (xErrors.length*arrayBytes));
 
-            sumBytes += (arrayBytes + (yErrors.length*intBytes));
+            sumBytes += (arrayBytes + (yErrors.length*arrayBytes));
         }
 
         sumBytes += overheadBytes;

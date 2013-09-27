@@ -50,7 +50,7 @@ class StringArrayLite {
            returnAddress                        32       32              64      64
            long                                 64       64              64      128
            double                               64       64              64      128
-
+           from Table II of http://users.elis.ugent.be/~leeckhou/papers/SPE06.pdf
         */
 
         String arch = System.getProperty("sun.arch.data.model");
@@ -62,18 +62,20 @@ class StringArrayLite {
 
         int nbits = (is32Bit) ? 32 : 64;
 
+        int arrayRefBits = 32;
+
         int overheadBytes = 16;
 
         // StringLite size:
         // byte[] bytes  size is 32 *  8 * nbits
         // int nBytes    size is nbits
-        long stringLiteSizeInBits = (32 * 8 * nbits) + nbits;
+        long stringLiteSizeInBits = (arrayRefBits * 8 * 32) + nbits;
         long stringLiteSizeInBytes = (stringLiteSizeInBits/8) + overheadBytes;
         long padding = (stringLiteSizeInBytes % 8);
         stringLiteSizeInBytes += padding;
 
 
-        long sumBits = (32 * n * (stringLiteSizeInBytes*8)) + (32 * n * nbits) + nbits;
+        long sumBits = (arrayRefBits * n * (stringLiteSizeInBytes*8)) + (arrayRefBits * n * 32) + nbits;
 
         long sumBytes = (sumBits/8) + overheadBytes;
 

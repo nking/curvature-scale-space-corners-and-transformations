@@ -118,6 +118,7 @@ public class DoubleAxisIndexer {
            returnAddress                        32       32              64      64
            long                                 64       64              64      128
            double                               64       64              64      128
+           from Table II of http://users.elis.ugent.be/~leeckhou/papers/SPE06.pdf
 
         */
 
@@ -129,12 +130,16 @@ public class DoubleAxisIndexer {
 
         int nbits = (is32Bit) ? 32 : 64;
 
+        int arrayRefBits = 32;
+
         int overheadBytes = 16;
 
-        long sumBits = 6*32*n + nbits;
+        // 6 float and int arrays on the heap
+        long sumBits = 6*(arrayRefBits + (n*32));
 
         if (xErrors != null) {
-            sumBits += (2*xErrors.length * nbits);
+            // 2 float arrays on the heap
+            sumBits += (2*(arrayRefBits + (xErrors.length * 32)));
         }
 
         long sumBytes = (sumBits/8) + overheadBytes;

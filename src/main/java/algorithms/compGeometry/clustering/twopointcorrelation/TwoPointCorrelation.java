@@ -390,8 +390,9 @@ public class TwoPointCorrelation {
 
         int overheadBytes = 16;
 
-        int intBytes = nbits/8;
+        int intBytes = (is32Bit) ? 4 : 8;
         int arrayBytes = 32/8;
+        int refBytes = nbits/8;
 
         /*
          * enums:  one has 4 items
@@ -413,16 +414,18 @@ public class TwoPointCorrelation {
 
 
         if (groupMembership != null) {
-            sumBytes += (arrayBytes + (groupMembership.length*(overheadBytes + intBytes + intBytes)));
+            // SimpleLinkedListNode[]
+            sumBytes += (arrayBytes + (groupMembership.length*(overheadBytes + refBytes + intBytes)));
         }
         if (groupHullIndexes != null) {
-            sumBytes += (arrayBytes + (groupHullIndexes.length*(overheadBytes + intBytes + intBytes)));
+            sumBytes += (arrayBytes + (groupHullIndexes.length*(overheadBytes + refBytes + intBytes)));
         }
         if (xGroupHullCentroids != null) {
-            sumBytes += 3*(arrayBytes + (xGroupHullCentroids.length*(intBytes)));
+            // float[] on the heap
+            sumBytes += 3*(arrayBytes + (xGroupHullCentroids.length*(arrayBytes)));
         }
         if (pointToGroupIndex != null) {
-            sumBytes += (arrayBytes + (pointToGroupIndex.length*intBytes));
+            sumBytes += (arrayBytes + (pointToGroupIndex.length*arrayBytes));
         }
         if (backgroundStats != null) {
             sumBytes += backgroundStats.approximateMemoryUsed();

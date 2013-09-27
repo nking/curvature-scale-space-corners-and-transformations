@@ -74,7 +74,7 @@ public class PerformanceMetricsRunner {
         float ymin = 0;
         float ymax = 300;
 
-        int nIter = 10;
+        int nIter = 3;
 
         for (int ii = 0; ii < nIter; ii++) {
 

@@ -44,11 +44,11 @@ public class GEVYFit implements IYFit {
         long sumBytes = 0;
 
         if (yfit != null) {
-            sumBytes += (arrayBytes + (yfit.length*intBytes));
+            sumBytes += (arrayBytes + (yfit.length*arrayBytes));
         }
 
         if (x != null) {
-            sumBytes += (arrayBytes + (x.length*intBytes));
+            sumBytes += (arrayBytes + (x.length*arrayBytes));
         }
 
         // 17 variables on the stack, each of size stack word size

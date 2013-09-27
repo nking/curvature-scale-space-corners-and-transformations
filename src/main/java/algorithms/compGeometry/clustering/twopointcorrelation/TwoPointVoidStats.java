@@ -268,19 +268,19 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
 
         if (allTwoPointSurfaceDensities != null) {
-            sumBytes += (arrayBytes + (allTwoPointSurfaceDensities.length*intBytes));
+            sumBytes += (arrayBytes + (allTwoPointSurfaceDensities.length*arrayBytes));
         }
 
         if (allTwoPointSurfaceDensitiesErrors != null) {
-            sumBytes += (arrayBytes + (allTwoPointSurfaceDensitiesErrors.length*intBytes));
+            sumBytes += (arrayBytes + (allTwoPointSurfaceDensitiesErrors.length*arrayBytes));
         }
 
         if (point1 != null) {
-            sumBytes += (arrayBytes + (point1.length*intBytes));
+            sumBytes += (arrayBytes + (point1.length*arrayBytes));
         }
 
         if (point2 != null) {
-            sumBytes += (arrayBytes + (point2.length*intBytes));
+            sumBytes += (arrayBytes + (point2.length*arrayBytes));
         }
 
         sumBytes += overheadBytes;
