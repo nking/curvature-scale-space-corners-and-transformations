@@ -272,7 +272,7 @@
         <antcall target="runTestsWithAspects" />
     </target>
 
-    <target name="compileTestAspects" description="Compile aspects for tests" >
+    <target name="compileTestAspects" description="Compile aspects for tests" depends="compile">
 
         <record name="${logfile}" append="yes" loglevel="debug"/>
 
