@@ -382,36 +382,69 @@ public class TwoPointCorrelation {
 
     public long approximateMemoryUsed() {
 
-        long sumBytes = 16 + 16 + indexer.approximateMemoryUsed() + (2*8);
+        String arch = System.getProperty("sun.arch.data.model");
 
-        long sumBits = (5*32) + (2*2);
+        boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
+
+        int nbits = (is32Bit) ? 32 : 64;
+
+        int overheadBytes = 16;
+
+        int intBytes = nbits/8;
+        int arrayBytes = 32/8;
+
+        /*
+         * enums:  one has 4 items
+         *         one has 3 items
+         */
+        long sumBits = 4*nbits;
+        long tmpSumBytes = (sumBits/8) + overheadBytes;
+        long padding = (tmpSumBytes % 8);
+        long sumBytes = tmpSumBytes + padding;
+        sumBits = 3*nbits;
+        tmpSumBytes = (sumBits/8) + overheadBytes;
+        padding = (tmpSumBytes % 8);
+        sumBytes += (tmpSumBytes + padding);
+
+        // a reference to each of the enums
+        sumBytes += (2*intBytes);
+
+        sumBytes += indexer.approximateMemoryUsed();
+
 
         if (groupMembership != null) {
-            sumBytes += (16 + (groupMembership.length*(8+4)));
+            sumBytes += (arrayBytes + (groupMembership.length*(overheadBytes + intBytes + intBytes)));
         }
         if (groupHullIndexes != null) {
-            sumBytes += (16 + (groupHullIndexes.length*(8+4)));
+            sumBytes += (arrayBytes + (groupHullIndexes.length*(overheadBytes + intBytes + intBytes)));
         }
         if (xGroupHullCentroids != null) {
-            sumBytes += 3*(16 + (xGroupHullCentroids.length*4));
+            sumBytes += 3*(arrayBytes + (xGroupHullCentroids.length*(intBytes)));
         }
         if (pointToGroupIndex != null) {
-            sumBytes += (16 + (pointToGroupIndex.length*4));
+            sumBytes += (arrayBytes + (pointToGroupIndex.length*intBytes));
         }
         if (backgroundStats != null) {
             sumBytes += backgroundStats.approximateMemoryUsed();
         }
         if (indexerFilePath != null) {
-            sumBytes += (16 + (indexerFilePath.length()*16));
+            // String size on the heap = reference size + content size?
+            sumBytes += (intBytes + (indexerFilePath.length()*intBytes));
         }
         if (minimaStatsFilePath != null) {
-            sumBytes += (16 + (minimaStatsFilePath.length()*16));
+            sumBytes += (intBytes + (minimaStatsFilePath.length()*intBytes));
         }
 
-        sumBytes += (sumBits/8);
+        // 8 variables in the stack are each word size
+        sumBytes += 8 * intBytes;
+
+        // log is reference size on the heap
+        sumBytes += intBytes;
+
+        sumBytes += overheadBytes;
 
         // amount of padding needed to make it a round 8 bytes
-        long padding = (sumBytes % 8);
+        padding = (sumBytes % 8);
 
         sumBytes += padding;
 

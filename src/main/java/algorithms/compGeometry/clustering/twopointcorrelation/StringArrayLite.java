@@ -27,15 +27,57 @@ class StringArrayLite {
 
     public long approximateMemoryUsed() {
 
+        /*
+        stack word size is 32 or 64 bits.
+        Stack holds:  local variables
+
+        Heap holds:  object references (32 bits) and arrays (32 bits x nItems X itemSize)
+
+         StringLite[] tstr;
+         int[] sumTStrChars;
+         int nTStr;
+                                                     32-bit platform          64-bit platform
+                                                Field   Size on          Field   Size on
+           Java types                           size    stack            size    stack
+           boolean                              32       32              32      64
+           byte                                 32       32              32      64
+           char                                 32       32              32      64
+           short                                32       32              32      64
+           int                                  32       32              32      64
+           ﬂoat                                 32       32              32      64
+           reference                            32       32              64      64
+           array reference                      32       32              32      32
+           returnAddress                        32       32              64      64
+           long                                 64       64              64      128
+           double                               64       64              64      128
+
+        */
+
+        String arch = System.getProperty("sun.arch.data.model");
+
+        boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
+
+
         int n = (tstr == null) ? 0 : tstr.length;
 
-        long sumBytes = 8 + 16 + (n*(16 + 8 + 8));
-        long sumBits = (n*32) + 32;
+        int nbits = (is32Bit) ? 32 : 64;
 
-        sumBytes += (sumBits/8);
+        int overheadBytes = 16;
 
-        // amount of padding needed to make it a round 8 bytes
-        long padding = (sumBytes % 8);
+        // StringLite size:
+        // byte[] bytes  size is 32 *  8 * nbits
+        // int nBytes    size is nbits
+        long stringLiteSizeInBits = (32 * 8 * nbits) + nbits;
+        long stringLiteSizeInBytes = (stringLiteSizeInBits/8) + overheadBytes;
+        long padding = (stringLiteSizeInBytes % 8);
+        stringLiteSizeInBytes += padding;
+
+
+        long sumBits = (32 * n * (stringLiteSizeInBytes*8)) + (32 * n * nbits) + nbits;
+
+        long sumBytes = (sumBits/8) + overheadBytes;
+
+        padding = (sumBytes % 8);
 
         sumBytes += padding;
 

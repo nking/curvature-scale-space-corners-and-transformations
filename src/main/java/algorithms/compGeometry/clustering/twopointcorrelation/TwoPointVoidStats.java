@@ -221,9 +221,41 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     // TODO:  replace with estimation using reflection one day
     public long approximateMemoryUsed() {
 
-        int n = (allTwoPointSurfaceDensities == null) ? 0 : allTwoPointSurfaceDensities.length;
+        String arch = System.getProperty("sun.arch.data.model");
 
-        long sumBytes = 4*16 + (3*8);
+        boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
+
+        int nbits = (is32Bit) ? 32 : 64;
+
+        int overheadBytes = 16;
+
+        int intBytes = (is32Bit) ? 4 : 8;
+        int arrayBytes = 32/8;
+
+        /*
+         * enums:  one has 7 items
+         *         one has 5 items
+         */
+        long sumBits = 7*nbits;
+        long tmpSumBytes = (sumBits/8) + overheadBytes;
+        long padding = (tmpSumBytes % 8);
+        long sumBytes = tmpSumBytes + padding;
+        sumBits = 5*nbits;
+        tmpSumBytes = (sumBits/8) + overheadBytes;
+        padding = (tmpSumBytes % 8);
+        sumBytes += (tmpSumBytes + padding);
+
+        // a reference to each of the enums
+        sumBytes += (2*intBytes);
+
+        // 4 references
+        sumBytes += (4*intBytes);
+
+        // 4 variables at stack word size each
+        sumBytes += (4*intBytes);
+
+
+        int n = (allTwoPointSurfaceDensities == null) ? 0 : allTwoPointSurfaceDensities.length;
 
         if (statsHistogram != null) {
             sumBytes += statsHistogram.approximateMemoryUsed();
@@ -235,15 +267,26 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             sumBytes += twoPointIdentities.approximateMemoryUsed();
         }
 
-        sumBytes += 2*(8 + 16);//enum reference + class
+        if (allTwoPointSurfaceDensities != null) {
+            sumBytes += (arrayBytes + (allTwoPointSurfaceDensities.length*intBytes));
+        }
 
-        long sumBits = (4*n*32) + 32 + 32 + 2 + (Sampling.values().length * (32))
-            + (State.values().length * (32));
+        if (allTwoPointSurfaceDensitiesErrors != null) {
+            sumBytes += (arrayBytes + (allTwoPointSurfaceDensitiesErrors.length*intBytes));
+        }
 
-        sumBytes += (sumBits/8);
+        if (point1 != null) {
+            sumBytes += (arrayBytes + (point1.length*intBytes));
+        }
+
+        if (point2 != null) {
+            sumBytes += (arrayBytes + (point2.length*intBytes));
+        }
+
+        sumBytes += overheadBytes;
 
         // amount of padding needed to make it a round 8 bytes
-        long padding = (sumBytes % 8);
+        padding = (sumBytes % 8);
 
         sumBytes += padding;
 

@@ -20,13 +20,38 @@ public class HistogramHolder implements Externalizable {
 
     public long approximateMemoryUsed() {
 
-        int n = (xHist == null) ? 0 : xHist.length;
+        String arch = System.getProperty("sun.arch.data.model");
 
-        // for this object and IYFit
-        long sumBytes = 5*16;
-        long sumBits = 5*(n*32) + 64;
+        boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
 
-        sumBytes += (sumBits/8);
+        int nbits = (is32Bit) ? 32 : 64;
+
+        int overheadBytes = 16;
+
+        int intBytes = (is32Bit) ? 4 : 8;
+        int arrayBytes = 32/8;
+
+        long sumBytes = 0;
+
+        if (xHist != null) {
+
+            sumBytes += (arrayBytes + (xHist.length*intBytes));
+
+            sumBytes += (arrayBytes + (yHist.length*intBytes));
+        }
+
+        if (yHistFloat != null) {
+            sumBytes += (arrayBytes + (yHistFloat.length*intBytes));
+        }
+
+        if (yErrors != null) {
+
+            sumBytes += (arrayBytes + (xErrors.length*intBytes));
+
+            sumBytes += (arrayBytes + (yErrors.length*intBytes));
+        }
+
+        sumBytes += overheadBytes;
 
         // amount of padding needed to make it a round 8 bytes
         long padding = (sumBytes % 8);

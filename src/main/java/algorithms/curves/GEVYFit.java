@@ -30,13 +30,35 @@ public class GEVYFit implements IYFit {
 
     public long approximateMemoryUsed() {
 
-        int n = (yfit == null) ? 0 : yfit.length;
+        String arch = System.getProperty("sun.arch.data.model");
 
-        // for this object and IYFit
-        long sumBytes = (2*16) + (2*16) + 16 + (3*8);
-        long sumBits = (2*n*32) + (17*32) + (3*65535);
+        boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
 
-        sumBytes += (sumBits/8);
+        int nbits = (is32Bit) ? 32 : 64;
+
+        int overheadBytes = 16;
+
+        int intBytes = (is32Bit) ? 4 : 8;
+        int arrayBytes = 32/8;
+
+        long sumBytes = 0;
+
+        if (yfit != null) {
+            sumBytes += (arrayBytes + (yfit.length*intBytes));
+        }
+
+        if (x != null) {
+            sumBytes += (arrayBytes + (x.length*intBytes));
+        }
+
+        // 17 variables on the stack, each of size stack word size
+        sumBytes += (17 * intBytes);
+
+        // String size on the heap = reference size + content size?
+        // parameterNames
+        sumBytes += (arrayBytes + (3*(nbits/8) + (intBytes*1 + intBytes*5 + intBytes*2)));
+
+        sumBytes += overheadBytes;
 
         // amount of padding needed to make it a round 8 bytes
         long padding = (sumBytes % 8);

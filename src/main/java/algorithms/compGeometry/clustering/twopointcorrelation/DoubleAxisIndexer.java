@@ -89,17 +89,55 @@ public class DoubleAxisIndexer {
 
     public long approximateMemoryUsed() {
 
+        /*
+        stack word size is 32 or 64 bits.
+        Stack holds:  local variables
+
+        Heap holds:  object references (32 bits) and arrays (32 bits x nItems X itemSize)
+
+        float[] x
+        float[] y
+        float[] xErrors
+        float[] yErrors
+        int[] sortedXIndexes
+        int[] sortedYIndexes
+        float[] xSortedByY
+        float[] ySortedByY
+        int nXY;
+                                                     32-bit platform          64-bit platform
+                                                Field   Size on          Field   Size on
+           Java types                           size    stack            size    stack
+           boolean                              32       32              32      64
+           byte                                 32       32              32      64
+           char                                 32       32              32      64
+           short                                32       32              32      64
+           int                                  32       32              32      64
+           ﬂoat                                 32       32              32      64
+           reference                            32       32              64      64
+           array reference                      32       32              32      32
+           returnAddress                        32       32              64      64
+           long                                 64       64              64      128
+           double                               64       64              64      128
+
+        */
+
+        String arch = System.getProperty("sun.arch.data.model");
+
+        boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
+
         int n = (x == null) ? 0 : x.length;
 
-        long sumBytes = 6*16;
+        int nbits = (is32Bit) ? 32 : 64;
 
-        long sumBits = (6*n*32) + 32;
+        int overheadBytes = 16;
+
+        long sumBits = 6*32*n + nbits;
 
         if (xErrors != null) {
-            sumBits += (2*xErrors.length * 32);
+            sumBits += (2*xErrors.length * nbits);
         }
 
-        sumBytes += (sumBits/8);
+        long sumBytes = (sumBits/8) + overheadBytes;
 
         // amount of padding needed to make it a round 8 bytes
         long padding = (sumBytes % 8);
