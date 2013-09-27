@@ -78,6 +78,7 @@
         <echo message="javadoc:                    create javadocs"/>
         <echo message="runEmma                     run code coverage for non-third party classes"/>
         <echo message="runFindbugs                 static analysis for non-third party classes"/>
+        <echo message="runPerformanceMetrics       run performance metrics"/>
         <echo message="package                     build jar"/>
     </target>
 
@@ -260,6 +261,7 @@
             </classpath>
             <formatter type="plain" usefile="true"/>
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
             <batchtest fork="yes" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
                     <include name="**/*Test*.class"/>
@@ -269,14 +271,14 @@
         </junit>
         <antcall target="runTestsWithAspects" />
     </target>
-    
+
     <target name="compileTestAspects" description="Compile aspects for tests" >
-        
+
         <record name="${logfile}" append="yes" loglevel="debug"/>
 
         <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
             classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
-        
+
         <!-- compile aspect .aj files -->
         <fileset id="ajFileSet" dir="${aspects.dir}" includes="**/*.aj"/>
         <pathconvert pathsep="${line.separator}" property="ajFiles" refid="ajFileSet"/>
@@ -285,7 +287,7 @@
         <path id="weave.path">
             <pathelement path="${src.out.dir}"/>
         </path>
-    
+
         <!--
         compile aspects alone to classes binary directory
         -->
@@ -300,7 +302,7 @@
                 <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
             </classpath>
         </iajc>
-             
+
     </target>
 
     <target name="runTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileTests">
@@ -315,29 +317,30 @@
                 <pathelement location="${src.out.dir}"/>
             </classpath>
             <formatter type="plain" usefile="true"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <test name="${test}" fork="yes" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
             </test>
         </junit>
     </target>
-    
+
     <target name="runTestsWithAspects" if="junit.present" depends="runAspectTest1">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="ran tests that have aspects" />
     </target>
-    
+
     <target name="runAspectTest1" if="junit.present" depends="compileTestAspects,compileTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
-        
+
         <condition property="aspect.exists">
             <available file="${src.out.dir}/algorithms/compGeometry/clustering/twopointcorrelation/TwoPointVoidStatsAspect.class" type="file"/>
         </condition>
-        <echo message="${aspect.exists}" />        
+        <echo message="${aspect.exists}" />
         <fail unless="aspect.exists">
             did not find compiled TwoPointVoidStatsAspect
         </fail>
-        
+
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
             <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
             <classpath>
@@ -347,13 +350,14 @@
                 <pathelement location="${src.out.dir}"/>
             </classpath>
             <formatter type="plain" usefile="true"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <test name="algorithms.compGeometry.clustering.twopointcorrelation.TwoPointVoidStats3Test" fork="yes" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
             </test>
         </junit>
     </target>
-    
+
     <target name="runLargeTests" if="junit.present" depends="clean,debug,compileLargeTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.large.out.dir}" />
@@ -364,6 +368,7 @@
                 <pathelement location="${src.out.dir}"/>
             </classpath>
             <formatter type="plain" usefile="true"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <batchtest fork="yes" todir="${tests.large.out.dir}">
                 <fileset dir="${tests.large.out.dir}">
@@ -398,6 +403,7 @@
                 <pathelement location="${src.out.dir}" />
             </classpath>
             <formatter type="plain" usefile="true"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <batchtest fork="yes" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
@@ -428,6 +434,7 @@
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
             <!--<jvmarg value="-ea"/>-->
             <formatter type="plain" usefile="true"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.large.out.dir}"/>
@@ -463,6 +470,7 @@
                 <pathelement location="${src.out.dir}"/>
             </classpath>
             <formatter type="plain" usefile="true"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <batchtest fork="yes" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
@@ -479,7 +487,7 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <junit fork="yes" showoutput="true" filtertrace="off">
-            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
+            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
             <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
@@ -498,7 +506,7 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <junit fork="yes" showoutput="true" filtertrace="off">
-            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
+            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
             <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.large.out.dir}"/>
