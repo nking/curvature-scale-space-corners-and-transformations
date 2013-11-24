@@ -7,7 +7,7 @@ import java.util.Arrays;
  *
  * @author nichole
  */
-class StringArrayLite {
+class StringArrayLite implements ITwoPointIdentity {
 
     protected StringLite[] tstr;
     protected int[] sumTStrChars;
@@ -25,6 +25,7 @@ class StringArrayLite {
         nTStr = 0;
     }
 
+    @Override
     public long approximateMemoryUsed() {
 
         /*
@@ -94,7 +95,8 @@ class StringArrayLite {
      * @param index1
      * @return
      */
-    protected boolean storeIfDoesNotContain(int index0, int index1) {
+    @Override
+    public boolean storeIfDoesNotContain(int index0, int index1) {
 
         // order the indexes to avoid double counting.
         int i0, i1;
@@ -106,6 +108,7 @@ class StringArrayLite {
             i1 = index0;
         }
 
+        //TODO:  use 2 integer arrays in StringArrayLite instead
         byte[] identity = createIdentity(index0, index1);
 
         int sumChars = sum(identity);

@@ -101,7 +101,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected int nTwoPointSurfaceDensities = 0;
     protected int[] point1 = null;
     protected int[] point2 = null;
-    protected StringArrayLite twoPointIdentities = null;
+    protected ITwoPointIdentity twoPointIdentities = null;
 
     protected int defaultNBins = 40;
 
@@ -366,7 +366,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         allTwoPointSurfaceDensities = new float[100];
         point1 = new int[100];
         point2 = new int[100];
-        twoPointIdentities = new StringArrayLite(100);
+        twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.nXY);
 
         findVoids();
 
