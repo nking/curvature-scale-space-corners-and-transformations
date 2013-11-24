@@ -4,8 +4,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.logging.Logger;
 
@@ -17,7 +15,7 @@ public class ResourceFinder {
 
     protected final static String sep = System.getProperty("file.separator");
 
-    protected transient static Logger log = Logger.getLogger(ResourceFinder.class.getName());
+    protected final static Logger log = Logger.getLogger(ResourceFinder.class.getName());
 
     public static String findFileInResources(String fileName) throws IOException {
 

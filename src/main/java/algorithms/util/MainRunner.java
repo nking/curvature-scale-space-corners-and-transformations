@@ -32,8 +32,10 @@ public class MainRunner {
 
     public void run(IInputFileReader reader, String[] args) {
 
-        for (int i = 0; i < args.length; i++) {
-            System.out.println(args[i]);
+        if (args != null) {
+            for (int i = 0; i < args.length; i++) {
+                System.out.println(args[i]);
+            }
         }
 
         if (args == null || args.length < 2) {

@@ -109,8 +109,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected HistogramHolder statsHistogram = null;
     protected GEVYFit bestFit = null;
 
-    protected boolean adjustMuForDensity = true;
-
     protected boolean doLogPerformanceMetrics = false;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -604,6 +602,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected void finalizeStats(HistogramHolder histogram, GEVYFit yfit) throws TwoPointVoidStatsException {
 
+        if (yfit == null) {
+            // this should never happen from calculateStatsForBackground
+            throw new TwoPointVoidStatsException("yfit cannot be null");
+        }
         this.statsHistogram = histogram;
 
         this.bestFit = yfit;
@@ -611,9 +613,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         try {
 
             if (debug) {
-                if (bestFit != null) {
-                    log.info(bestFit.toString());
-                }
+                log.info(bestFit.toString());
+
                 float xHalfInterval = (histogram.getXHist()[1] - histogram.getXHist()[0]) / 2.0f;
                 float xmin = 0;
                 float xmax = histogram.getXHist()[histogram.getXHist().length - 1] + xHalfInterval;
@@ -1423,7 +1424,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             plotter.writeFile();
 
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            Logger.getLogger(SerializerUtil.class.getName()).severe(e.getMessage());
+        }
     }
 
     protected void plotPairSeparations(TwoPointVoidStatsPlotter plotter, float xmin,

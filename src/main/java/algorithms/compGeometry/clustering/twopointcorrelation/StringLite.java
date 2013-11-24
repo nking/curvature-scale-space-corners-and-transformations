@@ -61,8 +61,6 @@ class StringLite {
     public boolean equals(Object o) {
         if (o instanceof StringLite) {
             return equals((StringLite)o);
-        } else if (o instanceof byte[]) {
-            return equals(o);
         } else {
             return false;
         }

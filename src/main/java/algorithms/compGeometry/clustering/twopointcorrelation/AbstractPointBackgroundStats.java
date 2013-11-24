@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.Calendar;
+import java.util.logging.Logger;
 
 /**
  * abstract class for implementations of IPointBackgroundStats to do some of the
@@ -114,6 +115,7 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
                     oos.close();
                 }
             } catch (IOException e1) {
+                Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());
             }
         }
     }
@@ -139,7 +141,8 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
 
             return true;
 
-        } catch (IOException e) {
+        } catch (IOException e1) {
+            Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());
         } finally {
             try {
                 if (fis != null) {
@@ -149,6 +152,7 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
                     ois.close();
                 }
             } catch (IOException e1) {
+                Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());
             }
         }
 

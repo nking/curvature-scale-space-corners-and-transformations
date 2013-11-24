@@ -172,13 +172,14 @@ public class HistogramHolder implements Externalizable {
             out.writeInt(0);
         } else {
             out.writeInt(xErrors.length);
-        }
-        for (int i = 0; i < xErrors.length; i++) {
+        
+            for (int i = 0; i < xErrors.length; i++) {
 
-            out.writeFloat(xErrors[i]);
-            out.writeFloat(yErrors[i]);
+                out.writeFloat(xErrors[i]);
+                out.writeFloat(yErrors[i]);
 
-            out.flush();
+                out.flush();
+            }
         }
     }
 

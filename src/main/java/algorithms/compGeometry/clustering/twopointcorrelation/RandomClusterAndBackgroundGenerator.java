@@ -64,7 +64,7 @@ public class RandomClusterAndBackgroundGenerator {
         // within the tests in TwoPointVoidTests, and those are kept somewhat
         // small due to runtime with 'useCompleteSampling'
 
-        int setChoice = sr.nextInt(3);
+        int setChoice = sr.nextInt(4);
 
         int nBackgroundPoints = 0;
         int[] nClusters = null;
@@ -100,14 +100,18 @@ public class RandomClusterAndBackgroundGenerator {
                 nBackgroundPoints = 10*sum;
                 clusterSep = CLUSTER_SEPARATION.values()[sr.nextInt(2)];
                 break;
-            case 3:
+            default:
+            //case 3:
                 nClusters = new int[0];
                 nBackgroundPoints = 150;
                 break;
         }
 
-        log.info("Creating points: " + nClusters.length + " clusters, "
-            + nBackgroundPoints + " background points, " + clusterSep.name());
+        int nn = (nClusters == null) ? 0 : nClusters.length;
+        String ns = (clusterSep == null) ? "" : clusterSep.name();
+
+        log.info("Creating points: " + nn + " clusters, "
+            + nBackgroundPoints + " background points, " + ns);
 
         return createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax, nClusters, nBackgroundPoints, clusterSep);
     }
@@ -262,8 +266,8 @@ public class RandomClusterAndBackgroundGenerator {
 
         int nTotalPoints = 0;
 
-        for (int n : numberOfClusterPoints) {
-            nTotalPoints += n;
+        for (int i = 0; i < nClusters; i++) {
+            nTotalPoints += numberOfClusterPoints[i];
         }
 
         nTotalPoints += numberOfBackgroundPoints;

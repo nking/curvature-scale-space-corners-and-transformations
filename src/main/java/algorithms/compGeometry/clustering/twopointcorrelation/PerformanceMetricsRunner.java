@@ -1,6 +1,5 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.misc.HistogramHolder;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -112,12 +111,11 @@ public class PerformanceMetricsRunner {
                         indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 100.0f);
                         break;
-                    case 3:
+                    //case 3:
+                    default:
                         // 100*1000
                         indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 1000.0f);
-                        break;
-                    default:
                         break;
                 }
 

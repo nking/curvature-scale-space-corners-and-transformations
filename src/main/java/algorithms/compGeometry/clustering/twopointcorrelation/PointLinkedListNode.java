@@ -8,13 +8,13 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
  */
 public class PointLinkedListNode {
 
-    public int secondPointIndex = -1;
+    protected int secondPointIndex = -1;
 
-    public int groupIndex = -1;
+    protected int groupIndex = -1;
 
-    public int distanceIndex = -1;
+    protected int distanceIndex = -1;
 
-    public PointLinkedListNode next = null;
+    protected PointLinkedListNode next = null;
 
     public PointLinkedListNode() {}
     public PointLinkedListNode(int indexOfSecondPoint, int indexWithinGroupArray, int indexWithinDistanceArray) {

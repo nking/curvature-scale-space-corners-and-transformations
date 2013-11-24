@@ -98,6 +98,9 @@ public class InputFileReader implements IInputFileReader {
             if (reader != null) {
                 reader.close();
             }
+            if (in != null) {
+                in.close();
+            }
             condenseArrays();
             log.info("finished loading file");
         }

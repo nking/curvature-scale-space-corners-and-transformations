@@ -95,7 +95,9 @@ public class SerializerUtil {
                 if (fos != null) {
                     fos.close();
                 }
-            } catch (IOException e1) {}
+            } catch (IOException e1) {
+                Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());
+            }
         }
     }
 
