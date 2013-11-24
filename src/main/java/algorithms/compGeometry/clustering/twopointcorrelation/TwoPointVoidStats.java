@@ -1,5 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.util.Util;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.XY;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
@@ -311,8 +312,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         calculateTwoPointVoidDensities();
 
-        twoPointIdentities = null;
-
         calculateStats();
     }
 
@@ -322,6 +321,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
             calculateTwoPointVoidDensities();
         }
+
+        // may need to release more memory.  if so, release point1 and point2
+        //long memAvail = Util.getAvailableHeapMemory();
+        //log.fine("memory available = " + memAvail);
 
         if (indexer.nXY > 999) {
             statsHistogram = createHistogramWithHigherPeakResolution();
@@ -367,6 +370,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.nXY);
 
         findVoids();
+
+        // release twoPointIdentities to free up memory
+        /*twoPointIdentities = null;
+        MemoryMXBean mb = ManagementFactory.getMemoryMXBean();
+        mb.gc();*/
 
         if (nTwoPointSurfaceDensities == 0) {
             throw new TwoPointVoidStatsException("No pairs were found isolated within an area");
@@ -1432,11 +1440,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected void plotPairSeparations(TwoPointVoidStatsPlotter plotter, float xmin,
         float xmax, float ymin, float ymax) {
 
-        int[] t1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities);
-        int[] t2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities);
+        if (point1 != null) {
+            int[] t1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities);
+            int[] t2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities);
 
-        plotter.addTwoPointPlot(indexer.getX(), indexer.getY(), t1, t2,
-            xmin, xmax, ymin, ymax);
+            plotter.addTwoPointPlot(indexer.getX(), indexer.getY(), t1, t2,
+                xmin, xmax, ymin, ymax);
+        }
 
         if (this.statsHistogram != null && allTwoPointSurfaceDensities != null) {
 

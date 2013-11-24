@@ -4,6 +4,7 @@ import algorithms.util.Errors;
 import java.util.Arrays;
 
 /**
+ *  TODO:  improve this class...
  *
  * @author nichole
  */
@@ -746,7 +747,7 @@ try {
 plotter.writeFile();
 } catch (Exception e) {}*/
 
-        boolean retry = true;
+        boolean retry = (nIter < 200) ? true : false;
 
         int yPeakIndex = MiscMath.findYMaxIndex(yHist);
 

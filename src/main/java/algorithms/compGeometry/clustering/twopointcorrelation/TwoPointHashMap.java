@@ -14,6 +14,13 @@ import java.util.logging.Logger;
  *
  * For datasets with N larger than 46340, the binary search tree impl should be
  * used instead.
+ *
+ * Note also that if the total available memory is less than that needed
+ * by backing arrays, one should run this program to use a larger minimum
+ * amount of memory (-Xms4046m for example.  make sure this is available to your program.).
+ * The TwoPointIdentityFactory will check available memory before returning
+ * an instance of this class.
+ * 
  * TODO:  if memory does not need to be conserved, could consider making many
  *    instances of TwoPointHashMap (Math.ceiling(N/46340.) instances)
  *    to divide N into ranges kept within each TwoPointHashMap instance.
@@ -60,8 +67,6 @@ class TwoPointHashMap implements ITwoPointIdentity {
 
         int nt = indexerNXY*indexerNXY;
 
-        log.fine("creating arrays of size " + nt + " for data size " + indexerNXY);
-
         a0 = new int[nt];
         a1 = new int[nt];
 
@@ -74,18 +79,23 @@ class TwoPointHashMap implements ITwoPointIdentity {
     @Override
     public long approximateMemoryUsed() {
 
+        return checkRequiredMemory((long)Math.sqrt(a0.length));
+    }
+
+    public static long checkRequiredMemory(long indexerNXY) {
+        
         String arch = System.getProperty("sun.arch.data.model");
 
         boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
 
-        int nbits = (is32Bit) ? 32 : 64;
+        long nbits = (is32Bit) ? 32 : 64;
 
-        int arrayRefBits = 32;
+        long arrayRefBits = 32;
 
-        int overheadBytes = 16;
+        long overheadBytes = 16;
 
         // 4 ints and 2 int arrays
-        long sumBits = 2*arrayRefBits + 4*nbits + 2*a0.length*nbits;
+        long sumBits = 4*nbits + 2*(arrayRefBits + indexerNXY*indexerNXY*nbits);
 
         long sumBytes = (sumBits/8) + overheadBytes;
 
@@ -95,6 +105,7 @@ class TwoPointHashMap implements ITwoPointIdentity {
 
         return sumBytes;
     }
+
 
     /**
      * check if combination is already stored, if not add it and return true, else
