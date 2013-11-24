@@ -64,7 +64,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
             if (stats != null && ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit != null) {
 
                 // centroid of area defined by the top portion of the fit where y >= ypeak/2
-                float[] areaAndXYTopCentroid = stats.calculateCentroidOfTop(
+                float[] areaAndXYTopCentroid = TwoPointVoidStats.calculateCentroidOfTop(
                     stats.bestFit.getOriginalScaleX(), stats.bestFit.getOriginalScaleYFit(), 0.5f);
 
                 if (areaAndXYTopCentroid != null) {

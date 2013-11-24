@@ -64,9 +64,9 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         for (int i = 0; i < nSwitches; i++) {
 
-            if (i != 3) {
+            /*if (i != 3) {
                 continue;
-            }
+            }*/
             for (int ii = 0; ii < nIterPerBackground; ii++) {
 
                 switch(i) {
@@ -196,15 +196,15 @@ public class FindClustersTest extends BaseTwoPointTest {
         log.info("\n start computing stats for all sets");
 
         count = 0;
-        float[] meanDivPeaks = new float[3];
-        float[] medianDivMeans = new float[3];
-        float[] x80DivMedians = new float[3];
-        float[] x80DivMeans = new float[3];
+        float[] meanDivPeaks = new float[nSwitches];
+        float[] medianDivMeans = new float[nSwitches];
+        float[] x80DivMedians = new float[nSwitches];
+        float[] x80DivMeans = new float[nSwitches];
 
-        float[] meanDivPeaksSD = new float[3];
-        float[] medianDivMeansSD = new float[3];
-        float[] x80DivMediansSD = new float[3];
-        float[] x80DivMeansSD = new float[3];
+        float[] meanDivPeaksSD = new float[nSwitches];
+        float[] medianDivMeansSD = new float[nSwitches];
+        float[] x80DivMediansSD = new float[nSwitches];
+        float[] x80DivMeansSD = new float[nSwitches];
 
         for (int i = 0; i < nSwitches; i++) {
 
