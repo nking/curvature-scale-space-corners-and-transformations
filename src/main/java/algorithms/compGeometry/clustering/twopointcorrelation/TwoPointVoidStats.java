@@ -25,19 +25,19 @@ import java.util.logging.Logger;
 
 /**
  * Class to estimate a background density for a set of points in which
- * the background surface density will be used by the calling program to find
+ * the background density will be used by the calling program to find
  * clusters in the data.
  *
  * It calculates the two-point density function of rectangular voids, creates a
  * histogram from the distribution, fits a Generalized Extreme Value
  * distribution to the histogram, integrates the area under the curve to
- * estimate the background surface density. For denser background densities, a
+ * estimate the background density. For denser background densities, a
  * slightly different integration limit is used.
  *
  * This assumes that the data contains background points and clustered points
  * whose 2 distributions are different from one another, but homogeneous within
  * their own. It assumes that the distributions do not need to be fit well, but
- * that only the rough range of the background surface density needs to be
+ * that only the rough range of the background density needs to be
  * learned.
  *
  <pre>
@@ -530,7 +530,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     /**
      * internal method to calculate the statistics from the histogram using a
      * fit to the background distribution and a rough integration under the fit
-     * to approximate a usable limit of the background surface density
+     * to approximate a usable limit of the background density
      * distribution.
      *
      * @param histogram

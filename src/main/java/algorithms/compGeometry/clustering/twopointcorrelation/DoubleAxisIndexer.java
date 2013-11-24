@@ -21,9 +21,6 @@ import java.util.Arrays;
       // else sort and index using method with errors
       indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
 
-      // find points within a rectangle's bounds:
-      int[] regionIndexes = indexer.findIntersectingRegionIndexes(xIndexLo, xIndexHi, yIndexLo, yIndexHi);
-
 
  * @author nichole
  */
@@ -272,8 +269,13 @@ public class DoubleAxisIndexer {
     }
 
     /**
-     * find the intersection of regions specified by xIndexLo:xIndexHi and yIndexLo:yIndexHi
-     * if there are only 2 points, else return an empty array
+     * Find the intersection of regions specified by xIndexLo:xIndexHi and yIndexLo:yIndexHi
+     * If there are only 2 points, else return an empty array.
+     *
+     * For example, returns int[]{region0Index, regionIIndex}
+     * which are the corners of the bounding box and can be used in the following way:
+     *     one point is indexer.x[region0Index], indexer.y[region0Index]
+     *     the other point is indexer.x[region1Index], indexer.y[region1Index]
      *
      * @param xIndexLo x index w.r.t the sortedXIndexes. used to lookup the
      * index w.r.t. the original unsorted array
@@ -321,7 +323,7 @@ public class DoubleAxisIndexer {
                     //   (1) ignore that and toss the region as containing more than 2 points.
                     //   (2) search here for the identical y in indexes, and if found, allow
                     //       algorithm to continue.  then discard if more than 3 are found in the region.
-                    //       the code that uses this would have to then try to store both pair surface densities
+                    //       the code that uses this would have to then try to store both pair densities
                     //       (this later adds alot to each iteration.  will use it only if complete sampling is selected)
                     //   ==> choosing to implement (2) if useCompleteSampling is true.
 

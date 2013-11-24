@@ -39,7 +39,7 @@ public class MainRunner {
         }
 
         if (args == null || args.length < 2) {
-            System.out.println("Requires file:  --file /path/to/file/fileName.txt");
+            System.out.println("Requires file:  --file /path/to/file/fileName.txt which contains rows of x<tab>y<tab>xerr<tab>yerr");
             System.out.println("     optional:  --twosigma");
             System.out.println("     optional:  --threesigma");
             System.out.println("     optional:  --background 0.3 (requires backgrounderror guesstimate at least)");
@@ -89,7 +89,7 @@ public class MainRunner {
         }
 
         if (filePath == null) {
-            System.err.println("Requires file:  --file /path/to/file/fileName.txt");
+            System.err.println("Requires file:  --file /path/to/file/fileName.txt which contains rows of x<tab>y<tab>xerr<tab>yerr");
             return;
         }
 

@@ -27,7 +27,7 @@ import java.io.Reader;
   where point1Indexes and point2Indexes are arrays of indexes to the indexes of arrays {x, y};
   The 2 points found form the rectangle boundaries of a void.
 
-  the twoPointSurfaceDensities are the surface densities of the voids and are parallel
+  the twoPointSurfaceDensities are the densities of the voids and are parallel
   to point1Indexes and point2Indexes.
 
  * @author nichole

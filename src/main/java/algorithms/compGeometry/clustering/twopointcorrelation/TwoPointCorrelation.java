@@ -72,7 +72,7 @@ public class TwoPointCorrelation {
     private float backgroundSurfaceDensity;
     private float backgroundError;
     private float sigmaFactor = 2.5f;
-    // we are looking for points which have surface density > sigmaFactor*backgroundAverage
+    // we are looking for points which have density > sigmaFactor*backgroundAverage
 
     protected int minimumNumberInCluster = 10;
 
@@ -304,7 +304,7 @@ public class TwoPointCorrelation {
         this.backgroundError = minStats.getBackgroundSurfaceDensityError();
 
         if (debug) {
-            log.info("background surface density ="
+            log.info("background density ="
                 + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
         }
 
@@ -346,7 +346,7 @@ public class TwoPointCorrelation {
         this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
 
         if (debug) {
-            log.info("==>background surface density ="
+            log.info("==>background density ="
                 + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
         }
 
@@ -518,17 +518,17 @@ public class TwoPointCorrelation {
         float[] y = indexer.getYSortedByY();
 
         float densityThreshold = sigmaFactor*backgroundSurfaceDensity;
-        // 2 or 3 times the background surface density
+        // 2 or 3 times the background density
         if (debug) {
             log.info("For clusters, using densityThreshold=" + densityThreshold);
         }
 
         SimpleLinkedListNode tmpPointsInMoreThanOneGroup = new SimpleLinkedListNode();
 
-        // store the distances between points when the separation implies it is above surface density
+        // store the distances between points when the separation implies it is above density
         for (int i = 0; i < indexer.nXY; i++) {
 
-            // groups are points whose separation is an implied surface density higher than 2 or 3 times the background.
+            // groups are points whose separation is an implied density higher than 2 or 3 times the background.
             // see if this point is part of a group already, by looking for it in the pointTo2ndPointIndex entry.
             // if it is a part of a group already, set the groupNumber,
             // else, leave the groupNumber as -1 until another point is close enough to start a new group.
@@ -584,7 +584,7 @@ public class TwoPointCorrelation {
             }
         }
 
-        // consolidate overlapping groups.  high surface density backgrounds will have larger number of overlapping clusters
+        // consolidate overlapping groups.  high density backgrounds will have larger number of overlapping clusters
         SimpleLinkedListNode latest = tmpPointsInMoreThanOneGroup;
         while (latest != null && latest.key != -1) {
 
@@ -815,7 +815,7 @@ public class TwoPointCorrelation {
             this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
 
             if (debug) {
-                log.info("==>background surface density ="
+                log.info("==>background density ="
                     + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
             }
 

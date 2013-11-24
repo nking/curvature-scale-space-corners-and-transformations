@@ -60,7 +60,7 @@ class TwoPointHashMap implements ITwoPointIdentity {
 
         int nt = indexerNXY*indexerNXY;
 
-        log.info("creating arrays of size " + nt + " for data size " + indexerNXY);
+        log.fine("creating arrays of size " + nt + " for data size " + indexerNXY);
 
         a0 = new int[nt];
         a1 = new int[nt];

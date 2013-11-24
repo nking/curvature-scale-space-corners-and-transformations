@@ -1,7 +1,5 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import java.util.Arrays;
-
 /**
  * A holder for two-point identities, where the identities are the indexes
  * of the indexer internal arrays.  N is the size of the dataset, that is
