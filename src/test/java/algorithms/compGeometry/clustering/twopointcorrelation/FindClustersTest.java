@@ -114,7 +114,6 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 String plotLabel = null;
 
-                System.out.print(" storing statistics ");
                 GEVYFit bestFit = stats.bestFit;
                 if (bestFit != null) {
                     float mean = bestFit.getXMean();

@@ -52,7 +52,7 @@ public class PerformanceMetricsRunner {
 
         TwoPointCorrelation clusterFinder = new TwoPointCorrelation(
             indexer.getX(), indexer.getY(),
-            indexer.getXErrors(), indexer.getYErrors(), indexer.x.length);
+            indexer.getXErrors(), indexer.getYErrors(), indexer.getX().length);
 
         clusterFinder.setDebug(false);
         clusterFinder.logPerformanceMetrics();
@@ -99,7 +99,8 @@ public class PerformanceMetricsRunner {
                     case 0:
                         //~100
                         indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                            3, 33, 33, 0.1f);
+                            10, 100, 110, 100.0f);
+                            //3, 33, 33, 0.1f);
                         break;
                     case 1:
                         //~1000

@@ -211,7 +211,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         String str = String.format("%35s:  N=%9d  %s  RT(sec)=%8d  instance estimates(bytes)=%9d   heapUsed(bytes)=%9d   memoryPoolsSum(bytes)=%9d",
             methodName,
-            indexer.nXY, bigOh, diffSec, approximateMemoryUsed(),
+            indexer.getNXY(), bigOh, diffSec, approximateMemoryUsed(),
             heapUsage.getUsed(), nonHeapUsage.getUsed() );
 
         Logger.getLogger(this.getClass().getSimpleName()).info(str);
@@ -326,7 +326,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         //long memAvail = Util.getAvailableHeapMemory();
         //log.fine("memory available = " + memAvail);
 
-        if (indexer.nXY > 999) {
+System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensities);
+
+        if (indexer.getNXY() > 999) {
             statsHistogram = createHistogramWithHigherPeakResolution();
         } else {
             statsHistogram = createHistogram();
@@ -367,7 +369,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         allTwoPointSurfaceDensities = new float[100];
         point1 = new int[100];
         point2 = new int[100];
-        twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.nXY);
+        twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.getNXY());
 
         findVoids();
 
@@ -503,7 +505,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         //HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, allTwoPointSurfaceDensities,
         //    allTwoPointSurfaceDensitiesErrors, false);
-
+System.out.println("==> " + allTwoPointSurfaceDensities.length);
         HistogramHolder histogram = Histogram.createHistogramForSkewedData(
             nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors, true);
 
@@ -831,6 +833,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         float[] x = indexer.getX();
         float[] y = indexer.getY();
 
+        int nXY = indexer.getNXY();
+
         if (sampling == null) {
 
             // ***** NOTE ********
@@ -848,13 +852,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             // There if SEMI_COMPLETE was used and there are outliers, the background fit
             // is redone using SEMI_COMPLETE_RANGE_SEARCH
 
-            if (indexer.nXY > 10000) {
+            if (nXY > 10000) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
-            } else if (indexer.nXY > 8000) {
+            } else if (nXY > 8000) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
-            } else if (indexer.nXY > 999) {
+            } else if (nXY > 999) {
                 this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
-            } else if (indexer.nXY < 100) {
+            } else if (nXY < 100) {
                 this.sampling = Sampling.COMPLETE;
             } else {
                 this.sampling = Sampling.SEMI_COMPLETE;
@@ -862,7 +866,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
 
         if (debug) {
-            log.info("findVoid sampling=" + sampling.name() + " for " + indexer.nXY + " points");
+            log.info("findVoid sampling=" + sampling.name() + " for " + nXY + " points");
         }
 
         if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
@@ -879,14 +883,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
 
             // uses a very rough range search
-            findVoidsRoughRangeSearch(0, indexer.nXY - 1, 0, indexer.nXY - 1, 2, 1.5f);
+            findVoidsRoughRangeSearch(0, nXY - 1, 0, nXY - 1, 2, 1.5f);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
 
             // uses a very rough range search
             int nDiv = 10;
             float bFactor = 4;
-            findVoidsRoughRangeSearch(0, indexer.nXY - 1, 0, indexer.nXY - 1, nDiv, bFactor);
+            findVoidsRoughRangeSearch(0, nXY - 1, 0, nXY - 1, nDiv, bFactor);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
 
@@ -899,7 +903,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             // for area of data so large that randomly chosen patches are neccessary
             //   to reduce sample to decrease runtime
             //findVoidsRandomSamples(20, 10);
-            findVoidsRoughRangeSearch(0, indexer.nXY - 1, 0, indexer.nXY - 1, 10, 4f);
+            findVoidsRoughRangeSearch(0, nXY - 1, 0, nXY - 1, 10, 4f);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
 
@@ -950,7 +954,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected void findVoidsUsingDoubleIndexes(int incr) {
         // N!/(2!(N-2)! * N!/(2!(N-2)!
 
-        findVoidsUsingDoubleIndexes(0, indexer.nXY - 1, 0, indexer.nXY - 1, incr);
+        findVoidsUsingDoubleIndexes(0, indexer.getNXY() - 1, 0, indexer.getNXY() - 1, incr);
     }
 
     protected void findVoidsUsingDoubleIndexes(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int incr) {
@@ -958,11 +962,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         for (int i = xIndexLo; i < xIndexHi; i++) {
             if (debug) {
-                log.info("findVoids i=" + i + "/" + indexer.nXY);
+                log.info("findVoids i=" + i + "/" + indexer.getNXY());
             }
-            for (int ii = (i + 1); ii < indexer.nXY; ii+=incr) {
+            for (int ii = (i + 1); ii < indexer.getNXY(); ii+=incr) {
                 for (int j = yIndexLo; j < yIndexHi; j++) {
-                    for (int jj = (j + 1); jj < indexer.nXY; jj+=incr) {
+                    for (int jj = (j + 1); jj < indexer.getNXY(); jj+=incr) {
                         processIndexedRegion(i, ii, j, jj);
                     }
                 }
@@ -1028,7 +1032,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
              * use the indexer.
              *
              */
-            int binSize = indexer.nXY/nDivisionsPerSide;
+            int binSize = indexer.getNXY()/nDivisionsPerSide;
 
             /*    col 0
              *     ||
@@ -1174,12 +1178,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             int uniqueYIndex = -1;
             for (int i = 0; i < regionIndexes.length; i++) {
                 boolean foundSameYAsI = false;
-                float ypi = indexer.y[ regionIndexes[i] ];
+                float ypi = indexer.getY()[ regionIndexes[i] ];
                 for (int j = 0; j < regionIndexes.length; j++) {
                     if (i == j) {
                         continue;
                     }
-                    float ypj = indexer.y[ regionIndexes[j] ];
+                    float ypj = indexer.getY()[ regionIndexes[j] ];
                     if (ypj == ypi) {
                         foundSameYAsI = true;
                         break;
@@ -1194,8 +1198,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             if (uniqueYIndex == -1) {
                 StringBuilder err = new StringBuilder("ERROR: intersecting region contained more than 2 points, but unique y wasn't found");
                 for (int i = 0; i < regionIndexes.length; i++) {
-                    err.append("\n  (").append( indexer.x[ regionIndexes[i] ] )
-                        .append(", ").append( indexer.y[ regionIndexes[i] ] ).append(")");
+                    err.append("\n  (").append( indexer.getX()[ regionIndexes[i] ] )
+                        .append(", ").append( indexer.getY()[ regionIndexes[i] ] ).append(")");
                 }
                 throw new IllegalStateException(err.toString());
             }
@@ -1231,8 +1235,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         // dependent on rotation of the reference frame
 
         float d = (float) Math.sqrt(LinesAndAngles.distSquared(
-            indexer.x[regionIndex0], indexer.y[regionIndex0],
-            indexer.x[regionIndex1], indexer.y[regionIndex1]));
+            indexer.getX()[regionIndex0], indexer.getY()[regionIndex0],
+            indexer.getX()[regionIndex1], indexer.getY()[regionIndex1]));
 
         if (d == 0) {
             return;
@@ -1311,6 +1315,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             return null;
         }
+    }
+
+    public int getNumberOfDensityPoints() {
+        return nTwoPointSurfaceDensities;
     }
 
     public String persistTwoPointBackground() throws IOException {

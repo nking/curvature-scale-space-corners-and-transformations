@@ -58,6 +58,9 @@ public class SerializerUtil {
         OutputStream fos = null;
         ObjectOutputStream oos = null;
 
+        float[] x = dain.getX();
+        float[] y = dain.getY();
+
         try {
             fos = new FileOutputStream(file);
 
@@ -66,17 +69,17 @@ public class SerializerUtil {
             oos.writeInt(dain.nXY);
 
             if (includeErrors) {
-                for (int i = 0; i < dain.nXY; i++) {
-                    oos.writeFloat( dain.x[i] );
-                    oos.writeFloat( dain.y[i] );
+                for (int i = 0; i < dain.getNXY(); i++) {
+                    oos.writeFloat( x[i] );
+                    oos.writeFloat( y[i] );
                     oos.writeFloat( dain.getXErrors()[i] );
                     oos.writeFloat( dain.getYErrors()[i] );
                     oos.flush();
                 }
             } else {
-                for (int i = 0; i < dain.nXY; i++) {
-                    oos.writeFloat( dain.x[i] );
-                    oos.writeFloat( dain.y[i] );
+                for (int i = 0; i < dain.getNXY(); i++) {
+                    oos.writeFloat( x[i] );
+                    oos.writeFloat( y[i] );
                     oos.flush();
                 }
             }

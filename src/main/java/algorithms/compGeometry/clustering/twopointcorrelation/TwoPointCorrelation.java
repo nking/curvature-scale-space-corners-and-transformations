@@ -180,7 +180,7 @@ public class TwoPointCorrelation {
 
         this.indexer = SerializerUtil.readPersistedPoints(indexerFilePath, true);
 
-        pointToGroupIndex = new int[this.indexer.nXY];
+        pointToGroupIndex = new int[this.indexer.getNXY()];
         Arrays.fill(pointToGroupIndex, -1);
 
         groupMembership = new SimpleLinkedListNode[10];
@@ -195,7 +195,7 @@ public class TwoPointCorrelation {
 
         this.indexer = doubleAxisIndexer;
 
-        pointToGroupIndex = new int[this.indexer.nXY];
+        pointToGroupIndex = new int[this.indexer.getNXY()];
         Arrays.fill(pointToGroupIndex, -1);
 
         groupMembership = new SimpleLinkedListNode[10];
@@ -359,12 +359,12 @@ public class TwoPointCorrelation {
             long stopTimeMillis = System.currentTimeMillis();
 
             printPerformanceMetrics(startTimeMillis, stopTimeMillis,
-                "calculateBackgroundVia2PtVoidFit");
+                "calculateBackgroundVia2PtVoidFit", voidStats.getNumberOfDensityPoints());
         }
     }
 
 
-    protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName) {
+    protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName, int nPoints) {
 
         long diffSec = (stopTimeMillis - startTimeMillis)/1000;
 
@@ -374,7 +374,7 @@ public class TwoPointCorrelation {
 
         String str = String.format("%35s:  N=%9d  RT(sec)=%8d  instance estimates(bytes)=%9d   heapUsed(bytes)=%9d   memoryPoolsSum(bytes)=%9d",
             methodName,
-            indexer.nXY, diffSec, approximateMemoryUsed(),
+            nPoints, diffSec, approximateMemoryUsed(),
             heapUsage.getUsed(), nonHeapUsage.getUsed() );
 
         Logger.getLogger(this.getClass().getSimpleName()).info(str);
@@ -510,7 +510,7 @@ public class TwoPointCorrelation {
             tmpGroupMembership[i] = new SimpleLinkedListNode();
         }
 
-        int[] tmpPointToGroupIndex = new int[indexer.nXY];
+        int[] tmpPointToGroupIndex = new int[indexer.getNXY()];
         Arrays.fill(tmpPointToGroupIndex, -1);
 
         // the indexes stored in the instance vars such as pointToGroupIndex are w.r.t. the arrays sorted by y
@@ -526,7 +526,7 @@ public class TwoPointCorrelation {
         SimpleLinkedListNode tmpPointsInMoreThanOneGroup = new SimpleLinkedListNode();
 
         // store the distances between points when the separation implies it is above density
-        for (int i = 0; i < indexer.nXY; i++) {
+        for (int i = 0; i < indexer.getNXY(); i++) {
 
             // groups are points whose separation is an implied density higher than 2 or 3 times the background.
             // see if this point is part of a group already, by looking for it in the pointTo2ndPointIndex entry.
@@ -536,7 +536,7 @@ public class TwoPointCorrelation {
             // this will be -1 if not yet assigned
             int groupNumber = tmpPointToGroupIndex[i];
 
-            for (int j = (i + 1); j < indexer.nXY; j++) {
+            for (int j = (i + 1); j < indexer.getNXY(); j++) {
 
                 float d = (float) Math.sqrt( Math.pow((x[i] - x[j]), 2) + Math.pow((y[i] - y[j]), 2) );
 
@@ -685,7 +685,7 @@ public class TwoPointCorrelation {
 
             long stopTimeMillis = System.currentTimeMillis();
 
-            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "bruteForceCalculateGroups");
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "bruteForceCalculateGroups", indexer.getNXY());
         }
 
         try {
@@ -695,6 +695,7 @@ public class TwoPointCorrelation {
         } catch (TwoPointVoidStatsException e) {
             log.severe(e.getMessage());
         }
+
     }
 
     protected float calculateFractionOfAreaOutsideOfClusters() throws IOException, TwoPointVoidStatsException {
@@ -721,7 +722,7 @@ public class TwoPointCorrelation {
 
     protected float calculateFractionOfPointsOutsideOfClusters() {
 
-        boolean[] insideClusters = new boolean[indexer.nXY];
+        boolean[] insideClusters = new boolean[indexer.getNXY()];
 
         for (int i = 0; i < nGroups; i++) {
 
@@ -745,7 +746,7 @@ public class TwoPointCorrelation {
             }
         }
 
-        float frac = (float)count/(float)indexer.nXY;
+        float frac = (float)count/(float)indexer.getNXY();
 
         return frac;
     }
@@ -770,9 +771,9 @@ public class TwoPointCorrelation {
 
             int nDensities = ((TwoPointVoidStats)backgroundStats).nTwoPointSurfaceDensities;
 
-            //if (nDensities < 1001) {
-            //    return;
-            //}
+if (nDensities < 1001) {
+    return;
+}
 
             float fracPoints = calculateFractionOfPointsOutsideOfClusters();
 
@@ -850,9 +851,11 @@ public class TwoPointCorrelation {
         float[] x = indexer.getXSortedByY();
         float[] y = indexer.getYSortedByY();
 
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(indexer.x[indexer.sortedXIndexes[0]],
-            indexer.x[indexer.sortedXIndexes[indexer.nXY - 1]],
-            indexer.y[indexer.sortedYIndexes[0]], indexer.y[indexer.sortedYIndexes[indexer.nXY - 1]]);
+        int nXY = indexer.getNXY();
+
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(indexer.getX()[indexer.getSortedXIndexes()[0]],
+            indexer.getX()[indexer.getSortedXIndexes()[nXY - 1]],
+            indexer.getY()[indexer.getSortedYIndexes()[0]], indexer.getY()[indexer.getSortedYIndexes()[nXY - 1]]);
 
         for (int i = 0; i < nGroups; i++) {
 
@@ -948,7 +951,7 @@ public class TwoPointCorrelation {
 
             long stopTimeMillis = System.currentTimeMillis();
 
-            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateHullsOfClusters");
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateHullsOfClusters", nGroups);
         }
     }
 

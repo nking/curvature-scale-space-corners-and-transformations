@@ -28,7 +28,7 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
     protected boolean debug = false;
 
     public AbstractPointBackgroundStats(DoubleAxisIndexer indexedSortedPoints) {
-        if (indexedSortedPoints.x == null) {
+        if (indexedSortedPoints.getX() == null) {
             throw new IllegalArgumentException("indexedSortedPoints has to contain sorted data");
         }
         this.indexer = indexedSortedPoints;

@@ -85,8 +85,6 @@ public class FittingStatsTest extends BaseTwoPointTest {
 
                 stats.plotFit(plotter2);
 
-                System.out.print(" storing statistics ");
-
                 GEVYFit bestFit = stats.bestFit;
 
                 if (bestFit != null) {

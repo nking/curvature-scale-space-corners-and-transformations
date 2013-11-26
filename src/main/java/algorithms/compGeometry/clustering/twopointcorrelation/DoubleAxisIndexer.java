@@ -84,6 +84,10 @@ public class DoubleAxisIndexer {
     public DoubleAxisIndexer() {
     }
 
+    public int getNXY() {
+        return nXY;
+    }
+
     public long approximateMemoryUsed() {
 
         /*

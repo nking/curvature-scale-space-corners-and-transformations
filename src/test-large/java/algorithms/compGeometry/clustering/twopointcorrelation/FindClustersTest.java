@@ -11,7 +11,7 @@ import java.util.logging.Logger;
  */
 public class FindClustersTest extends BaseTwoPointTest {
 
-    boolean debug = true;
+    boolean debug = false;
 
     boolean writeToTmpData = false;
 
@@ -83,11 +83,16 @@ public class FindClustersTest extends BaseTwoPointTest {
                             3, 30, 60, 10.0f);
                         break;
                     case 3:
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                             3, 150, 300, 20.0f);
+                        break;
+                    default:
                         // 100*100
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 100.0f);
-                        break;
-                    default:
+                        //SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+                        //int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
+                        //float backgroundPointFractionToClusters
                         break;
                 }
 
@@ -95,7 +100,6 @@ public class FindClustersTest extends BaseTwoPointTest {
                     generator.xErrors, generator.yErrors, generator.x.length);
 
                 log.info(" " + count + " (" + indexer.nXY + " points) ... ");
-
 
                 if (writeToTmpData) {
                     // write to tmpdata if need to use in tests improve fits, histogram etc
@@ -117,8 +121,8 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 twoPtC.setDebug(true);
 
-                twoPtC.logPerformanceMetrics();
-                twoPtC.calculateBackground();
+                //twoPtC.logPerformanceMetrics();
+                //twoPtC.calculateBackground();
                 twoPtC.findClusters();
 
                 TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
@@ -126,7 +130,6 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 String plotLabel = null;
 
-                System.out.print(" storing statistics ");
                 GEVYFit bestFit = stats.bestFit;
                 if (bestFit != null) {
                     float mean = bestFit.getXMean();
@@ -163,6 +166,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                 twoPtC.calculateHullsOfClusters();
 
                 plotter.addPlot(twoPtC, plotLabel);
+
                 plotter.writeFile();
 
                 if (debug) {
@@ -295,7 +299,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         }
 
         log.info("Final stats:");
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < nSwitches; i++) {
 
             String line = String.format(
                 "    mean/peak=%.2f +- %.4f   median/mean=%.2f +- %.4f    x80/median=%.2f +- %.4f    x80/median=%.2f +- %.4f",
