@@ -2,6 +2,7 @@ package algorithms.misc;
 
 import algorithms.util.Errors;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 /**
  *  TODO:  improve this class...
@@ -9,6 +10,8 @@ import java.util.Arrays;
  * @author nichole
  */
 public class Histogram {
+
+    protected static Logger log = Logger.getLogger(Histogram.class.getName());
 
     /**
      * create a histogram from the data that has little or no adjustment
@@ -83,13 +86,15 @@ public class Histogram {
             throw new IllegalArgumentException("yHist has to be of size nBins and initialized");
         }
 
+        Arrays.fill(yHist, 0);
+
         for (int i = 0; i < nBins; i++) {
             xHist[i] = aMin + i*binWidth + (binWidth/2.f);
         }
 
         for (int i = 0; i < a.length; i++) {
             int bin = (int) ((a[i] - aMin)/binWidth);
-            if (bin < nBins) {
+            if ((bin > -1) && (bin < nBins)) {
                 yHist[bin]++;
             }
         }
@@ -171,78 +176,66 @@ public class Histogram {
             //return createHistogramForSkewedDataForPeakResolution2(preferredNumberOfBins, values, valueErrors, minValue, maxValue, 1);
         }*/
 
-        return createHistogramForSkewedDataIgnorePeakResolution(preferredNumberOfBins,
-            values, valueErrors, minValue, maxValue);
+        return createHistogramForSkewedDataIgnorePeakResolution(values, valueErrors, minValue, maxValue);
     }
 
-    private static HistogramHolder createHistogramForSkewedDataIgnorePeakResolution(int preferredNumberOfBins,
+    /**
+     * this is the histogram used for the small number histograms, that is for values.length < 1000
+     *
+     * @param preferredNumberOfBins
+     * @param values
+     * @param valueErrors
+     * @param minValue
+     * @param maxValue
+     * @return
+     */
+    private static HistogramHolder createHistogramForSkewedDataIgnorePeakResolution(
         float[] values, float[] valueErrors, float minValue, float maxValue) {
 
         if (values == null || valueErrors == null || values.length != valueErrors.length) {
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
         }
 
-        // -- start with a histogram based upon sturges or draconis.
-        // -- then reduce the bin width if necessary such that there are 10 or
-        //    so bins across the width of half max of the profile.
-        // -- reduce nbins until the last bins hold values > 5
-
-        float binWidth = calculateSturgesBinWidth(values, 0.25f);
-
-        int minNumberOfBins = (preferredNumberOfBins > 30) ? 30 : ((preferredNumberOfBins > 20) ? 20 : preferredNumberOfBins/2);
-
-        //float binWidth = calculateFreedmanDraconisBinWidth(values, 0.85f, maxValue);
-
-        int nBins = (int)((maxValue - minValue)/binWidth);
-
-        if (nBins > (2*preferredNumberOfBins)) {
-            nBins = 2*preferredNumberOfBins;
-            binWidth = (maxValue - minValue)/nBins;
-        } else if (nBins < minNumberOfBins) {
-            nBins = minNumberOfBins;
-            binWidth = (maxValue - minValue)/nBins;
-        }
-
-        float[] xHist = new float[nBins];
-        int[] yHist = new int[nBins];
-
-        float xMax = maxValue;
-
-        Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
-
-
-
-        // if there are many bins with counts < 5, should  reduce the number of bins, but not to less than half preferred.
-        // also, if there are many empty bins at start of histogram, increase the bin size.
-        boolean go = true;
-
-/*
-algorithms.util.PolygonAndPointPlotter plotter = null;
-try {
-plotter = new algorithms.util.PolygonAndPointPlotter();
-} catch (Exception e) {}
-String str = String.format("n=%10d w=%.5f", nBins, binWidth);
+        /*
+str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
 } catch (Exception e) {}*/
+// Sturges   good for very low numbers
+        int nIntervalsSturges = (int)Math.ceil( Math.log(values.length)/Math.log(2) );
 
-        while (go) {
+        int nBins = Math.max(nIntervalsSturges, 10);
+
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+
+        float binWidth = calculateBinWidth(minValue, maxValue, nBins);
+
+        Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
+
+        int minCounts = (values.length > 50) ? 15 : 5;
+
+        boolean go = true;
+
+        int nIter = 0;
+
+        while (go && (nIter < 100) && (minValue < maxValue)) {
 
             int yPeakIndex = MiscMath.findYMaxIndex(yHist);
 
-            int startsWithLessThan5Counts = 0;
-            int indexStartingConsecutiveStartLowCounts = -1;
+            int startsWithLessThanMinCounts = 0;
 
-            int endsWithLessThan5Counts = 0;
+            int endsWithLessThanMinCounts = 0;
             int indexStartingConsecutiveEndLowCounts = -1;
             int prevIndexStartingConsecutiveEndLowCounts = yHist.length;
+
             for (int i = (yHist.length - 1); i > -1; i--) {
 
-                if (yHist[i] < 5) {
+                if (yHist[i] < minCounts) {
 
                     // count the consecutive low counts at the end of the histogram:
-                    endsWithLessThan5Counts++;
+                    endsWithLessThanMinCounts++;
                     // avoid using points with x < x at ypeak
                     if ( (i > yPeakIndex) && ((i == (prevIndexStartingConsecutiveEndLowCounts - 1)) ||
                     (i == (prevIndexStartingConsecutiveEndLowCounts - 2)))) {
@@ -255,152 +248,38 @@ plotter.writeFile();
                     // count the consecutive low counts at start of histogram
                     if (i > 0) {
                         // if there is a low count in i-1 too, increment this one, else reset it to zero (no skips)
-                        if (yHist[i-1] < 5) {
-                            startsWithLessThan5Counts++;
-                            indexStartingConsecutiveStartLowCounts = i-1;
+                        if (yHist[i-1] < minCounts) {
+                            startsWithLessThanMinCounts++;
                         } else {
-                            startsWithLessThan5Counts = 0;
-                            indexStartingConsecutiveStartLowCounts = -1;
+                            startsWithLessThanMinCounts = 0;
                         }
                     }
                 }
             }
 
-            /*
-             * Handle cases:
-             *
-             * (0) zeros at start  && zeros at end
-             *     -- reduce xmax
-             *        --> reduce nBins
-             *
-             * (1) zeros at start  only
-             *        --> reduce nBins
-             *
-             * (2) zeros at end only
-             *     -- reduce xmax
-             *        --> reduce nBins
-             *
-             * Note, don't want cases to undo each others work upon iteration, so chose
-             * to reduce the number of bins (rather than increase and decrease the bin width).
-             */
-
-            int chk = (int)(0.1*nBins);
-            chk = 4;
-
-            if ((indexStartingConsecutiveStartLowCounts == 0) && (indexStartingConsecutiveEndLowCounts > -1)) {
-                // case 0
-
-                // reduce xMax
-                float tmpXMax = xHist[indexStartingConsecutiveEndLowCounts];;
-
-                int tmpNBins = (int)((tmpXMax - minValue)/binWidth);
-
-                if (tmpNBins >= minNumberOfBins) {
-
-                    xMax = tmpXMax;
-
-                    nBins = tmpNBins;
-
-                } else if (nBins == minNumberOfBins) {
-
-                    go = false;
-
-                    nBins = 10; // absolute min number...
-
-                } else {
-                    xMax = tmpXMax;
-                    nBins = minNumberOfBins;
-                    binWidth = (maxValue - minValue)/nBins;
-                }
-
-            } else if (indexStartingConsecutiveStartLowCounts == 0) {
-                // case 1
-
-                if (startsWithLessThan5Counts > 2) {
-
-                    // reduce nBins
-                    float firstNonZero = xHist[startsWithLessThan5Counts];
-                    float minBinWidth = firstNonZero - minValue;
-
-                    int tmpNBins = (int)((xMax - minValue)/minBinWidth);
-
-                    if (tmpNBins >= minNumberOfBins) {
-
-                        nBins = tmpNBins;
-
-                        binWidth = minBinWidth;
-
-                    } else if (nBins == minNumberOfBins) {
-                        go = false;
-
-                        nBins = 10; // absolute min number...
-
-                    } else {
-                        nBins = minNumberOfBins;
-                        binWidth = (maxValue - minValue)/nBins;
-                    }
-
-                } else {
-                    go = false;
-                }
-
-            } else if (indexStartingConsecutiveEndLowCounts > -1) {
-                // case 2
-
-                // reduce xMax
-                float tmpXMax = xHist[indexStartingConsecutiveEndLowCounts];;
-
-                int tmpNBins = (int)((tmpXMax - minValue)/binWidth);
-
-                if (tmpNBins >= minNumberOfBins) {
-
-                    xMax = tmpXMax;
-
-                    nBins = tmpNBins;
-
-                } else if (nBins == minNumberOfBins) {
-                    go = false;
-
-                    nBins = 10; // absolute min number...
-                } else {
-                    xMax = tmpXMax;
-                    nBins = minNumberOfBins;
-                    binWidth = (maxValue - minValue)/nBins;
-                }
-
-            } else {
+            if (startsWithLessThanMinCounts == 0 && endsWithLessThanMinCounts == 0) {
                 go = false;
-            }
+            } else {
+                if (endsWithLessThanMinCounts > 0) {
+                    maxValue -= 1.01*binWidth;
+                }
+                if (startsWithLessThanMinCounts > 0) {
+                    minValue += 1.01*binWidth;
+                }
 
+                binWidth = calculateBinWidth(minValue, maxValue, nBins);
 
-            if (go) {
+                Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
 
-                binWidth = calculateBinWidth(minValue, xMax, nBins);
-
-                xHist = new float[nBins];
-                yHist = new int[nBins];
-                Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
-/*
-str = String.format("n=%10d w=%.5f", nBins, binWidth);
-plotter.addPlot(xHist, yHist, null, null, str);
-try {
-plotter.writeFile();
-} catch (Exception e) {}*/
+                nIter++;
             }
         }
-
-        xHist = new float[nBins];
-        yHist = new int[nBins];
-        Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
 
         float[] yHistFloat = new float[yHist.length];
         for (int i = 0; i < yHist.length; i++) {
             yHistFloat[i] = (float) yHist[i];
         }
 
-        if (valueErrors == null) {
-            valueErrors = Errors.populateYErrorsBySqrt(yHistFloat);
-        }
         float[] yErrors = new float[xHist.length];
         float[] xErrors = new float[xHist.length];
 
@@ -412,12 +291,6 @@ plotter.writeFile();
         histogram.setYHistFloat(yHistFloat);
         histogram.setYErrors(yErrors);
         histogram.setXErrors(xErrors);
-/*
-str = String.format("n=%10d w=%.5f", nBins, binWidth);
-plotter.addPlot(xHist, yHist, null, null, str);
-try {
-plotter.writeFile();
-} catch (Exception e) {}*/
 
         return histogram;
     }
@@ -641,9 +514,6 @@ plotter.writeFile();
             yHistFloat[i] = (float) yHist[i];
         }
 
-        if (valueErrors == null) {
-            valueErrors = Errors.populateYErrorsBySqrt(yHistFloat);
-        }
         float[] yErrors = new float[xHist.length];
         float[] xErrors = new float[xHist.length];
 
@@ -665,7 +535,7 @@ plotter.writeFile();
         return histogram;
     }
 
-     /**
+         /**
      * create a histogram adjusted to have a range
      * representing most of the data and a number of bins which attempts to have
      * counts per bin above 5.  The number of bins returned will be between
@@ -925,9 +795,6 @@ plotter.writeFile();
                 yHistFloat[i] = (float) yHist[i];
             }
 
-            if (valueErrors == null) {
-                valueErrors = Errors.populateYErrorsBySqrt(yHistFloat);
-            }
             float[] yErrors = new float[xHist.length];
             float[] xErrors = new float[xHist.length];
 
@@ -939,12 +806,18 @@ plotter.writeFile();
             histogram.setYHistFloat(yHistFloat);
             histogram.setYErrors(yErrors);
             histogram.setXErrors(xErrors);
-/*
-str = String.format("n=%10d w=%.5f", nBins, binWidth);
+/*str = String.format("n=%10d w=%.5f", nBins, binWidth);
 plotter.addPlot(xHist, yHist, null, null, str);
 try {
 plotter.writeFile();
 } catch (Exception e) {}*/
+
+ // Sturges   good for very low numbers
+ int nItervalsSturges = (int)Math.ceil( Math.log(values.length)/Math.log(2) );
+
+ // Rice
+ int nItervalsRice = (int)(2*Math.pow(values.length, 0.3333));
+//System.out.println("nBins=" + nBins + " nItervalsSturges=" + nItervalsSturges + " nItervalsRice=" + nItervalsRice);
 
             return histogram;
         }
@@ -1091,7 +964,7 @@ plotter.writeFile();
             float a = valueErrors[i];
             a *= a;
 
-            if (bin < xHist.length) {
+            if ((bin > -1) && (bin < xHist.length)) {
 
                 sumErrorPerBin[bin] += a;
 
