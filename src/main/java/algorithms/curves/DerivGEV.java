@@ -3,7 +3,6 @@ package algorithms.curves;
 public class DerivGEV {
 
     /*
-     *
      *                          (   (      ( x-mu))-(1/k))
      *                          (-1*(1 + k*(-----))      )
      *                 1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
@@ -24,7 +23,9 @@ public class DerivGEV {
      *   
      *   dzdk = (x-mu)/sigma
      *   
-     *   dzdsigma =   d( k * (x-mu) * sigma^-1)  =  -1 * k * (x-mu) * (sigma^-2) 
+     *   dzdsigma =  -1 * k * (x-mu) * (sigma^-2) 
+     *   
+     *   dzdmu = -1*k/sigma
      *   
      *   
      *   deriv of -z^(-1/k) w.r.t. x is
@@ -51,6 +52,9 @@ public class DerivGEV {
      *           df(sigma)dsigma = -z^(-1/k) * (-1/k) * ----------- + 0
      *                                                       z
      *   
+     *   deriv of -z^(-1/k) w.r.t. mu is            -1*dzdmu
+     *           df(mu)mu =  -z^(-1/k) * ( (-1/k) * ----------- + 0 )
+     *                                                  z
      *   
      *   
      *   Let f1 = the first exponential in y
@@ -62,9 +66,11 @@ public class DerivGEV {
      *   df1dk = f1 * -z^(-1/k) * ( (-1/k) * -------  +  (1/k^2) * ln(-z) )
      *                                          z
      *                                  
-     *                                         -1*dzdsigma
-     *   df1dsigma = f1 * -z^(-1/k) * (-1/k) * -----------
-     *                                              z
+     *   df1dsigma = f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+     *                                             
+     *   
+     *   df1dmu = f1 * (1/k) * z^(-1 - (1/k)) * dzdmu
+     *   
      *   
      *   
      *   Let f2 = z^(-1-(1/k))
@@ -80,7 +86,156 @@ public class DerivGEV {
      *   df2dsigma = f2 * ( (-1-(1/k)) * --------  +  0 )
      *                                      z
      *   
+     *                                 dzdmu
+     *   df2dmu = f2 * ( (-1-(1/k)) * --------  +  0 )
+     *                                   z
      *   
-               
+     *   Then putting it all together:
+     *   
+     *          yconst
+     *   yfit = ------ * f1 * f2
+     *           sigma
+     *           
+     *           yconst
+     *   dydx =  ------ * ( f1 * df2dx + f2 * df1dx )
+     *           sigma
+     *          
+     *           yconst
+     *   dydk =  ------ * ( f1 * df2dk + f2 * df1dk )
+     *           sigma
+     *           
+     *              yconst
+     *   dydsigma = ------ * ( f1 * df2dsigma + f2 * df1dsigma )
+     *              sigma
+     *   
+     *              yconst
+     *   dydmu    = ------ * ( f1 * df2dmu + f2 * df1dmu )
+     *              sigma
+     *   
      */
+    
+    /**
+     * calculate the derivative of the GEV w.r.t. x
+     * 
+     * the runtime cost is 4 transcendental functions.
+     * 
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
+    public static double derivWRTX(float yConst, float mu, float k, float sigma, float x) {
+        
+        double z = 1. + k *( (x-mu)/sigma );
+        
+        double f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+        
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        double dzdx = k/sigma;
+        
+        double df2dx = f2 * (  (-1. - (1./k)) * ( dzdx/ z) );
+        
+        double df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;
+        
+        double dydx = (yConst/sigma) * ( f1 * df2dx + f2 * df1dx );
+        
+        return dydx;
+    }
+
+    /**
+     * calculate the derivative of the GEV w.r.t. k
+     * 
+     * the runtime cost is 5 transcendental functions.
+     * 
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
+    public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
+        
+        double z = 1. + k *( (x-mu)/sigma );
+        
+        double f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+        
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        double dzdk = (x-mu)/sigma;
+        
+        double df2dk = f2 * (  (-1. - (1./k)) * ( dzdk/ z)  +  (-1. - (1./k)) * Math.log(z) );
+        
+        double df1dk = f1 * Math.pow(-1*z, (1./k)) * ( (-1./k) * (-1.*dzdk/z)  +  (1./k*k) * Math.log(-z) );
+        
+        double dydk = (yConst/sigma) * ( f1 * df2dk + f2 * df1dk );
+        
+        return dydk;
+    }
+    
+    /**
+     * calculate the derivative of the GEV w.r.t. sigma
+     * 
+     * the runtime cost is 5 transcendental functions.
+     * 
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
+    public static double derivWRTSigma(float yConst, float mu, float k, float sigma, float x) {
+        
+        double z = 1. + k *( (x-mu)/sigma );
+        
+        double f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+        
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        double dzdsigma = -1. * k * (x-mu) * Math.pow(sigma, -2.);
+        
+        double df2dsigma = f2 * (  (-1. - (1./k)) * ( dzdsigma/ z)  );
+        
+        double df1dsigma = f1 * (-1./k) * Math.pow(-1*z, -1. - (1./k)) * dzdsigma;
+        
+        double dydk = (yConst/sigma) * ( f1 * df2dsigma + f2 * df1dsigma );
+        
+        return dydk;
+    }
+
+    /**
+     * calculate the derivative of the GEV w.r.t. mu
+     * 
+     * the runtime cost is 5 transcendental functions.
+     * 
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
+    public static double derivWRTMu(float yConst, float mu, float k, float sigma, float x) {
+        
+        double z = 1. + k *( (x-mu)/sigma );
+        
+        double f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+        
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        double dzdmu = -1. * k/sigma;
+        
+        double df2dmu = f2 * (  (-1. - (1./k)) * ( dzdmu/ z)  );
+        
+        double df1dmu = f1 * Math.pow(-1*z, (1./k)) * ( (-1./k) * (-1.*dzdmu/z) );
+        
+        double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );
+        
+        return dydmu;
+    }
+    
 }
