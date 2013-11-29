@@ -1,5 +1,7 @@
 package algorithms.curves;
 
+import algorithms.misc.MiscMath;
+
 public class DerivGEV {
 
     /*
@@ -43,9 +45,8 @@ public class DerivGEV {
                  df(x)dx = f(x) * ( v(x) * -------  +  dv(x)dx * ln(u(x)) )
                                             u(x)
                 
-                                                  -1*dzdk       
-                 df(k)dk = -z^(-1/k) * ( (-1/k) * -------  +  (1/k^2) * ln(-z) )
-     *                                               z
+     *           df(k)dk = -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+     *           
      *   
      *   deriv of -z^(-1/k) w.r.t. sigma is
      *                                                  -1*dzdsigma
@@ -60,16 +61,16 @@ public class DerivGEV {
      *   Let f1 = the first exponential in y
      *          = exp(-z^(1/k))
      *   
-     *   df1dx = f1 * d(-z^(1/k))dx = f1 * (1/k) * z^(-1 - (1/k)) * dzdx
+     *   df1dx     = f1 * (1/k) * z^(-1 - (1/k)) * dzdx
      *   
-     *                                      -1*dzdk
-     *   df1dk = f1 * -z^(-1/k) * ( (-1/k) * -------  +  (1/k^2) * ln(-z) )
-     *                                          z
+     *                                      
+     *   df1dk = f1 * -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+     *                                         
      *                                  
      *   df1dsigma = f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
      *                                             
      *   
-     *   df1dmu = f1 * (1/k) * z^(-1 - (1/k)) * dzdmu
+     *   df1dmu    = f1 * (1/k) * z^(-1 - (1/k)) * dzdmu
      *   
      *   
      *   
@@ -77,10 +78,8 @@ public class DerivGEV {
      *                                dzdx
      *   df2dx = f2 * ( (-1-(1/k)) * ------  +  0 ) 
      *                                 z 
-     *                                     
-     *                                dzdk
-     *   df2dk = f2 * ( (-1-(1/k)) * -------  +  (-1-(1/k)) * ln(z) )
-     *                                  z
+     *                                  
+     *   df2dk = f2 * z^(-1-(1/k)) * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
      *       
      *                                   dzdsigma
      *   df2dsigma = f2 * ( (-1-(1/k)) * --------  +  0 )
@@ -111,7 +110,6 @@ public class DerivGEV {
      *              yconst
      *   dydmu    = ------ * ( f1 * df2dmu + f2 * df1dmu )
      *              sigma
-     *   
      */
     
     /**
@@ -130,21 +128,32 @@ public class DerivGEV {
         
         double z = 1. + k *( (x-mu)/sigma );
         
-        double f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+        double f1, f2;
         
-        double f2 = Math.pow(z, (-1. - (1./k)) );
-        
+        if (z < 0) {
+            f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+            f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
+        } else {
+            f1 = Math.exp( -1. * Math.pow(z, 1./k) );
+            f2 = Math.pow(z, (-1. - (1./k)) );
+        }
+                
         double dzdx = k/sigma;
         
         double df2dx = f2 * (  (-1. - (1./k)) * ( dzdx/ z) );
         
-        double df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;
+        double df1dx = f1 * (1./k) * dzdx;
+        if (z < 0) {
+            df1dx = -1. * Math.pow(-1.*z, (-1. - (1./k)));
+        } else {
+            df1dx = Math.pow(z, (-1. - (1./k)));
+        }
         
         double dydx = (yConst/sigma) * ( f1 * df2dx + f2 * df1dx );
         
         return dydx;
     }
-
+    
     /**
      * calculate the derivative of the GEV w.r.t. k
      * 
@@ -159,18 +168,46 @@ public class DerivGEV {
      */
     public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
         
+        // TODO:  recheck the math in this one
+        //        and decide on tests.
+        
         double z = 1. + k *( (x-mu)/sigma );
         
-        double f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+        double f1, f2;
         
-        double f2 = Math.pow(z, (-1. - (1./k)) );
+        if (z < 0) {
+            f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+            f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
+        } else {
+            f1 = Math.exp( -1. * Math.pow(z, 1./k) );
+            f2 = Math.pow(z, (-1. - (1./k)) );
+        }
         
         double dzdk = (x-mu)/sigma;
         
-        double df2dk = f2 * (  (-1. - (1./k)) * ( dzdk/ z)  +  (-1. - (1./k)) * Math.log(z) );
+        double lnz, lnnz;
+        if (z < 0) {
+            lnz = MiscMath.naturalLogOfNegative(z);
+            lnnz = Math.log(-1.*z);
+        } else {
+            lnnz = MiscMath.naturalLogOfNegative(-1.*z);
+            lnz = Math.log(z);
+        }
         
-        double df1dk = f1 * Math.pow(-1*z, (1./k)) * ( (-1./k) * (-1.*dzdk/z)  +  (1./k*k) * Math.log(-z) );
+        // f2 * z^(-1-(1/k)) * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
+        double df2dk = f2 * ( (-1-(1/k)) * (dzdk/z) + (1./k*k)*lnz);
         
+        // f1 * -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+        double df1dk = f1 * -1. * ( (-1./k) * (dzdk/z)  +  (1./k*k) * lnnz );
+        
+        if (z < 0) {
+            df2dk *= -1. * Math.pow(-1.*z, (-1. - (1./k)));
+            df1dk *= -1. * Math.pow(-1.*z, (-1./k));
+        } else {
+            df2dk *= Math.pow(z, (-1. - (1./k)));
+            df1dk *= Math.pow(z, (-1./k));
+        }
+                
         double dydk = (yConst/sigma) * ( f1 * df2dk + f2 * df1dk );
         
         return dydk;
@@ -192,15 +229,26 @@ public class DerivGEV {
         
         double z = 1. + k *( (x-mu)/sigma );
         
-        double f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+        double f1, f2;
         
-        double f2 = Math.pow(z, (-1. - (1./k)) );
+        if (z < 0) {
+            f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+            f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
+        } else {
+            f1 = Math.exp( -1. * Math.pow(z, 1./k) );
+            f2 = Math.pow(z, (-1. - (1./k)) );
+        }
         
         double dzdsigma = -1. * k * (x-mu) * Math.pow(sigma, -2.);
         
         double df2dsigma = f2 * (  (-1. - (1./k)) * ( dzdsigma/ z)  );
         
-        double df1dsigma = f1 * (-1./k) * Math.pow(-1*z, -1. - (1./k)) * dzdsigma;
+        double df1dsigma =  f1 * (1./k) * dzdsigma;
+        if (z < 0) {
+            df1dsigma *= -1. * Math.pow(-1.*z, -1. - (1./k));
+        } else {
+            df1dsigma *= Math.pow(z, -1. - (1./k));
+        }
         
         double dydk = (yConst/sigma) * ( f1 * df2dsigma + f2 * df1dsigma );
         
@@ -223,15 +271,26 @@ public class DerivGEV {
         
         double z = 1. + k *( (x-mu)/sigma );
         
-        double f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+        double f1, f2;
         
-        double f2 = Math.pow(z, (-1. - (1./k)) );
+        if (z < 0) {
+            f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+            f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
+        } else {
+            f1 = Math.exp( -1. * Math.pow(z, 1./k) );
+            f2 = Math.pow(z, (-1. - (1./k)) );
+        }
         
         double dzdmu = -1. * k/sigma;
         
         double df2dmu = f2 * (  (-1. - (1./k)) * ( dzdmu/ z)  );
         
-        double df1dmu = f1 * Math.pow(-1*z, (1./k)) * ( (-1./k) * (-1.*dzdmu/z) );
+        double df1dmu = f1 * (1/k) * dzdmu;
+        if (z < 0) {
+            df1dmu *= -1. * Math.pow(-1.*z, (-1 - (1/k)));
+        } else {
+            df1dmu *= Math.pow(z, (-1 - (1/k)));
+        }
         
         double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );
         

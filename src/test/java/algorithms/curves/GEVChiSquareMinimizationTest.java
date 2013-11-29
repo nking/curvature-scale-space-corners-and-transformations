@@ -364,7 +364,7 @@ public class GEVChiSquareMinimizationTest extends TestCase {
                 log.info(yfit.toString());
 
                 // plot 2 fits.  the 2nd should be closer by number, but chisqsum is smaller for first.
-                //               errors incorect?   <====
+                //               errors incorrect?   <====
                 /*
                  float[] yGEV1 = gev.generateNormalizedCurve(new float[]{50.0000076f, 422.1334229f, 0.067541346f});
                  float[] yGEV2 = gev.generateNormalizedCurve(new float[]{16.6666775f, 84.4266815f, 0.067541346f});

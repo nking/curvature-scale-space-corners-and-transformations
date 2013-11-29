@@ -33,7 +33,7 @@ public class RandomClusterAndBackgroundGenerator {
         return (x == null) ? 0 : x.length;
     }
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
+    public DoubleAxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
 
         float xmin = 0;
         float xmax = 300;
@@ -43,7 +43,7 @@ public class RandomClusterAndBackgroundGenerator {
         return createIndexerWithRandomPoints(xmin, xmax, ymin, ymax);
     }
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints(float xmin,
+    public DoubleAxisIndexer createIndexerWithRandomPoints(float xmin,
         float xmax, float ymin, float ymax) throws NoSuchAlgorithmException {
 
         SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
@@ -116,7 +116,7 @@ public class RandomClusterAndBackgroundGenerator {
         return createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax, nClusters, nBackgroundPoints, clusterSep);
     }
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+    public DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
 
         createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);
@@ -127,7 +127,7 @@ public class RandomClusterAndBackgroundGenerator {
         return indexer;
     }
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+    public DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters) {
 
@@ -154,7 +154,7 @@ public class RandomClusterAndBackgroundGenerator {
         return indexer;
     }
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+    public DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters, CLUSTER_SEPARATION clusterSeparation) {
 

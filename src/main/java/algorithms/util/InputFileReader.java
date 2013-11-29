@@ -64,7 +64,6 @@ public class InputFileReader implements IInputFileReader {
                 if (values == null || values.length != 4) {
                     throw new IOException("file data has to be tab separated, and 4 columns of: x y xError yError");
                 }
-
                 expandArraysIfNecessary();
 
                 for (int i = 0; i < values.length; i++) {
@@ -107,14 +106,18 @@ public class InputFileReader implements IInputFileReader {
     }
 
     protected void expandArraysIfNecessary() {
-        if (nPoints > (x.length - 2)) {
-            int expand = (int)(1.3f*x.length);
+        
+        // 0 1 2 3  nPoints=3    x.length should be at least nPoints+1
+        
+        if ((nPoints + 1) > x.length) {
+            int expand = (int)(1.3f*(nPoints + 1));
             x = Arrays.copyOf(x, expand);
             y = Arrays.copyOf(y, expand);
             xErrors = Arrays.copyOf(xErrors, expand);
             yErrors = Arrays.copyOf(yErrors, expand);
         }
     }
+    
     protected void condenseArrays() {
         x = Arrays.copyOf(x, nPoints);
         y = Arrays.copyOf(y, nPoints);

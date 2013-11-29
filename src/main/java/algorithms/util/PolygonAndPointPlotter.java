@@ -304,21 +304,23 @@ public class PolygonAndPointPlotter {
         return sb;
     }
 
-    public void writeFile() throws IOException {
-        writeToFile(this.plotContent.toString(), "points_and_polygon.html");
+    public String writeFile() throws IOException {
+        return writeToFile(this.plotContent.toString(), "points_and_polygon.html");
     }
 
-    public void writeFile2() throws IOException {
-        writeToFile(this.plotContent.toString(), "points_and_polygon2.html");
+    public String writeFile2() throws IOException {
+        return writeToFile(this.plotContent.toString(), "points_and_polygon2.html");
     }
 
-    public void writeFile3() throws IOException {
-        writeToFile(this.plotContent.toString(), "points_and_polygon3.html");
+    public String writeFile3() throws IOException {
+        return writeToFile(this.plotContent.toString(), "points_and_polygon3.html");
     }
 
-    protected void writeToFile(String fileContent, String fileName) throws IOException {
+    protected String writeToFile(String fileContent, String fileName) throws IOException {
 
         String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);
+        
+        return copyFilePath;
     }
 
 }

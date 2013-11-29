@@ -30,7 +30,7 @@ public class MainRunner {
         return clusterFinder;
     }
 
-    public void run(IInputFileReader reader, String[] args) {
+    public TwoPointCorrelation run(IInputFileReader reader, String[] args) {
 
         if (args != null) {
             for (int i = 0; i < args.length; i++) {
@@ -44,7 +44,7 @@ public class MainRunner {
             System.out.println("     optional:  --threesigma");
             System.out.println("     optional:  --background 0.3 (requires backgrounderror guesstimate at least)");
             System.out.println("     optional:  --backgrounderror 0.1");
-            return;
+            return null;
         }
 
         arguments = new HashMap<String, String>();
@@ -90,12 +90,12 @@ public class MainRunner {
 
         if (filePath == null) {
             System.err.println("Requires file:  --file /path/to/file/fileName.txt which contains rows of x<tab>y<tab>xerr<tab>yerr");
-            return;
+            return null;
         }
 
         if ((bckgnd != null) && (bckgndErr == null)) {
             System.err.println("Requires  --backgrounderror if --background is set");
-            return;
+            return null;
         }
 
         try {
@@ -143,10 +143,14 @@ public class MainRunner {
 
 
             String plotFilePath = clusterFinder.plotClusters();
+            
+            return clusterFinder;
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+        
+        return null;
     }
 
 }

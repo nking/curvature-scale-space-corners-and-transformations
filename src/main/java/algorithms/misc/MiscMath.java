@@ -310,4 +310,32 @@ public class MiscMath {
         return new float[]{mean, stdev};
     }
 
+    public static double naturalLogOfNegative(double negativeNumber) {
+        /*
+         * Using 2 rules to get the natural log of a negative number:
+         * 
+         * ln(a*b) = ln(a) + ln(b)
+         * 
+         * and the Taylor series expansion:
+         *     ln(1+x)= x - (x^2)/2 + (x^3)/3 - ...
+         *     
+         *     For x = -1.005, ln(-0.005) is approx -4.295
+         *     
+         * Then ln(z) = ln(a*(-0.005) ==> a = z/0.005
+         * 
+         *      ln(z) = ln(z/0.005) + ln(-0.005)
+         *            = ln(z/0.005) - 4.295
+         */
+        if (negativeNumber == 0) {
+            return 0;
+        } if (negativeNumber > 0) {
+            return Math.log(negativeNumber);
+        }
+        
+        double a = negativeNumber/(-0.005);
+        
+        double lnz = Math.log(a) - 4.295;
+        
+        return lnz;
+    }
 }

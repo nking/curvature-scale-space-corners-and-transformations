@@ -1,6 +1,7 @@
 package algorithms.sorting;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.Test;
@@ -47,6 +48,84 @@ public class MultiArrayMergeSortTest extends TestCase {
             previousX = x[i];
             previousY = y[i];
         }
+    	
+    	// ===   test   exceptions ====
+    	boolean caughtException = true;
+    	try {
+    	    MultiArrayMergeSort.sortByY(null, y);
+    	} catch (Throwable t) {
+    	    caughtException = true;
+    	}
+    	assertTrue(caughtException);
+    	
+    	caughtException = true;
+        try {
+            MultiArrayMergeSort.sortByY(x, null);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortByY(x, Arrays.copyOf(y, y.length - 3));
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        
+        
+        //===== test w/ int array too ====
+        int[] sortedXIndexes = new int[x.length];
+        for (int i = 0; i < nPoints; i++) {
+            x[i] = sr.nextInt()*sr.nextFloat();
+            y[i] = sr.nextInt()*sr.nextFloat();
+            sortedXIndexes[i] = i;
+        }
+        
+        float[] cpX = Arrays.copyOf(x, x.length);
+        float[] cpY = Arrays.copyOf(y, y.length);        
+
+        MultiArrayMergeSort.sortByY(x, y, sortedXIndexes, x.length);
+        assertTrue(x.length == nPoints);
+
+        previousX = x[0];
+        previousY = y[0];
+        for (int i=1; i < x.length; i++) {
+            assertTrue( y[i] >= previousY);
+            previousX = x[i];
+            previousY = y[i];
+            
+            int idx = sortedXIndexes[i];
+            assertTrue(cpX[idx] == x[i]);
+            assertTrue(cpY[idx] == y[i]);
+        }
+        
+        // ===   test   exceptions ====
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortByY(null, y, null, x.length);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortByY(x, null, null, x.length);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortByY(x, y, null, x.length);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
     }
 
     public void testSortByYThenX(){

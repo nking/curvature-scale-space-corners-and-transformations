@@ -134,6 +134,22 @@ public class MiscMathTest extends TestCase {
         assertTrue(Math.abs(meanStDv[0] - 3) < 0.01);
         assertTrue(Math.abs(meanStDv[1] - 1.155) < 0.01);//1+1+1+1 ==> sqrt(4/3)
     }
+    
+    //public static double naturalLogOfNegative(double negativeNumber) {
+    public void testNaturalLogOfNegative() throws Exception {
+        
+        double x = 0;
+        double result = MiscMath.naturalLogOfNegative(x);
+        assertTrue(result == 0);
+        
+        x = -0.5;
+        result = MiscMath.naturalLogOfNegative(x);
+        assertTrue(Math.abs(result - -0.693147180558) < 0.1);
+        
+        x = -0.5;
+        result = MiscMath.naturalLogOfNegative(x);
+        assertTrue(Math.abs(result - -0.693147180558) < 0.1);
+    }
 
     /**
      * Test of findMax method, of class MiscMath.

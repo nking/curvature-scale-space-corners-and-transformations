@@ -65,22 +65,6 @@ public class MultiArrayMergeSort {
         sortByY(x, y, 0, nLength - 1);
     }
 
-    public static void sortByY(float[] x, float[] y, int[] a, int[] b, int nLength) {
-        if (x == null) {
-        	throw new IllegalArgumentException("x cannot be null");
-        }
-        if (y == null) {
-        	throw new IllegalArgumentException("y cannot be null");
-        }
-        if (x.length < nLength) {
-        	throw new IllegalArgumentException("number of items in x must be at least nLength");
-        }
-        if (y.length < nLength) {
-        	throw new IllegalArgumentException("number of items in y must be at least nLength");
-        }
-        sortByY(x, y, a, b, 0, nLength - 1);
-    }
-
     public static void sortByY(float[] x, float[] y, int[] a, int nLength) {
         if (x == null) {
         	throw new IllegalArgumentException("x cannot be null");
@@ -108,20 +92,6 @@ public class MultiArrayMergeSort {
             sortByY(x, y, indexLo, indexMid);
             sortByY(x, y, indexMid + 1, indexHi);
             merge(x, y, indexLo, indexMid, indexHi);
-        }
-    }
-
-    public static void sortByY(float[] x, float[] y, int[] a, int[] b, int indexLo, int indexHi) {
-
-        int indexMid = -1;
-
-        if (indexLo < indexHi) {
-
-            indexMid = (indexLo + indexHi)/2;
-
-            sortByY(x, y, a, b, indexLo, indexMid);
-            sortByY(x, y, a, b, indexMid + 1, indexHi);
-            merge(x, y, a, b, indexLo, indexMid, indexHi);
         }
     }
 
@@ -214,67 +184,6 @@ public class MultiArrayMergeSort {
             } else {
                 y[k] = yRight[j];
                 x[k] = xRight[j];
-                j += 1;
-            }
-        }
-    }
-
-    private static void merge( float[] x, float[] y, int[] a, int[] b, int indexLo, int indexMid, int indexHi) {
-
-        int nLeft = indexMid - indexLo + 1;
-        int nRight = indexHi - indexMid;
-
-        float[] yLeft = new float[nLeft + 1];
-        float[] xLeft = new float[nLeft + 1];
-        int[] aLeft = new int[nLeft + 1];
-        int[] bLeft = new int[nLeft + 1];
-
-        float[] yRight = new float[nRight + 1];
-        float[] xRight = new float[nRight + 1];
-        int[] aRight = new int[nRight + 1];
-        int[] bRight = new int[nRight + 1];
-
-        int i, j, index;
-
-        for (i = 0; i < nLeft; i++) {
-            index = indexLo + i;
-            yLeft[i] = y[index];
-            xLeft[i] = x[index];
-            aLeft[i] = a[index];
-            bLeft[i] = b[index];
-        }
-        for (j = 0; j < nRight; j++) {
-            index = indexMid + j + 1;
-            yRight[j] = y[index];
-            xRight[j] = x[index];
-            aRight[j] = a[index];
-            bRight[j] = b[index];
-        }
-
-        yLeft[nLeft] = Float.MAX_VALUE;
-        xLeft[nLeft] = Float.MAX_VALUE;
-        aLeft[nLeft] = Integer.MAX_VALUE;
-        bLeft[nLeft] = Integer.MAX_VALUE;
-        yRight[nRight] = Float.MAX_VALUE;
-        xRight[nRight] = Float.MAX_VALUE;
-        aRight[nRight] = Integer.MAX_VALUE;
-        bRight[nRight] = Integer.MAX_VALUE;
-
-        i = 0;
-        j = 0;
-
-        for (int k = indexLo; k <= indexHi; k++) {
-            if (yLeft[i] <= yRight[j]) {
-                y[k] = yLeft[i];
-                x[k] = xLeft[i];
-                a[k] = aLeft[i];
-                b[k] = bLeft[i];
-                i += 1;
-            } else {
-                y[k] = yRight[j];
-                x[k] = xRight[j];
-                a[k] = aRight[j];
-                b[k] = bRight[j];
                 j += 1;
             }
         }
