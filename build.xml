@@ -164,8 +164,8 @@
         <mkdir  dir="${instr.out.dir}"/>
         <mkdir  dir="${coverage.dir}"/>
         <mkdir  dir="${log.dir}"/>
-        <mkdir  dir="tmpdata"/>
-        <mkdir  dir="src/placeholder"/>
+        <mkdir  dir="${basedir}/tmpdata"/>
+        <mkdir  dir="${basedir}/src/placeholder"/>
     </target>
 
     <!-- compile sources -->
@@ -308,7 +308,12 @@
     <target name="runTest" if="junit.present" depends="prepare,debug,compile,JUnit,compileTests">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <fail unless="test">
-            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+            Requires -Dtest=class
+                Example: 
+                    -Dtest=algorithms.compression.huffman.HuffmanTest
+            Note that to set jvm properties, set the shell variable JAVA_OPTS.
+                Example:
+                    export JAVA_OPTS=-Xms1024m
         </fail>
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
             <classpath>
@@ -361,7 +366,7 @@
     <target name="runLargeTests" if="junit.present" depends="clean,debug,compileLargeTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.large.out.dir}" />
-        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+        <junit fork="no" showoutput="true" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
             <classpath>
                 <pathelement location="${tests.large.out.dir}"/>
                 <path refid="test.large.classpath"/>
@@ -386,7 +391,7 @@
                 metadatafile="${coverage.dir}/metadata.emma"
                 merge="true">
                 <filter includes="algorithms.*" />
-                <filter includes="algorithms.*" excludes="algorithms.*.*Plotter*, algorithms.*.*Exception, algorithms.*.*Test*" />
+                <filter includes="algorithms.*" excludes="algorithms.*.*Plotter*, algorithms.*.*Exception, algorithms.*.*Test*, algorithms.compGeometry.clustering.twopointcorrelation.PerformanceMetricsRunner" />
             </instr>
         </emma>
         <record name="${logfile}" append="yes" loglevel="debug"/>
@@ -435,7 +440,7 @@
             <!--<jvmarg value="-ea"/>-->
             <formatter type="plain" usefile="true"/>
             <jvmarg value="-XX:-UseSplitVerifier" />
-            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <sysproperty key="java.util.logging.config.file" value="${basedir}/src/main/resources/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.large.out.dir}"/>
                 <path refid="test.large.classpath"/>
@@ -451,7 +456,8 @@
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <java classname="algorithms.compGeometry.clustering.twopointcorrelation.PerformanceMetricsRunner"
             fork="true" failonerror="true">
-        <!-- maxmemory="1024m -->
+            <jvmarg value="-Xms512m"/>
+            <jvmarg value="-Xmx1024m"/>
             <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
                 <path refid="compile.classpath"/>
@@ -461,7 +467,7 @@
 
     <target name="debugTests" if="junit.present" depends="clean,debug,compileTests,JUnit">
         <record name="${logfile}" append="yes" loglevel="debug"/>
-        <echo message="running tests, output is in ${tests.out.dir}" />
+        <echo message="connect to port 5005, running tests, output is in ${tests.out.dir}" />
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
             <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
             <classpath>
