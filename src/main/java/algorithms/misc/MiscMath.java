@@ -310,32 +310,70 @@ public class MiscMath {
         return new float[]{mean, stdev};
     }
 
-    public static double naturalLogOfNegative(double negativeNumber) {
+    //public static double naturalLogOfNegative(double negativeNumber) {
         /*
          * Using 2 rules to get the natural log of a negative number:
          * 
-         * ln(a*b) = ln(a) + ln(b)
+         * (1) ln(a*b) = ln(a) + ln(b)
          * 
-         * and the Taylor series expansion:
+         * (2) and the Taylor series expansion:
          *     ln(1+x)= x - (x^2)/2 + (x^3)/3 - ...
          *     
-         *     For x = -1.005, ln(-0.005) is approx -4.295
-         *     
-         * Then ln(z) = ln(a*(-0.005) ==> a = z/0.005
-         * 
-         *      ln(z) = ln(z/0.005) + ln(-0.005)
+         *     For x = -1.005, ln(1.0 + -1.005) is approx -3.9120
+         *
+         * Let z = a*b
+         * ln(a*b) = ln(a) + ln(1 - 1.005)
+         * ln(z) = ln(z/(-1*(1 - 1.005))) + ln(1 - 1.005)  
+         *    
+         *      ln(z) = ln(z/0.005) + ln(-0.005)  (with x = -1.005)
          *            = ln(z/0.005) - 4.295
          */
-        if (negativeNumber == 0) {
+        /*if (negativeNumber == 0) {
             return 0;
         } if (negativeNumber > 0) {
             return Math.log(negativeNumber);
         }
         
-        double a = negativeNumber/(-0.005);
+        double onePlusX = 1 + -0.0001;
+                
+        double a = negativeNumber/onePlusX;
         
-        double lnz = Math.log(a) - 4.295;
+        double lnz = Math.log(a) - 3.9120;.
         
         return lnz;
+    }*/
+    
+    public static double taylor(double number) {
+        return taylor(number, 100);
+    }
+    /**
+     * use the taylor series to approximate the natural log of a number.
+     * Note that internally, the variable x which is number - 1.
+     * 
+     * ln(1 + x) is computed, so number = 1 + x and therefore x = number - 1;
+     * 
+     * ln(1+x) = x - (x^2)/2 + (x^3)/3 - ...
+     * 
+     * @param number
+     * @param n
+     * @return
+     */
+    protected static double taylor(double number, int n) {
+        double x = number - 1.0;
+        
+        double sum = 0;
+        for (int i = 1; i <= n; i++) {
+            double f = Math.pow(x, i)/(float)i;
+            if (i % 2 == 0) {
+                sum -= f;
+                System.out.print("     MINUS i=" + i);
+            } else {
+                sum += f;
+                System.out.print("     PLUS i=" + i);
+            }
+            
+        }
+System.out.println("   x=" + x + "  n=" + n + " sum=" + sum);
+        return sum;
     }
 }

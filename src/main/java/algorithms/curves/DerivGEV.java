@@ -47,24 +47,27 @@ public class DerivGEV {
                 
      *           df(k)dk = -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
      *           
+     *       *Because the ln( negative number) is not defined (though can be approximated with taylor series)
+     *        need a different method of creating the derivative of a number with a power that is a function of x.
+     *        This derivative is only needed with the derivative with respect to k.
+     *        
+              One solution is to calculate the GEV with slightly different values of k near the given k to get delta GEV/deltaK.
+     *
      *   
      *   deriv of -z^(-1/k) w.r.t. sigma is
-     *                                                  -1*dzdsigma
-     *           df(sigma)dsigma = -z^(-1/k) * (-1/k) * ----------- + 0
-     *                                                       z
+     *       (1/k) * z^(-1 - (1/k)) * dzdsigma 
      *   
-     *   deriv of -z^(-1/k) w.r.t. mu is            -1*dzdmu
-     *           df(mu)mu =  -z^(-1/k) * ( (-1/k) * ----------- + 0 )
-     *                                                  z
+     *   deriv of -z^(-1/k) w.r.t. mu is 
+     *       (1/k) * z^(-1 - (1/k)) * dzdmu 
      *   
      *   
      *   Let f1 = the first exponential in y
-     *          = exp(-z^(1/k))
+     *          = exp(-1*(z^(-1/k)))
      *   
      *   df1dx     = f1 * (1/k) * z^(-1 - (1/k)) * dzdx
      *   
      *                                      
-     *   df1dk = f1 * -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+     *   df1dk     = f1 * -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
      *                                         
      *                                  
      *   df1dsigma = f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
@@ -125,29 +128,22 @@ public class DerivGEV {
      * @return
      */
     public static double derivWRTX(float yConst, float mu, float k, float sigma, float x) {
-        
+
         double z = 1. + k *( (x-mu)/sigma );
-        
-        double f1, f2;
-        
-        if (z < 0) {
-            f1 = Math.exp( Math.pow(-1.*z, 1./k) );
-            f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
-        } else {
-            f1 = Math.exp( -1. * Math.pow(z, 1./k) );
-            f2 = Math.pow(z, (-1. - (1./k)) );
-        }
-                
+
+        // f1 = exp(-1*(z^(-1/k)))
+        // f2 = z^(-1-(1/k))
+        // df1dx     = f1 * (1/k) * z^(-1 - (1/k)) * dzdx
+        // df2dx     = f2 * ( (-1-(1/k)) * (dzdx/z) )
+
+        double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+      
         double dzdx = k/sigma;
-        
+
         double df2dx = f2 * (  (-1. - (1./k)) * ( dzdx/ z) );
         
-        double df1dx = f1 * (1./k) * dzdx;
-        if (z < 0) {
-            df1dx = -1. * Math.pow(-1.*z, (-1. - (1./k)));
-        } else {
-            df1dx = Math.pow(z, (-1. - (1./k)));
-        }
+        double df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;
         
         double dydx = (yConst/sigma) * ( f1 * df2dx + f2 * df1dx );
         
@@ -166,51 +162,103 @@ public class DerivGEV {
      * @param x
      * @return
      */
+    /*
     public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
         
         // TODO:  recheck the math in this one
         //        and decide on tests.
         
         double z = 1. + k *( (x-mu)/sigma );
-        
+      
         double f1, f2;
         
         if (z < 0) {
-            f1 = Math.exp( Math.pow(-1.*z, 1./k) );
+            f1 = Math.exp( Math.pow(-1.*z, -1./k) );
             f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
         } else {
-            f1 = Math.exp( -1. * Math.pow(z, 1./k) );
+            f1 = Math.exp( -1. * Math.pow(z, -1./k) );
             f2 = Math.pow(z, (-1. - (1./k)) );
         }
         
         double dzdk = (x-mu)/sigma;
         
-        double lnz, lnnz;
-        if (z < 0) {
-            lnz = MiscMath.naturalLogOfNegative(z);
-            lnnz = Math.log(-1.*z);
+        double df2dk, df1dk;
+
+        if (z == 0) {
+            use alt method for df2dk.  a brute force delta using neighboring points?
+            use alt method for df1dk.  a brute force delta using neighboring points?
+        } else if (z > 0) {
+            use alt method for df1dk.  a brute force delta using neighboring points?
+            //      f2 * z^(-1-(1/k)) * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
+            df2dk = f2 * Math.pow(z, (-1. - (1./k))) * ( (-1-(1/k)) * (dzdk/z) + (1./k*k)*Math.log(z));
         } else {
-            lnnz = MiscMath.naturalLogOfNegative(-1.*z);
-            lnz = Math.log(z);
-        }
-        
-        // f2 * z^(-1-(1/k)) * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
-        double df2dk = f2 * ( (-1-(1/k)) * (dzdk/z) + (1./k*k)*lnz);
-        
-        // f1 * -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
-        double df1dk = f1 * -1. * ( (-1./k) * (dzdk/z)  +  (1./k*k) * lnnz );
-        
-        if (z < 0) {
-            df2dk *= -1. * Math.pow(-1.*z, (-1. - (1./k)));
-            df1dk *= -1. * Math.pow(-1.*z, (-1./k));
-        } else {
-            df2dk *= Math.pow(z, (-1. - (1./k)));
-            df1dk *= Math.pow(z, (-1./k));
+            use alt method for df2dk.  a brute force delta using neighboring points?
+            //      f1 *    -z^(-1/k)              * ( (-1/k) * (dzdk/z)   +  (1/k^2) * ln( -z ) )
+            df1dk = f1 *  Math.pow(-1.*z, (-1./k)) * ( (-1./k) * (dzdk/z)  +  (1./k*k) * Math.log(-1.*z));
         }
                 
         double dydk = (yConst/sigma) * ( f1 * df2dk + f2 * df1dk );
         
         return dydk;
+    }*/
+    
+    public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
+
+        return calculateDerivUsingDeltaK(yConst, mu, k, sigma, x);
+    }
+    
+    /**
+     * calculate d/dk of GEV using the difference between GEVs given minor changes in k
+     * 
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
+    protected static Double calculateDerivUsingDeltaK(float yConst, float mu, float k, float sigma, float x) {
+        
+        float deltaK = 0.01f*k;
+        
+        Double d0 = GeneralizedExtremeValue.generateYGEV(x, (k - deltaK), sigma, mu);
+        
+        Double d1 = GeneralizedExtremeValue.generateYGEV(x, (k), sigma, mu);
+        
+        Double d2 = GeneralizedExtremeValue.generateYGEV(x, (k + deltaK), sigma, mu);
+        
+        if (d0 != null && d1 != null && d2 != null) {
+            
+            double delta0 = d1.doubleValue() - d0.doubleValue();
+            
+            double delta1 = d2.doubleValue() - d1.doubleValue();
+            
+            double d = (delta0 + delta1)/2.;
+            
+            return (d/deltaK);
+        
+        } else if (d1 != null && d2 != null) {
+                        
+            double delta = d2.doubleValue() - d1.doubleValue();
+                        
+            return (delta/deltaK);
+            
+        } else if (d0 != null && d1 != null) {
+            
+            double delta = d1.doubleValue() - d0.doubleValue();
+            
+            return (delta/deltaK);
+            
+        } else if (d0 != null && d2 != null) {
+            
+            double delta = d2.doubleValue() - d0.doubleValue();
+            
+            return (delta/deltaK);
+            
+        } else {
+            
+            return null;
+        }
     }
     
     /**
@@ -229,15 +277,8 @@ public class DerivGEV {
         
         double z = 1. + k *( (x-mu)/sigma );
         
-        double f1, f2;
-        
-        if (z < 0) {
-            f1 = Math.exp( Math.pow(-1.*z, 1./k) );
-            f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
-        } else {
-            f1 = Math.exp( -1. * Math.pow(z, 1./k) );
-            f2 = Math.pow(z, (-1. - (1./k)) );
-        }
+        double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
+        double f2 = Math.pow(z, (-1. - (1./k)) );
         
         double dzdsigma = -1. * k * (x-mu) * Math.pow(sigma, -2.);
         
@@ -271,19 +312,12 @@ public class DerivGEV {
         
         double z = 1. + k *( (x-mu)/sigma );
         
-        double f1, f2;
-        
-        if (z < 0) {
-            f1 = Math.exp( Math.pow(-1.*z, 1./k) );
-            f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
-        } else {
-            f1 = Math.exp( -1. * Math.pow(z, 1./k) );
-            f2 = Math.pow(z, (-1. - (1./k)) );
-        }
-        
+        double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+      
         double dzdmu = -1. * k/sigma;
         
-        double df2dmu = f2 * (  (-1. - (1./k)) * ( dzdmu/ z)  );
+        double df2dmu = f2 * (  (-1. - (1./k)) * ( dzdmu / z)  );
         
         double df1dmu = f1 * (1/k) * dzdmu;
         if (z < 0) {

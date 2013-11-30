@@ -132,6 +132,80 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         return generateCurve(x, parameters[0], parameters[1], parameters[2]);
     }
+    
+    /*
+     *                          (   (      ( x-mu))-(1/k))
+     *                          (-1*(1 + k*(-----))      )
+     *                 1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
+     * y = y_const * ----- * exp                           * (1 + k*(-----))
+     *               sigma                                   (      (sigma))
+     *
+     * mu is  the location parameter
+     * sigma is the scale parameter and is > 0
+     * k is the shape parameter
+     * 
+     * 
+     * Components needed in the derivatives:
+     * 
+     *   Let z = (1 + k*( (x-mu)/sigma )
+     *   
+     */
+    public static Double generateYGEV(float xPoint, float k, float sigma, float mu) {
+        
+        if (sigma == 0) {
+            //throw new IllegalArgumentException("sigma must be > 0");
+            return null;
+        }
+        
+        if (k == 0) {
+            // use Gumbel
+            return generateYEVTypeI(xPoint, sigma, mu);
+        }
+        
+        // if k == 0, use Gumbel which is Type I
+        // if k > 0, use Frechet which is Type II
+        // if k < 0, use Weibull which is Type III.  Not using k < 0 in this project
+
+        float z = 1.f + k * ((xPoint - mu)/sigma);
+
+        float a = -1.f * (float) Math.pow(z, (-1.f/k));
+       
+        if (Float.isInfinite(a)) {
+            // k is very small
+            return generateYEVTypeI(xPoint, sigma, mu);
+        }
+
+        float b = (float) Math.pow(z, (-1.f - (1.f/k)));
+
+        if (Float.isInfinite(b)) {
+            // k is very small
+            return generateYEVTypeI(xPoint, sigma, mu);
+        }
+        
+        if (Float.isNaN(a) || Float.isNaN(b)) {
+            // or return 0?
+            return null;
+        } else {
+            float t = (float) ((1.f/sigma) * Math.exp(a) * b);
+            return Double.valueOf(t);
+        }
+    }
+    
+    public static Double generateYEVTypeI(float xPoint, float sigma, float mu) {
+        
+        if (sigma == 0) {
+            throw new IllegalArgumentException("sigma must be > 0");
+        }
+
+        double z = (xPoint - mu)/sigma;
+
+        double a = (float) (-1.f - Math.exp(-1.0f*z));
+         
+        double yGEV = (float) ((1.f/sigma) * Math.exp(a));
+
+        return yGEV;
+    }
+    
 
     public float[] generateCurve(float[] x1, float k, float sigma, float mu) {
 

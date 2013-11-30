@@ -135,20 +135,53 @@ public class MiscMathTest extends TestCase {
         assertTrue(Math.abs(meanStDv[1] - 1.155) < 0.01);//1+1+1+1 ==> sqrt(4/3)
     }
     
-    //public static double naturalLogOfNegative(double negativeNumber) {
-    public void testNaturalLogOfNegative() throws Exception {
+    public void testTaylor() throws Exception {
+        double s;
+        int i;
+        double onePlusX = 1 + -0.001;
+        i = 4;
+        s = MiscMath.taylor(onePlusX, i);
+        assertTrue(Math.abs(s) < 0.01);
         
-        double x = 0;
-        double result = MiscMath.naturalLogOfNegative(x);
-        assertTrue(result == 0);
+        i = 11;
+        s = MiscMath.taylor(onePlusX, i);
+        assertTrue(Math.abs(s) < 0.01);
         
-        x = -0.5;
-        result = MiscMath.naturalLogOfNegative(x);
-        assertTrue(Math.abs(result - -0.693147180558) < 0.1);
+        i = 16;
+        s = MiscMath.taylor(onePlusX, i);
+        assertTrue(Math.abs(s) < 0.01);
         
-        x = -0.5;
-        result = MiscMath.naturalLogOfNegative(x);
-        assertTrue(Math.abs(result - -0.693147180558) < 0.1);
+        
+        onePlusX = 1 + -1.001;
+        i = 4;
+        s = MiscMath.taylor(onePlusX, i);       // -1.836
+        assertTrue(Math.abs(s - -2.09) < 0.1);
+        
+        i = 11;
+        s = MiscMath.taylor(onePlusX, i);
+        assertTrue(Math.abs(s - -3.03) < 0.1);
+        
+        i = 16;
+        s = MiscMath.taylor(onePlusX, i);
+        assertTrue(Math.abs(s - -3.397) < 0.1);
+        
+        
+        s = MiscMath.taylor(2.00001, 4);
+        s = MiscMath.taylor(2.00001, 11);
+        s = MiscMath.taylor(2.00001, 16);
+        
+        onePlusX = 1 + -1.00001;
+        i = 4;
+        s = MiscMath.taylor(onePlusX, i);       // -1.836
+        assertTrue(Math.abs(s - -2.083) < 0.1);
+        
+        i = 11;
+        s = MiscMath.taylor(onePlusX, i);
+        assertTrue(Math.abs(s - -3.02) < 0.1);
+        
+        i = 16;
+        s = MiscMath.taylor(onePlusX, i);
+        assertTrue(Math.abs(s - -3.38) < 0.1);
     }
 
     /**
