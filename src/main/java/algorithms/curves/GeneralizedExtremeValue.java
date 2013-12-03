@@ -168,15 +168,17 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         float z = 1.f + k * ((xPoint - mu)/sigma);
 
-        float a = -1.f * (float) Math.pow(z, (-1.f/k));
+        float a = (z >= 0) ? -1.f * (float) Math.pow(z, (-1.f/k)) : (float) Math.pow(-1.f*z, (-1.f/k));
+        //float a = -1.f * (float) Math.pow(z, (-1.f/k));
        
         if (Float.isInfinite(a)) {
             // k is very small
             return generateYEVTypeI(xPoint, sigma, mu);
         }
 
-        float b = (float) Math.pow(z, (-1.f - (1.f/k)));
-
+        float b = (z >= 0) ? (float) Math.pow(z, (-1.f - (1.f/k))) : (float) Math.pow(-1.f*z, (-1.f - (1.f/k)));
+        //float b = (float) Math.pow(z, (-1.f - (1.f/k)));
+        
         if (Float.isInfinite(b)) {
             // k is very small
             return generateYEVTypeI(xPoint, sigma, mu);
@@ -224,13 +226,15 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
             float z = 1.f + k*((x1[i] - mu)/sigma);
 
-            float a = -1.f*(float) Math.pow(z, (-1.f/k));
+            float a = (z >= 0) ? -1.f * (float) Math.pow(z, (-1.f/k)) : (float) Math.pow(-1.f*z, (-1.f/k));
+            //float a = -1.f*(float) Math.pow(z, (-1.f/k));
 
             if (Float.isInfinite(a)) {
                 return null;
             }
 
-            float b = (float) Math.pow(z, (-1.f - (1.f/k)));
+            float b = (z >= 0) ? (float) Math.pow(z, (-1.f - (1.f/k))) : -1.f * (float) Math.pow(-1.*z, (-1.f - (1.f/k)));
+            //float b = (float) Math.pow(z, (-1.f - (1.f/k)));
 
             if (Float.isInfinite(b)) {
                 return null;
@@ -357,7 +361,23 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
             return null;
         }
 
-        float yMax = Float.MIN_VALUE;
+        float[] yGEV = genCurve(x1, k, sigma, mu);
+
+        float yMax = MiscMath.findMax(yGEV);
+
+        for (int i = 0; i < yGEV.length; i++){
+            yGEV[i] /= yMax;
+        }
+
+        return yGEV;
+    }
+    
+    public static float[] genCurve(float[] x1, float k, float sigma, float mu) {
+
+        if (sigma == 0) {
+            //throw new IllegalArgumentException("sigma must be > 0");
+            return null;
+        }
 
         float[] yGEV = new float[x1.length];
 
@@ -365,13 +385,15 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
             float z = 1.f + k*((x1[i] - mu)/sigma);
 
-            float a = -1.f*(float) Math.pow(z, (-1.f/k));
+            float a = (z >= 0) ? -1.f * (float) Math.pow(z, (-1.f/k)) : (float) Math.pow(-1.f*z, (-1.f/k));
+            //float a = -1.f*(float) Math.pow(z, (-1.f/k));
 
             if (Float.isInfinite(a)) {
                 return null;
             }
 
-            float b = (float) Math.pow(z, (-1.f - (1.f/k)));
+            float b = (z >= 0) ? (float) Math.pow(z, (-1.f - (1.f/k))) : (float) Math.pow(-1.f*z, (-1.f - (1.f/k)));
+            //float b = (float) Math.pow(z, (-1.f - (1.f/k)));
 
             if (Float.isInfinite(b)) {
                 return null;
@@ -384,14 +406,6 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
                 float t = (float) ((1.f/sigma) * Math.exp(a) * b);
                 yGEV[i] = t;
             }
-
-            if (yGEV[i] > yMax) {
-                yMax = yGEV[i];
-            }
-        }
-
-        for (int i = 0; i < yGEV.length; i++){
-            yGEV[i] /= yMax;
         }
 
         return yGEV;

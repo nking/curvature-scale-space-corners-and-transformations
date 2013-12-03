@@ -52,7 +52,7 @@ public class DerivGEVTest extends TestCase {
         assertTrue( d < 0);
     }
     
-    public void estDerivWRTK() throws Exception {
+    public void testDerivWRTK() throws Exception {
         
         // k is the shape parameter
         
@@ -75,6 +75,15 @@ public class DerivGEVTest extends TestCase {
         float[] yGEV2 = gev.generateCurve(xp, k + (k/10.f), sigma, mu);
                     
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
+        
+        for (int i = 0; i < yGEV1.length; i++) {
+            Double deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, xp[i]);
+            if (deriv != null) {
+                System.out.println( String.format(" df(k)/dk= %8.4f  x=%.3f", deriv.doubleValue(), xp[i]));
+            }
+        }
+        
+        /*
         plotter.addPlot(xp, yGEV0, null, null, null, null, "k-deltaK");
         plotter.addPlot(xp, yGEV1, null, null, null, null, "k=" + k);
         plotter.addPlot(xp, yGEV2, null, null, null, null, "k+deltaK");
@@ -95,6 +104,7 @@ public class DerivGEVTest extends TestCase {
             
             last = deriv.doubleValue();           
         }
+        */
         
         //TODO:  test for other curves and portion
         
@@ -146,7 +156,7 @@ public class DerivGEVTest extends TestCase {
         
     }
 
-    public void testDerivWRTMu() throws Exception {
+    public void estDerivWRTMu() throws Exception {
         
         // mu is the location variable
         
@@ -171,9 +181,7 @@ public class DerivGEVTest extends TestCase {
         for (int i = 1; i < 10; i++) {
             double delta = (mu/10.) * i;
             float d = (float) (mu + delta);
-                        
-            // looks like the deriv increases with increasing scale sigma for this region of the curve
-            
+                                    
             Double deriv = DerivGEV.derivWRTMu(yConst, d, k, sigma, 0.7f);
             if (deriv != null) {
                 System.out.println(d + ":" + deriv);

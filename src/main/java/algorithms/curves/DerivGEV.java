@@ -1,5 +1,7 @@
 package algorithms.curves;
 
+import java.util.Arrays;
+
 import algorithms.misc.MiscMath;
 
 public class DerivGEV {
@@ -131,11 +133,6 @@ public class DerivGEV {
 
         double z = 1. + k *( (x-mu)/sigma );
 
-        // f1 = exp(-1*(z^(-1/k)))
-        // f2 = z^(-1-(1/k))
-        // df1dx     = f1 * (1/k) * z^(-1 - (1/k)) * dzdx
-        // df2dx     = f2 * ( (-1-(1/k)) * (dzdx/z) )
-
         double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
         double f2 = Math.pow(z, (-1. - (1./k)) );
       
@@ -164,9 +161,6 @@ public class DerivGEV {
      */
     /*
     public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
-        
-        // TODO:  recheck the math in this one
-        //        and decide on tests.
         
         double z = 1. + k *( (x-mu)/sigma );
       
@@ -202,9 +196,9 @@ public class DerivGEV {
         return dydk;
     }*/
     
-    public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
+    public static Double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
 
-        return calculateDerivUsingDeltaK(yConst, mu, k, sigma, x);
+        return calculateDerivUsingDeltaK(mu, k, sigma, x);
     }
     
     /**
@@ -217,9 +211,9 @@ public class DerivGEV {
      * @param x
      * @return
      */
-    protected static Double calculateDerivUsingDeltaK(float yConst, float mu, float k, float sigma, float x) {
+    protected static Double calculateDerivUsingDeltaK(float mu, float k, float sigma, float x) {
         
-        float deltaK = 0.01f*k;
+        float deltaK = 0.001f*k;
         
         Double d0 = GeneralizedExtremeValue.generateYGEV(x, (k - deltaK), sigma, mu);
         
@@ -227,33 +221,40 @@ public class DerivGEV {
         
         Double d2 = GeneralizedExtremeValue.generateYGEV(x, (k + deltaK), sigma, mu);
         
+        Double d = calculateDerivUsingDelta(d0, d1, d2, deltaK);
+        
+        return d;
+    }
+    
+    protected static Double calculateDerivUsingDelta(Double d0, Double d1, Double d2, double delta) {
+        
         if (d0 != null && d1 != null && d2 != null) {
-            
+                        
             double delta0 = d1.doubleValue() - d0.doubleValue();
             
             double delta1 = d2.doubleValue() - d1.doubleValue();
             
             double d = (delta0 + delta1)/2.;
             
-            return (d/deltaK);
+            return (d/delta);
         
         } else if (d1 != null && d2 != null) {
                         
-            double delta = d2.doubleValue() - d1.doubleValue();
+            double d = d2.doubleValue() - d1.doubleValue();
                         
-            return (delta/deltaK);
+            return (d/delta);
             
         } else if (d0 != null && d1 != null) {
             
-            double delta = d1.doubleValue() - d0.doubleValue();
+            double d = d1.doubleValue() - d0.doubleValue();
             
-            return (delta/deltaK);
+            return (d/delta);
             
         } else if (d0 != null && d2 != null) {
             
-            double delta = d2.doubleValue() - d0.doubleValue();
+            double d = d2.doubleValue() - d0.doubleValue();
             
-            return (delta/deltaK);
+            return (d/delta);
             
         } else {
             
@@ -291,9 +292,36 @@ public class DerivGEV {
             df1dsigma *= Math.pow(z, -1. - (1./k));
         }
         
-        double dydk = (yConst/sigma) * ( f1 * df2dsigma + f2 * df1dsigma );
+        double dydSigma = (yConst/sigma) * ( f1 * df2dsigma + f2 * df1dsigma );
         
-        return dydk;
+        if (Double.isNaN(dydSigma)) {
+            return calculateDerivUsingDeltaSigma(mu, k, sigma, x);
+        }
+        
+        return dydSigma;
+    }
+    
+    /**
+     * calculate d/dk of GEV using the difference between GEVs given minor changes in k
+     * 
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
+    protected static Double calculateDerivUsingDeltaSigma(float mu, float k, float sigma, float x) {
+        
+        float deltaSigma = 0.001f*sigma;
+        
+        Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma - deltaSigma), mu);
+        
+        Double d1 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, mu);
+        
+        Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma + deltaSigma), mu);
+        
+        return calculateDerivUsingDelta(d0, d1, d2, deltaSigma);
     }
 
     /**
@@ -328,7 +356,150 @@ public class DerivGEV {
         
         double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );
         
+        if (Double.isNaN(dydmu)) {
+            return calculateDerivUsingDeltaMu(mu, k, sigma, x);
+        }
+        
         return dydmu;
     }
     
+    /**
+     * calculate d/dk of GEV using the difference between GEVs given minor changes in k
+     * 
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
+    protected static Double calculateDerivUsingDeltaMu(float mu, float k, float sigma, float x) {
+        
+        float deltaMu = 0.001f*mu;
+        
+        Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, (mu - deltaMu));
+        
+        Double d1 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, mu);
+        
+        Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, (mu + deltaMu));
+        
+        return calculateDerivUsingDelta(d0, d1, d2, deltaMu);
+    }
+    
+    /**
+     * for given mu, k, sigma and the data x, normalizedY and normalizedYErr,
+     * calculate the partial derivative of the GEV(k, sigma, mu, x[i]) with respect to 
+     * k, then sigma, then mu
+     * over each i in x and return the derivatives of each which minimize the chi square sum.
+     * 
+     * runtime cost is (x.length * 3) iterations of a function that has 5 transcendental operations
+     *    + x.length iterations of a function that has 2 transcendental operations.
+     *    
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param normalizedY
+     * @param normalizedYErr
+     * @param derivs array to populate with answers.  it's given as an argument to reuse the array
+     * @return
+     */
+    //TODO:  don't need to pass back the yconst used do I?
+    public static void derivsThatMinimizeChiSqSum(float mu, float k, float sigma, float[] x, 
+        float[] normalizedY, float[] normalizedYErr, float[] derivs) {
+                
+        Arrays.fill(derivs, 0);
+        
+        float[] chiSqMin = new float[derivs.length];
+        Arrays.fill(chiSqMin, Float.MAX_VALUE);
+
+        float[] yGEV = GeneralizedExtremeValue.genCurve(x, k, sigma, mu);
+        if (yGEV == null) {
+            return;
+        }
+        float yMax = MiscMath.findMax(yGEV);
+        for (int ii = 0; ii < yGEV.length; ii++){
+            yGEV[ii] /= yMax;
+        }
+        float yConst = 1.f/yMax;
+        
+        // fGEV(x, kVar, sigmaVar, mu) = (yNorm/sigma)*exp(-1*(1+k((x-mu)/sigma))^(-1/k)) * (1+k((x-mu)/sigma))^(-1-(1/k))
+        // We want to minimize sum over all data points in histogram: sum over i of (fGEV[i] - y[i]) * yerr[i]
+        //    -- y is normalized to a max of 1.  make sure that fGEV is normalized too (divide it by its peak).
+        //    -- deriv of sum w.r.t. sigmaVar is yerr*DerivGEV.wrtSigma... sum over i
+        //    -- deriv of sum w.r.t. kVar     is yerr*DerivGEV.wrtK... sum over i
+        //    -- deriv of sum w.r.t. muVar    is yerr*DerivGEV.wrtMu... sum over i
+        //    ----> because yerr[i] is the same for all derivatives and we're comparing, we can drop it from the calcs
+        
+        float[] tmpChiSqMin = new float[derivs.length];
+        float[] tmpDerivs = new float[tmpChiSqMin.length];
+        
+        float min = Float.MAX_VALUE;
+        
+        for (int i = 0; i < x.length; i++) {
+                        
+            Arrays.fill(tmpChiSqMin, Float.MAX_VALUE);
+            Arrays.fill(tmpDerivs, 0);
+            
+            for (int j = 0; j < derivs.length; j++) {
+                Double deriv = null;
+                switch (j) {
+                    case 0:
+                        deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, x[i]);
+                        break;
+                    case 1:
+                        deriv = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x[i]);
+                        break;
+                    case 2:
+                        deriv = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x[i]);
+                        break;
+                }
+                if (deriv != null && !deriv.isNaN()) {
+                    //TODO:  if wanted to reduce runtime, could remove the method frame load/unload here by importing the method statements
+                    float chiSqSum = chiSqSum(yGEV, normalizedY, normalizedYErr);
+                    if (chiSqSum < tmpChiSqMin[j]) {
+                        tmpChiSqMin[j] = chiSqSum;
+                        tmpDerivs[j] = deriv.floatValue();
+                    }
+                } else {
+                    break;
+                }
+            }
+            
+            // compare chSqMins:   chose the one w/ a smallest chiSqMin OR smallest sum of all j chiSqMin?
+            boolean allAreSet = true;
+            boolean minIsCurrent = true;
+            for (int j = 0; j < derivs.length; j++) {
+                if (tmpChiSqMin[j] == Float.MAX_VALUE || Float.isNaN(tmpChiSqMin[j])) {
+                    allAreSet = false;
+                    break;
+                }
+                if (tmpChiSqMin[j] < min) {
+                    min = tmpChiSqMin[j];
+                    minIsCurrent = false;
+                }
+            }
+            if (allAreSet && !minIsCurrent) {                
+                 System.arraycopy(tmpChiSqMin, 0, chiSqMin, 0, chiSqMin.length);
+                 System.arraycopy(tmpDerivs, 0, derivs, 0, tmpDerivs.length);
+            }
+        }        
+    }
+    
+    public static Float chiSqSum(float mu, float k, float sigma, float[] x, float[] normalizedY, float[] normalizedYErr) {
+        float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);
+        if (yGEV == null) {
+            return null;
+        }
+        return chiSqSum(yGEV, normalizedY, normalizedYErr);
+    }
+    protected static float chiSqSum(float[] normalizedYGEV, float[] normalizedY, float[] normalizedYErr) {
+        float chiSqSum = 0.0f;
+        for (int ii = 0; ii < normalizedYGEV.length; ii++) {
+            float z = (normalizedYGEV[ii] - normalizedY[ii]);
+            z *= normalizedYErr[ii];
+            chiSqSum += z*z;
+        }
+        return chiSqSum;
+    }
 }

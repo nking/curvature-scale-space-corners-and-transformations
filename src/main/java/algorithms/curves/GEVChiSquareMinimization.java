@@ -921,7 +921,7 @@ public class GEVChiSquareMinimization {
     /**
      * fit the curve by randomly drawing  k and sigma parameters and keeping the
      * best fit.  The algorithm stops after a maximum number of iterations.
-     * In general, this algorithm tends not to find the best fit for the GEV curve.
+     * In general, this algorithm tends not to find the best fit for the GEV curve - its not optimal.
      *
      * @param weightMethod
      * @param mu
@@ -1112,8 +1112,8 @@ public class GEVChiSquareMinimization {
      *
      * The reduction instead of solution is necessary for some GEV curves over
      * a large range of values because the solution f(k, sigma, mu) is not unique,
-     * and hence the local minimum found first using a rough division of parameter space
-     * may not lead to the best fit.
+     * and hence the local minimum found first using a rough default division of parameter space
+     * may not lead to the best fit (hence the larger range is needed).
      *
      * @param weightMethod
      * @param kMin
@@ -1271,7 +1271,7 @@ public class GEVChiSquareMinimization {
     }
 
     /**
-     * divides the ranges into small steps and uses the simplex method to fit the
+     * divides the ranges into small steps and uses the Downhill Simplex method to fit the
      * curve within each of those small steps.  returns the best fit.
      * Note that for the GEV curve the best fit may not be unique, that is
      * there may be another set of k and sigma which result in the same curve.

@@ -319,14 +319,14 @@ public class MiscMath {
          * (2) and the Taylor series expansion:
          *     ln(1+x)= x - (x^2)/2 + (x^3)/3 - ...
          *     
-         *     For x = -1.005, ln(1.0 + -1.005) is approx -3.9120
+         *     For x = -1.005, ln(1.0 + -1.001) is approx -3.9120... curve is nearly vertical here, so not a good way to proceed
          *
          * Let z = a*b
-         * ln(a*b) = ln(a) + ln(1 - 1.005)
-         * ln(z) = ln(z/(-1*(1 - 1.005))) + ln(1 - 1.005)  
+         * ln(a*b) = ln(a) + ln(1 - 1.001)
+         * ln(z) = ln(z/(-1*(1 - 1.001))) + ln(1 - 1.001)  
          *    
-         *      ln(z) = ln(z/0.005) + ln(-0.005)  (with x = -1.005)
-         *            = ln(z/0.005) - 4.295
+         *      ln(z) = ln(z/0.001) + ln(-0.001)  (with x = -1.001)
+         *            = ln(z/0.001) - 3.9120
          */
         /*if (negativeNumber == 0) {
             return 0;
@@ -370,10 +370,8 @@ public class MiscMath {
             } else {
                 sum += f;
                 System.out.print("     PLUS i=" + i);
-            }
-            
+            }            
         }
-System.out.println("   x=" + x + "  n=" + n + " sum=" + sum);
         return sum;
     }
 }
