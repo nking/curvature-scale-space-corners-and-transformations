@@ -30,7 +30,7 @@ public class PolakRibiereTest extends TestCase {
                     
         PolakRibiere fitCurve = new PolakRibiere(xp, yGEV, Errors.populateYErrorsBySqrt(xp), ye);
        
-        float kMin = 0;
+        float kMin = 0.01f;
         float kMax = 3*k;
         float sigmaMin = 0.5f*sigma;
         float sigmaMax = 2.5f*sigma;
@@ -38,6 +38,7 @@ public class PolakRibiereTest extends TestCase {
         float muMax = xp[xp.length - 1];
         
         GEVYFit yFit = fitCurve.fitCurve(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
+        //GEVYFit yFit = fitCurve.fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu);
         
         if (assertResults) {
             assertNotNull(yFit);

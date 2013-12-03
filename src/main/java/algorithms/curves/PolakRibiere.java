@@ -15,7 +15,7 @@ import algorithms.util.PolygonAndPointPlotter;
    To make a solution faster than the very robust but slow downhill simplex method,
    would like to use the partial derivatives of the GEV 
    to make an iterative solution for chi-square minimization 
-   of a non-linear GEV model's difference from the data.
+   of a non-linear, non-quadratic GEV model's difference from the data.
    
    This solution uses a conjugate gradient method with a Polak-Robiere to help
    determine the next stop and direction.
@@ -45,7 +45,6 @@ import algorithms.util.PolygonAndPointPlotter;
                   delta (x_n-1)^T delta (x_n-1)
     
     In the equation above, use beta = max (0, beta_n)
-    
     
   @author nichole
  */
@@ -189,12 +188,15 @@ public class PolakRibiere {
      
         // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
         float[] r = new float[3];
-        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r);
+        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, vars.length - 1);
+        
+        //TODO: derive M, the preconditioner
         
         float[] rPrev = new float[r.length];
         
         // p is search direction
-        float[] p = Arrays.copyOf(r, r.length);        
+        float[] p = Arrays.copyOf(r, r.length);    
+        //TODO:  assign to p the inverse of M preconditioner * r
         
         int maxIterations = 100;
         int nIter = 0;
@@ -216,7 +218,7 @@ public class PolakRibiere {
                     rPrev[k] = r[k];
                 }
                 // populate r with the best fitting derivatives for vars[]
-                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r); //TODO: could improve runtime by giving chiSqSum? same scale?
+                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, vars.length - 1);
                 for (int k = 0; k < r.length; k++) {  
                     
                     // Polak=Ribiere function
@@ -228,12 +230,134 @@ public class PolakRibiere {
                 }                
             }
             // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-            float alpha = lineSearch(r, p, vars, chiSqSum);
+            float alpha = lineSearch(r, p, vars, chiSqSum, 0, r.length - 1);
             if (alpha == 0) {
                 // need 2nd deriv pre-conditioning!!
                 break;
             }
             for (int k = 0; k < r.length; k++) {
+                float ap = alpha*p[k];
+                vars[k] = vars[k] + ap;
+ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+            }
+            nIter++;
+        }
+        
+        float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
+
+        float chisqsum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
+
+        GEVYFit yfit = new GEVYFit();
+        yfit.setChiSqSum(chisqsum);
+        yfit.setK(vars[0]);
+        yfit.setSigma(vars[1]);
+        yfit.setMu(vars[2]);
+        yfit.setYFit(yGEV);
+        yfit.setX(x);
+        yfit.setXScale(xScale);
+        yfit.setYScale(yScale);
+        yfit.setYDataErrSq( calcYErrSquareSum() ); 
+        
+        return yfit;
+    }
+    
+    public GEVYFit fitCurve(float kMin, float kMax, float sigmaMin, float sigmaMax, float mu) throws FailedToConvergeException {
+
+        //TODO:  check that muMin and muMax are within bounds of x
+        
+        /* Minimize f(vars)
+         *
+         * The function f is called the objective function or cost function.
+         *
+         * The vector x is an n-vector of independent variables: 
+         *    vars = [var_1, var_2, …, var_n]^T is a member of set Real numbers. 
+         *    The variables var_1, …, var_n are often referred to as decision variables. 
+         *
+         * The optimization problem above can be viewed as a decision problem that involves 
+         * finding the “best” vector var of the decision variables over all possible vectors in Ω. 
+         * By the “best” vector we mean the one that results in the-smallest value of 
+         * the objective function. 
+         * 
+         * This vector is called the minimizer of f over Ω. 
+         * It is possible that there may be many minimizers. In this case, finding 
+         * any of the minimizers will suffice.
+         *     
+         *  Df is the first derivative of f(vars) and is 
+         *      [partial deriv f/partial deriv var_1, partial deriv f/partial deriv var_1, ...]
+         *  
+         *  ∇f = the gradient of f. 
+         *  ∇f = (Df)^T
+         *  
+         *  F(vars) is the 2nd derivative of f and is sometimes called the Hessian.
+         *                            | d^2f/d^2_var_1       ...    d^2f/d_var_n d_var_1
+         *     F(vars) = D^2f(vars) = |         ...          ...         ...
+         *                            | d^2f/d_var_1 d_var_n ...    d^2f/d^2_var_n
+         *  
+         *  Example:  Let f(x1, x2) = 5(x_1) + 8(x_2) + (x_1)(x_2) − (x_1)^2 − 2(x_2)^2
+         *        Df(x) = (∇f(x))^T = [df/dx_1, df/dx2] = [5 + x_2 - 2x_1,  8 + x_1 - 4x_2]
+         *        
+         *                            | -2  1 |
+         *        F(x) = D^2f(x)    = |  1 -4 |
+         *
+         */
+        
+        float kVar = kMax;//(kMax + kMin)/2.f;
+        float sigmaVar = sigmaMax;//(sigmaMax + sigmaMin)/2.f;
+        float muVar = mu;//(muMax + muMin)/2.f;
+        
+        // the variables k, sigma, and mu
+        float[] vars = new float[]{kVar, sigmaVar, muVar};
+     
+        // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
+        float[] r = new float[3];
+        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, 1);
+        
+        //TODO: derive M, the preconditioner
+        
+        float[] rPrev = new float[r.length];
+        
+        // p is search direction
+        float[] p = Arrays.copyOf(r, r.length);    
+        //TODO:  assign to p the inverse of M preconditioner * r
+        
+        int maxIterations = 100;
+        int nIter = 0;
+        float eps = 0.000001f;
+        while ( (nIter < maxIterations) && isAcceptableMin(vars, eps, kMin, kMax, sigmaMin, sigmaMax)) {
+            
+            float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
+            float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
+            
+            try {
+            String label = String.format("k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chiSqSum=%3.4f", vars[0], vars[1], vars[2], nIter, chiSqSum);
+            plotFit(yGEV, label);
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+            }
+            
+            if (nIter > 0) {
+                for (int k = 0; k < 2; k++) {
+                    rPrev[k] = r[k];
+                }
+                // populate r with the best fitting derivatives for vars[]
+                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, 1);
+                for (int k = 0; k < r.length; k++) {  
+                    
+                    // Polak=Ribiere function
+                    float beta = (float) Math.max((r[k] * (r[k] - rPrev[k]) / Math.pow(rPrev[k], 2)), 0);
+                    //p_k = r_k +β_k*(p_(k−1)).
+                    p[k] = r[k] + beta*p[k];
+                    
+                    System.out.println("r[" + k + "]=" + r[k] + "  p[" + k + "]=" + p[k] + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                }                
+            }
+            // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
+            float alpha = lineSearch(r, p, vars, chiSqSum, 0, 1);
+            if (alpha == 0) {
+                // need 2nd deriv pre-conditioning!!
+                break;
+            }
+            for (int k = 0; k < 2; k++) {
                 float ap = alpha*p[k];
                 vars[k] = vars[k] + ap;
  System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
@@ -276,9 +400,11 @@ public class PolakRibiere {
      * 
      * @param r
      * @param p
+     * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
+     * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @return
      */
-    protected float lineSearch(float[] r, float[] p, float[] vars, float chiSqSum) throws FailedToConvergeException {
+    protected float lineSearch(float[] r, float[] p, float[] vars, float chiSqSum, int idx0, int idx1) throws FailedToConvergeException {
                 
         float low = 0;
         float alpha = 1;
@@ -291,7 +417,7 @@ public class PolakRibiere {
             
             boolean failed = false;
             
-            for (int i = 0; i < r.length; i++) {
+            for (int i = idx0; i <= idx1; i++) {
                 // solve alpha by trial and error starting with max value then use bisect:
                 //     chiSqSum(... + alpha*p[i])  <=  chiSqSum + (c_1 * alpha * r[i]*p[i]).  
                 //     where c_1 is 0 or 1.  c_1 being 0 doesn't make sense...
@@ -314,6 +440,12 @@ public class PolakRibiere {
                 }
                 
                 float lft = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
+                
+                // for mu alone, trying a hard set limit.  has to be within x bounds.  
+                if ((i == 2) && (tmpVars[i] < x[0]) || (tmpVars[i] > x[x.length - 1]) ) {
+                    failed = true;
+                    break;
+                }
                 
                 if ((lft > rght) || (lft > chiSqSum)) {
                     failed = true;
@@ -355,6 +487,20 @@ public class PolakRibiere {
                 if (vars[2] >= muMin && vars[2] <= muMax) {
                     return true;
                 }
+            }
+        }
+        
+        // return false
+        // temporarily allow it to explore all space to see if it runs away
+        return true;
+    }
+    
+    protected boolean isAcceptableMin(float[] vars, float eps, float kMin,
+        float kMax, float sigmaMin, float sigmaMax) {
+        
+        if (vars[0] >= kMin && vars[0] <= kMax) {
+            if (vars[1] >= sigmaMin && vars[1] <= sigmaMax) {
+                return true;
             }
         }
         
