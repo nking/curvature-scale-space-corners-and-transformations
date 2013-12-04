@@ -17,7 +17,7 @@ import algorithms.util.PolygonAndPointPlotter;
    to make an iterative solution for chi-square minimization 
    of a non-linear, non-quadratic GEV model's difference from the data.
    
-   This solution uses a conjugate gradient method with a Polak-Robiere to help
+   This solution uses a conjugate gradient method with a Polak-Robiere function to help
    determine the next stop and direction.
    
    NOTE:

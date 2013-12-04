@@ -1,6 +1,5 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.util.Util;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.XY;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
@@ -328,11 +327,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
 System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensities);
 
+        long t0 = System.currentTimeMillis();
         if (indexer.getNXY() > 999) {
             statsHistogram = createHistogramWithHigherPeakResolution();
         } else {
             statsHistogram = createHistogram();
         }
+        t0 = (System.currentTimeMillis() - t0)/1000;
+System.out.println("histogram took " + t0 + " seconds");
 
         state = State.HISTOGRAM_CREATED;
 
