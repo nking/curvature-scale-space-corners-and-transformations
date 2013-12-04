@@ -40,12 +40,167 @@ import algorithms.util.PolygonAndPointPlotter;
    
    Polak-Robiere function:
    
-              delta (x_n)^T (delta x_n - delta x_n-1)
-    beta_n =  ---------------------------------------
-                  delta (x_n-1)^T delta (x_n-1)
+               ∇(x_n)^T * (∇x_n - ∇x_n-1)
+    beta_n =  ----------------------------
+                 ∇(x_n-1)^T * ∇(x_n-1)   
     
     In the equation above, use beta = max (0, beta_n)
     
+    =============================================================================================
+    
+    Minimize f(vars)
+         
+         The function f is called the objective function or cost function.
+         
+          The vector x is an n-vector of independent variables: 
+             vars = [var_1, var_2, …, var_n]^T is a member of set Real numbers. 
+             The variables var_1, …, var_n are often referred to as decision variables. 
+         
+          The optimization problem above can be viewed as a decision problem that involves 
+          finding the “best” vector var of the decision variables over all possible vectors in Ω. 
+          By the “best” vector we mean the one that results in the-smallest value of 
+          the objective function. 
+          
+          This vector is called the minimizer of f over Ω. 
+          It is possible that there may be many minimizers. In this case, finding 
+          any of the minimizers will suffice.
+              
+           Df is the first derivative of f(vars) and is 
+               [partial deriv f/partial deriv var_1, partial deriv f/partial deriv var_1, ...]
+           
+           ∇f = the gradient of f. 
+           ∇f = (Df)^T
+           
+           F(vars) is the 2nd derivative of f and is sometimes called the Hessian.
+                                     | ∂^2f/∂^2_var_1       ...    ∂^2f/∂_var_n d_var_1
+              F(vars) = D^2f(vars) = |         ...          ...         ...
+                                     | ∂^2f/∂_var_1 d_var_n ...    ∂^2f/∂^2_var_n
+           
+           Example:  Let f(x1, x2) = 5(x_1) + 8(x_2) + (x_1)(x_2) − (x_1)^2 − 2(x_2)^2
+                 Df(x) = (∇f(x))^T = [∂f/dx_1, ∂f/dx2] = [5 + x_2 - 2x_1,  8 + x_1 - 4x_2]
+                 
+                                     | -2  1 |
+                 F(x) = D^2f(x)    = |  1 -4 |
+                 
+           --------------------------------------------------------------------------------
+           
+           f(k, sigma, mu) = the GEV function
+           
+           Df = [∂f/∂k, ∂f/∂sigma, ∂f/∂mu]
+           
+                         |   ∂f/∂k   |
+           ∇f = (Df)^T = | ∂f/∂sigma |
+                         |   ∂f/∂mu  |
+                
+                                                  | ∂^2f/∂k∂k       ∂^2f/∂sigma∂k        ∂^2f/∂mu∂k     |
+           F(k, sigma, mu) = D^2f(k, sigma, mu) = | ∂^2f/∂k∂sigma   ∂^2f/∂sigma∂sigma    ∂^2f/∂mu∂sigma |
+                                                  | ∂^2f/∂k∂mu      ∂^2f/∂sigma∂mu       ∂^2f/∂mu∂mu    |
+                
+           M = D^2f(k, sigma, mu)
+           
+                                    | ∂^2f/∂k∂k        ∂^2f/∂k∂sigma       ∂^2f/∂k∂mu     |     |   ∂f/∂k   |
+           M^(-1) * ∇f = M^T * ∇f = | ∂^2f/∂sigma∂k    ∂^2f/∂sigma∂sigma   ∂^2f/∂sigma∂mu |  *  | ∂f/∂sigma |
+                                    | ∂^2f/∂mu∂k       ∂^2f/∂mu∂sigma      ∂^2f/∂mu∂mu    |     |   ∂f/∂mu  |
+                                    
+                                    | (∂^2f/∂k∂k) * (∂f/∂k) +  (∂^2f/∂k∂sigma) * (∂f/∂sigma) + (∂^2f/∂k∂mu) * (∂f/∂mu)          |
+                                  = | (∂^2f/∂sigma∂k) * (∂f/∂k) + (∂^2f/∂sigma∂sigma) * (∂f/∂sigma) + (∂^2f/∂sigma∂mu)*(∂f/∂mu) |
+                                    | (∂^2f/∂mu∂k)*(∂f/∂k) + (∂^2f/∂mu∂sigma)*(∂f/∂sigma) + (∂^2f/∂mu∂mu)*(∂f/∂mu)              |
+                                    
+           Can use Incomplete Cholesky factorization with fill 0 on M^(-1) to create the pre-conditioning matrix.
+           
+               http://netlib.org/linalg/html_templates/node64.html#figdilu
+               
+               Let S be the non-zero set ({i,j} : a_i_j != 0 )
+               
+                for i = 1, 2, ...
+                    set d_i_i = a_i_i
+                for i = 1, 2, ...
+                    set d_i_i = 1/d_i_i
+                    for j = i + 1, i + 2, ...                       
+                    if (i, j) in set S and (j, i) in set S then
+                        set d_j_j = d_j_j - a_j_i * d_i_i * a_i_j
+                
+                set d(1,1) = (∂^2f/∂k∂k)
+                set d(2,2) = (∂^2f/∂sigma∂sigma)
+                set d(3,3) = (∂^2f/∂mu∂mu)
+                
+                i = 1:
+                        set d(1,1) = 1./d(1,1) = 1./(∂^2f/∂k∂k)
+                    
+                        | (1,1) (1,2) (1,3) | = | 1/(∂^2f/∂k∂k)   
+                    d = | (2,1) (2,2) (2,3) | = |                    (∂^2f/∂sigma∂sigma)  
+                        | (3,1) (3,2) (3,3) | = |                                             (∂^2f/∂mu∂mu) |
+                      
+                    j=2:
+                        set d(2,2) = (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma)
+                    j=3:
+                        set d(3,3) = (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu)
+                        
+                i = 2:
+                        set d(2,2) = 1./d(2,2) = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                        
+                        | (1,1) (1,2) (1,3) | = | 1/(∂^2f/∂k∂k)   
+                    d = | (2,1) (2,2) (2,3) | = |                latest d(2,2)  
+                        | (3,1) (3,2) (3,3) | = |                                             (∂^2f/∂mu∂mu) |
+                        
+                    j=3:
+                        set d(3,3) = d(3,3) - a(3,2) * d(2,2) * a(2,3)
+                                   =
+                                     ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                     -
+                                     (
+                                        (∂^2f/∂mu∂sigma)
+                                        *
+                                        ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                        *
+                                        ∂^2f/∂sigma∂mu
+                                     )
+                                      
+                i = 3:
+                        set d(3,3) = 1./d(3,3)
+                        
+                            = 1./(
+                                     ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                     -
+                                     (
+                                        (∂^2f/∂mu∂sigma)
+                                        *
+                                        ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                        *
+                                        ∂^2f/∂sigma∂mu
+                                     )
+                                 ) 
+                                 
+                                 
+        Then using the ICU0 matrix as preconditioner:
+               
+                                            | d(1,1)   0        0      |     |   ∂f/∂k   |
+            (M_icuo)^(-1) * ∇f = M^T * ∇f = | 0        d(2,2)   0      |  *  | ∂f/∂sigma |
+                                            | 0        0        d(3,3) |     |   ∂f/∂mu  |
+                                        
+                                            | d(1,1) * (∂f/∂k)     |
+                                          = | d(2,2) * (∂f/∂sigma) |
+                                            | d(3,3) * (∂f/∂mu)    |
+
+                 where d(1,1) is 1./(∂^2f/∂k∂k)
+                       d(2,2) is ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                       d(3,3) is 1./(
+                                         ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                         -
+                                         (
+                                            (∂^2f/∂mu∂sigma)
+                                            *
+                                            ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                            *
+                                            ∂^2f/∂sigma∂mu
+                                         )
+                                     ) 
+                                     
+           Note that below in the code, r is ∇f.
+           
+           The preconditioner has not yet been applied below.
+           
+           
   @author nichole
  */
 public class PolakRibiere {
@@ -75,6 +230,8 @@ public class PolakRibiere {
     protected final GeneralizedExtremeValue gev;
     
     protected PolygonAndPointPlotter plotter;
+    
+    protected static float eps = 1e-8f;
     
     public PolakRibiere(float[] xPoints, float[] yPoints,
         float[] xErrPoints, float[] yErrPoints) {
@@ -143,52 +300,20 @@ public class PolakRibiere {
 
         //TODO:  check that muMin and muMax are within bounds of x
         
-        /* Minimize f(vars)
-         *
-         * The function f is called the objective function or cost function.
-         *
-         * The vector x is an n-vector of independent variables: 
-         *    vars = [var_1, var_2, …, var_n]^T is a member of set Real numbers. 
-         *    The variables var_1, …, var_n are often referred to as decision variables. 
-         *
-         * The optimization problem above can be viewed as a decision problem that involves 
-         * finding the “best” vector var of the decision variables over all possible vectors in Ω. 
-         * By the “best” vector we mean the one that results in the-smallest value of 
-         * the objective function. 
-         * 
-         * This vector is called the minimizer of f over Ω. 
-         * It is possible that there may be many minimizers. In this case, finding 
-         * any of the minimizers will suffice.
-         *     
-         *  Df is the first derivative of f(vars) and is 
-         *      [partial deriv f/partial deriv var_1, partial deriv f/partial deriv var_1, ...]
-         *  
-         *  ∇f = the gradient of f. 
-         *  ∇f = (Df)^T
-         *  
-         *  F(vars) is the 2nd derivative of f and is sometimes called the Hessian.
-         *                            | d^2f/d^2_var_1       ...    d^2f/d_var_n d_var_1
-         *     F(vars) = D^2f(vars) = |         ...          ...         ...
-         *                            | d^2f/d_var_1 d_var_n ...    d^2f/d^2_var_n
-         *  
-         *  Example:  Let f(x1, x2) = 5(x_1) + 8(x_2) + (x_1)(x_2) − (x_1)^2 − 2(x_2)^2
-         *        Df(x) = (∇f(x))^T = [df/dx_1, df/dx2] = [5 + x_2 - 2x_1,  8 + x_1 - 4x_2]
-         *        
-         *                            | -2  1 |
-         *        F(x) = D^2f(x)    = |  1 -4 |
-         *
-         */
-        
-        float kVar = (kMax + kMin)/2.f;
-        float sigmaVar = (sigmaMax + sigmaMin)/2.f;
-        float muVar = (muMax + muMin)/2.f;
+        float kVar = kMax;//(kMax + kMin)/2.f;
+        float sigmaVar = sigmaMax;//(sigmaMax + sigmaMin)/2.f;
+        float muVar = muMax; //(muMax + muMin)/2.f;
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
+        float[] varsMin = new float[]{kMin, sigmaMin, muMin};
+        float[] varsMax = new float[]{kMax, sigmaMax, muMax};
      
+        int varStopIdx = vars.length - 1;
+        
         // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
         float[] r = new float[3];
-        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, vars.length - 1);
+        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
         
         //TODO: derive M, the preconditioner
         
@@ -198,10 +323,19 @@ public class PolakRibiere {
         float[] p = Arrays.copyOf(r, r.length);    
         //TODO:  assign to p the inverse of M preconditioner * r
         
-        int maxIterations = 100;
+        float prevChiSqSum = Float.MAX_VALUE;
+        
+        int maxIterations = 200;
         int nIter = 0;
-        float eps = 0.000001f;
-        while ( (nIter < maxIterations) && isAcceptableMin(vars, eps, kMin, kMax, sigmaMin, sigmaMax, muMin, muMax)) {
+        while ( nIter < maxIterations) {
+            
+            if ((nIter > 0) && residualsAreSame(rPrev, r)) {
+                System.out.println("residuals are same nIter=" + nIter);
+                /*if (varStopIdx == (vars.length - 1)) {
+                    // this holds mu fixed to current value in vars[2]
+                    varStopIdx--;
+                } */
+            }
             
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
             float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
@@ -218,11 +352,14 @@ public class PolakRibiere {
                     rPrev[k] = r[k];
                 }
                 // populate r with the best fitting derivatives for vars[]
-                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, vars.length - 1);
-                for (int k = 0; k < r.length; k++) {  
+                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
+                for (int k = 0; k <= varStopIdx; k++) {  
                     
                     // Polak=Ribiere function
-                    float beta = (float) Math.max((r[k] * (r[k] - rPrev[k]) / Math.pow(rPrev[k], 2)), 0);
+                    float beta =  (float) ((r[k] * (r[k] - rPrev[k])) / Math.pow(rPrev[k], 2));
+                    if (beta < 0 || Float.isInfinite(beta) || Float.isNaN(beta)) {
+                        beta = 0;
+                    }
                     //p_k = r_k +β_k*(p_(k−1)).
                     p[k] = r[k] + beta*p[k];
                     
@@ -230,16 +367,20 @@ public class PolakRibiere {
                 }                
             }
             // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-            float alpha = lineSearch(r, p, vars, chiSqSum, 0, r.length - 1);
-            if (alpha == 0) {
-                // need 2nd deriv pre-conditioning!!
+            float alpha = lineSearch(r, p, vars, varsMin, varsMax, prevChiSqSum, 0, varStopIdx);
+ 
+            if (alpha <= eps) {
+                // need 2nd deriv pre-conditioning
                 break;
             }
-            for (int k = 0; k < r.length; k++) {
+            for (int k = 0; k <= varStopIdx; k++) {
                 float ap = alpha*p[k];
                 vars[k] = vars[k] + ap;
  System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
             }
+            
+            prevChiSqSum = chiSqSum;
+            
             nIter++;
         }
         
@@ -261,57 +402,43 @@ public class PolakRibiere {
         return yfit;
     }
     
-    public GEVYFit fitCurve(float kMin, float kMax, float sigmaMin, float sigmaMax, float mu) throws FailedToConvergeException {
-
-        //TODO:  check that muMin and muMax are within bounds of x
+    /**
+     * find the best fitting GEV by solving for each parameter in set {k, sigma, mu} separately
+     * rather then minimizing the function for suggested changes by all derivatives at once.
+     * 
+     * So far, this is resulting in the best fits, but is sensitive to the starting point
+     * and has not been tested over a wide range of data distributions.
+     * 
+     * TODO: A pre-conditioner is being added to use the 2nd derivatives for better solutions or
+     * faster solutions.
+     * 
+     * @param kMin
+     * @param kMax
+     * @param sigmaMin
+     * @param sigmaMax
+     * @param muMin
+     * @param muMax
+     * @return
+     * @throws FailedToConvergeException
+     */
+    public GEVYFit fitCurveParametersSeparately(float kMin, float kMax, float sigmaMin, float sigmaMax,
+        float muMin, float muMax) throws FailedToConvergeException {
         
-        /* Minimize f(vars)
-         *
-         * The function f is called the objective function or cost function.
-         *
-         * The vector x is an n-vector of independent variables: 
-         *    vars = [var_1, var_2, …, var_n]^T is a member of set Real numbers. 
-         *    The variables var_1, …, var_n are often referred to as decision variables. 
-         *
-         * The optimization problem above can be viewed as a decision problem that involves 
-         * finding the “best” vector var of the decision variables over all possible vectors in Ω. 
-         * By the “best” vector we mean the one that results in the-smallest value of 
-         * the objective function. 
-         * 
-         * This vector is called the minimizer of f over Ω. 
-         * It is possible that there may be many minimizers. In this case, finding 
-         * any of the minimizers will suffice.
-         *     
-         *  Df is the first derivative of f(vars) and is 
-         *      [partial deriv f/partial deriv var_1, partial deriv f/partial deriv var_1, ...]
-         *  
-         *  ∇f = the gradient of f. 
-         *  ∇f = (Df)^T
-         *  
-         *  F(vars) is the 2nd derivative of f and is sometimes called the Hessian.
-         *                            | d^2f/d^2_var_1       ...    d^2f/d_var_n d_var_1
-         *     F(vars) = D^2f(vars) = |         ...          ...         ...
-         *                            | d^2f/d_var_1 d_var_n ...    d^2f/d^2_var_n
-         *  
-         *  Example:  Let f(x1, x2) = 5(x_1) + 8(x_2) + (x_1)(x_2) − (x_1)^2 − 2(x_2)^2
-         *        Df(x) = (∇f(x))^T = [df/dx_1, df/dx2] = [5 + x_2 - 2x_1,  8 + x_1 - 4x_2]
-         *        
-         *                            | -2  1 |
-         *        F(x) = D^2f(x)    = |  1 -4 |
-         *
-         */
-        
-        float kVar = kMax;//(kMax + kMin)/2.f;
-        float sigmaVar = sigmaMax;//(sigmaMax + sigmaMin)/2.f;
-        float muVar = mu;//(muMax + muMin)/2.f;
+        float kVar = kMin;//(kMax + kMin)/2.f;
+        float sigmaVar = sigmaMin;//(sigmaMax + sigmaMin)/2.f;
+        float muVar = muMin; //(muMax + muMin)/2.f;
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
+        float[] varsMin = new float[]{kMin, sigmaMin, muMin};
+        float[] varsMax = new float[]{kMax, sigmaMax, muMax};
      
+        int varStopIdx = vars.length - 1;
+        
         // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
         float[] r = new float[3];
-        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, 1);
-        
+        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
+
         //TODO: derive M, the preconditioner
         
         float[] rPrev = new float[r.length];
@@ -320,10 +447,19 @@ public class PolakRibiere {
         float[] p = Arrays.copyOf(r, r.length);    
         //TODO:  assign to p the inverse of M preconditioner * r
         
-        int maxIterations = 100;
+        float bestChiSqSum = Float.MAX_VALUE;
+        
+        int maxIterations = 200;
         int nIter = 0;
-        float eps = 0.000001f;
-        while ( (nIter < maxIterations) && isAcceptableMin(vars, eps, kMin, kMax, sigmaMin, sigmaMax)) {
+        while ( nIter < maxIterations) {
+            
+            if ((nIter > 0) && residualsAreSame(rPrev, r)) {
+                System.out.println("residuals are same nIter=" + nIter);
+                /*if (varStopIdx == (vars.length - 1)) {
+                    // this holds mu fixed to current value in vars[2]
+                    varStopIdx--;
+                }*/
+            }
             
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
             float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
@@ -335,33 +471,43 @@ public class PolakRibiere {
                 System.err.println(e.getMessage());
             }
             
-            if (nIter > 0) {
-                for (int k = 0; k < 2; k++) {
-                    rPrev[k] = r[k];
-                }
-                // populate r with the best fitting derivatives for vars[]
-                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, 1);
-                for (int k = 0; k < r.length; k++) {  
+            for (int k = 0; k < r.length; k++) {
+                rPrev[k] = r[k];
+            }
+            
+            for (int k = 0; k <= varStopIdx; k++) {
+            
+                if (nIter > 0) {
+                    
+                    // populate r with the best fitting derivatives for vars[]
+                    DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, k, k);
                     
                     // Polak=Ribiere function
-                    float beta = (float) Math.max((r[k] * (r[k] - rPrev[k]) / Math.pow(rPrev[k], 2)), 0);
+                    float beta =  (float) ((r[k] * (r[k] - rPrev[k])) / Math.pow(rPrev[k], 2));
+                    if (beta < 0 || Float.isInfinite(beta) || Float.isNaN(beta)) {
+                        beta = 0;
+                    }
                     //p_k = r_k +β_k*(p_(k−1)).
                     p[k] = r[k] + beta*p[k];
-                    
+                        
                     System.out.println("r[" + k + "]=" + r[k] + "  p[" + k + "]=" + p[k] + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
-                }                
-            }
-            // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-            float alpha = lineSearch(r, p, vars, chiSqSum, 0, 1);
-            if (alpha == 0) {
-                // need 2nd deriv pre-conditioning!!
-                break;
-            }
-            for (int k = 0; k < 2; k++) {
+                }
+                
+             // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
+                float alpha = lineSearch(r, p, vars, varsMin, varsMax, bestChiSqSum, k, k);
+                if (alpha <= eps) {
+                    // need 2nd deriv pre-conditioning
+                    break;
+                }
                 float ap = alpha*p[k];
                 vars[k] = vars[k] + ap;
- System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+     System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
             }
+            
+            if (chiSqSum < bestChiSqSum) {
+                bestChiSqSum = chiSqSum;
+            }
+            
             nIter++;
         }
         
@@ -381,7 +527,7 @@ public class PolakRibiere {
         yfit.setYDataErrSq( calcYErrSquareSum() ); 
         
         return yfit;
-    }
+    }     
     
     public float calcYErrSquareSum() {
         float sum = 0.f;
@@ -404,7 +550,8 @@ public class PolakRibiere {
      * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @return
      */
-    protected float lineSearch(float[] r, float[] p, float[] vars, float chiSqSum, int idx0, int idx1) throws FailedToConvergeException {
+    protected float lineSearch(float[] r, float[] p, float[] vars, float[] varsMin, float[] varsMax,
+        float chiSqSum, int idx0, int idx1) throws FailedToConvergeException {
                 
         float low = 0;
         float alpha = 1;
@@ -413,7 +560,7 @@ public class PolakRibiere {
         float[] tmpVars = new float[vars.length];
                 
         boolean notFound = true;
-        while (notFound && (Math.abs(high - low) > 0.001)) {
+        while (notFound && (Math.abs(high - low) > eps)) {
             
             boolean failed = false;
             
@@ -423,6 +570,11 @@ public class PolakRibiere {
                 //     where c_1 is 0 or 1.  c_1 being 0 doesn't make sense...
                 float ap = alpha*p[i];                
                 tmpVars[i] = vars[i] + ap;
+                
+                if ((tmpVars[i] < varsMin[i]) || (tmpVars[i] > varsMax[i])) {
+                    failed = true;
+                    break;
+                }
                 
                 float rght = chiSqSum + alpha * r[i]*p[i];
                 
@@ -435,19 +587,15 @@ public class PolakRibiere {
                         yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], vars[2]);
                         break;
                     case 2:
-                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);
+                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);                        
                         break;
                 }
                 
                 float lft = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
                 
-                // for mu alone, trying a hard set limit.  has to be within x bounds.  
-                if ((i == 2) && (tmpVars[i] < x[0]) || (tmpVars[i] > x[x.length - 1]) ) {
-                    failed = true;
-                    break;
-                }
+                boolean t2 = (lft > (chiSqSum + 0.01f)) && ((0.01f/chiSqSum) > 0.02f);
                 
-                if ((lft > rght) || (lft > chiSqSum)) {
+                if ((lft > rght) || ((lft/chiSqSum) > 1.5) || t2 ) {
                     failed = true;
                     break;
                 } else {
@@ -456,6 +604,7 @@ public class PolakRibiere {
             }
             
             if (!failed) {
+                // if in high side, let solution climb?
                 return alpha;
             }
             
@@ -608,5 +757,14 @@ public class PolakRibiere {
             }
         }
         return true;
+    }
+    
+    protected boolean residualsAreSame(float[] rPrev, float[] r) {
+        float limit = 0.001f;
+        if ( (Math.abs(rPrev[0] - r[0]) < limit) && (Math.abs(rPrev[1] - r[1]) < limit)
+            && (Math.abs(rPrev[2] - r[2]) < limit) ) {
+            return true;
+        }
+        return false;
     }
 }

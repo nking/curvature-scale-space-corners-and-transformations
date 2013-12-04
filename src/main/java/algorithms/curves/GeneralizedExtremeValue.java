@@ -271,6 +271,26 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         return yGEV;
     }
+    
+    public static float[] generateEVTypeICurve(float[] x1, float sigma, float mu) {
+
+        if (sigma == 0) {
+            throw new IllegalArgumentException("sigma must be > 0");
+        }
+
+        float[] yGEV = new float[x1.length];
+
+        for (int i = 0; i < x1.length; i++) {
+
+            float z = (x1[i] - mu)/sigma;
+
+            float a = (float) (-1.f - Math.exp(-1.0f*z));
+
+            yGEV[i] = (float) ((1.f/sigma) * Math.exp(a));// times Math.exp(z) too???
+        }
+
+        return yGEV;
+    }
 
     public float determineYConstant(float[] yGEV, float mu) {
 
@@ -377,6 +397,10 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         if (sigma == 0) {
             //throw new IllegalArgumentException("sigma must be > 0");
             return null;
+        }
+        
+        if (k == 0) {
+            return generateEVTypeICurve(x1, sigma, mu);
         }
 
         float[] yGEV = new float[x1.length];

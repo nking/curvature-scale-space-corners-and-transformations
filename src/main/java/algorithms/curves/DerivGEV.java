@@ -198,7 +198,7 @@ public class DerivGEV {
     
     public static Double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
 
-        return calculateDerivUsingDeltaK(mu, k, sigma, x);
+        return estimateDerivUsingDeltaK(mu, k, sigma, x);
     }
     
     /**
@@ -211,7 +211,7 @@ public class DerivGEV {
      * @param x
      * @return
      */
-    protected static Double calculateDerivUsingDeltaK(float mu, float k, float sigma, float x) {
+    static Double estimateDerivUsingDeltaK(float mu, float k, float sigma, float x) {
         
         float deltaK = 0.001f*k;
         
@@ -221,12 +221,12 @@ public class DerivGEV {
         
         Double d2 = GeneralizedExtremeValue.generateYGEV(x, (k + deltaK), sigma, mu);
         
-        Double d = calculateDerivUsingDelta(d0, d1, d2, deltaK);
+        Double d = estimateDerivUsingDelta(d0, d1, d2, deltaK);
         
         return d;
     }
     
-    protected static Double calculateDerivUsingDelta(Double d0, Double d1, Double d2, double delta) {
+    protected static Double estimateDerivUsingDelta(Double d0, Double d1, Double d2, double delta) {
         
         if (d0 != null && d1 != null && d2 != null) {
                         
@@ -295,7 +295,7 @@ public class DerivGEV {
         double dydSigma = (yConst/sigma) * ( f1 * df2dsigma + f2 * df1dsigma );
         
         if (Double.isNaN(dydSigma)) {
-            return calculateDerivUsingDeltaSigma(mu, k, sigma, x);
+            return estimateDerivUsingDeltaSigma(mu, k, sigma, x);
         }
         
         return dydSigma;
@@ -311,7 +311,7 @@ public class DerivGEV {
      * @param x
      * @return
      */
-    protected static Double calculateDerivUsingDeltaSigma(float mu, float k, float sigma, float x) {
+    static Double estimateDerivUsingDeltaSigma(float mu, float k, float sigma, float x) {
         
         float deltaSigma = 0.001f*sigma;
         
@@ -321,7 +321,7 @@ public class DerivGEV {
         
         Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma + deltaSigma), mu);
         
-        return calculateDerivUsingDelta(d0, d1, d2, deltaSigma);
+        return estimateDerivUsingDelta(d0, d1, d2, deltaSigma);
     }
 
     /**
@@ -357,7 +357,7 @@ public class DerivGEV {
         double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );
         
         if (Double.isNaN(dydmu)) {
-            return calculateDerivUsingDeltaMu(mu, k, sigma, x);
+            return estimateDerivUsingDeltaMu(mu, k, sigma, x);
         }
         
         return dydmu;
@@ -373,7 +373,7 @@ public class DerivGEV {
      * @param x
      * @return
      */
-    protected static Double calculateDerivUsingDeltaMu(float mu, float k, float sigma, float x) {
+    static Double estimateDerivUsingDeltaMu(float mu, float k, float sigma, float x) {
         
         float deltaMu = 0.001f*mu;
         
@@ -383,7 +383,7 @@ public class DerivGEV {
         
         Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, (mu + deltaMu));
         
-        return calculateDerivUsingDelta(d0, d1, d2, deltaMu);
+        return estimateDerivUsingDelta(d0, d1, d2, deltaMu);
     }
     
     /**
@@ -401,12 +401,14 @@ public class DerivGEV {
      * @param x
      * @param normalizedY
      * @param normalizedYErr
+     * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
+     * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @param derivs array to populate with answers.  it's given as an argument to reuse the array
      * @return
      */
     //TODO:  don't need to pass back the yconst used do I?
     public static void derivsThatMinimizeChiSqSum(float mu, float k, float sigma, float[] x, 
-        float[] normalizedY, float[] normalizedYErr, float[] derivs) {
+        float[] normalizedY, float[] normalizedYErr, float[] derivs, int idx0, int idx1) {
                 
         Arrays.fill(derivs, 0);
         
@@ -421,7 +423,7 @@ public class DerivGEV {
         for (int ii = 0; ii < yGEV.length; ii++){
             yGEV[ii] /= yMax;
         }
-        float yConst = 1.f/yMax;
+        //float yConst = 1.f/yMax;
         
         // fGEV(x, kVar, sigmaVar, mu) = (yNorm/sigma)*exp(-1*(1+k((x-mu)/sigma))^(-1/k)) * (1+k((x-mu)/sigma))^(-1-(1/k))
         // We want to minimize sum over all data points in histogram: sum over i of (fGEV[i] - y[i]) * yerr[i]
@@ -441,17 +443,20 @@ public class DerivGEV {
             Arrays.fill(tmpChiSqMin, Float.MAX_VALUE);
             Arrays.fill(tmpDerivs, 0);
             
-            for (int j = 0; j < derivs.length; j++) {
+            for (int j = idx0; j <= idx1; j++) {
                 Double deriv = null;
                 switch (j) {
                     case 0:
-                        deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, x[i]);
+                        //deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, x[i]);
+                        deriv = DerivGEV.estimateDerivUsingDeltaK(mu, k, sigma, x[i]);
                         break;
                     case 1:
-                        deriv = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x[i]);
+                        //deriv = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x[i]);
+                        deriv = DerivGEV.estimateDerivUsingDeltaSigma(mu, k, sigma, x[i]);
                         break;
                     case 2:
-                        deriv = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x[i]);
+                        //deriv = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x[i]);
+                        deriv = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, x[i]);
                         break;
                 }
                 if (deriv != null && !deriv.isNaN()) {
@@ -469,7 +474,7 @@ public class DerivGEV {
             // compare chSqMins:   chose the one w/ a smallest chiSqMin OR smallest sum of all j chiSqMin?
             boolean allAreSet = true;
             boolean minIsCurrent = true;
-            for (int j = 0; j < derivs.length; j++) {
+            for (int j = idx0; j <= idx1; j++) {
                 if (tmpChiSqMin[j] == Float.MAX_VALUE || Float.isNaN(tmpChiSqMin[j])) {
                     allAreSet = false;
                     break;
@@ -480,8 +485,8 @@ public class DerivGEV {
                 }
             }
             if (allAreSet && !minIsCurrent) {                
-                 System.arraycopy(tmpChiSqMin, 0, chiSqMin, 0, chiSqMin.length);
-                 System.arraycopy(tmpDerivs, 0, derivs, 0, tmpDerivs.length);
+                 System.arraycopy(tmpChiSqMin, idx0, chiSqMin, idx0, (idx1 - idx0 + 1));
+                 System.arraycopy(tmpDerivs,   idx0, derivs,   idx0, (idx1 - idx0 + 1));
             }
         }        
     }

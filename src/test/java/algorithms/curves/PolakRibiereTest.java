@@ -32,12 +32,13 @@ public class PolakRibiereTest extends TestCase {
        
         float kMin = 0.01f;
         float kMax = 3*k;
-        float sigmaMin = 0.5f*sigma;
+        float sigmaMin = 0.01f*sigma;
         float sigmaMax = 2.5f*sigma;
         float muMin = 0.5f * mu;
         float muMax = xp[xp.length - 1];
         
-        GEVYFit yFit = fitCurve.fitCurve(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
+        //GEVYFit yFit = fitCurve.fitCurve(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
+        GEVYFit yFit = fitCurve.fitCurveParametersSeparately(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
         //GEVYFit yFit = fitCurve.fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu);
         
         if (assertResults) {

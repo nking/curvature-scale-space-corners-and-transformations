@@ -52,7 +52,7 @@ public class DerivGEVTest extends TestCase {
         assertTrue( d < 0);
     }
     
-    public void testDerivWRTK() throws Exception {
+    public void estDerivWRTK() throws Exception {
         
         // k is the shape parameter
         
@@ -83,7 +83,7 @@ public class DerivGEVTest extends TestCase {
             }
         }
         
-        /*
+        
         plotter.addPlot(xp, yGEV0, null, null, null, null, "k-deltaK");
         plotter.addPlot(xp, yGEV1, null, null, null, null, "k=" + k);
         plotter.addPlot(xp, yGEV2, null, null, null, null, "k+deltaK");
@@ -104,7 +104,7 @@ public class DerivGEVTest extends TestCase {
             
             last = deriv.doubleValue();           
         }
-        */
+        
         
         //TODO:  test for other curves and portion
         
@@ -128,9 +128,9 @@ public class DerivGEVTest extends TestCase {
        
         GeneralizedExtremeValue gev = new GeneralizedExtremeValue(new float[0], 
             new float[0], new float[0], new float[0]);
-        float[] yGEV0 = gev.generateCurve(xp, k, (float)(sigma - (sigma/10.f)), mu);
+        float[] yGEV0 = gev.generateCurve(xp, k, (sigma - (sigma/10.f)), mu);
         float[] yGEV1 = gev.generateCurve(xp, k, sigma, mu);
-        float[] yGEV2 = gev.generateCurve(xp, k, (float)(sigma + (sigma/10.f)), mu);
+        float[] yGEV2 = gev.generateCurve(xp, k, (sigma + (sigma/10.f)), mu);
                     
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
         plotter.addPlot(xp, yGEV0, null, null, null, null, "sigma-delta");
@@ -151,12 +151,15 @@ public class DerivGEVTest extends TestCase {
             
             assertTrue(last < deriv.doubleValue());
             
+            Double deriv2 = DerivGEV.estimateDerivUsingDeltaSigma(mu, k, sigma, xPoint);
+            
+            System.out.println(" " + deriv + " : " + deriv2);
             last = deriv.doubleValue();           
         }
         
     }
 
-    public void estDerivWRTMu() throws Exception {
+    public void testDerivWRTMu() throws Exception {
         
         // mu is the location variable
         
@@ -192,6 +195,11 @@ public class DerivGEVTest extends TestCase {
             assertNotNull(deriv);
             
             assertTrue(last < deriv.doubleValue());
+            
+
+            Double deriv2 = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, xPoint);
+            
+            System.out.println(" " + deriv + " : " + deriv2);
             
             last = deriv.doubleValue();       
         }
