@@ -21,7 +21,7 @@ import algorithms.misc.MiscMath;
  *     1 + (k * (x-mu)/sigma) > 0
  *
  *
- * for below, use z = (x-mu)/sigma
+ * Let z = (x-mu)/sigma
  *
  * Extreme Value Type I:
  *                     1
@@ -42,6 +42,10 @@ import algorithms.misc.MiscMath;
  *                     k     (x - mu)^(k+1)      (   (x - mu)^k)
  *     y = y_const * ----- * (------)       * exp( - (------)  )
  *                   sigma   (sigma )            (   (sigma )  )
+ *                   
+ *                     k                    
+ *       = y_const * ----- * (z)^(k+1) * exp( -1*(z)^k )
+ *                   sigma                  
  *
  *     k > 0
  *     sigma > 0
@@ -149,6 +153,11 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
      * 
      *   Let z = (1 + k*( (x-mu)/sigma )
      *   
+     *   f1 = exp( -1. * ( z^(-1./k) ) ) = exp(a)
+     *   
+     *   f2 = z^(-1. - (1/k)) = exp(b)
+     *            
+     *   then y = (yconst/sigma) * f1 * f2
      */
     public static Double generateYGEV(float xPoint, float k, float sigma, float mu) {
         
@@ -158,7 +167,6 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         }
         
         if (k == 0) {
-            // use Gumbel
             return generateYEVTypeI(xPoint, sigma, mu);
         }
         
@@ -168,16 +176,20 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         float z = 1.f + k * ((xPoint - mu)/sigma);
 
-        float a = (z >= 0) ? -1.f * (float) Math.pow(z, (-1.f/k)) : (float) Math.pow(-1.f*z, (-1.f/k));
-        //float a = -1.f * (float) Math.pow(z, (-1.f/k));
-       
+        boolean zIsNegative = (z < 0);
+        
+        if (zIsNegative) {
+            z *= -1;
+        }
+
+        float a = -1.f * (float) Math.pow(z, (-1.f/k));
+
         if (Float.isInfinite(a)) {
             // k is very small
             return generateYEVTypeI(xPoint, sigma, mu);
         }
 
-        float b = (z >= 0) ? (float) Math.pow(z, (-1.f - (1.f/k))) : (float) Math.pow(-1.f*z, (-1.f - (1.f/k)));
-        //float b = (float) Math.pow(z, (-1.f - (1.f/k)));
+        float b = (float) Math.pow(z, (-1.f - (1.f/k)));
         
         if (Float.isInfinite(b)) {
             // k is very small
@@ -188,6 +200,10 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
             // or return 0?
             return null;
         } else {
+            if (zIsNegative) {
+                a *= -1;
+                b *= -1;
+            }
             float t = (float) ((1.f/sigma) * Math.exp(a) * b);
             return Double.valueOf(t);
         }
@@ -217,7 +233,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         }
 
         if (k == 0) {
-            return generateEVTypeICurve(sigma, mu);
+            return generateEVTypeICurve(x1, sigma, mu);
         }
 
         float[] yGEV = new float[x1.length];
@@ -225,25 +241,35 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         for (int i = 0; i < x1.length; i++) {
 
             float z = 1.f + k*((x1[i] - mu)/sigma);
-
-            float a = (z >= 0) ? -1.f * (float) Math.pow(z, (-1.f/k)) : (float) Math.pow(-1.f*z, (-1.f/k));
-            //float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
-            if (Float.isInfinite(a)) {
-                return null;
+            
+            boolean zIsNegative = (z < 0);
+            
+            if (zIsNegative) {
+                z *= -1;
             }
 
-            float b = (z >= 0) ? (float) Math.pow(z, (-1.f - (1.f/k))) : -1.f * (float) Math.pow(-1.*z, (-1.f - (1.f/k)));
-            //float b = (float) Math.pow(z, (-1.f - (1.f/k)));
+            float a = -1.f*(float) Math.pow(z, (-1.f/k));
+
+            if (Float.isInfinite(a)) {
+                // k is extremely small, use approx when k = 0
+                return generateEVTypeICurve(x1, sigma, mu);
+            }
+
+            float b = (float) Math.pow(z, (-1.f - (1.f/k)));
 
             if (Float.isInfinite(b)) {
-                return null;
+                // k is extremely small, use approx when k = 0
+                return generateEVTypeICurve(x1, sigma, mu);
             }
 
             if (Float.isNaN(a) || Float.isNaN(b)) {
                 // return null;
                 yGEV[i] = 0;
             } else {
+                if (zIsNegative) {
+                    a *= -1.f;
+                    b *= -1.f;
+                }
                 float t = (float) ((1.f/sigma) * Math.exp(a) * b);
                 yGEV[i] = t;
             }
@@ -408,25 +434,37 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         for (int i = 0; i < x1.length; i++) {
 
             float z = 1.f + k*((x1[i] - mu)/sigma);
-
-            float a = (z >= 0) ? -1.f * (float) Math.pow(z, (-1.f/k)) : (float) Math.pow(-1.f*z, (-1.f/k));
-            //float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
-            if (Float.isInfinite(a)) {
-                return null;
+            
+            boolean zIsNegative = (z < 0);
+            
+            if (zIsNegative) {
+                z *= -1;
             }
 
-            float b = (z >= 0) ? (float) Math.pow(z, (-1.f - (1.f/k))) : (float) Math.pow(-1.f*z, (-1.f - (1.f/k)));
-            //float b = (float) Math.pow(z, (-1.f - (1.f/k)));
+            //float a = (z >= 0) ? -1.f * (float) Math.pow(z, (-1.f/k)) : (float) Math.pow(-1.f*z, (-1.f/k));
+            float a = -1.f*(float) Math.pow(z, (-1.f/k));
+
+            if (Float.isInfinite(a)) {
+                // k is extremely small, use approx when k = 0
+                return generateEVTypeICurve(x1, sigma, mu);
+            }
+
+            //float b = (z >= 0) ? (float) Math.pow(z, (-1.f - (1.f/k))) : (float) Math.pow(-1.f*z, (-1.f - (1.f/k)));
+            float b = (float) Math.pow(z, (-1.f - (1.f/k)));
 
             if (Float.isInfinite(b)) {
-                return null;
+                // k is extremely small, use approx when k = 0
+                return generateEVTypeICurve(x1, sigma, mu);
             }
 
             if (Float.isNaN(a) || Float.isNaN(b)) {
                 // return null;
                 yGEV[i] = 0;
             } else {
+                if (zIsNegative) {
+                    a *= a;
+                    b *= b;
+                }
                 float t = (float) ((1.f/sigma) * Math.exp(a) * b);
                 yGEV[i] = t;
             }
