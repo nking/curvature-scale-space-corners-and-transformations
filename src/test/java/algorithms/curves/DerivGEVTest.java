@@ -110,7 +110,9 @@ public class DerivGEVTest extends TestCase {
         
     }
 
-    public void estDerivWRTSigma() throws Exception {
+    public void testDerivWRTSigma() throws Exception {
+        
+        System.out.println("testDerivWRTSigma");
         
         // sigma is the scale factor
         
@@ -125,12 +127,14 @@ public class DerivGEVTest extends TestCase {
         for (int i = 0; i < xp.length; i++) {
             xp[i] = (float)i/xp.length;
         }
-       
+        
+        float factor = 0.0001f;
+        
         GeneralizedExtremeValue gev = new GeneralizedExtremeValue(new float[0], 
             new float[0], new float[0], new float[0]);
-        float[] yGEV0 = gev.generateCurve(xp, k, (sigma - (sigma/10.f)), mu);
+        float[] yGEV0 = gev.generateCurve(xp, k, (sigma - (sigma*factor)), mu);
         float[] yGEV1 = gev.generateCurve(xp, k, sigma, mu);
-        float[] yGEV2 = gev.generateCurve(xp, k, (sigma + (sigma/10.f)), mu);
+        float[] yGEV2 = gev.generateCurve(xp, k, (sigma + (sigma*factor)), mu);
                     
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
         plotter.addPlot(xp, yGEV0, null, null, null, null, "sigma-delta");
@@ -140,12 +144,15 @@ public class DerivGEVTest extends TestCase {
        
         double last = Integer.MIN_VALUE;
         for (int i = 1; i < 10; i++) {
-            double delta = (sigma/10.) * i;
+            double delta = (sigma*factor) * i;
             float d = (float) (sigma + delta);
                         
             // looks like the deriv increases with increasing scale sigma for this region of the curve
             
             Double deriv = DerivGEV.derivWRTSigma(yConst, mu, k, d, xPoint);
+            if (deriv != null) {
+                System.out.println("sigma=" + d + "  derivWRTSigma=" + deriv);
+            }
             
             assertNotNull(deriv);
             
@@ -153,13 +160,16 @@ public class DerivGEVTest extends TestCase {
             
             Double deriv2 = DerivGEV.estimateDerivUsingDeltaSigma(mu, k, sigma, xPoint);
             
-            System.out.println(" " + deriv + " : " + deriv2);
+            System.out.println("  compare derivWRTSigma to  estimateDerivUsingDeltaSigma " + deriv + " : " + deriv2);
+            
             last = deriv.doubleValue();           
         }
         
     }
 
     public void testDerivWRTMu() throws Exception {
+        
+        System.out.println("testDerivWRTMu");
         
         // mu is the location variable
         
@@ -180,14 +190,16 @@ public class DerivGEVTest extends TestCase {
                     
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
                
+        float factor = 0.0001f;
+        
         double last = Integer.MIN_VALUE;
         for (int i = 1; i < 10; i++) {
-            double delta = (mu/10.) * i;
+            double delta = (mu*factor) * i;
             float d = (float) (mu + delta);
                                     
             Double deriv = DerivGEV.derivWRTMu(yConst, d, k, sigma, 0.7f);
             if (deriv != null) {
-                System.out.println(d + ":" + deriv);
+                System.out.println("mu=" + d + "  derivWRTMu=" + deriv);
             }
             float[] yGEV1 = gev.generateCurve(xp, k, sigma, d);
             plotter.addPlot(xp, yGEV1, null, null, null, null, "mu=" + d);
@@ -199,7 +211,7 @@ public class DerivGEVTest extends TestCase {
 
             Double deriv2 = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, xPoint);
             
-            System.out.println(" " + deriv + " : " + deriv2);
+            System.out.println("  compare derivWRTMu to  estimateDerivUsingDeltaMu " + deriv + " : " + deriv2);
             
             last = deriv.doubleValue();       
         }

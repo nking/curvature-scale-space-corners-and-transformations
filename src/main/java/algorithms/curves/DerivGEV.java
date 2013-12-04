@@ -80,19 +80,21 @@ public class DerivGEV {
      *   
      *   
      *   Let f2 = z^(-1-(1/k))
-     *                                dzdx
-     *   df2dx = f2 * ( (-1-(1/k)) * ------  +  0 ) 
-     *                                 z 
-     *                                  
-     *   df2dk = f2 * z^(-1-(1/k)) * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
-     *       
-     *                                   dzdsigma
-     *   df2dsigma = f2 * ( (-1-(1/k)) * --------  +  0 )
-     *                                      z
      *   
-     *                                 dzdmu
-     *   df2dmu = f2 * ( (-1-(1/k)) * --------  +  0 )
-     *                                   z
+     *   df2dx = (-1-(1/k)) * z^(-2-(1/k)) * dzdx 
+     *   
+     *                                  
+     *   df2dk: u(k) = z and v(k) = (-1-(1/k))
+     *      using 
+                                        du(k)dk
+                 df2dk = f2 * ( v(k) * -------  +  dv(k)dk * ln(u(k)) )
+                                         u(k)
+                       = f2 * ( (-1-(1/k)) * dzdk/z + (1/k^2) * ln(z) )
+     *       
+     *   df2dsigma = (-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
+     *   
+     *   df2dmu = (-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+     *   
      *   
      *   Then putting it all together:
      *   
@@ -138,7 +140,8 @@ public class DerivGEV {
       
         double dzdx = k/sigma;
 
-        double df2dx = f2 * (  (-1. - (1./k)) * ( dzdx/ z) );
+        //(-1-(1/k)) * z^(-2-(1/k)) * dzdx
+        double df2dx = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdx;
         
         double df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;
         
@@ -229,7 +232,7 @@ public class DerivGEV {
     protected static Double estimateDerivUsingDelta(Double d0, Double d1, Double d2, double delta) {
         
         if (d0 != null && d1 != null && d2 != null) {
-                        
+            
             double delta0 = d1.doubleValue() - d0.doubleValue();
             
             double delta1 = d2.doubleValue() - d1.doubleValue();
@@ -283,7 +286,8 @@ public class DerivGEV {
         
         double dzdsigma = -1. * k * (x-mu) * Math.pow(sigma, -2.);
         
-        double df2dsigma = f2 * (  (-1. - (1./k)) * ( dzdsigma/ z)  );
+        //(-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
+        double df2dsigma = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdsigma;
         
         double df1dsigma =  f1 * (1./k) * dzdsigma;
         if (z < 0) {
@@ -313,7 +317,7 @@ public class DerivGEV {
      */
     static Double estimateDerivUsingDeltaSigma(float mu, float k, float sigma, float x) {
         
-        float deltaSigma = 0.001f*sigma;
+        float deltaSigma = 0.0001f*sigma;
         
         Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma - deltaSigma), mu);
         
@@ -345,7 +349,8 @@ public class DerivGEV {
       
         double dzdmu = -1. * k/sigma;
         
-        double df2dmu = f2 * (  (-1. - (1./k)) * ( dzdmu / z)  );
+        // df2dmu = (-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+        double df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;
         
         double df1dmu = f1 * (1/k) * dzdmu;
         if (z < 0) {
@@ -375,7 +380,7 @@ public class DerivGEV {
      */
     static Double estimateDerivUsingDeltaMu(float mu, float k, float sigma, float x) {
         
-        float deltaMu = 0.001f*mu;
+        float deltaMu = 0.0001f*mu;
         
         Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, (mu - deltaMu));
         
@@ -423,7 +428,7 @@ public class DerivGEV {
         for (int ii = 0; ii < yGEV.length; ii++){
             yGEV[ii] /= yMax;
         }
-        //float yConst = 1.f/yMax;
+        float yConst = 1.f/yMax;
         
         // fGEV(x, kVar, sigmaVar, mu) = (yNorm/sigma)*exp(-1*(1+k((x-mu)/sigma))^(-1/k)) * (1+k((x-mu)/sigma))^(-1-(1/k))
         // We want to minimize sum over all data points in histogram: sum over i of (fGEV[i] - y[i]) * yerr[i]
@@ -438,6 +443,8 @@ public class DerivGEV {
         
         float min = Float.MAX_VALUE;
         
+        //TODO: can change this to use avg of values in spectrum, but any single value for a single x appears to be same within 
+        
         for (int i = 0; i < x.length; i++) {
                         
             Arrays.fill(tmpChiSqMin, Float.MAX_VALUE);
@@ -451,12 +458,11 @@ public class DerivGEV {
                         deriv = DerivGEV.estimateDerivUsingDeltaK(mu, k, sigma, x[i]);
                         break;
                     case 1:
-                        //deriv = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x[i]);
-                        deriv = DerivGEV.estimateDerivUsingDeltaSigma(mu, k, sigma, x[i]);
+                        deriv = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x[i]);
+                        //deriv = DerivGEV.estimateDerivUsingDeltaSigma(mu, k, sigma, x[i]);
                         break;
                     case 2:
-                        //deriv = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x[i]);
-                        deriv = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, x[i]);
+                        deriv = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x[i]);
                         break;
                 }
                 if (deriv != null && !deriv.isNaN()) {
