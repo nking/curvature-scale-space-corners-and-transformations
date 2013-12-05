@@ -109,11 +109,17 @@ public class DerivGEV {
      *           yconst
      *   dydk =  ------ * ( f1 * df2dk + f2 * df1dk )
      *           sigma
-     *           
-     *              yconst
-     *   dydsigma = ------ * ( f1 * df2dsigma + f2 * df1dsigma )
-     *              sigma
-     *   
+     *      
+     *   dydsigma:  
+     *        needs to use chain rule once more
+     *        
+     *        f0 = (yconst/sigma)
+     *        df0dsigma = -(yconst/sigma^2)
+     *        
+     *        f = f0 * f1 * f2
+     *        
+     *        dydsigma = (  df0dsigma * f1 * f2 ) + ( df1dsigma * f0 * f2 ) + (df2dsigma * f0 * f1 )
+     *
      *              yconst
      *   dydmu    = ------ * ( f1 * df2dmu + f2 * df1dmu )
      *              sigma
@@ -162,46 +168,75 @@ public class DerivGEV {
      * @param x
      * @return
      */
-    /*
     public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
         
         double z = 1. + k *( (x-mu)/sigma );
       
-        double f1, f2;
+        /*if (z < 0) {
+            return estimateDerivUsingDeltaK(mu, k, sigma, x);
+        }*/
         
-        if (z < 0) {
-            f1 = Math.exp( Math.pow(-1.*z, -1./k) );
-            f2 = -1.* Math.pow(-1.*z, (-1. - (1./k)) );
-        } else {
-            f1 = Math.exp( -1. * Math.pow(z, -1./k) );
-            f2 = Math.pow(z, (-1. - (1./k)) );
+        boolean zIsNegative = (z < 0);
+        
+        if (zIsNegative) {
+            z *= -1;
+        }
+        
+        float a = -1.f*(float) Math.pow(z, (-1.f/k));
+        
+        if (zIsNegative) {
+            a *= -1.f;
+        }
+        
+        double f1 = Math.exp( a );
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        if (zIsNegative) {
+            f2 *= -1.f;
         }
         
         double dzdk = (x-mu)/sigma;
         
-        double df2dk, df1dk;
-
-        if (z == 0) {
-            use alt method for df2dk.  a brute force delta using neighboring points?
-            use alt method for df1dk.  a brute force delta using neighboring points?
-        } else if (z > 0) {
-            use alt method for df1dk.  a brute force delta using neighboring points?
-            //      f2 * z^(-1-(1/k)) * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
-            df2dk = f2 * Math.pow(z, (-1. - (1./k))) * ( (-1-(1/k)) * (dzdk/z) + (1./k*k)*Math.log(z));
-        } else {
-            use alt method for df2dk.  a brute force delta using neighboring points?
-            //      f1 *    -z^(-1/k)              * ( (-1/k) * (dzdk/z)   +  (1/k^2) * ln( -z ) )
-            df1dk = f1 *  Math.pow(-1.*z, (-1./k)) * ( (-1./k) * (dzdk/z)  +  (1./k*k) * Math.log(-1.*z));
+        // df1dk     = f1 * -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+        
+        // df2dk = f2 * ( (-1-(1/k)) * dzdk/z + (1/k^2) * ln(z) )
+        
+        // any value of z will have trouble with ln(-z) or ln(z) because the built in logarithm doesn't
+        //    use a taylor series approximation for negative values plus handling for the number of cycles
+        // so df1dk and df2dk are approximated with very small deltas
+        
+        float deltaK = 0.01f;
+        
+        double k_1 = k + deltaK;
+        double z_1 = 1. + k_1 *( (x-mu)/sigma );
+        if (zIsNegative) {
+            z_1 *= -1;
         }
-                
+        
+        float a_1 = -1.f*(float) Math.pow(z_1, (-1.f/k_1));
+        
+        double f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );
+        
+        if (zIsNegative) {
+            a_1 *= -1.f;
+            f2_1 *= -1.f;
+        }
+        
+        double df1dk = (Math.exp( a_1 ) - f1)/deltaK;
+        
+        double df2dk = (f2_1 - f2)/deltaK;
+        
+        if (zIsNegative) {
+            double compare_df1dk = f1 * a * ( (-1.f/k)*(dzdk/z) + (1.f/(k*k))*Math.log( -z ) );
+            System.out.println("  df1dk estimate=" + df1dk + " deriv=" + compare_df1dk + "  k=" + k + " z=" + z);
+        } else {
+            double compare_df2dk = f2 * (  (-1.f - (1.f/k))*(dzdk/z) + (1.f/(k*k))*Math.log(z) );
+            System.out.println("  df2dk estimate=" + df1dk + " deriv=" + compare_df2dk + "  k=" + k + " z=" + z);
+        }
+                        
         double dydk = (yConst/sigma) * ( f1 * df2dk + f2 * df1dk );
         
         return dydk;
-    }*/
-    
-    public static Double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
-
-        return estimateDerivUsingDeltaK(mu, k, sigma, x);
     }
     
     /**
@@ -281,22 +316,45 @@ public class DerivGEV {
         
         double z = 1. + k *( (x-mu)/sigma );
         
-        double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
+        //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
+        //double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        boolean zIsNegative = (z < 0);
+        
+        if (zIsNegative) {
+            z *= -1;
+        }
+        
+        float a = -1.f*(float) Math.pow(z, (-1.f/k));
+        
+        if (zIsNegative) {
+            a *= -1.f;
+        }
+        
+        double f0 = (yConst/sigma);
+        double f1 = Math.exp( a );
         double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        if (zIsNegative) {
+            f2 *= -1.f;
+        }
         
         double dzdsigma = -1. * k * (x-mu) * Math.pow(sigma, -2.);
         
         //(-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
         double df2dsigma = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdsigma;
         
-        double df1dsigma =  f1 * (1./k) * dzdsigma;
-        if (z < 0) {
-            df1dsigma *= -1. * Math.pow(-1.*z, -1. - (1./k));
-        } else {
-            df1dsigma *= Math.pow(z, -1. - (1./k));
+        //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+        double df1dsigma =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdsigma;
+        
+        if (zIsNegative) {
+            df2dsigma *= -1.f;
+            df1dsigma *= -1.f;
         }
         
-        double dydSigma = (yConst/sigma) * ( f1 * df2dsigma + f2 * df1dsigma );
+        double df0dsigma = -1.f/(sigma*sigma);
+                
+        double dydSigma = (  df0dsigma * f1 * f2 ) + ( df1dsigma * f0 * f2 ) + (df2dsigma * f0 * f1 );
         
         if (Double.isNaN(dydSigma)) {
             return estimateDerivUsingDeltaSigma(mu, k, sigma, x);
@@ -344,19 +402,39 @@ public class DerivGEV {
         
         double z = 1. + k *( (x-mu)/sigma );
         
-        double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
-        double f2 = Math.pow(z, (-1. - (1./k)) );
+        //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
+        //double f2 = Math.pow(z, (-1. - (1./k)) );
       
+        boolean zIsNegative = (z < 0);
+        
+        if (zIsNegative) {
+            z *= -1;
+        }
+        
+        float a = -1.f*(float) Math.pow(z, (-1.f/k));
+        
+        if (zIsNegative) {
+            a *= -1.f;
+        }
+        
+        double f1 = Math.exp( a );
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        if (zIsNegative) {
+            f2 *= -1.f;
+        }
+       
         double dzdmu = -1. * k/sigma;
         
-        // df2dmu = (-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+        //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
         double df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;
         
-        double df1dmu = f1 * (1/k) * dzdmu;
-        if (z < 0) {
-            df1dmu *= -1. * Math.pow(-1.*z, (-1 - (1/k)));
-        } else {
-            df1dmu *= Math.pow(z, (-1 - (1/k)));
+        //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+        double df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;
+        
+        if (zIsNegative) {
+            df2dmu *= -1.f;
+            df1dmu *= -1.f;
         }
         
         double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );
@@ -454,8 +532,8 @@ public class DerivGEV {
                 Double deriv = null;
                 switch (j) {
                     case 0:
-                        //deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, x[i]);
-                        deriv = DerivGEV.estimateDerivUsingDeltaK(mu, k, sigma, x[i]);
+                        deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, x[i]);
+                        //deriv = DerivGEV.estimateDerivUsingDeltaK(mu, k, sigma, x[i]);
                         break;
                     case 1:
                         deriv = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x[i]);
@@ -463,6 +541,7 @@ public class DerivGEV {
                         break;
                     case 2:
                         deriv = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x[i]);
+                        //deriv = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, x[i]);
                         break;
                 }
                 if (deriv != null && !deriv.isNaN()) {
@@ -508,8 +587,7 @@ public class DerivGEV {
         float chiSqSum = 0.0f;
         for (int ii = 0; ii < normalizedYGEV.length; ii++) {
             float z = (normalizedYGEV[ii] - normalizedY[ii]);
-            z *= normalizedYErr[ii];
-            chiSqSum += z*z;
+            chiSqSum += z*z*normalizedYErr[ii];
         }
         return chiSqSum;
     }
