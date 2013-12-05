@@ -143,16 +143,40 @@ public class DerivGEV {
     public static double derivWRTX(float yConst, float mu, float k, float sigma, float x) {
 
         double z = 1. + k *( (x-mu)/sigma );
-
-        double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
+        
+        /*if (z < 0) {
+            return estimateDerivUsingDeltaK(mu, k, sigma, x);
+        }*/
+        
+        boolean zIsNegative = (z < 0);
+        
+        if (zIsNegative) {
+            z *= -1;
+        }
+        
+        float a = -1.f*(float) Math.pow(z, (-1.f/k));
+        
+        if (zIsNegative) {
+            a *= -1.f;
+        }
+        
+        double f1 = Math.exp( a );
         double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        if (zIsNegative) {
+            f2 *= -1.f;
+        }
       
         double dzdx = k/sigma;
 
-        //(-1-(1/k)) * z^(-2-(1/k)) * dzdx
         double df2dx = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdx;
         
         double df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;
+        
+        if (zIsNegative) {
+            df2dx *= -1.f;
+            df1dx *= -1.f;
+        }
         
         double dydx = (yConst/sigma) * ( f1 * df2dx + f2 * df1dx );
         
@@ -198,8 +222,6 @@ public class DerivGEV {
             f2 *= -1.f;
         }
         
-        double dzdk = (x-mu)/sigma;
-        
         // df1dk     = f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
         
         // df2dk = f2 * ( (-1-(1/k)) * dzdk/z + (1/k^2) * ln(z) )
@@ -229,9 +251,10 @@ public class DerivGEV {
         
         double df2dk = (f2_1 - f2)/deltaK;
         
-        /* to compare to the derivative:
+        // to compare to the derivative:
+        /*double dzdk = (x-mu)/sigma;
         if (zIsNegative) {
-            double compare_df1dk = f1 * a * ( (1.f/k)*(dzdk/z) + (1.f/(k*k))*Math.log( -z ) );
+            double compare_df1dk = f1 * a * ( (1.f/k)*(dzdk/z) + (1.f/(k*k))*Math.log( z ) );
             System.out.println( String.format("  df1dk   estimate=%4.6f  deriv=%4.6f ", df1dk, compare_df1dk));
         } else {
             double compare_df2dk = f2 * (  (-1.f - (1.f/k))*(dzdk/z) + (1.f/(k*k))*Math.log(z) );
@@ -408,7 +431,7 @@ public class DerivGEV {
         
         //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
         //double f2 = Math.pow(z, (-1. - (1./k)) );
-      
+        
         boolean zIsNegative = (z < 0);
         
         if (zIsNegative) {
@@ -442,7 +465,7 @@ public class DerivGEV {
         }
         
         double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );
-        
+                
         if (Double.isNaN(dydmu)) {
             return estimateDerivUsingDeltaMu(mu, k, sigma, x);
         }
@@ -451,7 +474,10 @@ public class DerivGEV {
     }
     
     /**
-     * calculate d/dk of GEV using the difference between GEVs given minor changes in k
+     * estimate d/dmu of GEV using the difference between GEVs given minor changes in k
+     * 
+     * Note that this method does not match the results of method derivWRTMu.  Prefer method derivWRTMu
+     * when possible.
      * 
      * @param yConst
      * @param mu
@@ -524,9 +550,7 @@ public class DerivGEV {
         float[] tmpDerivs = new float[tmpChiSqMin.length];
         
         float min = Float.MAX_VALUE;
-        
-        //TODO: can change this to use avg of values in spectrum, but any single value for a single x appears to be same within 
-        
+                
         for (int i = 0; i < x.length; i++) {
                         
             Arrays.fill(tmpChiSqMin, Float.MAX_VALUE);

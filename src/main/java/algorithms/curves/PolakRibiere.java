@@ -300,9 +300,19 @@ public class PolakRibiere {
 
         //TODO:  check that muMin and muMax are within bounds of x
         
-        float kVar = kMax;//(kMax + kMin)/2.f;
-        float sigmaVar = sigmaMax;//(sigmaMax + sigmaMin)/2.f;
-        float muVar = muMax; //(muMax + muMin)/2.f;
+        float kVar = kMin;
+        float sigmaVar = sigmaMin;
+        float muVar = muMin;
+        
+        /*
+        float kVar = kMax;
+        float sigmaVar = sigmaMax;
+        float muVar = muMax;
+        
+        float kVar = (kMax + kMin)/2.f;
+        float sigmaVar = (sigmaMax + sigmaMin)/2.f;
+        float muVar = (muMax + muMin)/2.f;
+        */
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
@@ -323,7 +333,9 @@ public class PolakRibiere {
         float[] p = Arrays.copyOf(r, r.length);    
         //TODO:  assign to p the inverse of M preconditioner * r
         
-        float prevChiSqSum = Float.MAX_VALUE;
+        float bestChiSqSum = calculateChiSquareSum(
+            GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
+            WEIGHTS_DURING_CHISQSUM.ERRORS);
         
         int maxIterations = 200;
         int nIter = 0;
@@ -367,7 +379,7 @@ public class PolakRibiere {
                 }                
             }
             // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-            float alpha = lineSearch(r, p, vars, varsMin, varsMax, prevChiSqSum, 0, varStopIdx);
+            float alpha = lineSearch(r, p, vars, varsMin, varsMax, bestChiSqSum, 0, varStopIdx);
  
             if (alpha <= eps) {
                 // need 2nd deriv pre-conditioning
@@ -379,7 +391,9 @@ public class PolakRibiere {
  System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
             }
             
-            prevChiSqSum = chiSqSum;
+            if (chiSqSum < bestChiSqSum) {
+                bestChiSqSum = chiSqSum;
+            }
             
             nIter++;
         }
@@ -424,9 +438,20 @@ public class PolakRibiere {
     public GEVYFit fitCurveParametersSeparately(float kMin, float kMax, float sigmaMin, float sigmaMax,
         float muMin, float muMax) throws FailedToConvergeException {
         
-        float kVar = kMin;//(kMax + kMin)/2.f;
-        float sigmaVar = sigmaMin;//(sigmaMax + sigmaMin)/2.f;
-        float muVar = muMin; //(muMax + muMin)/2.f;
+        /*
+        float kVar = kMin;
+        float sigmaVar = sigmaMin;
+        float muVar = muMin;
+        
+        float kVar = kMax;
+        float sigmaVar = sigmaMax;
+        float muVar = muMax;
+        */
+        
+        float kVar = (kMax + kMin)/2.f;
+        float sigmaVar = (sigmaMax + sigmaMin)/2.f;
+        float muVar = (muMax + muMin)/2.f;
+       
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
@@ -447,7 +472,9 @@ public class PolakRibiere {
         float[] p = Arrays.copyOf(r, r.length);    
         //TODO:  assign to p the inverse of M preconditioner * r
         
-        float bestChiSqSum = Float.MAX_VALUE;
+        float bestChiSqSum = calculateChiSquareSum(
+            GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
+            WEIGHTS_DURING_CHISQSUM.ERRORS);
         
         int maxIterations = 200;
         int nIter = 0;

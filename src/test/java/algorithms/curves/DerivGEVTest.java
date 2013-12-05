@@ -1,12 +1,14 @@
 package algorithms.curves;
 
+import java.security.SecureRandom;
+
 import algorithms.misc.MiscMath;
 import algorithms.util.PolygonAndPointPlotter;
 import junit.framework.TestCase;
 
 public class DerivGEVTest extends TestCase {
 
-    public void estDerivWRTX() throws Exception {
+    public void testDerivWRTX() throws Exception {
         
         float k = 1.80f;
         float sigma = 0.85f;
@@ -51,6 +53,86 @@ public class DerivGEVTest extends TestCase {
         
         d = DerivGEV.derivWRTX(yConst, mu, k, sigma, 0.7f);
         assertTrue( d < 0);
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed( seed);
+        System.out.println("seed=" + seed);
+        
+        for (int i = 0; i < 100; i++) {
+            float x = sr.nextFloat()*sr.nextInt(120000);
+            Double deriv = DerivGEV.derivWRTX(yConst, mu, k, sigma, x);
+            System.out.println( x + ":" + deriv);
+        }
+        
+        /*
+        float s = 0.85f;
+        s = 1.9f;
+        
+        k = 1.0f;
+        sigma = s;
+        mu = 0.441f;
+        yConst = 1;
+        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);                    
+        plotter.addPlot(xp, yGEV, null, null, null, null, "k=1");
+        filePath = plotter.writeFile();
+        
+        k = 1.5f;
+        sigma = s;
+        mu = 0.441f;
+        yConst = 1;
+        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);                    
+        plotter.addPlot(xp, yGEV, null, null, null, null, "k=1.5");
+        filePath = plotter.writeFile();
+        
+        k = 2.0f;
+        sigma = s;
+        mu = 0.441f;
+        yConst = 1;
+        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);                    
+        plotter.addPlot(xp, yGEV, null, null, null, null, "k=2");
+        filePath = plotter.writeFile();
+        
+        k = 2.5f;
+        sigma = s;
+        mu = 0.441f;
+        yConst = 1;
+        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);                    
+        plotter.addPlot(xp, yGEV, null, null, null, null, "k=2.5");
+        filePath = plotter.writeFile();
+        
+        k = 3.0f;
+        sigma = s;
+        mu = 0.441f;
+        yConst = 1;
+        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);                    
+        plotter.addPlot(xp, yGEV, null, null, null, null, "k=3");
+        filePath = plotter.writeFile();
+        
+        k = 3.5f;
+        sigma = s;
+        mu = 0.441f;
+        yConst = 1;
+        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);                    
+        plotter.addPlot(xp, yGEV, null, null, null, null, "k=3.5");
+        filePath = plotter.writeFile();
+        
+        k = 4.0f;
+        sigma = s;
+        mu = 0.441f;
+        yConst = 1;
+        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);                    
+        plotter.addPlot(xp, yGEV, null, null, null, null, "k=4");
+        filePath = plotter.writeFile();
+        
+        k = 4.5f;
+        sigma = s;
+        mu = 0.441f;
+        yConst = 1;
+        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);                    
+        plotter.addPlot(xp, yGEV, null, null, null, null, "");
+        filePath = plotter.writeFile();
+        */
     }
     
     public void testDerivWRTK() throws Exception {
@@ -79,13 +161,14 @@ public class DerivGEVTest extends TestCase {
                     
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
         
+        /*
         for (int i = 0; i < yGEV1.length; i++) {
             Double deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, xp[i]);
             if (deriv != null) {
                 System.out.println( String.format(" df(k)/dk= %8.4f  x=%.3f", deriv.doubleValue(), xp[i]));
             }
         }
-        
+        */
         
         plotter.addPlot(xp, yGEV0, null, null, null, null, "k-deltaK");
         plotter.addPlot(xp, yGEV1, null, null, null, null, "k=" + k);
@@ -94,7 +177,7 @@ public class DerivGEVTest extends TestCase {
        
         double last = Integer.MIN_VALUE;
         for (int i = 1; i < 10; i++) {
-            double delta = (k/10.) * i;
+            double delta = (k*factor) * i;
             float d = (float) (k + delta);
                         
             // looks like the deriv increases with increasing shape k for this region of the curve
@@ -107,7 +190,8 @@ public class DerivGEVTest extends TestCase {
             
             assertNotNull(deriv);
             
-            assertTrue(last < deriv.doubleValue());
+            // these are all nearly the same value since x is the same and delta k is small
+            //assertTrue(last < deriv.doubleValue());
             
             Double deriv2 = DerivGEV.estimateDerivUsingDeltaK(mu, k, sigma, xPoint);
             
@@ -116,12 +200,39 @@ public class DerivGEVTest extends TestCase {
             last = deriv.doubleValue();           
         }
         
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed( seed);
+        System.out.println("seed=" + seed);
         
-        //TODO:  test for other curves and portion
+        for (int i = 0; i < 100000; i++) {
+            float x = sr.nextFloat()*sr.nextInt(120000);
+            while (x == 0) {
+                x = sr.nextFloat()*sr.nextInt(120000);
+            }
+            Double deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
+            assertNotNull(deriv);
+            Double deriv2 = DerivGEV.estimateDerivUsingDeltaK(mu, k, sigma, x);
+            assertNotNull(deriv2);
+                        
+            float m = sr.nextFloat()*sr.nextInt((int)Math.ceil(x));
+            float s = sr.nextFloat()*sr.nextInt(10);
+            while (s == 0) {
+                s = sr.nextFloat()*sr.nextInt(10);
+            }
+            float k_ = sr.nextFloat()*sr.nextInt(10);
+            while (k_ == 0) {
+                k_ = sr.nextFloat()*sr.nextInt(10);
+            }
+            deriv = DerivGEV.derivWRTK(yConst, m, k_, s, x);
+            assertNotNull(deriv);
+
+            //System.out.println( x + ":" + deriv);
+        }
         
     }
 
-    public void estDerivWRTSigma() throws Exception {
+    public void testDerivWRTSigma() throws Exception {
         
         System.out.println("testDerivWRTSigma");
         
@@ -181,9 +292,37 @@ public class DerivGEVTest extends TestCase {
         }
         System.out.println("==> yFactor=" + yFactor + " delta=" + sigma*factor);
         
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed( seed);
+        System.out.println("seed=" + seed);
+        
+        for (int i = 0; i < 100000; i++) {
+            float x = sr.nextFloat()*sr.nextInt(120000);
+            while (x == 0) {
+                x = sr.nextFloat()*sr.nextInt(120000);
+            }
+            Double deriv = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);
+            assertNotNull(deriv);
+            Double deriv2 = DerivGEV.estimateDerivUsingDeltaSigma(mu, k, sigma, x);
+            assertNotNull(deriv2);
+            //System.out.println( x + ":" + deriv);
+            
+            float m = sr.nextFloat()*sr.nextInt((int)Math.ceil(x));
+            float s = sr.nextFloat()*sr.nextInt(10);
+            while (s == 0) {
+                s = sr.nextFloat()*sr.nextInt(10);
+            }
+            float k_ = sr.nextFloat()*sr.nextInt(10);
+            while (k_ == 0) {
+                k_ = sr.nextFloat()*sr.nextInt(10);
+            }
+            deriv = DerivGEV.derivWRTSigma(yConst, m, k_, s, x);
+            assertNotNull(deriv);
+        }
     }
 
-    public void estDerivWRTMu() throws Exception {
+    public void testDerivWRTMu() throws Exception {
         
         System.out.println("testDerivWRTMu");
         
@@ -222,7 +361,7 @@ public class DerivGEVTest extends TestCase {
             
             assertNotNull(deriv);
             
-            assertTrue(last < deriv.doubleValue());
+            //assertTrue(last < deriv.doubleValue());
             
 
             Double deriv2 = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, xPoint);
@@ -232,6 +371,35 @@ public class DerivGEVTest extends TestCase {
             last = deriv.doubleValue();       
         }
         String filePath = plotter.writeFile();
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed( seed);
+        System.out.println("seed=" + seed);
+        
+        for (int i = 0; i < 100000; i++) {
+            float x = sr.nextFloat()*sr.nextInt(120000);
+            while (x == 0) {
+                x = sr.nextFloat()*sr.nextInt(120000);
+            }
+            Double deriv = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x);
+            assertNotNull(deriv);
+            Double deriv2 = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, x);
+            assertNotNull(deriv2);
+            //System.out.println( x + ":" + deriv);
+            
+            float m = sr.nextFloat()*sr.nextInt((int)Math.ceil(x));
+            float s = sr.nextFloat()*sr.nextInt(10);
+            while (s == 0) {
+                s = sr.nextFloat()*sr.nextInt(10);
+            }
+            float k_ = sr.nextFloat()*sr.nextInt(10);
+            while (k_ == 0) {
+                k_ = sr.nextFloat()*sr.nextInt(10);
+            }
+            deriv = DerivGEV.derivWRTMu(yConst, m, k_, s, x);
+            assertNotNull(deriv);
+        }
     }
 
 }

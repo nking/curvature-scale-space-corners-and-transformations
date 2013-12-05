@@ -271,7 +271,11 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
                     b *= -1.f;
                 }
                 float t = (float) ((1.f/sigma) * Math.exp(a) * b);
-                yGEV[i] = t;
+                if (t < 0) {
+                    yGEV[i] = 0;
+                } else {
+                    yGEV[i] = t;
+                }
             }
         }
 
@@ -292,7 +296,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
             float a = (float) (-1.f - Math.exp(-1.0f*z));
 
-            yGEV[i] = (float) ((1.f/sigma) * Math.exp(a));// times Math.exp(z) too???
+            yGEV[i] = (float) ((1.f/sigma) * Math.exp(a));
         }
 
         return yGEV;
@@ -438,18 +442,16 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
             boolean zIsNegative = (z < 0);
             
             if (zIsNegative) {
-                z *= -1;
+                z *= -1.f;
             }
 
-            //float a = (z >= 0) ? -1.f * (float) Math.pow(z, (-1.f/k)) : (float) Math.pow(-1.f*z, (-1.f/k));
             float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
+            
             if (Float.isInfinite(a)) {
                 // k is extremely small, use approx when k = 0
                 return generateEVTypeICurve(x1, sigma, mu);
             }
 
-            //float b = (z >= 0) ? (float) Math.pow(z, (-1.f - (1.f/k))) : (float) Math.pow(-1.f*z, (-1.f - (1.f/k)));
             float b = (float) Math.pow(z, (-1.f - (1.f/k)));
 
             if (Float.isInfinite(b)) {
@@ -462,11 +464,15 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
                 yGEV[i] = 0;
             } else {
                 if (zIsNegative) {
-                    a *= a;
-                    b *= b;
+                    a *= -1.f;
+                    b *= -1.f;
                 }
                 float t = (float) ((1.f/sigma) * Math.exp(a) * b);
-                yGEV[i] = t;
+                if (t < 0) {
+                    yGEV[i] = 0;
+                } else {
+                    yGEV[i] = t;
+                }
             }
         }
 
