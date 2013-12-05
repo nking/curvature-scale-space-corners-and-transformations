@@ -619,4 +619,170 @@ public class DerivGEV {
         }
         return chiSqSum;
     }
+    
+    /**
+     * see notes in NonQuadraticConjugateGradientSolver.java
+     * 
+       Then using the ICU0 matrix as preconditioner:
+               
+                                            | d(1,1)   0        0      |     |   ∂f/∂k   |
+            (M_icuo)^(-1) * ∇f = M^T * ∇f = | 0        d(2,2)   0      |  *  | ∂f/∂sigma |
+                                            | 0        0        d(3,3) |     |   ∂f/∂mu  |
+                                        
+                                            | d(1,1) * (∂f/∂k)     |
+                                          = | d(2,2) * (∂f/∂sigma) |
+                                            | d(3,3) * (∂f/∂mu)    |
+
+                 where d(1,1) is 1./(∂^2f/∂k∂k)
+                       d(2,2) is ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                       d(3,3) is 1./(
+                                         ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                         -
+                                         (
+                                            (∂^2f/∂mu∂sigma)
+                                            *
+                                            ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                            *
+                                            ∂^2f/∂sigma∂mu
+                                         )
+                                     )
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param normalizedY
+     * @param normalizedYErr
+     * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
+     * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
+     * @param r array of first derivatives of k, sigma, and mu that will be transformed using the ICU0 preconditioner
+     */
+    public static void transformRUsingICU0Preconditioner(float mu, float k, float sigma, float[] x, 
+        float[] normalizedY, float[] normalizedYErr, float[] r, int idx0, int idx1) {
+        
+        // Need 2nd deriv formulas.
+        
+        // The comparison of manually calculating the first derivative formulas versus 
+        // estimating the first deriv at the points plus and minus a small delta
+        // shows that an estimate is fine for all partial derivatives except for mu.
+        //   either there's a bug that I haven't found yet for the mu formula or the derivatives w.r.t. mu aren't
+        //   sensitive to changes (presumably because mu is related to x which is an independent variable in the eqn).
+        // For that reason, can use the estimate method for 2nd derivatives which don't use mu
+        //   but for mu, need to use derive the 2nd derivatives
+        //
+        // The derivatives need to manually calculated for the following:
+        // ∂^2f/∂k∂mu
+        // ∂^2f/∂mu∂mu
+        // ∂^2f/∂mu∂k
+        // ∂^2f/∂mu∂sigma
+        
+        // And estimates for these:  ∂^2f/∂k∂k, ∂^2f/∂k∂sigma, ∂^2f/∂sigma∂sigma, ∂^2f/∂sigma∂k
+        
+    }
+    
+    /* 
+     df1dk     = f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+     df2dk     = = f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
+     dzdk = (x-mu)/sigma
+     
+     ∂^2f/∂k∂mu
+         = ∂/∂mu ( (yconst/sigma) * ( f1 * df2dk + f2 * df1dk )  )
+         = (yconst/sigma) * ∂/∂mu( f1 * df2dk )  + (yconst/sigma) * ∂/∂mu(f2 * df1dk )
+         = (yconst/sigma) *  pt1                 + (yconst/sigma) * pt2   
+       
+         pt1 = ∂/∂mu( f1 * df2dk )
+             = f1 * ∂/∂mu( df2dk ) + df2dk * ∂/∂mu(f1)
+             = f1 * pt1_0          + df2dk * df1dmu
+             
+             pt1_0 = ∂/∂mu( df2dk )
+                   = ∂/∂mu( f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) ) )
+                      
+                   for a product of more than 2 factors, multiply deriv of one times all 
+                   other factors then add next deriv times all other factors...
+       
+                   = ∂/∂mu( f2 * (-1-(1/k)) * dzdk * (1/z) )  +  ∂/∂mu( f2 * (1/k^2) * ln(z) )
+                   
+                   = pt1_0_0                                  + pt1_0_1
+                   
+                 pt1_0_0 = ∂/∂mu( f2 ) * (-1-(1/k)) * dzdk * (1/z)  +  0  
+                             + ∂/∂mu(dzdk) * f2 * (-1-(1/k)) * (1/z)  
+                             + ∂/∂mu((1/z)) * f2 * (-1-(1/k)) * dzdk
+                         = pt1_0_0_0 * (-1-(1/k)) * dzdk * (1/z)    +  0  
+                             + pt1_0_0_1 * f2 * (-1-(1/k)) * (1/z)
+                             + pt1_0_0_2 * f2 * (-1-(1/k)) * dzdk
+                         
+                     pt1_0_0_0 = ∂/∂mu( f2 )
+                               = df2dmu
+                               = (-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+                                 
+                     pt1_0_0_1 = ∂/∂mu(dzdk)
+                               = ∂/∂mu( (x-mu)/sigma )
+                               = -mu/sigma
+                     
+                     pt1_0_0_2 = ∂/∂mu(1/z)  
+                     
+                                    z = (1 + k*( (x-mu)/sigma ) = (sigma + k*(x-mu))/sigma
+                                    1/z = sigma/(sigma + k*(x-mu))
+                                    
+                               = ∂/∂mu(sigma/(sigma + k*(x-mu)))
+                               = ∂/∂mu( sigma * (sigma + k*(x-mu))^-1 )
+                               = -1 * sigma * (sigma + k*(x-mu))^-2  * (-k*mu)
+                               = k * mu * sigma * (sigma + k*(x-mu))^-2
+                               
+                 pt1_0_1 = ∂/∂mu( f2 * (1/k^2) * ln(z) ) 
+                         = df2dmu * (1/k^2) * ln(z)
+                            + 0
+                            + ∂/∂mu( ln(z) ) * f2 * (1/k^2)
+                         = df2dmu * (1/k^2) * ln(z)
+                            + pt1_0_1_0 * f2 * (1/k^2)
+                     
+                     pt1_0_1_0 = ∂/∂mu( ln(z) )   where logarithm( u(mu) ) = (1/u(mu)) * d*u(mu)/dmu
+                               = ∂/∂mu( ln ( (sigma + k*(x-mu))/sigma ) 
+                               = ( sigma / (sigma + k*(x-mu)) ) * (-k)
+                               = (-k * sigma) / ( k * (sigma + k*(x-mu)) )
+         
+         pt2 = ∂/∂mu(f2 * df1dk )
+             = f2 * ∂/∂mu( df1dk ) + df1dk * df2dmu
+             = f2 * pt2_0 + df1dk * df2dmu
+         
+             pt2_0 = ∂/∂mu( df1dk )
+                   = ∂/∂mu( f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) ) )
+                   = ∂/∂mu( f1 * (-z^(-1/k)) * (1/k) * dzdk * (1/z) )  +  ∂/∂mu( f1 * (-z^(-1/k)) * (1/k^2) * ln( -z ) )
+                   = pt2_0_0   +   pt2_0_1
+                 
+                 pt2_0_0 = ∂/∂mu( f1 * (-z^(-1/k)) * (1/k) * dzdk * (1/z) )
+                         = df1dmu * (-z^(-1/k)) * (1/k) * dzdk * (1/z)   
+                             + ∂/∂mu(-z^(-1/k)) * f1 * (1/k) * dzdk * (1/z)
+                             + 0
+                             + ∂/∂mu(dzdk) * f1 * (-z^(-1/k)) * (1/k) * (1/z)
+                             + ∂/∂mu(1/z) * f1 * (-z^(-1/k)) * (1/k) * dzdk
+                         = df1dmu * (-z^(-1/k)) * (1/k) * dzdk * (1/z) 
+                             + pt2_0_0_0 * f1 * (1/k) * dzdk * (1/z)
+                             + pt2_0_0_1 * f1 * (-z^(-1/k)) * (1/k) * (1/z)
+                             + pt2_0_0_2 * f1 * (-z^(-1/k)) * (1/k) * dzdk
+                             
+                     pt2_0_0_0 = ∂/∂mu(-z^(-1/k))
+                               = (1/k) * z^(-1 - (1/k)) * dzdmu  <== from class level comments
+                     
+                     pt2_0_0_1 = ∂/∂mu(dzdk)
+                               = ∂/∂mu( (x-mu)/sigma )
+                               = -mu/sigm
+                             
+                     pt2_0_0_2 = ∂/∂mu(1/z)
+                               = pt1_0_0_1
+                               
+                 pt2_0_1 = ∂/∂mu( f1 * (-z^(-1/k)) * (1/k^2) * ln( -z ) )
+                         = df1dmu * (-z^(-1/k)) * (1/k^2) * ln( -z )
+                            + ∂/∂mu(-z^(-1/k)) * f1 * (1/k^2) * ln( -z )
+                            + ∂/∂mu(1/k^2) * f1 * (-z^(-1/k)) * ln( -z )
+                            + ∂/∂mu( ln( -z ) ) * f1 * (-z^(-1/k)) * (1/k^2)
+                         = df1dmu * (-z^(-1/k)) * (1/k^2) * ln( -z )
+                            + pt2_0_0_0 * f1 * (1/k^2) * ln( -z )
+                            + 0
+                            + pt2_0_1_0 * f1 * (-z^(-1/k)) * (1/k^2)
+                        
+                     pt2_0_1_0 = ∂/∂mu( ln ( -1*(sigma + k*(x-mu))/sigma ) 
+                               = (k*sigma)/(sigma + k*(x-mu))
+                               
+
+*/
 }

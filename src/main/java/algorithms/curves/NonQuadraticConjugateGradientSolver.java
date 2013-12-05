@@ -203,7 +203,7 @@ import algorithms.util.PolygonAndPointPlotter;
            
   @author nichole
  */
-public class PolakRibiere {
+public class NonQuadraticConjugateGradientSolver {
 
     protected final float[] x;
     
@@ -233,7 +233,7 @@ public class PolakRibiere {
     
     protected static float eps = 1e-8f;
     
-    public PolakRibiere(float[] xPoints, float[] yPoints,
+    public NonQuadraticConjugateGradientSolver(float[] xPoints, float[] yPoints,
         float[] xErrPoints, float[] yErrPoints) {
 
         if (xPoints == null) {

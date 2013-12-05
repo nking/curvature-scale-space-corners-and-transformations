@@ -5,7 +5,7 @@ import java.util.Arrays;
 import algorithms.util.Errors;
 import junit.framework.TestCase;
 
-public class PolakRibiereTest extends TestCase {
+public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
     public void testFitCurve() throws Exception {
         
@@ -28,7 +28,7 @@ public class PolakRibiereTest extends TestCase {
             new float[0], new float[0], new float[0]);
         float[] yGEV = gev.generateCurve(xp, k, sigma, mu);
                     
-        PolakRibiere fitCurve = new PolakRibiere(xp, yGEV, Errors.populateYErrorsBySqrt(xp), ye);
+        NonQuadraticConjugateGradientSolver fitCurve = new NonQuadraticConjugateGradientSolver(xp, yGEV, Errors.populateYErrorsBySqrt(xp), ye);
        
         float kMin = 0.01f;
         float kMax = 3*k;
