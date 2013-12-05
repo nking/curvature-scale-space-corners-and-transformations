@@ -548,6 +548,8 @@ public class DerivGEV {
             yGEV[ii] /= yMax;
         }
         float yConst = 1.f/yMax;
+        
+        float xPoint = x[yMaxIdx + 1];
                 
         for (int i = idx0; i <= idx1; i++) {
                         
@@ -555,7 +557,7 @@ public class DerivGEV {
                 case 0: {
                     // k
                     // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
-                    double rModified = calculatePreconditionerModifiedResidualK(yConst, mu, k, sigma, x[yMaxIdx]);
+                    double rModified = calculatePreconditionerModifiedResidualK(yConst, mu, k, sigma, xPoint);
                     
                     // test whether adding or subtracting the residual results in a reduced chisqsum
                     if (rModified > 0) {
@@ -571,7 +573,7 @@ public class DerivGEV {
                 case 1: {
                     // sigma
                     // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
-                    double rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, x[yMaxIdx]);
+                    double rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, xPoint);
                     
                     // test whether adding or subtracting the residual results in a reduced chisqsum
                     if (rModified > 0) {
@@ -587,7 +589,7 @@ public class DerivGEV {
                 case 2: {
                     // mu
                     // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
-                    double rModified = calculatePreconditionerModifiedResidualMu(yConst, mu, k, sigma, x[yMaxIdx]);
+                    double rModified = calculatePreconditionerModifiedResidualMu(yConst, mu, k, sigma, xPoint);
                     
                     // test whether adding or subtracting the residual results in a reduced chisqsum
                     if (rModified > 0) {
