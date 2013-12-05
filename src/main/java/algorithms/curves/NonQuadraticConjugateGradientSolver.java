@@ -21,12 +21,17 @@ import algorithms.util.PolygonAndPointPlotter;
    determine the next stop and direction.
    
    NOTE:
-   
-      The preconditioning matrix (2nd derivatives) is in progress, but not yet present.
-      The solution does not yet converge.
+      internally, the first and second derivatives of the curve GEV(k, sigma, mu)
+      are used to calculate what the smallest step in k, sigma, or mu would be in
+      order to create a significant change in the GEV curve.
+     
+      The suggested change for k is calculated from d/dk modified by the preconditioner
+      at the point right after the model peak.
+     
+     Note that the suggested changes might be applied by the NonQuadraticConguteSolver as
+     a fraction of the suggested change returned by the lineSearch method
  
- 
-   Useful for implementing the code below was reading:
+  Useful for implementing the code below was reading:
    
    
    http://en.wikipedia.org/wiki/Fletcher-Reeves#Nonlinear_conjugate_gradient
@@ -198,8 +203,7 @@ import algorithms.util.PolygonAndPointPlotter;
                                      
            Note that below in the code, r is ∇f.
            
-           The preconditioner has not yet been applied below.
-           
+    
            
   @author nichole
  */
@@ -324,14 +328,11 @@ public class NonQuadraticConjugateGradientSolver {
         // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
         float[] r = new float[3];
         DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
-        
-        //TODO: derive M, the preconditioner
-        
+                
         float[] rPrev = new float[r.length];
         
         // p is search direction
         float[] p = Arrays.copyOf(r, r.length);    
-        //TODO:  assign to p the inverse of M preconditioner * r
         
         float bestChiSqSum = calculateChiSquareSum(
             GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
@@ -423,9 +424,6 @@ public class NonQuadraticConjugateGradientSolver {
      * So far, this is resulting in the best fits, but is sensitive to the starting point
      * and has not been tested over a wide range of data distributions.
      * 
-     * TODO: A pre-conditioner is being added to use the 2nd derivatives for better solutions or
-     * faster solutions.
-     * 
      * @param kMin
      * @param kMax
      * @param sigmaMin
@@ -465,14 +463,11 @@ public class NonQuadraticConjugateGradientSolver {
         // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
         float[] r = new float[3];
         DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
-
-        //TODO: derive M, the preconditioner
         
         float[] rPrev = new float[r.length];
         
         // p is search direction
         float[] p = Arrays.copyOf(r, r.length);    
-        //TODO:  assign to p the inverse of M preconditioner * r
         
         float bestChiSqSum = calculateChiSquareSum(
             GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
@@ -525,7 +520,6 @@ public class NonQuadraticConjugateGradientSolver {
              // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
                 float alpha = lineSearch(r, p, vars, varsMin, varsMax, bestChiSqSum, k, k);
                 if (alpha <= eps) {
-                    // need 2nd deriv pre-conditioning
                     break;
                 }
                 float ap = alpha*p[k];

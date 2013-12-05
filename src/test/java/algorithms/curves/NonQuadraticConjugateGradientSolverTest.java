@@ -15,6 +15,14 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         float k = 1.80f;
         float sigma = 0.85f;
         float mu = 0.441f;
+        /*k = 0.294f;
+        sigma = 0.141f;
+        mu = 0.254f;*/
+        /*
+        k = 0.294f;
+        sigma = 2.141f;
+        mu = 0.254f;
+        */
         
         float[] xp = new float[30];
         float[] ye = new float[30];

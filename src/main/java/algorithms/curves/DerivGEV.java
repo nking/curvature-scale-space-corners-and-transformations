@@ -501,12 +501,19 @@ public class DerivGEV {
     
     /**
      * for given mu, k, sigma and the data x, normalizedY and normalizedYErr,
-     * calculate the partial derivative of the GEV(k, sigma, mu, x[i]) with respect to 
-     * k, then sigma, then mu
-     * over each i in x and return the derivatives of each which minimize the chi square sum.
+     * calculate the changes in k, sigma, and mu which would reduce the chi sq sum.
      * 
-     * runtime cost is (x.length * 3) iterations of a function that has 5 transcendental operations
-     *    + x.length iterations of a function that has 2 transcendental operations.
+     * Note that internally, the first and second derivatives of the curve GEV(k, sigma, mu)
+     * are used to calculate what the smallest step in k, sigma, or mu would be in
+     * order to create a significant change in the GEV curve.
+     * 
+     * The suggested change for k is calculated from d/dk modified by the preconditioner
+     * at the point right after the model peak.
+     * 
+     * Note that the suggested changes might be applied by the NonQuadraticConguteSolver as
+     * a fraction of the suggested change.
+     * 
+     * runtime cost is 
      *    
      * @param mu
      * @param k
@@ -519,106 +526,581 @@ public class DerivGEV {
      * @param derivs array to populate with answers.  it's given as an argument to reuse the array
      * @return
      */
-    //TODO:  don't need to pass back the yconst used do I?
     public static void derivsThatMinimizeChiSqSum(float mu, float k, float sigma, float[] x, 
         float[] normalizedY, float[] normalizedYErr, float[] derivs, int idx0, int idx1) {
                 
         Arrays.fill(derivs, 0);
         
-        float[] chiSqMin = new float[derivs.length];
-        Arrays.fill(chiSqMin, Float.MAX_VALUE);
-
+        // to determine the suggested step for k, sigma, or mu,
+        //   we look at the first derivatives of the point in the model GEV right after the maximum
+        //   and then modify those derivatives using a preconditioner from ICU0 matrix.
+        // that suggested step is tried as plus and minus of current variable and the one
+        //   with the smallest resulting chisqsum from the curve produced by the change is the
+        //   result returned in derivs for that variable.
+        
         float[] yGEV = GeneralizedExtremeValue.genCurve(x, k, sigma, mu);
         if (yGEV == null) {
             return;
         }
-        float yMax = MiscMath.findMax(yGEV);
+        int yMaxIdx = MiscMath.findYMaxIndex(yGEV);
+        float yMax = yGEV[yMaxIdx];
         for (int ii = 0; ii < yGEV.length; ii++){
             yGEV[ii] /= yMax;
         }
         float yConst = 1.f/yMax;
-        
-        // fGEV(x, kVar, sigmaVar, mu) = (yNorm/sigma)*exp(-1*(1+k((x-mu)/sigma))^(-1/k)) * (1+k((x-mu)/sigma))^(-1-(1/k))
-        // We want to minimize sum over all data points in histogram: sum over i of (fGEV[i] - y[i]) * yerr[i]
-        //    -- y is normalized to a max of 1.  make sure that fGEV is normalized too (divide it by its peak).
-        //    -- deriv of sum w.r.t. sigmaVar is yerr*DerivGEV.wrtSigma... sum over i
-        //    -- deriv of sum w.r.t. kVar     is yerr*DerivGEV.wrtK... sum over i
-        //    -- deriv of sum w.r.t. muVar    is yerr*DerivGEV.wrtMu... sum over i
-        //    ----> because yerr[i] is the same for all derivatives and we're comparing, we can drop it from the calcs
-        
-        float[] tmpChiSqMin = new float[derivs.length];
-        float[] tmpDerivs = new float[tmpChiSqMin.length];
-        
-        float min = Float.MAX_VALUE;
                 
-        for (int i = 0; i < x.length; i++) {
+        for (int i = idx0; i <= idx1; i++) {
                         
-            Arrays.fill(tmpChiSqMin, Float.MAX_VALUE);
-            Arrays.fill(tmpDerivs, 0);
-            
-            for (int j = idx0; j <= idx1; j++) {
-                Double deriv = null;
-                switch (j) {
-                    case 0:
-                        deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, x[i]);
-                        //deriv = DerivGEV.estimateDerivUsingDeltaK(mu, k, sigma, x[i]);
-                        break;
-                    case 1:
-                        deriv = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x[i]);
-                        //deriv = DerivGEV.estimateDerivUsingDeltaSigma(mu, k, sigma, x[i]);
-                        break;
-                    case 2:
-                        deriv = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x[i]);
-                        //deriv = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, x[i]);
-                        break;
+            switch(i) {
+                case 0: {
+                    // k
+                    // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
+                    double rModified = calculatePreconditionerModifiedResidualK(yConst, mu, k, sigma, x[yMaxIdx]);
+                    
+                    // test whether adding or subtracting the residual results in a reduced chisqsum
+                    if (rModified > 0) {
+                        float[] yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
+                        float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
+                        float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
+                        float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
+                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)(k + rModified) : (float)(k - rModified);
+                    }
+                    
+                    break;
                 }
+                case 1: {
+                    // sigma
+                    // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
+                    double rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, x[yMaxIdx]);
+                    
+                    // test whether adding or subtracting the residual results in a reduced chisqsum
+                    if (rModified > 0) {
+                        float[] yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
+                        float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
+                        float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
+                        float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
+                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)(sigma + rModified) : (float)(sigma - rModified);
+                    }
+                    
+                    break;
+                }
+                case 2: {
+                    // mu
+                    // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
+                    double rModified = calculatePreconditionerModifiedResidualMu(yConst, mu, k, sigma, x[yMaxIdx]);
+                    
+                    // test whether adding or subtracting the residual results in a reduced chisqsum
+                    if (rModified > 0) {
+                        float[] yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
+                        float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
+                        float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
+                        float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
+                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)(mu + rModified) : (float)(mu - rModified);
+                    }
+                    
+                    break;
+                }
+            }            
+        }
+    }
+    
+    public static double calculatePreconditionerModifiedResidualK(
+        float yConst, float mu, float k, float sigma, float x) {
+
+        // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
+        // to the first derivative
+        // 
+        // k component to residuals = d(1,1) * (∂f/∂k)
+        //       where d(1,1) is 1./(∂^2f/∂k∂k)        
+        
+        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
+        
+        if (dydk == null) {
+            return 0;
+        }
+        
+        Double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk);
+        
+        double resid = dydk/d2ydkdk;
+        
+        return resid;
+    }
+    
+    /**
+     * estimate ∂^2f/∂k∂k empirically.
+     * 
+     * The method uses the tested DerivGEV.derivWRTK() for ∂f/∂k and plugs in different k's 
+     * to estimate ∂^2f/∂k∂k.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
+    static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x) {
+     
+        // ∂^2f/∂k∂k = estimate as (dydk_2 - dydk)/dk
+        
+        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
+        
+        if (dydk == null) {
+            return 0;
+        }
+        
+        return estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());
+    }
+    
+    /**
+     * estimate ∂^2f/∂k∂k empirically.  the method accepts dydk as a given to allow easier
+     * resuse in other equations, but has to trust that dydk was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydk
+     * @return
+     */
+    static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x, double dydk) {
+
+        // ∂^2f/∂k∂k = estimate as (dydk_2 - dydk)/dk
+        
+        float factor = 0.0001f;
+        
+        double delta = (k*factor);
+        
+        Double dydk_2 = DerivGEV.derivWRTK(yConst, mu, (float)(k + delta), sigma, x);
+        
+        if (dydk_2 == null) {
+            return 0;
+        }
+        
+        double d2ydkdk = (dydk_2 - dydk)/delta;
+        
+        return d2ydkdk;
+    }
+    
+    /**
+     * estimate ∂^2f/∂k∂sigma empirically.  the method accepts dydk as a given to allow easier
+     * resuse in other equations, but has to trust that dydk was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydk
+     * @return
+     */
+    static double estimateDY2DKDSigma(float yConst, float mu, float k, float sigma, float x, double dydk) {
+
+        // ∂^2f/∂k∂sigma 
+        
+        float factor = 0.0001f;
+        
+        double delta = (sigma*factor);
+        
+        Double dydk_2 = DerivGEV.derivWRTK(yConst, mu, k, (float)(sigma + delta), x);
+        
+        if (dydk_2 == null) {
+            return 0;
+        }
+        
+        double d2ydkdk = (dydk_2 - dydk)/delta;
+        
+        return d2ydkdk;
+    }
+
+    /**
+     * estimate ∂^2f/∂k∂mu empirically.  the method accepts dydk as a given to allow easier
+     * resuse in other equations, but has to trust that dydk was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydk
+     * @return
+     */
+    static double estimateDY2DKDMu(float yConst, float mu, float k, float sigma, float x, double dydk) {
+
+        // ∂^2f/∂k∂mu 
+        
+        float factor = 0.0001f;
+        
+        double delta = (mu*factor);
+        
+        Double dydm_2 = DerivGEV.derivWRTK(yConst, (float)(mu + delta), k, sigma, x);
+        
+        if (dydm_2 == null) {
+            return 0;
+        }
+        
+        double d2ydkdm = (dydm_2 - dydk)/delta;
+        
+        return d2ydkdm;
+    }
+    
+    /**
+     * estimate ∂^2f/∂sigma∂sigma empirically.  the method accepts dydsigma as a given to allow easier
+     * resuse in other equations, but has to trust that dydsigma was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydsigma
+     * @return
+     */
+    static double estimateDY2DSigmaDSigma(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
+
+        // ∂^2f/∂sigma∂sigma = estimate as (dyds_2 - dyds)/ds
+        
+        float factor = 0.0001f;
+        
+        double delta = (sigma*factor);
+        
+        Double dyds_2 = DerivGEV.derivWRTSigma(yConst, mu, k, (float)(sigma + delta), x);
+        
+        if (dyds_2 == null) {
+            return 0;
+        }
+        
+        double d2ydsds = (dyds_2 - dydsigma)/delta;
+        
+        return d2ydsds;
+    }
+    
+    /**
+     * estimate ∂^2f/∂mu∂mu empirically.  the method accepts dydsigma as a given to allow easier
+     * resuse in other equations, but has to trust that dydmu was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydsigma
+     * @return
+     */
+    static double estimateDY2DMuDMu(float yConst, float mu, float k, float sigma, float x, double dydmu) {
+
+        // ∂^2f/∂mu∂mu
+        
+        float factor = 0.0001f;
+        
+        double delta = (mu*factor);
+        
+        Double dydm_2 = DerivGEV.derivWRTMu(yConst, (float)(mu + delta), k, sigma, x);
+        
+        if (dydm_2 == null) {
+            return 0;
+        }
+        
+        double d2ydmdm = (dydm_2 - dydmu)/delta;
+        
+        return d2ydmdm;
+    }
+    
+    /**
+     * estimate ∂^2f/∂mu∂k empirically.  the method accepts dydsigma as a given to allow easier
+     * resuse in other equations, but has to trust that dydmu was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydsigma
+     * @return
+     */
+    static double estimateDY2DMuDK(float yConst, float mu, float k, float sigma, float x, double dydmu) {
+
+        // ∂^2f/∂mu∂k
+        
+        float factor = 0.0001f;
+        
+        double delta = (k*factor);
+        
+        Double dydm_2 = DerivGEV.derivWRTMu(yConst, mu, (float)(k + delta), sigma, x);
+        
+        if (dydm_2 == null) {
+            return 0;
+        }
+        
+        double d2ydmdk = (dydm_2 - dydmu)/delta;
+        
+        return d2ydmdk;
+    }
+    
+    /**
+     * estimate ∂^2f/∂mu∂sigma empirically.  the method accepts dydsigma as a given to allow easier
+     * resuse in other equations, but has to trust that dydmu was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydsigma
+     * @return
+     */
+    static double estimateDY2DMuDSigma(float yConst, float mu, float k, float sigma, float x, double dydmu) {
+
+        // ∂^2f/∂mu∂sigma
+        
+        float factor = 0.0001f;
+        
+        double delta = (sigma*factor);
+        
+        Double dydm_2 = DerivGEV.derivWRTMu(yConst, mu, k, (float)(sigma + delta), x);
+        
+        if (dydm_2 == null) {
+            return 0;
+        }
+        
+        double d2ydmds = (dydm_2 - dydmu)/delta;
+        
+        return d2ydmds;
+    }
+    
+    /**
+     * estimate ∂^2f/∂sigma∂k empirically.  the method accepts dydsigma as a given to allow easier
+     * resuse in other equations, but has to trust that dydsigma was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydsigma
+     * @return
+     */
+    static double estimateDY2DSigmaDK(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
+
+        // ∂^2f/∂sigma∂k = estimate as (dy2_ds_dk - dyds)/dk
+        
+        float factor = 0.0001f;
+        
+        double delta = (k*factor);
+        
+        Double dy2_ds_dk = DerivGEV.derivWRTSigma(yConst, mu, (float)(k + delta), sigma, x);
+        
+        if (dy2_ds_dk == null) {
+            return 0;
+        }
+        
+        double d2ydsdk = (dy2_ds_dk - dydsigma)/delta;
+        
+        return d2ydsdk;
+    }
+    
+    /**
+     * estimate ∂^2f/∂sigma∂mu empirically.  the method accepts dydsigma as a given to allow easier
+     * resuse in other equations, but has to trust that dydsigma was derived with the
+     * same k, sigma, mu, and x.
+     * 
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @param dydsigma
+     * @return
+     */
+    static double estimateDY2DSigmaDMu(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
+
+        // ∂^2f/∂sigma∂mu = estimate as (dy2_ds_dk - dyds)/dk
+        
+        float factor = 0.0001f;
+        
+        double delta = (sigma*factor);
+        
+        Double dy2_ds_dk = DerivGEV.derivWRTSigma(yConst, mu, k, (float)(sigma + delta), x);
+        
+        if (dy2_ds_dk == null) {
+            return 0;
+        }
+        
+        double d2ydsdm = (dy2_ds_dk - dydsigma)/delta;
+        
+        return d2ydsdm;
+    }
+    
+    public static double calculatePreconditionerModifiedResidualSigma(
+        float yConst, float mu, float k, float sigma, float x) {
+
+        // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
+        // to the first derivative
+        // 
+        // sigma component to residuals = d(2,2) * (∂f/∂sigma)
+        //       where d(2,2) is ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+        
+        // ∂f/∂sigma
+        Double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);
+        
+        if (dyds == null) {
+            return 0;
+        }
+        
+        
+        // ∂^2f/∂sigma∂sigma
+        double d2ydsds = estimateDY2DSigmaDSigma(yConst, mu, k, sigma, x, dyds);
+            
+        
+        // (∂^2f/∂sigma∂k) = estimate as (dydsigma_1 - dydsigma)/dsigma        
+        double d2ydsdk = estimateDY2DSigmaDK(yConst, mu, k, sigma, x, dyds);
+        
+        // ∂f/∂k        
+        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
+        
+        if (dydk != null) {
+            
+            // ∂^2f/∂k∂k
+            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk);
+
+            // ∂^2f/∂k∂sigma
+            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dyds);
+
+            double modification = d2ydsds - (d2ydsdk / d2ydkdk) * d2ydkds;
+
+            double resid = dyds / modification;
+
+            return resid;
+            
+        } else {
+            
+            double modification = d2ydsds;
+            
+            double resid = dyds / modification;
+
+            return resid;
+        }
+    }
+
+    public static double calculatePreconditionerModifiedResidualMu(
+        float yConst, float mu, float k, float sigma, float x) {
+        
+        // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
+        // to the first derivative
+        // 
+        // sigma component to residuals = d(3,3) * (∂f/∂mu)
+        /*
+           where  d(3,3) is 1./(
+                     ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                     -
+                     (
+                        ∂^2f/∂mu∂sigma
+                        *
+                        ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                        *
+                        ∂^2f/∂sigma∂mu
+                     )
+                 )
+                 
+                Let pt1 = (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu)
+            
+                Let pt2_1 = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+            
+            d(3,3) = 1./( (pt1) - ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )) 
+        */
+        
+        // ∂f/∂mu
+        Double dydmu = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x);
+        
+        if (dydmu == null) {
+            return 0;
+        }
+        
+        // ∂f/∂sigma
+        Double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);
+        if (dyds == null) {
+            return 0;
+        }
+               
+        // ∂^2f/∂sigma∂sigma
+        double d2ydsds = estimateDY2DSigmaDSigma(yConst, mu, k, sigma, x, dyds.doubleValue());
+        
+        if (d2ydsds == 0) {
+            return 0;
+        }
+        
                 
-                if (deriv != null && !deriv.isNaN() && !deriv.isInfinite()) {
-                    
-                    switch (j) {
-                        case 0:
-                            yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + deriv), sigma, mu);
-                            break;
-                        case 1:
-                            yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + deriv), mu);
-                            break;
-                        case 2:
-                            yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + deriv));
-                            break;
-                    }
-                    
-                    //TODO:  if wanted to reduce runtime, could remove the method frame load/unload here by importing the method statements
-                    float chiSqSum = chiSqSum(yGEV, normalizedY, normalizedYErr);
-if (j == 0) {
-    System.out.println(String.format("%d)  deriv=%4.4f  chiSqSum=%4.4f", j, deriv, chiSqSum));
-}
-                    if (chiSqSum <= tmpChiSqMin[j]) {
-                        tmpChiSqMin[j] = chiSqSum;
-                        tmpDerivs[j] = deriv.floatValue();
-                    }
-                } else {
-                    break;
-                }
-            }
+        // ∂^2f/∂mu∂mu
+        double d2ydmdm = estimateDY2DMuDMu(yConst, mu, k, sigma, x, dydmu.doubleValue());
+        
+        // ∂f/∂k        
+        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
+        
+        double pt1;
+        
+        if (dydk != null) {
             
-            // compare chSqMins:   chose the one w/ a smallest chiSqMin OR smallest sum of all j chiSqMin?
-            boolean allAreSet = true;
-            boolean minIsCurrent = true;
-            for (int j = idx0; j <= idx1; j++) {
-                if (tmpChiSqMin[j] == Float.MAX_VALUE || Float.isNaN(tmpChiSqMin[j])) {
-                    allAreSet = false;
-                    break;
-                }
-                if (tmpChiSqMin[j] < min) {
-                    min = tmpChiSqMin[j];
-                    minIsCurrent = false;
-                }
-            }
-            if (allAreSet && !minIsCurrent) {                
-                 System.arraycopy(tmpChiSqMin, idx0, chiSqMin, idx0, (idx1 - idx0 + 1));
-                 System.arraycopy(tmpDerivs,   idx0, derivs,   idx0, (idx1 - idx0 + 1));
-            }
+            // ∂^2f/∂mu∂k
+            double d2ydmdk = estimateDY2DMuDK(yConst, mu, k, sigma, x, dydmu.doubleValue());
+
+            // ∂^2f/∂k∂k 
+            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());
+            
+            // ∂^2f/∂k∂mu
+            double d2ydkdm = estimateDY2DKDMu(yConst, mu, k, sigma, x, dydk.doubleValue());
+            
+            pt1 = d2ydmdm - (d2ydmdk*d2ydkdm / d2ydkdk);
+            
+        } else {
+            
+            pt1 = d2ydmdm;
         }        
+            
+        // (∂^2f/∂sigma∂k) = estimate as (dydsigma_1 - dydsigma)/dsigma        
+        double d2ydsdk = estimateDY2DSigmaDK(yConst, mu, k, sigma, x, dyds.doubleValue());
+        
+        double d2ydmds = estimateDY2DMuDSigma(yConst, mu, k, sigma, x, dydmu.doubleValue());
+        
+        
+        // d(3,3) = 1./( (pt1) - ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )) 
+        // 
+        // pt2_1 = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+        
+        double pt2_1;
+        
+        if (d2ydmds == 0) {
+            
+            pt2_1 = 0;
+            
+        } if (d2ydsdk != 0 && dydk != null) {
+            
+            // ∂^2f/∂sigma∂k
+            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.longValue());
+                        
+            // ∂^2f/∂k∂sigma
+            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dyds);
+            
+            pt2_1 = d2ydsds - (d2ydsdk * d2ydkds / d2ydkdk);
+            
+            pt2_1 = 1./pt2_1;
+                
+        } else {
+            
+            pt2_1 = 1./d2ydsds;
+        }
+        
+        // ∂^2f/∂sigma∂mu
+        double d2dydsdm = estimateDY2DSigmaDMu(yConst, mu, k, sigma, x, dyds);
+        
+        // d(3,3) = 1./( (pt1) - ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )) 
+        // 
+        // pt2_1 = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+        
+        double modification = pt1 - (pt2_1 * d2ydmds * d2dydsdm);
+                        
+        double resid = dyds/modification;
+        
+        return resid;
     }
     
     public static Float chiSqSum(float mu, float k, float sigma, float[] x, float[] normalizedY, float[] normalizedYErr) {
@@ -639,64 +1121,17 @@ if (j == 0) {
     }
     
     /**
-     * see notes in NonQuadraticConjugateGradientSolver.java
+     * retrieve the second deriv of GEV ∂^2f/∂k∂mu.
      * 
-       Then using the ICU0 matrix as preconditioner:
-               
-                                            | d(1,1)   0        0      |     |   ∂f/∂k   |
-            (M_icuo)^(-1) * ∇f = M^T * ∇f = | 0        d(2,2)   0      |  *  | ∂f/∂sigma |
-                                            | 0        0        d(3,3) |     |   ∂f/∂mu  |
-                                        
-                                            | d(1,1) * (∂f/∂k)     |
-                                          = | d(2,2) * (∂f/∂sigma) |
-                                            | d(3,3) * (∂f/∂mu)    |
-
-                 where d(1,1) is 1./(∂^2f/∂k∂k)
-                       d(2,2) is ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
-                       d(3,3) is 1./(
-                                         ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
-                                         -
-                                         (
-                                            (∂^2f/∂mu∂sigma)
-                                            *
-                                            ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
-                                            *
-                                            ∂^2f/∂sigma∂mu
-                                         )
-                                     )
+     * Note:  the method hasn't been tested yet and will be compared to the results from method estimateDY2DKDMu.
+     * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @param normalizedY
-     * @param normalizedYErr
-     * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
-     * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
-     * @param r array of first derivatives of k, sigma, and mu that will be transformed using the ICU0 preconditioner
+     * @return
      */
-    public static void transformRUsingICU0Preconditioner(float mu, float k, float sigma, float[] x, 
-        float[] normalizedY, float[] normalizedYErr, float[] r, int idx0, int idx1) {
-        
-        // Need 2nd deriv formulas.
-        
-        // The comparison of manually calculating the first derivative formulas versus 
-        // estimating the first deriv at the points plus and minus a small delta
-        // shows that an estimate is fine for all partial derivatives except for mu.
-        //   either there's a bug that I haven't found yet for the mu formula or the derivatives w.r.t. mu aren't
-        //   sensitive to changes (presumably because mu is related to x which is an independent variable in the eqn).
-        // For that reason, can use the estimate method for 2nd derivatives which don't use mu
-        //   but for mu, need to derive the 2nd derivatives
-        //
-        // Need to manually calculate derivatives for the following:
-        // ∂^2f/∂k∂mu = secondDerivKDerivMu
-        // ∂^2f/∂mu∂mu
-        // ∂^2f/∂mu∂k
-        // ∂^2f/∂mu∂sigma
-        
-        // And estimates for these:  ∂^2f/∂k∂k, ∂^2f/∂k∂sigma, ∂^2f/∂sigma∂sigma, ∂^2f/∂sigma∂k
-        
-    }
-    
     public static double secondDerivKDerivMu(float yConst, float mu, float k, float sigma, float x) {
         
         double z = 1. + k *( (x-mu)/sigma );
@@ -777,6 +1212,10 @@ if (j == 0) {
     }
     
     /* 
+     Can see that calculating the formula for the partial derivative ∂^2f/∂k∂mu
+     is time consuming and error prone so will only implement the "estimate" methods hereafter.
+     
+     
      df1dk     = f1 * (-1*z^(-1/k)) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
      df2dk     = f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
      dzdk = (x-mu)/sigma

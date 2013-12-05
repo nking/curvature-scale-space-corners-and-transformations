@@ -1,6 +1,7 @@
 package algorithms.curves;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
 
 import algorithms.misc.MiscMath;
 import algorithms.util.PolygonAndPointPlotter;
@@ -150,7 +151,69 @@ public class DerivGEVTest extends TestCase {
         for (int i = 0; i < xp.length; i++) {
             xp[i] = (float)i/xp.length;
         }
-       
+        
+        /*
+        // ====== exploring known GEV curve and expected residual suggested for a change in k ====
+        float minChiSqSum = Float.MAX_VALUE;
+        int minChiSqSumIdx = 0;
+        float[] yg0 = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);
+        float[] yg0e = new float[yg0.length];
+        Arrays.fill(yg0e, 0.03f);
+        float s2  = 0.85f; //1.07f;
+        float mu2 = 0.441f;//0.59f;
+        float k2  = 1.80f - 1.7f; //2.75f;
+        float avgResidK = 0.f;
+        int yMaxModelIdx = MiscMath.findYMaxIndex(GeneralizedExtremeValue.generateNormalizedCurve(xp, k2, s2, mu2));
+        System.out.println("yMaxModelIdx=" + yMaxModelIdx);
+        double[] suggestedK = new double[xp.length];
+        for (int i = 0; i < xp.length; i++) {            
+            Double d = DerivGEV.derivWRTK(yConst, mu2, k2, s2, xp[i]);
+            double deltaK = 0.0001f;
+            Double d2 = DerivGEV.derivWRTK(yConst, mu2, (float)(k2 - deltaK), s2, xp[i]);
+            Double dd = (d2-d)/deltaK;            
+            double preconditionedResidual = d2/dd;
+            float chiSqSum = DerivGEV.chiSqSum(mu2, (float)(k2 + preconditionedResidual), s2, xp, yg0, yg0e);
+            float chiSqSum2 = DerivGEV.chiSqSum(mu2, (float)(k2 - preconditionedResidual), s2, xp, yg0, yg0e);
+            System.out.println( String.format("x[%d]=%4.3f  (d/dk=%4.5f, d2/dkdk=%4.5f) ==> (+%4.4f  chiSqSum=%4.4f) (-%4.4f  chiSqSum=%4.4f)", 
+                i, xp[i], d, dd, preconditionedResidual, chiSqSum, preconditionedResidual, chiSqSum2));
+            avgResidK += preconditionedResidual;
+            suggestedK[i] = (chiSqSum < chiSqSum2) ? preconditionedResidual : -1.f*preconditionedResidual;
+            if (suggestedK[i] < minChiSqSum) {
+                minChiSqSum = (float) suggestedK[i];
+                minChiSqSumIdx = i;
+            }
+        }
+        avgResidK /= xp.length;
+        float stdDevSuggestedK = 0;
+        for (int i = 0; i < xp.length; i++) {
+            stdDevSuggestedK += Math.pow((suggestedK[i] - avgResidK), 2);
+        }
+        stdDevSuggestedK = (float) (Math.sqrt(stdDevSuggestedK/(xp.length - 1.0f)));//N-1 because had to calculate mean from the data
+        float avgKWithoutOutliers = 0;
+        int countWithoutOutliers = 0;
+        for (int i = 0; i < xp.length; i++) {
+            float diff = (float)suggestedK[i] - avgResidK;
+            if (Math.abs(diff - avgResidK) < 3.*stdDevSuggestedK) {
+                avgKWithoutOutliers += suggestedK[i];
+                countWithoutOutliers++;
+            } else {
+                System.out.println("  exclude " + suggestedK[i]);
+            }
+        }
+        avgKWithoutOutliers /= countWithoutOutliers;
+        System.out.println("===> avg d/dk/d2/dkdk = " + avgKWithoutOutliers 
+            + "  d/dk/d2/dkdk at minChiSqSum = " + suggestedK[minChiSqSumIdx]
+            + "  d/dk/d2/dkdk at yMax=" + suggestedK[yMaxModelIdx]);
+        // results show it's still the best approach to take the minChiSqSum solution from the min change in d/dk
+        //    the problem with this approach is we are actually needing to know what deltaK to test chisqsum for
+        //    and the curve gives us d/dk modified by d2/dkdk as the suggested step in either direction that
+        //    will create a change in the gev.
+        //    the correct answer would test both + modified d/dk and - d/dk
+        //  is the idx at position +1 past model y max always the best answer for d/dk?
+        // ===> looks like a good pattern would be to get the modified d/dk at position yMaxIdx + 1
+        //      and test whether adding that or subtracting it improves the chi sq sum and take the best answer.
+        */
+        
         float factor = 0.0001f;
         
         GeneralizedExtremeValue gev = new GeneralizedExtremeValue(new float[0], 
@@ -160,15 +223,7 @@ public class DerivGEVTest extends TestCase {
         float[] yGEV2 = gev.generateCurve(xp, k + (k*factor), sigma, mu);
                     
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
-        
-        /*
-        for (int i = 0; i < yGEV1.length; i++) {
-            Double deriv = DerivGEV.derivWRTK(yConst, mu, k, sigma, xp[i]);
-            if (deriv != null) {
-                System.out.println( String.format(" df(k)/dk= %8.4f  x=%.3f", deriv.doubleValue(), xp[i]));
-            }
-        }
-        */
+     
         
         plotter.addPlot(xp, yGEV0, null, null, null, null, "k-deltaK");
         plotter.addPlot(xp, yGEV1, null, null, null, null, "k=" + k);
@@ -249,6 +304,68 @@ public class DerivGEVTest extends TestCase {
         for (int i = 0; i < xp.length; i++) {
             xp[i] = (float)i/xp.length;
         }
+        
+        /*
+        // ====== exploring known GEV curve and expected residual suggested for a change in k ====
+        float minChiSqSum = Float.MAX_VALUE;
+        int minChiSqSumIdx = 0;
+        float[] yg0 = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);
+        float[] yg0e = new float[yg0.length];
+        Arrays.fill(yg0e, 0.03f);
+        float s2  = sigma - 0.4f;
+        float mu2 = mu;
+        float k2  = k;
+        float avgResid = 0.f;
+        int yMaxModelIdx = MiscMath.findYMaxIndex(GeneralizedExtremeValue.generateNormalizedCurve(xp, k2, s2, mu2));
+        System.out.println("yMaxModelIdx=" + yMaxModelIdx);
+        double[] suggested = new double[xp.length];
+        for (int i = 0; i < xp.length; i++) {            
+            Double d = DerivGEV.derivWRTSigma(yConst, mu2, k2, s2, xp[i]);
+            
+            // modification by 2nd derivs for sigma is more complex
+            // (∂^2f/∂sigma∂sigma)
+            double delta = 0.0001f*s2;
+            Double d2 = DerivGEV.derivWRTSigma(yConst, mu2, k2, (float)(s2 + delta), xp[i]);
+            Double dd = (d2-d)/delta;
+            
+            double preconditionedResidual = DerivGEV.calculatePreconditionerModifiedResidualSigma(yConst, mu2, k2, sigma, xp[i]);
+            
+            float chiSqSum = DerivGEV.chiSqSum(mu2, k2, (float)(s2 + preconditionedResidual), xp, yg0, yg0e);
+            float chiSqSum2 = DerivGEV.chiSqSum(mu2, k2, (float)(s2 - preconditionedResidual), xp, yg0, yg0e);
+            System.out.println( String.format("x[%d]=%4.3f  (d/ds=%4.5f, d2/dsds=%4.5f) ==> (+%4.4f  chiSqSum=%4.4f) (-%4.4f  chiSqSum=%4.4f)", 
+                i, xp[i], d, dd, preconditionedResidual, chiSqSum, preconditionedResidual, chiSqSum2));
+            avgResid += preconditionedResidual;
+            suggested[i] = (chiSqSum < chiSqSum2) ? preconditionedResidual : -1.f*preconditionedResidual;
+            if (suggested[i] < minChiSqSum) {
+                minChiSqSum = (float) suggested[i];
+                minChiSqSumIdx = i;
+            }
+        }
+        avgResid /= xp.length;
+        float stdDevSuggested = 0;
+        for (int i = 0; i < xp.length; i++) {
+            stdDevSuggested += Math.pow((suggested[i] - avgResid), 2);
+        }
+        stdDevSuggested = (float) (Math.sqrt(stdDevSuggested/(xp.length - 1.0f)));//N-1 because had to calculate mean from the data
+        float avgKWithoutOutliers = 0;
+        int countWithoutOutliers = 0;
+        for (int i = 0; i < xp.length; i++) {
+            float diff = (float)suggested[i] - avgResid;
+            if (Math.abs(diff - avgResid) < 3.*stdDevSuggested) {
+                avgKWithoutOutliers += suggested[i];
+                countWithoutOutliers++;
+            } else {
+                System.out.println("  exclude " + suggested[i]);
+            }
+        }
+        avgKWithoutOutliers /= countWithoutOutliers;
+        System.out.println("===> avg d/ds/d2/dsds = " + avgKWithoutOutliers 
+            + "  d/ds/d2/dsds at minChiSqSum = " + suggested[minChiSqSumIdx]
+            + "  d/ds/d2/dsds at yMax=" + suggested[yMaxModelIdx]);
+        // ===> looks like a good pattern would be to get the modified d/dsigma at position yMaxIdx + 1
+        //      and test whether adding that or subtracting it improves the chi sq sum and take the best answer.
+        // it's quick and gives an answer in the right direction.
+        */
         
         float factor = 0.0001f;
         
@@ -339,13 +456,73 @@ public class DerivGEVTest extends TestCase {
         for (int i = 0; i < xp.length; i++) {
             xp[i] = (float)i/xp.length;
         }
-       
+        /*
+        // ====== exploring known GEV curve and expected residual suggested for a change in k ====
+        float minChiSqSum = Float.MAX_VALUE;
+        int minChiSqSumIdx = 0;
+        float[] yg0 = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, sigma, mu);
+        float[] yg0e = new float[yg0.length];
+        Arrays.fill(yg0e, 0.03f);
+        float s2  = sigma;
+        float mu2 = mu  - 0.4f;
+        float k2  = k;
+        float avgResid = 0.f;
+        int yMaxModelIdx = MiscMath.findYMaxIndex(GeneralizedExtremeValue.generateNormalizedCurve(xp, k2, s2, mu2));
+        System.out.println("yMaxModelIdx=" + yMaxModelIdx);
+        double[] suggested = new double[xp.length];
+        for (int i = 0; i < xp.length; i++) {            
+            Double d = DerivGEV.derivWRTSigma(yConst, mu2, k2, s2, xp[i]);
+            
+            // modification by 2nd derivs for mu is more complex
+            // (∂^2f/∂mu∂mu)
+            double delta = 0.0001f*mu2;
+            Double d2 = DerivGEV.derivWRTMu(yConst, (float)(mu2 + delta), k2, s2, xp[i]);
+            Double dd = (d2-d)/delta;
+            
+            double preconditionedResidual = DerivGEV.calculatePreconditionerModifiedResidualMu(yConst, mu2, k2, sigma, xp[i]);
+            
+            float chiSqSum = DerivGEV.chiSqSum((float)(mu2 + preconditionedResidual), k2, s2, xp, yg0, yg0e);
+            float chiSqSum2 = DerivGEV.chiSqSum((float)(mu2 - preconditionedResidual), k2, s2, xp, yg0, yg0e);
+            System.out.println( String.format("x[%d]=%4.3f  (d/dm=%4.5f, d2/dmdm=%4.5f) ==> (+%4.4f  chiSqSum=%4.4f) (-%4.4f  chiSqSum=%4.4f)", 
+                i, xp[i], d, dd, preconditionedResidual, chiSqSum, preconditionedResidual, chiSqSum2));
+            avgResid += preconditionedResidual;
+            suggested[i] = (chiSqSum < chiSqSum2) ? preconditionedResidual : -1.f*preconditionedResidual;
+            if (suggested[i] < minChiSqSum) {
+                minChiSqSum = (float) suggested[i];
+                minChiSqSumIdx = i;
+            }
+        }
+        avgResid /= xp.length;
+        float stdDevSuggested = 0;
+        for (int i = 0; i < xp.length; i++) {
+            stdDevSuggested += Math.pow((suggested[i] - avgResid), 2);
+        }
+        stdDevSuggested = (float) (Math.sqrt(stdDevSuggested/(xp.length - 1.0f)));//N-1 because had to calculate mean from the data
+        float avgKWithoutOutliers = 0;
+        int countWithoutOutliers = 0;
+        for (int i = 0; i < xp.length; i++) {
+            float diff = (float)suggested[i] - avgResid;
+            if (Math.abs(diff - avgResid) < 3.*stdDevSuggested) {
+                avgKWithoutOutliers += suggested[i];
+                countWithoutOutliers++;
+            } else {
+                System.out.println("  exclude " + suggested[i]);
+            }
+        }
+        avgKWithoutOutliers /= countWithoutOutliers;
+        System.out.println("===> avg d/dm/d2/dmdm = " + avgKWithoutOutliers 
+            + "  d/dm/d2/dmdm at minChiSqSum = " + suggested[minChiSqSumIdx]
+            + "  d/dm/d2/dmdm at yMax=" + suggested[yMaxModelIdx]);
+        // ===> looks like a good pattern would be to get the modified d/dsigma at position yMaxIdx + 1
+        //      and test whether adding that or subtracting it improves the chi sq sum and take the best answer.
+        // it's quick and gives an answer in the right direction.
+       */
+        float factor = 0.0001f;
+        
         GeneralizedExtremeValue gev = new GeneralizedExtremeValue(new float[0], 
             new float[0], new float[0], new float[0]);
                     
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
-               
-        float factor = 0.0001f;
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);        
         
         double last = Integer.MIN_VALUE;
         for (int i = 1; i < 10; i++) {
