@@ -667,9 +667,9 @@ public class DerivGEV {
         //   either there's a bug that I haven't found yet for the mu formula or the derivatives w.r.t. mu aren't
         //   sensitive to changes (presumably because mu is related to x which is an independent variable in the eqn).
         // For that reason, can use the estimate method for 2nd derivatives which don't use mu
-        //   but for mu, need to use derive the 2nd derivatives
+        //   but for mu, need to derive the 2nd derivatives
         //
-        // The derivatives need to manually calculated for the following:
+        // Need to manually calculate derivatives for the following:
         // ∂^2f/∂k∂mu
         // ∂^2f/∂mu∂mu
         // ∂^2f/∂mu∂k
@@ -681,7 +681,7 @@ public class DerivGEV {
     
     /* 
      df1dk     = f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
-     df2dk     = = f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
+     df2dk     = f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
      dzdk = (x-mu)/sigma
      
      ∂^2f/∂k∂mu
@@ -694,7 +694,7 @@ public class DerivGEV {
              = f1 * pt1_0          + df2dk * df1dmu
              
              pt1_0 = ∂/∂mu( df2dk )
-                   = ∂/∂mu( f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) ) )
+                   = ∂/∂mu( f2 * ( (-1-(1/k)) * dzdk * (1/z)  +  (1/k^2) * ln(z) ) )
                       
                    for a product of more than 2 factors, multiply deriv of one times all 
                    other factors then add next deriv times all other factors...
@@ -706,27 +706,23 @@ public class DerivGEV {
                  pt1_0_0 = ∂/∂mu( f2 ) * (-1-(1/k)) * dzdk * (1/z)  +  0  
                              + ∂/∂mu(dzdk) * f2 * (-1-(1/k)) * (1/z)  
                              + ∂/∂mu((1/z)) * f2 * (-1-(1/k)) * dzdk
-                         = pt1_0_0_0 * (-1-(1/k)) * dzdk * (1/z)    +  0  
-                             + pt1_0_0_1 * f2 * (-1-(1/k)) * (1/z)
-                             + pt1_0_0_2 * f2 * (-1-(1/k)) * dzdk
-                         
-                     pt1_0_0_0 = ∂/∂mu( f2 )
-                               = df2dmu
-                               = (-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+                         = df2dmu * (-1-(1/k)) * dzdk * (1/z)   
+                             + pt1_0_0_0 * f2 * (-1-(1/k)) * (1/z)
+                             + pt1_0_0_1 * f2 * (-1-(1/k)) * dzdk
                                  
-                     pt1_0_0_1 = ∂/∂mu(dzdk)
+                     pt1_0_0_0 = ∂/∂mu(dzdk)
                                = ∂/∂mu( (x-mu)/sigma )
                                = -mu/sigma
                      
-                     pt1_0_0_2 = ∂/∂mu(1/z)  
+                     pt1_0_0_1 = ∂/∂mu(1/z)  
                      
                                     z = (1 + k*( (x-mu)/sigma ) = (sigma + k*(x-mu))/sigma
                                     1/z = sigma/(sigma + k*(x-mu))
                                     
                                = ∂/∂mu(sigma/(sigma + k*(x-mu)))
                                = ∂/∂mu( sigma * (sigma + k*(x-mu))^-1 )
-                               = -1 * sigma * (sigma + k*(x-mu))^-2  * (-k*mu)
-                               = k * mu * sigma * (sigma + k*(x-mu))^-2
+                               = -1 * sigma * (sigma + k*(x-mu))^-2  * (-k)
+                               = k * sigma * (sigma + k*(x-mu))^-2
                                
                  pt1_0_1 = ∂/∂mu( f2 * (1/k^2) * ln(z) ) 
                          = df2dmu * (1/k^2) * ln(z)
@@ -745,7 +741,7 @@ public class DerivGEV {
              = f2 * pt2_0 + df1dk * df2dmu
          
              pt2_0 = ∂/∂mu( df1dk )
-                   = ∂/∂mu( f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) ) )
+                   = ∂/∂mu( f1 * -z^(-1/k) * ( -1*(-1/k) * dzdk * (1/z)  +  (1/k^2) * ln( -z ) ) )
                    = ∂/∂mu( f1 * (-z^(-1/k)) * (1/k) * dzdk * (1/z) )  +  ∂/∂mu( f1 * (-z^(-1/k)) * (1/k^2) * ln( -z ) )
                    = pt2_0_0   +   pt2_0_1
                  
@@ -765,7 +761,7 @@ public class DerivGEV {
                      
                      pt2_0_0_1 = ∂/∂mu(dzdk)
                                = ∂/∂mu( (x-mu)/sigma )
-                               = -mu/sigm
+                               = -1/sigm
                              
                      pt2_0_0_2 = ∂/∂mu(1/z)
                                = pt1_0_0_1
@@ -773,7 +769,7 @@ public class DerivGEV {
                  pt2_0_1 = ∂/∂mu( f1 * (-z^(-1/k)) * (1/k^2) * ln( -z ) )
                          = df1dmu * (-z^(-1/k)) * (1/k^2) * ln( -z )
                             + ∂/∂mu(-z^(-1/k)) * f1 * (1/k^2) * ln( -z )
-                            + ∂/∂mu(1/k^2) * f1 * (-z^(-1/k)) * ln( -z )
+                            + 0
                             + ∂/∂mu( ln( -z ) ) * f1 * (-z^(-1/k)) * (1/k^2)
                          = df1dmu * (-z^(-1/k)) * (1/k^2) * ln( -z )
                             + pt2_0_0_0 * f1 * (1/k^2) * ln( -z )
