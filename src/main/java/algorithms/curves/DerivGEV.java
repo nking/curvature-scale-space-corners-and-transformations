@@ -47,7 +47,10 @@ public class DerivGEV {
                  df(x)dx = f(x) * ( v(x) * -------  +  dv(x)dx * ln(u(x)) )
                                             u(x)
                 
-     *           df(k)dk = -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+                 u(k) = -z
+                 v(k) = (-1/k)
+                 
+     *           df(k)dk = -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
      *           
      *       *Because the ln( negative number) is not defined (though can be approximated with taylor series)
      *        need a different method of creating the derivative of a number with a power that is a function of x.
@@ -69,7 +72,7 @@ public class DerivGEV {
      *   df1dx     = f1 * (1/k) * z^(-1 - (1/k)) * dzdx
      *   
      *                                      
-     *   df1dk     = f1 * -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+     *   df1dk     = f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
      *                                         
      *                                  
      *   df1dsigma = f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
@@ -87,9 +90,9 @@ public class DerivGEV {
      *   df2dk: u(k) = z and v(k) = (-1-(1/k))
      *      using 
                                         du(k)dk
-                 df2dk = f2 * ( v(k) * -------  +  dv(k)dk * ln(u(k)) )
+                 df2dk = f2 * ( v(k) * -------   +   dv(k)dk * ln(u(k)) )
                                          u(k)
-                       = f2 * ( (-1-(1/k)) * dzdk/z + (1/k^2) * ln(z) )
+                       = f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
      *       
      *   df2dsigma = (-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
      *   
@@ -197,7 +200,7 @@ public class DerivGEV {
         
         double dzdk = (x-mu)/sigma;
         
-        // df1dk     = f1 * -z^(-1/k) * ( (-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+        // df1dk     = f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
         
         // df2dk = f2 * ( (-1-(1/k)) * dzdk/z + (1/k^2) * ln(z) )
         
@@ -205,7 +208,7 @@ public class DerivGEV {
         //    use a taylor series approximation for negative values plus handling for the number of cycles
         // so df1dk and df2dk are approximated with very small deltas
         
-        float deltaK = 0.01f;
+        float deltaK = 0.0001f;
         
         double k_1 = k + deltaK;
         double z_1 = 1. + k_1 *( (x-mu)/sigma );
@@ -226,13 +229,14 @@ public class DerivGEV {
         
         double df2dk = (f2_1 - f2)/deltaK;
         
+        /* to compare to the derivative:
         if (zIsNegative) {
-            double compare_df1dk = f1 * a * ( (-1.f/k)*(dzdk/z) + (1.f/(k*k))*Math.log( -z ) );
-            System.out.println("  df1dk estimate=" + df1dk + " deriv=" + compare_df1dk + "  k=" + k + " z=" + z);
+            double compare_df1dk = f1 * a * ( (1.f/k)*(dzdk/z) + (1.f/(k*k))*Math.log( -z ) );
+            System.out.println( String.format("  df1dk   estimate=%4.6f  deriv=%4.6f ", df1dk, compare_df1dk));
         } else {
             double compare_df2dk = f2 * (  (-1.f - (1.f/k))*(dzdk/z) + (1.f/(k*k))*Math.log(z) );
-            System.out.println("  df2dk estimate=" + df1dk + " deriv=" + compare_df2dk + "  k=" + k + " z=" + z);
-        }
+            System.out.println( String.format("  df2dk   estimate=%4.6f  deriv=%4.6f   (z=%4.6f, k=%4.6f)", df2dk, compare_df2dk, z, k));
+        }*/
                         
         double dydk = (yConst/sigma) * ( f1 * df2dk + f2 * df1dk );
         

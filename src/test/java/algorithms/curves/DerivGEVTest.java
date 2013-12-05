@@ -121,7 +121,7 @@ public class DerivGEVTest extends TestCase {
         
     }
 
-    public void testDerivWRTSigma() throws Exception {
+    public void estDerivWRTSigma() throws Exception {
         
         System.out.println("testDerivWRTSigma");
         
