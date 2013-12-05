@@ -153,7 +153,7 @@ public class DerivGEV {
         if (zIsNegative) {
             z *= -1;
         }
-        
+       
         float a = -1.f*(float) Math.pow(z, (-1.f/k));
         
         if (zIsNegative) {
@@ -572,10 +572,27 @@ public class DerivGEV {
                         //deriv = DerivGEV.estimateDerivUsingDeltaMu(mu, k, sigma, x[i]);
                         break;
                 }
-                if (deriv != null && !deriv.isNaN()) {
+                
+                if (deriv != null && !deriv.isNaN() && !deriv.isInfinite()) {
+                    
+                    switch (j) {
+                        case 0:
+                            yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + deriv), sigma, mu);
+                            break;
+                        case 1:
+                            yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + deriv), mu);
+                            break;
+                        case 2:
+                            yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + deriv));
+                            break;
+                    }
+                    
                     //TODO:  if wanted to reduce runtime, could remove the method frame load/unload here by importing the method statements
                     float chiSqSum = chiSqSum(yGEV, normalizedY, normalizedYErr);
-                    if (chiSqSum < tmpChiSqMin[j]) {
+if (j == 0) {
+    System.out.println(String.format("%d)  deriv=%4.4f  chiSqSum=%4.4f", j, deriv, chiSqSum));
+}
+                    if (chiSqSum <= tmpChiSqMin[j]) {
                         tmpChiSqMin[j] = chiSqSum;
                         tmpDerivs[j] = deriv.floatValue();
                     }
@@ -615,6 +632,7 @@ public class DerivGEV {
         float chiSqSum = 0.0f;
         for (int ii = 0; ii < normalizedYGEV.length; ii++) {
             float z = (normalizedYGEV[ii] - normalizedY[ii]);
+            //TODO:  setup tests with realistic errors
             chiSqSum += z*z*normalizedYErr[ii];
         }
         return chiSqSum;
@@ -670,7 +688,7 @@ public class DerivGEV {
         //   but for mu, need to derive the 2nd derivatives
         //
         // Need to manually calculate derivatives for the following:
-        // ∂^2f/∂k∂mu
+        // ∂^2f/∂k∂mu = secondDerivKDerivMu
         // ∂^2f/∂mu∂mu
         // ∂^2f/∂mu∂k
         // ∂^2f/∂mu∂sigma
@@ -679,8 +697,87 @@ public class DerivGEV {
         
     }
     
+    public static double secondDerivKDerivMu(float yConst, float mu, float k, float sigma, float x) {
+        
+        double z = 1. + k *( (x-mu)/sigma );
+        
+        boolean zIsNegative = (z < 0);
+        
+        if (zIsNegative) {
+            z *= -1;
+        }
+        
+        float a = -1.f*(float) Math.pow(z, (-1.f/k));
+             
+        if (zIsNegative) {
+            a *= -1.f;
+        }
+        
+        double f1 = Math.exp( a );
+        double f2 = Math.pow(z, (-1. - (1./k)) );
+        
+        if (zIsNegative) {
+            f2 *= -1.f;
+        }
+       
+        double dzdmu = -1. * k/sigma;
+        
+        //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+        double df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;
+        
+        //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+        double df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;
+                
+        float deltaK = 0.0001f;
+        float deltaMu = 0.0001f;
+        double k_1 = k + deltaK;
+        double mu_1 = mu + deltaMu;
+        double z_1 = 1. + k_1 *( (x-mu)/sigma );
+        double z_1_1 = 1. + k_1 *( (x-mu_1)/sigma );
+        
+        if (zIsNegative) {
+            df2dmu *= -1.f;
+            df1dmu *= -1.f;
+            z_1 *= -1.f;
+            z_1_1 *= -1.f;
+        }
+                
+        // approximating  df1dk and df2dk  to avoid the correction needed for log(negative number)
+        float a_1 = -1.f*(float) Math.pow(z_1, (-1.f/k_1)); 
+        float a_1_1 = -1.f*(float) Math.pow(z_1_1, (-1.f/k_1)); 
+        double f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );
+        double f2_1_1 = Math.pow(z_1_1, (-1. - (1./k_1)) );
+        if (zIsNegative) {
+            a_1 *= -1.f;
+            a_1_1 *= -1.f;
+            f2_1 *= -1.f;
+            f2_1_1 *= -1.f;
+        }
+        double f1_1 = Math.exp( a_1 );
+        double df1dk = (Math.exp( a_1 ) - f1)/deltaK;
+        double df1dk_1 = (Math.exp( a_1_1 ) - f1_1)/deltaK;
+        double df2dk = (f2_1 - f2)/deltaK;
+        double df2dk_1 = (f2_1_1 - f2_1)/deltaK;
+        
+        
+        //pt1_0 = ∂/∂mu( df2dk )  the derivative involves potential log(negative number) so work around: 
+        double pt1_0 = (df2dk_1 - df2dk)/deltaMu;
+        
+        // pt2_0 = ∂/∂mu( df1dk ) the derivative involves potential log(negative number) so work around:
+        double pt2_0 = (df1dk_1 - df1dk)/deltaMu;
+        
+        
+        double pt2 = f2 * pt2_0 + df1dk * df2dmu;       
+        
+        double pt1 = (f1 * pt1_0) + (df2dk * df1dmu);
+        
+        double d2fdkdmu = (yConst/sigma) * (pt1 + pt2);
+        
+        return d2fdkdmu;
+    }
+    
     /* 
-     df1dk     = f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
+     df1dk     = f1 * (-1*z^(-1/k)) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
      df2dk     = f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
      dzdk = (x-mu)/sigma
      
@@ -741,22 +838,22 @@ public class DerivGEV {
              = f2 * pt2_0 + df1dk * df2dmu
          
              pt2_0 = ∂/∂mu( df1dk )
-                   = ∂/∂mu( f1 * -z^(-1/k) * ( -1*(-1/k) * dzdk * (1/z)  +  (1/k^2) * ln( -z ) ) )
-                   = ∂/∂mu( f1 * (-z^(-1/k)) * (1/k) * dzdk * (1/z) )  +  ∂/∂mu( f1 * (-z^(-1/k)) * (1/k^2) * ln( -z ) )
+                   = ∂/∂mu( f1 * (-1*z^(-1/k)) * ( -1*(-1/k) * dzdk * (1/z)  +  (1/k^2) * ln( -z ) ) )
+                   = ∂/∂mu( f1 * (-1*z^(-1/k)) * (1/k) * dzdk * (1/z) )  +  ∂/∂mu( f1 * (-1*z^(-1/k)) * (1/k^2) * ln( -z ) )
                    = pt2_0_0   +   pt2_0_1
                  
-                 pt2_0_0 = ∂/∂mu( f1 * (-z^(-1/k)) * (1/k) * dzdk * (1/z) )
-                         = df1dmu * (-z^(-1/k)) * (1/k) * dzdk * (1/z)   
-                             + ∂/∂mu(-z^(-1/k)) * f1 * (1/k) * dzdk * (1/z)
+                 pt2_0_0 = ∂/∂mu( f1 * (-1*z^(-1/k)) * (1/k) * dzdk * (1/z) )
+                         = df1dmu * (-1*z^(-1/k)) * (1/k) * dzdk * (1/z)   
+                             + ∂/∂mu(-1*z^(-1/k)) * f1 * (1/k) * dzdk * (1/z)
                              + 0
-                             + ∂/∂mu(dzdk) * f1 * (-z^(-1/k)) * (1/k) * (1/z)
-                             + ∂/∂mu(1/z) * f1 * (-z^(-1/k)) * (1/k) * dzdk
-                         = df1dmu * (-z^(-1/k)) * (1/k) * dzdk * (1/z) 
+                             + ∂/∂mu(dzdk) * f1 * (-1*z^(-1/k)) * (1/k) * (1/z)
+                             + ∂/∂mu(1/z) * f1 * (-1*z^(-1/k)) * (1/k) * dzdk
+                         = df1dmu * (-1*z^(-1/k)) * (1/k) * dzdk * (1/z) 
                              + pt2_0_0_0 * f1 * (1/k) * dzdk * (1/z)
-                             + pt2_0_0_1 * f1 * (-z^(-1/k)) * (1/k) * (1/z)
-                             + pt2_0_0_2 * f1 * (-z^(-1/k)) * (1/k) * dzdk
+                             + pt2_0_0_1 * f1 * (-1*z^(-1/k)) * (1/k) * (1/z)
+                             + pt2_0_0_2 * f1 * (-1*z^(-1/k)) * (1/k) * dzdk
                              
-                     pt2_0_0_0 = ∂/∂mu(-z^(-1/k))
+                     pt2_0_0_0 = ∂/∂mu(-1*z^(-1/k))
                                = (1/k) * z^(-1 - (1/k)) * dzdmu  <== from class level comments
                      
                      pt2_0_0_1 = ∂/∂mu(dzdk)
@@ -766,19 +863,18 @@ public class DerivGEV {
                      pt2_0_0_2 = ∂/∂mu(1/z)
                                = pt1_0_0_1
                                
-                 pt2_0_1 = ∂/∂mu( f1 * (-z^(-1/k)) * (1/k^2) * ln( -z ) )
-                         = df1dmu * (-z^(-1/k)) * (1/k^2) * ln( -z )
-                            + ∂/∂mu(-z^(-1/k)) * f1 * (1/k^2) * ln( -z )
+                 pt2_0_1 = ∂/∂mu( f1 * (-1*z^(-1/k)) * (1/k^2) * ln( -z ) )
+                         = df1dmu * (-1*z^(-1/k)) * (1/k^2) * ln( -z )
+                            + ∂/∂mu(-1*z^(-1/k)) * f1 * (1/k^2) * ln( -z )
                             + 0
-                            + ∂/∂mu( ln( -z ) ) * f1 * (-z^(-1/k)) * (1/k^2)
-                         = df1dmu * (-z^(-1/k)) * (1/k^2) * ln( -z )
+                            + ∂/∂mu( ln( -z ) ) * f1 * (-1*z^(-1/k)) * (1/k^2)
+                         = df1dmu * (-1*z^(-1/k)) * (1/k^2) * ln( -z )
                             + pt2_0_0_0 * f1 * (1/k^2) * ln( -z )
                             + 0
-                            + pt2_0_1_0 * f1 * (-z^(-1/k)) * (1/k^2)
+                            + pt2_0_1_0 * f1 * (-1*z^(-1/k)) * (1/k^2)
                         
                      pt2_0_1_0 = ∂/∂mu( ln ( -1*(sigma + k*(x-mu))/sigma ) 
                                = (k*sigma)/(sigma + k*(x-mu))
-                               
 
 */
 }
