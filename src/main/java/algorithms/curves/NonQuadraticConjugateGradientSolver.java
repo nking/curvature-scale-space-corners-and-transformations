@@ -616,9 +616,13 @@ public class NonQuadraticConjugateGradientSolver {
                 
                 float lft = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
                 
-                boolean t2 = (lft > (chiSqSum + 0.01f)) && ((0.01f/chiSqSum) > 0.02f);
+                boolean t0 = ((0.01f/chiSqSum) > 0.02f);
                 
-                if ((lft > rght) || ((lft/chiSqSum) > 1.5) || t2 ) {
+                boolean t1 = ((lft/chiSqSum) > 1.5);
+                
+                boolean t2 = (lft > (chiSqSum + 0.01f)) && t0;
+                
+                if ((lft > rght) || t1 || t2 ) {
                     failed = true;
                     break;
                 } else {

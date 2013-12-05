@@ -565,7 +565,7 @@ public class DerivGEV {
                         float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
                         float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
                         float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
-                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)(k + rModified) : (float)(k - rModified);
+                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)rModified : (float)(-1.f * rModified);
                     }
                     
                     break;
@@ -574,14 +574,13 @@ public class DerivGEV {
                     // sigma
                     // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
                     double rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, xPoint);
-                    
                     // test whether adding or subtracting the residual results in a reduced chisqsum
                     if (rModified > 0) {
                         float[] yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
                         float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
                         float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
                         float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
-                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)(sigma + rModified) : (float)(sigma - rModified);
+                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)rModified : (float)(-1.f * rModified);
                     }
                     
                     break;
@@ -597,7 +596,7 @@ public class DerivGEV {
                         float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
                         float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
                         float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
-                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)(mu + rModified) : (float)(mu - rModified);
+                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)rModified : (float)(-1.f * rModified);
                     }
                     
                     break;
@@ -963,10 +962,10 @@ public class DerivGEV {
         if (dydk != null) {
             
             // ∂^2f/∂k∂k
-            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk);
+            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());
 
             // ∂^2f/∂k∂sigma
-            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dyds);
+            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dydk.doubleValue());
 
             double modification = d2ydsds - (d2ydsdk / d2ydkdk) * d2ydkds;
 
@@ -1074,13 +1073,13 @@ public class DerivGEV {
             
             pt2_1 = 0;
             
-        } if (d2ydsdk != 0 && dydk != null) {
+        } else if (d2ydsdk != 0 && dydk != null) {
             
             // ∂^2f/∂sigma∂k
             double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.longValue());
                         
             // ∂^2f/∂k∂sigma
-            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dyds);
+            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dydk.doubleValue());
             
             pt2_1 = d2ydsds - (d2ydsdk * d2ydkds / d2ydkdk);
             
@@ -1092,7 +1091,7 @@ public class DerivGEV {
         }
         
         // ∂^2f/∂sigma∂mu
-        double d2dydsdm = estimateDY2DSigmaDMu(yConst, mu, k, sigma, x, dyds);
+        double d2dydsdm = estimateDY2DSigmaDMu(yConst, mu, k, sigma, x, dyds.doubleValue());
         
         // d(3,3) = 1./( (pt1) - ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )) 
         // 
