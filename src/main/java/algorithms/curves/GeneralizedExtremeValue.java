@@ -201,8 +201,8 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
             return null;
         } else {
             if (zIsNegative) {
-                a *= -1;
-                b *= -1;
+                a *= -1.f;
+                b *= -1.f;
             }
             float t = (float) ((1.f/sigma) * Math.exp(a) * b);
             return Double.valueOf(t);
@@ -245,7 +245,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
             boolean zIsNegative = (z < 0);
             
             if (zIsNegative) {
-                z *= -1;
+                z *= -1.f;
             }
 
             float a = -1.f*(float) Math.pow(z, (-1.f/k));
