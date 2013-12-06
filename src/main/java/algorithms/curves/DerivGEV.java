@@ -552,20 +552,19 @@ public class DerivGEV {
         float xPoint = x[yMaxIdx + 1];
                 
         for (int i = idx0; i <= idx1; i++) {
-                        
+            float[] yGEVPlus = null;
+            float[] yGEVMinus = null;
+            double rModified = 0;
             switch(i) {
                 case 0: {
                     // k
                     // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
-                    double rModified = calculatePreconditionerModifiedResidualK(yConst, mu, k, sigma, xPoint);
+                    rModified = calculatePreconditionerModifiedResidualK(yConst, mu, k, sigma, xPoint);
                     
                     // test whether adding or subtracting the residual results in a reduced chisqsum
-                    if (rModified > 0) {
-                        float[] yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
-                        float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
-                        float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
-                        float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
-                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)rModified : (float)(-1.f * rModified);
+                    if (rModified != 0) {
+                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
+                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
                     }
                     
                     break;
@@ -573,14 +572,11 @@ public class DerivGEV {
                 case 1: {
                     // sigma
                     // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
-                    double rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, xPoint);
+                    rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, xPoint);
                     // test whether adding or subtracting the residual results in a reduced chisqsum
-                    if (rModified > 0) {
-                        float[] yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
-                        float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
-                        float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
-                        float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
-                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)rModified : (float)(-1.f * rModified);
+                    if (rModified != 0) {
+                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
+                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
                     }
                     
                     break;
@@ -588,20 +584,24 @@ public class DerivGEV {
                 case 2: {
                     // mu
                     // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
-                    double rModified = calculatePreconditionerModifiedResidualMu(yConst, mu, k, sigma, xPoint);
+                    rModified = calculatePreconditionerModifiedResidualMu(yConst, mu, k, sigma, xPoint);
                     
                     // test whether adding or subtracting the residual results in a reduced chisqsum
-                    if (rModified > 0) {
-                        float[] yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
-                        float[] yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
-                        float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
-                        float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
-                        derivs[i] = (chiSqSumPlus <= chiSqSumMinus) ? (float)rModified : (float)(-1.f * rModified);
+                    if (rModified != 0) {
+                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
+                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
                     }
                     
                     break;
                 }
-            }            
+            }
+            if (rModified != 0 && yGEVPlus != null && yGEVMinus != null) {
+                float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
+                float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
+                float best = (chiSqSumPlus <= chiSqSumMinus) ? (float)rModified : (float)(-1.f * rModified);
+                derivs[i] = best;
+            }
+            System.out.println(" derivs[" + i + "]=" + derivs[i]);
         }
     }
     
@@ -766,15 +766,20 @@ public class DerivGEV {
         
         double delta = (sigma*factor);
         
+        
         Double dyds_2 = DerivGEV.derivWRTSigma(yConst, mu, k, (float)(sigma + delta), x);
         
-        if (dyds_2 == null) {
+        Double dyds_3 = DerivGEV.derivWRTSigma(yConst, mu, k, (float)(sigma - delta), x);
+        
+        /*if (dyds_2 == null) {
             return 0;
-        }
+        }*/
         
-        double d2ydsds = (dyds_2 - dydsigma)/delta;
+        return estimateDerivUsingDelta(dydsigma, dyds_2, dyds_3, delta);
         
-        return d2ydsds;
+        //double d2ydsds = (dyds_2 - dydsigma)/delta;
+        
+        //return d2ydsds;
     }
     
     /**

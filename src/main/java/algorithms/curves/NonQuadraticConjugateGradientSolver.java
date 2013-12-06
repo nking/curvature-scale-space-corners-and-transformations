@@ -334,7 +334,11 @@ public class NonQuadraticConjugateGradientSolver {
         // p is search direction
         float[] p = Arrays.copyOf(r, r.length);    
         
-        float bestChiSqSum = calculateChiSquareSum(
+        // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
+        // chiSqSumForLineSearch[1] holds the return value from lineSearch
+        float[] chiSqSumForLineSearch = new float[2];
+        
+        chiSqSumForLineSearch[0] = calculateChiSquareSum(
             GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
             WEIGHTS_DURING_CHISQSUM.ERRORS);
         
@@ -380,20 +384,20 @@ public class NonQuadraticConjugateGradientSolver {
                 }                
             }
             // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-            float alpha = lineSearch(r, p, vars, varsMin, varsMax, bestChiSqSum, 0, varStopIdx);
+            float alpha = lineSearch(r, p, vars, varsMin, varsMax, chiSqSumForLineSearch, 0, varStopIdx);
  
             if (alpha <= eps) {
                 // need 2nd deriv pre-conditioning
                 break;
             }
-            for (int k = 0; k <= varStopIdx; k++) {
-                float ap = alpha*p[k];
-                vars[k] = vars[k] + ap;
- System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
-            }
-            
-            if (chiSqSum < bestChiSqSum) {
-                bestChiSqSum = chiSqSum;
+                        
+            if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
+                for (int k = 0; k <= varStopIdx; k++) {
+                    float ap = alpha*p[k];
+                    vars[k] = vars[k] + ap;
+System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                }
+                chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
             }
             
             nIter++;
@@ -467,9 +471,13 @@ public class NonQuadraticConjugateGradientSolver {
         float[] rPrev = new float[r.length];
         
         // p is search direction
-        float[] p = Arrays.copyOf(r, r.length);    
+        float[] p = Arrays.copyOf(r, r.length);   
         
-        float bestChiSqSum = calculateChiSquareSum(
+        // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
+        // chiSqSumForLineSearch[1] holds the return value from lineSearch
+        float[] chiSqSumForLineSearch = new float[2];
+        
+        chiSqSumForLineSearch[0] = calculateChiSquareSum(
             GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
             WEIGHTS_DURING_CHISQSUM.ERRORS);
         
@@ -506,6 +514,8 @@ public class NonQuadraticConjugateGradientSolver {
                     // populate r with the best fitting derivatives for vars[]
                     DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, k, k);
                     
+System.out.println("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                    
                     // Polak=Ribiere function
                     float beta =  (float) ((r[k] * (r[k] - rPrev[k])) / Math.pow(rPrev[k], 2));
                     if (beta < 0 || Float.isInfinite(beta) || Float.isNaN(beta)) {
@@ -514,23 +524,28 @@ public class NonQuadraticConjugateGradientSolver {
                     //p_k = r_k +β_k*(p_(k−1)).
                     p[k] = r[k] + beta*p[k];
                         
-                    System.out.println("r[" + k + "]=" + r[k] + "  p[" + k + "]=" + p[k] + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+ System.out.println("    p[" + k + "]=" + p[k] + "  beta=" + beta + " nIter=" + nIter);
                 }
                 
              // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-                float alpha = lineSearch(r, p, vars, varsMin, varsMax, bestChiSqSum, k, k);
+                float alpha = lineSearch(r, p, vars, varsMin, varsMax, chiSqSumForLineSearch, k, k);
                 if (alpha <= eps) {
                     break;
                 }
                 float ap = alpha*p[k];
-                vars[k] = vars[k] + ap;
-     System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                
+                float tmpVar = vars[k] + ap;                
+                
+                if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
+                    vars[k] = tmpVar;
+                    chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                }
+                
+ System.out.println("    alpha=" + alpha + "  -> vars[" + k + "]=" + vars[k] + "  chiSqSum=" + chiSqSumForLineSearch[0] + " nIter=" + nIter);
+ @SuppressWarnings("unused")
+int z = 1;
             }
-            
-            if (chiSqSum < bestChiSqSum) {
-                bestChiSqSum = chiSqSum;
-            }
-            
+                        
             nIter++;
         }
         
@@ -567,20 +582,31 @@ public class NonQuadraticConjugateGradientSolver {
      *     result will be applied as vars[k] = vars[k] + alpha*p[k]
      *
      * 
-     * @param r
-     * @param p
+     * @param r suggested changes to apply to vars
+     * @param p suggested changes to apply to vars, previously altered by a beta function
+     * @param vars the array holding current values for k, sigma, and mu
+     * @param varsMin the minimum acceptable value of items in vars array
+     * @param varsMax the maximum acceptable value of items in vars array
+     * @param chiSqSum an array whose first item is the instance's current best chiSqSum corresponding to values in vars
+     *         and whose second item is space to return the last value for chiSqSum computed here for the successful
+     *         alpha.  an array with mixed uses is an attempt to optimize for runtime. this may change to return
+     *         the alpha and chiSqSum in an object in the future.
      * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @return
      */
     protected float lineSearch(float[] r, float[] p, float[] vars, float[] varsMin, float[] varsMax,
-        float chiSqSum, int idx0, int idx1) throws FailedToConvergeException {
+        float[] chiSqSum, int idx0, int idx1) throws FailedToConvergeException {
                 
         float low = 0;
         float alpha = 1;
         float high = 1;
         
         float[] tmpVars = new float[vars.length];
+                
+        float[] yGEV = null;
+        
+        chiSqSum[1] = Float.MAX_VALUE;
                 
         boolean notFound = true;
         while (notFound && (Math.abs(high - low) > eps)) {
@@ -599,9 +625,8 @@ public class NonQuadraticConjugateGradientSolver {
                     break;
                 }
                 
-                float rght = chiSqSum + alpha * r[i]*p[i];
+                float rght = chiSqSum[0] + alpha * r[i]*p[i];
                 
-                float[] yGEV = null;
                 switch(i) {
                     case 0:
                         yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], vars[1], vars[2]);
@@ -614,19 +639,20 @@ public class NonQuadraticConjugateGradientSolver {
                         break;
                 }
                 
-                float lft = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
+                chiSqSum[1] = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
                 
-                boolean t0 = ((0.01f/chiSqSum) > 0.02f);
+                boolean t0 = ((0.01f/chiSqSum[0]) > 0.02f);
                 
-                boolean t1 = ((lft/chiSqSum) > 1.5);
+                boolean t1 = ((chiSqSum[1]/chiSqSum[0]) > 1.5);
                 
-                boolean t2 = (lft > (chiSqSum + 0.01f)) && t0;
+                boolean t2 = (chiSqSum[1] > (chiSqSum[0] + 0.01f)) && t0;
                 
-                if ((lft > rght) || t1 || t2 ) {
+                if ((chiSqSum[1] > rght) || t1 || t2 ) {
                     failed = true;
                     break;
                 } else {
-                    System.out.println("alpha=" + alpha + "  lft=" + lft + " rght=" + rght + " i=" + i + " failed=" + failed);
+                    System.out.println("   alpha=" + alpha + "  lft=" + chiSqSum[1] + " rght=" + rght + " i=" + i + " prev chiSqSum=" + chiSqSum[0]);
+                    int z = 1;
                 }
             }
             
