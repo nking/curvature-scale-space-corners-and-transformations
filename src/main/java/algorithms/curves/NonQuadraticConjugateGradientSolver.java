@@ -364,11 +364,15 @@ public class NonQuadraticConjugateGradientSolver {
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
             float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
             
-            try {
-            String label = String.format("k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f", vars[0], vars[1], vars[2], nIter, chiSqSum);
-            plotFit(yGEV, label);
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
+            if (debug) {
+                try {
+                    String label = String.format(
+                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f",
+                        vars[0], vars[1], vars[2], nIter, chiSqSum);
+                    plotFit(yGEV, label);
+                } catch (IOException e) {
+                    System.err.println(e.getMessage());
+                }
             }
             
             // if solution has stalled, apply changes that improve the solution in small steps
@@ -377,8 +381,7 @@ public class NonQuadraticConjugateGradientSolver {
                     rPrev[k] = r[k];
                 }
                 
-                // we want to start with idx = 1 or 2
-                int idx = (nAltSolutionCount % 2) + 1;
+                int idx = (nAltSolutionCount % 3);
                 
                 DerivGEV.exploreChangeInVars(vars, x, y, ye, r, chiSqSumForLineSearch, idx);
                 // OR temporarily allow changes that increase chiSqSum
@@ -414,7 +417,7 @@ public class NonQuadraticConjugateGradientSolver {
                     //p_k = r_k +β_k*(p_(k−1)).
                     p[k] = r[k] + beta*p[k];
                     
-                    System.out.println("r[" + k + "]=" + r[k] + "  p[" + k + "]=" + p[k] + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                    log.finest("r[" + k + "]=" + r[k] + "  p[" + k + "]=" + p[k] + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
                 }                
             }
             // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
@@ -429,7 +432,8 @@ public class NonQuadraticConjugateGradientSolver {
                 for (int k = 0; k <= varStopIdx; k++) {
                     float ap = alpha*p[k];
                     vars[k] = vars[k] + ap;
-System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                    
+                    log.finest("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
                 }
                 chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
             }
@@ -535,11 +539,15 @@ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
             float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
             
-            try {
-            String label = String.format("k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f", vars[0], vars[1], vars[2], nIter, chiSqSum);
-            plotFit(yGEV, label);
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
+            if (debug) {
+                try {
+                    String label = String.format(
+                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f",
+                        vars[0], vars[1], vars[2], nIter, chiSqSum);
+                    plotFit(yGEV, label);
+                } catch (IOException e) {
+                    System.err.println(e.getMessage());
+                }
             }
             
             for (int k = 0; k < r.length; k++) {
@@ -548,9 +556,8 @@ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
             
             // if solution has stalled, suggest deltas and apply the accepted
             if ((nIter > 3) && (nSameSequentially > 2)) {
-                                
-                // we want to start with idx = 1 or 2
-                int idx = (nAltSolutionCount % 2) + 1;
+                
+                int idx = (nAltSolutionCount % 3);
                 
                 DerivGEV.exploreChangeInVars(vars, x, y, ye, r, chiSqSumForLineSearch, idx);
                 
@@ -578,7 +585,7 @@ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
                     // populate r with the best fitting derivatives for vars[]
                     DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, k, k);
                     
-System.out.println("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                    log.finest("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
                     
                     // Polak=Ribiere function
                     float beta =  (float) ((r[k] * (r[k] - rPrev[k])) / Math.pow(rPrev[k], 2));
@@ -588,13 +595,13 @@ System.out.println("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k]
                     //p_k = r_k +β_k*(p_(k−1)).
                     p[k] = r[k] + beta*p[k];
                         
- System.out.println("    p[" + k + "]=" + p[k] + "  beta=" + beta + " nIter=" + nIter);
+                    log.finest("    p[" + k + "]=" + p[k] + "  beta=" + beta + " nIter=" + nIter);
                 }
                 
              // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
                 float alpha = lineSearch(r, p, vars, varsMin, varsMax, chiSqSumForLineSearch, k, k);
                 if (alpha <= eps) {
-System.out.println("       r[" + k + "]=" + r[k] + "  last chiSqSum=" + chiSqSumForLineSearch[1]);
+                    log.finest("       r[" + k + "]=" + r[k] + "  last chiSqSum=" + chiSqSumForLineSearch[1]);
                     continue;
                 }
                 float ap = alpha*p[k];
@@ -606,9 +613,7 @@ System.out.println("       r[" + k + "]=" + r[k] + "  last chiSqSum=" + chiSqSum
                     chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
                 }
                 
- System.out.println("    alpha=" + alpha + "  -> vars[" + k + "]=" + vars[k] + "  chiSqSum=" + chiSqSumForLineSearch[0] + " nIter=" + nIter);
- @SuppressWarnings("unused")
-int z = 1;
+                log.finest("    alpha=" + alpha + "  -> vars[" + k + "]=" + vars[k] + "  chiSqSum=" + chiSqSumForLineSearch[0] + " nIter=" + nIter);
             }
             
             if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
@@ -636,7 +641,7 @@ int z = 1;
         yfit.setYScale(yScale);
         yfit.setYDataErrSq( calcYErrSquareSum() ); 
         
-System.out.println("number of times the alt solution was needed = " + nAltSolutionCount);
+        log.info("number of times the alt solution was needed = " + nAltSolutionCount);
 
         return yfit;
     }     
@@ -719,7 +724,7 @@ System.out.println("number of times the alt solution was needed = " + nAltSoluti
                     failed = true;
                     break;
                 } else {
-                    System.out.println("   alpha=" + alpha + "  lft=" + chiSqSum[1] + " rght=" + rght + " i=" + i + " prev chiSqSum=" + chiSqSum[0]);
+                    log.finest("   alpha=" + alpha + "  lft=" + chiSqSum[1] + " rght=" + rght + " i=" + i + " prev chiSqSum=" + chiSqSum[0]);
                 }
             }
             
