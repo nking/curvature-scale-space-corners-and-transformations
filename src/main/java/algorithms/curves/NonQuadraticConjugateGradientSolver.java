@@ -229,6 +229,8 @@ public class NonQuadraticConjugateGradientSolver {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
+    protected int maxIterations = 100;
+    
     protected boolean debug = false;
     
     protected final GeneralizedExtremeValue gev;
@@ -304,19 +306,21 @@ public class NonQuadraticConjugateGradientSolver {
 
         //TODO:  check that muMin and muMax are within bounds of x
         
+        /*
         float kVar = kMin;
         float sigmaVar = sigmaMin;
         float muVar = muMin;
-        
+        */
         /*
         float kVar = kMax;
         float sigmaVar = sigmaMax;
         float muVar = muMax;
+        */
         
         float kVar = (kMax + kMin)/2.f;
         float sigmaVar = (sigmaMax + sigmaMin)/2.f;
         float muVar = (muMax + muMin)/2.f;
-        */
+        
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
@@ -342,7 +346,6 @@ public class NonQuadraticConjugateGradientSolver {
             GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
             WEIGHTS_DURING_CHISQSUM.ERRORS);
         
-        int maxIterations = 200;
         int nIter = 0;
         while ( nIter < maxIterations) {
             
@@ -391,7 +394,7 @@ public class NonQuadraticConjugateGradientSolver {
                 break;
             }
                         
-            if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
+            if (!chiSqSumIsNotAcceptable(chiSqSumForLineSearch[0], chiSqSumForLineSearch[1])) {
                 for (int k = 0; k <= varStopIdx; k++) {
                     float ap = alpha*p[k];
                     vars[k] = vars[k] + ap;
@@ -481,7 +484,6 @@ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
             GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
             WEIGHTS_DURING_CHISQSUM.ERRORS);
         
-        int maxIterations = 200;
         int nIter = 0;
         while ( nIter < maxIterations) {
             
@@ -530,13 +532,14 @@ System.out.println("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k]
              // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
                 float alpha = lineSearch(r, p, vars, varsMin, varsMax, chiSqSumForLineSearch, k, k);
                 if (alpha <= eps) {
-                    break;
+System.out.println("       r[" + k + "]=" + r[k] + "  last chiSqSum=" + chiSqSumForLineSearch[1]);
+                    continue;
                 }
                 float ap = alpha*p[k];
                 
                 float tmpVar = vars[k] + ap;                
                 
-                if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
+                if (!chiSqSumIsNotAcceptable(chiSqSumForLineSearch[0], chiSqSumForLineSearch[1])) {
                     vars[k] = tmpVar;
                     chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
                 }
@@ -602,7 +605,7 @@ int z = 1;
         float alpha = 1;
         float high = 1;
         
-        float[] tmpVars = new float[vars.length];
+        float[] tmpVars = Arrays.copyOf(vars, vars.length);
                 
         float[] yGEV = null;
         
@@ -629,10 +632,10 @@ int z = 1;
                 
                 switch(i) {
                     case 0:
-                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], vars[1], vars[2]);
+                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);
                         break;
                     case 1:
-                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], vars[2]);
+                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);
                         break;
                     case 2:
                         yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);                        
@@ -640,14 +643,8 @@ int z = 1;
                 }
                 
                 chiSqSum[1] = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
-                
-                boolean t0 = ((0.01f/chiSqSum[0]) > 0.02f);
-                
-                boolean t1 = ((chiSqSum[1]/chiSqSum[0]) > 1.5);
-                
-                boolean t2 = (chiSqSum[1] > (chiSqSum[0] + 0.01f)) && t0;
-                
-                if ((chiSqSum[1] > rght) || t1 || t2 ) {
+                                
+                if ((chiSqSum[1] > rght) || chiSqSumIsNotAcceptable(chiSqSum[0], chiSqSum[1])) {
                     failed = true;
                     break;
                 } else {
@@ -679,6 +676,13 @@ int z = 1;
             
         }
         return alpha;
+    }
+
+    private boolean chiSqSumIsNotAcceptable(float bestChSqSum, float compareChSqSum) {
+        
+        boolean t1 = ((compareChSqSum/bestChSqSum) > 1.001);
+        
+        return t1 ;
     }
 
     protected boolean isAcceptableMin(float[] vars, float eps, float kMin,

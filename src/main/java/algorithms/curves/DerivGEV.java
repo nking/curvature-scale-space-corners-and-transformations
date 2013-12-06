@@ -551,7 +551,8 @@ public class DerivGEV {
         
         float xPoint = x[yMaxIdx + 1];
                 
-        for (int i = idx0; i <= idx1; i++) {
+        for (int i = idx0; i < (idx1 + 1); i++) {
+
             float[] yGEVPlus = null;
             float[] yGEVMinus = null;
             double rModified = 0;
