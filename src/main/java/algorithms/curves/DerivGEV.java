@@ -390,7 +390,7 @@ public class DerivGEV {
             df1dsigma *= -1.f;
         }
         
-        double df0dsigma = -1.f/(sigma*sigma);
+        double df0dsigma = -1.f*yConst/(sigma*sigma);
                 
         double dydSigma = (  df0dsigma * f1 * f2 ) + ( df1dsigma * f0 * f2 ) + (df2dsigma * f0 * f1 );
         
@@ -413,15 +413,15 @@ public class DerivGEV {
      */
     static Double estimateDerivUsingDeltaSigma(float mu, float k, float sigma, float x) {
         
-        float deltaSigma = 0.0001f*sigma;
+        float delta = 0.0001f*sigma;
         
-        Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma - deltaSigma), mu);
+        Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma - delta), mu);
         
         Double d1 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, mu);
         
-        Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma + deltaSigma), mu);
+        Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma + delta), mu);
         
-        return estimateDerivUsingDelta(d0, d1, d2, deltaSigma);
+        return estimateDerivUsingDelta(d0, d1, d2, delta);
     }
 
     /**
@@ -486,9 +486,6 @@ public class DerivGEV {
     
     /**
      * estimate d/dmu of GEV using the difference between GEVs given minor changes in k
-     * 
-     * Note that this method does not match the results of method derivWRTMu.  Prefer method derivWRTMu
-     * when possible.
      * 
      * @param yConst
      * @param mu

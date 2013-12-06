@@ -529,7 +529,7 @@ public class DerivGEVTest extends TestCase {
             double delta = (mu*factor) * i;
             float d = (float) (mu + delta);
                                     
-            Double deriv = DerivGEV.derivWRTMu(yConst, d, k, sigma, 0.7f);
+            Double deriv = DerivGEV.derivWRTMu(yConst, d, k, sigma, xPoint);
             if (deriv != null) {
                 System.out.println("mu=" + d + "  derivWRTMu=" + deriv);
             }

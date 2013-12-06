@@ -229,7 +229,7 @@ public class NonQuadraticConjugateGradientSolver {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
-    protected int maxIterations = 500;
+    protected int maxIterations = 200;
     
     protected boolean debug = false;
     
@@ -310,21 +310,20 @@ public class NonQuadraticConjugateGradientSolver {
 
         //TODO:  check that muMin and muMax are within bounds of x
         
-        /*
         float kVar = kMin;
         float sigmaVar = sigmaMin;
         float muVar = muMin;
-        */
+        
         /*
         float kVar = kMax;
         float sigmaVar = sigmaMax;
         float muVar = muMax;
         */
-        
+        /*
         float kVar = (kMax + kMin)/2.f;
         float sigmaVar = (sigmaMax + sigmaMin)/2.f;
         float muVar = (muMax + muMin)/2.f;
-        
+        */
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
