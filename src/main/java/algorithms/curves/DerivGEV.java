@@ -701,8 +701,8 @@ public class DerivGEV {
                     }
                 }
                         
-                float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
-                float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
+                float chiSqSumPlus = (yGEVPlus != null) ? chiSqSum(yGEVPlus, normalizedY, normalizedYErr) : Float.MAX_VALUE;
+                float chiSqSumMinus = (yGEVMinus != null) ? chiSqSum(yGEVMinus, normalizedY, normalizedYErr) : Float.MAX_VALUE;
                 boolean bestIsPlus = (chiSqSumPlus < chiSqSumMinus);
                     
                 if (bestIsPlus && (chiSqSumPlus < bestChiSqSum)) {

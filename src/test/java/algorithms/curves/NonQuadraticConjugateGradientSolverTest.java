@@ -40,7 +40,7 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
                     
         NonQuadraticConjugateGradientSolver fitCurve = new NonQuadraticConjugateGradientSolver(xp, yGEV, Errors.populateYErrorsBySqrt(xp), ye);
        
-        // problem fiting curve: k=0.91, s=0.22, m=.218
+        // TODO:  problem fitting parameters in <>  k=1.4680 <0.09> s=0.1307 <0.05> m=0.1543 <0.106> (nx=40,i=21) chi=0.013889
         
         float kMin = 0.01f;
         float kMax = 3*k;
@@ -78,7 +78,7 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         
         System.out.println("SEED=" + seed);
         
-        float[] kRange = new float[]{0.00001f, 2.0f};
+        float[] kRange = new float[]{0.001f, 2.0f};
         float[] sRange = new float[]{0.025f, 0.5f};
         
         String path = null;
@@ -87,7 +87,7 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
             
             float[] xp = new float[nX];
             float[] ye = new float[nX];
-            Arrays.fill(ye, 0.05f);
+            Arrays.fill(ye, 0.04f);
 
             for (int i = 0; i < xp.length; i++) {
                 xp[i] = (float)i/xp.length;
@@ -121,6 +121,12 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
                 plotter.addPlot(xp, yGEV, xe, ye, fit.getX(), fit.getYFit(), label);
                     
                 path = plotter.writeFile2();
+                
+                assertTrue(fit.getChiSqSum() < 0.05f);
+                //assertTrue(Math.abs(fit.getK() - k)     < k*0.4);
+                //assertTrue(Math.abs(fit.getSigma() - s) < s*0.25);
+                assertTrue(Math.abs(fit.getMu() - m)    < 0.3);
+                
             }
             
             nX >>= 1;

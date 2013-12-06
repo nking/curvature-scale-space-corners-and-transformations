@@ -485,20 +485,21 @@ public class NonQuadraticConjugateGradientSolver {
     public GEVYFit fitCurveParametersSeparately(float kMin, float kMax, float sigmaMin, float sigmaMax,
         float muMin, float muMax) throws FailedToConvergeException {
         
+        /*
         float kVar = kMin;
         float sigmaVar = sigmaMin;
         float muVar = muMin;
-        
+        */
         /*
         float kVar = kMax;
         float sigmaVar = sigmaMax;
         float muVar = muMax;
         */
-        /*
+        
         float kVar = (kMax + kMin)/2.f;
         float sigmaVar = (sigmaMax + sigmaMin)/2.f;
         float muVar = (muMax + muMin)/2.f;
-        */
+        
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
