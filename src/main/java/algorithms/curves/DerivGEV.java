@@ -763,7 +763,7 @@ public class DerivGEV {
      */
     static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x) {
      
-        // ∂^2f/∂k∂k = estimate as (dydk_2 - dydk)/dk
+        // ∂^2f/∂k∂k 
         
         Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
         
@@ -1093,7 +1093,9 @@ public class DerivGEV {
             
                 Let pt2_1 = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
             
-            d(3,3) = 1./( (pt1) - ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )) 
+                Let pt2 = ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )
+            
+            d(3,3) = 1./( pt1 - pt2) 
         */
         
         // ∂f/∂mu
@@ -1148,15 +1150,18 @@ public class DerivGEV {
         
         double d2ydmds = estimateDY2DMuDSigma(yConst, mu, k, sigma, x, dydmu.doubleValue());
         
+        // ∂^2f/∂sigma∂mu
+        double d2ydsdm = estimateDY2DSigmaDMu(yConst, mu, k, sigma, x, dyds.doubleValue());
         
         // d(3,3) = 1./( (pt1) - ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )) 
         // 
         // pt2_1 = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+        // Let pt2 = ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )
         
-        double pt2_1;
+        double pt2, pt2_1;
         
         if (d2ydmds == 0) {
-            
+            pt2 = 0;
             pt2_1 = 0;
             
         } else if (d2ydsdk != 0 && dydk != null) {
@@ -1171,21 +1176,18 @@ public class DerivGEV {
             
             pt2_1 = 1./pt2_1;
                 
+            pt2 = d2ydmds * pt2_1 * d2ydsdm;
+            
         } else {
             
             pt2_1 = 1./d2ydsds;
+            
+            pt2 = d2ydmds * pt2_1 * d2ydsdm;
         }
         
-        // ∂^2f/∂sigma∂mu
-        double d2dydsdm = estimateDY2DSigmaDMu(yConst, mu, k, sigma, x, dyds.doubleValue());
-        
-        // d(3,3) = 1./( (pt1) - ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )) 
-        // 
-        // pt2_1 = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
-        
-        double modification = pt1 - (pt2_1 * d2ydmds * d2dydsdm);
-                        
-        double resid = dyds/modification;
+        double modification = pt1 - pt2;
+                                
+        double resid = dydmu/modification;
         
         return resid;
     }
