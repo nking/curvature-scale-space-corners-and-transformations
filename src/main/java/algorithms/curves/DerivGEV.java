@@ -549,7 +549,7 @@ public class DerivGEV {
         }
         float yConst = 1.f/yMax;
         
-        float xPoint = x[yMaxIdx + 1];
+        float xPoint = x[yMaxIdx + 0];
                 
         for (int i = idx0; i < (idx1 + 1); i++) {
 
@@ -604,6 +604,119 @@ public class DerivGEV {
             }
             System.out.println(" derivs[" + i + "]=" + derivs[i]);
         }
+    }
+
+    /**
+     * when derivsThatMinimizeChiSqSum is not successfully finding acceptable changes for the
+     * curve to improve the minimization of the chi - square sum, use this method
+     * to test a range of changes and return them in the array r if successfully found 
+     * a change.
+     * 
+     * @param vars
+     * @param x
+     * @param y
+     * @param ye
+     * @param r
+     * @param chiSqSumReturn item [0] is the best current chiSqSum for given vars.
+     *    item [1] is to return the value of the best chiSqSum here to the invoker
+     *    if r was set to non-zero values.
+     * @param idx the index in vars to start with to help rotate which changes are
+     *   set in r first and accepted.
+     */
+    public static void exploreChangeInVars(float[] vars, float[] x, float[] normalizedY,
+        float[] normalizedYErr, float[] r, float[] chiSqSumReturn, int idx) {
+        
+        float defaultChange = 0.6f;
+        
+        Arrays.fill(r, 0);
+              
+        float bestChiSqSum = chiSqSumReturn[0];
+                       
+        // apply mu changes first by starting with i=2
+        for (int c = 0; c < 3; c++) {
+            
+            int i = idx + c;
+            if (i > 2) {
+                i = i - 3;
+            }
+            
+            float k = vars[0] + r[0];
+            float sigma = vars[1] + r[1];
+            float mu = vars[2] + r[2];
+            
+            float rModified = defaultChange;
+            
+            if (i == 2) {
+                rModified = 0.5f - mu;
+            }
+            
+            float[] yGEVPlus = null;
+            float[] yGEVMinus = null;
+            
+            int nMaxIter = 10;
+            int nIter = 0;
+            
+            boolean hasRetried = false;
+            boolean useDoubleChange = false;
+            
+            while (nIter < nMaxIter) {
+                switch(i) {
+                    case 0: {
+                        // k                    
+                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
+                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
+                    
+                        break;
+                    }
+                    case 1: {
+                        // sigma
+                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
+                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
+                        
+                        break;
+                    }
+                    case 2: {
+                        // mu
+                        
+                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
+                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
+                                                
+                        break;
+                    }
+                }
+                        
+                float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
+                float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
+                boolean bestIsPlus = (chiSqSumPlus < chiSqSumMinus);
+                    
+                if (bestIsPlus && (chiSqSumPlus < bestChiSqSum)) {
+                    r[i] = rModified;
+                    bestChiSqSum = chiSqSumPlus;
+                    // continue to next variable
+                    break;
+                } else if (chiSqSumMinus < bestChiSqSum) {
+                    r[i] = -1.f * rModified;
+                    bestChiSqSum = chiSqSumMinus;
+                    // continue to next variable
+                    break;
+                } else {
+                    
+                    if (hasRetried) {
+                        if (useDoubleChange) {
+                            rModified *= 2.f;
+                        } else {
+                            rModified /= 2;
+                        }
+                    } else {
+                        rModified /= 2.f;
+                        hasRetried = true;
+                    }
+                    
+                    nIter++;
+                }                
+            }
+        }
+        chiSqSumReturn[1] = bestChiSqSum;
     }
     
     public static double calculatePreconditionerModifiedResidualK(
@@ -1217,7 +1330,7 @@ public class DerivGEV {
         
         return d2fdkdmu;
     }
-    
+
     /* 
      Can see that calculating the formula for the partial derivative ∂^2f/∂k∂mu
      is time consuming and error prone so will only implement the "estimate" methods hereafter.

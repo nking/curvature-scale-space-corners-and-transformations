@@ -229,7 +229,7 @@ public class NonQuadraticConjugateGradientSolver {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
-    protected int maxIterations = 100;
+    protected int maxIterations = 500;
     
     protected boolean debug = false;
     
@@ -299,6 +299,10 @@ public class NonQuadraticConjugateGradientSolver {
         }
     }
 
+    public void setMaximumNumberOfIterations(int maxNumber) {
+        this.maxIterations = maxNumber;
+    }
+    
     //TODO:  when this class and GEVChiSquareMinimization are abstracted, this method should be abstract in the base class and implemented here
     
     public GEVYFit fitCurve(float kMin, float kMax, float sigmaMin, float sigmaMax,
@@ -346,26 +350,54 @@ public class NonQuadraticConjugateGradientSolver {
             GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
             WEIGHTS_DURING_CHISQSUM.ERRORS);
         
+        int nSameSequentially = 0;
+        float epsChiSame = 1e-5f;
+        float lastChiSqSum = Float.MAX_VALUE;
+        int nAltSolutionCount = 0;
+        
         int nIter = 0;
         while ( nIter < maxIterations) {
             
-            if ((nIter > 0) && residualsAreSame(rPrev, r)) {
-                System.out.println("residuals are same nIter=" + nIter);
-                /*if (varStopIdx == (vars.length - 1)) {
-                    // this holds mu fixed to current value in vars[2]
-                    varStopIdx--;
-                } */
-            }
-            
+            /*if ((nIter > 1) && residualsAreSame(rPrev, r)) {
+                break;
+            }*/
+           
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
             float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
             
             try {
-            String label = String.format("k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chiSqSum=%3.4f", vars[0], vars[1], vars[2], nIter, chiSqSum);
+            String label = String.format("k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f", vars[0], vars[1], vars[2], nIter, chiSqSum);
             plotFit(yGEV, label);
             } catch (IOException e) {
                 System.err.println(e.getMessage());
             }
+            
+            // if solution has stalled, apply changes that improve the solution in small steps
+            if ((nIter > 3) && (nSameSequentially > 2)) {
+                for (int k = 0; k < r.length; k++) {
+                    rPrev[k] = r[k];
+                }
+                
+                // we want to start with idx = 1 or 2
+                int idx = (nAltSolutionCount % 2) + 1;
+                
+                DerivGEV.exploreChangeInVars(vars, x, y, ye, r, chiSqSumForLineSearch, idx);
+                // OR temporarily allow changes that increase chiSqSum
+                
+                nAltSolutionCount++;
+                
+                // apply changes
+                if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
+                    for (int k = 0; k <= varStopIdx; k++) {
+                        vars[k] = vars[k] + r[k];
+                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                    }
+                    nSameSequentially = 0;
+                    lastChiSqSum = chiSqSumForLineSearch[0];
+                    nIter++;
+                    continue;
+                }
+            }            
             
             if (nIter > 0) {
                 for (int k = 0; k < r.length; k++) {
@@ -402,6 +434,13 @@ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
                 }
                 chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
             }
+            
+            if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
+                nSameSequentially++;
+            } else {
+                nSameSequentially = 0;
+            }
+            lastChiSqSum = chiSqSumForLineSearch[0];
             
             nIter++;
         }
@@ -443,22 +482,20 @@ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
     public GEVYFit fitCurveParametersSeparately(float kMin, float kMax, float sigmaMin, float sigmaMax,
         float muMin, float muMax) throws FailedToConvergeException {
         
-        /*
         float kVar = kMin;
         float sigmaVar = sigmaMin;
         float muVar = muMin;
-        */
+        
         /*
         float kVar = kMax;
         float sigmaVar = sigmaMax;
         float muVar = muMax;
         */
-        
-        
+        /*
         float kVar = (kMax + kMin)/2.f;
         float sigmaVar = (sigmaMax + sigmaMin)/2.f;
         float muVar = (muMax + muMin)/2.f;
-        
+        */
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
@@ -484,22 +521,23 @@ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
             GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
             WEIGHTS_DURING_CHISQSUM.ERRORS);
         
+        int nSameSequentially = 0;
+        float epsChiSame = 1e-5f;
+        float lastChiSqSum = Float.MAX_VALUE;
+        int nAltSolutionCount = 0;
+        
         int nIter = 0;
-        while ( nIter < maxIterations) {
+        while (nIter < maxIterations) {
             
-            if ((nIter > 0) && residualsAreSame(rPrev, r)) {
-                System.out.println("residuals are same nIter=" + nIter);
-                /*if (varStopIdx == (vars.length - 1)) {
-                    // this holds mu fixed to current value in vars[2]
-                    varStopIdx--;
-                }*/
-            }
+            /*if ((nIter > 1) && residualsAreSame(rPrev, r)) {
+                break;
+            }*/
             
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
             float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
             
             try {
-            String label = String.format("k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chiSqSum=%3.4f", vars[0], vars[1], vars[2], nIter, chiSqSum);
+            String label = String.format("k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f", vars[0], vars[1], vars[2], nIter, chiSqSum);
             plotFit(yGEV, label);
             } catch (IOException e) {
                 System.err.println(e.getMessage());
@@ -507,6 +545,31 @@ System.out.println("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
             
             for (int k = 0; k < r.length; k++) {
                 rPrev[k] = r[k];
+            }
+            
+            // if solution has stalled, suggest deltas and apply the accepted
+            if ((nIter > 3) && (nSameSequentially > 2)) {
+                                
+                // we want to start with idx = 1 or 2
+                int idx = (nAltSolutionCount % 2) + 1;
+                
+                DerivGEV.exploreChangeInVars(vars, x, y, ye, r, chiSqSumForLineSearch, idx);
+                
+                // OR temporarily allow changes that increase chiSqSum
+                
+                nAltSolutionCount++;
+                
+                // apply changes
+                if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
+                    for (int k = 0; k <= varStopIdx; k++) {
+                        vars[k] = vars[k] + r[k];
+                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                    }
+                    nSameSequentially = 0;
+                    lastChiSqSum = chiSqSumForLineSearch[0];
+                    nIter++;
+                    continue;
+                }
             }
             
             for (int k = 0; k <= varStopIdx; k++) {
@@ -548,7 +611,14 @@ System.out.println("       r[" + k + "]=" + r[k] + "  last chiSqSum=" + chiSqSum
  @SuppressWarnings("unused")
 int z = 1;
             }
-                        
+            
+            if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
+                nSameSequentially++;
+            } else {
+                nSameSequentially = 0;
+            }
+            lastChiSqSum = chiSqSumForLineSearch[0];
+            
             nIter++;
         }
         
@@ -567,6 +637,8 @@ int z = 1;
         yfit.setYScale(yScale);
         yfit.setYDataErrSq( calcYErrSquareSum() ); 
         
+System.out.println("number of times the alt solution was needed = " + nAltSolutionCount);
+
         return yfit;
     }     
     
@@ -628,8 +700,6 @@ int z = 1;
                     break;
                 }
                 
-                float rght = chiSqSum[0] + alpha * r[i]*p[i];
-                
                 switch(i) {
                     case 0:
                         yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);
@@ -642,6 +712,8 @@ int z = 1;
                         break;
                 }
                 
+                float rght = chiSqSum[0] + alpha * r[i]*p[i];
+                
                 chiSqSum[1] = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
                                 
                 if ((chiSqSum[1] > rght) || chiSqSumIsNotAcceptable(chiSqSum[0], chiSqSum[1])) {
@@ -649,7 +721,6 @@ int z = 1;
                     break;
                 } else {
                     System.out.println("   alpha=" + alpha + "  lft=" + chiSqSum[1] + " rght=" + rght + " i=" + i + " prev chiSqSum=" + chiSqSum[0]);
-                    int z = 1;
                 }
             }
             
@@ -671,9 +742,7 @@ int z = 1;
                 high = bisector;
                 alpha = 0.75f*(high + low)/2.f;
             }
-            
-            // TODO: could adapt the pattern to find the max of high partition when successful by raising low
-            
+                        
         }
         return alpha;
     }
@@ -681,6 +750,10 @@ int z = 1;
     private boolean chiSqSumIsNotAcceptable(float bestChSqSum, float compareChSqSum) {
         
         boolean t1 = ((compareChSqSum/bestChSqSum) > 1.001);
+        
+        /*if (compareChSqSum < 0.002 && bestChSqSum < 0.002) {
+            t1 = false;
+        }*/
         
         return t1 ;
     }
@@ -817,7 +890,7 @@ int z = 1;
     }
     
     protected boolean residualsAreSame(float[] rPrev, float[] r) {
-        float limit = 0.001f;
+        float limit = eps;//Float.MIN_VALUE;
         if ( (Math.abs(rPrev[0] - r[0]) < limit) && (Math.abs(rPrev[1] - r[1]) < limit)
             && (Math.abs(rPrev[2] - r[2]) < limit) ) {
             return true;
