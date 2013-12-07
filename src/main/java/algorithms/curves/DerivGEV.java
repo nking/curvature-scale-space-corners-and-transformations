@@ -682,30 +682,30 @@ public class DerivGEV {
                 switch(i) {
                     case 0: {
                         // k 
-                        if (((float)(k + rModified) >= varsMin[i]) || ((float)(k + rModified) <= varsMax[i])) {
+                        if (((float)(k + rModified) >= varsMin[i]) && ((float)(k + rModified) <= varsMax[i])) {
                             yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
                         }
-                        if (((float)(k - rModified) >= varsMin[i]) || ((float)(k - rModified) <= varsMax[i])) {
+                        if (((float)(k - rModified) >= varsMin[i]) && ((float)(k - rModified) <= varsMax[i])) {
                             yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
                         }
                         break;
                     }
                     case 1: {
                         // sigma
-                        if (((float)(sigma + rModified) >= varsMin[i]) || ((float)(sigma + rModified) <= varsMax[i])) {
+                        if (((float)(sigma + rModified) >= varsMin[i]) && ((float)(sigma + rModified) <= varsMax[i])) {
                             yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
                         }
-                        if (((float)(sigma - rModified) >= varsMin[i]) || ((float)(sigma - rModified) <= varsMax[i])) {
+                        if (((float)(sigma - rModified) >= varsMin[i]) && ((float)(sigma - rModified) <= varsMax[i])) {
                             yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
                         }
                         break;
                     }
                     case 2: {
                         // mu
-                        if (((float)(mu + rModified) >= varsMin[i]) || ((float)(mu + rModified) <= varsMax[i])) {
+                        if (((float)(mu + rModified) >= varsMin[i]) && ((float)(mu + rModified) <= varsMax[i])) {
                             yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
                         }
-                        if (((float)(mu - rModified) >= varsMin[i]) || ((float)(mu - rModified) <= varsMax[i])) {
+                        if (((float)(mu - rModified) >= varsMin[i]) && ((float)(mu - rModified) <= varsMax[i])) {
                             yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
                         }                   
                         break;
