@@ -55,116 +55,141 @@ import algorithms.util.PolygonAndPointPlotter;
     
     Minimize f(vars)
          
-         The function f is called the objective function or cost function.
-         
-          The vector x is an n-vector of independent variables: 
-             vars = [var_1, var_2, …, var_n]^T is a member of set Real numbers. 
-             The variables var_1, …, var_n are often referred to as decision variables. 
-         
-          The optimization problem above can be viewed as a decision problem that involves 
-          finding the “best” vector var of the decision variables over all possible vectors in Ω. 
-          By the “best” vector we mean the one that results in the-smallest value of 
-          the objective function. 
+     The function f is called the objective function or cost function.
+     
+      The vector x is an n-vector of independent variables: 
+         vars = [var_1, var_2, …, var_n]^T is a member of set Real numbers. 
+         The variables var_1, …, var_n are often referred to as decision variables. 
+     
+      The optimization problem above can be viewed as a decision problem that involves 
+      finding the “best” vector var of the decision variables over all possible vectors in Ω. 
+      By the “best” vector we mean the one that results in the-smallest value of 
+      the objective function. 
+      
+      This vector is called the minimizer of f over Ω. 
+      It is possible that there may be many minimizers. In this case, finding 
+      any of the minimizers will suffice.
           
-          This vector is called the minimizer of f over Ω. 
-          It is possible that there may be many minimizers. In this case, finding 
-          any of the minimizers will suffice.
-              
-           Df is the first derivative of f(vars) and is 
-               [partial deriv f/partial deriv var_1, partial deriv f/partial deriv var_1, ...]
+       Df is the first derivative of f(vars) and is 
+           [partial deriv f/partial deriv var_1, partial deriv f/partial deriv var_1, ...]
+       
+       ∇f = the gradient of f. 
+       ∇f = (Df)^T
+       
+       F(vars) is the 2nd derivative of f and is sometimes called the Hessian.
+                                 | ∂^2f/∂^2_var_1       ...    ∂^2f/∂_var_n d_var_1
+          F(vars) = D^2f(vars) = |         ...          ...         ...
+                                 | ∂^2f/∂_var_1 d_var_n ...    ∂^2f/∂^2_var_n
+       
+       Example:  Let f(x1, x2) = 5(x_1) + 8(x_2) + (x_1)(x_2) − (x_1)^2 − 2(x_2)^2
+             Df(x) = (∇f(x))^T = [∂f/dx_1, ∂f/dx2] = [5 + x_2 - 2x_1,  8 + x_1 - 4x_2]
+             
+                                 | -2  1 |
+             F(x) = D^2f(x)    = |  1 -4 |
+             
+       --------------------------------------------------------------------------------
+       
+       f(k, sigma, mu) = the GEV function
+       
+       Df = [∂f/∂k, ∂f/∂sigma, ∂f/∂mu]
+       
+                     |   ∂f/∂k   |
+       ∇f = (Df)^T = | ∂f/∂sigma |
+                     |   ∂f/∂mu  |
+            
+                                              | ∂^2f/∂k∂k       ∂^2f/∂sigma∂k        ∂^2f/∂mu∂k     |
+       F(k, sigma, mu) = D^2f(k, sigma, mu) = | ∂^2f/∂k∂sigma   ∂^2f/∂sigma∂sigma    ∂^2f/∂mu∂sigma |
+                                              | ∂^2f/∂k∂mu      ∂^2f/∂sigma∂mu       ∂^2f/∂mu∂mu    |
+            
+       M = D^2f(k, sigma, mu)
+       
+                                | ∂^2f/∂k∂k        ∂^2f/∂k∂sigma       ∂^2f/∂k∂mu     |     |   ∂f/∂k   |
+       M^(-1) * ∇f = M^T * ∇f = | ∂^2f/∂sigma∂k    ∂^2f/∂sigma∂sigma   ∂^2f/∂sigma∂mu |  *  | ∂f/∂sigma |
+                                | ∂^2f/∂mu∂k       ∂^2f/∂mu∂sigma      ∂^2f/∂mu∂mu    |     |   ∂f/∂mu  |
+                                
+                                | (∂^2f/∂k∂k) * (∂f/∂k) +  (∂^2f/∂k∂sigma) * (∂f/∂sigma) + (∂^2f/∂k∂mu) * (∂f/∂mu)          |
+                              = | (∂^2f/∂sigma∂k) * (∂f/∂k) + (∂^2f/∂sigma∂sigma) * (∂f/∂sigma) + (∂^2f/∂sigma∂mu)*(∂f/∂mu) |
+                                | (∂^2f/∂mu∂k)*(∂f/∂k) + (∂^2f/∂mu∂sigma)*(∂f/∂sigma) + (∂^2f/∂mu∂mu)*(∂f/∂mu)              |
+                                
+       Can use Incomplete Cholesky factorization with fill 0 on M^(-1) to create the pre-conditioning matrix.
+       
+           http://netlib.org/linalg/html_templates/node64.html#figdilu
            
-           ∇f = the gradient of f. 
-           ∇f = (Df)^T
+           Let S be the non-zero set ({i,j} : a_i_j != 0 )
            
-           F(vars) is the 2nd derivative of f and is sometimes called the Hessian.
-                                     | ∂^2f/∂^2_var_1       ...    ∂^2f/∂_var_n d_var_1
-              F(vars) = D^2f(vars) = |         ...          ...         ...
-                                     | ∂^2f/∂_var_1 d_var_n ...    ∂^2f/∂^2_var_n
-           
-           Example:  Let f(x1, x2) = 5(x_1) + 8(x_2) + (x_1)(x_2) − (x_1)^2 − 2(x_2)^2
-                 Df(x) = (∇f(x))^T = [∂f/dx_1, ∂f/dx2] = [5 + x_2 - 2x_1,  8 + x_1 - 4x_2]
-                 
-                                     | -2  1 |
-                 F(x) = D^2f(x)    = |  1 -4 |
-                 
-           --------------------------------------------------------------------------------
-           
-           f(k, sigma, mu) = the GEV function
-           
-           Df = [∂f/∂k, ∂f/∂sigma, ∂f/∂mu]
-           
-                         |   ∂f/∂k   |
-           ∇f = (Df)^T = | ∂f/∂sigma |
-                         |   ∂f/∂mu  |
+            for i = 1, 2, ...
+                set d_i_i = a_i_i
+            for i = 1, 2, ...
+                set d_i_i = 1/d_i_i
+                for j = i + 1, i + 2, ...                       
+                if (i, j) in set S and (j, i) in set S then
+                    set d_j_j = d_j_j - a_j_i * d_i_i * a_i_j
+            
+            set d(1,1) = (∂^2f/∂k∂k)
+            set d(2,2) = (∂^2f/∂sigma∂sigma)
+            set d(3,3) = (∂^2f/∂mu∂mu)
+            
+            i = 1:
+                    set d(1,1) = 1./d(1,1) = 1./(∂^2f/∂k∂k)
                 
-                                                  | ∂^2f/∂k∂k       ∂^2f/∂sigma∂k        ∂^2f/∂mu∂k     |
-           F(k, sigma, mu) = D^2f(k, sigma, mu) = | ∂^2f/∂k∂sigma   ∂^2f/∂sigma∂sigma    ∂^2f/∂mu∂sigma |
-                                                  | ∂^2f/∂k∂mu      ∂^2f/∂sigma∂mu       ∂^2f/∂mu∂mu    |
-                
-           M = D^2f(k, sigma, mu)
-           
-                                    | ∂^2f/∂k∂k        ∂^2f/∂k∂sigma       ∂^2f/∂k∂mu     |     |   ∂f/∂k   |
-           M^(-1) * ∇f = M^T * ∇f = | ∂^2f/∂sigma∂k    ∂^2f/∂sigma∂sigma   ∂^2f/∂sigma∂mu |  *  | ∂f/∂sigma |
-                                    | ∂^2f/∂mu∂k       ∂^2f/∂mu∂sigma      ∂^2f/∂mu∂mu    |     |   ∂f/∂mu  |
-                                    
-                                    | (∂^2f/∂k∂k) * (∂f/∂k) +  (∂^2f/∂k∂sigma) * (∂f/∂sigma) + (∂^2f/∂k∂mu) * (∂f/∂mu)          |
-                                  = | (∂^2f/∂sigma∂k) * (∂f/∂k) + (∂^2f/∂sigma∂sigma) * (∂f/∂sigma) + (∂^2f/∂sigma∂mu)*(∂f/∂mu) |
-                                    | (∂^2f/∂mu∂k)*(∂f/∂k) + (∂^2f/∂mu∂sigma)*(∂f/∂sigma) + (∂^2f/∂mu∂mu)*(∂f/∂mu)              |
-                                    
-           Can use Incomplete Cholesky factorization with fill 0 on M^(-1) to create the pre-conditioning matrix.
-           
-               http://netlib.org/linalg/html_templates/node64.html#figdilu
-               
-               Let S be the non-zero set ({i,j} : a_i_j != 0 )
-               
-                for i = 1, 2, ...
-                    set d_i_i = a_i_i
-                for i = 1, 2, ...
-                    set d_i_i = 1/d_i_i
-                    for j = i + 1, i + 2, ...                       
-                    if (i, j) in set S and (j, i) in set S then
-                        set d_j_j = d_j_j - a_j_i * d_i_i * a_i_j
-                
-                set d(1,1) = (∂^2f/∂k∂k)
-                set d(2,2) = (∂^2f/∂sigma∂sigma)
-                set d(3,3) = (∂^2f/∂mu∂mu)
-                
-                i = 1:
-                        set d(1,1) = 1./d(1,1) = 1./(∂^2f/∂k∂k)
+                    | (1,1) (1,2) (1,3) | = | 1/(∂^2f/∂k∂k)   
+                d = | (2,1) (2,2) (2,3) | = |                    (∂^2f/∂sigma∂sigma)  
+                    | (3,1) (3,2) (3,3) | = |                                             (∂^2f/∂mu∂mu) |
+                  
+                j=2:
+                    set d(2,2) = (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma)
+                j=3:
+                    set d(3,3) = (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu)
                     
-                        | (1,1) (1,2) (1,3) | = | 1/(∂^2f/∂k∂k)   
-                    d = | (2,1) (2,2) (2,3) | = |                    (∂^2f/∂sigma∂sigma)  
-                        | (3,1) (3,2) (3,3) | = |                                             (∂^2f/∂mu∂mu) |
-                      
-                    j=2:
-                        set d(2,2) = (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma)
-                    j=3:
-                        set d(3,3) = (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu)
-                        
-                i = 2:
-                        set d(2,2) = 1./d(2,2) = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
-                        
-                        | (1,1) (1,2) (1,3) | = | 1/(∂^2f/∂k∂k)   
-                    d = | (2,1) (2,2) (2,3) | = |                latest d(2,2)  
-                        | (3,1) (3,2) (3,3) | = |                                             (∂^2f/∂mu∂mu) |
-                        
-                    j=3:
-                        set d(3,3) = d(3,3) - a(3,2) * d(2,2) * a(2,3)
-                                   =
-                                     ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
-                                     -
-                                     (
-                                        (∂^2f/∂mu∂sigma)
-                                        *
-                                        ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
-                                        *
-                                        ∂^2f/∂sigma∂mu
-                                     )
-                                      
-                i = 3:
-                        set d(3,3) = 1./d(3,3)
-                        
-                            = 1./(
+            i = 2:
+                    set d(2,2) = 1./d(2,2) = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                    
+                    | (1,1) (1,2) (1,3) | = | 1/(∂^2f/∂k∂k)   
+                d = | (2,1) (2,2) (2,3) | = |                latest d(2,2)  
+                    | (3,1) (3,2) (3,3) | = |                                             (∂^2f/∂mu∂mu) |
+                    
+                j=3:
+                    set d(3,3) = d(3,3) - a(3,2) * d(2,2) * a(2,3)
+                               =
+                                 ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                 -
+                                 (
+                                    (∂^2f/∂mu∂sigma)
+                                    *
+                                    ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                    *
+                                    ∂^2f/∂sigma∂mu
+                                 )
+                                  
+            i = 3:
+                    set d(3,3) = 1./d(3,3)
+                    
+                        = 1./(
+                                 ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                 -
+                                 (
+                                    (∂^2f/∂mu∂sigma)
+                                    *
+                                    ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                    *
+                                    ∂^2f/∂sigma∂mu
+                                 )
+                             ) 
+                             
+                             
+    Then using the ICU0 matrix as preconditioner:
+           
+                                        | d(1,1)   0        0      |     |   ∂f/∂k   |
+        (M_icuo)^(-1) * ∇f = M^T * ∇f = | 0        d(2,2)   0      |  *  | ∂f/∂sigma |
+                                        | 0        0        d(3,3) |     |   ∂f/∂mu  |
+                                    
+                                        | d(1,1) * (∂f/∂k)     |
+                                      = | d(2,2) * (∂f/∂sigma) |
+                                        | d(3,3) * (∂f/∂mu)    |
+
+             where d(1,1) is 1./(∂^2f/∂k∂k)
+                   d(2,2) is ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                   d(3,3) is 1./(
                                      ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
                                      -
                                      (
@@ -176,296 +201,65 @@ import algorithms.util.PolygonAndPointPlotter;
                                      )
                                  ) 
                                  
-                                 
-        Then using the ICU0 matrix as preconditioner:
-               
-                                            | d(1,1)   0        0      |     |   ∂f/∂k   |
-            (M_icuo)^(-1) * ∇f = M^T * ∇f = | 0        d(2,2)   0      |  *  | ∂f/∂sigma |
-                                            | 0        0        d(3,3) |     |   ∂f/∂mu  |
-                                        
-                                            | d(1,1) * (∂f/∂k)     |
-                                          = | d(2,2) * (∂f/∂sigma) |
-                                            | d(3,3) * (∂f/∂mu)    |
-
-                 where d(1,1) is 1./(∂^2f/∂k∂k)
-                       d(2,2) is ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
-                       d(3,3) is 1./(
-                                         ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
-                                         -
-                                         (
-                                            (∂^2f/∂mu∂sigma)
-                                            *
-                                            ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
-                                            *
-                                            ∂^2f/∂sigma∂mu
-                                         )
-                                     ) 
-                                     
-           Note that below in the code, r is ∇f.
-           
-    
-           
+       Note that below in the code, r is ∇f.
+       
   @author nichole
  */
-public class NonQuadraticConjugateGradientSolver {
-
-    protected final float[] x;
-    
-    // original y scaled to a max value of 1
-    protected final float[] y;
-
-    protected final float[] xe;
-    protected final float[] ye;
-    
-    protected final float xmin; 
-    protected final float xmax;
-    protected final float ymin;
-    protected final float ymax;
-
-    protected float xScale = -1;
-    
-    // the factor by which the y axis can be multiplied to return it to the original values
-    protected float yScale = -1;
+public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     protected int maxIterations = 200;
     
-    protected boolean debug = false;
-    
-    protected final GeneralizedExtremeValue gev;
-    
     protected PolygonAndPointPlotter plotter;
     
     protected static float eps = 1e-8f;
     
+    protected static float convergedEps = 0.00001f;
+    
     public NonQuadraticConjugateGradientSolver(float[] xPoints, float[] yPoints,
         float[] xErrPoints, float[] yErrPoints) {
 
-        if (xPoints == null) {
-            throw new IllegalArgumentException("xPoints cannot be null");
-        }
-        if (yPoints == null) {
-            throw new IllegalArgumentException("yPoints cannot be null");
-        }
-        if (xErrPoints == null) {
-            throw new IllegalArgumentException("xErrPoints cannot be null");
-        }
-        if (yErrPoints == null) {
-            throw new IllegalArgumentException("yErrPoints cannot be null");
-        }
-
-        float[] tmp = Arrays.copyOf(xPoints, xPoints.length);
-        this.xScale = scaleDataTo1(tmp);
-        this.x = tmp;
-
-        tmp = Arrays.copyOf(yPoints, yPoints.length);
-        this.yScale = scaleDataTo1(tmp);
-        this.y = tmp;
-
-        tmp = Arrays.copyOf(xErrPoints, xErrPoints.length);
-        scaleDataTo1(tmp, xScale);
-        this.xe = tmp;
-
-        tmp = Arrays.copyOf(yErrPoints, yErrPoints.length);
-        scaleDataTo1(tmp, yScale);
-        this.ye = tmp;
-
-        this.gev = new GeneralizedExtremeValue(x, y, xe, ye);
-        
-        xmin = x[0];
-        xmax = x[x.length - 1];
-        ymin = 0.0f;
-        ymax = MiscMath.findMax(y);
+        super(xPoints, yPoints, xErrPoints, yErrPoints);
         
         try {
             plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
         } catch (IOException e) {
             log.severe(e.getMessage());
         }
-    }
-    
-    protected final float scaleDataTo1(float[] a) {
-        float max = MiscMath.findMax(a);
-        scaleDataTo1(a, max);
-        return max;
-    }
-    protected final void scaleDataTo1(float[] a, float scale) {
-        if (a == null) {
-            return;
-        }
-        for (int i = 0; i < a.length; i++) {
-            a[i] = a[i]/scale;
-        }
-    }
+    }    
 
     public void setMaximumNumberOfIterations(int maxNumber) {
         this.maxIterations = maxNumber;
     }
     
-    //TODO:  when this class and GEVChiSquareMinimization are abstracted, this method should be abstract in the base class and implemented here
-    
-    public GEVYFit fitCurve(float kMin, float kMax, float sigmaMin, float sigmaMax,
-        float muMin, float muMax) throws FailedToConvergeException {
-
-        //TODO:  check that muMin and muMax are within bounds of x
+    public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) throws FailedToConvergeException, IOException {
         
-        float kVar = kMin;
-        float sigmaVar = sigmaMin;
-        float muVar = muMin;
+        float kMin = 0.001f;
+        float kMax = 2.0f;
+        float sigmaMin = 0.025f;
+        float sigmaMax = 0.5f;
+        float muMin = 0.0001f;
+        float muMax = 0.3f;
         
-        /*
-        float kVar = kMax;
-        float sigmaVar = sigmaMax;
-        float muVar = muMax;
-        */
-        /*
-        float kVar = (kMax + kMin)/2.f;
-        float sigmaVar = (sigmaMax + sigmaMin)/2.f;
-        float muVar = (muMax + muMin)/2.f;
-        */
-        
-        // the variables k, sigma, and mu
-        float[] vars = new float[]{kVar, sigmaVar, muVar};
-        float[] varsMin = new float[]{kMin, sigmaMin, muMin};
-        float[] varsMax = new float[]{kMax, sigmaMax, muMax};
-     
-        int varStopIdx = vars.length - 1;
-        
-        // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
-        float[] r = new float[3];
-        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
-                
-        float[] rPrev = new float[r.length];
-        
-        // p is search direction
-        float[] p = Arrays.copyOf(r, r.length);    
-        
-        // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
-        // chiSqSumForLineSearch[1] holds the return value from lineSearch
-        float[] chiSqSumForLineSearch = new float[2];
-        
-        chiSqSumForLineSearch[0] = calculateChiSquareSum(
-            GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
-            WEIGHTS_DURING_CHISQSUM.ERRORS);
-        
-        int nSameSequentially = 0;
-        float epsChiSame = 1e-5f;
-        float lastChiSqSum = Float.MAX_VALUE;
-        int nAltSolutionCount = 0;
-        
-        int nIter = 0;
-        while ( nIter < maxIterations) {
-            
-            /*if ((nIter > 1) && residualsAreSame(rPrev, r)) {
-                break;
-            }*/
-           
-            float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
-            float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
-            
-            if (debug) {
-                try {
-                    String label = String.format(
-                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f",
-                        vars[0], vars[1], vars[2], nIter, chiSqSum);
-                    plotFit(yGEV, label);
-                } catch (IOException e) {
-                    System.err.println(e.getMessage());
-                }
+        // if yScale is small, muMax should be as large as 0.6 roughly
+        if (yScale < 100) {
+            muMax = 0.5f;
+            sigmaMax = 0.5f;
+        } else {
+            int yMaxIndex = MiscMath.findYMaxIndex(y);
+            float xAtYMax = x[yMaxIndex];
+            muMin = xAtYMax/2.f;
+            muMax = xAtYMax * 2.0f;
+            kMax = 1.0f;
+            if (yScale > 200) {
+                kMin = 0.2f;
             }
-            
-            // if solution has stalled, apply changes that improve the solution in small steps
-            if ((nIter > 3) && (nSameSequentially > 2)) {
-                for (int k = 0; k < r.length; k++) {
-                    rPrev[k] = r[k];
-                }
-                
-                int idx = (nAltSolutionCount % 3);
-                
-                DerivGEV.exploreChangeInVars(vars, x, y, ye, r, chiSqSumForLineSearch, idx);
-                // OR temporarily allow changes that increase chiSqSum
-                
-                nAltSolutionCount++;
-                
-                // apply changes
-                if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
-                    for (int k = 0; k <= varStopIdx; k++) {
-                        vars[k] = vars[k] + r[k];
-                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
-                    }
-                    nSameSequentially = 0;
-                    lastChiSqSum = chiSqSumForLineSearch[0];
-                    nIter++;
-                    continue;
-                }
-            }            
-            
-            if (nIter > 0) {
-                for (int k = 0; k < r.length; k++) {
-                    rPrev[k] = r[k];
-                }
-                // populate r with the best fitting derivatives for vars[]
-                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
-                for (int k = 0; k <= varStopIdx; k++) {  
-                    
-                    // Polak=Ribiere function
-                    float beta =  (float) ((r[k] * (r[k] - rPrev[k])) / Math.pow(rPrev[k], 2));
-                    if (beta < 0 || Float.isInfinite(beta) || Float.isNaN(beta)) {
-                        beta = 0;
-                    }
-                    //p_k = r_k +β_k*(p_(k−1)).
-                    p[k] = r[k] + beta*p[k];
-                    
-                    log.finest("r[" + k + "]=" + r[k] + "  p[" + k + "]=" + p[k] + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
-                }                
-            }
-            // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-            float alpha = lineSearch(r, p, vars, varsMin, varsMax, chiSqSumForLineSearch, 0, varStopIdx);
- 
-            if (alpha <= eps) {
-                // need 2nd deriv pre-conditioning
-                break;
-            }
-                        
-            if (!chiSqSumIsNotAcceptable(chiSqSumForLineSearch[0], chiSqSumForLineSearch[1])) {
-                for (int k = 0; k <= varStopIdx; k++) {
-                    float ap = alpha*p[k];
-                    vars[k] = vars[k] + ap;
-                    
-                    log.finest("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
-                }
-                chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
-            }
-            
-            if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
-                nSameSequentially++;
-            } else {
-                nSameSequentially = 0;
-            }
-            lastChiSqSum = chiSqSumForLineSearch[0];
-            
-            nIter++;
         }
         
-        float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
-
-        float chisqsum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
-
-        GEVYFit yfit = new GEVYFit();
-        yfit.setChiSqSum(chisqsum);
-        yfit.setK(vars[0]);
-        yfit.setSigma(vars[1]);
-        yfit.setMu(vars[2]);
-        yfit.setYFit(yGEV);
-        yfit.setX(x);
-        yfit.setXScale(xScale);
-        yfit.setYScale(yScale);
-        yfit.setYDataErrSq( calcYErrSquareSum() ); 
-        
-        return yfit;
+        return fitCurveParametersSeparately(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
     }
-    
+
     /**
      * find the best fitting GEV by solving for each parameter in set {k, sigma, mu} separately
      * rather then minimizing the function for suggested changes by all derivatives at once.
@@ -473,18 +267,45 @@ public class NonQuadraticConjugateGradientSolver {
      * So far, this is resulting in the best fits, but is sensitive to the starting point
      * and has not been tested over a wide range of data distributions.
      * 
-     * @param kMin
-     * @param kMax
-     * @param sigmaMin
-     * @param sigmaMax
-     * @param muMin
-     * @param muMax
+     * The range of values given to this method by TwoPointVoidStats are those found to be most useful
+     * for representing the range of normalized GEV curves that match the datasets given to it.
+     * k < 0 are not fit because the distributions are not physical for the expected datasets,
+     * though that can be changed if needed.
+     * 
+     * @param kMin  minimum range of value of k, the shape parameter
+     * @param kMax  maximum range of value of k, the shape parameter
+     * @param sigmaMin  minimum range of value of sigma, the scale parameter
+     * @param sigmaMax  maximum range of value of sigma, the scale parameter
+     * @param muMin  minimum range of value of mu, the location parameter
+     * @param muMax  maximum range of value of mu, the location parameter
      * @return
      * @throws FailedToConvergeException
      */
     public GEVYFit fitCurveParametersSeparately(float kMin, float kMax, float sigmaMin, float sigmaMax,
         float muMin, float muMax) throws FailedToConvergeException {
         
+        if (kMin < 0) {
+            throw new IllegalArgumentException("kMin must be larger than zero");
+        }
+        if (kMin > kMax) {
+            throw new IllegalArgumentException("kMin must be less than kMax");
+        }
+        if (muMin < 0) {
+            throw new IllegalArgumentException("muMin must be larger than zero. mu is usually near the peak of the normalized histogram's x value.");
+        }
+        if (muMin > muMax) {
+            throw new IllegalArgumentException("muMin must be less than muMax");
+        }
+        /*if (muMax > xmax) {
+            throw new IllegalArgumentException("muMax must be less than the maximum value of x in the histogram (" + xmax + ")");
+        }*/
+        if (sigmaMin < 0) {
+            throw new IllegalArgumentException("sigmaMin must be larger than zero");
+        }
+        if (sigmaMin > sigmaMax) {
+            throw new IllegalArgumentException("sigmaMin must be less than sigmaMax");
+        }
+                
         /*
         float kVar = kMin;
         float sigmaVar = sigmaMin;
@@ -500,9 +321,8 @@ public class NonQuadraticConjugateGradientSolver {
         float sigmaVar = (sigmaMax + sigmaMin)/2.f;
         float muVar = (muMax + muMin)/2.f;
         
-        
         // the variables k, sigma, and mu
-        float[] vars = new float[]{kVar, sigmaVar, muVar};
+        float[] vars    = new float[]{kVar, sigmaVar, muVar};
         float[] varsMin = new float[]{kMin, sigmaMin, muMin};
         float[] varsMax = new float[]{kMax, sigmaMax, muMax};
      
@@ -521,9 +341,7 @@ public class NonQuadraticConjugateGradientSolver {
         // chiSqSumForLineSearch[1] holds the return value from lineSearch
         float[] chiSqSumForLineSearch = new float[2];
         
-        chiSqSumForLineSearch[0] = calculateChiSquareSum(
-            GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]), 
-            WEIGHTS_DURING_CHISQSUM.ERRORS);
+        chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
         
         int nSameSequentially = 0;
         float epsChiSame = 1e-5f;
@@ -531,14 +349,14 @@ public class NonQuadraticConjugateGradientSolver {
         int nAltSolutionCount = 0;
         
         int nIter = 0;
-        while (nIter < maxIterations) {
+        while ((nIter < maxIterations) && (chiSqSumForLineSearch[0] > convergedEps)) {
             
             /*if ((nIter > 1) && residualsAreSame(rPrev, r)) {
                 break;
             }*/
             
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
-            float chiSqSum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
+            float chiSqSum = DerivGEV.chiSqSum(yGEV, y, ye);
             
             if (debug) {
                 try {
@@ -559,8 +377,8 @@ public class NonQuadraticConjugateGradientSolver {
             if ((nIter > 3) && (nSameSequentially > 2)) {
                 
                 int idx = (nAltSolutionCount % 3);
-                
-                DerivGEV.exploreChangeInVars(vars, x, y, ye, r, chiSqSumForLineSearch, idx);
+
+                DerivGEV.exploreChangeInVars(vars, varsMin, varsMax, x, y, ye, r, chiSqSumForLineSearch, idx);
                 
                 // OR temporarily allow changes that increase chiSqSum
                 
@@ -645,18 +463,202 @@ public class NonQuadraticConjugateGradientSolver {
         log.info("number of times the alt solution was needed = " + nAltSolutionCount);
 
         return yfit;
-    }     
-    
-    public float calcYErrSquareSum() {
-        float sum = 0.f;
-        for (int i = 0; i < y.length; i++) {
-            float z = yScale*ye[i];
-            z *= z;
-            sum += z;
-        }
-        return sum;
     }
   
+    /**
+     * fit the x, y data with a GEV whose parameters are within the given ranges for k,
+     * sigma, and mu.  The method attempts to fit for changes in k, sigma, and mu all
+     * at once for each iteration.
+     * 
+     * @param kMin  minimum range of value of k, the shape parameter
+     * @param kMax  maximum range of value of k, the shape parameter
+     * @param sigmaMin  minimum range of value of sigma, the scale parameter
+     * @param sigmaMax  maximum range of value of sigma, the scale parameter
+     * @param muMin  minimum range of value of mu, the location parameter
+     * @param muMax  maximum range of value of mu, the location parameter
+     * @return
+     * @throws FailedToConvergeException
+     */
+    public GEVYFit fitCurve(float kMin, float kMax, float sigmaMin, float sigmaMax,
+        float muMin, float muMax) throws FailedToConvergeException {
+
+        if (kMin < 0) {
+            throw new IllegalArgumentException("kMin must be larger than zero");
+        }
+        if (kMin > kMax) {
+            throw new IllegalArgumentException("kMin must be less than kMax");
+        }
+        if (muMin < 0) {
+            throw new IllegalArgumentException("muMin must be larger than zero. mu is usually near the peak of the normalized histogram's x value.");
+        }
+        if (muMin > muMax) {
+            throw new IllegalArgumentException("muMin must be less than muMax");
+        }
+        /*
+        if (muMax > xmax) {
+            throw new IllegalArgumentException("muMax must be less than the maximum value of x in the histogram (" + xmax + ")");
+        }*/
+        if (sigmaMin < 0) {
+            throw new IllegalArgumentException("sigmaMin must be larger than zero");
+        }
+        if (sigmaMin > sigmaMax) {
+            throw new IllegalArgumentException("sigmaMin must be less than sigmaMax");
+        }
+        
+        float kVar = kMin;
+        float sigmaVar = sigmaMin;
+        float muVar = muMin;
+        
+        /*
+        float kVar = kMax;
+        float sigmaVar = sigmaMax;
+        float muVar = muMax;
+        */
+        /*
+        float kVar = (kMax + kMin)/2.f;
+        float sigmaVar = (sigmaMax + sigmaMin)/2.f;
+        float muVar = (muMax + muMin)/2.f;
+        */
+        
+        // the variables k, sigma, and mu
+        float[] vars = new float[]{kVar, sigmaVar, muVar};
+        float[] varsMin = new float[]{kMin, sigmaMin, muMin};
+        float[] varsMax = new float[]{kMax, sigmaMax, muMax};
+     
+        int varStopIdx = vars.length - 1;
+        
+        // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
+        float[] r = new float[3];
+        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
+                
+        float[] rPrev = new float[r.length];
+        
+        // p is search direction
+        float[] p = Arrays.copyOf(r, r.length);    
+        
+        // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
+        // chiSqSumForLineSearch[1] holds the return value from lineSearch
+        float[] chiSqSumForLineSearch = new float[2];
+        
+        chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
+        
+        int nSameSequentially = 0;
+        float epsChiSame = 1e-5f;
+        float lastChiSqSum = Float.MAX_VALUE;
+        int nAltSolutionCount = 0;
+        
+        int nIter = 0;
+        while ((nIter < maxIterations) && (chiSqSumForLineSearch[0] > convergedEps)) {
+            
+            /*if ((nIter > 1) && residualsAreSame(rPrev, r)) {
+                break;
+            }*/
+           
+            float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
+            float chiSqSum = DerivGEV.chiSqSum(yGEV, y, ye);
+                       
+            if (debug) {
+                try {
+                    String label = String.format(
+                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f",
+                        vars[0], vars[1], vars[2], nIter, chiSqSum);
+                    plotFit(yGEV, label);
+                } catch (IOException e) {
+                    System.err.println(e.getMessage());
+                }
+            }
+            
+            // if solution has stalled, apply changes that improve the solution in small steps
+            if ((nIter > 3) && (nSameSequentially > 2)) {
+                for (int k = 0; k < r.length; k++) {
+                    rPrev[k] = r[k];
+                }
+                
+                int idx = (nAltSolutionCount % 3);
+                
+                DerivGEV.exploreChangeInVars(vars, varsMin, varsMax, x, y, ye, r, chiSqSumForLineSearch, idx);
+                // OR temporarily allow changes that increase chiSqSum
+                
+                nAltSolutionCount++;
+                
+                // apply changes
+                if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
+                    for (int k = 0; k <= varStopIdx; k++) {
+                        vars[k] = vars[k] + r[k];
+                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                    }
+                    nSameSequentially = 0;
+                    lastChiSqSum = chiSqSumForLineSearch[0];
+                    nIter++;
+                    continue;
+                }
+            }            
+            
+            if (nIter > 0) {
+                for (int k = 0; k < r.length; k++) {
+                    rPrev[k] = r[k];
+                }
+                // populate r with the best fitting derivatives for vars[]
+                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
+                for (int k = 0; k <= varStopIdx; k++) {  
+                    
+                    // Polak=Ribiere function
+                    float beta =  (float) ((r[k] * (r[k] - rPrev[k])) / Math.pow(rPrev[k], 2));
+                    if (beta < 0 || Float.isInfinite(beta) || Float.isNaN(beta)) {
+                        beta = 0;
+                    }
+                    //p_k = r_k +β_k*(p_(k−1)).
+                    p[k] = r[k] + beta*p[k];
+                    
+                    log.finest("r[" + k + "]=" + r[k] + "  p[" + k + "]=" + p[k] + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                }                
+            }
+            // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
+            float alpha = lineSearch(r, p, vars, varsMin, varsMax, chiSqSumForLineSearch, 0, varStopIdx);
+ 
+            if (alpha <= eps) {
+                // need 2nd deriv pre-conditioning
+                break;
+            }
+                        
+            if (!chiSqSumIsNotAcceptable(chiSqSumForLineSearch[0], chiSqSumForLineSearch[1])) {
+                for (int k = 0; k <= varStopIdx; k++) {
+                    float ap = alpha*p[k];
+                    vars[k] = vars[k] + ap;
+                    
+                    log.finest("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                }
+                chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+            }
+            
+            if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
+                nSameSequentially++;
+            } else {
+                nSameSequentially = 0;
+            }
+            lastChiSqSum = chiSqSumForLineSearch[0];
+            
+            nIter++;
+        }
+        
+        float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
+
+        float chisqsum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
+
+        GEVYFit yfit = new GEVYFit();
+        yfit.setChiSqSum(chisqsum);
+        yfit.setK(vars[0]);
+        yfit.setSigma(vars[1]);
+        yfit.setMu(vars[2]);
+        yfit.setYFit(yGEV);
+        yfit.setX(x);
+        yfit.setXScale(xScale);
+        yfit.setYScale(yScale);
+        yfit.setYDataErrSq( calcYErrSquareSum() ); 
+        
+        return yfit;
+    }
+    
     /**
      * f(x_k + α*p_k) ≤ f(x_k) + c_1*α*((∇f_k)^T)*p_k  where c_1 is 0 or 1
      *     result will be applied as vars[k] = vars[k] + alpha*p[k]
@@ -719,7 +721,7 @@ public class NonQuadraticConjugateGradientSolver {
                 
                 float rght = chiSqSum[0] + alpha * r[i]*p[i];
                 
-                chiSqSum[1] = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
+                chiSqSum[1] = DerivGEV.chiSqSum(yGEV, y, ye);
                                 
                 if ((chiSqSum[1] > rght) || chiSqSumIsNotAcceptable(chiSqSum[0], chiSqSum[1])) {
                     failed = true;
@@ -803,97 +805,7 @@ public class NonQuadraticConjugateGradientSolver {
             Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());
         }
     }
-    
-    // TODO:  this needs to be in abstract base class  ******************
-    
-    /**
-     * calculate the chi square of the yModel using the method for weights.
-     * The best results for the fit are usually from using errors for the
-     * fit.
-     *
-     * @param yModel
-     * @param wdc
-     * @return
-     */
-    public float calculateChiSquareSum(float[] yNormalizedModel, WEIGHTS_DURING_CHISQSUM wdc) {
-
-        if (yNormalizedModel == null) {
-            return Float.POSITIVE_INFINITY;
-        }
-
-        float[] w = calcWeights(wdc, yNormalizedModel);
-
-        float chiSum = 0.f;
-
-        for (int i = 0; i < yNormalizedModel.length; i++) {
-
-            float z = yScale*(yNormalizedModel[i] - y[i]);
-            z *= z*w[i];
-
-            chiSum += z;
-        }
-
-        return chiSum;
-    }
-
-    /**
-     * create the weight array used by the chi square sum method for the given
-     * weight method.
-     *
-     * @param wdc
-     * @param yModel
-     * @return
-     */
-    float[] calcWeights(WEIGHTS_DURING_CHISQSUM wdc, float[] yModel) {
-
-        float[] w = new float[yModel.length];
-
-        if (wdc != null) {
-            if (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.INVERSE_Y.ordinal()) {
-                for (int i = 0; i < w.length; i++) {
-                    w[i] = 1.0f/(yScale*y[i]);
-                }
-            } else if (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.MODEL_Y.ordinal()) {
-                for (int i = 0; i < w.length; i++) {
-                    w[i] = yModel[i]*yScale;
-                }
-            } else {
-                boolean hasValidValues = hasValidValues(ye);
-                if (hasValidValues) {
-                    for (int i = 0; i < w.length; i++) {
-                        w[i] = ye[i]*yScale;
-                    }
-                } else {
-                    throw new IllegalStateException("dy has invalid values");
-                }
-            }
-        } else {
-            // defaults to using errors
-            boolean hasValidValues = hasValidValues(ye);
-            if (hasValidValues) {
-                for (int i = 0; i < w.length; i++) {
-                    w[i] = ye[i]*yScale;
-                }
-            } else {
-                throw new IllegalStateException("dy has invalid values");
-            }
-        }
-
-        return w;
-    }
-
-    protected boolean hasValidValues(float[] a) {
-        if (a == null) {
-            return false;
-        }
-        for (int i = 0; i < a.length; i++) {
-            if (Float.isNaN(a[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-    
+      
     protected boolean residualsAreSame(float[] rPrev, float[] r) {
         float limit = eps;//Float.MIN_VALUE;
         if ( (Math.abs(rPrev[0] - r[0]) < limit) && (Math.abs(rPrev[1] - r[1]) < limit)

@@ -8,6 +8,8 @@ import algorithms.curves.FailedToConvergeException;
 import algorithms.curves.GEVChiSquareMinimization;
 import algorithms.curves.GEVYFit;
 import algorithms.curves.GeneralizedExtremeValue;
+import algorithms.curves.ICurveFitter;
+import algorithms.curves.NonQuadraticConjugateGradientSolver;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
@@ -112,6 +114,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected boolean doLogPerformanceMetrics = false;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
+    
+    // uses conjugate gradient method for non quadratic functions
+    protected boolean useDefaultFitting = true;
 
     //
     public HistogramHolder getStatsHistogram() {
@@ -149,6 +154,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      */
     public void setUseLeastCompleteSampling() {
         this.sampling = Sampling.LEAST_COMPLETE;
+    }
+    
+    public void setUseDownhillSimplexHistogramFitting() {
+        this.useDefaultFitting = false;
     }
 
     /**
@@ -559,25 +568,54 @@ System.out.println("==> " + allTwoPointSurfaceDensities.length);
     }
 
     protected GEVYFit fitBackgroundHistogram(HistogramHolder histogram, int yMaxBin) throws TwoPointVoidStatsException {
-
+        
         try {
-
-            GEVChiSquareMinimization chiSqMin = new GEVChiSquareMinimization(
-                histogram.getXHist(), histogram.getYHistFloat(), histogram.getXErrors(), histogram.getYErrors());
-
-            chiSqMin.setDebug(debug);
 
             GEVYFit yfit = null;
 
-            if (gevRangeFittingParameters != null) {
+            ICurveFitter chiSqMin = null;
 
-                yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
-                    gevRangeFittingParameters[0], gevRangeFittingParameters[1],
-                    gevRangeFittingParameters[2], gevRangeFittingParameters[3]
-                );
+            if (useDefaultFitting) {
+
+                chiSqMin = new NonQuadraticConjugateGradientSolver(
+                    histogram.getXHist(), histogram.getYHistFloat(), histogram.getXErrors(), histogram.getYErrors());
 
             } else {
-                yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+
+                chiSqMin = new GEVChiSquareMinimization(
+                    histogram.getXHist(), histogram.getYHistFloat(), histogram.getXErrors(), histogram.getYErrors());
+            }
+
+            chiSqMin.setDebug(debug);
+
+            if (gevRangeFittingParameters != null) {
+
+                if (useDefaultFitting) {
+
+                    yfit = ((NonQuadraticConjugateGradientSolver)chiSqMin)
+                        .fitCurve(gevRangeFittingParameters[0], gevRangeFittingParameters[1],
+                            gevRangeFittingParameters[2], gevRangeFittingParameters[3], 0.001f, 0.3f);
+                } else {
+
+                    yfit = 
+                        ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZeroAndMu(
+                            GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
+                        gevRangeFittingParameters[0], gevRangeFittingParameters[1],
+                        gevRangeFittingParameters[2], gevRangeFittingParameters[3]
+                    );
+                }
+
+            } else {
+
+                if (useDefaultFitting) {
+
+                    yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+                    
+                } else {
+                    
+                    yfit = ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZeroAndMu(
+                        GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+                }                
             }
 
             if (yfit == null) {
@@ -597,10 +635,6 @@ System.out.println("==> " + allTwoPointSurfaceDensities.length);
                     plotPairSeparations();
                 }
                 throw new TwoPointVoidStatsException("histogram of linear densities was not fittable");
-            }
-
-            if (yfit == null) {
-                throw new TwoPointVoidStatsException("did not find a solution");
             }
 
             return yfit;

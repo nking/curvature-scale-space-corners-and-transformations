@@ -28,17 +28,23 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
 
-        SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
-        srr.setSeed(System.currentTimeMillis());
-        long seed = srr.nextLong();
+        //SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
+        //srr.setSeed(System.currentTimeMillis());
+        //long seed = srr.nextLong();
 
+        //long seed = System.currentTimeMillis();
+        
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+     
+        long seed = -1907716377807004294l; //compare to results_downhill_simplex_0.html
+        //long seed = 7202122544352439191l;//compare to results_downhill_simplex_1.html
+        
+        //long seed = 1386396176806l;
+        
         sr.setSeed(seed);
-        //sr.setSeed(7202122544352439191l);
-
         log.info("SEED=" + seed);
 
-        // a long running test to calculcate and print the stats of fits
+        // a long running test to calculate and print the stats of fits
         //  for sparse, moderate, and densely populated backgrounds,
         //  all with the same number of clusters and cluster points, though
         //  randomly distributed.
@@ -104,7 +110,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     generator.xErrors, generator.yErrors, generator.x.length);
 
                 twoPtC.setDebug(true);
-
+              
                 twoPtC.logPerformanceMetrics();
                 twoPtC.calculateBackground();
                 twoPtC.findClusters();
@@ -116,25 +122,41 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 GEVYFit bestFit = stats.bestFit;
                 if (bestFit != null) {
-                    float mean = bestFit.getXMean();
-                    float median = bestFit.getXMedian();
-                    float peak = bestFit.getXPeak();
-                    float x05 = bestFit.getX05Percent();
-                    float x10 = bestFit.getX10Percent();
-                    float x80 = bestFit.getX80Percent();
-                    float x95 = bestFit.getX95Percent();
-
-                    // === stats for plot labels =====
-                    float meanDivPeak = mean/peak;
-                    float medianDivMean = median/mean;
-                    float x80DivMedian = x80/median;
+                    
                     // label needs:  x10, peak,  mean/peak, median/mean and x80/median
                     plotLabel = String.format(
-                        "  (%d %d) x10=%.4f peak=%.4f av/peak=%.2f med/av=%.2f chst=%.1f",
-                        i, ii, x10, peak, meanDivPeak, medianDivMean, bestFit.getChiSqStatistic()
+                        "  (%d %d) best k=%.4f sigma=%.4f mu=%.4f chiSqSum=%.6f chst=%.1f",
+                        i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), bestFit.getChiSqStatistic()
                     );
                     if (debug) {
                         log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
+                    }
+                }
+                
+                if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
+                    if (i == 1 && ii == 0) {
+                        StringBuilder xsb = new StringBuilder();
+                        StringBuilder ysb = new StringBuilder();
+                        StringBuilder xesb = new StringBuilder();
+                        StringBuilder yesb = new StringBuilder();
+    
+                        for (int z = 0; z < histogram.getYHist().length; z++) {
+                            if (z > 0) {
+                                xsb.append("f, ");
+                                ysb.append("f, ");
+                                xesb.append("f, ");
+                                yesb.append("f, ");
+                            }
+                            xsb.append(histogram.getXHist()[z]);
+                            ysb.append(histogram.getYHist()[z]);
+                            xesb.append(histogram.getXErrors()[z]);
+                            yesb.append(histogram.getYErrors()[z]);
+                        }
+                        System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+                        System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+                        System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+                        System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
+                        int z = 1;
                     }
                 }
 
@@ -142,31 +164,6 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                 plotter.addPlot(twoPtC, plotLabel);
                 plotter.writeFile();
-
-                /*
-                if (debug) {
-
-                    if (twoPtC.backgroundStats instanceof TwoPointVoidStats) {
-
-                        HistogramHolder hist = ((TwoPointVoidStats)twoPtC.backgroundStats).statsHistogram;
-
-                        log.info("\n   (" + i + " " + ii + ")");
-                        StringBuffer s0 = new StringBuffer("  x = new float[]{");
-                        StringBuffer s1 = new StringBuffer("  y = new float[]{");
-                        for (int iii = 0; iii < hist.getXHist().length; iii++) {
-                            if (iii > 0) {
-                                s0.append(", ");
-                                s1.append(", ");
-                            }
-                            s0.append(hist.getXHist()[iii]).append("f");
-                            s1.append(hist.getYHistFloat()[iii]).append("f");
-                        }
-                        s0.append("};");
-                        s1.append("};");
-                        log.info(s0.toString());
-                        log.info(s1.toString());
-                    }
-                }*/
 
                 count++;
             }

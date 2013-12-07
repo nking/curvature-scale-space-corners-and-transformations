@@ -28,16 +28,7 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public class GEVChiSquareMinimization {
-
-    protected final float[] x;
-    protected final float[] y;
-
-    protected final float[] dx;
-    protected final float[] dy;
-
-    protected float xScale = -1;
-    protected float yScale = -1;
+public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
     public static final float kMinDefault = 0.00001f;
     public static final float kMaxDefault = 0.001f;
@@ -53,10 +44,6 @@ public class GEVChiSquareMinimization {
     public static final int downhillSimplexStartDivisionsDefault2 = 3;
     protected int downhillSimplexStartDivisions = downhillSimplexStartDivisionsDefault;
 
-    protected final GeneralizedExtremeValue gev;
-
-    protected boolean debug = false;
-
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     public enum WEIGHTS_DURING_CHISQSUM {
@@ -66,179 +53,7 @@ public class GEVChiSquareMinimization {
     public GEVChiSquareMinimization(float[] xPoints, float[] yPoints,
         float[] dXPoints, float[] dYPoints) {
 
-        if (xPoints == null) {
-            throw new IllegalArgumentException("xPoints cannot be null");
-        }
-        if (yPoints == null) {
-            throw new IllegalArgumentException("yPoints cannot be null");
-        }
-        if (dXPoints == null) {
-            throw new IllegalArgumentException("dXPoints cannot be null");
-        }
-        if (dYPoints == null) {
-            throw new IllegalArgumentException("dYPoints cannot be null");
-        }
-
-        float[] tmp = Arrays.copyOf(xPoints, xPoints.length);
-        this.xScale = scaleDataTo1(tmp);
-        this.x = tmp;
-
-        tmp = Arrays.copyOf(yPoints, yPoints.length);
-        this.yScale = scaleDataTo1(tmp);
-        this.y = tmp;
-
-        tmp = Arrays.copyOf(dXPoints, dXPoints.length);
-        scaleDataTo1(tmp, xScale);
-        this.dx = tmp;
-
-        tmp = Arrays.copyOf(dYPoints, dYPoints.length);
-        scaleDataTo1(tmp, yScale);
-        this.dy = tmp;
-
-        this.gev = new GeneralizedExtremeValue(x, y, dx, dy);
-    }
-
-    protected final float scaleDataTo1(float[] a) {
-        float max = MiscMath.findMax(a);
-        scaleDataTo1(a, max);
-        return max;
-    }
-    protected final void scaleDataTo1(float[] a, float scale) {
-        if (a == null) {
-            return;
-        }
-        for (int i = 0; i < a.length; i++) {
-            a[i] = a[i]/scale;
-        }
-    }
-
-    /**
-     * turn debugging results in comments such as intermediate fit results being
-     * printed to standard out and plots being generated.
-     *
-     * @param doUseDebug
-     */
-    public void setDebug(boolean doUseDebug) {
-        debug = doUseDebug;
-    }
-
-    /**
-     * create the weight array used by the chi square sum method for the given
-     * weight method.
-     *
-     * @param wdc
-     * @param yModel
-     * @return
-     */
-    float[] calcWeights(WEIGHTS_DURING_CHISQSUM wdc, float[] yModel) {
-
-        float[] w = new float[yModel.length];
-
-        if (wdc != null) {
-            if (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.INVERSE_Y.ordinal()) {
-                for (int i = 0; i < w.length; i++) {
-                    w[i] = 1.0f/(yScale*y[i]);
-                }
-            } else if (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.MODEL_Y.ordinal()) {
-                for (int i = 0; i < w.length; i++) {
-                    w[i] = yModel[i]*yScale;
-                }
-            } else {
-                boolean hasValidValues = hasValidValues(dy);
-                if (hasValidValues) {
-                    for (int i = 0; i < w.length; i++) {
-                        w[i] = dy[i]*yScale;
-                    }
-                } else {
-                    throw new IllegalStateException("dy has invalid values");
-                }
-            }
-        } else {
-            // defaults to using errors
-            boolean hasValidValues = hasValidValues(dy);
-            if (hasValidValues) {
-                for (int i = 0; i < w.length; i++) {
-                    w[i] = dy[i]*yScale;
-                }
-            } else {
-                throw new IllegalStateException("dy has invalid values");
-            }
-        }
-
-        return w;
-    }
-
-    protected boolean hasValidValues(float[] a) {
-        if (a == null) {
-            return false;
-        }
-        for (int i = 0; i < a.length; i++) {
-            if (Float.isNaN(a[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * calculate the chi square of the yModel using the method for weights.
-     * The best results for the fit are usually from using errors for the
-     * fit.
-     *
-     * @param yModel
-     * @param wdc
-     * @return
-     */
-    public float calculateChiSquareSum(float[] yModel, WEIGHTS_DURING_CHISQSUM wdc) {
-
-        if (yModel == null) {
-            return Float.POSITIVE_INFINITY;
-        }
-
-        float[] w = calcWeights(wdc, yModel);
-
-        float chiSum = 0.f;
-
-        for (int i = 0; i < yModel.length; i++) {
-
-            float z = yScale*(yModel[i] - y[i]);
-            z *= z*w[i];
-
-            chiSum += z;
-        }
-
-        return chiSum;
-    }
-
-    /**
-     * given the GEV model points yModel, calculate the chi-square statistic.
-     *
-     * @param yModel
-     * @param wdc
-     * @return
-     */
-    public float calculateChiSquareStatistic(float[] yModel, WEIGHTS_DURING_CHISQSUM wdc) {
-
-        float chiSquareSum = calculateChiSquareSum(yModel, wdc);
-
-        // minus one due to having to calculate the mean by using the data
-        float degreesOfFreedom = yModel.length - 3 - 1;
-
-        return chiSquareSum/degreesOfFreedom;
-    }
-
-    /**
-     * return the y array errors summed in quadrature
-     * @return
-     */
-    public float calcYErrSquareSum() {
-        float sum = 0.f;
-        for (int i = 0; i < y.length; i++) {
-            float z = yScale*dy[i];
-            z *= z;
-            sum += z;
-        }
-        return sum;
+        super(xPoints, yPoints, dXPoints, dYPoints);
     }
 
     /**
@@ -1218,59 +1033,6 @@ public class GEVChiSquareMinimization {
     }
 
     /**
-     generate randomly values for k and sigma between a default of
-
-     float kMin = 0.00001f;
-     float kMax = 0.001f;
-     float sigmaMin = 0.025f;
-     float sMax = 20.0f*sigmaMin;
-
-     * @param sr
-     * @param mu
-     * @return an array of k and sigma, respectively
-     */
-    public static float[] generateRandomParameters(SecureRandom sr, float mu) {
-        float kMin = 0.00001f;
-        float kMax = 0.001f;
-        float sigmaMin = 0.025f;
-        float sigmaMax = 20.0f*sigmaMin;
-        return generateRandomParameters(sr, kMin, kMax, sigmaMin, sigmaMax, mu);
-    }
-
-    /**
-     * generate randomly values for k and sigma
-     *
-     * @param sr
-     * @param kMin
-     * @param kMax
-     * @param sigmaMin
-     * @param sigmaMax
-     * @param mu
-     * @return an array of k and sigma, respectively
-     */
-    public static float[] generateRandomParameters(SecureRandom sr, float kMin, float kMax, float sigmaMin, float sigmaMax, float mu) {
-
-        float sDiff = sigmaMax - sigmaMin;
-        float kDiff = kMax - kMin;
-
-        float sigma = sigmaMin + sr.nextFloat() * sDiff;
-
-        float k = kMin + sr.nextFloat() * kDiff;
-
-        boolean go = true;
-        while (go) {
-            if ( (k * mu) > -1*sigma) {
-
-                go = false;
-
-                k = kMin + sr.nextFloat() * kDiff;
-            }
-        }
-
-        return new float[]{k, sigma};
-    }
-
-    /**
      * divides the ranges into small steps and uses the Downhill Simplex method to fit the
      * curve within each of those small steps.  returns the best fit.
      * Note that for the GEV curve the best fit may not be unique, that is
@@ -1341,7 +1103,7 @@ public class GEVChiSquareMinimization {
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
 
         try {
-            plotter.addPlot(x, y, dx, dy, yfit.getX(), yfit.getYFit(), label);
+            plotter.addPlot(x, y, xe, ye, yfit.getX(), yfit.getYFit(), label);
             plotter.writeFile2();
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());

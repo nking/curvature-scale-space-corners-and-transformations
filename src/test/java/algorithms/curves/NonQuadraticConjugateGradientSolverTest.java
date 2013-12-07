@@ -9,7 +9,7 @@ import junit.framework.TestCase;
 
 public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
-    public void estFitCurve() throws Exception {
+    public void testFitCurve() throws Exception {
         
         // while revising code, if not on a development branch, don't assert results
         boolean assertResults = false;
@@ -67,7 +67,7 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
         
-        int n = 40;
+        int n = 10;
         int nX = 40;
         
         // do for number of x points being 40, 30, 20, 10
@@ -132,5 +132,23 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
             nX >>= 1;
         }
         System.out.println(" plot is at path=" + path);
+    }
+    
+    public void estAFit() throws Exception {
+        
+        float[] x = new float[]{0.014247895f, 0.042743687f, 0.07123948f, 0.09973527f, 
+            0.12823106f, 0.15672685f, 0.18522264f, 0.21371843f, 0.24221422f, 0.27071002f, 0.2992058f};
+        float[] y = new float[]{332f, 390f, 219f, 160f, 115f, 76f, 65f, 38f, 34f, 26f, 15};
+        float[] xe = new float[]{7.4649105f, 7.4649105f, 7.4649105f, 7.4649105f, 7.4649105f, 
+            7.4649105f, 7.4649105f, 7.4649105f, 7.4649105f, 7.4649105f, 7.4649105f};
+        float[] ye = new float[]{0.043646604f, 0.06301082f, 0.11369733f, 0.1743775f, 
+            0.25399062f, 0.37100628f, 0.4721122f, 0.7102276f, 0.82596064f, 1.0478927f, 1.5082606f};
+        
+        NonQuadraticConjugateGradientSolver solver = 
+            new NonQuadraticConjugateGradientSolver(x, y, xe, ye);
+        
+        solver.setDebug(true);
+
+        GEVYFit fit = solver.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
     }
 }

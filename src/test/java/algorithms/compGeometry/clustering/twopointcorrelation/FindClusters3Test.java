@@ -72,8 +72,10 @@ public class FindClusters3Test extends TestCase {
             if (areaAndXYTopCentroid != null) {
 
                 plotLabel = String.format(
-                    "  (%4d)  peak=%.4f  xcen=%.4f  chst=%.1f",
-                    twoPtC.indexer.nXY, ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getXPeak(),
+                    "  (%4d)  k=%.4f  sigma=%.4f  mu=%.4f chst=%.1f",
+                    twoPtC.indexer.nXY, ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getK(),
+                    ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getSigma(),
+                    ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getMu(),
                     areaAndXYTopCentroid[1], ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getChiSqStatistic());
 
             } else {

@@ -172,8 +172,8 @@ public class DerivGEVTest extends TestCase {
             Double d2 = DerivGEV.derivWRTK(yConst, mu2, (float)(k2 - deltaK), s2, xp[i]);
             Double dd = (d2-d)/deltaK;            
             double preconditionedResidual = d2/dd;
-            float chiSqSum = DerivGEV.chiSqSum(mu2, (float)(k2 + preconditionedResidual), s2, xp, yg0, yg0e);
-            float chiSqSum2 = DerivGEV.chiSqSum(mu2, (float)(k2 - preconditionedResidual), s2, xp, yg0, yg0e);
+            float chiSqSum = DerivGEV.chiSqSum((float)(k2 + preconditionedResidual), s2, mu2, xp, yg0, yg0e);
+            float chiSqSum2 = DerivGEV.chiSqSum((float)(k2 - preconditionedResidual), s2, mu2, xp, yg0, yg0e);
             System.out.println( String.format("x[%d]=%4.3f  (d/dk=%4.5f, d2/dkdk=%4.5f) ==> (+%4.4f  chiSqSum=%4.4f) (-%4.4f  chiSqSum=%4.4f)", 
                 i, xp[i], d, dd, preconditionedResidual, chiSqSum, preconditionedResidual, chiSqSum2));
             avgResidK += preconditionedResidual;
@@ -330,8 +330,8 @@ public class DerivGEVTest extends TestCase {
             
             double preconditionedResidual = DerivGEV.calculatePreconditionerModifiedResidualSigma(yConst, mu2, k2, sigma, xp[i]);
             
-            float chiSqSum = DerivGEV.chiSqSum(mu2, k2, (float)(s2 + preconditionedResidual), xp, yg0, yg0e);
-            float chiSqSum2 = DerivGEV.chiSqSum(mu2, k2, (float)(s2 - preconditionedResidual), xp, yg0, yg0e);
+            float chiSqSum = DerivGEV.chiSqSum(k2, (float)(s2 + preconditionedResidual), mu2, xp, yg0, yg0e);
+            float chiSqSum2 = DerivGEV.chiSqSum(k2, (float)(s2 - preconditionedResidual), mu2, xp, yg0, yg0e);
             System.out.println( String.format("x[%d]=%4.3f  (d/ds=%4.5f, d2/dsds=%4.5f) ==> (+%4.4f  chiSqSum=%4.4f) (-%4.4f  chiSqSum=%4.4f)", 
                 i, xp[i], d, dd, preconditionedResidual, chiSqSum, preconditionedResidual, chiSqSum2));
             avgResid += preconditionedResidual;
@@ -481,8 +481,8 @@ public class DerivGEVTest extends TestCase {
             
             double preconditionedResidual = DerivGEV.calculatePreconditionerModifiedResidualMu(yConst, mu2, k2, sigma, xp[i]);
             
-            float chiSqSum = DerivGEV.chiSqSum((float)(mu2 + preconditionedResidual), k2, s2, xp, yg0, yg0e);
-            float chiSqSum2 = DerivGEV.chiSqSum((float)(mu2 - preconditionedResidual), k2, s2, xp, yg0, yg0e);
+            float chiSqSum = DerivGEV.chiSqSum(k2, s2, (float)(mu2 + preconditionedResidual), xp, yg0, yg0e);
+            float chiSqSum2 = DerivGEV.chiSqSum(k2, s2, (float)(mu2 - preconditionedResidual), xp, yg0, yg0e);
             System.out.println( String.format("x[%d]=%4.3f  (d/dm=%4.5f, d2/dmdm=%4.5f) ==> (+%4.4f  chiSqSum=%4.4f) (-%4.4f  chiSqSum=%4.4f)", 
                 i, xp[i], d, dd, preconditionedResidual, chiSqSum, preconditionedResidual, chiSqSum2));
             avgResid += preconditionedResidual;

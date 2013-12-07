@@ -628,18 +628,24 @@ public class DerivGEV {
      * to test a range of changes and return them in the array r if successfully found 
      * a change.
      * 
-     * @param vars
-     * @param x
-     * @param y
-     * @param ye
-     * @param r
+     * @param vars array of current values of k, sigma, and mu
+     * @param varsMin array of minimum allowed values of k, sigma, and mu
+     * @param varsMax array of maximum allowed values of k, sigma, and mu
+     * @param x normalized x values of histogram to fit
+     * @param y normalized y values of histogram to fit
+     * @param ye normalized y error values of histogram to fit
+     * @param r the array to pass back values to be added to vars found by this method. 
+     *     the items are ordered so that index=0 holds delta k, index=1 holds delta sigma,
+     *     index=2 holds delta mu.  the values may be zero if no step was found to
+     *     improve the chi square sum. 
      * @param chiSqSumReturn item [0] is the best current chiSqSum for given vars.
      *    item [1] is to return the value of the best chiSqSum here to the invoker
      *    if r was set to non-zero values.
      * @param idx the index in vars to start with to help rotate which changes are
      *   set in r first and accepted.
      */
-    public static void exploreChangeInVars(float[] vars, float[] x, float[] normalizedY,
+    public static void exploreChangeInVars(float[] vars, float[] varsMin, float[] varsMax,
+        float[] x, float[] normalizedY,
         float[] normalizedYErr, float[] r, float[] chiSqSumReturn, int idx) {
         
         float defaultChange = 0.5f;
@@ -671,36 +677,41 @@ public class DerivGEV {
             
             int nMaxIter = 10;
             int nIter = 0;
-            
-            boolean hasRetried = false;
-            boolean useDoubleChange = false;
-            
+                        
             while (nIter < nMaxIter) {
                 switch(i) {
                     case 0: {
-                        // k                    
-                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
-                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
-                    
+                        // k 
+                        if (((float)(k + rModified) >= varsMin[i]) || ((float)(k + rModified) <= varsMax[i])) {
+                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
+                        }
+                        if (((float)(k - rModified) >= varsMin[i]) || ((float)(k - rModified) <= varsMax[i])) {
+                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
+                        }
                         break;
                     }
                     case 1: {
                         // sigma
-                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
-                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
-                        
+                        if (((float)(sigma + rModified) >= varsMin[i]) || ((float)(sigma + rModified) <= varsMax[i])) {
+                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
+                        }
+                        if (((float)(sigma - rModified) >= varsMin[i]) || ((float)(sigma - rModified) <= varsMax[i])) {
+                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
+                        }
                         break;
                     }
                     case 2: {
                         // mu
-                        
-                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
-                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
-                                                
+                        if (((float)(mu + rModified) >= varsMin[i]) || ((float)(mu + rModified) <= varsMax[i])) {
+                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
+                        }
+                        if (((float)(mu - rModified) >= varsMin[i]) || ((float)(mu - rModified) <= varsMax[i])) {
+                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
+                        }                   
                         break;
                     }
                 }
-                        
+                
                 float chiSqSumPlus = (yGEVPlus != null) ? chiSqSum(yGEVPlus, normalizedY, normalizedYErr) : Float.MAX_VALUE;
                 float chiSqSumMinus = (yGEVMinus != null) ? chiSqSum(yGEVMinus, normalizedY, normalizedYErr) : Float.MAX_VALUE;
                 boolean bestIsPlus = (chiSqSumPlus < chiSqSumMinus);
@@ -716,17 +727,8 @@ public class DerivGEV {
                     // continue to next variable
                     break;
                 } else {
-                    
-                    if (hasRetried) {
-                        if (useDoubleChange) {
-                            rModified *= 2.f;
-                        } else {
-                            rModified /= 2.f;
-                        }
-                    } else {
-                        rModified /= 2.f;
-                        hasRetried = true;
-                    }
+                   
+                    rModified /= 2.f;
                     
                     nIter++;
                 }                
@@ -1222,15 +1224,26 @@ public class DerivGEV {
         
         return resid;
     }
-    
-    public static Float chiSqSum(float mu, float k, float sigma, float[] x, float[] normalizedY, float[] normalizedYErr) {
+   
+    public static Float chiSqSum(final float k, final float sigma, final float mu, final float[] x,
+        final float[] normalizedY, final float[] normalizedYErr) {
+        
         float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);
         if (yGEV == null) {
             return null;
         }
         return chiSqSum(yGEV, normalizedY, normalizedYErr);
     }
-    protected static float chiSqSum(float[] normalizedYGEV, float[] normalizedY, float[] normalizedYErr) {
+    /**
+     * compute the chi square sum for the normalized curves, that is, do not include the factors for
+     * yScale of the original unnormalized data.
+     * 
+     * @param normalizedYGEV
+     * @param normalizedY
+     * @param normalizedYErr
+     * @return
+     */
+    public static float chiSqSum(float[] normalizedYGEV, float[] normalizedY, float[] normalizedYErr) {
         float chiSqSum = 0.0f;
         for (int ii = 0; ii < normalizedYGEV.length; ii++) {
             float z = (normalizedYGEV[ii] - normalizedY[ii]);
