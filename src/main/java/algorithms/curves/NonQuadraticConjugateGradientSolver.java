@@ -17,40 +17,22 @@ import algorithms.util.PolygonAndPointPlotter;
    to make an iterative solution for chi-square minimization 
    of a non-linear, non-quadratic GEV model's difference from the data.
    
-   This solution uses a conjugate gradient method with a Polak-Robiere function to help
-   determine the next stop and direction.
-   
-   NOTE:
-      internally, the first and second derivatives of the curve GEV(k, sigma, mu)
-      are used to calculate what the smallest step in k, sigma, or mu would be in
-      order to create a significant change in the GEV curve.
-     
-      The suggested change for k is calculated from d/dk modified by the preconditioner
-      at the point right after the model peak.
-     
-     Note that the suggested changes might be applied by the NonQuadraticConguteSolver as
-     a fraction of the suggested change returned by the lineSearch method
+   This solution uses a preconditioner matrix with ICU0 function to help
+   determine the next stop and direction. Note that the suggested changes 
+   might be applied by the NonQuadraticConguteSolver as
+   a fraction of the suggested change returned by the lineSearch method
  
   Useful for implementing the code below was reading:
    
    
    http://en.wikipedia.org/wiki/Fletcher-Reeves#Nonlinear_conjugate_gradient
    
-       1) Calculate the steepest direction: deltax_n = -d/dx f(x_n)
-       2) Compute beta_n according to one of the formulas below (Polak-Robiere here)
-       3) Update the conjugate direction: s_n = deltax_n + (beta_n)*(s_n-1)
-       4) Perform a line search: alpha_n = arg min_{\alpha} f(x_n + alpha s_n)
-       5) Update the position: x_{n+1} = x_{n} + (alpha_{n})*(s_{n})
+   and
    
+   http://netlib.org/linalg/html_templates/node64.html#figdilu
    
-   Polak-Robiere function:
+   and browsing various books on optimization
    
-               ∇(x_n)^T * (∇x_n - ∇x_n-1)
-    beta_n =  ----------------------------
-                 ∇(x_n-1)^T * ∇(x_n-1)   
-    
-    In the equation above, use beta = max (0, beta_n)
-    
     =============================================================================================
     
     Minimize f(vars)
@@ -336,11 +318,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         float[] r = new float[3];
         DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
         
-        float[] rPrev = new float[r.length];
-        
-        // p is search direction
-        float[] p = Arrays.copyOf(r, r.length);   
-        
         // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
         // chiSqSumForLineSearch[1] holds the return value from lineSearch
         float[] chiSqSumForLineSearch = new float[2];
@@ -371,10 +348,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                 } catch (IOException e) {
                     System.err.println(e.getMessage());
                 }
-            }
-            
-            for (int k = 0; k < r.length; k++) {
-                rPrev[k] = r[k];
             }
             
             // if solution has stalled, suggest deltas and apply the accepted
@@ -409,25 +382,15 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                     DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, k, k);
                     
                     log.finest("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
-                    
-                    // Polak=Ribiere function
-                    float beta =  (float) ((r[k] * (r[k] - rPrev[k])) / Math.pow(rPrev[k], 2));
-                    if (beta < 0 || Float.isInfinite(beta) || Float.isNaN(beta)) {
-                        beta = 0;
-                    }
-                    //p_k = r_k +β_k*(p_(k−1)).
-                    p[k] = r[k] + beta*p[k];
-                        
-                    log.finest("    p[" + k + "]=" + p[k] + "  beta=" + beta + " nIter=" + nIter);
                 }
                 
-             // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-                float alpha = lineSearch(r, p, vars, varsMin, varsMax, chiSqSumForLineSearch, k, k);
+                // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
+                float alpha = lineSearch(r, vars, varsMin, varsMax, chiSqSumForLineSearch, k, k);
                 if (alpha <= eps) {
                     log.finest("       r[" + k + "]=" + r[k] + "  last chiSqSum=" + chiSqSumForLineSearch[1]);
                     continue;
                 }
-                float ap = alpha*p[k];
+                float ap = alpha*r[k];
                 
                 float tmpVar = vars[k] + ap;                
                 
@@ -534,11 +497,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
         float[] r = new float[3];
         DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
-                
-        float[] rPrev = new float[r.length];
-        
-        // p is search direction
-        float[] p = Arrays.copyOf(r, r.length);    
         
         // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
         // chiSqSumForLineSearch[1] holds the return value from lineSearch
@@ -574,9 +532,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             
             // if solution has stalled, apply changes that improve the solution in small steps
             if ((nIter > 3) && (nSameSequentially > 2)) {
-                for (int k = 0; k < r.length; k++) {
-                    rPrev[k] = r[k];
-                }
                 
                 int idx = (nAltSolutionCount % 3);
                 
@@ -596,29 +551,15 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                     nIter++;
                     continue;
                 }
-            }            
+            }         
             
             if (nIter > 0) {
-                for (int k = 0; k < r.length; k++) {
-                    rPrev[k] = r[k];
-                }
                 // populate r with the best fitting derivatives for vars[]
-                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
-                for (int k = 0; k <= varStopIdx; k++) {  
-                    
-                    // Polak=Ribiere function
-                    float beta =  (float) ((r[k] * (r[k] - rPrev[k])) / Math.pow(rPrev[k], 2));
-                    if (beta < 0 || Float.isInfinite(beta) || Float.isNaN(beta)) {
-                        beta = 0;
-                    }
-                    //p_k = r_k +β_k*(p_(k−1)).
-                    p[k] = r[k] + beta*p[k];
-                    
-                    log.finest("r[" + k + "]=" + r[k] + "  p[" + k + "]=" + p[k] + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
-                }                
+                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);      
             }
+            
             // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-            float alpha = lineSearch(r, p, vars, varsMin, varsMax, chiSqSumForLineSearch, 0, varStopIdx);
+            float alpha = lineSearch(r, vars, varsMin, varsMax, chiSqSumForLineSearch, 0, varStopIdx);
  
             if (alpha <= eps) {
                 // need 2nd deriv pre-conditioning
@@ -627,7 +568,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                         
             if (!chiSqSumIsNotAcceptable(chiSqSumForLineSearch[0], chiSqSumForLineSearch[1])) {
                 for (int k = 0; k <= varStopIdx; k++) {
-                    float ap = alpha*p[k];
+                    float ap = alpha*r[k];
                     vars[k] = vars[k] + ap;
                     
                     log.finest("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
@@ -669,7 +610,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      *
      * 
      * @param r suggested changes to apply to vars
-     * @param p suggested changes to apply to vars, previously altered by a beta function
      * @param vars the array holding current values for k, sigma, and mu
      * @param varsMin the minimum acceptable value of items in vars array
      * @param varsMax the maximum acceptable value of items in vars array
@@ -681,7 +621,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @return
      */
-    protected float lineSearch(float[] r, float[] p, float[] vars, float[] varsMin, float[] varsMax,
+    protected float lineSearch(float[] r, float[] vars, float[] varsMin, float[] varsMax,
         float[] chiSqSum, int idx0, int idx1) throws FailedToConvergeException {
                 
         float low = 0;
@@ -703,7 +643,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                 // solve alpha by trial and error starting with max value then use bisect:
                 //     chiSqSum(... + alpha*p[i])  <=  chiSqSum + (c_1 * alpha * r[i]*p[i]).  
                 //     where c_1 is 0 or 1.  c_1 being 0 doesn't make sense...
-                float ap = alpha*p[i];                
+                float ap = alpha*r[i];                
                 tmpVars[i] = vars[i] + ap;
                 
                 if ((tmpVars[i] < varsMin[i]) || (tmpVars[i] > varsMax[i])) {
@@ -723,7 +663,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                         break;
                 }
                 
-                float rght = chiSqSum[0] + alpha * r[i]*p[i];
+                float rght = chiSqSum[0] + alpha * r[i]*r[i];
                 
                 chiSqSum[1] = DerivGEV.chiSqSum(yGEV, y, ye);
                                 
