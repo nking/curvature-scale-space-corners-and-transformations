@@ -119,6 +119,8 @@ public class TwoPointCorrelation {
     protected boolean debug = false;
 
     protected boolean doLogPerformanceMetrics = false;
+    
+    protected boolean setUseDownhillSimplexHistogramFitting = false;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -228,6 +230,16 @@ public class TwoPointCorrelation {
     public void setDebug(boolean turnDebugOn) {
         this.debug = turnDebugOn;
     }
+    
+    /**
+     * if letting the code fit the background distribution, this method will use
+     * a downhill simplex method wrapped in range searches to fit the distribution,
+     * else the default method will be used which is a non-quadratic conjugate gradient
+     * solver. 
+     */
+    public void setUseDownhillSimplexHistogramFitting() {
+        this.setUseDownhillSimplexHistogramFitting = true;
+    }
 
     protected void logPerformanceMetrics() {
         this.doLogPerformanceMetrics = true;
@@ -294,6 +306,9 @@ public class TwoPointCorrelation {
 
         TwoPointVoidStats minStats = new TwoPointVoidStats(indexer);
         minStats.setDebug(debug);
+        if (setUseDownhillSimplexHistogramFitting) {
+            minStats.setUseDownhillSimplexHistogramFitting();
+        }
         minStats.calc(minimaFilePath);
 
         if (debug) {
@@ -330,6 +345,10 @@ public class TwoPointCorrelation {
 
         if ((useCompleteBackgroundSampling != null) && useCompleteBackgroundSampling) {
             voidStats.setUseCompleteSampling();
+        }
+        
+        if (setUseDownhillSimplexHistogramFitting) {
+            voidStats.setUseDownhillSimplexHistogramFitting();
         }
 
         voidStats.calc();
@@ -800,6 +819,10 @@ if (nDensities < 1001) {
 
             if (doLogPerformanceMetrics) {
                 voidStats.logPerformanceMetrics();
+            }
+            
+            if (setUseDownhillSimplexHistogramFitting) {
+                voidStats.setUseDownhillSimplexHistogramFitting();
             }
 
             voidStats.setUseSemiCompleteRangeSampling();

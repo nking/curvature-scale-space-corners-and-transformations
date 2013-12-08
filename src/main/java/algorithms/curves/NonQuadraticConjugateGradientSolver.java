@@ -233,6 +233,10 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         this.maxIterations = maxNumber;
     }
     
+    /**
+     * fit the x and y data using built in default ranges for the parameters k, sigma, and mu.
+     * 
+     */
     public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) throws FailedToConvergeException, IOException {
         
         float kMin = 0.001f;
