@@ -317,7 +317,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * @throws TwoPointVoidStatsException
      */
     public void calc() throws TwoPointVoidStatsException {
-
+   
         calculateTwoPointVoidDensities();
 
         calculateStats();
@@ -329,21 +329,20 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
             calculateTwoPointVoidDensities();
         }
-
+        
+        long startTimeMillis = System.currentTimeMillis();
+       
         // may need to release more memory.  if so, release point1 and point2
         //long memAvail = Util.getAvailableHeapMemory();
         //log.fine("memory available = " + memAvail);
 
 System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensities);
-
-        long t0 = System.currentTimeMillis();
+        
         if (indexer.getNXY() > 999) {
             statsHistogram = createHistogramWithHigherPeakResolution();
         } else {
             statsHistogram = createHistogram();
         }
-        t0 = (System.currentTimeMillis() - t0)/1000;
-System.out.println("histogram took " + t0 + " seconds");
 
         state = State.HISTOGRAM_CREATED;
 
@@ -359,6 +358,15 @@ System.out.println("histogram took " + t0 + " seconds");
         }
 
         calculateStatsForBackground(statsHistogram, yMaxBin);
+        
+        if (doLogPerformanceMetrics) {
+
+            long stopTimeMillis = System.currentTimeMillis();
+
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis,
+                "calculateStats", Integer.toString(statsHistogram.getXHist().length) );
+        }
+
     }
 
     /**
@@ -429,7 +437,7 @@ System.out.println("histogram took " + t0 + " seconds");
             } else {
                 str = str + this.allTwoPointSurfaceDensities.length;
             }
-            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateSurfaceDensities", str);
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateBackgroundVia2PtVoidFit-->calculateTwoPointVoidDensities", str);
         }
     }
 
@@ -516,6 +524,7 @@ System.out.println("histogram took " + t0 + " seconds");
 
         //HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, allTwoPointSurfaceDensities,
         //    allTwoPointSurfaceDensitiesErrors, false);
+        
         HistogramHolder histogram = Histogram.createHistogramForSkewedData(
             nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors, true);
 
@@ -537,11 +546,7 @@ System.out.println("histogram took " + t0 + " seconds");
         HistogramHolder histogram = Histogram.createHistogramForSkewedDataForPeakResolution2(
             nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors,
             minMax[0], minMax[1], 0);
-
-        //HistogramHolder histogram = Histogram.createHistogramForSkewedDataForPeakResolution(
-        //    nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors,
-        //    minMax[0], minMax[1]);
-
+        
         plotPairSeparations();
 
         return histogram;

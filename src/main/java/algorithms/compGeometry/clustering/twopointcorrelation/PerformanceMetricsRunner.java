@@ -49,10 +49,13 @@ public class PerformanceMetricsRunner {
 
         log.info(" (" + indexer.nXY + " points) ... ");
 
+        long t0 = System.currentTimeMillis();
 
         TwoPointCorrelation clusterFinder = new TwoPointCorrelation(
             indexer.getX(), indexer.getY(),
             indexer.getXErrors(), indexer.getYErrors(), indexer.getX().length);
+
+        //clusterFinder.setUseDownhillSimplexHistogramFitting();
 
         clusterFinder.setDebug(false);
         clusterFinder.logPerformanceMetrics();
@@ -62,6 +65,10 @@ public class PerformanceMetricsRunner {
         clusterFinder.findClusters();
 
         clusterFinder.calculateHullsOfClusters();
+        
+        long t1 = (System.currentTimeMillis() - t0)/1000;
+        
+        log.info("  ====> total RT(sec) = " + t1);
     }
 
     public static void main(String[] args) throws Exception {
@@ -88,8 +95,8 @@ public class PerformanceMetricsRunner {
                 long seed = srr.nextLong();
 
                 SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-                sr.setSeed( seed );
-                //sr.setSeed(-2384802679227907254l);
+                //sr.setSeed( seed );
+                sr.setSeed(-2384802679227907254l);
 
                 DoubleAxisIndexer indexer = null;
 
@@ -99,8 +106,8 @@ public class PerformanceMetricsRunner {
                     case 0:
                         //~100
                         indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                            10, 100, 110, 100.0f);
-                            //3, 33, 33, 0.1f);
+                            //10, 100, 110, 100.0f);
+                            3, 33, 33, 0.1f);
                         break;
                     case 1:
                         //~1000
