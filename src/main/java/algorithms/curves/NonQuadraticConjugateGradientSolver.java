@@ -1,7 +1,6 @@
 package algorithms.curves;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 import algorithms.curves.GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM;
@@ -18,9 +17,7 @@ import algorithms.util.PolygonAndPointPlotter;
    of a non-linear, non-quadratic GEV model's difference from the data.
    
    This solution uses a preconditioner matrix with ICU0 function to help
-   determine the next stop and direction. Note that the suggested changes 
-   might be applied by the NonQuadraticConguteSolver as
-   a fraction of the suggested change returned by the lineSearch method
+   determine the next stop and direction. 
  
   Useful for implementing the code below was reading:
    
@@ -216,34 +213,59 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
     }
     
     /**
-     * fit the x and y data using built in default ranges for the parameters k, sigma, and mu.
+     * get an array of kMin, kMax, sigmaMin, sigmaMax, muMin, muMax default ranges that
+     * are tuned for distributions in which the peak of the GEV is usually < 0.4 in a normalized
+     * range of x values.  If the fits are poor and the peak of the data is located near
+     * 0.5 or later, you'll probably need to widen the shape parameter sigma range and use
+     * the method fitCurveParametersSeparately directly.
      * 
+     * @return
      */
-    public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) throws FailedToConvergeException, IOException {
+    public float[] getMinMaxRanges() {
+        
+        int yMaxIndex = MiscMath.findYMaxIndex(y);
+        float xAtYMax = x[yMaxIndex];
         
         float kMin = 0.001f;
         float kMax = 2.0f;
         float sigmaMin = 0.025f;
-        float sigmaMax = 0.5f;
-        float muMin = 0.0001f;
-        float muMax = 0.3f;
+        float sigmaMax = 1.0f;
+        float muMin = xAtYMax/2.f;
+        float muMax = xAtYMax * 2.0f;
+        if (muMax > 1.0) {
+            muMax = xAtYMax * 1.5f;
+        }
         
-        // if yScale is small, muMax should be as large as 0.6 roughly
-        if (yScale < 100) {
-            muMax = 0.5f;
-            sigmaMax = 0.5f;
-        } else {
-            int yMaxIndex = MiscMath.findYMaxIndex(y);
-            float xAtYMax = x[yMaxIndex];
-            muMin = xAtYMax/2.f;
-            muMax = xAtYMax * 2.0f;
+        if (yScale > 100) {
             kMax = 1.0f;
             if (yScale > 200) {
                 kMin = 0.2f;
             }
         }
         
-        return fitCurveParametersSeparately(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
+        return new float[] {kMin, kMax, sigmaMin, sigmaMax, muMin, muMax};
+    }
+    
+    /**
+     * fit the x and y data using built in default ranges for the parameters k, sigma, and mu.
+     * 
+     */
+    public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) throws FailedToConvergeException, IOException {
+        
+        float[] minMaxes = getMinMaxRanges();
+        
+        return fitCurveParametersSeparately(minMaxes[0], minMaxes[1], minMaxes[2], minMaxes[3], minMaxes[4], minMaxes[5]);
+    }
+    
+    /**
+     * fit the x and y data using built in default ranges for the parameters k, sigma, and mu.
+     * 
+     */
+    public GEVYFit fitCurveKGreaterThanZeroAllAtOnce(WEIGHTS_DURING_CHISQSUM weightMethod) throws FailedToConvergeException, IOException {
+        
+        float[] minMaxes = getMinMaxRanges();
+        
+        return fitCurveParametersAllAtOnce(minMaxes[0], minMaxes[1], minMaxes[2], minMaxes[3], minMaxes[4], minMaxes[5]);
     }
 
     /**
@@ -291,12 +313,21 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         if (sigmaMin > sigmaMax) {
             throw new IllegalArgumentException("sigmaMin must be less than sigmaMax");
         }
-                
+        
+        // for most solutions, choosing middle of range is a good starting point,
+        //   but for those that do not improved after several iterations,
+        //   they should be restarted with the min variables.
+        
+        boolean hasTriedMinStarts = false;
+        
         /*
         float kVar = kMin;
         float sigmaVar = sigmaMin;
         float muVar = muMin;
         */
+        
+        boolean hasTriedMaxStarts = false;
+        boolean hasTriedAltSteps = false;
         /*
         float kVar = kMax;
         float sigmaVar = sigmaMax;
@@ -314,35 +345,36 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      
         int varStopIdx = vars.length - 1;
         
-        // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
-        float[] r = new float[3];
-        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
-        
         // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
-        // chiSqSumForLineSearch[1] holds the return value from lineSearch
+        // chiSqSumForLineSearch[1] holds the return value from DerivGEV if step > 0 was admissable
         float[] chiSqSumForLineSearch = new float[2];
         
         chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
         
+        // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
+        float[] r = new float[3];
+        
         int nSameSequentially = 0;
         float epsChiSame = 1e-5f;
         float lastChiSqSum = Float.MAX_VALUE;
-        int nAltSolutionCount = 0;
+        
+        GEVYFit bestYFit = new GEVYFit();
         
         int nIter = 0;
-        while ((nIter < maxIterations) && (chiSqSumForLineSearch[0] > convergedEps)) {
+                
+        while ((nIter < maxIterations) /*&& (chiSqSumForLineSearch[0] > convergedEps)*/) {
             
             /*if ((nIter > 1) && residualsAreSame(rPrev, r)) {
                 break;
             }*/
             
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
+            
             float chiSqSum = DerivGEV.chiSqSum(yGEV, y, ye);
             
             if (debug) {
                 try {
-                    String label = String.format(
-                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f",
+                    String label = String.format("k=%4.4f <*>  s=%4.4f <*>  m=%4.4f <*>  n=%d  chi=%4.8f",
                         vars[0], vars[1], vars[2], nIter, chiSqSum);
                     plotFit(yGEV, label);
                 } catch (IOException e) {
@@ -350,27 +382,51 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                 }
             }
             
-            // if solution has stalled, suggest deltas and apply the accepted
+            // if solution has stalled, start with the min start point, else the max start points
             if ((nIter > 3) && (nSameSequentially > 2)) {
                 
-                int idx = (nAltSolutionCount % 3);
-
-                DerivGEV.exploreChangeInVars(vars, varsMin, varsMax, x, y, ye, r, chiSqSumForLineSearch, idx);
+                if (!hasTriedAltSteps) {
+                    
+                    bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
                 
-                // OR temporarily allow changes that increase chiSqSum
-                
-                nAltSolutionCount++;
-                
-                // apply changes
-                if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
-                    for (int k = 0; k <= varStopIdx; k++) {
-                        vars[k] = vars[k] + r[k];
-                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                    for (int k = 0; k < vars.length; k++) {
+                        DerivGEV.exploreChangeInVars(vars, varsMin, varsMax, x, y, ye, r, chiSqSumForLineSearch, k);
+                        if (r[k] != 0) {
+                            vars[k] += r[k];
+                            chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                        }
                     }
+                    
+                    bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
+                    
+                    hasTriedAltSteps = true;
                     nSameSequentially = 0;
-                    lastChiSqSum = chiSqSumForLineSearch[0];
-                    nIter++;
-                    continue;
+                    lastChiSqSum = Float.MAX_VALUE;
+                    
+                } else if (true && !hasTriedMinStarts && (chiSqSumForLineSearch[0] > 0.001f)) {
+                    
+                    bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
+                    
+                    kVar = kMin;
+                    sigmaVar = sigmaMin;
+                    muVar = muMin;
+                    
+                    vars[0] = kVar;
+                    vars[1] = sigmaVar;
+                    vars[2] = muVar;
+                    nSameSequentially = 0;
+                    lastChiSqSum = Float.MAX_VALUE;
+
+                    chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
+
+                    hasTriedMinStarts = true;
+                    hasTriedAltSteps = false;
+                    
+                    nIter = 0;
+
+                } else {
+                    // let end or let continue
+                    nIter = maxIterations;
                 }
             }
             
@@ -379,27 +435,16 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                 if (nIter > 0) {
                     
                     // populate r with the best fitting derivatives for vars[]
-                    DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, k, k);
+                    DerivGEV.derivsThatMinimizeChiSqSum(vars, varsMin, varsMax, chiSqSumForLineSearch,
+                        x, y, ye, r, k, k);
                     
-                    log.finest("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                    if (r[k] != 0) {
+                        vars[k] += r[k];
+                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                    }
+                    
+                    log.info("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
                 }
-                
-                // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-                float alpha = lineSearch(r, vars, varsMin, varsMax, chiSqSumForLineSearch, k, k);
-                if (alpha <= eps) {
-                    log.finest("       r[" + k + "]=" + r[k] + "  last chiSqSum=" + chiSqSumForLineSearch[1]);
-                    continue;
-                }
-                float ap = alpha*r[k];
-                
-                float tmpVar = vars[k] + ap;                
-                
-                if (!chiSqSumIsNotAcceptable(chiSqSumForLineSearch[0], chiSqSumForLineSearch[1])) {
-                    vars[k] = tmpVar;
-                    chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
-                }
-                
-                log.finest("    alpha=" + alpha + "  -> vars[" + k + "]=" + vars[k] + "  chiSqSum=" + chiSqSumForLineSearch[0] + " nIter=" + nIter);
             }
             
             if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
@@ -412,26 +457,41 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             nIter++;
         }
         
-        float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
-
-        float chisqsum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
-
-        GEVYFit yfit = new GEVYFit();
-        yfit.setChiSqSum(chisqsum);
-        yfit.setK(vars[0]);
-        yfit.setSigma(vars[1]);
-        yfit.setMu(vars[2]);
-        yfit.setYFit(yGEV);
-        yfit.setX(x);
-        yfit.setXScale(xScale);
-        yfit.setYScale(yScale);
-        yfit.setYDataErrSq( calcYErrSquareSum() ); 
+        bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
         
-        log.info("number of times the alt solution was needed = " + nAltSolutionCount);
-
-        return yfit;
+        if (debug) {
+            try {
+                String label = String.format("k=%4.4f <*>  s=%4.4f <*>  m=%4.4f <*>  n=%d  chi=%4.8f",
+                    vars[0], vars[1], vars[2], nIter, bestYFit.getChiSqSum());
+                plotFit(bestYFit.getYFit(), label);
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+        
+        return bestYFit;
     }
   
+    protected GEVYFit compareFits(GEVYFit bestYFit, float[] vars, float[] chiSqSumForLineSearch) {
+        
+        if ((bestYFit == null) || (chiSqSumForLineSearch[0] < bestYFit.getChiSqSum())) {
+            
+            float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
+    
+            bestYFit = new GEVYFit();
+            bestYFit.setChiSqSum(chiSqSumForLineSearch[0]);
+            bestYFit.setK(vars[0]);
+            bestYFit.setSigma(vars[1]);
+            bestYFit.setMu(vars[2]);
+            bestYFit.setYFit(yGEV);
+            bestYFit.setX(x);
+            bestYFit.setXScale(xScale);
+            bestYFit.setYScale(yScale);
+        }
+        
+        return bestYFit;
+    }
+
     /**
      * fit the x, y data with a GEV whose parameters are within the given ranges for k,
      * sigma, and mu.  The method attempts to fit for changes in k, sigma, and mu all
@@ -446,7 +506,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      * @return
      * @throws FailedToConvergeException
      */
-    public GEVYFit fitCurve(float kMin, float kMax, float sigmaMin, float sigmaMax,
+    public GEVYFit fitCurveParametersAllAtOnce(float kMin, float kMax, float sigmaMin, float sigmaMax,
         float muMin, float muMax) throws FailedToConvergeException {
 
         if (kMin < 0) {
@@ -472,20 +532,22 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             throw new IllegalArgumentException("sigmaMin must be less than sigmaMax");
         }
         
+        boolean hasTriedMinStarts = false;
+        /*
         float kVar = kMin;
         float sigmaVar = sigmaMin;
         float muVar = muMin;
+        */
         
+        boolean hasTriedMaxStarts = false;
         /*
         float kVar = kMax;
         float sigmaVar = sigmaMax;
         float muVar = muMax;
         */
-        /*
         float kVar = (kMax + kMin)/2.f;
         float sigmaVar = (sigmaMax + sigmaMin)/2.f;
         float muVar = (muMax + muMin)/2.f;
-        */
         
         // the variables k, sigma, and mu
         float[] vars = new float[]{kVar, sigmaVar, muVar};
@@ -496,10 +558,9 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         
         // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
         float[] r = new float[3];
-        DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);
         
         // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
-        // chiSqSumForLineSearch[1] holds the return value from lineSearch
+        // chiSqSumForLineSearch[1] holds the return value from DerivGEV if step > 0 was admissable
         float[] chiSqSumForLineSearch = new float[2];
         
         chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
@@ -507,7 +568,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         int nSameSequentially = 0;
         float epsChiSame = 1e-5f;
         float lastChiSqSum = Float.MAX_VALUE;
-        int nAltSolutionCount = 0;
         
         int nIter = 0;
         while ((nIter < maxIterations) && (chiSqSumForLineSearch[0] > convergedEps)) {
@@ -522,7 +582,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             if (debug) {
                 try {
                     String label = String.format(
-                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.6f",
+                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.8f",
                         vars[0], vars[1], vars[2], nIter, chiSqSum);
                     plotFit(yGEV, label);
                 } catch (IOException e) {
@@ -530,51 +590,58 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                 }
             }
             
-            // if solution has stalled, apply changes that improve the solution in small steps
+            // if solution has stalled, restart with min values, else max values, else exit loop
             if ((nIter > 3) && (nSameSequentially > 2)) {
                 
-                int idx = (nAltSolutionCount % 3);
-                
-                DerivGEV.exploreChangeInVars(vars, varsMin, varsMax, x, y, ye, r, chiSqSumForLineSearch, idx);
-                // OR temporarily allow changes that increase chiSqSum
-                
-                nAltSolutionCount++;
-                
-                // apply changes
-                if (chiSqSumForLineSearch[1] < chiSqSumForLineSearch[0]) {
-                    for (int k = 0; k <= varStopIdx; k++) {
-                        vars[k] = vars[k] + r[k];
-                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
-                    }
+                if (!hasTriedMinStarts && (chiSqSum > 0.01f)) {
+                    kVar = kMin;
+                    sigmaVar = sigmaMin;
+                    muVar = muMin;
+                    hasTriedMinStarts = true;
+                    vars[0] = kVar;
+                    vars[1] = sigmaVar;
+                    vars[2] = muVar;
                     nSameSequentially = 0;
-                    lastChiSqSum = chiSqSumForLineSearch[0];
-                    nIter++;
-                    continue;
+                    lastChiSqSum = Float.MAX_VALUE;
+                    
+                    chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
+                    
+                    nIter = 0;
+                
+                } else if (!hasTriedMaxStarts && (chiSqSum > 0.01f)) {
+                    kVar = kMax;
+                    sigmaVar = sigmaMax;
+                    muVar = muMax;
+                    hasTriedMaxStarts = true;
+                    vars[0] = kVar;
+                    vars[1] = sigmaVar;
+                    vars[2] = muVar;
+                    nSameSequentially = 0;
+                    lastChiSqSum = Float.MAX_VALUE;
+
+                    chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
+                    
+                    nIter = 0;
+                
+                } else {
+                    // let end or let continue
+                    nIter = maxIterations;
                 }
             }         
             
             if (nIter > 0) {
+                
                 // populate r with the best fitting derivatives for vars[]
-                DerivGEV.derivsThatMinimizeChiSqSum(vars[2], vars[0], vars[1], x, y, ye, r, 0, varStopIdx);      
-            }
-            
-            // line search finds the fraction of the derivatives in p to apply to the GEV to reduce the chi sq sum
-            float alpha = lineSearch(r, vars, varsMin, varsMax, chiSqSumForLineSearch, 0, varStopIdx);
- 
-            if (alpha <= eps) {
-                // need 2nd deriv pre-conditioning
-                break;
-            }
-                        
-            if (!chiSqSumIsNotAcceptable(chiSqSumForLineSearch[0], chiSqSumForLineSearch[1])) {
+                DerivGEV.derivsThatMinimizeChiSqSum(vars, varsMin, varsMax, chiSqSumForLineSearch,
+                    x, y, ye, r, 0, varStopIdx); 
+                
                 for (int k = 0; k <= varStopIdx; k++) {
-                    float ap = alpha*r[k];
-                    vars[k] = vars[k] + ap;
-                    
-                    log.finest("  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                    if (r[k] != 0) {
+                        vars[k] += r[k];
+                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                    }
                 }
-                chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
-            }
+            }         
             
             if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
                 nSameSequentially++;
@@ -602,111 +669,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         yfit.setYDataErrSq( calcYErrSquareSum() ); 
         
         return yfit;
-    }
-    
-    /**
-     * f(x_k + α*p_k) ≤ f(x_k) + c_1*α*((∇f_k)^T)*p_k  where c_1 is 0 or 1
-     *     result will be applied as vars[k] = vars[k] + alpha*p[k]
-     *
-     * 
-     * @param r suggested changes to apply to vars
-     * @param vars the array holding current values for k, sigma, and mu
-     * @param varsMin the minimum acceptable value of items in vars array
-     * @param varsMax the maximum acceptable value of items in vars array
-     * @param chiSqSum an array whose first item is the instance's current best chiSqSum corresponding to values in vars
-     *         and whose second item is space to return the last value for chiSqSum computed here for the successful
-     *         alpha.  an array with mixed uses is an attempt to optimize for runtime. this may change to return
-     *         the alpha and chiSqSum in an object in the future.
-     * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
-     * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
-     * @return
-     */
-    protected float lineSearch(float[] r, float[] vars, float[] varsMin, float[] varsMax,
-        float[] chiSqSum, int idx0, int idx1) throws FailedToConvergeException {
-                
-        float low = 0;
-        float alpha = 1;
-        float high = 1;
-        
-        float[] tmpVars = Arrays.copyOf(vars, vars.length);
-                
-        float[] yGEV = null;
-        
-        chiSqSum[1] = Float.MAX_VALUE;
-                
-        boolean notFound = true;
-        while (notFound && (Math.abs(high - low) > eps)) {
-            
-            boolean failed = false;
-            
-            for (int i = idx0; i <= idx1; i++) {
-                // solve alpha by trial and error starting with max value then use bisect:
-                //     chiSqSum(... + alpha*p[i])  <=  chiSqSum + (c_1 * alpha * r[i]*p[i]).  
-                //     where c_1 is 0 or 1.  c_1 being 0 doesn't make sense...
-                float ap = alpha*r[i];                
-                tmpVars[i] = vars[i] + ap;
-                
-                if ((tmpVars[i] < varsMin[i]) || (tmpVars[i] > varsMax[i])) {
-                    failed = true;
-                    break;
-                }
-                
-                switch(i) {
-                    case 0:
-                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);
-                        break;
-                    case 1:
-                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);
-                        break;
-                    case 2:
-                        yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, tmpVars[0], tmpVars[1], tmpVars[2]);                        
-                        break;
-                }
-                
-                float rght = chiSqSum[0] + alpha * r[i]*r[i];
-                
-                chiSqSum[1] = DerivGEV.chiSqSum(yGEV, y, ye);
-                                
-                if ((chiSqSum[1] > rght) || chiSqSumIsNotAcceptable(chiSqSum[0], chiSqSum[1])) {
-                    failed = true;
-                    break;
-                } else {
-                    log.finest("   alpha=" + alpha + "  lft=" + chiSqSum[1] + " rght=" + rght + " i=" + i + " prev chiSqSum=" + chiSqSum[0]);
-                }
-            }
-            
-            if (!failed) {
-                // if in high side, let solution climb?
-                return alpha;
-            }
-            
-            // use bisect with pattern to always try high side first
-            
-            float bisector = (high + low)/2.f;
-            if (alpha == 1) {
-                alpha = 0.75f;
-            } else if (alpha > bisector) {
-                // try the low side
-                alpha = 0.25f*(high + low)/2.f;
-            } else {
-                // reduce the high side since neither high nor low partition was successful
-                high = bisector;
-                alpha = 0.75f*(high + low)/2.f;
-            }
-                        
-        }
-        return alpha;
-    }
-
-    private boolean chiSqSumIsNotAcceptable(float bestChSqSum, float compareChSqSum) {
-        
-        boolean t1 = ((compareChSqSum/bestChSqSum) > 1.001);
-        
-        /*if (compareChSqSum < 0.002 && bestChSqSum < 0.002) {
-            t1 = false;
-        }*/
-        
-        return t1 ;
     }
 
     protected boolean isAcceptableMin(float[] vars, float eps, float kMin,

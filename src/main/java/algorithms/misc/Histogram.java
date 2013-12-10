@@ -1,6 +1,5 @@
 package algorithms.misc;
 
-import algorithms.util.Errors;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
@@ -185,8 +184,8 @@ public class Histogram {
      * @param preferredNumberOfBins
      * @param values
      * @param valueErrors
-     * @param minValue
-     * @param maxValue
+     * @param minValue min x histogram value
+     * @param maxValue max x histogram value
      * @return
      */
     private static HistogramHolder createHistogramForSkewedDataIgnorePeakResolution(
@@ -209,20 +208,59 @@ plotter.writeFile();
 
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
+        
+        float minx = minValue;
+        float maxx = maxValue;
 
-        float binWidth = calculateBinWidth(minValue, maxValue, nBins);
+        float binWidth = calculateBinWidth(minx, maxx, nBins);
 
-        Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
-
-        int minCounts = (values.length > 50) ? 15 : 5;
+        Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
 
         boolean go = true;
 
         int nIter = 0;
+        
+        boolean didFlatten20 = false;
+        boolean didFlatten20To1 = false;
+        boolean didFlatten1 = false;
 
-        while (go && (nIter < 100) && (minValue < maxValue)) {
+        while (go && (nIter < 100) && (minx < maxx)) {
 
             int yPeakIndex = MiscMath.findYMaxIndex(yHist);
+            
+            float yHistMax = yHist[yPeakIndex];
+            int minCounts = (yHistMax < 50) ? 3 : 20;
+            
+            // correct for the over-correcting that reduces the histogram to all zeros and a single peak
+            if (yHistMax <= 20.0f && !didFlatten20 && !didFlatten1) {
+                minx = minValue;
+                maxx = maxValue;
+                binWidth = calculateBinWidth(minx, maxx, nBins);
+                Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
+                if (yHistMax > 1.0f) {
+                    didFlatten20 = true;
+                    minCounts = 5;
+                } else {
+                    didFlatten1 = true;
+                    minCounts = 10;
+                }
+            } else if (didFlatten20) {
+                if (yHistMax == 1.0f) {
+                    minx = minValue;
+                    maxx = maxValue;
+                    binWidth = calculateBinWidth(minx, maxx, nBins);
+                    Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
+                    didFlatten20 = false;
+                    didFlatten20To1 = true;
+                    minCounts = 10;
+                } else {
+                    minCounts = 5;
+                }
+            } else if (didFlatten1) {
+                minCounts = 10;
+            } else if (didFlatten20To1) {
+                minCounts = 10;
+            }
 
             int startsWithLessThanMinCounts = 0;
 
@@ -234,13 +272,15 @@ plotter.writeFile();
 
                 if (yHist[i] < minCounts) {
 
-                    // count the consecutive low counts at the end of the histogram:
                     endsWithLessThanMinCounts++;
                     // avoid using points with x < x at ypeak
                     if ( (i > yPeakIndex) && ((i == (prevIndexStartingConsecutiveEndLowCounts - 1)) ||
                     (i == (prevIndexStartingConsecutiveEndLowCounts - 2)))) {
+                        
                         indexStartingConsecutiveEndLowCounts = i;
+                        
                         prevIndexStartingConsecutiveEndLowCounts = indexStartingConsecutiveEndLowCounts;
+                    
                     } else {
                         prevIndexStartingConsecutiveEndLowCounts = i;
                     }
@@ -261,15 +301,15 @@ plotter.writeFile();
                 go = false;
             } else {
                 if (endsWithLessThanMinCounts > 0) {
-                    maxValue -= 1.01*binWidth;
+                    maxx -= 1.01*binWidth;
                 }
                 if (startsWithLessThanMinCounts > 0) {
-                    minValue += 1.01*binWidth;
+                    minx += 1.01*binWidth;
                 }
 
-                binWidth = calculateBinWidth(minValue, maxValue, nBins);
+                binWidth = calculateBinWidth(minx, maxx, nBins);
 
-                Histogram.createHistogram(values, nBins, minValue, maxValue, xHist, yHist, binWidth);
+                Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
 
                 nIter++;
             }

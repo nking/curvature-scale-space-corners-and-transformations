@@ -516,7 +516,6 @@ System.out.println("histogram took " + t0 + " seconds");
 
         //HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, allTwoPointSurfaceDensities,
         //    allTwoPointSurfaceDensitiesErrors, false);
-System.out.println("==> " + allTwoPointSurfaceDensities.length);
         HistogramHolder histogram = Histogram.createHistogramForSkewedData(
             nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors, true);
 
@@ -593,7 +592,7 @@ System.out.println("==> " + allTwoPointSurfaceDensities.length);
                 if (useDefaultFitting) {
 
                     yfit = ((NonQuadraticConjugateGradientSolver)chiSqMin)
-                        .fitCurve(gevRangeFittingParameters[0], gevRangeFittingParameters[1],
+                        .fitCurveParametersAllAtOnce(gevRangeFittingParameters[0], gevRangeFittingParameters[1],
                             gevRangeFittingParameters[2], gevRangeFittingParameters[3], 0.001f, 0.3f);
                 } else {
 

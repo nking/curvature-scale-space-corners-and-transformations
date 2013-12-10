@@ -528,21 +528,30 @@ public class DerivGEV {
      * 
      * runtime cost is 
      *    
-     * @param mu
-     * @param k
-     * @param sigma
-     * @param x
+     * @param vars array of current values of k, sigma, and mu
+     * @param varsMin array of minimum allowed values of k, sigma, and mu
+     * @param varsMax array of maximum allowed values of k, sigma, and mu
+     * @param chiSqSumReturn item [0] is the best current chiSqSum for given vars.
+     *    item [1] is to return the value of the best chiSqSum here to the invoker
+     *    if r was set to non-zero values.
+     * @param x normalized x values of histogram to fit
+     * @param y normalized y values of histogram to fit
+     * @param ye normalized y error values of histogram to fit
+     * @param r the array to pass back values to be added to vars found by this method. 
+     *     the items are ordered so that index=0 holds delta k, index=1 holds delta sigma,
+     *     index=2 holds delta mu.  the values may be zero if no step was found to
+     *     improve the chi square sum. 
      * @param normalizedY
      * @param normalizedYErr
      * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
-     * @param derivs array to populate with answers.  it's given as an argument to reuse the array
+     * @param r array to populate with answers.  it's given as an argument to reuse the array
      * @return
      */
-    public static void derivsThatMinimizeChiSqSum(float mu, float k, float sigma, float[] x, 
-        float[] normalizedY, float[] normalizedYErr, float[] derivs, int idx0, int idx1) {
+    public static void derivsThatMinimizeChiSqSum(float[] vars, float[] varsMin, float[] varsMax, float[] chiSqSumReturn,
+        float[] x, float[] normalizedY, float[] normalizedYErr, float[] r, int idx0, int idx1) {
                 
-        Arrays.fill(derivs, 0);
+        Arrays.fill(r, 0);
         
         // to determine the suggested step for k, sigma, or mu,
         //   we look at the first derivatives of the point in the model GEV right after the maximum
@@ -550,75 +559,113 @@ public class DerivGEV {
         // that suggested step is tried as plus and minus of current variable and the one
         //   with the smallest resulting chisqsum from the curve produced by the change is the
         //   result returned in derivs for that variable.
-        
-        float[] yGEV = GeneralizedExtremeValue.genCurve(x, k, sigma, mu);
-        if (yGEV == null) {
-            return;
-        }
-        int yMaxIdx = MiscMath.findYMaxIndex(yGEV);
-        if (yMaxIdx < 0) {
-            yMaxIdx = 0;
-        }
-        float yMax = yGEV[yMaxIdx];
-        for (int ii = 0; ii < yGEV.length; ii++){
-            yGEV[ii] /= yMax;
-        }
-        float yConst = 1.f/yMax;
-        
-        float xPoint = x[yMaxIdx + 0];
                 
         for (int i = idx0; i < (idx1 + 1); i++) {
 
+            float k = vars[0] + r[0];
+            float sigma = vars[1] + r[1];
+            float mu = vars[2] + r[2];
+    
+            float[] yGEV = GeneralizedExtremeValue.genCurve(x, vars[0], vars[1], vars[2]);
+            if (yGEV == null) {
+                return;
+            }
+            int yMaxIdx = MiscMath.findYMaxIndex(yGEV);
+            if (yMaxIdx < 0) {
+                yMaxIdx = 0;
+            }
+            float yMax = yGEV[yMaxIdx];
+            for (int ii = 0; ii < yGEV.length; ii++){
+                yGEV[ii] /= yMax;
+            }
+            float yConst = 1.f/yMax;
+            
+            int xIdx = yMaxIdx + 1;
+            if (xIdx > x.length - 1) {
+                xIdx = x.length - 1;
+            }
+            
+            float xPoint = x[xIdx];
+            
+            float bestChiSqSum = chiSqSumReturn[0];
+            
             float[] yGEVPlus = null;
             float[] yGEVMinus = null;
             double rModified = 0;
+            
             switch(i) {
+                // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
                 case 0: {
                     // k
-                    // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
                     rModified = calculatePreconditionerModifiedResidualK(yConst, mu, k, sigma, xPoint);
-                    
-                    // test whether adding or subtracting the residual results in a reduced chisqsum
-                    if (rModified != 0) {
-                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
-                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
-                    }
-                    
                     break;
                 }
                 case 1: {
                     // sigma
-                    // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
                     rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, xPoint);
-                    // test whether adding or subtracting the residual results in a reduced chisqsum
-                    if (rModified != 0) {
-                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
-                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
-                    }
-                    
                     break;
                 }
                 case 2: {
                     // mu
-                    // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
                     rModified = calculatePreconditionerModifiedResidualMu(yConst, mu, k, sigma, xPoint);
-                    
-                    // test whether adding or subtracting the residual results in a reduced chisqsum
-                    if (rModified != 0) {
-                        yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
-                        yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
-                    }
-                    
                     break;
                 }
             }
-            if (rModified != 0 && yGEVPlus != null && yGEVMinus != null) {
-                float chiSqSumPlus = chiSqSum(yGEVPlus, normalizedY, normalizedYErr);
-                float chiSqSumMinus = chiSqSum(yGEVMinus, normalizedY, normalizedYErr);
-                float best = (chiSqSumPlus <= chiSqSumMinus) ? (float)rModified : (float)(-1.f * rModified);
-                derivs[i] = best;
+            
+            switch(i) {
+                case 0: {
+                    // k
+                    if (rModified != 0) {
+                        if (((float)(k + rModified) >= varsMin[i]) && ((float)(k + rModified) <= varsMax[i])) {
+                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);
+                        }
+                        if (((float)(k - rModified) >= varsMin[i]) && ((float)(k - rModified) <= varsMax[i])) {
+                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);
+                        }
+                    }
+                    break;
+                }
+                case 1: {
+                    // sigma
+                    if (rModified != 0) {
+                        if (((float)(sigma + rModified) >= varsMin[i]) && ((float)(sigma + rModified) <= varsMax[i])) {
+                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);
+                        }
+                        if (((float)(sigma - rModified) >= varsMin[i]) && ((float)(sigma - rModified) <= varsMax[i])) {
+                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);
+                        }
+                    }
+                    break;
+                }
+                case 2: {
+                    // mu
+                    if (rModified != 0) {
+                        if (((float)(mu + rModified) >= varsMin[i]) && ((float)(mu + rModified) <= varsMax[i])) {
+                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));
+                        }
+                        if (((float)(mu - rModified) >= varsMin[i]) && ((float)(mu - rModified) <= varsMax[i])) {
+                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));
+                        }
+                    }
+                    break;
+                }
             }
-            log.finest(" derivs[" + i + "]=" + derivs[i]);
+                    
+            float chiSqSumPlus = (yGEVPlus != null) ? chiSqSum(yGEVPlus, normalizedY, normalizedYErr) : Float.MAX_VALUE;
+            float chiSqSumMinus = (yGEVMinus != null) ? chiSqSum(yGEVMinus, normalizedY, normalizedYErr) : Float.MAX_VALUE;
+            boolean bestIsPlus = (chiSqSumPlus < chiSqSumMinus);
+                
+            if (bestIsPlus && (chiSqSumPlus < bestChiSqSum)) {
+                r[i] = (float) rModified;
+                bestChiSqSum = chiSqSumPlus;
+                chiSqSumReturn[1] = bestChiSqSum;
+            } else if (chiSqSumMinus < bestChiSqSum) {
+                r[i] = (float) (-1.f * rModified);
+                bestChiSqSum = chiSqSumMinus;
+                chiSqSumReturn[1] = bestChiSqSum;
+            }
+            
+            log.finest(" derivs[" + i + "]=" + r[i]);
         }
     }
 
@@ -645,18 +692,16 @@ public class DerivGEV {
      *   set in r first and accepted.
      */
     public static void exploreChangeInVars(float[] vars, float[] varsMin, float[] varsMax,
-        float[] x, float[] normalizedY,
-        float[] normalizedYErr, float[] r, float[] chiSqSumReturn, int idx) {
-        
+        float[] x, float[] normalizedY, float[] normalizedYErr, float[] r, float[] chiSqSumReturn, int idx) {
+
         float defaultChange = 0.5f;
-        
+
         Arrays.fill(r, 0);
-              
+
         float bestChiSqSum = chiSqSumReturn[0];
-                       
-        // apply mu changes first by starting with i=2
+
         for (int c = 0; c < 3; c++) {
-            
+
             int i = idx + c;
             if (i > 2) {
                 i = i - 3;
@@ -728,7 +773,7 @@ public class DerivGEV {
                     break;
                 } else {
                    
-                    rModified /= 2.f;
+                    rModified /= 1.5f;
                     
                     nIter++;
                 }                
@@ -737,8 +782,7 @@ public class DerivGEV {
         chiSqSumReturn[1] = bestChiSqSum;
     }
     
-    public static double calculatePreconditionerModifiedResidualK(
-        float yConst, float mu, float k, float sigma, float x) {
+    public static double calculatePreconditionerModifiedResidualK(float yConst, float mu, float k, float sigma, float x) {
 
         // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
         // to the first derivative
@@ -1234,6 +1278,7 @@ public class DerivGEV {
         }
         return chiSqSum(yGEV, normalizedY, normalizedYErr);
     }
+    
     /**
      * compute the chi square sum for the normalized curves, that is, do not include the factors for
      * yScale of the original unnormalized data.
@@ -1244,8 +1289,48 @@ public class DerivGEV {
      * @return
      */
     public static float chiSqSum(float[] normalizedYGEV, float[] normalizedY, float[] normalizedYErr) {
+        return chiSqSum(normalizedYGEV, normalizedY, normalizedYErr, 0, normalizedY.length);
+    }
+    
+    /**
+     * compute the chi square sum for the normalized curves after x > xStart.  The calc does not include the factors for
+     * yScale of the original unnormalized data.
+     * 
+     * @param normalizedYGEV
+     * @param normalizedY
+     * @param normalizedYErr
+     * @param x
+     * @param xStart the x value to start calculating sum for
+     * @return
+     */
+    public static float chiSqSum(float[] normalizedYGEV, float[] normalizedY, float[] normalizedYErr, float[] x, float xStart) {
         float chiSqSum = 0.0f;
         for (int ii = 0; ii < normalizedYGEV.length; ii++) {
+            if (x[ii] >= xStart) {
+                float z = (normalizedYGEV[ii] - normalizedY[ii]);
+                chiSqSum += z*z*normalizedYErr[ii];
+            }
+        }
+        return chiSqSum;
+    }
+    
+    /**
+     * compute the chi square sum for the normalized curves for only part of the indexes of the curve.  
+     * The calc does not include the factors for
+     * yScale of the original unnormalized data.
+     * 
+     * @param normalizedYGEV
+     * @param normalizedY
+     * @param normalizedYErr
+     * @param x
+     * @param startIdx
+     * @param stopIdx the last index, exclusive
+     * @return
+     */
+    public static float chiSqSum(float[] normalizedYGEV, float[] normalizedY, float[] normalizedYErr, 
+        int startIdx, int stopIdx) {
+        float chiSqSum = 0.0f;
+        for (int ii = startIdx; ii < stopIdx; ii++) {
             float z = (normalizedYGEV[ii] - normalizedY[ii]);
             chiSqSum += z*z*normalizedYErr[ii];
         }
