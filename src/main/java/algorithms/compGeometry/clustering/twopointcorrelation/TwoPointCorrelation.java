@@ -30,7 +30,7 @@ import java.util.logging.Logger;
       OR the background density can be set manually:
           setBackground(float backgroundSurfaceDensity, float standardDeviationOfBackground);
 
-  Usage as an API:
+  Use as an API:
       TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
       clusterFinder.calculateBackground();
       clusterFinder.findClusters();
@@ -46,11 +46,11 @@ import java.util.logging.Logger;
 
   Note:  For datasets in which the density of background points is high, if you don't
      have the ability to reduce the data by a key characteristic, you might consider
-     the results of this code as seeds for a Voronoi diagram or other.
+     the results of this code as seeds for a Voronoi diagram or other code.
      float[] xSeeds = clusterFinder.getXHullCentroids();
      float[] ySeeds = clusterFinder.getYHullCentroids();
 
-  Usage from the command line:
+  Use from the command line:
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
 
           java -cp bin/classes  algorithms.compGeometry.clustering.twopointcorrelation.TwoPointCorrelation --file /path/to/file/fileName.txt
@@ -125,9 +125,9 @@ public class TwoPointCorrelation {
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
-     * construct without errors on xPoints and yPoints.  Note that internally,
-     * RMS errors, that is 'shot noise' is used which may be larger than your
-     * true errors.
+     * constructor without errors on xPoints and yPoints.  Note that the
+     * errors are estimated internally as rms, shot noise and used throughout
+     * the code.
      *
      * @param xPoints
      * @param yPoints
@@ -145,20 +145,6 @@ public class TwoPointCorrelation {
         initializeClusterVariables();
 
         state = STATE.INITIALIZED;
-    }
-
-    private void initializeClusterVariables() {
-
-        nGroups = 0;
-
-        pointToGroupIndex = new int[indexer.getNumberOfPoints()];
-        Arrays.fill(pointToGroupIndex, -1);
-
-        groupMembership = new SimpleLinkedListNode[10];
-
-        for (int i = 0; i < groupMembership.length; i++) {
-            groupMembership[i] = new SimpleLinkedListNode();
-        }
     }
 
     public TwoPointCorrelation(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nXYPoints) {
@@ -206,6 +192,20 @@ public class TwoPointCorrelation {
         }
 
         state = STATE.INITIALIZED;
+    }
+
+    private void initializeClusterVariables() {
+
+        nGroups = 0;
+
+        pointToGroupIndex = new int[indexer.getNumberOfPoints()];
+        Arrays.fill(pointToGroupIndex, -1);
+
+        groupMembership = new SimpleLinkedListNode[10];
+
+        for (int i = 0; i < groupMembership.length; i++) {
+            groupMembership[i] = new SimpleLinkedListNode();
+        }
     }
 
     public void setSigmaFactorToTwo() {
@@ -330,8 +330,6 @@ public class TwoPointCorrelation {
 
     protected void calculateBackgroundVia2PtVoidFit(Boolean useCompleteBackgroundSampling) throws TwoPointVoidStatsException, IOException {
 
-        long startTimeMillis = System.currentTimeMillis();
-
         if ((bMethod != null) && (bMethod.ordinal() == BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
             return;
         }
@@ -372,16 +370,7 @@ public class TwoPointCorrelation {
         state = STATE.BACKGROUND_SET;
 
         bMethod = BACKGROUND_METHOD.FIT_TWO_POINT_VOIDS;
-
-        if (doLogPerformanceMetrics) {
-
-            long stopTimeMillis = System.currentTimeMillis();
-
-            printPerformanceMetrics(startTimeMillis, stopTimeMillis,
-                "calculateBackgroundVia2PtVoidFit", voidStats.getNumberOfDensityPoints());
-        }
     }
-
 
     protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName, int nPoints) {
 

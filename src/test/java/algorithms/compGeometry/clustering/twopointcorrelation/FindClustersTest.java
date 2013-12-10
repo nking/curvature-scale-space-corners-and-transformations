@@ -32,21 +32,23 @@ public class FindClustersTest extends BaseTwoPointTest {
         //srr.setSeed(System.currentTimeMillis());
         //long seed = srr.nextLong();
 
-        //long seed = System.currentTimeMillis();
+        long seed = System.currentTimeMillis();
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
         //long seed = -1907716377807004294l; //compare to results_downhill_simplex_0.html
         //long seed = 7202122544352439191l;//compare to results_downhill_simplex_1.html
 
-  //long seed = 1386487114962l;
+        //long seed = 1386487114962l;
         //long seed = 1386490144764l;
         //long seed = 1386491149962l;
         //long seed = 1386496843770l; // (yHistMax < 50) ? 3 : 20.   then yHistMax <= 20.0f gets 10
         //long seed = 1386497688970l; // problem w/ 1,2
         //long seed = 1386551711492l; // problem w/ 1,2  this one remains a problem...
         //long seed = 1386561119484l;
-        long seed = 1386564375863l;
+        //long seed = 1386564375863l;
+        //long seed = 1386654511861l;
+        //long seed = 1386662454910l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -118,7 +120,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     generator.x, generator.y,
                     generator.xErrors, generator.yErrors, generator.x.length);
 
-                twoPtC.setDebug(true);
+                //twoPtC.setDebug(true);
                 
 //twoPtC.setUseDownhillSimplexHistogramFitting();//best k=0.8334 sigma=0.2544 mu=0.3158 chiSqSum=116.282997 chst=19.
               

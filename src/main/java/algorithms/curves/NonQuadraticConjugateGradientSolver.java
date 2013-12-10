@@ -230,7 +230,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         float kMax = 2.0f;
         float sigmaMin = 0.025f;
         float sigmaMax = 1.0f;
-        float muMin = xAtYMax/2.f;
+        float muMin = xAtYMax/2.5f;
         float muMax = xAtYMax * 2.0f;
         if (muMax > 1.0) {
             muMax = xAtYMax * 1.5f;
@@ -443,7 +443,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                         chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
                     }
                     
-                    log.info("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                    log.finest("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
                 }
             }
             
