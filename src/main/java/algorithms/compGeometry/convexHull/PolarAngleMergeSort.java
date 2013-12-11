@@ -80,13 +80,7 @@ public class PolarAngleMergeSort {
 
         sort(xP0, yP0, x, y, 1, x.length - 1, polarAngle);
         
-System.out.println("in PA sort x=" + Arrays.toString(x));
-System.out.println("in PA sort y=" + Arrays.toString(y));
-
         int nUsable = reduceToUniquePolarAngles(xP0, yP0, x, y, polarAngle);
-        
-System.out.println("in PA after reduce x=" + Arrays.toString(x));
-System.out.println("in PA after reduce y=" + Arrays.toString(y));
         
         return nUsable;
     }
