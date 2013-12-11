@@ -10,6 +10,7 @@ import algorithms.curves.GEVYFit;
 import algorithms.curves.GeneralizedExtremeValue;
 import algorithms.curves.ICurveFitter;
 import algorithms.curves.NonQuadraticConjugateGradientSolver;
+import algorithms.misc.DoubleAxisIndexerStats;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
@@ -87,7 +88,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     public enum Sampling {
         COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH,
-        SEMI_COMPLETE_RANGE_SEARCH_2, SEMI_COMPLETE_RANGE_SEARCH_3, SEMI_COMPLETE_RANGE_SEARCH_4
+        SEMI_COMPLETE_RANGE_SEARCH_2, SEMI_COMPLETE_RANGE_SEARCH_3, SEMI_COMPLETE_RANGE_SEARCH_4,
+        SEMI_COMPLETE_RANGE_SEARCH_SUBSET
     }
 
     public enum State {
@@ -115,8 +117,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
-    // uses conjugate gradient method for non quadratic functions
-    protected boolean useDefaultFitting = true;
+    // uses conjugate gradient method for non quadratic functions if = true, else downhill simplex.
+    protected boolean useDefaultFitting = false;
 
     //
     public HistogramHolder getStatsHistogram() {
@@ -412,33 +414,6 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
 
         state = State.DENSITIES_CALCULATED;
 
-        if (doLogPerformanceMetrics) {
-
-            long stopTimeMillis = System.currentTimeMillis();
-
-            String str = "";
-            if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
-                str = "O(n lg(n)) with n=";
-            } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
-                str = "O(n^4) with n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
-                str = "(n*bf/nDiv)^1.8) or O(n^2 - n) with n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
-                str = "? n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
-                str = "? n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
-                str = "(n*bf/nDiv)^2.2) n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
-                str = "(n/8)^(2.25) n=";
-            }
-            if (allTwoPointSurfaceDensities == null) {
-                str = str + "0";
-            } else {
-                str = str + this.allTwoPointSurfaceDensities.length;
-            }
-            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateBackgroundVia2PtVoidFit-->calculateTwoPointVoidDensities", str);
-        }
     }
 
     /**
@@ -829,10 +804,8 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
     }
 
     /**
-     * find the rectangular 2 point densities using the method already set.
-     *
-     * If the method has not yet been set, the following information is used to
-     * determine sampling:
+     * find the rectangular 2 point densities using the Sampling method already set
+     * or determine a Sampling method using the rules below.
      *
      * When no sampling has been set, the method attempts to assign least amount
      * of sampling needed to build a decent histogram.
@@ -851,30 +824,59 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
      * The rules when sampling has not been set are as follows (along with the
      * "refit" logic just described above):
 
-            if (indexer.nXY > 10000) {
-                // RT (n^1.8) to (n^2.2) roughly...
-                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
-            } else if (indexer.nXY > 8000) {
-                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
-            } else if (indexer.nXY > 999) {
-                // RT (n^1.8) roughly...
-                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
-            } else if (indexer.nXY < 100) {
-                // RT O(n^4)
-                this.sampling = Sampling.COMPLETE;
+            if (nXY >= 4000) {
+                if data seems evenly distributed without large gaps
+                sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET;  
             } else {
-                // RT O(n lg(n))
-                this.sampling = Sampling.SEMI_COMPLETE;
+                if (indexer.nXY > 10000) {
+                    // RT (n^1.8) to (n^2.2) roughly...
+                    this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
+                } else if (indexer.nXY > 8000) {
+                    this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
+                } else if (indexer.nXY > 999) {
+                    // RT (n^1.8) roughly...
+                    this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
+                } else if (indexer.nXY < 100) {
+                    // RT O(n^4)
+                    this.sampling = Sampling.COMPLETE;
+                } else {
+                    // RT O(n lg(n))
+                    this.sampling = Sampling.SEMI_COMPLETE;
+                }
             }
 
      */
     protected void findVoids() {
 
-        float[] x = indexer.getX();
-        float[] y = indexer.getY();
-
+        long startTimeMillis = System.currentTimeMillis();
+        
         int nXY = indexer.getNXY();
+        
+        // for reduced sampling of large sets, need these in scope:
+        int nCellsPerDimension = (int)Math.sqrt(indexer.nXY/1000);
 
+        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        
+        int nSampled = -1;
+        
+        if (nXY >= 4000) {
+            
+            // fits to void histograms of datasets where nXY > 1000 are the better fits.
+            // for larger datasets, can take a sub-sample the void densities to reduce the runtime if can quickly see that the data is evenly sampled.
+            // 2 cells holding 1000 points each is a dataset of size (2*sqrt(1000))^2 = 4000 at least.            
+            
+            boolean doesNotHaveLargeGaps = stats.doesNotHaveLargeGaps(nCellsPerDimension, indexer);
+            
+            log.info(" dataset spatial distribution doesNotHaveLargeGaps=" + doesNotHaveLargeGaps);
+            
+            if (doesNotHaveLargeGaps) {
+                
+                // reduce the sampling to a cell holding 1000 points 
+                // and use the sampling that would be applied for 1000 points
+                sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET;               
+            }
+        }
+        
         if (sampling == null) {
 
             // ***** NOTE ********
@@ -903,7 +905,7 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
             } else {
                 this.sampling = Sampling.SEMI_COMPLETE;
             }
-        }
+        }        
 
         if (debug) {
             log.info("findVoid sampling=" + sampling.name() + " for " + nXY + " points");
@@ -912,7 +914,7 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
         if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
 
             // uses divide and conquer
-            findVoids(0, x.length - 1, 0, y.length - 1);
+            findVoids(0, nXY - 1, 0, nXY - 1);
 
         } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
 
@@ -924,6 +926,15 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
 
             // uses a very rough range search
             findVoidsRoughRangeSearch(0, nXY - 1, 0, nXY - 1, 2, 1.5f);
+            
+        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET.ordinal()) {
+                        
+            // xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi
+            int[] xyMinMaxCell = stats.chooseARandomCell(nCellsPerDimension, indexer);
+
+            findVoidsRoughRangeSearch(xyMinMaxCell[0], xyMinMaxCell[1], xyMinMaxCell[2], xyMinMaxCell[3], 2, 1.5f);
+            
+            nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0])*(xyMinMaxCell[3] - xyMinMaxCell[2]);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
 
@@ -934,13 +945,13 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
 
-            // for area of data so large that randomly chosen patches are neccessary
+            // for area of data so large that randomly chosen patches are necessary
             //   to reduce sample to decrease runtime
             findVoidsRandomSamples(10, 10);
 
         } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
 
-            // for area of data so large that randomly chosen patches are neccessary
+            // for area of data so large that randomly chosen patches are necessary
             //   to reduce sample to decrease runtime
             //findVoidsRandomSamples(20, 10);
             findVoidsRoughRangeSearch(0, nXY - 1, 0, nXY - 1, 10, 4f);
@@ -954,6 +965,32 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
             int incr = 8;
 
             findVoidsUsingDoubleIndexes(incr);
+        }
+
+        if (doLogPerformanceMetrics) {
+
+            long stopTimeMillis = System.currentTimeMillis();
+
+            String str = "";
+            if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
+                str = "O(n lg(n)) with n=";
+            } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
+                str = "O(n^4) with n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
+                str = "(n*bf/nDiv)^1.8) or O(n^2 - n) with n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET.ordinal()) {
+                str = "(n*bf/nDiv)^1.8) or O(n^2 - n) with n=" + nSampled;
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
+                str = "? n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
+                str = "? n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
+                str = "(n*bf/nDiv)^2.2) n=";
+            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
+                str = "(n/8)^(2.25) n=";
+            }
+            
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateBackgroundVia2PtVoidFit-->calculateTwoPointVoidDensities", str);
         }
     }
 
@@ -1433,12 +1470,7 @@ System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensitie
             return;
         }
         try {
-            float xHalfInterval = (statsHistogram.getXHist()[1] - statsHistogram.getXHist()[0]) / 2.0f;
-            float xmin = statsHistogram.getXHist()[0] - xHalfInterval;
-            float xmax = statsHistogram.getXHist()[statsHistogram.getXHist().length - 1];
-            float ymin = MiscMath.findMin(statsHistogram.getYHistFloat());
-            float ymax = MiscMath.findMax(statsHistogram.getYHistFloat());
-
+            
             float[] xf = bestFit.getOriginalScaleX();
             float[] yf = bestFit.getOriginalScaleYFit();
 

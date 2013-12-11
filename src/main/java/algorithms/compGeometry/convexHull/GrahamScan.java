@@ -1,6 +1,5 @@
 package algorithms.compGeometry.convexHull;
 
-
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.sorting.MultiArrayMergeSort;
 import java.util.Arrays;
@@ -72,9 +71,8 @@ public class GrahamScan {
 
         // (1) let p0 be the point in Q w/ minimum yCoord,
         //     or the leftmost point if more than one w/ same minimum yCoord.
-        //MultiArrayMergeSort.sortByYThenDecrX(xPoints, yPoints);
-        MultiArrayMergeSort.sortByYThenX(x, y);
-
+        MultiArrayMergeSort.sortBy1stArgThen2nd(y, x);
+        
         points = new XYStack(x.length);
 
         int p0Index = 0;
@@ -102,15 +100,15 @@ public class GrahamScan {
                 points.peekNextToTopX(), points.peekNextToTopY(),
                 points.peekTopX(), points.peekTopY(),
                 x[i], y[i]);
-
-            while (direction > 0 && !points.isEmpty()) {
+            
+            while (/*!Double.isNaN(direction) && */ direction > 0 && !points.isEmpty()) {
 
                 points.pop();
 
                 direction = LinesAndAngles.direction(
                     points.peekNextToTopX(), points.peekNextToTopY(),
                     points.peekTopX(), points.peekTopY(),
-                    x[i], y[i]);
+                    x[i], y[i]);                
             }
 
             points.push(x[i], y[i]);

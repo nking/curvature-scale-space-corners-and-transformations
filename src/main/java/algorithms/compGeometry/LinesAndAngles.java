@@ -118,6 +118,15 @@ public class LinesAndAngles {
         }
     }
 
+    /**
+     * calculate the angle from the "horizon" at point p1 to the line p1 to point p2 
+     * 
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double calculatePolarSineTheta(double x1, double y1, double x2, double y2) {
         //System.out.println("(" + x1 + "," + y1 + ")," + "(" + x2 + "," + y2 + ")");
         // determine quadrant of points
@@ -169,12 +178,12 @@ public class LinesAndAngles {
     public static double calculatePolarSineTheta(float x1, float y1, float x2, float y2) {
         //System.out.println("(" + x1 + "," + y1 + ")," + "(" + x2 + "," + y2 + ")");
         // determine quadrant of points
-    	if (x2 == x1) {
+        if (x2 == x1) {
             if (y2 == y1) {
                 return 0.0f;
             }
-    		return 0.0f;//1.0;
-    	} else if (x2 > x1) {
+                return 1.0;//0.0f??
+        } else if (x2 > x1) {
              //
              //       p2 o
              //         /
@@ -193,24 +202,24 @@ public class LinesAndAngles {
             double b = lengthOfLine(x2, y1, x2, y2);
             return (b/c);
         } else {
-             //                                                       .
-             //   p2 o              p2 o
-             //       \                |\c        sin(t) = b/c + sin(pi)
-             //        \              b| \
-             //      p1 o------        ...o------
-             //                           p1
-             //            p1
-             //         .. o-----
-             //        b| /          sin(t) = b/c + sin(pi)
-             //         |/ c
-             //      p2 o
-            double c = lengthOfLine(x1, y1, x2, y2);
-            double b = lengthOfLine(x2, y1, x1, y1);
+            //                                                       .
+            //   p2 o              p2 o
+            //       \                |\c        sin(t) = b/c + sin(pi)
+            //        \              b| \
+            //      p1 o------        ...o------
+            //                           p1
+            //            p1
+            //         .. o-----
+            //        b| /          sin(t) = b/c + sin(pi)
+            //         |/ c
+            //      p2 o
+           double c = lengthOfLine(x1, y1, x2, y2);
+           double b = lengthOfLine(x2, y1, x1, y1);
 
-            // the angle is actually (1-b/c) + sin90 = (1-b/c) + 1 = (b/c)
+           // the angle is actually (1-b/c) + sin90 = (1-b/c) + 1 = (b/c)
 
-            return (b/c) + 1.0;
-        }
+           return (b/c) + 1.0;
+       }
     }
 
     public static double lengthOfLine(double x1, double y1, double x2, double y2) {

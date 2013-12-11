@@ -21,7 +21,6 @@ import java.util.Arrays;
       // else sort and index using method with errors
       indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
 
-
  * @author nichole
  */
 public class DoubleAxisIndexer {
@@ -53,7 +52,8 @@ public class DoubleAxisIndexer {
     /**
      * array whose values hold indexes of x.  the order of items in sortedXIndexes
      * is order of increasing value of x, in other words minimum x is in sortedXIndexes[0]
-     * and maximum x is in sortedXIndexes[x.length - 1]
+     * and maximum x is in sortedXIndexes[x.length - 1].  
+     * the values in sortedXIndexes can be used as indexes in 
      */
     protected int[] sortedXIndexes = null;
 
@@ -183,11 +183,11 @@ public class DoubleAxisIndexer {
             sortedXIndexes[i] = i;
         }
 
-        MultiArrayMergeSort.sortByY(yPoints, xPoints, sortedXIndexes, nXY);
+        MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);
 
         this.sortedYIndexes = Arrays.copyOf(this.sortedXIndexes, nXY);
 
-        MultiArrayMergeSort.sortByY(xPoints, yPoints, sortedYIndexes, nXY);
+        MultiArrayMergeSort.sortBy1stArg(yPoints, xPoints, sortedYIndexes, nXY);
 
         this.xSortedByY = xPoints;
         this.ySortedByY = yPoints;
@@ -218,11 +218,11 @@ public class DoubleAxisIndexer {
             sortedXIndexes[i] = i;
         }
 
-        MultiArrayMergeSort.sortByY(yPoints, xPoints, sortedXIndexes, nXY);
+        MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);
 
         this.sortedYIndexes = Arrays.copyOf(this.sortedXIndexes, nXY);
 
-        MultiArrayMergeSort.sortByY(xPoints, yPoints, sortedYIndexes, nXY);
+        MultiArrayMergeSort.sortBy1stArg(yPoints, xPoints, sortedYIndexes, nXY);
 
         this.xSortedByY = xPoints;
         this.ySortedByY = yPoints;
@@ -595,6 +595,11 @@ public class DoubleAxisIndexer {
     }
 
     protected int findIndexForValue(int[] array, int value) {
+        
+        if (array.equals(this.ySortedByY)) {
+            return Arrays.binarySearch(ySortedByY, value);  
+        } 
+        
         for (int i = 0; i < array.length; i++) {
             if (array[i] == value) {
                 return i;

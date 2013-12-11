@@ -79,9 +79,15 @@ public class PolarAngleMergeSort {
         double[] polarAngle = new double[x.length];
 
         sort(xP0, yP0, x, y, 1, x.length - 1, polarAngle);
+        
+System.out.println("in PA sort x=" + Arrays.toString(x));
+System.out.println("in PA sort y=" + Arrays.toString(y));
 
         int nUsable = reduceToUniquePolarAngles(xP0, yP0, x, y, polarAngle);
-
+        
+System.out.println("in PA after reduce x=" + Arrays.toString(x));
+System.out.println("in PA after reduce y=" + Arrays.toString(y));
+        
         return nUsable;
     }
 
@@ -157,7 +163,7 @@ public class PolarAngleMergeSort {
         return lastKeptIndex + 1;
     }
 
-    private static void sort(double xP0, double yP0, double[] x, double[] y, int indexLo, int indexHi, double[] polarAngle) {
+    static void sort(double xP0, double yP0, double[] x, double[] y, int indexLo, int indexHi, double[] polarAngle) {
 
         int indexMid = -1;
 
@@ -231,8 +237,9 @@ public class PolarAngleMergeSort {
         j = 0;
 
         for (int k = indexLo; k <= indexHi; k++) {
-
+            
             double angDiff = angleLeft[i] - angleRight[j];
+            
             if (angDiff < 0) {
                 angDiff *= -1.;
             }
@@ -250,7 +257,6 @@ public class PolarAngleMergeSort {
                 j++;
             }
         }
-
     }
 
     private static void merge( float xP0, float yP0, float[] x, float[] y, int indexLo, int indexMid, int indexHi, double[] polarAngle) {
@@ -308,7 +314,6 @@ public class PolarAngleMergeSort {
                 j++;
             }
         }
-
     }
 
     static double relativeLengthOfLine(double x1, double y1, double x2, double y2) {

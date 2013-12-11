@@ -32,7 +32,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         //srr.setSeed(System.currentTimeMillis());
         //long seed = srr.nextLong();
 
-        long seed = System.currentTimeMillis();
+        //long seed = System.currentTimeMillis();
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
@@ -49,6 +49,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         //long seed = 1386564375863l;
         //long seed = 1386654511861l;
         //long seed = 1386662454910l;
+        long seed = 1386750505246l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -120,9 +121,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     generator.x, generator.y,
                     generator.xErrors, generator.yErrors, generator.x.length);
 
-                //twoPtC.setDebug(true);
-                
-//twoPtC.setUseDownhillSimplexHistogramFitting();//best k=0.8334 sigma=0.2544 mu=0.3158 chiSqSum=116.282997 chst=19.
+                //twoPtC.setDebug(true);                
               
                 twoPtC.logPerformanceMetrics();
                 twoPtC.calculateBackground();
@@ -146,7 +145,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     }
                 }
                 
-                if (true) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
+                if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
                     if (i == 1 && ii == 0) {
                         StringBuilder xsb = new StringBuilder();
                         StringBuilder ysb = new StringBuilder();

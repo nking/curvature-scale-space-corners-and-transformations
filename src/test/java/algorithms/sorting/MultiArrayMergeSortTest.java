@@ -38,7 +38,7 @@ public class MultiArrayMergeSortTest extends TestCase {
             y[i] = sr.nextInt()*sr.nextFloat();
         }
 
-    	MultiArrayMergeSort.sortByY(x, y);
+    	MultiArrayMergeSort.sortBy1stArg(y, x);
     	assertTrue(x.length == nPoints);
 
         float previousX = x[0];
@@ -52,7 +52,7 @@ public class MultiArrayMergeSortTest extends TestCase {
     	// ===   test   exceptions ====
     	boolean caughtException = true;
     	try {
-    	    MultiArrayMergeSort.sortByY(null, y);
+    	    MultiArrayMergeSort.sortBy1stArg(null, x);
     	} catch (Throwable t) {
     	    caughtException = true;
     	}
@@ -60,7 +60,7 @@ public class MultiArrayMergeSortTest extends TestCase {
     	
     	caughtException = true;
         try {
-            MultiArrayMergeSort.sortByY(x, null);
+            MultiArrayMergeSort.sortBy1stArg(y, null);
         } catch (Throwable t) {
             caughtException = true;
         }
@@ -68,7 +68,7 @@ public class MultiArrayMergeSortTest extends TestCase {
         
         caughtException = true;
         try {
-            MultiArrayMergeSort.sortByY(x, Arrays.copyOf(y, y.length - 3));
+            MultiArrayMergeSort.sortBy1stArg(y, Arrays.copyOf(x, x.length - 3));
         } catch (Throwable t) {
             caughtException = true;
         }
@@ -87,7 +87,7 @@ public class MultiArrayMergeSortTest extends TestCase {
         float[] cpX = Arrays.copyOf(x, x.length);
         float[] cpY = Arrays.copyOf(y, y.length);        
 
-        MultiArrayMergeSort.sortByY(x, y, sortedXIndexes, x.length);
+        MultiArrayMergeSort.sortBy1stArg(y, x, sortedXIndexes, x.length);
         assertTrue(x.length == nPoints);
 
         previousX = x[0];
@@ -105,7 +105,7 @@ public class MultiArrayMergeSortTest extends TestCase {
         // ===   test   exceptions ====
         caughtException = true;
         try {
-            MultiArrayMergeSort.sortByY(null, y, null, x.length);
+            MultiArrayMergeSort.sortBy1stArg(y, null, null, y.length);
         } catch (Throwable t) {
             caughtException = true;
         }
@@ -113,7 +113,7 @@ public class MultiArrayMergeSortTest extends TestCase {
         
         caughtException = true;
         try {
-            MultiArrayMergeSort.sortByY(x, null, null, x.length);
+            MultiArrayMergeSort.sortBy1stArg(x, null, null, x.length);
         } catch (Throwable t) {
             caughtException = true;
         }
@@ -121,14 +121,14 @@ public class MultiArrayMergeSortTest extends TestCase {
         
         caughtException = true;
         try {
-            MultiArrayMergeSort.sortByY(x, y, null, x.length);
+            MultiArrayMergeSort.sortBy1stArg(y, x, null, x.length);
         } catch (Throwable t) {
             caughtException = true;
         }
         assertTrue(caughtException);
     }
 
-    public void testSortByYThenX(){
+    public void testSortBy1stArgThen2nd(){
 
         /*   10
          *
@@ -194,39 +194,19 @@ public class MultiArrayMergeSortTest extends TestCase {
         y[12] =  9.3f;
 
 
-        float[] ex = new float[13];
-    	float[] ey = new float[13];
-        ex[0] =  2.5f;
-        ey[0] =  1.0f;
-        ex[1] = 10.5f;
-        ey[1] =  2.0f;
-        ex[2] = 10.0f;
-        ey[2] =  3.0f;
-        ex[3] =  0.5f;
-        ey[3] =  3.2f;
-        ex[4] =  9.0f;
-        ey[4] =  4.0f;
+        float[] ex = Arrays.copyOf(x, x.length);
+    	float[] ey = Arrays.copyOf(y, y.length);
+        ex[4] =  x[5];
+        ey[4] =  y[5];
+        ex[5] =  x[4];
+        ey[5] =  y[4];
+        
+        ex[8] =  x[9];
+        ey[8] =  y[9];
+        ex[9] =  x[8];
+        ey[9] =  y[8];
 
-        ex[5] = 11.2f;
-        ey[5] =  4.0f;
-        ex[6] =  4.0f;
-        ey[6] =  4.2f;
-        ex[7] =  2.0f;
-        ey[7] =  5.0f;
-        ex[8] =  3.0f;
-        ey[8] =  5.3f;
-        ex[9] =  5.0f;
-        ey[9] =  5.3f;
-
-        ex[10] =  6.0f;
-        ey[10] =  6.0f;
-        ex[11] =  7.0f;
-        ey[11] =  6.0f;
-        ex[12] =  2.3f;
-        ey[12] =  9.3f;
-
-
-    	MultiArrayMergeSort.sortByYThenX(x, y);
+    	MultiArrayMergeSort.sortBy1stArgThen2nd(y, x);
     	assertTrue(x.length == ex.length);
 
     	for (int i=0; i < ex.length; i++) {

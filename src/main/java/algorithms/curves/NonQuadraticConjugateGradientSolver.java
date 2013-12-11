@@ -226,21 +226,21 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         int yMaxIndex = MiscMath.findYMaxIndex(y);
         float xAtYMax = x[yMaxIndex];
         
-        float kMin = 0.001f;
+        float kMin = 0.0001f;
         float kMax = 2.0f;
         float sigmaMin = 0.025f;
-        float sigmaMax = 1.0f;
+        float sigmaMax = 3.0f;
         float muMin = xAtYMax/2.5f;
-        float muMax = xAtYMax * 2.0f;
+        float muMax = xAtYMax * 3.0f;
         if (muMax > 1.0) {
             muMax = xAtYMax * 1.5f;
         }
         
         if (yScale > 100) {
-            kMax = 1.0f;
-            if (yScale > 200) {
+            //kMax = 1.0f;
+            /*if (yScale > 200) {
                 kMin = 0.2f;
-            }
+            }*/
         }
         
         return new float[] {kMin, kMax, sigmaMin, sigmaMax, muMin, muMax};

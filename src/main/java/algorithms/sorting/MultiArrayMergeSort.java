@@ -1,5 +1,7 @@
 package algorithms.sorting;
 
+import java.util.Arrays;
+
 /**
  * merge sort worse case runtime is O(N * log_2(N))
  *
@@ -18,304 +20,356 @@ package algorithms.sorting;
  * @author Nichole King
  */
 public class MultiArrayMergeSort {
-
+    
 	/**
-     * sort array using mergesort (divide, conquer, and combine) sorting both by increasing y
-     * (the x array is kept parallel to y at all times).
+     * sort array using mergesort (divide, conquer, and combine) sorting the first 
+     * array a1 by increasing value and applying the same changes to a2.
      * runtime is O(N * log_2(N))
      *
-     * @param x of x points
-     * @param y array of y points
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
      */
-    public static void sortByY(float[] x, float[] y) {
-        if (x == null) {
-        	throw new IllegalArgumentException("x cannot be null");
+    public static void sortBy1stArg(float[] a1, float[] a2) {
+        if (a1 == null) {
+        	throw new IllegalArgumentException("a1 cannot be null");
         }
-        if (y == null) {
-        	throw new IllegalArgumentException("y cannot be null");
+        if (a2 == null) {
+        	throw new IllegalArgumentException("a2 cannot be null");
         }
-        if (x.length != y.length) {
-        	throw new IllegalArgumentException("number of items in x must be the same as in y");
+        if (a1.length != a2.length) {
+        	throw new IllegalArgumentException("number of items in a1 must be the same as in a2");
         }
-        sortByY(x, y, 0, x.length - 1);
+        sortBy1stArg(a1, a2, 0, a1.length - 1);
     }
 
     /**
-     * sort array using mergesort (divide, conquer, and combine) sorting both by increasing y
-     * (the x array is kept parallel to y at all times).
+     * sort array using mergesort (divide, conquer, and combine) sorting the first 
+     * array a1 by increasing value and applying the same changes to a2.
      * runtime is O(N * log_2(N))
      *
-     * @param x of x points
-     * @param y array of y points
-     * @param nLength number of items in x and y to sort, starting with item 0
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param nLength the number of points to sort in a1 starting with item 0
      */
-    public static void sortByY(float[] x, float[] y, int nLength) {
-        if (x == null) {
-        	throw new IllegalArgumentException("x cannot be null");
+    public static void sortBy1stArg(float[] a1, float[] a2, int nLength) {
+        if (a1 == null) {
+        	throw new IllegalArgumentException("a1 cannot be null");
         }
-        if (y == null) {
-        	throw new IllegalArgumentException("y cannot be null");
+        if (a2 == null) {
+        	throw new IllegalArgumentException("a2 cannot be null");
         }
-        if (x.length < nLength) {
-        	throw new IllegalArgumentException("number of items in x must be at least nLength");
+        if (a1.length < nLength) {
+        	throw new IllegalArgumentException("number of items in a1 must be at least nLength");
         }
-        if (y.length < nLength) {
-        	throw new IllegalArgumentException("number of items in y must be at least nLength");
+        if (a2.length < nLength) {
+        	throw new IllegalArgumentException("number of items in a2 must be at least nLength");
         }
-        sortByY(x, y, 0, nLength - 1);
-    }
-
-    public static void sortByY(float[] x, float[] y, int[] a, int nLength) {
-        if (x == null) {
-        	throw new IllegalArgumentException("x cannot be null");
-        }
-        if (y == null) {
-        	throw new IllegalArgumentException("y cannot be null");
-        }
-        if (x.length < nLength) {
-        	throw new IllegalArgumentException("number of items in x must be at least nLength");
-        }
-        if (y.length < nLength) {
-        	throw new IllegalArgumentException("number of items in y must be at least nLength");
-        }
-        sortByY(x, y, a, 0, nLength - 1);
-    }
-
-    public static void sortByY(float[] x, float[] y, int indexLo, int indexHi) {
-
-        int indexMid = -1;
-
-        if (indexLo < indexHi) {
-
-            indexMid = (indexLo + indexHi)/2;
-
-            sortByY(x, y, indexLo, indexMid);
-            sortByY(x, y, indexMid + 1, indexHi);
-            merge(x, y, indexLo, indexMid, indexHi);
-        }
-    }
-
-    public static void sortByY(float[] x, float[] y, int[] a, int indexLo, int indexHi) {
-
-        int indexMid = -1;
-
-        if (indexLo < indexHi) {
-
-            indexMid = (indexLo + indexHi)/2;
-
-            sortByY(x, y, a, indexLo, indexMid);
-            sortByY(x, y, a, indexMid + 1, indexHi);
-            merge(x, y, a, indexLo, indexMid, indexHi);
-        }
-    }
-
-    public static void sortByYThenX(float[] x, float[] y) {
-        if (x == null) {
-        	throw new IllegalArgumentException("x cannot be null");
-        }
-        if (y == null) {
-        	throw new IllegalArgumentException("y cannot be null");
-        }
-        if (x.length != y.length) {
-        	throw new IllegalArgumentException("number of items in x must be the same as in y");
-        }
-        sortByYThenX(x, y, 0, x.length - 1, true);
+        sortBy1stArg(a1, a2, 0, nLength - 1);
     }
 
     /**
-     * @param x array
-     * @param y array
-     * @param indexLo first index of first subarray for sorting
-     * @param indexMid first index of second subarray for sorting
-     * @param indexHi last index of second subarray for sorting
-     * @param incrX sort by increasing x.  if false, will use decreasing x.
+     * sort array using mergesort (divide, conquer, and combine) sorting the first 
+     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param a3 array of points to apply a1 sorting to also
+     * @param nLength the number of points to sort in a1 starting with item 0
      */
-    private static void sortByYThenX(float[] x, float[] y, int indexLo, int indexHi, boolean incrX) {
+    public static void sortBy1stArg(float[] a1, float[] a2, int[] a3, int nLength) {
+        if (a1 == null) {
+        	throw new IllegalArgumentException("a1 cannot be null");
+        }
+        if (a2 == null) {
+        	throw new IllegalArgumentException("a2 cannot be null");
+        }
+        if (a1.length < nLength) {
+        	throw new IllegalArgumentException("number of items in a1 must be at least nLength");
+        }
+        if (a2.length < nLength) {
+        	throw new IllegalArgumentException("number of items in a2 must be at least nLength");
+        }
+        sortBy1stArg(a1, a2, a3, 0, nLength - 1);
+    }
 
-        int indexMid = -1;
+    /**
+     * sort array using mergesort (divide, conquer, and combine) sorting the first 
+     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param idxLo starting index of sorting of a1, inclusive
+     * @param idxHi stopping index of sorting of a1, inclusive
+     */
+    public static void sortBy1stArg(float[] a1, float[] a2, int idxLo, int idxHi) {
 
-        if (indexLo < indexHi) {
+        int idxMid = -1;
 
-            indexMid = (indexLo + indexHi)/2;
+        if (idxLo < idxHi) {
 
-            sortByYThenX(x, y, indexLo, indexMid, incrX);
-            sortByYThenX(x, y, indexMid + 1, indexHi, incrX);
-            mergeYThenX(x, y, indexLo, indexMid, indexHi, incrX);
+            idxMid = (idxLo + idxHi)/2;
+
+            sortBy1stArg(a1, a2, idxLo, idxMid);
+            sortBy1stArg(a1, a2, idxMid + 1, idxHi);
+            merge(a1, a2, idxLo, idxMid, idxHi);
         }
     }
 
-    private static void merge( float[] x, float[] y, int indexLo, int indexMid, int indexHi) {
+    /**
+     * sort array using mergesort (divide, conquer, and combine) sorting the first 
+     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param a3 array of points to apply a1 sorting to also
+     * @param idxLo starting index of sorting of a1, inclusive
+     * @param idxHi stopping index of sorting of a1, inclusive
+     */
+    public static void sortBy1stArg(float[] a1, float[] a2, int[] a3, int idxLo, int idxHi) {
 
-        int nLeft = indexMid - indexLo + 1;
-        int nRight = indexHi - indexMid;
+        int idxMid = -1;
 
-        float[] yLeft = new float[nLeft + 1];
-        float[] xLeft = new float[nLeft + 1];
+        if (idxLo < idxHi) {
 
-        float[] yRight = new float[nRight + 1];
-        float[] xRight = new float[nRight + 1];
+            idxMid = (idxLo + idxHi)/2;
+
+            sortBy1stArg(a1, a2, a3, idxLo, idxMid);
+            sortBy1stArg(a1, a2, a3, idxMid + 1, idxHi);
+            merge(a1, a2, a3, idxLo, idxMid, idxHi);
+        }
+    }
+
+    /**
+     * sort array using mergesort (divide, conquer, and combine) sorting the first 
+     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     */
+    public static void sortBy1stArgThen2nd(float[] a1, float[] a2) {
+        if (a1 == null) {
+        	throw new IllegalArgumentException("a1 cannot be null");
+        }
+        if (a2 == null) {
+        	throw new IllegalArgumentException("a2 cannot be null");
+        }
+        if (a1.length != a2.length) {
+        	throw new IllegalArgumentException("number of items in a1 must be the same as in a2");
+        }
+        sortBy1stArgThen2nd(a1, a2, 0, a1.length - 1, true);
+    }
+
+    /**
+     * sort array using mergesort (divide, conquer, and combine) sorting the first 
+     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * runtime is O(N * log_2(N))
+     *
+     * @param a1 array of points to be sorted
+     * @param a2 array of points to apply a1 sorting to also
+     * @param a3 array of points to apply a1 sorting to also
+     * @param idxLo starting index of sorting of a1, inclusive
+     * @param idxHi stopping index of sorting of a1, inclusive
+     * @param incrA2 a2 should be sorted by increasing value also
+     */
+    private static void sortBy1stArgThen2nd(float[] a1, float[] a2, int idxLo, int idxHi, boolean incrA2) {
+
+        int indexMid = -1;
+
+        if (idxLo < idxHi) {
+
+            indexMid = (idxLo + idxHi)/2;
+
+            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid, incrA2);
+            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi, incrA2);
+            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi, incrA2);
+        }
+    }
+
+    /**
+     * merge array
+     *
+     * @param a1 array of points to be sorted and merged
+     * @param a2 array of points to apply a1 changes to also
+     * @param idxLo starting index of merging of a1, inclusive
+     * @param idxMid mid point index of merging of a1, inclusive
+     * @param idxHi stopping index of merging of a1, inclusive
+     */
+    private static void merge(float[] a1, float[] a2, int idxLo, int idxMid, int idxHi) {
+
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
+
+        float[] a2Left = new float[nLeft + 1];
+        float[] a1Left = new float[nLeft + 1];
+
+        float[] a2Right = new float[nRight + 1];
+        float[] a1Right = new float[nRight + 1];
 
         int i, j, index;
 
         for (i = 0; i < nLeft; i++) {
-            index = indexLo + i;
-            yLeft[i] = y[index];
-            xLeft[i] = x[index];
+            index = idxLo + i;
+            a2Left[i] = a2[index];
+            a1Left[i] = a1[index];
         }
         for (j = 0; j < nRight; j++) {
-            index = indexMid + j + 1;
-            yRight[j] = y[index];
-            xRight[j] = x[index];
+            index = idxMid + j + 1;
+            a2Right[j] = a2[index];
+            a1Right[j] = a1[index];
         }
 
-        yLeft[nLeft] = Float.MAX_VALUE;
-        xLeft[nLeft] = Float.MAX_VALUE;
-        yRight[nRight] = Float.MAX_VALUE;
-        xRight[nRight] = Float.MAX_VALUE;
+        a2Left[nLeft] = Float.MAX_VALUE;
+        a1Left[nLeft] = Float.MAX_VALUE;
+        a2Right[nRight] = Float.MAX_VALUE;
+        a1Right[nRight] = Float.MAX_VALUE;
 
         i = 0;
         j = 0;
 
-        for (int k = indexLo; k <= indexHi; k++) {
-            if (yLeft[i] <= yRight[j]) {
-                y[k] = yLeft[i];
-                x[k] = xLeft[i];
+        for (int k = idxLo; k <= idxHi; k++) {
+            if (a1Left[i] <= a1Right[j]) {
+                a2[k] = a2Left[i];
+                a1[k] = a1Left[i];
                 i += 1;
             } else {
-                y[k] = yRight[j];
-                x[k] = xRight[j];
+                a2[k] = a2Right[j];
+                a1[k] = a1Right[j];
                 j += 1;
             }
         }
     }
 
-    private static void merge( float[] x, float[] y, int[] a, int indexLo, int indexMid, int indexHi) {
+    /**
+     * merge array
+     *
+     * @param a1 array of points to be sorted and merged
+     * @param a2 array of points to apply a1 changes to also
+     * @param a3 array of points to apply a1 changes to also
+     * @param idxLo starting index of merging of a1, inclusive
+     * @param idxMid mid point index of merging of a1, inclusive
+     * @param idxHi stopping index of merging of a1, inclusive
+     */
+    private static void merge(float[] a1, float[] a2, int[] a3, int idxLo, int idxMid, int idxHi) {
 
-        int nLeft = indexMid - indexLo + 1;
-        int nRight = indexHi - indexMid;
+        int nLeft = idxMid - idxLo + 1;
+        int nRight = idxHi - idxMid;
 
-        float[] yLeft = new float[nLeft + 1];
-        float[] xLeft = new float[nLeft + 1];
-        int[] aLeft = new int[nLeft + 1];
+        float[] a2Left = new float[nLeft + 1];
+        float[] a1Left = new float[nLeft + 1];
+        int[] a3Left = new int[nLeft + 1];
 
-        float[] yRight = new float[nRight + 1];
-        float[] xRight = new float[nRight + 1];
-        int[] aRight = new int[nRight + 1];
+        float[] a2Right = new float[nRight + 1];
+        float[] a1Right = new float[nRight + 1];
+        int[] a3Right = new int[nRight + 1];
 
         int i, j, index;
 
         for (i = 0; i < nLeft; i++) {
-            index = indexLo + i;
-            yLeft[i] = y[index];
-            xLeft[i] = x[index];
-            aLeft[i] = a[index];
+            index = idxLo + i;
+            a2Left[i] = a2[index];
+            a1Left[i] = a1[index];
+            a3Left[i] = a3[index];
         }
         for (j = 0; j < nRight; j++) {
-            index = indexMid + j + 1;
-            yRight[j] = y[index];
-            xRight[j] = x[index];
-            aRight[j] = a[index];
+            index = idxMid + j + 1;
+            a2Right[j] = a2[index];
+            a1Right[j] = a1[index];
+            a3Right[j] = a3[index];
         }
 
-        yLeft[nLeft] = Float.MAX_VALUE;
-        xLeft[nLeft] = Float.MAX_VALUE;
-        aLeft[nLeft] = Integer.MAX_VALUE;
-        yRight[nRight] = Float.MAX_VALUE;
-        xRight[nRight] = Float.MAX_VALUE;
-        aRight[nRight] = Integer.MAX_VALUE;
+        a2Left[nLeft] = Float.MAX_VALUE;
+        a1Left[nLeft] = Float.MAX_VALUE;
+        a3Left[nLeft] = Integer.MAX_VALUE;
+        a2Right[nRight] = Float.MAX_VALUE;
+        a1Right[nRight] = Float.MAX_VALUE;
+        a3Right[nRight] = Integer.MAX_VALUE;
 
         i = 0;
         j = 0;
 
-        for (int k = indexLo; k <= indexHi; k++) {
-            if (yLeft[i] <= yRight[j]) {
-                y[k] = yLeft[i];
-                x[k] = xLeft[i];
-                a[k] = aLeft[i];
+        for (int k = idxLo; k <= idxHi; k++) {
+            if (a1Left[i] <= a1Right[j]) {
+                a2[k] = a2Left[i];
+                a1[k] = a1Left[i];
+                a3[k] = a3Left[i];
                 i += 1;
             } else {
-                y[k] = yRight[j];
-                x[k] = xRight[j];
-                a[k] = aRight[j];
+                a2[k] = a2Right[j];
+                a1[k] = a1Right[j];
+                a3[k] = a3Right[j];
                 j += 1;
             }
         }
     }
 
     /**
-     * @param x array
-     * @param y array
-     * @param indexLo first index of first subarray for sorting
-     * @param indexMid first index of second subarray for sorting
-     * @param indexHi last index of second subarray for sorting
-     * @param incrX sort by increasing x.  if false, will use decreasing x.
+     * @param a1 array of points to be sorted and merged
+     * @param a2 array of points to apply a1 changes to also
+     * @param idxLo first index of first subarray for sorting
+     * @param idxMid first index of second subarray for sorting
+     * @param idxHi last index of second subarray for sorting
+     * @param incrA2 sort by a2 increasing values.  if false, will use decreasing values.
      */
-    private static void mergeYThenX( float[] x, float[] y, int indexLo, int indexMid, int indexHi, boolean incrX) {
+    private static void mergeBy1stArgThen2nd( float[] a1, float[] a2, int idxLo, int idxMid, int idxHi, boolean incrA2) {
 
-                                                                // cost  times          where n'=(indexHi - indexLo)
-        int nLeft = indexMid - indexLo + 1;                     // c01   1
-        int nRight = indexHi - indexMid;                        // c02   1
+                                                            // cost  times          where n'=(indexHi - indexLo)
+                                                            // c01   1
+                                                            // c02   1
 
-        float[] yLeft = new float[nLeft + 1];                 // c03   4 * n'/2       for assignment to the subsequent 4 arrays
-        float[] xLeft = new float[nLeft + 1];
+                                                            // c03   4 * n'/2       for assignment to the subsequent 4 arrays
 
-        float[] yRight = new float[nRight + 1];
-        float[] xRight = new float[nRight + 1];
+        float[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
+        float[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
+        
+        float[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
+        float[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
+        
+        a1Left[a1Left.length - 1] = Float.MAX_VALUE;
+        a2Left[a2Left.length - 1] = Float.MAX_VALUE;
+        a1Right[a1Right.length - 1] = Float.MAX_VALUE;
+        a2Right[a2Right.length - 1] = Float.MAX_VALUE;
 
-        int i, j, index;
-
-        for (i = 0; i < nLeft; i++) {
-            index = indexLo + i;
-            yLeft[i] = y[index];
-            xLeft[i] = x[index];
-        }
-        for (j = 0; j < nRight; j++) {
-            index = indexMid + j + 1;
-            yRight[j] = y[index];
-            xRight[j] = x[index];
-        }
-
-        yLeft[nLeft] = Float.MAX_VALUE;
-        xLeft[nLeft] = Float.MAX_VALUE;
-        yRight[nRight] = Float.MAX_VALUE;
-        xRight[nRight] = Float.MAX_VALUE;
-
-        i = 0;
-        j = 0;
+        int leftPos = 0;
+        int rightPos = 0;
 
                                                                                      // where M' + P' <= N'; P' is when L==R; M'<N'; P'<N'
-        for (int k = indexLo; k <= indexHi; k++) {                                   // c04   n'
-            float l = yLeft[i];                                                     // c04   n' * 1
-            float r = yRight[j];                                                    // c04   n' * 1
+        for (int k = idxLo; k <= idxHi; k++) {                                       // c04   n'
+            float l = a1Left[leftPos];                                               // c04   n' * 1
+            float r = a1Right[rightPos];                                             // c04   n' * 1
 
             if (l == r) {                                                            // c04   n' * 1
-                // compare the x values.  lowest x value should be moved to the left
-                float lx = xLeft[i];                                                // c04   p'
-                float rx = xRight[j];                                               // c04   p'
+                // compare the a2 values.  lowest a2 value should be moved to the left
+                float lx = a2Left[leftPos];                                                // c04   p'
+                float rx = a2Right[rightPos];                                               // c04   p'
 
                 // if sort by decreasing, we can reverse the lx and rx
-                if (!incrX) {                                                        // c04   p'
+                if (!incrA2) {                                                        // c04   p'
                     lx = rx;                                                         // c04   p'
-                    rx = xLeft[i];                                                   // c04   p'
+                    rx = a2Left[leftPos];                                                  // c04   p'
                 }
 
                 if (lx <= rx) {                                                      // 4*c04   p' for total of either block
-                    y[k] = yLeft[i];
-                    x[k] = xLeft[i];
-                    i += 1;
+                    a2[k] = a2Left[leftPos];
+                    a1[k] = a1Left[leftPos];
+                    leftPos++;
                 } else {
-                    y[k] = yRight[j];
-                    x[k] = xRight[j];
-                    j += 1;
+                    a2[k] = a2Right[rightPos];
+                    a1[k] = a1Right[rightPos];
+                    rightPos++;
                 }
+            
             } else if (l < r) {                                                      // 4*c04   m'-n' for total of either block
-                y[k] = yLeft[i];
-                x[k] = xLeft[i];
-                i += 1;
+                a2[k] = a2Left[leftPos];
+                a1[k] = a1Left[leftPos];
+                leftPos++;
             } else {
-                y[k] = yRight[j];
-                x[k] = xRight[j];
-                j += 1;
+                a2[k] = a2Right[rightPos];
+                a1[k] = a1Right[rightPos];
+                rightPos++;
             }
         }
     }

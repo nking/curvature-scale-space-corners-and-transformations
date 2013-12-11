@@ -26,7 +26,7 @@ public class PolarAngleMergeSortTest extends TestCase {
 
     public void testReduceToUniquePolarAngles() throws Exception {
 
-        /*            2,5
+        /*            2,6
          *
     	 *     0,2    2,2
          *                   4,1
@@ -34,7 +34,7 @@ public class PolarAngleMergeSortTest extends TestCase {
     	 */
         // points should have been sorted by y and decr x already
     	double[] xx = {2,4,2,2,0};
-    	double[] yy = {0,1,2,5,2};
+    	double[] yy = {0,1,2,6,2};
 
         double[] ap = new double[xx.length];
         for (int i = 0; i < xx.length; i++) {
@@ -44,7 +44,7 @@ public class PolarAngleMergeSortTest extends TestCase {
         int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], yy[0], xx, yy, ap);
 
         double[] expectedxx = {2, 4, 2, 0};
-    	double[] expectedyy = {0, 1, 5, 2};
+    	double[] expectedyy = {0, 1, 6, 2};
 
     	for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
@@ -129,22 +129,65 @@ public class PolarAngleMergeSortTest extends TestCase {
 
     public void testSort1() {
 
-        /*            2,5
+        /*            2,6
          *
     	 *     0,2    2,2
-         *                   4,1
+         *                   7,1
     	 *            2,0
     	 */
         // points should have been sorted by y and decr x already
-    	double[] xx = {2,4,0,2,2};
-    	double[] yy = {0,1,2,2,5};
+    	double[] xx = {2,7,0,2,2};
+    	double[] yy = {0,1,2,2,6};
 
         int nUsable = PolarAngleMergeSort.sort(2, 0, xx, yy);
 
-        double[] expectedxx = {2, 4, 2, 0};
-    	double[] expectedyy = {0, 1, 5, 2};
+        double[] expectedxx = {2, 7, 2, 0};
+    	double[] expectedyy = {0, 1, 6, 2};
 
     	for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
+        }
+    	
+    	// ======================================================================
+    	/*            2,6
+        *
+        *
+        *     0,2    2,2 3,2
+        *                      7,1
+        *            2,0
+        *    7
+        *    6   <>
+        *    5
+        *    4
+        *    3
+        *    <> <> <>
+        *    1             <>
+        *    0 1<> 3 4 5 6 7
+        */
+    	
+    	xx = new double[] {2.0, 7.0, 0.0, 2.0, 3.0, 2.0};
+    	yy = new double[] {0.0, 1.0, 2.0, 2.0, 2.0, 6.0};
+    	
+    	
+        expectedxx = new double[]{2.0, 7.0, 3.0, 2.0, 2.0, 0.0};
+        expectedyy = new double[]{0.0, 1.0, 2.0, 2.0, 6.0, 2.0};
+        
+    	double[] polarAngle = new double[xx.length];
+    	PolarAngleMergeSort.sort(2.0, 0.0, xx, yy, 0, xx.length - 1, polarAngle);
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
+        }
+        
+        // ================================================
+        
+    	nUsable = PolarAngleMergeSort.sort(2, 0, xx, yy);
+
+    	expectedxx = new double[]{2.0, 7.0, 3.0, 2.0, 0.0};
+        expectedyy = new double[]{0.0, 1.0, 2.0, 6.0, 2.0};
+        
+        for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
         }
