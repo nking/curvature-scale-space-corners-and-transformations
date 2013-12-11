@@ -191,5 +191,30 @@ public class SimpleLinkedListNode {
         }
         return count;
     }
+    
+    public static long approximateMemoryUsed() {
+            
+        String arch = System.getProperty("sun.arch.data.model");
+    
+        boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
+    
+        int nbits = (is32Bit) ? 32 : 64;
+    
+        int overheadBytes = 16;
+    
+        int intBytes = (is32Bit) ? 4 : 8;
+        
+        int refBytes = nbits/8;
 
+        long sumBytes = intBytes + refBytes;
+       
+        sumBytes += overheadBytes;
+        
+        long padding = (sumBytes % 8);
+        
+        sumBytes += padding;
+        
+        return sumBytes;
+    }
+    
 }

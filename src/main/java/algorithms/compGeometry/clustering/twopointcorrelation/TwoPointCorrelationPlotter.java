@@ -95,7 +95,7 @@ public class TwoPointCorrelationPlotter {
 
           //  ===== add group centroids =====
         dataSB.append("\n\n").append("var data_group_centroids = [\n");
-        for (int i = 0; i < twoPtCorr.nGroups; i++) {
+        for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
             if (i > 0) {
                 dataSB.append(",\n");
             }
@@ -106,7 +106,7 @@ public class TwoPointCorrelationPlotter {
 
 
         dataSB.append("\n").append("var data_polygons = [\n");
-        for (int i = 0; i < twoPtCorr.nGroups; i++) {
+        for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
             float[] xPolygon = twoPtCorr.getXGroupHull(i);
             float[] yPolygon = twoPtCorr.getYGroupHull(i);
             int nPolygonPoints = xPolygon.length;
@@ -120,7 +120,7 @@ public class TwoPointCorrelationPlotter {
                 }
                 dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
             }
-            if (i == (twoPtCorr.nGroups - 1)) {
+            if (i == (twoPtCorr.getNumberOfGroups() - 1)) {
                 dataSB.append("]\n");
             } else {
                 dataSB.append("],\n ");
@@ -254,7 +254,7 @@ public class TwoPointCorrelationPlotter {
 
           //  ===== add group centroids =====
         dataSB.append("\n\n").append("var data_group_centroids = [\n");
-        for (int i = 0; i < twoPtCorr.nGroups; i++) {
+        for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
             if (i > 0) {
                 dataSB.append(",\n");
             }
@@ -265,7 +265,7 @@ public class TwoPointCorrelationPlotter {
 
 
         dataSB.append("\n").append("var data_groups = [\n");
-        for (int i = 0; i < twoPtCorr.nGroups; i++) {
+        for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
 
             float[] xGroupPoints = twoPtCorr.getXGroup(i);
             float[] yGroupPoints = twoPtCorr.getYGroup(i);
@@ -281,7 +281,7 @@ public class TwoPointCorrelationPlotter {
                 }
                 dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
             }
-            if (i == (twoPtCorr.nGroups - 1)) {
+            if (i == (twoPtCorr.getNumberOfGroups() - 1)) {
                 dataSB.append("]\n");
             } else {
                 dataSB.append("],\n ");

@@ -11,4 +11,8 @@ public interface IGroupFinder {
     public int[] getPointToGroupIndexes();
     
     public void setMinimumNumberInCluster(int n);
+    
+    public long approximateMemoryUsed();
+    
+    public void setDebug(boolean setDebugToTrue);
 }

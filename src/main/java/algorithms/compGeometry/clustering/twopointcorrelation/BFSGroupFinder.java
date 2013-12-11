@@ -1,5 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import java.util.logging.Logger;
+
 /**
  * use a Breadth First Search algorithm to visit nodes within distance <
  * threshhold*threshholdFactor from a node to find the groups of nodes.
@@ -14,8 +16,12 @@ public class BFSGroupFinder extends AbstractGroupFinder {
         super(threshhold, threshholdFactor);
     }
     
+    public void constructLogger() {
+        this.log = Logger.getLogger(this.getClass().getName());
+    }
+    
     @Override
-    public void findGroups(DoubleAxisIndexer indexer) {
+    public void findClusters(DoubleAxisIndexer indexer) {
         // TODO Auto-generated method stub
 
     }
