@@ -15,16 +15,6 @@ public class DoubleAxisIndexerStats {
 
         float divSz = (1.00001f*maxValue - minValue)/numberOfBins;
         
-        /*
-        // expand div sizes if necessary to make sure the last point is in the last bin
-        if ((int) ((maxValue - minValue)/divSz) != (numberOfBins - 1)) {
-            float t = (maxValue + minValue)/2.0f;
-            int powDelta = MiscMath.findPowerOf10(t);
-            float pow10 = (float)Math.pow(10, powDelta);
-            divSz = (maxValue - minValue + pow10)/numberOfBins;
-        }
-        */
-        
         return divSz;
     }
     
@@ -47,31 +37,18 @@ public class DoubleAxisIndexerStats {
         
         int[] items = new int[numberOfCellsInOneDimension*numberOfCellsInOneDimension];
         
-        /*    ---.---.---.
-         *   |
-         *   2   .   .   .
-         * j |
-         *   1---.---.---.
-         *   |   |   |   |
-         *   0 - 1 - 2 - 3
-         *         i
-         *         
-         *   item[0] = (i=0, j=0)
-         *   item[1] = (i=1, j=0)
-         *   item[2] = (i=2, j=0)
-         *   item[3] = (i=0, j=1)
-         *   item[4] = (i=1, j=1)
-         */        
-        
         for (int i = 0; i < indexer.getX().length; i++) {
+            
             float x = indexer.getX()[i];
+            
             float y = indexer.getY()[i];
             
             int xCell = (int) ((x - xyMinMax[0])/xDivSz);
+            
             int yCell = (int) ((y - xyMinMax[2])/yDivSz);
             
             int itemN = yCell*numberOfCellsInOneDimension + xCell;
-   //System.out.println(String.format("(%.1f, %.1f) => [%d][%d] => %d", x, y, xCell, yCell, itemN));          
+            
             items[itemN] =  items[itemN] + 1;   
         }
 
@@ -99,11 +76,15 @@ public class DoubleAxisIndexerStats {
         }
                 
         float stDev = statistic.getStandardDeviation();
+        
         float avg = statistic.getAverage();
         
         for (int item : statistic.getItems()) {
+            
             float diff = Math.abs(item - avg);
+            
             if (diff > (1.0f * stDev)) {
+            
                 return false;
             }
         }
@@ -128,17 +109,13 @@ public class DoubleAxisIndexerStats {
         }
                 
         float stDev = statistic.getStandardDeviation();
+        
         float avg = statistic.getAverage();
         
-        //       avg
-        //        |
-        //     
-        //           item
-        //   ---------|----------
-        //         <.....>
-        //   ------]      
         for (int item : statistic.getItems()) {
+        
             if (item < (avg - stDev)) {
+            
                 return false;
             }
         }
@@ -161,11 +138,16 @@ public class DoubleAxisIndexerStats {
         Random sr = null;
         
         try {
+         
             sr = SecureRandom.getInstance("SHA1PRNG");
+            
         } catch (NoSuchAlgorithmException e) {
+            
             log.severe(e.getMessage());
+            
             sr = new Random();
         }
+        
         long seed = System.currentTimeMillis();
         seed = 1386620575944l;
         sr.setSeed(seed);
@@ -173,7 +155,6 @@ public class DoubleAxisIndexerStats {
         int nXY = indexer.getNXY();
                                 
         int xDivIndexesSz = nXY/numberOfCellsInOneDimension;
-        //int xDivIndexesSz = (int)calculateBinSize(nXY, 0.f, (float)numberOfCellsInOneDimension);
 
         int yDivIndexesSz = xDivIndexesSz;
         
@@ -182,12 +163,15 @@ public class DoubleAxisIndexerStats {
         int anYIndex = (int)(sr.nextFloat()*(nXY - yDivIndexesSz));
                 
         int xCell = (int) (anXIndex/xDivIndexesSz);
+
         int yCell = (int) (anYIndex/yDivIndexesSz);
         
-        //// xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi
         int xIndexLo = xCell*xDivIndexesSz;
+  
         int xIndexHi = xIndexLo + xDivIndexesSz;
+        
         int yIndexLo = yCell*yDivIndexesSz;
+        
         int yIndexHi = yIndexLo + yDivIndexesSz;
         
         return new int[]{xIndexLo, xIndexHi, yIndexLo, yIndexHi};
