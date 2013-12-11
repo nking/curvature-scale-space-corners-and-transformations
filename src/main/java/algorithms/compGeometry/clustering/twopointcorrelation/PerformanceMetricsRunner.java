@@ -6,6 +6,8 @@ import java.lang.management.OperatingSystemMXBean;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
+import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
+
 /**
   estimates performance metrics for TwoPointCorrelation as
   the dependencies upon N of the amount of memory needed and the runtime.
@@ -84,7 +86,7 @@ public class PerformanceMetricsRunner {
 
         for (int ii = 0; ii < nIter; ii++) {
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 5; i++) {
 
                 printSystemStats();
 
@@ -119,12 +121,24 @@ public class PerformanceMetricsRunner {
                         indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 100.0f);
                         break;
-                    //case 3:
-                    default:
-                        // 100*1000
+                    case 3: {
+                        int[] clusterNumbers = new int[]{1000, 300, 100};
+                        int nBackgroundPoints = 10000;
+                        CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.LARGE;
+                        
                         indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                            3, 30, 60, 1000.0f);
+                            clusterNumbers, nBackgroundPoints, clusterSeparation);
                         break;
+                    }
+                    default: {
+                        int[] clusterNumbers = new int[]{2000, 3000, 100};
+                        int nBackgroundPoints = 100000;
+                        CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.LARGE;
+                        
+                        indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            clusterNumbers, nBackgroundPoints, clusterSeparation);
+                        break;
+                    }
                 }
 
                 indexer.sortAndIndexXThenY(generator.x, generator.y,
