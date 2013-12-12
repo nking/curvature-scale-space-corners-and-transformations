@@ -72,7 +72,7 @@ public class DFSGroupFinderTest extends TestCase {
         String filePath = plotter.writeFile();
         System.out.println("filePath=" + filePath);
         
-        DFSGroupFinder groupFinder = new DFSGroupFinder(1.0f, 1.0f);
+        DFSGroupFinder groupFinder = new DFSGroupFinder(2.0f, 1.0f);
         groupFinder.findGroups(indexer);
         
         SimpleLinkedListNode[] list = groupFinder.getGroupMembershipList();

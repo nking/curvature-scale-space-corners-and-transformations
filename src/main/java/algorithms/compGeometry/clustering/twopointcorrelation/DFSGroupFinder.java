@@ -66,7 +66,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         //     2 points  <  thrsh * (uy-vy) so differences in y smaller than 2./thrsh are in a group
         //
         float dens = 2.f/thrsh;
-        
+
         float uX = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];
         float minXAssoc = uX - dens;
         float maxXAssoc = uX + dens;
@@ -76,7 +76,6 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         
         // iterate over uNode neighbors v.  can skip calc if color[v] != 0
         for (int vSortedXIndex = 1; vSortedXIndex < sortedXIndexes.length; vSortedXIndex++) {
-            
 
             if (color[vSortedXIndex] != 0) {
                 continue;
