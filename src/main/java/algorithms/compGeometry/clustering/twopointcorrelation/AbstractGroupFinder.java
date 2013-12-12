@@ -55,17 +55,21 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         }
     }
     
-    public abstract void findClusters(DoubleAxisIndexer indexer);
+    protected abstract void findClusters(DoubleAxisIndexer indexer);
     
     public abstract void constructLogger();
     
     public void findGroups(DoubleAxisIndexer indexer) {
+        
+        // TODO:  add hooks for performance metrics
         
         constructLogger();
         
         initializeVariables(indexer);
         
         findClusters(indexer);
+        
+        // TODO:  remove groups with members < minimumNumberInCluster.  might put in abstract base class's findGroups
     }
 
     @Override

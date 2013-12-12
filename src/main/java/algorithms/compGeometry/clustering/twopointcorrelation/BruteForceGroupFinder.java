@@ -22,7 +22,7 @@ public class BruteForceGroupFinder extends AbstractGroupFinder {
     }
     
     @Override
-    public void findClusters(DoubleAxisIndexer indexer) {
+    protected void findClusters(DoubleAxisIndexer indexer) {
         
         SimpleLinkedListNode[] tmpGroupMembership = new SimpleLinkedListNode[10];
         int nTmpGroups = 0;

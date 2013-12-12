@@ -17,6 +17,10 @@ public class SimpleLinkedListNode {
     public SimpleLinkedListNode(int insertKey) {
         this.key = insertKey;
     }
+    
+    public int getKey() {
+        return key;
+    }
 
     public SimpleLinkedListNode insert(int insertKey) {
         if (insertKey == -1) {
