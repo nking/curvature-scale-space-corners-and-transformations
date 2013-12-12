@@ -70,7 +70,7 @@ public class DFSGroupFinderTest extends TestCase {
         );
         plotter.addPlot(indexer.getX(), indexer.getY(), null, null, "");
         String filePath = plotter.writeFile();
-        System.out.println("filePath=" + filePath);
+        log.info("filePath=" + filePath);
         
         DFSGroupFinder groupFinder = new DFSGroupFinder(2.0f, 1.0f);
         groupFinder.findGroups(indexer);
@@ -84,17 +84,16 @@ public class DFSGroupFinderTest extends TestCase {
         int[] expected = new int[]{22, 20, 13};
         boolean[] found = new boolean[3];
         
-        System.out.println("nGroups=" + nGroups);
+        log.info("nGroups=" + nGroups);
         
         for (int i = 0; i < nGroups; i++) {
             int count = 0;
-            SimpleLinkedListNode group = list[i];
-            SimpleLinkedListNode latest = group;
+            SimpleLinkedListNode latest = list[i];
             while (latest != null) {
                 count++;
                 latest = latest.next;
             }
-            System.out.println("group " + i + " count=" + count);
+            log.info("group " + i + " count=" + count);
             
             for (int j = 0; j < expected.length; j++) {
                 if (expected[j] == count) {

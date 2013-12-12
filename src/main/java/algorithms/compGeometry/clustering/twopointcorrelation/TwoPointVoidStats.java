@@ -338,7 +338,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         //long memAvail = Util.getAvailableHeapMemory();
         //log.fine("memory available = " + memAvail);
 
-System.out.println("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensities);
+        log.fine("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensities);
         
         if (indexer.getNXY() > 999) {
             statsHistogram = createHistogramWithHigherPeakResolution();

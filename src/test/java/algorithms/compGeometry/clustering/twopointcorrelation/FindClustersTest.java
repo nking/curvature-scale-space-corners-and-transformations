@@ -6,6 +6,9 @@ import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+
 /**
  * @author nichole
  */
@@ -25,14 +28,14 @@ public class FindClustersTest extends BaseTwoPointTest {
         float xmax = 300;
         float ymin = 0;
         float ymax = 300;
-
+        
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
 
         //SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
         //srr.setSeed(System.currentTimeMillis());
         //long seed = srr.nextLong();
 
-        //long seed = System.currentTimeMillis();
+        long seed = System.currentTimeMillis();
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
@@ -49,7 +52,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         //long seed = 1386564375863l;
         //long seed = 1386654511861l;
         //long seed = 1386662454910l;
-        long seed = 1386750505246l;
+        //long seed = 1386750505246l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);

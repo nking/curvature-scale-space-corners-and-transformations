@@ -9,11 +9,12 @@ import java.util.Arrays;
  */
 public class SimpleLinkedListNode {
 
-    public int key = -1;
+    protected int key = -1;
 
-    public SimpleLinkedListNode next = null;
+    protected SimpleLinkedListNode next = null;
 
     public SimpleLinkedListNode() {}
+    
     public SimpleLinkedListNode(int insertKey) {
         this.key = insertKey;
     }
@@ -21,7 +22,19 @@ public class SimpleLinkedListNode {
     public int getKey() {
         return key;
     }
+    
+    public SimpleLinkedListNode getNext() {
+        return next;
+    }
 
+    /**
+     * set next to nextNode.  note that if this.next is not null, it is lost.
+     * @param nextNode
+     */
+    public void setNext(SimpleLinkedListNode nextNode) {
+        this.next = nextNode;
+    }
+    
     public SimpleLinkedListNode insert(int insertKey) {
         if (insertKey == -1) {
             throw new IllegalArgumentException("key must be larger than -1");

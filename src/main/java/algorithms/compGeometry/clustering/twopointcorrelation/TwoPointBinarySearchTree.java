@@ -6,13 +6,13 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
  * the indexer.nXY.
  * *
  * Runtime complexity:
- *    inserts are     O(lg_2(N)) at best and O(N) at worse.
- *    comparisons are O(lg_2(N))
+ *    inserts are     O(lg₂(N)) at best and O(N) at worse.
+ *    comparisons are O(lg₂(N))
  *
  * Space complexity:
  *    O(N)
  *
- * Note, could implement a balanced tree to make inserts at worse O(lg_2(N)).
+ * Note, could implement a balanced tree to make inserts at worse O(lg₂(N)).
  *
  * @author nichole
  */
