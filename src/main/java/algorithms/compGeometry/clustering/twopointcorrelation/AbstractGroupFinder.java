@@ -190,4 +190,114 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         
         return sumBytes;
     }
+    
+    public float[] getX(int groupId, DoubleAxisIndexer indexer) {
+        
+        if (nGroups == 0) {
+            return new float[0];
+        }
+        if (groupId > (nGroups - 1) || (groupId < 0)) {
+            throw new IllegalArgumentException("groupId=" + groupId + " is outside of range of nGroups=" + nGroups);
+        }
+        
+        int[] indexes = getIndexes(groupId);
+        
+        float[] x = new float[indexes.length];
+        
+        for (int i = 0; i < indexes.length; i++) {
+            
+            x[i] = indexer.getX()[ indexes[i] ];
+        }
+        
+        return x;
+    }
+    
+    public float[] getY(int groupId, DoubleAxisIndexer indexer) {
+        
+        if (nGroups == 0) {
+            return new float[0];
+        }
+        if (groupId > (nGroups - 1) || (groupId < 0)) {
+            throw new IllegalArgumentException("groupId=" + groupId + " is outside of range of nGroups=" + nGroups);
+        }
+        
+        int[] indexes = getIndexes(groupId);
+        
+        float[] y = new float[indexes.length];
+        
+        for (int i = 0; i < indexes.length; i++) {
+            
+            y[i] = indexer.getY()[ indexes[i] ];
+        }
+        
+        return y;
+    }
+    
+    public int[] getIndexes(int groupId) {
+        
+        if (nGroups == 0) {
+            return new int[0];
+        }
+        if (groupId > (nGroups - 1) || (groupId < 0)) {
+            throw new IllegalArgumentException("groupId=" + groupId + " is outside of range of nGroups=" + nGroups);
+        }
+        
+        int[] indexes = new int[10];
+        
+        int count = 0;
+        
+        SimpleLinkedListNode group = groupMembership[groupId];
+        
+        while (group != null) {
+            
+            int idx = group.getKey();
+            
+            indexes = expandIfNeeded(indexes, count + 1);
+            
+            indexes[count] = idx;
+            
+            group = group.next;
+            
+            count++;
+        }
+        
+        return Arrays.copyOf(indexes, count);
+    }
+   
+    protected int[] expandIfNeeded(int[] a, int nTotal) {
+        if (nTotal > a.length) {
+            int n = a.length + 10;
+            if (nTotal > n) {
+                n = nTotal;
+            }
+            return Arrays.copyOf(a, n);
+        }
+        return a;
+    }
+    
+    public void printMembership(DoubleAxisIndexer indexer) {
+        
+        System.out.println(nGroups + " Groups:");
+        
+        for (int i = 0; i < nGroups; i++) {
+            
+            System.out.println("  group " + i);
+            
+            SimpleLinkedListNode group = groupMembership[i];
+        
+            while (group != null) {
+                
+                int idx = group.getKey();
+                
+                float x = indexer.getX()[idx];
+                
+                float y = indexer.getY()[idx];
+                
+                System.out.println("    (" + x + "," + y + ")");
+                
+                group = group.next;
+            }
+        }
+    }
+
 }

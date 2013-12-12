@@ -23,11 +23,20 @@ public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
     protected void findVoidsUsingDoubleIndexes(int incr) {
         // N!/(2!(N-2)! * N!/(2!(N-2)!
 
-        findVoidsUsingDoubleIndexes(0, indexer.getNXY() - 1, 0, indexer.getNXY() - 1, incr);
+        findVoidsBruteForce(0, indexer.getNXY() - 1, 0, indexer.getNXY() - 1, incr);
     }
 
-    protected void findVoidsUsingDoubleIndexes(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int incr) {
-        // N!/(2!(N-2)! * N!/(2!(N-2)!
+    /**
+     * find voids using a brute force algorithm.  
+     * the runtime complexity is N!/(2!(N-2)! * N!/(2!(N-2)!
+     * 
+     * @param xIndexLo
+     * @param xIndexHi
+     * @param yIndexLo
+     * @param yIndexHi
+     * @param incr
+     */
+    protected void findVoidsBruteForce(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int incr) {
 
         boolean useCompleteSampling = (sampling.ordinal() == VoidSampling.COMPLETE.ordinal());
         
@@ -45,4 +54,19 @@ public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
         }
     }
 
+    /**
+     * find voids using a DFS algorithm
+     * 
+     * @param xIndexLo
+     * @param xIndexHi
+     * @param yIndexLo
+     * @param yIndexHi
+     * @param incr
+     */
+    protected void findVoidsDFS(int incr) {
+        
+        boolean useCompleteSampling = (sampling.ordinal() == VoidSampling.COMPLETE.ordinal());
+        
+        
+    }
 }

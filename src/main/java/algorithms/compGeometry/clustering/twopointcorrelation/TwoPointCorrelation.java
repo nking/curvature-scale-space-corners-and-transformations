@@ -416,6 +416,10 @@ public class TwoPointCorrelation {
 
         findGroups();
     }
+    
+    public IGroupFinder getGroupFinder() {
+        return groupFinder;
+    }
 
     public String plotClusters(float xMin, float xMax, float yMin, float yMax)
         throws FileNotFoundException, IOException, TwoPointVoidStatsException {
@@ -480,7 +484,7 @@ public class TwoPointCorrelation {
         }
 
     }
-
+  
     protected float calculateFractionOfAreaOutsideOfClusters() throws IOException, TwoPointVoidStatsException {
 
         if (state.ordinal() < STATE.CLUSTER_HULLS_CALCULATED.ordinal()) {
@@ -662,32 +666,14 @@ if (nDensities < 1001) {
 
             groupHullIndexes[i] = new SimpleLinkedListNode();
 
-            SimpleLinkedListNode groupNode = groupFinder.getGroupMembershipList()[i];
-
-            int nMembers = groupNode.getKeys().length;
-
-            float[] xMember = new float[nMembers];
-            float[] yMember = new float[nMembers];
-            int[] memberIndexes = new int[nMembers];
-
-            int count = 0;
-
-            while ((groupNode != null) && (groupNode.key != -1)) {
-
-                int pointIndex = groupNode.key;
-
-                xMember[count]       = x[pointIndex];
-                yMember[count]       = y[pointIndex];
-                memberIndexes[count] = pointIndex;
-                count++;
-
-                groupNode = groupNode.next;
-            }
-
+            int[] memberIndexes = getGroupFinder().getIndexes(i);
+            float[] xMember = getGroupFinder().getX(i, indexer);
+            float[] yMember = getGroupFinder().getY(i, indexer);
+            
             float[] xhull = null;
             float[] yhull = null;
 
-            if (count > 2) {
+            if (xMember.length > 2) {
                 try {
                     GrahamScan scan = new GrahamScan();
                     scan.computeHull(xMember, yMember);
@@ -700,9 +686,9 @@ if (nDensities < 1001) {
 
             if (xhull == null) {
 
-                xhull = new float[count];
-                yhull = new float[count];
-                for (int ii = 0; ii < count; ii++) {
+                xhull = new float[xMember.length];
+                yhull = new float[xMember.length];
+                for (int ii = 0; ii < xMember.length; ii++) {
                     xhull[ii] = xMember[ii];
                     yhull[ii] = yMember[ii];
                 }
@@ -716,7 +702,7 @@ if (nDensities < 1001) {
                 float xh = xhull[j];
                 float yh = yhull[j];
 
-                for (int k = 0; k < count; k++) {
+                for (int k = 0; k < xMember.length; k++) {
 
                     int pointIndex = memberIndexes[k];
 
@@ -772,25 +758,18 @@ if (nDensities < 1001) {
             throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
         }
 
-        // the indexes stored in the instance vars such as pointToGroupIndex are w.r.t. the arrays sorted by y
-        float[] x = indexer.getXSortedByY();
-        float[] y = indexer.getYSortedByY();
-
-        SimpleLinkedListNode groupNode = groupFinder.getGroupMembershipList()[groupNumber];
-
+        float[] xMember = getGroupFinder().getX(groupNumber, indexer);
+        float[] yMember = getGroupFinder().getY(groupNumber, indexer);
+        
         float xCoordsAvg = 0;
         float yCoordsAvg = 0;
         int count = 0;
-
-        while ((groupNode != null) && (groupNode.key != -1)) {
-
-            int pointIndex = groupNode.key;
-
-            xCoordsAvg += x[pointIndex];
-            yCoordsAvg += y[pointIndex];
-
-            groupNode = groupNode.next;
+        
+        for (int i = 0; i < xMember.length; i++) {
+            xCoordsAvg += xMember[i];
+            yCoordsAvg += yMember[i];
         }
+
         xCoordsAvg /= (float)count;
         yCoordsAvg /= (float)count;
 
@@ -809,8 +788,7 @@ if (nDensities < 1001) {
             throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
         }
 
-        // the indexes stored in the instance vars such as pointToGroupIndex are w.r.t. the arrays sorted by y
-        float[] x = indexer.getXSortedByY();
+        float[] x = indexer.getX();
 
         SimpleLinkedListNode hullNode = groupHullIndexes[groupNumber];
 
@@ -843,7 +821,7 @@ if (nDensities < 1001) {
         }
 
         // the indexes stored in the instance vars such as pointToGroupIndex are w.r.t. the arrays sorted by y
-        float[] y = indexer.getYSortedByY();
+        float[] y = indexer.getY();
 
         SimpleLinkedListNode hullNode = groupHullIndexes[groupNumber];
 
@@ -948,47 +926,12 @@ if (nDensities < 1001) {
 
     public float[] getXGroup(int groupNumber) {
 
-        return getGroupArray(groupNumber, indexer.getXSortedByY());
+        return (groupFinder != null) ? groupFinder.getX(groupNumber, indexer) : new float[0];
     }
 
     public float[] getYGroup(int groupNumber) {
 
-        return getGroupArray(groupNumber, indexer.getYSortedByY());
-    }
-
-    protected float[] getGroupArray(int groupNumber, float[] array) {
-
-        if (groupFinder == null) {
-            return null;
-        }
-                
-        int count = 0;
-
-        float[] a = new float[10];
-
-        SimpleLinkedListNode groupNode = groupFinder.getGroupMembershipList()[groupNumber];
-
-        while ((groupNode != null) && (groupNode.key != -1)) {
-
-            int pointIndex = groupNode.key;
-
-            if (a.length < (count + 1)) {
-                int oldN = a.length;
-                int n = (int) (1.5f * oldN);
-                if (n < (oldN + 1)) {
-                    n = oldN + 1;
-                }
-                a = Arrays.copyOf(a, n);
-            }
-
-            a[count] = array[pointIndex];
-
-            count++;
-
-            groupNode = groupNode.next;
-        }
-
-        return Arrays.copyOf(a, count);
+        return (groupFinder != null) ? groupFinder.getY(groupNumber, indexer) : new float[0];
     }
 
 }

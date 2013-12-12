@@ -1,5 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import algorithms.util.Stack;
@@ -189,10 +190,12 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         
         int groupId;
         
-        /*float tmpux = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];
+        /*
+        float tmpux = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];
         float tmpuy = indexer.getY()[ sortedXIndexes[uSortedXIndex] ];
         float tmpvx = indexer.getX()[ sortedXIndexes[vSortedXIndex] ];
-        float tmpvy = indexer.getY()[ sortedXIndexes[vSortedXIndex] ];*/
+        float tmpvy = indexer.getY()[ sortedXIndexes[vSortedXIndex] ];
+        */
         
         if ((pointToGroupIndex[uIdx] > -1) && (pointToGroupIndex[vIdx] == -1)) {
         
@@ -225,12 +228,18 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             groupMembership[groupId].insert(vIdx);
             
             nGroups++;
+            
         } else {
-            //System.out.println("not readding " + uIdx + ":" + vIdx);
+            
+            groupId = -1;
+            
+            System.err.println("not readding " + uIdx + ":" + vIdx );
         }
         
-        //System.out.println(groupId + ") processPair  (" + tmpux + "," + tmpuy + ")");
-        //System.out.println(groupId + ") processPair  (" + tmpvx + "," + tmpvy + ")");
+        /*
+        System.out.println(groupId + ") processPair  (" + tmpux + "," + tmpuy + ")");
+        System.out.println(groupId + ") processPair  (" + tmpvx + "," + tmpvy + ")");
+        */
     }
-
+ 
 }

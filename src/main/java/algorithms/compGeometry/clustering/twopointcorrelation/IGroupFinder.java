@@ -12,6 +12,14 @@ public interface IGroupFinder {
     
     public void setMinimumNumberInCluster(int n);
     
+    public float[] getX(int groupId, DoubleAxisIndexer indexer);
+    
+    public float[] getY(int groupId, DoubleAxisIndexer indexer);
+    
+    public int[] getIndexes(int groupId);
+    
+    public void printMembership(DoubleAxisIndexer indexer);
+    
     public long approximateMemoryUsed();
     
     public void setDebug(boolean setDebugToTrue);

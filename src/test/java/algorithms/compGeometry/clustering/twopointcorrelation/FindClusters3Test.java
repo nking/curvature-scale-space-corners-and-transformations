@@ -2,6 +2,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -57,6 +58,14 @@ public class FindClusters3Test extends TestCase {
         twoPtC.calculateBackground();
         twoPtC.findClusters();
 
+        PolygonAndPointPlotter pl = new PolygonAndPointPlotter(50, 150, 50, 150);
+        pl.addPlot(twoPtC.getGroupFinder().getX(0, indexer), twoPtC.getGroupFinder().getY(0, indexer), null, null, "");
+       
+        ((DFSGroupFinder)twoPtC.getGroupFinder()).printMembership(indexer);
+        
+        pl.addPlot(twoPtC.getGroupFinder().getX(1, indexer), twoPtC.getGroupFinder().getY(1, indexer), null, null, "");
+        pl.writeFile();
+
         twoPtC.calculateHullsOfClusters();
 
         TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
@@ -97,6 +106,17 @@ public class FindClusters3Test extends TestCase {
             CreateClusterDataTest.writeHistogram(filePath, histogram);
         }
 
+        assertTrue(twoPtC.getNumberOfGroups() == 2);
+        
+        float[] xHC = twoPtC.getXHullCentroids();
+        float[] yHC = twoPtC.getYHullCentroids();
+        
+        assertTrue(xHC.length == 2);
+        assertTrue(yHC.length == 2);
+        assertTrue(xHC[0] < 100);
+        assertTrue(yHC[0] < 100);
+        assertTrue(xHC[1] > 100);
+        
         log.info( twoPtC.indexer.nXY + " points ... ");
 
         log.info("  END ");
