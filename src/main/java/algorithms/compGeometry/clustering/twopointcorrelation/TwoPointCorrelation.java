@@ -112,6 +112,7 @@ public class TwoPointCorrelation {
     protected boolean setUseDownhillSimplexHistogramFitting = false;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
+        
 
     /**
      * constructor without errors on xPoints and yPoints.  Note that the
@@ -413,7 +414,7 @@ public class TwoPointCorrelation {
             calculateBackgroundVia2PtVoidFit(false);
         }
 
-        bruteForceCalculateGroups();
+        findGroups();
     }
 
     public String plotClusters(float xMin, float xMax, float yMin, float yMax)
@@ -451,13 +452,13 @@ public class TwoPointCorrelation {
         return plotter.writeFile3();
     }
 
-    public void bruteForceCalculateGroups() {
+    public void findGroups() {
 
         long startTimeMillis = System.currentTimeMillis();
 
-        // use temporary variables first to prune groups with less than 3 members
-
-        groupFinder = new BruteForceGroupFinder(backgroundSurfaceDensity, sigmaFactor);
+        groupFinder = new DFSGroupFinder(backgroundSurfaceDensity, sigmaFactor);
+        
+        groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);
         
         groupFinder.findGroups(indexer);
         
@@ -467,7 +468,7 @@ public class TwoPointCorrelation {
 
             long stopTimeMillis = System.currentTimeMillis();
 
-            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "bruteForceCalculateGroups", indexer.getNXY());
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "findGroups", indexer.getNXY());
         }
 
         try {
@@ -620,7 +621,7 @@ if (nDensities < 1001) {
                     + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
             }
 
-            bruteForceCalculateGroups();
+            findGroups();
         }
     }
 

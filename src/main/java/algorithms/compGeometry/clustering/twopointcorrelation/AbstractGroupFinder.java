@@ -60,16 +60,14 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
     public abstract void constructLogger();
     
     public void findGroups(DoubleAxisIndexer indexer) {
-        
-        // TODO:  add hooks for performance metrics
-        
+                
         constructLogger();
         
         initializeVariables(indexer);
         
         findClusters(indexer);
         
-        // TODO:  remove groups with members < minimumNumberInCluster.  might put in abstract base class's findGroups
+        prune();        
     }
 
     @Override
@@ -85,6 +83,60 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
     @Override
     public int[] getPointToGroupIndexes() {
         return pointToGroupIndex;
+    }
+    
+    /**
+     * remove groups smaller than minimumNumberInCluster
+     */
+    protected void prune() {
+        
+        log.info("number of groups before prune=" + nGroups);
+        
+        /*
+         * [------] 0
+         * [------] 1 <---- too few
+         * [------] 2
+         */
+        // iterate backwards so can move items up without conflict with iterator
+        for (int i = (nGroups - 1); i > -1; i--) {
+            
+            SimpleLinkedListNode group = groupMembership[i];
+            
+            int count = 0;
+            SimpleLinkedListNode latest = group;
+            while (latest != null) {
+                count++;
+                latest = latest.next;
+            }
+            
+            if (count < minimumNumberInCluster) {
+                
+                // remove this group and move up all groups w/ index > i by one index
+                for (int j = (i + 1); j < nGroups; j++) {
+                    
+                    int newGroupId = j - 1;
+                    
+                    groupMembership[newGroupId] = groupMembership[j];
+                    
+                    // update members in pointToGroupIndex
+                    latest = groupMembership[j];
+                    
+                    while (latest != null) {
+                        
+                        int idx = latest.getKey();
+                        
+                        pointToGroupIndex[idx] = newGroupId;
+                        
+                        latest = latest.next;
+                    }
+                }
+                
+                nGroups--;
+                
+            }
+        }
+        
+        log.info("number of groups after prune=" + nGroups);
     }
 
     protected void checkAndExpandGroupMembershipArray() {

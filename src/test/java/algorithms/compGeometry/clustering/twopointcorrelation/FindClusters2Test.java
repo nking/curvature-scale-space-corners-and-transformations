@@ -143,7 +143,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     }
                 }
                 
-                if (true) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
+                if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
                     if (i == 0 && ii == 0) {
                         StringBuilder xsb = new StringBuilder();
                         StringBuilder ysb = new StringBuilder();

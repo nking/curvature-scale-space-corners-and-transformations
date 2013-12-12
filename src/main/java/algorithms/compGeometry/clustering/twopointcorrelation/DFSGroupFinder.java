@@ -59,12 +59,20 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         
         color[uSortedXIndex] = 1;
         
+        // we process the pair when their point density is higher than thrsh:  that is  (2 points/distance) > thrsh
+        //  
+        //  2 points  <  thrsh * ( (ux-vx)^2 + (uy-vy)^2 )^(0.5) 
+        //  to see the max extent along y, set diff in x's to zero:  
+        //     2 points  <  thrsh * (uy-vy) so differences in y smaller than 2./thrsh are in a group
+        //
+        float dens = 2.f/thrsh;
+        
         float uX = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];
-        float minXAssoc = uX - thrsh;
-        float maxXAssoc = uX + thrsh;
+        float minXAssoc = uX - dens;
+        float maxXAssoc = uX + dens;
         float uY = indexer.getY()[ sortedXIndexes[uSortedXIndex] ];
-        float minYAssoc = uY - thrsh;
-        float maxYAssoc = uY + thrsh;
+        float minYAssoc = uY - dens;
+        float maxYAssoc = uY + dens;
         
         // iterate over uNode neighbors v.  can skip calc if color[v] != 0
         for (int vSortedXIndex = 1; vSortedXIndex < sortedXIndexes.length; vSortedXIndex++) {
@@ -77,7 +85,6 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             float vX = indexer.getX()[ sortedXIndexes[vSortedXIndex] ];
             
             if (vX < minXAssoc) {
-                //TODO:  I think I have to add to queue for later processing
                 continue;
             }
             
@@ -105,11 +112,6 @@ public class DFSGroupFinder extends AbstractGroupFinder {
     protected void processPair(DoubleAxisIndexer indexer, int uSortedXIndex, int vSortedXIndex) {
         
         //log.finest("processPair " + uSortedXIndex + ":" + vSortedXIndex);           
-
-        // u and v should be in a group together
-        // v has not been assigned to a group yet, but u may have
-        // if u has a group id already, add v
-        // else create a group and add u and v
         
         int uIdx = indexer.getSortedXIndexes()[uSortedXIndex];
         
