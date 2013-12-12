@@ -559,14 +559,14 @@ public class TwoPointCorrelation {
             return;
         }
 
-        if (((TwoPointVoidStats)backgroundStats).getSampling().ordinal() == TwoPointVoidStats.Sampling.SEMI_COMPLETE.ordinal()) {
+        if (((TwoPointVoidStats)backgroundStats).getSampling().ordinal() == VoidSampling.SEMI_COMPLETE.ordinal()) {
 
             // this is very roughly trying to determine whether there are many
             //   outliers, and if so, we should use the range search because
             //   it samples between the clusters better.
             // Caveat is should not reduce the sampling to 'range search' if there are few points already.
 
-            int nDensities = ((TwoPointVoidStats)backgroundStats).nTwoPointSurfaceDensities;
+            int nDensities = ((TwoPointVoidStats)backgroundStats).getNumberOfDensityPoints();
 
 if (nDensities < 1001) {
     return;
@@ -580,12 +580,12 @@ if (nDensities < 1001) {
 
             if (fracPoints <= 0.11f) {
                 if (fracArea > 0.33f) {
-                    log.info("KEEP " + TwoPointVoidStats.Sampling.SEMI_COMPLETE.name()
+                    log.info("KEEP " + VoidSampling.SEMI_COMPLETE.name()
                         + " fracPoints=" + fracPoints + " fracArea=" + fracArea + " nGroups=" + n);
                     return;
                 }
             }
-            log.info("CHANGE TO " + TwoPointVoidStats.Sampling.SEMI_COMPLETE_RANGE_SEARCH.name()
+            log.info("CHANGE TO " + VoidSampling.SEMI_COMPLETE_RANGE_SEARCH.name()
                 + " fracPoints=" + fracPoints + " fracArea=" + fracArea + " nGroups=" + n);
 
             if (debug) {

@@ -86,26 +86,15 @@ import java.util.logging.Logger;
  */
 public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
-    public enum Sampling {
-        COMPLETE, LEAST_COMPLETE, SEMI_COMPLETE, SEMI_COMPLETE_RANGE_SEARCH,
-        SEMI_COMPLETE_RANGE_SEARCH_2, SEMI_COMPLETE_RANGE_SEARCH_3, SEMI_COMPLETE_RANGE_SEARCH_4,
-        SEMI_COMPLETE_RANGE_SEARCH_SUBSET
-    }
-
     public enum State {
         POINTS_LOADED, DENSITIES_CALCULATED, HISTOGRAM_CREATED, HISTOGRAM_FITTED, STATS_FINALIZED
     }
 
-    protected Sampling sampling = null;
+    protected VoidSampling sampling = null;
 
     protected State state = null;
 
-    protected float[] allTwoPointSurfaceDensities = null;
-    protected float[] allTwoPointSurfaceDensitiesErrors = null;
-    protected int nTwoPointSurfaceDensities = 0;
-    protected int[] point1 = null;
-    protected int[] point2 = null;
-    protected ITwoPointIdentity twoPointIdentities = null;
+    protected IVoidFinder voidFinder = null;
 
     protected int defaultNBins = 40;
 
@@ -155,7 +144,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * The runtime is O(N*log_2(N)) as it uses divide and conquer.
      */
     public void setUseLeastCompleteSampling() {
-        this.sampling = Sampling.LEAST_COMPLETE;
+        this.sampling = VoidSampling.LEAST_COMPLETE;
     }
     
     public void setUseDownhillSimplexHistogramFitting() {
@@ -173,7 +162,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * used by default.
      */
     public void setUseCompleteSampling() {
-        this.sampling = Sampling.COMPLETE;
+        this.sampling = VoidSampling.COMPLETE;
     }
 
     /**
@@ -186,7 +175,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * depending upon data size.
      */
     public void setUseSemiCompleteRangeSampling() {
-        this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
+        this.sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH;
     }
 
     /**
@@ -200,11 +189,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * that it is N!/(2!( (N/8)-2)! * N!/(2!( (N/8) -2)
      */
     public void setUseSemiCompleteSampling() {
-        this.sampling = Sampling.SEMI_COMPLETE;
+        this.sampling = VoidSampling.SEMI_COMPLETE;
     }
 
-    public Sampling getSampling() {
-        return Sampling.valueOf(sampling.name());
+    public VoidSampling getSampling() {
+        return VoidSampling.valueOf(sampling.name());
     }
 
     protected void logPerformanceMetrics() {
@@ -263,33 +252,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         // 4 variables at stack word size each
         sumBytes += (4*intBytes);
 
-
-        int n = (allTwoPointSurfaceDensities == null) ? 0 : allTwoPointSurfaceDensities.length;
-
         if (statsHistogram != null) {
             sumBytes += statsHistogram.approximateMemoryUsed();
         }
         if (bestFit != null) {
             sumBytes += bestFit.approximateMemoryUsed();
         }
-        if (twoPointIdentities != null) {
-            sumBytes += twoPointIdentities.approximateMemoryUsed();
-        }
-
-        if (allTwoPointSurfaceDensities != null) {
-            sumBytes += (arrayBytes + (allTwoPointSurfaceDensities.length*arrayBytes));
-        }
-
-        if (allTwoPointSurfaceDensitiesErrors != null) {
-            sumBytes += (arrayBytes + (allTwoPointSurfaceDensitiesErrors.length*arrayBytes));
-        }
-
-        if (point1 != null) {
-            sumBytes += (arrayBytes + (point1.length*arrayBytes));
-        }
-
-        if (point2 != null) {
-            sumBytes += (arrayBytes + (point2.length*arrayBytes));
+        if (voidFinder != null) {
+            sumBytes += voidFinder.approximateMemoryUsed();
         }
 
         sumBytes += overheadBytes;
@@ -338,7 +308,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         //long memAvail = Util.getAvailableHeapMemory();
         //log.fine("memory available = " + memAvail);
 
-        log.fine("nXY=" + indexer.getNXY() + " nD=" + nTwoPointSurfaceDensities);
+        if (voidFinder != null) {
+            log.fine("nXY=" + indexer.getNXY() + " nD=" + voidFinder.getNumberOfTwoPointDensities());
+        }
         
         if (indexer.getNXY() > 999) {
             statsHistogram = createHistogramWithHigherPeakResolution();
@@ -385,108 +357,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             return;
         }
 
-        long startTimeMillis = System.currentTimeMillis();
-
-        allTwoPointSurfaceDensities = new float[100];
-        point1 = new int[100];
-        point2 = new int[100];
-        twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.getNXY());
+        long startTimeMillis = System.currentTimeMillis();        
 
         findVoids();
 
-        // release twoPointIdentities to free up memory
-        /*twoPointIdentities = null;
-        MemoryMXBean mb = ManagementFactory.getMemoryMXBean();
-        mb.gc();*/
-
-        if (nTwoPointSurfaceDensities == 0) {
-            throw new TwoPointVoidStatsException("No pairs were found isolated within an area");
-        }
-
-        // condense arrays
-        allTwoPointSurfaceDensities = Arrays.copyOf(allTwoPointSurfaceDensities, nTwoPointSurfaceDensities);
-        point1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities);
-        point2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities);
-
-        allTwoPointSurfaceDensitiesErrors =
-            calulateTwoPointDensityErrors(allTwoPointSurfaceDensities, point1, point2,
-            indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors());
-
         state = State.DENSITIES_CALCULATED;
 
-    }
-
-    /**
-     * Calculate the 2 point density errors following the chain rule
-     *
-     *                                | df |^2               | df |^2         df   df
-     *      (sigma_f)^2 =  (sigma_x)^2|----|   +  (sigma_y)^2|----|    +  2 * -- * -- * cov_ab
-     *                                | dx |                 | dy |           dx   dy
-     *
-     *      For uncorrelated variables the covariance terms are zero.
-     *
-     * For two-point density:
-     *                 N             dF      -N
-     *      F(x,y) = ------   ==>   ---- =  -----
-     *                 X             dx      X^2
-     *
-     *                                  |   -N   |^2
-     *     (sigma_f)^2 =  (sigma_x)^2 * |--------|
-     *                                  |   X^2  |
-     *
-     * @param densities - the two point densities
-     * @param point1Indexes indexes to xp, yp of one of the 2 points in the two-point densities
-     * @param point2Indexes indexes to xp, yp of the other of the 2 points in the two-point densities
-     * @param xp x array of points
-     * @param yp y array of points
-     * @param xpe errors in x
-     * @param ype errors in y
-     * @return errors for densities
-     */
-    float[] calulateTwoPointDensityErrors(float[] densities, int[] point1Indexes, int[] point2Indexes,
-        float[] xp, float[] yp, float[] xpe, float[] ype) {
-
-        if (densities == null) {
-            throw new IllegalArgumentException("densities cannot be null");
-        }
-        if (point1Indexes == null || point2Indexes == null) {
-            throw new IllegalArgumentException("pointIndexes cannot be null");
-        }
-        if (xp == null || yp == null) {
-            throw new IllegalArgumentException("xp and yp cannot be null");
-        }
-        if (xpe == null || ype == null) {
-            throw new IllegalArgumentException("errors are required");
-        }
-
-        float[] densityErrors = new float[densities.length];
-
-        for (int i = 0; i < densities.length; i++) {
-
-            if (Float.isInfinite(densities[i])) {
-                continue;
-            }
-
-            int pt1 = point1[i];
-            int pt2 = point2[i];
-
-            double xe1 = xpe[pt1] ; // xp[pt1];
-            double xe2 = xpe[pt2] ; // xp[pt2];
-            double ye1 = ype[pt1] ; // yp[pt1];
-            double ye2 = ype[pt2] ; // yp[pt2];
-
-            double xsigmasq = ( xe1 * xe1 ) + ( xe2 * xe2 );
-            double ysigmasq = ( ye1 * ye1 ) + ( ye2 * ye2 );
-            double xysigmasq = xsigmasq + ysigmasq;
-
-            double linearDensity = allTwoPointSurfaceDensities[i];
-            double linearDensitySq = Math.pow(linearDensity, 2);
-
-            double err = Math.sqrt(xysigmasq * linearDensitySq);
-
-            densityErrors[i] = (float)err;
-        }
-        return densityErrors;
     }
 
     protected HistogramHolder createHistogram() throws TwoPointVoidStatsException {
@@ -501,7 +377,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         //    allTwoPointSurfaceDensitiesErrors, false);
         
         HistogramHolder histogram = Histogram.createHistogramForSkewedData(
-            nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors, true);
+            nBins, voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors(), true);
 
         plotPairSeparations();
 
@@ -513,13 +389,17 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
             calculateTwoPointVoidDensities();
         }
+        
+        if (voidFinder == null) {
+            return null;
+        }
 
         int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
 
-        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(allTwoPointSurfaceDensities);
+        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(voidFinder.getTwoPointDensities());
 
         HistogramHolder histogram = Histogram.createHistogramForSkewedDataForPeakResolution2(
-            nBins, allTwoPointSurfaceDensities, allTwoPointSurfaceDensitiesErrors,
+            nBins, voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors(),
             minMax[0], minMax[1], 0);
         
         plotPairSeparations();
@@ -817,6 +697,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * Until then, the number of data points are used to decide sampling.
      * If SEMI_COMPLETE was used, the ability to improve the sampling is done
      * in the invoker @see TwoPointCorrelation#bruteForceCalculateGroups() which uses
+     * @throws TwoPointVoidStatsException 
      * @see TwoPointCorrelation#temporaryWorkaroundForSampling().
      * There if SEMI_COMPLETE was used and there are outliers, the background fit
      * is redone using SEMI_COMPLETE_RANGE_SEARCH
@@ -830,7 +711,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             } else {
                 if (indexer.nXY > 10000) {
                     // RT (n^1.8) to (n^2.2) roughly...
-                    this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
+                    this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_2;
                 } else if (indexer.nXY > 8000) {
                     this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
                 } else if (indexer.nXY > 999) {
@@ -846,7 +727,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             }
 
      */
-    protected void findVoids() {
+    protected void findVoids() throws TwoPointVoidStatsException {
 
         long startTimeMillis = System.currentTimeMillis();
         
@@ -873,7 +754,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 
                 // reduce the sampling to a cell holding 1000 points 
                 // and use the sampling that would be applied for 1000 points
-                sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET;               
+                sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET;               
             }
         }
         
@@ -895,15 +776,15 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             // is redone using SEMI_COMPLETE_RANGE_SEARCH
 
             if (nXY > 10000) {
-                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_4;
+                this.sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_2;
             } else if (nXY > 8000) {
-                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_3;
+                this.sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_3;
             } else if (nXY > 999) {
-                this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
+                this.sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH;
             } else if (nXY < 100) {
-                this.sampling = Sampling.COMPLETE;
+                this.sampling = VoidSampling.COMPLETE;
             } else {
-                this.sampling = Sampling.SEMI_COMPLETE;
+                this.sampling = VoidSampling.SEMI_COMPLETE;
             }
         }        
 
@@ -911,60 +792,113 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             log.info("findVoid sampling=" + sampling.name() + " for " + nXY + " points");
         }
 
-        if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
+        if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {
 
-            // uses divide and conquer
-            findVoids(0, nXY - 1, 0, nXY - 1);
-
-        } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
-
-            int incr = 1;
-
-            findVoidsUsingDoubleIndexes(incr);
-
-        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
-
-            // uses a very rough range search
-            findVoidsRoughRangeSearch(0, nXY - 1, 0, nXY - 1, 2, 1.5f);
+            voidFinder = new DivideAndConquerVoidFinder();
             
-        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET.ordinal()) {
+            voidFinder.setSampling(sampling);
+            
+            voidFinder.findVoids(indexer);
+
+        } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
+
+            voidFinder = new CompleteSamplingVoidFinder();
+            
+            voidFinder.setSampling(sampling);
+            
+            voidFinder.findVoids(indexer);
+
+        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
+            
+            int nDiv = 2;
+            
+            float bFactor = 1.5f;
+            
+            voidFinder = new RoughRangeSearchVoidFinder();
+            
+            voidFinder.setSampling(sampling);
+            
+            ((RoughRangeSearchVoidFinder)voidFinder).setBinFactor(bFactor);
+            ((RoughRangeSearchVoidFinder)voidFinder).setNumberOfDivisions(nDiv);
+           
+            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexLow(0);
+            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexHigh(indexer.getNumberOfPoints() - 1);
+            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexLow(0);
+            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexHigh(indexer.getNumberOfPoints() - 1);
+            
+            voidFinder.findVoids(indexer);
+            
+        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET.ordinal()) {
                         
             // xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi
-            int[] xyMinMaxCell = stats.chooseARandomCell(nCellsPerDimension, indexer);
-
-            findVoidsRoughRangeSearch(xyMinMaxCell[0], xyMinMaxCell[1], xyMinMaxCell[2], xyMinMaxCell[3], 2, 1.5f);
+            int[] xyMinMaxCell = stats.chooseARandomCell(nCellsPerDimension, indexer);            
+            
+            int nDiv = 2;
+            
+            float bFactor = 1.5f;
+            
+            voidFinder = new RoughRangeSearchVoidFinder();
+            
+            voidFinder.setSampling(sampling);
+            
+            ((RoughRangeSearchVoidFinder)voidFinder).setBinFactor(bFactor);
+            ((RoughRangeSearchVoidFinder)voidFinder).setNumberOfDivisions(nDiv);
+           
+            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexLow(xyMinMaxCell[0]);
+            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexHigh(xyMinMaxCell[1]);
+            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexLow(xyMinMaxCell[2]);
+            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexHigh(xyMinMaxCell[3]);
+            
+            voidFinder.findVoids(indexer);            
             
             nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0])*(xyMinMaxCell[3] - xyMinMaxCell[2]);
 
-        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
+        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
 
             // uses a very rough range search
             int nDiv = 10;
             float bFactor = 4;
-            findVoidsRoughRangeSearch(0, nXY - 1, 0, nXY - 1, nDiv, bFactor);
+            
+            voidFinder = new RoughRangeSearchVoidFinder();
+            
+            voidFinder.setSampling(sampling);
+            
+            ((RoughRangeSearchVoidFinder)voidFinder).setBinFactor(bFactor);
+            ((RoughRangeSearchVoidFinder)voidFinder).setNumberOfDivisions(nDiv);
+           
+            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexLow(0);
+            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexHigh(indexer.getNumberOfPoints() - 1);
+            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexLow(0);
+            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexHigh(indexer.getNumberOfPoints() - 1);
+            
+            voidFinder.findVoids(indexer);
 
-        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
+        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
 
             // for area of data so large that randomly chosen patches are necessary
             //   to reduce sample to decrease runtime
-            findVoidsRandomSamples(10, 10);
+            
+            voidFinder = new RandomRoughRangeSearchVoidFinder();
+            
+            voidFinder.setSampling(sampling);
+            
+            voidFinder.findVoids(indexer);
 
-        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
-
-            // for area of data so large that randomly chosen patches are necessary
-            //   to reduce sample to decrease runtime
-            //findVoidsRandomSamples(20, 10);
-            findVoidsRoughRangeSearch(0, nXY - 1, 0, nXY - 1, 10, 4f);
-
-        } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
+        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE.ordinal()) {
 
             // for datasets not evenly distributed, and with clusters >> outliers
             //  For this case, complete sampling works, but we want something faster.
 
             // N!/(2!( (N/8)-2)! * N!/(2!( (N/8) -2) ??  TODO: estimate this
             int incr = 8;
-
-            findVoidsUsingDoubleIndexes(incr);
+            
+            voidFinder = new CompleteSamplingVoidFinder();
+            
+            ((CompleteSamplingVoidFinder)voidFinder).setSkipInterval(8);
+            
+            voidFinder.setSampling(sampling);
+            
+            voidFinder.findVoids(indexer);
         }
 
         if (doLogPerformanceMetrics) {
@@ -972,367 +906,23 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             long stopTimeMillis = System.currentTimeMillis();
 
             String str = "";
-            if (sampling.ordinal() == Sampling.LEAST_COMPLETE.ordinal()) {
+            if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {
                 str = "O(n lg(n)) with n=";
-            } else if (sampling.ordinal() == Sampling.COMPLETE.ordinal()) {
+            } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
                 str = "O(n^4) with n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
+            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
                 str = "(n*bf/nDiv)^1.8) or O(n^2 - n) with n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET.ordinal()) {
+            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET.ordinal()) {
                 str = "(n*bf/nDiv)^1.8) or O(n^2 - n) with n=" + nSampled;
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
-                str = "? n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
-                str = "? n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE_RANGE_SEARCH_4.ordinal()) {
+            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
                 str = "(n*bf/nDiv)^2.2) n=";
-            } else if (sampling.ordinal() == Sampling.SEMI_COMPLETE.ordinal()) {
+            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
+                str = "? n=";
+            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE.ordinal()) {
                 str = "(n/8)^(2.25) n=";
             }
             
             printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateBackgroundVia2PtVoidFit-->calculateTwoPointVoidDensities", str);
-        }
-    }
-
-    /**
-     * A divide and conquer approach to finding the rectangular areas
-     * containing only two points.  it's a recursion with pattern
-     * T(n) = 4T(n/2) + n  so the runtime is O(n^2).  It does not completely
-     * sample every pair of points.
-     *
-     * The range search within void findVoids() is preferred even though slower
-     * than this divide and conquer because the range search has a more
-     * complete solution, that is a higher number of pairs bounding rectangular
-     * voids are learned from the range search.
-     * @param xIndexLo
-     * @param xIndexHi
-     * @param yIndexLo
-     * @param yIndexHi
-     */
-    protected void findVoids(int xIndexLo, int xIndexHi,
-        int yIndexLo, int yIndexHi) {
-                                                                                 // cost     number of times
-        if ((xIndexLo < xIndexHi) && (yIndexLo < yIndexHi)) {                    //
-
-            int xIndexMid = (xIndexLo + xIndexHi)/2;                             //
-
-            int yIndexMid = (yIndexLo + yIndexHi)/2;                             //
-
-            findVoids(xIndexLo, xIndexMid, yIndexLo, yIndexMid);           // c4           N/2
-            findVoids(xIndexLo, xIndexMid, yIndexMid + 1, yIndexHi);       // c5           N/2
-
-            findVoids(xIndexMid + 1, xIndexHi, yIndexLo, yIndexMid);       // c6           N/2
-            findVoids(xIndexMid + 1, xIndexHi, yIndexMid + 1, yIndexHi);   // c7           N/2
-
-            processIndexedRegion(xIndexLo, xIndexHi, yIndexLo, yIndexHi);  //              N/2
-        }
-    }
-
-    protected void findVoidsUsingDoubleIndexes(int incr) {
-        // N!/(2!(N-2)! * N!/(2!(N-2)!
-
-        findVoidsUsingDoubleIndexes(0, indexer.getNXY() - 1, 0, indexer.getNXY() - 1, incr);
-    }
-
-    protected void findVoidsUsingDoubleIndexes(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int incr) {
-        // N!/(2!(N-2)! * N!/(2!(N-2)!
-
-        for (int i = xIndexLo; i < xIndexHi; i++) {
-            if (debug) {
-                log.info("findVoids i=" + i + "/" + indexer.getNXY());
-            }
-            for (int ii = (i + 1); ii < indexer.getNXY(); ii+=incr) {
-                for (int j = yIndexLo; j < yIndexHi; j++) {
-                    for (int jj = (j + 1); jj < indexer.getNXY(); jj+=incr) {
-                        processIndexedRegion(i, ii, j, jj);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @param xIndexLo index given w.r.t. indexer.sortedXIndexes
-     * @param xIndexHi index given w.r.t. indexer.sortedXIndexes
-     * @param yIndexLo index given w.r.t. indexer.sortedYIndexes
-     * @param yIndexHi index given w.r.t. indexer.sortedYIndexes
-     * @param nDiv used to form the number of intervals = nPoints/nDiv
-     *        which should usually be 2 or so
-     * @param bFactor
-     */
-    protected void findVoidsRoughRangeSearch(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, int nDiv, float bFactor) {
-
-        //Divide y interval in half and execute the same size intervals in x over the full range
-        int nYIntervals = (yIndexHi - yIndexLo) / nDiv;                     // cost     number of times
-
-        for (int k = 0; k < nYIntervals; k++) {                             //               nDiv
-            int binSz = (int)((k + 1) * bFactor);                           // c10
-
-            int yLo = yIndexLo;
-            while ((yLo + binSz) < yIndexHi) {                              //               nDiv
-
-                int nXIntervals = (xIndexHi - xIndexLo)/ binSz;
-
-                for (int j = 0; j < nXIntervals; j++) {                     //              nDiv/bfactor
-                    int startX = xIndexLo + (j * binSz);
-                    int endX = startX + binSz;
-//System.out.println("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + (yLo + binSz));
-                    processIndexedRegion(startX, endX, yLo, yLo + binSz);
-                }
-                yLo += binSz;
-            }
-        }
-    }
-
-    /**
-     *
-     * runtime estimation  is O(n^2) + O(n)
-     *     where if evenly distributed, n = N/nSamples, 10*( (N/10)^2 + (N/10) ) ?  not yet checked...
-     *
-     * @param nSamples the number of samples to take
-     * @param nDivisionsPerSide
-     */
-    protected void findVoidsRandomSamples(int nSamples, int nDivisionsPerSide) {
-
-        try {
-            int n = indexer.getNumberOfPoints();
-
-            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-            sr.setSeed(System.nanoTime());
-
-            // find nSamples non-overlapping regions to sample the area
-
-            /*
-             * divide into a grid of nDivisionsPerSide by nDivisionsPerSide and choose nSamples randomly from them
-             *
-             * Note that the division is in index space rather than value space to
-             * use the indexer.
-             *
-             */
-            int binSize = indexer.getNXY()/nDivisionsPerSide;
-
-            /*    col 0
-             *     ||
-             *     \/
-             *      0 |  1 | 2     <=== row 0
-             *    ---------------
-             *        |    |
-             *      3 |  4 | 5
-             *    ---------------
-             *        |    |
-             *      6 |  7 | 8
-             */
-
-            int nSSq = nDivisionsPerSide*nDivisionsPerSide;
-
-            // choices are 0 through nSamples-1
-            boolean[] selected = new boolean[nSSq];
-
-            // q=0,1,2,3
-            int quadNumber = 0;
-
-            for (int i = 0; i < nSamples; i++) {
-
-                quadNumber++;
-                if (quadNumber > 4) {
-                    quadNumber = 0;
-                }
-
-                // to create more evenly distributed random sampling,
-                //     will try for each quadrant
-                //   3*nDiv:4*nDiv
-                //
-                //   2*nDiv:3*nDiv
-                //
-                //   nDiv:2*nDiv
-                //
-                //   0:nDiv         nDiv:2*nDiv       2*nDiv:3*nDiv       3*nDiv:4*nDiv
-                //
-                //   0,1   1,1
-                //   0,0   1,0
-
-                /*int bin = sr.nextInt(nSSq);
-                while (selected[bin]) {
-                    bin = sr.nextInt(nSSq);
-                }
-                selected[bin] = true;
-                int row = (bin/nDivisionsPerSide);
-                int col = (bin % nDivisionsPerSide);
-                */
-
-                int row = 0;
-                int col = 0;
-                int bin = 0;
-
-                boolean draw = true;
-                while (draw) {
-                    int dCol = sr.nextInt(nDivisionsPerSide/2);
-                    int dRow = sr.nextInt(nDivisionsPerSide/2);
-                    switch(quadNumber) {
-                        case 0:
-                            col = dCol;
-                            row = dRow;
-                            break;
-                        case 1:
-                            col = 2*dCol;
-                            row = dRow;
-                            break;
-                        case 2:
-                            col = dCol;
-                            row = 2*dRow;
-                            break;
-                        default:
-                            col = 2*dCol;
-                            row = 2*dRow;
-                            break;
-                    }
-                    bin = col + (row*nDivisionsPerSide);
-                    draw = (selected[bin]);
-                }
-                selected[bin] = true;
-
-                int startX = col*binSize;
-                int endX = startX + binSize;
-                int yLo = row*binSize;
-                int yHi = yLo + binSize;
-
-                if (debug) {
-                    /*log.info("[" + quadNumber + "] " + " bin =" + bin + " nDiv=" + nDivisionsPerSide
-                        + " " + String.format("  %4d : %4d", col, row)
-                        + " " + String.format("  [X %.4f : %.4f] [Y %.4f : %.4f]",
-                        indexer.x[indexer.sortedXIndexes[startX]], indexer.x[indexer.sortedXIndexes[endX]],
-                        indexer.y[yLo], indexer.y[yHi])  );*/
-
-                    log.info("processIndexedRegion: " + startX + ":" + endX + ":" + yLo + ":" + yHi);
-                }
-
-                findVoidsRoughRangeSearch(startX, endX, yLo, yHi, 2, 2);
-            }
-
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    /**
-     * this returns the intersection of points within the area defined by the x
-     * range and y range where those are given in the reference frame of the
-     * indexes sorted by each axis.
-     *
-     * @param x
-     * @param y
-     * @param xIndexLo index given w.r.t. indexer.sortedXIndexes
-     * @param xIndexHi index given w.r.t. indexer.sortedXIndexes
-     * @param yIndexLo index given w.r.t. indexer.sortedYIndexes
-     * @param yIndexHi index given w.r.t. indexer.sortedYIndexes
-     */
-    private void processIndexedRegion(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi) {
-
-        boolean useCompleteSampling = (sampling.ordinal() == Sampling.COMPLETE.ordinal());
-
-        // returns indexes w.r.t. indexer.x and indexer.y
-        int[] regionIndexes = indexer.findIntersectingRegionIndexesIfOnlyTwo(
-            xIndexLo, xIndexHi, yIndexLo, yIndexHi, useCompleteSampling);
-
-        int nPointsInRegion = regionIndexes.length;
-
-        // an area which has 2 points in it and has the smallest nPoints/area, that is the
-        // largest area is the value we are looking for.
-        // we won't be finding the furthest pair because that 'rectangular area' would presumably
-        // contain other points too.
-        //    *an exception is made for useCompleteSampling if more than one same y is present
-        if ( (nPointsInRegion < 2) || ((nPointsInRegion != 2) && !useCompleteSampling) ) {
-            return;
-        }
-
-        if (nPointsInRegion == 2) {
-
-            processIndexedPair(regionIndexes[0], regionIndexes[1]);
-
-        } else if (nPointsInRegion == 3) {
-
-            // find the point that doesn't have the same y as the others.
-            int uniqueYIndex = -1;
-            for (int i = 0; i < regionIndexes.length; i++) {
-                boolean foundSameYAsI = false;
-                float ypi = indexer.getY()[ regionIndexes[i] ];
-                for (int j = 0; j < regionIndexes.length; j++) {
-                    if (i == j) {
-                        continue;
-                    }
-                    float ypj = indexer.getY()[ regionIndexes[j] ];
-                    if (ypj == ypi) {
-                        foundSameYAsI = true;
-                        break;
-                    }
-                }
-                if (!foundSameYAsI) {
-                    // we found the unique y
-                    uniqueYIndex = i;
-                    break;
-                }
-            }
-            if (uniqueYIndex == -1) {
-                StringBuilder err = new StringBuilder("ERROR: intersecting region contained more than 2 points, but unique y wasn't found");
-                for (int i = 0; i < regionIndexes.length; i++) {
-                    err.append("\n  (").append( indexer.getX()[ regionIndexes[i] ] )
-                        .append(", ").append( indexer.getY()[ regionIndexes[i] ] ).append(")");
-                }
-                throw new IllegalStateException(err.toString());
-            }
-            int regionIndex0 = regionIndexes[uniqueYIndex];
-            for (int i = 0; i < regionIndexes.length; i++) {
-                if (i != uniqueYIndex) {
-                    int regionIndex1 = regionIndexes[i];
-                    processIndexedPair(regionIndex0, regionIndex1);
-                }
-            }
-        } else if (nPointsInRegion == 4) {
-            // this is a rectangle, so write all combinations
-            for (int i = 0; i < regionIndexes.length; i++) {
-                int regionIndex0 = regionIndexes[i];
-                for (int j = (i + 1); j < regionIndexes.length; j++) {
-                    int regionIndex1 = regionIndexes[j];
-                    processIndexedPair(regionIndex0, regionIndex1);
-                }
-            }
-        }
-    }
-
-    /**
-     * process the pair of points by calculating the linear density and storing it
-     * in the instance arrays if not already stored.
-     *
-     * @param regionIndex0 index w.r.t. indexer.x and indexer.y
-     * @param regionIndex1 index w.r.t. indexer.x and indexer.y
-     */
-    protected void processIndexedPair(int regionIndex0, int regionIndex1) {
-
-        // Note: using 1-D instead of 2-D rectangles seems to be a better choice because it is not
-        // dependent on rotation of the reference frame
-
-        float d = (float) Math.sqrt(LinesAndAngles.distSquared(
-            indexer.getX()[regionIndex0], indexer.getY()[regionIndex0],
-            indexer.getX()[regionIndex1], indexer.getY()[regionIndex1]));
-
-        if (d == 0) {
-            return;
-        }
-
-        float linearDensity = 2.f / d;
-
-        // expand arrays by 100 if needed
-        if ((nTwoPointSurfaceDensities + 2) > allTwoPointSurfaceDensities.length) {
-            allTwoPointSurfaceDensities = Arrays.copyOf(allTwoPointSurfaceDensities, nTwoPointSurfaceDensities + 100);
-            point1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities + 100);
-            point2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities + 100);
-        }
-
-        if (twoPointIdentities.storeIfDoesNotContain(regionIndex0, regionIndex1)) {
-            allTwoPointSurfaceDensities[nTwoPointSurfaceDensities] = linearDensity;
-            point1[nTwoPointSurfaceDensities] = regionIndex0;
-            point2[nTwoPointSurfaceDensities] = regionIndex1;
-            nTwoPointSurfaceDensities++;
         }
     }
 
@@ -1395,7 +985,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     public int getNumberOfDensityPoints() {
-        return nTwoPointSurfaceDensities;
+        return (voidFinder != null) ? voidFinder.getNumberOfTwoPointDensities() : 0;
     }
 
     public String persistTwoPointBackground() throws IOException {
@@ -1403,18 +993,22 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     protected void serializeTwoPointBackground(ObjectOutputStream oos) throws IOException {
-
-        oos.writeInt(nTwoPointSurfaceDensities);
-
-        for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
-            oos.writeFloat(allTwoPointSurfaceDensities[i]);
+        
+        if (voidFinder == null) {
+            throw new IllegalStateException("no voidFinder to persist");
         }
-        for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
-            oos.writeInt(point1[i]);
-            oos.writeInt(point2[i]);
+
+        oos.writeInt(voidFinder.getNumberOfTwoPointDensities());
+
+        for (int i = 0; i < voidFinder.getNumberOfTwoPointDensities(); i++) {
+            oos.writeFloat(voidFinder.getTwoPointDensities()[i]);
         }
-        for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
-            oos.writeFloat(allTwoPointSurfaceDensitiesErrors[i]);
+        for (int i = 0; i < voidFinder.getNumberOfTwoPointDensities(); i++) {
+            oos.writeInt(voidFinder.getPoint1()[i]);
+            oos.writeInt(voidFinder.getPoint2()[i]);
+        }
+        for (int i = 0; i < voidFinder.getNumberOfTwoPointDensities(); i++) {
+            oos.writeFloat(voidFinder.getTwoPointDensityErrors()[i]);
         }
 
         oos.flush();
@@ -1429,7 +1023,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         boolean didDeserialize = deserializeTwoPointBackground(persistedFileName);;
 
-        if (nTwoPointSurfaceDensities == 0) {
+        if (voidFinder.getNumberOfTwoPointDensities() == 0) {
             throw new IOException("No pairs were found isolated within an area");
         } else {
             if (didDeserialize) {
@@ -1442,23 +1036,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected void deserializeTwoPointBackground(ObjectInputStream ois) throws IOException {
 
-        this.nTwoPointSurfaceDensities = ois.readInt();
-
-        this.allTwoPointSurfaceDensities = new float[nTwoPointSurfaceDensities];
-        this.allTwoPointSurfaceDensitiesErrors = new float[nTwoPointSurfaceDensities];
-        this.point1 = new int[nTwoPointSurfaceDensities];
-        this.point2 = new int[nTwoPointSurfaceDensities];
-
-        for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
-            this.allTwoPointSurfaceDensities[i] = ois.readFloat();
-        }
-        for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
-            this.point1[i] = ois.readInt();
-            this.point2[i] = ois.readInt();
-        }
-        for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
-            this.allTwoPointSurfaceDensitiesErrors[i] = ois.readFloat();
-        }
+        voidFinder = new VoidReader(ois);
+        
     }
 
     void plotFit(PolygonAndPointPlotter plotter) {
@@ -1519,26 +1098,30 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected void plotPairSeparations(TwoPointVoidStatsPlotter plotter, float xmin,
         float xmax, float ymin, float ymax) {
+        
+        if (voidFinder == null) {
+            return;
+        }
 
-        if (point1 != null) {
-            int[] t1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities);
-            int[] t2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities);
+        if (voidFinder.getPoint1() != null) {
+            int[] t1 = Arrays.copyOf(voidFinder.getPoint1(), voidFinder.getNumberOfTwoPointDensities());
+            int[] t2 = Arrays.copyOf(voidFinder.getPoint2(), voidFinder.getNumberOfTwoPointDensities());
 
             plotter.addTwoPointPlot(indexer.getX(), indexer.getY(), t1, t2,
                 xmin, xmax, ymin, ymax);
         }
 
-        if (this.statsHistogram != null && allTwoPointSurfaceDensities != null) {
+        if (this.statsHistogram != null && (voidFinder.getNumberOfTwoPointDensities() > 0)) {
 
             float min = statsHistogram.getXHist()[0];
             float max = statsHistogram.getXHist()[statsHistogram.getXHist().length - 1] +
                 (  (statsHistogram.getXHist()[1] - statsHistogram.getXHist()[0])/2.f);
 
-            float[] tmp = new float[allTwoPointSurfaceDensities.length];
+            float[] tmp = new float[voidFinder.getNumberOfTwoPointDensities()];
             int count = 0;
             for (int i = 0; i < tmp.length; i++) {
-                if ((allTwoPointSurfaceDensities[i] >= min) && (allTwoPointSurfaceDensities[i] <= max)) {
-                    tmp[count] = allTwoPointSurfaceDensities[i];
+                if ((voidFinder.getTwoPointDensities()[i] >= min) && (voidFinder.getTwoPointDensities()[i] <= max)) {
+                    tmp[count] = voidFinder.getTwoPointDensities()[i];
                     count++;
                 }
             }
