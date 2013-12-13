@@ -828,8 +828,8 @@ plotter.writeFile();
 
             xHist = new float[nBins];
             yHist = new int[nBins];
-            Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);
-
+            Histogram.createHistogram(values, nBins, minValue, xMax, xHist, yHist, binWidth);  
+            
             float[] yHistFloat = new float[yHist.length];
             for (int i = 0; i < yHist.length; i++) {
                 yHistFloat[i] = (float) yHist[i];
@@ -852,13 +852,7 @@ try {
 plotter.writeFile();
 } catch (Exception e) {}*/
 
- // Sturges   good for very low numbers
- int nItervalsSturges = (int)Math.ceil( Math.log(values.length)/Math.log(2) );
-
- // Rice
- int nItervalsRice = (int)(2*Math.pow(values.length, 0.3333));
-//System.out.println("nBins=" + nBins + " nItervalsSturges=" + nItervalsSturges + " nItervalsRice=" + nItervalsRice);
-
+           
             return histogram;
         }
     }
@@ -876,11 +870,11 @@ plotter.writeFile();
         */
         float[] meanStdev = MiscMath.findMeanAndStDev(values);
 
-        float binWidth = (float) (binWidthFactor*3.49f* meanStdev[1]/Math.pow(values.length, (1./3.)));
+        float binWidth = (float) (binWidthFactor * 3.49f * meanStdev[1]/Math.pow(values.length, (1./3.)));
 
         return binWidth;
     }
-
+ 
     public static float calculateFreedmanDraconisBinWidth(float[] values, float binWidthFactor) {
 
         if (values == null) {

@@ -135,6 +135,10 @@ public class DoubleAxisIndexerStats {
      */
     public int[] chooseARandomCell(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
         
+        if (numberOfCellsInOneDimension < 1) {
+            throw new IllegalArgumentException("numberOfCellsInOneDimension must be larger than 0");
+        }
+        
         Random sr = null;
         
         try {

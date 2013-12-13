@@ -53,7 +53,8 @@ public class FindClustersTest extends BaseTwoPointTest {
         //long seed = 1386654511861l;
         //long seed = 1386662454910l;
         //long seed = 1386750505246l;
-        long seed = 1386900065786l;
+        //long seed = 1386900065786l;
+        long seed = 1386930386057l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -128,57 +129,61 @@ public class FindClustersTest extends BaseTwoPointTest {
                 twoPtC.setDebug(true);                
               
                 twoPtC.logPerformanceMetrics();
+                
                 twoPtC.calculateBackground();
+                //twoPtC.setBackground(0.2f, 0.1f);
                 twoPtC.findClusters();
 
+                String plotLabel = "";
+                
                 TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
-                HistogramHolder histogram = stats.statsHistogram;
-
-                String plotLabel = null;
-
-                GEVYFit bestFit = stats.bestFit;
-                if (bestFit != null) {
-                    
-                    // label needs:  x10, peak,  mean/peak, median/mean and x80/median
-                    plotLabel = String.format(
-                        "  (%d %d) best k=%.4f sigma=%.4f mu=%.4f chiSqSum=%.6f chst=%.1f",
-                        i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), bestFit.getChiSqStatistic()
-                    );
-                    if (debug) {
-                        log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
-                    }
-                }
-                
-                if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
-                    if (i == 1 && ii == 0) {
-                        StringBuilder xsb = new StringBuilder();
-                        StringBuilder ysb = new StringBuilder();
-                        StringBuilder xesb = new StringBuilder();
-                        StringBuilder yesb = new StringBuilder();
-    
-                        for (int z = 0; z < histogram.getYHist().length; z++) {
-                            if (z > 0) {
-                                xsb.append("f, ");
-                                ysb.append("f, ");
-                                xesb.append("f, ");
-                                yesb.append("f, ");
-                            }
-                            xsb.append(histogram.getXHist()[z]);
-                            ysb.append(histogram.getYHist()[z]);
-                            xesb.append(histogram.getXErrors()[z]);
-                            yesb.append(histogram.getYErrors()[z]);
+                if (stats != null) {
+                    HistogramHolder histogram = stats.statsHistogram;
+        
+                    GEVYFit bestFit = stats.bestFit;
+                    if (bestFit != null) {
+                        
+                        // label needs:  x10, peak,  mean/peak, median/mean and x80/median
+                        plotLabel = String.format(
+                            "  (%d %d) best k=%.4f sigma=%.4f mu=%.4f chiSqSum=%.6f chst=%.1f",
+                            i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), bestFit.getChiSqStatistic()
+                        );
+                        if (debug) {
+                            log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
                         }
-                        System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                        System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-                        System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
-                        System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
-                        int z = 1;
+                    }
+                    
+                    if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
+                        if (i == 2 && ii == 2) {
+                            StringBuilder xsb = new StringBuilder();
+                            StringBuilder ysb = new StringBuilder();
+                            StringBuilder xesb = new StringBuilder();
+                            StringBuilder yesb = new StringBuilder();
+        
+                            for (int z = 0; z < histogram.getYHist().length; z++) {
+                                if (z > 0) {
+                                    xsb.append("f, ");
+                                    ysb.append("f, ");
+                                    xesb.append("f, ");
+                                    yesb.append("f, ");
+                                }
+                                xsb.append(histogram.getXHist()[z]);
+                                ysb.append(histogram.getYHist()[z]);
+                                xesb.append(histogram.getXErrors()[z]);
+                                yesb.append(histogram.getYErrors()[z]);
+                            }
+                            System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+                            System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+                            System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+                            System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
+                            int z = 1;
+                        }
                     }
                 }
-                
+            
                 twoPtC.calculateHullsOfClusters();
 
-                plotter.addPlotWithoutHull(twoPtC, plotLabel);
+                plotter.addPlot(twoPtC, plotLabel);
                 plotter.writeFile();
 
              // assert that the low number histograms are all well formed and result in finding n clusters

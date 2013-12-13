@@ -50,8 +50,6 @@ public class TwoPointVoidStats3Test extends BaseTwoPointTest {
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(false);
         
-        stats.setUseSemiCompleteSampling();
-
         System.out.println("*4*");
         
         stats.calc();

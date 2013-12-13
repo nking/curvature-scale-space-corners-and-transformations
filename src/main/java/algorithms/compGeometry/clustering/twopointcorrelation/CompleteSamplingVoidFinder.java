@@ -4,16 +4,6 @@ import java.util.logging.Logger;
 
 public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
     
-    protected int skipInterval = 1;
-    
-    protected int xSortedIdxLo = -1;
-    
-    protected int xSortedIdxHi = -1;
-    
-    protected int ySortedIdxLo = -1;
-    
-    protected int ySortedIdxHi = -1;
-    
     public void constructLogger() {
         this.log = Logger.getLogger(this.getClass().getName());
     }   
@@ -22,40 +12,6 @@ public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
     protected void findVoidsImpl() {
 
         findVoidsByPairBounds();
-    }
-    
-    @Override
-    protected void initializeVariables() {
-        
-        super.initializeVariables();
-        
-        this.xSortedIdxLo = 0;
-        
-        this.xSortedIdxHi = indexer.getNXY();
-        
-        this.ySortedIdxLo = 0;
-        
-        this.ySortedIdxHi = indexer.getNXY();
-    }
-    
-    public void setXSortedIdxLo(int idx) {
-        this.xSortedIdxLo = idx;
-    }
-    
-    public void setXSortedIdxHi(int idx) {
-        this.xSortedIdxHi = idx;
-    }
-    
-    public void setYSortedIdxLo(int idx) {
-        this.ySortedIdxLo = idx;
-    }
-    
-    public void setYSortedIdxHi(int idx) {
-        this.ySortedIdxHi = idx;
-    }
-    
-    public void setSkipInterval(int skip) {
-        this.skipInterval = skip;
     }
 
     /**
@@ -69,13 +25,9 @@ public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
         //
         //    *(i,j)
 
-        for (int uSortedXIndex = xSortedIdxLo; uSortedXIndex < xSortedIdxHi; uSortedXIndex+=skipInterval) {
+        for (int uSortedXIndex = 0; uSortedXIndex < indexer.getNumberOfPoints(); uSortedXIndex++) {
             
-            for (int vSortedXIndex = ySortedIdxLo; vSortedXIndex < ySortedIdxHi; vSortedXIndex+=skipInterval) {
-            
-                if (uSortedXIndex == vSortedXIndex) {
-                    continue;
-                }
+            for (int vSortedXIndex = (uSortedXIndex + 1); vSortedXIndex < indexer.getNumberOfPoints(); vSortedXIndex++) {
                 
                 processIndexedRegion(uSortedXIndex, vSortedXIndex);
             }

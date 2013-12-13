@@ -137,8 +137,8 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
             // we already know that x is within bounds, just need to test yt and exit quickly if it is within bounds
             float yt = y[idx];
             
-            if ( !((yt < y0) || (yt > y1)) ) {
-                // it's not outside of bounds, it's within, so do not
+            if ((yt > y0) && (yt < y1)) {
+                // it's within bounds
                 doProcess = false;
                 break;
             }
@@ -170,7 +170,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
             return;
         }
 
-        float linearDensity = 2.f / d;
+        float linearDensity = (float) (2.f / Math.sqrt(d));
 
         // expand arrays by 100 if needed
         if ((nTwoPointSurfaceDensities + 2) > allTwoPointSurfaceDensities.length) {
