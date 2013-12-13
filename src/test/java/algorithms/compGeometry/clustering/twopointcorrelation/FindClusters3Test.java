@@ -55,13 +55,15 @@ public class FindClusters3Test extends TestCase {
         //twoPtC.setBackground(0.26f, 0.001f);
         //twoPtC.findClusters();
 
+        //LEAST_COMPLETE
         twoPtC.calculateBackground();
         twoPtC.findClusters();
 
         PolygonAndPointPlotter pl = new PolygonAndPointPlotter(50, 150, 50, 150);
         pl.addPlot(twoPtC.getGroupFinder().getX(0, indexer), twoPtC.getGroupFinder().getY(0, indexer), null, null, "");
-       
-        ((DFSGroupFinder)twoPtC.getGroupFinder()).printMembership(indexer);
+        pl.writeFile();
+        
+        //((DFSGroupFinder)twoPtC.getGroupFinder()).printMembership(indexer);
         
         pl.addPlot(twoPtC.getGroupFinder().getX(1, indexer), twoPtC.getGroupFinder().getY(1, indexer), null, null, "");
         pl.writeFile();

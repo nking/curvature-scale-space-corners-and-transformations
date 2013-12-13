@@ -259,33 +259,4 @@ public class DoubleAxisIndexerTest extends TestCase {
         }
         int z = 1;
     }
-
-    public void testFindIntersectingRegionIndexes() throws Exception {
-
-        int npoints = 100;
-
-        float[] x = new float[npoints];
-        float[] y = new float[npoints];
-
-        /*
-         * randomly create data then assert that value  previous is less than last for indexes
-         */
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        //sr.setSeed(System.currentTimeMillis());
-        sr.setSeed(123456789);
-
-        for (int i = 0; i < npoints; i++) {
-            x[i] = sr.nextFloat()*(float)(npoints - 1);
-            y[i] = sr.nextFloat()*(float)(npoints - 1);
-        }
-
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, npoints);
-
-        int[] intersectingIndexes = indexer.findIntersectingRegionIndexes(0, npoints-1, 0, npoints-1);
-
-        assertTrue(intersectingIndexes.length == npoints);
-
-    }
-
 }

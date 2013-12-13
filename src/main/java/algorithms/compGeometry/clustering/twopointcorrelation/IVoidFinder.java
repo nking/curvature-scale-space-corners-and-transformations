@@ -3,10 +3,10 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 public interface IVoidFinder {
     
     public void findVoids(DoubleAxisIndexer indexer) throws TwoPointVoidStatsException;
+        
+    public void processIndexedRegion(int xSortedIndex0, int xSortedIndex1);
     
-    public void processIndexedRegion(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, boolean useCompleteSampling);
-    
-    public void processIndexedPair(int regionIndex0, int regionIndex1);
+    public void processIndexedPair(int idx0, int idx1);
     
     
     public float[] getTwoPointDensities();

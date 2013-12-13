@@ -172,8 +172,8 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 
                 twoPtC.calculateHullsOfClusters();
 
-                plotter.addPlot(twoPtC, plotLabel);
-                //plotter.addPlotWithoutHull(twoPtC, plotLabel);
+                //plotter.addPlot(twoPtC, plotLabel);
+                plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();
 
                 if (i == 0) {

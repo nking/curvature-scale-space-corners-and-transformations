@@ -35,7 +35,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         //srr.setSeed(System.currentTimeMillis());
         //long seed = srr.nextLong();
 
-        long seed = System.currentTimeMillis();
+        //long seed = System.currentTimeMillis();
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
@@ -53,6 +53,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         //long seed = 1386654511861l;
         //long seed = 1386662454910l;
         //long seed = 1386750505246l;
+        long seed = 1386900065786l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -124,7 +125,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     generator.x, generator.y,
                     generator.xErrors, generator.yErrors, generator.x.length);
 
-                //twoPtC.setDebug(true);                
+                twoPtC.setDebug(true);                
               
                 twoPtC.logPerformanceMetrics();
                 twoPtC.calculateBackground();
@@ -177,7 +178,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                 
                 twoPtC.calculateHullsOfClusters();
 
-                plotter.addPlot(twoPtC, plotLabel);
+                plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();
 
              // assert that the low number histograms are all well formed and result in finding n clusters

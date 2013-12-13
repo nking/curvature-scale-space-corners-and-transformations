@@ -1,6 +1,5 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 import algorithms.util.Stack;
@@ -112,6 +111,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
                 
                 processPair(indexer, uSortedXIndex, vSortedXIndex);
                 
+                // inserting back at the top of the stack assures that the search continues next from an associated point
                 stack.insert(vSortedXIndex);
             }
         }
@@ -233,7 +233,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             
             groupId = -1;
             
-            System.err.println("not readding " + uIdx + ":" + vIdx );
+            log.finest("not reading " + uIdx + ":" + vIdx );
         }
         
         /*

@@ -12,7 +12,7 @@ public class DivideAndConquerVoidFinder extends AbstractVoidFinder {
     @Override
     protected void findVoidsImpl() {
         
-        findVoids(0, indexer.nXY - 1, 0, indexer.nXY - 1);
+        findVoids(0, indexer.nXY - 1);
     }
     
 
@@ -28,25 +28,17 @@ public class DivideAndConquerVoidFinder extends AbstractVoidFinder {
      * @param yIndexLo
      * @param yIndexHi
      */
-    protected void findVoids(int xIndexLo, int xIndexHi,
-        int yIndexLo, int yIndexHi) {
-        
-        boolean useCompleteSampling = (sampling.ordinal() == VoidSampling.COMPLETE.ordinal());
-        
-                                                                                 // cost     number of times
-        if ((xIndexLo < xIndexHi) && (yIndexLo < yIndexHi)) {                    //
+    protected void findVoids(int xIndexLo, int xIndexHi) {
+                
+        if (xIndexLo < xIndexHi) {    
 
-            int xIndexMid = (xIndexLo + xIndexHi)/2;                             //
+            int xIndexMid = (xIndexLo + xIndexHi)/2;         
 
-            int yIndexMid = (yIndexLo + yIndexHi)/2;                             //
+            findVoids(xIndexLo, xIndexMid);      
 
-            findVoids(xIndexLo, xIndexMid, yIndexLo, yIndexMid);           // c4           N/2
-            findVoids(xIndexLo, xIndexMid, yIndexMid + 1, yIndexHi);       // c5           N/2
+            findVoids(xIndexMid + 1, xIndexHi);     
 
-            findVoids(xIndexMid + 1, xIndexHi, yIndexLo, yIndexMid);       // c6           N/2
-            findVoids(xIndexMid + 1, xIndexHi, yIndexMid + 1, yIndexHi);   // c7           N/2
-
-            processIndexedRegion(xIndexLo, xIndexHi, yIndexLo, yIndexHi, useCompleteSampling);  //              N/2
+            processIndexedRegion(xIndexLo, xIndexHi); 
         }
     }
 }

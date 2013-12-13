@@ -227,269 +227,53 @@ public class DoubleAxisIndexer {
         this.xSortedByY = xPoints;
         this.ySortedByY = yPoints;
     }
-
+     
     /**
-     * find the intersection of regions specified by xIndexLo:xIndexHi and yIndexLo:yIndexHi
+     * given 2 points defined by their indexes with respect to the
+     * array sortedXIndexes, return true if there are no other points
+     * within their bounds.
      *
-     * @param xIndexLo x index w.r.t the sortedXIndexes. used to lookup the
-     * index w.r.t. the original unsorted array
-     * @param xIndexHi
-     * @param yIndexLo y index w.r.t the sortedYIndexes. used to lookup the
-     * index w.r.t. the original unsorted array
-     * @param yIndexHi
+     * @param xSortedIndex1 index of first point's location in the array sortedXIndexes
+     * @param xSortedIndex2 index of second point's location in the array sortedXIndexes
      *
-     * @return array of indexes of points within the intersection of boundaries
-     *    of x[sortedXIndexes[xIndexLo]]:x[sortedXIndexes[xIndexHi]] and
-     *       x[sortedYIndexes[yIndexLo]]:y[sortedYIndexes[yIndexHi]].
-     *    the resulting array of indexes are w.r.t. the original arrays indexer.x and indexer.y
+     * @return true if there are no other points within the bounds of the 2 referenced
+     * by their indexes
      */
-    protected int[] findIntersectingRegionIndexes(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi) {
-
-        // since these points are sorted by Y can pick out the x first, and use binary search to find y points
-        int n = (xIndexHi - xIndexLo) + (yIndexHi - yIndexLo) + 2;
-        if (n < 0) {
-            int  z = 1;
+    protected boolean hasNoOtherPointsWithinBounds(int xSortedIndex1, int xSortedIndex2) {
+    
+        if (xSortedIndex1 > xSortedIndex2) {
+            int tmp = xSortedIndex1;
+            xSortedIndex1 = xSortedIndex2;
+            xSortedIndex2 = tmp;
         }
-        int[] indexes = new int[n];
-        int nIndexes = 0;
+        
+        int idx1 = sortedXIndexes[xSortedIndex1];
+        int idx2 = sortedXIndexes[xSortedIndex2];
+        
+        // x's are already ordered by increasing x
+        float y0 = y[idx1];
+        float y1 = y[idx2];
+       
+        if (y0 > y1) {
+            float tmp = y0;
+            y0 = y1;
+            y1 = tmp;
+        }
+        
+        for (int i = (xSortedIndex1 + 1); i < xSortedIndex2; i++) {
+            
+            int idx = sortedXIndexes[i];
 
-        for (int i = xIndexLo; i <= xIndexHi; i++) {
-
-            int xIndex = sortedXIndexes[i];
-
-            float xp = x[xIndex];
-            float yp = y[xIndex];
-
-            // find the corresponding y index and see if it is in range yIndexLo to yIndexHi
-            int yIndexSorted = Arrays.binarySearch(ySortedByY, yp);
-
-            if ((yIndexSorted >= yIndexLo) && (yIndexSorted <= yIndexHi)) {
-                indexes[nIndexes] = xIndex;
-                nIndexes++;
+            // we already know that x is within bounds, just need to test yt and exit quickly if it is within bounds
+            float yt = y[idx];
+            
+            if ( !((yt < y0) || (yt > y1)) ) {
+                // it's not outside of bounds
+                return false;
             }
         }
-
-        return Arrays.copyOf(indexes, nIndexes);
-    }
-
-    /**
-     * Find the intersection of regions specified by xIndexLo:xIndexHi and yIndexLo:yIndexHi
-     * If there are only 2 points, else return an empty array.
-     *
-     * For example, returns int[]{region0Index, regionIIndex}
-     * which are the corners of the bounding box and can be used in the following way:
-     *     one point is indexer.x[region0Index], indexer.y[region0Index]
-     *     the other point is indexer.x[region1Index], indexer.y[region1Index]
-     *
-     * @param xIndexLo x index w.r.t the sortedXIndexes. used to lookup the
-     * index w.r.t. the original unsorted array
-     * @param xIndexHi
-     * @param yIndexLo y index w.r.t the sortedYIndexes. used to lookup the
-     * index w.r.t. the original unsorted array
-     * @param yIndexHi
-     * @param useCompleteSampling if set to true, an exception to returning only
-     *     2 point intersecting regions is made and the method might return 3 points
-     *     if 2 of the points have the same y.
-     *
-     * @return array of indexes of points within the intersection of boundaries
-     *    of x[sortedXIndexes[xIndexLo]]:x[sortedXIndexes[xIndexHi]] and
-     *       x[sortedYIndexes[yIndexLo]]:y[sortedYIndexes[yIndexHi]].
-     *    the resulting array of indexes are w.r.t. the original arrays indexer.x and indexer.y
-     */
-    protected int[] findIntersectingRegionIndexesIfOnlyTwo(int xIndexLo, int xIndexHi,
-        int yIndexLo, int yIndexHi, boolean useCompleteSampling) {
-
-        // since these points are sorted by Y can pick out the x first, and use binary search to find y points
-        int n = (xIndexHi - xIndexLo) + (yIndexHi - yIndexLo) + 2;
-
-        int[] indexes = new int[n];
-        int nIndexes = 0;
-
-        for (int i = xIndexLo; i <= xIndexHi; i++) {
-
-            int xIndex = sortedXIndexes[i];
-
-            float xp = x[xIndex];
-            float yp = y[xIndex];
-
-            // find the corresponding y index and see if it is in range yIndexLo to yIndexHi
-            // where is xIndex in ySortedIndexes.  assumes unique y values.
-            int yIndexSorted = Arrays.binarySearch(ySortedByY, yp);
-
-            if ((yIndexSorted >= yIndexLo) && (yIndexSorted <= yIndexHi)) {
-                indexes[nIndexes] = xIndex;
-                nIndexes++;
-
-                if (nIndexes > 2) {
-
-                    // more than one of same y value can be a problem here.
-                    // choices:
-                    //   (1) ignore that and toss the region as containing more than 2 points.
-                    //   (2) search here for the identical y in indexes, and if found, allow
-                    //       algorithm to continue.  then discard if more than 3 are found in the region.
-                    //       the code that uses this would have to then try to store both pair densities
-                    //       (this later adds alot to each iteration.  will use it only if complete sampling is selected)
-                    //   ==> choosing to implement (2) if useCompleteSampling is true.
-
-                    if (useCompleteSampling) {
-                        // if there is more than one of same y value, there can only be that many + 1 total, in other
-                        //  words, only one other different y valued point in there,
-                        // OR, could be a rectangle, with 2 points having same x's and 2 having same y's
-                        boolean isATriangleWithTwoSameYs = isATriangleWithTwoSameYs(indexes, nIndexes, yp);
-                        if (isATriangleWithTwoSameYs) {
-                            // let algorithm continue
-                        } else if (isARectangle(indexes, nIndexes)) {
-                            // let algorithm continue
-                        } else {
-                            return new int[0];
-                        }
-                    } else {
-                        return new int[0];
-                    }
-                }
-            }
-        }
-
-        return Arrays.copyOf(indexes, nIndexes);
-    }
-
-    /**
-     * test whether the points found by the indexes are 3 in number with 2 having the
-     * same value as yp (which is the latest entered, so faster to use that).
-     *
-     * @param indexes
-     * @param nIndexes
-     * @param yp
-     * @return
-     */
-    protected boolean isATriangleWithTwoSameYs(int[] indexes, int nIndexes, float yp) {
-        int countSameYValue = 0;
-        for (int ii = 0; ii < nIndexes; ii++) {
-            float yt = y[ indexes[ii]];
-            if (yt == yp) {
-                countSameYValue++;
-            }
-        }
-        if (countSameYValue == (nIndexes - 1)) {
-            return true;
-        }
-        return false;
-    }
-    protected boolean isARectangle(int[] indexes, int nIndexes) {
-        // quickest way to rule out rectangle?  count points with same x's and same y's and should have 2 each
-        if (nIndexes != 4) {
-            return false;
-        }
-        int nSameX = 0;
-        int nSameY = 0;
-        int[] sameXIndexes0 = new int[2]; // a value in sameXIndexes0 is paired with same index in sameXIndexes1
-        int[] sameXIndexes1 = new int[2];
-        int[] sameYIndexes0 = new int[2];
-        int[] sameYIndexes1 = new int[2];
-        for (int i = 0; i < nIndexes; i++) {
-            float xti = x[ indexes[i] ];
-            float yti = y[ indexes[i] ];
-            for (int j = (i + 1); j < nIndexes; j++) {
-                float xtj = x[ indexes[j] ];
-                float ytj = y[ indexes[j] ];
-                float diffx = xti - xtj;
-                float diffy = yti - ytj;
-                if (Math.abs(diffx) <= 0.001*xti) {
-                    // [0]  nSameX->0:1
-                    // [1]  nSameX->1:2
-                    if (nSameX > 1) {
-                        return false;
-                    } else {
-                        sameXIndexes0[nSameX] = i;
-                        sameXIndexes1[nSameX] = j;
-                        nSameX++;
-                    }
-                } else if (Math.abs(diffy) <= 0.001*yti) {
-                    if (nSameY > 1) {
-                        return false;
-                    } else {
-                        sameYIndexes0[nSameY] = i;
-                        sameYIndexes1[nSameY] = j;
-                        nSameY++;
-                    }
-                }
-            }
-        }
-        if (nSameX != 2) {
-            return false;
-        } else if (nSameY != 2) {
-            return false;
-        } else {
-            // there were 4 points, and we found 2 with same x and 2 with same y and none
-            // are identical points.
-            // now need to assert that the sets include pattern of points.
-            int topYIndex, bottomYIndex, leftXIndex, rightXIndex;
-            if (y[sameYIndexes0[0]] > y[sameYIndexes0[1]]) {
-                topYIndex = 0;
-                bottomYIndex = 1;
-            } else {
-                topYIndex = 1;
-                bottomYIndex = 0;
-            }
-            if (x[sameXIndexes0[0]] < x[sameXIndexes0[1]]) {
-                leftXIndex = 0;
-                rightXIndex = 1;
-            } else {
-                leftXIndex = 1;
-                rightXIndex = 0;
-            }
-
-            // 1 |1   3      sameYIndexes0[1] = 1   sameYIndexes1[1] = 3
-            //   |
-            // 0 |0   2      sameYIndexes0[0] = 0   sameYIndexes1[0] = 2
-            //   ------
-            //    0   1
-            //
-            //   /\
-            //    |
-            // sameXIndexes0[0] = 0   sameXIndexes1[0] = 1
-            // sameXIndexes0[1] = 2   sameXIndexes1[0] = 3
-
-            // do the top and left contain same index?
-            if (sameYIndexes0[topYIndex] == sameXIndexes0[leftXIndex]) {
-                // found top left
-                // is there a top right with same index?
-                if (sameYIndexes1[topYIndex] == sameXIndexes0[rightXIndex]) {
-                    // found top left  and top right  since we know 2x's are same and 2y's are same, we have a rectangle now
-                    return true;
-                } else if (sameYIndexes1[topYIndex] == sameXIndexes1[rightXIndex]) {
-                    return true;
-                }
-            } else if (sameYIndexes1[topYIndex] == sameXIndexes0[leftXIndex]) {
-                // found top left
-                // is there a top right with same index?
-                if (sameYIndexes0[topYIndex] == sameXIndexes0[rightXIndex]) {
-                    // found top left  and top right  since we know 2x's are same and 2y's are same, we have a rectangle now
-                    return true;
-                } else if (sameYIndexes0[topYIndex] == sameXIndexes1[rightXIndex]) {
-                    return true;
-                }
-            } else if (sameYIndexes0[topYIndex] == sameXIndexes1[leftXIndex]) {
-                // found top left
-                // is there a top right with same index?
-                if (sameYIndexes1[topYIndex] == sameXIndexes0[rightXIndex]) {
-                    // found top left  and top right  since we know 2x's are same and 2y's are same, we have a rectangle now
-                    return true;
-                } else if (sameYIndexes1[topYIndex] == sameXIndexes1[rightXIndex]) {
-                    return true;
-                }
-            } else if (sameYIndexes1[topYIndex] == sameXIndexes1[leftXIndex]) {
-                // found top left
-                // is there a top right with same index?
-                if (sameYIndexes0[topYIndex] == sameXIndexes0[rightXIndex]) {
-                    // found top left  and top right  since we know 2x's are same and 2y's are same, we have a rectangle now
-                    return true;
-                } else if (sameYIndexes0[topYIndex] == sameXIndexes1[rightXIndex]) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        
+        return true;
     }
 
     /**

@@ -95,85 +95,58 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
     }
     
     /**
-     * this returns the intersection of points within the area defined by the x
-     * range and y range where those are given in the reference frame of the
-     * indexes sorted by each axis.
+     * process the region bounded by the pair if the region is found to be a void
+     * bounded only by the 2 given points referenced by the indexes.
      *
      * @param x
      * @param y
-     * @param xIndexLo index given w.r.t. indexer.sortedXIndexes
-     * @param xIndexHi index given w.r.t. indexer.sortedXIndexes
-     * @param yIndexLo index given w.r.t. indexer.sortedYIndexes
-     * @param yIndexHi index given w.r.t. indexer.sortedYIndexes
+     * @param xSortedIndex0 index within indexer.sortedXIndexes which is an index to reference a point in indexer's x and y
+     * @param xSortedIndex1 index within indexer.sortedXIndexes which is an index to reference a point in indexer's x and y
      */
-    public void processIndexedRegion(int xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi, boolean useCompleteSampling) {
-
-        // returns indexes w.r.t. indexer.x and indexer.y
-        int[] regionIndexes = indexer.findIntersectingRegionIndexesIfOnlyTwo(
-            xIndexLo, xIndexHi, yIndexLo, yIndexHi, useCompleteSampling);
-
-        int nPointsInRegion = regionIndexes.length;
-
-        // an area which has 2 points in it and has the smallest nPoints/area, that is the
-        // largest area is the value we are looking for.
-        // we won't be finding the furthest pair because that 'rectangular area' would presumably
-        // contain other points too.
-        //    *an exception is made for useCompleteSampling if more than one same y is present
-        if ( (nPointsInRegion < 2) || ((nPointsInRegion != 2) && !useCompleteSampling) ) {
-            return;
+    public void processIndexedRegion(int xSortedIndex0, int xSortedIndex1) {
+        
+        if (xSortedIndex0 > xSortedIndex1) {
+            int tmp = xSortedIndex0;
+            xSortedIndex0 = xSortedIndex1;
+            xSortedIndex1 = tmp;
         }
+        
+        int[] sortedXIndexes = indexer.getSortedXIndexes();
+        
+        float[] y = indexer.getY();
+        
+        int idx1 = sortedXIndexes[xSortedIndex0];
+        int idx2 = sortedXIndexes[xSortedIndex1];
+        
+        // x's are already ordered by increasing x
+        float y0 = y[idx1];
+        float y1 = y[idx2];
+       
+        if (y0 > y1) {
+            float tmp = y0;
+            y0 = y1;
+            y1 = tmp;
+        }
+        
+        boolean doProcess = true;
+        
+        for (int i = (xSortedIndex0 + 1); i < xSortedIndex1; i++) {
+            
+            int idx = sortedXIndexes[i];
 
-        if (nPointsInRegion == 2) {
-
-            processIndexedPair(regionIndexes[0], regionIndexes[1]);
-
-        } else if (nPointsInRegion == 3) {
-
-            // find the point that doesn't have the same y as the others.
-            int uniqueYIndex = -1;
-            for (int i = 0; i < regionIndexes.length; i++) {
-                boolean foundSameYAsI = false;
-                float ypi = indexer.getY()[ regionIndexes[i] ];
-                for (int j = 0; j < regionIndexes.length; j++) {
-                    if (i == j) {
-                        continue;
-                    }
-                    float ypj = indexer.getY()[ regionIndexes[j] ];
-                    if (ypj == ypi) {
-                        foundSameYAsI = true;
-                        break;
-                    }
-                }
-                if (!foundSameYAsI) {
-                    // we found the unique y
-                    uniqueYIndex = i;
-                    break;
-                }
+            // we already know that x is within bounds, just need to test yt and exit quickly if it is within bounds
+            float yt = y[idx];
+            
+            if ( !((yt < y0) || (yt > y1)) ) {
+                // it's not outside of bounds, it's within, so do not
+                doProcess = false;
+                break;
             }
-            if (uniqueYIndex == -1) {
-                StringBuilder err = new StringBuilder("ERROR: intersecting region contained more than 2 points, but unique y wasn't found");
-                for (int i = 0; i < regionIndexes.length; i++) {
-                    err.append("\n  (").append( indexer.getX()[ regionIndexes[i] ] )
-                        .append(", ").append( indexer.getY()[ regionIndexes[i] ] ).append(")");
-                }
-                throw new IllegalStateException(err.toString());
-            }
-            int regionIndex0 = regionIndexes[uniqueYIndex];
-            for (int i = 0; i < regionIndexes.length; i++) {
-                if (i != uniqueYIndex) {
-                    int regionIndex1 = regionIndexes[i];
-                    processIndexedPair(regionIndex0, regionIndex1);
-                }
-            }
-        } else if (nPointsInRegion == 4) {
-            // this is a rectangle, so write all combinations
-            for (int i = 0; i < regionIndexes.length; i++) {
-                int regionIndex0 = regionIndexes[i];
-                for (int j = (i + 1); j < regionIndexes.length; j++) {
-                    int regionIndex1 = regionIndexes[j];
-                    processIndexedPair(regionIndex0, regionIndex1);
-                }
-            }
+        }
+        
+        if (doProcess) {
+            
+            processIndexedPair(idx1, idx2);
         }
     }
 
@@ -181,17 +154,17 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
      * process the pair of points by calculating the linear density and storing it
      * in the instance arrays if not already stored.
      *
-     * @param regionIndex0 index w.r.t. indexer.x and indexer.y
-     * @param regionIndex1 index w.r.t. indexer.x and indexer.y
+     * @param idx0 index w.r.t. indexer.x and indexer.y
+     * @param idx1 index w.r.t. indexer.x and indexer.y
      */
-    public void processIndexedPair(int regionIndex0, int regionIndex1) {
+    public void processIndexedPair(int idx0, int idx1) {
 
         // Note: using 1-D instead of 2-D rectangles seems to be a better choice because it is not
         // dependent on rotation of the reference frame
 
         float d = (float) Math.sqrt(LinesAndAngles.distSquared(
-            indexer.getX()[regionIndex0], indexer.getY()[regionIndex0],
-            indexer.getX()[regionIndex1], indexer.getY()[regionIndex1]));
+            indexer.getX()[idx0], indexer.getY()[idx0],
+            indexer.getX()[idx1], indexer.getY()[idx1]));
 
         if (d == 0) {
             return;
@@ -206,10 +179,10 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
             point2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities + 100);
         }
 
-        if (twoPointIdentities.storeIfDoesNotContain(regionIndex0, regionIndex1)) {
+        if (twoPointIdentities.storeIfDoesNotContain(idx0, idx1)) {
             allTwoPointSurfaceDensities[nTwoPointSurfaceDensities] = linearDensity;
-            point1[nTwoPointSurfaceDensities] = regionIndex0;
-            point2[nTwoPointSurfaceDensities] = regionIndex1;
+            point1[nTwoPointSurfaceDensities] = idx0;
+            point2[nTwoPointSurfaceDensities] = idx1;
             nTwoPointSurfaceDensities++;
         }
     }

@@ -474,15 +474,6 @@ public class TwoPointCorrelation {
 
             printPerformanceMetrics(startTimeMillis, stopTimeMillis, "findGroups", indexer.getNXY());
         }
-
-        try {
-            temporaryWorkaroundForSampling();
-        } catch (IOException e) {
-            log.severe(e.getMessage());
-        } catch (TwoPointVoidStatsException e) {
-            log.severe(e.getMessage());
-        }
-
     }
   
     protected float calculateFractionOfAreaOutsideOfClusters() throws IOException, TwoPointVoidStatsException {
@@ -551,84 +542,6 @@ public class TwoPointCorrelation {
 
         return frac;
     }
-
-    protected void temporaryWorkaroundForSampling() throws TwoPointVoidStatsException, IOException {
-
-        // This is a temporary work around to account for not being able to distinguish yet for the default case
-        //   of sampling.  If we used TwoPointVoidStats.Sampling.SEMI_COMPLETE,
-        //   and if there are many points are outliers or all points are in one cluster
-        //   we have to redo-the analysis with TwoPointVoidStats.Sampling.SEMI_COMPLETE_RANGE_SEARCH
-
-        if (backgroundStats == null) {
-            return;
-        }
-
-        if (((TwoPointVoidStats)backgroundStats).getSampling().ordinal() == VoidSampling.SEMI_COMPLETE.ordinal()) {
-
-            // this is very roughly trying to determine whether there are many
-            //   outliers, and if so, we should use the range search because
-            //   it samples between the clusters better.
-            // Caveat is should not reduce the sampling to 'range search' if there are few points already.
-
-            int nDensities = ((TwoPointVoidStats)backgroundStats).getNumberOfDensityPoints();
-
-if (nDensities < 1001) {
-    return;
-}
-
-            float fracPoints = calculateFractionOfPointsOutsideOfClusters();
-
-            float fracArea = calculateFractionOfAreaOutsideOfClusters();
-
-            int n = (groupFinder != null) ? groupFinder.getNumberOfGroups() : 0;
-
-            if (fracPoints <= 0.11f) {
-                if (fracArea > 0.33f) {
-                    log.info("KEEP " + VoidSampling.SEMI_COMPLETE.name()
-                        + " fracPoints=" + fracPoints + " fracArea=" + fracArea + " nGroups=" + n);
-                    return;
-                }
-            }
-            log.info("CHANGE TO " + VoidSampling.SEMI_COMPLETE_RANGE_SEARCH.name()
-                + " fracPoints=" + fracPoints + " fracArea=" + fracArea + " nGroups=" + n);
-
-            if (debug) {
-                plotClusters();
-            }
-
-            TwoPointVoidStats voidStats = new TwoPointVoidStats(indexer);
-            voidStats.setDebug(debug);
-
-            if (doLogPerformanceMetrics) {
-                voidStats.logPerformanceMetrics();
-            }
-            
-            if (setUseDownhillSimplexHistogramFitting) {
-                voidStats.setUseDownhillSimplexHistogramFitting();
-            }
-
-            voidStats.setUseSemiCompleteRangeSampling();
-
-            voidStats.calc();
-
-            backgroundStats = voidStats;
-
-            if (persistTheMinimaStats) {
-                minimaStatsFilePath = voidStats.persistTwoPointBackground();
-            }
-
-            this.backgroundSurfaceDensity = voidStats.getBackgroundSurfaceDensity();
-            this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
-
-            if (debug) {
-                log.info("==>background density ="
-                    + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
-            }
-
-            findGroups();
-        }
-    }
-
 
     /**
      * calculate convex hulls of clusters and calculate the hull centroids and area

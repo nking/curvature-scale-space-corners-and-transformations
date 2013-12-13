@@ -14,9 +14,9 @@ public class TwoPointVoidStats3Test extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
-    public void testFindVoidsRoughRangeSearch() throws Exception {
+    public void testFindVoidsSemiCompleteSearch() throws Exception {
 
-        log.info("testFindVoidsRoughRangeSearch");
+        log.info("testFindVoidsSemiCompleteSearch");
 
         SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
         srr.setSeed( System.currentTimeMillis() );
@@ -50,7 +50,7 @@ public class TwoPointVoidStats3Test extends BaseTwoPointTest {
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(false);
         
-        stats.setUseSemiCompleteRangeSampling();
+        stats.setUseSemiCompleteSampling();
 
         System.out.println("*4*");
         

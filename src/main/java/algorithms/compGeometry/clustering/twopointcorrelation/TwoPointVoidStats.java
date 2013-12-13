@@ -21,8 +21,6 @@ import java.io.ObjectOutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
@@ -166,27 +164,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     /**
-     * Use semi-complete range sampling.  This is a sampling method which scans
-     * over a range of values with varying bin sizes.  Its good to use for
-     * datasets in which there are outliers, that is data outside of "clusters".
-     *
-     * Note, if using this method, you may want to consider instead letting the code find it by default instead,
-     * as the code will vary the bin size and its factor of change
-     * depending upon data size.
-     */
-    public void setUseSemiCompleteRangeSampling() {
-        this.sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH;
-    }
-
-    /**
-     * Use the algorithm for Sampling.COMPLETE, but sample the 2nd index over a larger range to reduce the
-     * runtime.  This algorithm is very good to use when Sampling.COMPLETE is needed,
-     * but there are a large enough number of points to sample the background very
-     * well even when we decrease the sampling by a large amount.  This works well
-     * for datasets which have few to no background points, that is few to no outliers.
-     *
-     * The runtime is not yet estimated, but first look suggests
-     * that it is N!/(2!( (N/8)-2)! * N!/(2!( (N/8) -2)
+     * Use semi-complete sampling, which is the same as complete sampling, but
+     * skips every 4 lines
      */
     public void setUseSemiCompleteSampling() {
         this.sampling = VoidSampling.SEMI_COMPLETE;
@@ -684,30 +663,18 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     /**
-     * find the rectangular 2 point densities using the Sampling method already set
-     * or determine a Sampling method using the rules below.
-     *
-     * When no sampling has been set, the method attempts to assign least amount
-     * of sampling needed to build a decent histogram.
-     * (One day it should quickly look at the overall structure of the data
-     * to learn if outliers are likely, and hence choose between a default
-     * sampling pattern similar to Sampling.COMPLETE for
-     * no outliers, or sampling pattern similar to Sampling.SEMI_COMPLETE_RANGE_SEARCH
-     * when outliers are expected, but it does not at this time.)
-     * Until then, the number of data points are used to decide sampling.
-     * If SEMI_COMPLETE was used, the ability to improve the sampling is done
-     * in the invoker @see TwoPointCorrelation#bruteForceCalculateGroups() which uses
+     * 
+     * 
      * @throws TwoPointVoidStatsException 
      * @see TwoPointCorrelation#temporaryWorkaroundForSampling().
      * There if SEMI_COMPLETE was used and there are outliers, the background fit
      * is redone using SEMI_COMPLETE_RANGE_SEARCH
      *
-     * The rules when sampling has not been set are as follows (along with the
-     * "refit" logic just described above):
+     * The rules when sampling has not been set are as follows
 
             if (nXY >= 4000) {
                 if data seems evenly distributed without large gaps
-                sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET;  
+                sampling = Sampling.SEMI_COMPLETE_SUBSET;  
             } else {
                 if (indexer.nXY > 10000) {
                     // RT (n^1.8) to (n^2.2) roughly...
@@ -717,12 +684,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 } else if (indexer.nXY > 999) {
                     // RT (n^1.8) roughly...
                     this.sampling = Sampling.SEMI_COMPLETE_RANGE_SEARCH;
-                } else if (indexer.nXY < 100) {
-                    // RT O(n^4)
-                    this.sampling = Sampling.COMPLETE;
                 } else {
-                    // RT O(n lg(n))
-                    this.sampling = Sampling.SEMI_COMPLETE;
+                    // RT O(n^2)
+                    this.sampling = Sampling.COMPLETE;
                 }
             }
 
@@ -754,7 +718,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 
                 // reduce the sampling to a cell holding 1000 points 
                 // and use the sampling that would be applied for 1000 points
-                sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET;               
+                sampling = VoidSampling.SEMI_COMPLETE_SUBSET;               
             }
         }
         
@@ -776,15 +740,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             // is redone using SEMI_COMPLETE_RANGE_SEARCH
 
             if (nXY > 10000) {
-                this.sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_2;
+                this.sampling = VoidSampling.SEMI_COMPLETE;
             } else if (nXY > 8000) {
-                this.sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_3;
+                this.sampling = VoidSampling.SEMI_COMPLETE;
             } else if (nXY > 999) {
-                this.sampling = VoidSampling.SEMI_COMPLETE_RANGE_SEARCH;
-            } else if (nXY < 100) {
                 this.sampling = VoidSampling.COMPLETE;
             } else {
-                this.sampling = VoidSampling.SEMI_COMPLETE;
+                this.sampling = VoidSampling.COMPLETE;
             }
         }        
 
@@ -808,99 +770,41 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             
             voidFinder.findVoids(indexer);
 
-        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
-            
-            int nDiv = 2;
-            
-            float bFactor = 1.5f;
-            
-            voidFinder = new RoughRangeSearchVoidFinder();
-            
-            voidFinder.setSampling(sampling);
-            
-            ((RoughRangeSearchVoidFinder)voidFinder).setBinFactor(bFactor);
-            ((RoughRangeSearchVoidFinder)voidFinder).setNumberOfDivisions(nDiv);
-           
-            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexLow(0);
-            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexHigh(indexer.getNumberOfPoints() - 1);
-            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexLow(0);
-            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexHigh(indexer.getNumberOfPoints() - 1);
-            
-            voidFinder.findVoids(indexer);
-            
-        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET.ordinal()) {
-                        
+        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_SUBSET.ordinal()) {
+
             // xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi
-            int[] xyMinMaxCell = stats.chooseARandomCell(nCellsPerDimension, indexer);            
-            
-            int nDiv = 2;
-            
-            float bFactor = 1.5f;
-            
-            voidFinder = new RoughRangeSearchVoidFinder();
-            
-            voidFinder.setSampling(sampling);
-            
-            ((RoughRangeSearchVoidFinder)voidFinder).setBinFactor(bFactor);
-            ((RoughRangeSearchVoidFinder)voidFinder).setNumberOfDivisions(nDiv);
+            int[] xyMinMaxCell = stats.chooseARandomCell(nCellsPerDimension, indexer);
            
-            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexLow(xyMinMaxCell[0]);
-            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexHigh(xyMinMaxCell[1]);
-            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexLow(xyMinMaxCell[2]);
-            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexHigh(xyMinMaxCell[3]);
-            
-            voidFinder.findVoids(indexer);            
-            
-            nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0])*(xyMinMaxCell[3] - xyMinMaxCell[2]);
+            voidFinder = new CompleteSamplingVoidFinder();
 
-        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
-
-            // uses a very rough range search
-            int nDiv = 10;
-            float bFactor = 4;
-            
-            voidFinder = new RoughRangeSearchVoidFinder();
-            
             voidFinder.setSampling(sampling);
-            
-            ((RoughRangeSearchVoidFinder)voidFinder).setBinFactor(bFactor);
-            ((RoughRangeSearchVoidFinder)voidFinder).setNumberOfDivisions(nDiv);
-           
-            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexLow(0);
-            ((RoughRangeSearchVoidFinder)voidFinder).setXIndexHigh(indexer.getNumberOfPoints() - 1);
-            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexLow(0);
-            ((RoughRangeSearchVoidFinder)voidFinder).setYIndexHigh(indexer.getNumberOfPoints() - 1);
-            
+
+            ((CompleteSamplingVoidFinder) voidFinder).setXSortedIdxLo(xyMinMaxCell[0]);
+            ((CompleteSamplingVoidFinder) voidFinder).setXSortedIdxHi(xyMinMaxCell[1]);
+            ((CompleteSamplingVoidFinder) voidFinder).setYSortedIdxLo(xyMinMaxCell[2]);
+            ((CompleteSamplingVoidFinder) voidFinder).setYSortedIdxHi(xyMinMaxCell[3]);
+
             voidFinder.findVoids(indexer);
 
-        } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
-
-            // for area of data so large that randomly chosen patches are necessary
-            //   to reduce sample to decrease runtime
-            
-            voidFinder = new RandomRoughRangeSearchVoidFinder();
-            
-            voidFinder.setSampling(sampling);
-            
-            voidFinder.findVoids(indexer);
+            nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0]) * (xyMinMaxCell[3] - xyMinMaxCell[2]);
 
         } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE.ordinal()) {
-
-            // for datasets not evenly distributed, and with clusters >> outliers
-            //  For this case, complete sampling works, but we want something faster.
-
-            // N!/(2!( (N/8)-2)! * N!/(2!( (N/8) -2) ??  TODO: estimate this
-            int incr = 8;
             
             voidFinder = new CompleteSamplingVoidFinder();
-            
-            ((CompleteSamplingVoidFinder)voidFinder).setSkipInterval(8);
-            
+
             voidFinder.setSampling(sampling);
             
-            voidFinder.findVoids(indexer);
-        }
+            ((CompleteSamplingVoidFinder) voidFinder).setSkipInterval(4);
 
+            ((CompleteSamplingVoidFinder) voidFinder).setXSortedIdxLo(0);
+            ((CompleteSamplingVoidFinder) voidFinder).setXSortedIdxHi(indexer.getNXY());
+            ((CompleteSamplingVoidFinder) voidFinder).setYSortedIdxLo(0);
+            ((CompleteSamplingVoidFinder) voidFinder).setYSortedIdxHi(indexer.getNXY());
+
+            voidFinder.findVoids(indexer);
+            
+        }
+        
         if (doLogPerformanceMetrics) {
 
             long stopTimeMillis = System.currentTimeMillis();
@@ -909,17 +813,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {
                 str = "O(n lg(n)) with n=";
             } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
-                str = "O(n^4) with n=";
-            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH.ordinal()) {
-                str = "(n*bf/nDiv)^1.8) or O(n^2 - n) with n=";
-            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_SUBSET.ordinal()) {
-                str = "(n*bf/nDiv)^1.8) or O(n^2 - n) with n=" + nSampled;
-            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_2.ordinal()) {
-                str = "(n*bf/nDiv)^2.2) n=";
-            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_RANGE_SEARCH_3.ordinal()) {
-                str = "? n=";
+                str = "O(n^2) with n=";
             } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE.ordinal()) {
-                str = "(n/8)^(2.25) n=";
+                str = "O((n/4)^2) with n=";
+            } else if (sampling.ordinal() == VoidSampling.SEMI_COMPLETE_SUBSET.ordinal()) {
+                str = "O(n1*n2) = O(" + nSampled + ")";
             }
             
             printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateBackgroundVia2PtVoidFit-->calculateTwoPointVoidDensities", str);
