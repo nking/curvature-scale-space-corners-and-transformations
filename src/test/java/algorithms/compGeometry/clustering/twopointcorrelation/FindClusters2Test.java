@@ -35,11 +35,11 @@ public class FindClusters2Test extends BaseTwoPointTest {
         //srr.setSeed(System.currentTimeMillis());
         //long seed = srr.nextLong();
 
-        //long seed = System.currentTimeMillis();
+        long seed = System.currentTimeMillis();
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
-        long seed = 1386750505246l;
+        //long seed = 1386750505246l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -172,8 +172,8 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 
                 twoPtC.calculateHullsOfClusters();
 
-                //plotter.addPlot(twoPtC, plotLabel);
-                plotter.addPlotWithoutHull(twoPtC, plotLabel);
+                plotter.addPlot(twoPtC, plotLabel);
+                //plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();
 
                 if (i == 0) {

@@ -14,6 +14,7 @@ import algorithms.misc.DoubleAxisIndexerStats;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
+import algorithms.misc.Statistic;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -508,7 +509,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             String limitStr = "";
 
             boolean isSmallNumberHist = false;
-
+            
             // for histograms with small number of points and small peak, need to use
             //   a pattern observed for just those and that is that the minimum before
             //   yPeak is the answer if lower than the first point.
@@ -530,6 +531,17 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                     isSmallNumberHist = true;
                     this.backgroundSurfaceDensity = histogram.getXHist()[minIndex];
                 }
+            }
+            
+            //TODO:  improve calcs for spatially separated groups without background points between them.
+            //maybe take use findVoids of non empty cells only
+            DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+            float fracEmpty = stats.fractionOfCellsWithoutPoints(6, indexer);
+            log.finest("fracEmpty cells = " + fracEmpty); 
+
+            if ((fracEmpty > 0.5) && (yPeakIndex > 0)) {
+                isSmallNumberHist = true;
+                this.backgroundSurfaceDensity = histogram.getXHist()[1];
             }
 
             float limit, limitError;
@@ -664,10 +676,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         int nCellsPerDimension = (int)Math.sqrt(indexer.nXY/1000);
 
         DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
-        
+                
         int nSampled = -1;
         
-        /*if (nXY >= 4000) {
+        if (nXY >= 4000) {
             
             // fits to void histograms of datasets where nXY > 1000 are the better fits.
             // for larger datasets, can take a sub-sample the void densities to reduce the runtime if can quickly see that the data is evenly sampled.
@@ -683,7 +695,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 // and use the sampling that would be applied for 1000 points
                 sampling = VoidSampling.SEMI_COMPLETE_SUBSET;               
             }
-        }*/
+        }
         
         if (sampling == null) {
 
