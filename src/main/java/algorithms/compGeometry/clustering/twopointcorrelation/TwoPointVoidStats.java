@@ -28,22 +28,40 @@ import java.util.logging.Logger;
 /**
  * Class to estimate a background density for a set of points in which
  * the background density will be used by the calling program to find
- * clusters in the data.
+ * clusters, that is groups of points associated by proximity, in the data.
  *
  * It calculates the two-point density function of rectangular voids, creates a
  * histogram from the distribution, fits a Generalized Extreme Value
- * distribution to the histogram, integrates the area under the curve to
- * estimate the background density. For denser background densities, a
- * slightly different integration limit is used.
- *
- * This assumes that the data contains background points and clustered points
- * whose 2 distributions are different from one another, but homogeneous within
- * their own. It assumes that the distributions do not need to be fit well, but
- * that only the rough range of the background density needs to be
- * learned.
+ * distribution to the histogram and interprets that based upon information
+ * about the number density of points in both dimensions.
+ * 
+ * Essentially one must learn before sampling and analysis, whether the majority of points
+   are in groups or are background points ahead of time.
+   The only way to know that ahead of time is by rough cell counts (in 2-dimensions) before
+   making the 1-dimensional histogram of counts.
+   -- If a significant number of cells are empty, this is easily seen as SPARSE_BACKGROUND sampling
+      and then the background density is the lowest bin's x value in a well formed histogram
+   -- If all cells have values within stdev of avg it's an even distribution of points.
+      this is seen as needing COMPLETE sampling
+      and then the density is the peak bin's x value in a well formed histogram
+   -- Else, we should avoid empty cells and avoid the cells with counts > avg + stdev 
+      and then use COMPLETE sampling of that subset of cells
+      and then the density is the peak bin's x value in a well formed histogram
+      -- Note that the cells should not be too large in number because that would be
+         biasing the histogram to remove the densities that represent the distance between
+         groups.
+      -- Note that for this case, we really want to be able to remove the groups after first approx
+         and then do a complete sampling on the data without those and determine the 
+         background density as the peak's x bin as the answer from that.  
+         the problem is that one needs to fit a profile to the groups
+         in order to subtract them and to believe that that profile is correct and differentiable
+         from a uniform background distribution (which are details of the 2-point correlation function...)
+         
+         TODO: following up on extreme differences for distributions in the later before
+         improving the sampling to match the above description 
  *
  <pre>
- * More specifically:
+ * More specifically for the true background points:
  * -- The location of the 'background' points in two dimensional space are likely
  *    Poisson, that is their locations in a fixed interval of space are
  *    independent of one another and occurred randomly.
@@ -55,8 +73,9 @@ import java.util.logging.Logger;
  * -- The GEV curve contains 3 independent fitting parameters and the curve is
  *    an exponential combined with a polynomial, so it's resulting fitted
  *    parameters are not unique, but the curve is useful for characterizing the
- *    background point distribution and then integrating under the curve.
- * -- The points within a cluster are distributed radially.
+ *    background point distribution and analyzing the distribution for the most
+ *    frequently occurring densities (the peak) and the smallest densities for
+ *    sparse background data setss.
  * </pre>
  *
  *
@@ -70,15 +89,16 @@ import java.util.logging.Logger;
  *     stats.calc();
  *
  * The value returned by the code is used by TwoPointCorrelation as an estimate
- * of the background density.  That density is "noise" which TwoPointCorrelation
- * looks for clusters in the signal higher it (densities > threshold*noise).
+ * of the background density.  That density is used as "noise" which TwoPointCorrelation
+ * looks for clusters in the signal higher than it by a threshhold factor that's
+ * usually 2 or 3 (densities > threshold*noise).
  *
  * The runtimes for the code are still in progress, but roughly approximated
  * in 2 stages:  (1) calculating and fitting the background voids
  * @see #findVoids@see(), and (2) finding the groups within the data using
  * a threshold from the background density.
  *
- * If debugging is turned on, a plot is generated and the path is printed to
+ * If debugging is turned on, a plots are generated and those file paths are printed to
  * standard out, and statements are printed to standard out.
  *
  * @author nichole
