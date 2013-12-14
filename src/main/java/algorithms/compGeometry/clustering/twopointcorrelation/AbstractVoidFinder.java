@@ -73,6 +73,13 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.getNXY());        
     }
     
+    public void releaseLargeVariables() {
+        allTwoPointSurfaceDensities = null;
+        twoPointIdentities = null;
+        point2 = null;
+        point1 = null;
+    }
+    
     protected abstract void findVoidsImpl();
     
     public abstract void constructLogger();
@@ -191,7 +198,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
     protected void condenseArrays() throws TwoPointVoidStatsException {
         
         if (nTwoPointSurfaceDensities == 0) {
-            throw new TwoPointVoidStatsException("No pairs were found isolated within an area");
+            //throw new TwoPointVoidStatsException("No pairs were found isolated within an area");
         }
 
         // condense arrays

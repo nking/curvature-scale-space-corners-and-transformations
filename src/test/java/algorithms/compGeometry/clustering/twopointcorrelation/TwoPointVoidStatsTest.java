@@ -81,6 +81,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
         stats.setGEVRangeParameters(0.0001f, 1.0f, 0.00001f, 0.002f);
+        //stats.setStandardDeviationFactor(2.5f);        
         stats.calc();
 
         float bSurfDens    = stats.getBackgroundSurfaceDensity();
@@ -134,7 +135,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
-
+        //stats.setStandardDeviationFactor(2.5f);
         stats.calc();
 
         assertNotNull(stats.getBestFit());
@@ -192,6 +193,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
         stats.setUseCompleteSampling();
+        //stats.setStandardDeviationFactor(2.5f);
 
         stats.calc();
 
@@ -228,7 +230,8 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(debug);
-
+        //stats.setStandardDeviationFactor(2.5f);
+        
         stats.calc();
 
         assertNotNull(stats.getBestFit());

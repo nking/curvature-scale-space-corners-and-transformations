@@ -128,7 +128,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     
     // uses conjugate gradient method for non quadratic functions if = true, else downhill simplex.
     protected boolean useDefaultFitting = false;
-
+    
+    /**
+     * the factor to use when comparing a value to average += standardDeviation*sigmaFactor.
+     * It should be the same as TwoPointCorrelation.sigmaFactor.
+     * It's value is usually between 2 and 3.
+     */
+    protected float sigmaFactor = 2.5f;
+    
     //
     public HistogramHolder getStatsHistogram() {
         return statsHistogram;
@@ -157,27 +164,18 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         state = State.POINTS_LOADED;
     }
-
-    /**
-     * Use the least complete sampling.  This is fine for datasets with many many outliers,
-     * especially compared to the number within clusters.  It's the fastest, but
-     * should not be used for datasets in which there are few to no-outliers as there
-     * will be very few two-point voids that get sampled.
-     * The runtime is O(N*log_2(N)) as it uses divide and conquer.
-     */
-    public void setUseLeastCompleteSampling() {
-        this.sampling = VoidSampling.LEAST_COMPLETE;
-    }
     
     public void setUseDownhillSimplexHistogramFitting() {
         this.useDefaultFitting = false;
     }
 
     /**
-     * Use complete sampling.
-     * The runtime for the complete sampling is < O(N^2).
+     * set the type of sampling to be used on the dataset to calculate the 2-point
+     * densities.  Note that this is expected to be invoked only from
+     * TwoPointCorrelation.
+     * @param sampling
      */
-    public void setUseCompleteSampling() {
+    protected void setUseCompleteSampling() {
         this.sampling = VoidSampling.COMPLETE;
     }
 
@@ -196,14 +194,19 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected void setInterpretForSparseBackgroundToTrue() {
         this.interpretForSparseBackground = Boolean.TRUE;
     }
+    
     /**
-     * set the type of sampling to be used on the dataset to calculate the 2-point
-     * densities.  Note that this is expected to be invoked only from
-     * TwoPointCorrelation.
-     * @param sampling
+     * set the value of the variable 'sigmaFactor'.
+     * @param stDevFactor
      */
-    protected void setSampling(VoidSampling sampling) {
-        this.sampling = sampling;
+    protected void setStandardDeviationFactor(float stDevFactor) {
+        this.sigmaFactor = stDevFactor;
+    }
+    
+    public void releaseLargeVariables() {
+        if (voidFinder != null) {
+            voidFinder.releaseLargeVariables();
+        }
     }
     
     protected void logPerformanceMetrics() {
@@ -399,7 +402,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
         
         int nCellsPerDimensionForStats = (int)Math.sqrt(indexer.nXY/300.);
-        if (nCellsPerDimensionForStats > 1) {
+        if (nCellsPerDimensionForStats < 1) {
             nCellsPerDimensionForStats = 1;
         }
         Statistic statistic = stats.calculateCellDensities(nCellsPerDimensionForStats, indexer);
@@ -416,21 +419,22 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             
             } else {
                             
-                boolean allAreSame = stats.allAreSame(statistic);
+                float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor);
                 
                 interpretForSparseBackground = Boolean.FALSE;
                 
-                if ((nCellsPerDimensionForStats > 1) && allAreSame) {
+                if ((nCellsPerDimensionForStats > 1) && (fractionOutliers < 0.1f)) {
                     
-                    if (nXY >= 10000) {
+                    /*if (nXY >= 10000) {
                         // reduce the sampling to a cell holding 1000 points 
                         // and use the sampling that would be applied for 1000 points
+                        // this method can take longer than VoidSampling.COMPLETE due to increased complexity for converting y axis indexes
                         sampling = VoidSampling.COMPLETE_ON_RANDOM_SUBSET;
                         
-                    } else {
+                    } else {*/
                         
                         sampling = VoidSampling.COMPLETE;
-                    }
+                    //}
                     
                 } else {
                     

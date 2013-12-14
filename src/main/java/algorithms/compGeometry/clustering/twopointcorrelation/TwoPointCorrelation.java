@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -68,6 +67,12 @@ public class TwoPointCorrelation {
     }
 
     protected final DoubleAxisIndexer indexer;
+    
+    protected Boolean refineSolution = Boolean.FALSE;
+    
+    protected boolean allowRefinement = false;
+    
+    protected DoubleAxisIndexer tempRefineSolnIndexer = null;
 
     private float backgroundSurfaceDensity;
     private float backgroundError;
@@ -112,7 +117,6 @@ public class TwoPointCorrelation {
     protected boolean setUseDownhillSimplexHistogramFitting = false;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
-        
 
     /**
      * constructor without errors on xPoints and yPoints.  Note that the
@@ -207,6 +211,10 @@ public class TwoPointCorrelation {
     public void setMinimumNumberInCluster(int minimumNumberForClusterMembership) {
         this.minimumNumberInCluster = minimumNumberForClusterMembership;
     }
+    
+    public void setAllowRefinement() {
+        allowRefinement = true;
+    }
 
     public void setBackground(float backgroundSurfaceDensity, float standardDeviationOfBackground) {
 
@@ -217,22 +225,6 @@ public class TwoPointCorrelation {
         state = STATE.BACKGROUND_SET;
 
         bMethod = BACKGROUND_METHOD.USER_SUPPLIED;
-    }
-
-    /**
-     * calculate background using complete sampling.  warning, this method takes longer than all other methods.
-     *
-     * @throws TwoPointVoidStatsException
-     * @throws IOException
-     */
-    public void calculateBackgroundUsingCompleteSampling() throws TwoPointVoidStatsException, IOException {
-
-        if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
-
-            boolean useCompleteBackgroundSampling = true;
-
-            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling);
-        }
     }
 
     /**
@@ -247,9 +239,7 @@ public class TwoPointCorrelation {
 
         if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
 
-            boolean useCompleteBackgroundSampling = false;
-
-            calculateBackgroundVia2PtVoidFit(useCompleteBackgroundSampling);
+            calculateBackgroundVia2PtVoidFit();
         }
     }
 
@@ -260,6 +250,9 @@ public class TwoPointCorrelation {
         if (setUseDownhillSimplexHistogramFitting) {
             minStats.setUseDownhillSimplexHistogramFitting();
         }
+        
+        minStats.setStandardDeviationFactor(sigmaFactor);
+        
         minStats.calc(minimaFilePath);
 
         if (debug) {
@@ -279,21 +272,33 @@ public class TwoPointCorrelation {
         bMethod = BACKGROUND_METHOD.DESERIALIZED;
     }
 
-    protected void calculateBackgroundVia2PtVoidFit(Boolean useCompleteBackgroundSampling) throws TwoPointVoidStatsException, IOException {
+    protected void calculateBackgroundVia2PtVoidFit() throws TwoPointVoidStatsException, IOException {
 
         if ((bMethod != null) && (bMethod.ordinal() == BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
             return;
         }
 
-        TwoPointVoidStats voidStats = new TwoPointVoidStats(indexer);
+        TwoPointVoidStats voidStats = null;
+        
+        if (refineSolution.booleanValue()) {
+
+            voidStats = new TwoPointVoidStats(tempRefineSolnIndexer);
+            
+            voidStats.setUseCompleteSampling();
+           
+            voidStats.setInterpretForSparseBackgroundToTrue();
+                                
+        } else {
+            
+            voidStats = new TwoPointVoidStats(indexer);
+        }
+        
         voidStats.setDebug(debug);
+        
+        voidStats.setStandardDeviationFactor(sigmaFactor);
 
         if (doLogPerformanceMetrics) {
             voidStats.logPerformanceMetrics();
-        }
-
-        if ((useCompleteBackgroundSampling != null) && useCompleteBackgroundSampling) {
-            voidStats.setUseCompleteSampling();
         }
         
         if (setUseDownhillSimplexHistogramFitting) {
@@ -302,9 +307,7 @@ public class TwoPointCorrelation {
 
         voidStats.calc();
 
-        //if (debug) {
-            backgroundStats = voidStats;
-        //}
+        backgroundStats = voidStats;
 
         if (persistTheMinimaStats) {
             minimaStatsFilePath = voidStats.persistTwoPointBackground();
@@ -312,6 +315,12 @@ public class TwoPointCorrelation {
 
         this.backgroundSurfaceDensity = voidStats.getBackgroundSurfaceDensity();
         this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
+        
+        //backgroundStats.releaseLargeVariables();
+        
+        if (refineSolution) {
+            tempRefineSolnIndexer = null;
+        }
 
         if (debug) {
             log.info("==>background density ="
@@ -411,7 +420,7 @@ public class TwoPointCorrelation {
     public void findClusters() throws TwoPointVoidStatsException, IOException {
 
         if (state.ordinal() < STATE.BACKGROUND_SET.ordinal()) {
-            calculateBackgroundVia2PtVoidFit(false);
+            calculateBackgroundVia2PtVoidFit();
         }
 
         findGroups();
@@ -456,8 +465,8 @@ public class TwoPointCorrelation {
         return plotter.writeFile3();
     }
 
-    public void findGroups() {
-
+    protected void findGroups() throws TwoPointVoidStatsException, IOException {
+        
         long startTimeMillis = System.currentTimeMillis();
 
         groupFinder = new DFSGroupFinder(backgroundSurfaceDensity, sigmaFactor);
@@ -474,35 +483,82 @@ public class TwoPointCorrelation {
 
             printPerformanceMetrics(startTimeMillis, stopTimeMillis, "findGroups", indexer.getNXY());
         }
+        
+        if (allowRefinement && !refineSolution && backgroundStats != null && backgroundStats instanceof TwoPointVoidStats) {
+            
+            TwoPointVoidStats tmp = (TwoPointVoidStats)backgroundStats;
+            
+            if (tmp.getInterpretForSparseBackground() != null && tmp.getInterpretForSparseBackground().booleanValue()) {
+            
+                if (tmp.getSampling() != null && tmp.getSampling().ordinal() == VoidSampling.COMPLETE.ordinal()) {
+                    
+                    tempRefineSolnIndexer = createIndexerMinusGroupPoints();
+                    
+                    if (tempRefineSolnIndexer != null) {
+
+                        // subtract the groups to create a new indexer
+                        refineSolution = Boolean.TRUE;
+
+                        state = STATE.INITIALIZED;
+
+                        findClusters();
+                        
+                    }
+                }
+            }
+        }
     }
   
-    protected float calculateFractionOfAreaOutsideOfClusters() throws IOException, TwoPointVoidStatsException {
-
-        if (state.ordinal() < STATE.CLUSTER_HULLS_CALCULATED.ordinal()) {
-            calculateHullsOfClusters();
-        }
+    private DoubleAxisIndexer createIndexerMinusGroupPoints() {
         
+        if (indexer == null) {
+            throw new IllegalStateException("indexer cannot be null");
+        }
         if (groupFinder == null) {
-            // there are no clusters, so fraction outside is 1.0
-            return 1.0f;
+            throw new IllegalStateException("groupFinder cannot be null");
         }
-
-        int nGroups = groupFinder.getNumberOfGroups();
         
-        // ignore overlapping clusters at this point:
-        float groupAreaSum = 0;
-
-        for (int i = 0; i < nGroups; i++) {
-            groupAreaSum += groupHullSurfaceAreas[i];
+        int[] pointToGroupIndexes = groupFinder.getPointToGroupIndexes();
+        
+        int numberInGroups = 0;
+        for (int idx : pointToGroupIndexes) {
+            if (idx > -1) {
+                numberInGroups++;
+            }
         }
-
-        //xmin, xmax, ymin, ymax
-        float[] xyMinMax = this.indexer.findXYMinMax();
-        float dataPointsArea = (xyMinMax[3] - xyMinMax[2])*(xyMinMax[1] - xyMinMax[0]);
-
-        float frac = (dataPointsArea - groupAreaSum)/dataPointsArea;
-
-        return frac;
+        
+        int n = indexer.getNumberOfPoints() - numberInGroups;
+        
+        if (n == 0) {
+            return null;
+        }
+        
+        float[] tmpx = new float[n];
+        float[] tmpy = new float[n];
+        float[] tmpxe = new float[n];
+        float[] tmpye = new float[n];
+        
+        int count = 0;
+        
+        for (int i = 0; i < pointToGroupIndexes.length; i++) {
+            
+            int groupId = pointToGroupIndexes[i];
+            
+            if (groupId == -1) {
+             
+                tmpx[count] = indexer.getX()[i];
+                tmpy[count] = indexer.getY()[i];
+                tmpxe[count] = indexer.getXErrors()[i];
+                tmpye[count] = indexer.getYErrors()[i];
+                
+                count++;
+            }
+        }
+        
+        DoubleAxisIndexer tmpIndexer = new DoubleAxisIndexer();
+        tmpIndexer.sortAndIndexXThenY(tmpx, tmpy, tmpxe, tmpye, tmpx.length);
+                
+        return tmpIndexer;
     }
 
     protected float calculateFractionOfPointsOutsideOfClusters() {

@@ -38,6 +38,8 @@ public interface IPointBackgroundStats {
      * @return the backgroundSurfaceDensityError
      */
     public float getBackgroundSurfaceDensityError();
+    
+    public void releaseLargeVariables();
 
     public long approximateMemoryUsed();
 }

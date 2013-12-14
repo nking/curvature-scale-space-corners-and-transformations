@@ -27,7 +27,14 @@ public class DoubleAxisIndexerStats {
      * @return statistic the basic statistics of the point counts within the cells
      */
     public Statistic calculateCellDensities(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
-
+        
+        if (numberOfCellsInOneDimension == 0) {
+            throw new IllegalArgumentException("numberOfCellsInOneDimension must be larger than 0");
+        }
+        if (indexer == null) {
+            throw new IllegalArgumentException("indexer cannot be null");
+        }
+        
         //xmin, xmax, ymin, ymax 
         float[] xyMinMax = indexer.findXYMinMax();
 
@@ -90,16 +97,16 @@ public class DoubleAxisIndexerStats {
     }
     
     /**
-     * looking at cells across the dataset to see if they have roughly equal numbers of points in them.
-     * 
-     * The division is by the x and y range of values.
+     * return the fraction of cells whose counts are outside of average +- standardDeviation*factorStDev
      * 
      * @param numberOfCellsInOneDimension number of cells across one dimension to divide the
      *  data into to count the number of points within each cell
      * @param indexer
+     * @param factorStDev the factor to test whether a cell's counts are within average += stDev*factorStDev.
+     * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
      * @return whether all of the counts within cells are similar within one standard deviation
      */
-    public boolean allAreSame(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
+    public float fractionOfCellsOutSideOfAvgTolerance(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer, float factorStDev) {
         
         Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);
         
@@ -107,23 +114,24 @@ public class DoubleAxisIndexerStats {
             throw new IllegalArgumentException("could not calculate statistics from given indexer");
         }
                 
-        return allAreSame(statistic);
+        return fractionOfCellsOutSideOfAvgTolerance(statistic, factorStDev);
     }
     
     /**
-     * looking at cells across the dataset to see if they have roughly equal numbers of points in them.
-     * 
-     * The division is by the x and y range of values.
+     * return the fraction of cells whose counts are outside of average +- standardDeviation*factorStDev
      * 
      * @param statistic
-     * @param indexer
+     * @param factorStDev the factor to test whether a cell's counts are within average += stDev*factorStDev.
+     * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
      * @return whether all of the counts within cells are similar within one standard deviation
      */
-    public boolean allAreSame(Statistic statistic) {
+    public float fractionOfCellsOutSideOfAvgTolerance(Statistic statistic, float factorStDev) {
                 
         if (statistic == null) {
             throw new IllegalArgumentException("statistic cannot be null");
         }
+        
+        int nAboveAvgPlusStDev = 0;
                 
         float stDev = statistic.getStandardDeviation();
         
@@ -133,13 +141,13 @@ public class DoubleAxisIndexerStats {
             
             float diff = Math.abs(item - avg);
             
-            if (diff > (1.0f * stDev)) {
+            if (diff > (factorStDev * stDev)) {
             
-                return false;
+                nAboveAvgPlusStDev++;
             }
         }
         
-        return true;
+        return (float)nAboveAvgPlusStDev/(float)statistic.getNumberOfItems();
     }
     
     /**
@@ -148,9 +156,11 @@ public class DoubleAxisIndexerStats {
      * 
      * @param numberOfCellsInOneDimension
      * @param indexer
+     * @param factorStDev the factor to test whether a cell's counts are within average += stDev*factorStDev.
+     * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
      * @return whether there are not cells with significantly fewer points in them than average
      */
-    public boolean doesNotHaveLargeGaps(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
+    public boolean doesNotHaveLargeGaps(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer, float factorStDev) {
         
         Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);
         
@@ -158,7 +168,7 @@ public class DoubleAxisIndexerStats {
             throw new IllegalArgumentException("could not calculate statistics from given indexer");
         }
                 
-        return doesNotHaveLargeGaps(statistic);
+        return doesNotHaveLargeGaps(statistic, factorStDev);
     }
 
     /**
@@ -166,9 +176,11 @@ public class DoubleAxisIndexerStats {
      * is whether some cells have significantly fewer counts than others.
      * 
      * @param statistic
+     * @param factorStDev the factor to test whether a cell's counts are within average += stDev*factorStDev.
+     * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
      * @return whether there are not cells with significantly fewer points in them than average
      */
-    public boolean doesNotHaveLargeGaps(Statistic statistic) {
+    public boolean doesNotHaveLargeGaps(Statistic statistic, float factorStDev) {
                 
         if (statistic == null) {
             throw new IllegalArgumentException("statistic cannot be null");
@@ -180,7 +192,7 @@ public class DoubleAxisIndexerStats {
         
         for (int item : statistic.getItems()) {
         
-            if (item < (avg - stDev)) {
+            if (item < (avg - stDev*factorStDev)) {
             
                 return false;
             }

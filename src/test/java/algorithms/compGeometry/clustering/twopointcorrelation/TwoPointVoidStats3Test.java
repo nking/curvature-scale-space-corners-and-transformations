@@ -49,6 +49,7 @@ public class TwoPointVoidStats3Test extends BaseTwoPointTest {
         
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(false);
+        //stats.setStandardDeviationFactor(2.5f);
         
         System.out.println("*4*");
         

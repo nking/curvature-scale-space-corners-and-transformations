@@ -94,9 +94,10 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
      
-        boolean same = stats.allAreSame(numberOfCellsInOneDimension, indexer);
+        float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
+            (numberOfCellsInOneDimension, indexer, 2.5f);
         
-        assertTrue(same);
+        assertTrue(fractionOutliers < 0.1f);
     }
 
     public void testAllAreSame1() throws Exception {
@@ -134,9 +135,10 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
      
-        boolean same = stats.allAreSame(numberOfCellsInOneDimension, indexer);
+        float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
+            (numberOfCellsInOneDimension, indexer, 2.5f);
         
-        assertFalse(same);
+        assertTrue(fractionOutliers > 0.1f);
     }
     
     public void testDoesNotHaveLargeGaps() throws Exception {
@@ -174,7 +176,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
      
-        boolean same = stats.doesNotHaveLargeGaps(numberOfCellsInOneDimension, indexer);
+        boolean same = stats.doesNotHaveLargeGaps(numberOfCellsInOneDimension, indexer, 2.5f);
         
         assertFalse(same);
     }
@@ -201,9 +203,10 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
      
-        boolean same = stats.doesNotHaveLargeGaps(numberOfCellsInOneDimension, indexer);
+        float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
+            (numberOfCellsInOneDimension, indexer, 2.5f);
         
-        assertTrue(same);
+        assertTrue(fractionOutliers < 0.1f);
     }
     
     public void testChooseARandomCell() throws Exception {
