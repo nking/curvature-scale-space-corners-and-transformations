@@ -51,11 +51,11 @@ public class DistributionsTest extends BaseTwoPointTest {
         
         long seed = System.currentTimeMillis();
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        //seed = 1386930386057l;
+        seed = 1386991714037l;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
-        int nSwitches = 4;
+        int nSwitches = 5;
 
         int nIterPerBackground = 1;
 
@@ -96,11 +96,10 @@ public class DistributionsTest extends BaseTwoPointTest {
                     }
                     case 2: {
                         // 2 groups of uniformly filled random points
-                        //createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
-                        //   int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
                         indexer = createIndexerWithRandomPoints(sr, 
                             xmin, xmax, ymin, ymax,
-                            new int[]{300, 100}, 0, CLUSTER_SEPARATION.MODERATE);
+                            3, 200, 300, 0.01f);
+                        
                         break;
                     }
                     case 3: {
@@ -109,9 +108,16 @@ public class DistributionsTest extends BaseTwoPointTest {
                         //   int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
                         indexer = createIndexerWithRandomPoints(sr, 
                             xmin, xmax, ymin, ymax,
-                            new int[]{0}, 3000, CLUSTER_SEPARATION.MODERATE);
+                            new int[]{0}, 1000, CLUSTER_SEPARATION.MODERATE);
                         break;
                     }
+                    case 4: {
+                        // background with 3 groups in it
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                            nClusters, 200, 300, 1f);
+                        break;
+                    }
+                                        
                     default:
                         break;
                 }
@@ -143,6 +149,7 @@ public class DistributionsTest extends BaseTwoPointTest {
                     float[] densities = stats.voidFinder.getTwoPointDensities();
                     float[] densityErrors = stats.voidFinder.getTwoPointDensityErrors();
                     
+                   
                     HistogramHolder simpleHistogram = 
                         Histogram.calculateSturgesHistogramRemoveZeroTail(densities, densityErrors);
                     plotter2.addPlot(
