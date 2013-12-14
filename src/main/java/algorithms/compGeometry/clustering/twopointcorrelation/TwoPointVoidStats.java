@@ -14,7 +14,6 @@ import algorithms.misc.DoubleAxisIndexerStats;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
-import algorithms.misc.Statistic;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -43,10 +42,10 @@ import java.util.logging.Logger;
       and then the background density is the lowest bin's x value in a well formed histogram
    -- If all cells have values within stdev of avg it's an even distribution of points.
       this is seen as needing COMPLETE sampling
-      and then the density is the peak bin's x value in a well formed histogram
+      and then the background density is the peak bin's x value in a well formed histogram
    -- Else, we should avoid empty cells and avoid the cells with counts > avg + stdev 
       and then use COMPLETE sampling of that subset of cells
-      and then the density is the peak bin's x value in a well formed histogram
+      and then the background density is the peak bin's x value in a well formed histogram
       -- Note that the cells should not be too large in number because that would be
          biasing the histogram to remove the densities that represent the distance between
          groups.
@@ -58,7 +57,7 @@ import java.util.logging.Logger;
          from a uniform background distribution (which are details of the 2-point correlation function...)
          
          TODO: following up on extreme differences for distributions in the later before
-         improving the sampling to match the above description 
+ *       improving the sampling to match the above description 
  *
  <pre>
  * More specifically for the true background points:
@@ -75,9 +74,8 @@ import java.util.logging.Logger;
  *    parameters are not unique, but the curve is useful for characterizing the
  *    background point distribution and analyzing the distribution for the most
  *    frequently occurring densities (the peak) and the smallest densities for
- *    sparse background data setss.
+ *    sparse background data sets.
  * </pre>
- *
  *
  * Usage:
  *    TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
@@ -94,11 +92,11 @@ import java.util.logging.Logger;
  * usually 2 or 3 (densities > threshold*noise).
  *
  * The runtimes for the code are still in progress, but roughly approximated
- * in 2 stages:  (1) calculating and fitting the background voids
- * @see #findVoids@see(), and (2) finding the groups within the data using
- * a threshold from the background density.
+ * in 2 stages:  
+ * (1) calculating and fitting the background voids @see #findVoids@see(), 
+ * and (2) finding the groups within the data using a threshold from the background density.
  *
- * If debugging is turned on, a plots are generated and those file paths are printed to
+ * If debugging is turned on, plots are generated and those file paths are printed to
  * standard out, and statements are printed to standard out.
  *
  * @author nichole
@@ -172,13 +170,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     /**
      * Use complete sampling.
-     * The runtime for the complete sampling is N!/(2!(N-2)! * N!/(2!(N-2) from
-     * permutations of iterating over x and y, and the result is effectively N^4.
-     *
-     * Complete sampling takes quite awhile, so other sampling methods are usually
-     * used by default if this is not set by the user, with the exception of
-     * datasets with less than 100 points.  For those, complete sampling is
-     * used by default.
+     * The runtime for the complete sampling is < O(N^2).
      */
     public void setUseCompleteSampling() {
         this.sampling = VoidSampling.COMPLETE;
@@ -304,11 +296,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             log.fine("nXY=" + indexer.getNXY() + " nD=" + voidFinder.getNumberOfTwoPointDensities());
         }
         
+        /*
         if (indexer.getNXY() > 999) {
             statsHistogram = createHistogramWithHigherPeakResolution();
-        } else {
+        } else {*/
             statsHistogram = createHistogram();
-        }
+        //}
 
         state = State.HISTOGRAM_CREATED;
 
@@ -363,14 +356,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             calculateTwoPointVoidDensities();
         }
 
-        int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
-
-        //HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, allTwoPointSurfaceDensities,
-        //    allTwoPointSurfaceDensitiesErrors, false);
+        //int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
         
-        HistogramHolder histogram = Histogram.createHistogramForSkewedData(
-            nBins, voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors(), true);
+        //HistogramHolder histogram = Histogram.createHistogramForSkewedData(
+        //    nBins, voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors(), true);
 
+        HistogramHolder histogram = Histogram.calculateSturgesHistogramRemoveZeroTail(
+            voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors());
+        
         plotPairSeparations();
 
         return histogram;

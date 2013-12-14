@@ -1,7 +1,9 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
+import algorithms.util.ResourceFinder;
+
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import junit.framework.TestCase;
@@ -63,6 +65,15 @@ public class BaseTwoPointTest extends TestCase {
         return generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
             numberOfClusters, minimumNumberOfPointsPerCluster, maximumNumberOfPointsPerCluster,
             backgroundPointFractionToClusters);
+    }
+    
+    protected DoubleAxisIndexer createIndexerWithRandomPointsAroundCenterWithDSquared(
+        SecureRandom sr, int numberOfClusterPoints,
+        float xmin, float xmax, float ymin, float ymax, float maximumRadius) {
+       
+        return generator.createIndexerWithRandomPointsAroundCenterWithDSquared(
+            sr, numberOfClusterPoints,
+            xmin, xmax, ymin, ymax, maximumRadius);
     }
 
     protected void createRandomPointsAroundCenter(SecureRandom sr, float maxRadius,
@@ -137,4 +148,40 @@ public class BaseTwoPointTest extends TestCase {
 
         return RandomClusterAndBackgroundGenerator.calculateXAndYFromXcYcAndRadiusCCW(xc, yc, radius, angleInDegreesFromYEQ0XGT0);
     }
+    
+    static void printHistogramToStandardOut(float[] xp, int[] yp, float[] xpe, float[] ype) {
+        StringBuilder xsb = new StringBuilder();
+        StringBuilder ysb = new StringBuilder();
+        StringBuilder xesb = new StringBuilder();
+        StringBuilder yesb = new StringBuilder();
+        for (int z = 0; z < xp.length; z++) {
+            if (z > 0) {
+                xsb.append("f, ");
+                ysb.append("f, ");
+                xesb.append("f, ");
+                yesb.append("f, ");
+            }
+            xsb.append(xp[z]);
+            ysb.append(yp[z]);
+            xesb.append(xpe[z]);
+            yesb.append(ype[z]);
+        }
+        System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+        System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+        System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+        System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
+    }
+
+    static void writeIndexerToTmpData(DoubleAxisIndexer indexer, int count) throws IOException {
+        // write to tmpdata if need to use in tests improve fits, histogram etc
+        String str = String.valueOf(count);
+        while (str.length() < 3) {
+            str = "0" + str;
+        }
+        String fileNamePostfix = "_clusters_" + str + ".dat";
+        String fileName = CreateClusterDataTest.indexerFileNamePrefix + fileNamePostfix;
+        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
+        CreateClusterDataTest.writeIndexer(filePath, indexer);
+    }
+
 }

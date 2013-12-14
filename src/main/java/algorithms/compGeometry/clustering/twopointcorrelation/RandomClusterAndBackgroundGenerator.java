@@ -196,6 +196,150 @@ public class RandomClusterAndBackgroundGenerator {
             }
         }
     }
+    
+    /**
+     * create a group of points around a center whose density distribution decreases
+     * by distance squared from the center.  the points are randomly chosen to populate
+     * that distribution.
+     * 
+     * @param sr - instance of secure random to use
+     * @param maxRadius - maximum radius of group of points
+     * @param numberOfPoints - number of points in the group
+     * @param xc0 - x coordinate of the group center to create
+     * @param yc0 - y coordinate of the group center to create
+     * @param x0 - the output array to hold results for the x coordinates of the group
+     * @param y0 - the output array to hold results for the y coordinates of the group
+     * @param xyStartOffset the offset in the arrays x0 and y0 indexes with which to start adding points.
+     */
+    protected void createRandomPointsAroundCenterWithDSquared(SecureRandom sr, float maxRadius,
+        int numberOfPoints, float xc0, float yc0, float[] x0, float[] y0, int xyStartOffset) {
+        
+        /* want to represent the increasing density towards the center of the group 
+         * using annular radii that result in equal areas (though smaller annular widths).
+         *     
+         *     The area of an annulus:
+         *         area = pi * (r0^2 - r1^2) where r0 is outer annuli and r1 is inner radius of annulus
+         *         
+         *         try 2 annuli to start relationship:
+         *         
+         *         pi*(r0^2 - r1^2) = pi*(r1^2 - 0)
+         *            (r0^2 - r1^2) = r1^2
+         *            r0^2 = 2 * (r1^2)
+         *            r0 = sqrt 2 * r1 for them to have equal areas
+         *       
+         *         then 4 annuli:
+         *         |  |    |      |         |
+         *         r0 r1   r2     r3        c
+         *         (r0^2 - r1^2) = (r1^2 - r2^2) = (r2^2 - r3^2) = r3^2
+         *            --> r2 = (sqrt 2) * r3
+         *            --> r1^2 =  2*(r2^2) - r3^3 = 4*r3^2 - r3^2 = 3r3^2
+         *            
+         *            (r0^2 - r1^2) = (r1^2 - r2^2)
+         *            r0^2 = (2*r1^2 - r2^2)
+         *                 = 2*( 3r3^2 ) - 2*(r3^2)
+         *                 = 6*r3^2 - 2*r3^2
+         *                 = 4*r3^2
+         *
+         *         in summary, for 4 annuli,
+         *             r0^2 = 4 * r3^2  = maxr^2
+         *             r1^2 = 3 * r3^2
+         *             r2^2 = 2 * r3^2
+         *           
+         *         extrapolate to nbins from i=0 at outer edge to i=nbins-1 at center:
+         *             (r_i)^2 = (nbins - i) * (r3)^2
+         *             
+         *             and r3^2 = maxr^2/4
+         *             
+         *             (r_i)^2 = (nbins - i) * (maxr)^2 / nbins
+         *             
+         *             ==> r_i = math.sqrt(  (nbins - i)/nbins ) * maxr
+         *      
+         *     For those equal area annuli, we need n_i to increase with i.
+         *     Knowing that we held the area constant over i,
+         *     we have n_i = n * fraction / (r_i)^2
+         *     
+         *     for 4 annuli:
+         *         |  |    |      |         |
+         *         r0 r1   r2     r3        c
+         *         
+         *                                 1               1               1            1
+         *         n =  n*fraction *  ------------  + ------------ + ------------ + -----------
+         *                              (r_0)^2          (r_1)^2        (r_2)^2       (r_3)^2
+         *         
+         *               1              1               1               1            1
+         *         ----------- =   ------------  + ------------ + ------------ + -----------
+         *           fraction        (r_0)^2          (r_1)^2        (r_2)^2       (r_3)^2
+         *           
+         *  Then to create a density distribution that is radially increasing by r^2 towards center of group,
+         *     choose the number of bins.
+         *     solve the fraction.
+         *     create n_i points within that  r_i annulus randomly.
+         */ 
+                
+        int nBins = 5;
+        
+        double sum = 0;
+        for (int i = 0; i < nBins; i++) {
+            
+            float x = (nBins - i)/(float)nBins;
+            float xInner = (nBins - i - 1.f)/(float)nBins;
+            
+            // r_i = math.sqrt(  (nbins - i)/nbins ) * maxr
+            // this is rOuter for current bin
+            double rOuter = maxRadius * Math.sqrt(x);
+            double rInner = maxRadius * Math.sqrt(xInner);
+            double ri = (rOuter + rInner)/2.;
+            
+            double f = Math.pow(maxRadius/(maxRadius - ri), 2);
+                                                
+            sum += (numberOfPoints/f);
+        }
+        float fraction = (float)(numberOfPoints/sum);
+        
+        int offset = xyStartOffset;
+        
+        for (int i = 0; i < nBins; i++) {
+                        
+            // index 0 is outer edge, rOuter = maxRadius
+            
+            float x = (nBins - i)/(float)nBins;
+            float xInner = (nBins - i - 1.f)/(float)nBins;
+            
+            // r_i = math.sqrt(  (nbins - i)/nbins ) * maxr
+            // this is rOuter for current bin
+            double rOuter = maxRadius * Math.sqrt(x);
+            double rInner = maxRadius * Math.sqrt(xInner);
+            double ri = (rOuter + rInner)/2.;
+            
+            // maxradius = 80,  n=300
+            // i=0   r_i=76   n ~ 0            f=large number 1/(maxRadius-r_i)
+            // i=x   r_x=40   n ~ 300/(2^2)     
+            // i=n-1 r_n-1=0  n close to 300
+            
+            double f = Math.pow(maxRadius/(maxRadius - ri), 2);
+            
+            double n = fraction * numberOfPoints/f;
+            
+            System.out.println("n_" + i + " = " + n + " r_i=" + ri + " f_i=" + f
+                + " (maxRadius=" + maxRadius 
+                + " rOuter=" + rOuter + " rInner=" + rInner + ")");
+            
+            int np = (int)n;
+            //if (i == 2) {
+            for (int ii = 0; ii < np; ii++) {
+                float[] xy = calculateRandomXAndYWithinAnnulus(sr, xc0, yc0, (float)rInner, (float)rOuter);
+                if ((xy[0] > 0) && (xy[1] > 0)) {
+                    x0[offset + ii] = xy[0];
+                    y0[offset + ii] = xy[1];
+                } else {
+                    // redo random point
+                    ii--;
+                }
+            }
+            //}
+            offset += np;
+        }
+    }
 
     protected void createRandomSeparatedPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfPointsToCreate, float[] xPoints, float[] yPoints, float minSeparationBetweenPoints) {
@@ -334,6 +478,51 @@ public class RandomClusterAndBackgroundGenerator {
         }
     }
 
+    public DoubleAxisIndexer createIndexerWithRandomPointsAroundCenterWithDSquared(
+        SecureRandom sr, int numberOfClusterPoints,
+        float xmin, float xmax, float ymin, float ymax, float maximumRadius) {
+
+        // contains points sequentially for: background, cluster[0],...cluster[n-1]
+        x = new float[numberOfClusterPoints];
+        y = new float[numberOfClusterPoints];
+
+        // compare these to findings.  they are used to generate the clusters
+        xc = new float[1];
+        yc = new float[1];
+        
+        /*
+         *  draw center of group as anywhere from xmin + maxRadius to xmax-maxRadius and similar for y
+         */
+
+        float xcd = (xmax + xmin)/2.f;
+        float ycd = (ymax + ymin)/2.f;
+        float xdiff = ((xmax - xmin)/2.f) - maximumRadius;
+        float ydiff = ((ymax - ymin)/2.f) - maximumRadius;
+        float xd = (xdiff*sr.nextFloat());
+        float yd = (ydiff*sr.nextFloat());
+        float xCenter = (sr.nextBoolean()) ? xcd + xd : xcd - xd;
+        float yCenter = (sr.nextBoolean()) ? ycd + yd : ycd - yd;
+        
+        xc[0] = xCenter;
+        yc[0] = yCenter;
+        
+        createRandomPointsAroundCenterWithDSquared(sr, maximumRadius,
+            numberOfClusterPoints, xCenter, yCenter, x, y, 0);
+
+        xErrors = new float[numberOfClusterPoints];
+        yErrors = new float[numberOfClusterPoints];
+        for (int i = 0; i < numberOfClusterPoints; i++) {
+            // simulate x error as a percent error of 0.03 for each bin
+            xErrors[i] = x[i] * 0.03f;
+            yErrors[i] = (float) (Math.sqrt(y[i]));
+        }
+        
+        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+
+        return indexer;
+    }
+
      /**
      *      |
      *      |
@@ -374,4 +563,22 @@ public class RandomClusterAndBackgroundGenerator {
 
         return calculateXAndYFromXcYcAndRadius(xc, yc, radius, 360 - angleInDegreesFromYEQ0XGT0);
     }
+    
+    static float[] calculateRandomXAndYWithinAnnulus(SecureRandom sr, 
+        float xc, float yc, float innerRadius, float outerRadius) {
+
+        /* 
+        *    -- choose a random number within annular width, then add inner radius to it.
+        *    -- then choose a random angle zero through 360.
+        *    -- then determine x and y from the distance and the angle
+        */
+        float radius = innerRadius + (outerRadius - innerRadius) * sr.nextFloat();
+        
+        double angle = 360. * sr.nextDouble();
+        
+        float[] xy = calculateXAndYFromXcYcAndRadius(xc, yc, radius, angle);
+        
+        return xy;
+    }
+
 }
