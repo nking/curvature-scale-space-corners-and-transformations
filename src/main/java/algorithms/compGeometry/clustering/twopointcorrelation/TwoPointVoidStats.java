@@ -109,8 +109,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     protected VoidSampling sampling = null;
-    
-    protected boolean interpretForSparseBackground = false;
+
+    protected Boolean interpretForSparseBackground = null;
 
     protected State state = null;
 
@@ -145,12 +145,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * @param indexedSortedPoints indexed points sorted by Y
      */
     public TwoPointVoidStats(DoubleAxisIndexer indexedSortedPoints) {
+        
         super(indexedSortedPoints);
 
         state = State.POINTS_LOADED;
     }
 
     public TwoPointVoidStats(String persistedIndexerFilePath) throws IOException {
+        
         super(persistedIndexerFilePath);
 
         state = State.POINTS_LOADED;
@@ -183,6 +185,27 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         return VoidSampling.valueOf(sampling.name());
     }
 
+    public Boolean getInterpretForSparseBackground() {
+        return interpretForSparseBackground;
+    }
+    /**
+     * set the interpretation of the density histogram to the method
+     * used for sparse backgrounds.  Note that this is expected to
+     * only be called from TwoPointCorrelation.
+     */
+    protected void setInterpretForSparseBackgroundToTrue() {
+        this.interpretForSparseBackground = Boolean.TRUE;
+    }
+    /**
+     * set the type of sampling to be used on the dataset to calculate the 2-point
+     * densities.  Note that this is expected to be invoked only from
+     * TwoPointCorrelation.
+     * @param sampling
+     */
+    protected void setSampling(VoidSampling sampling) {
+        this.sampling = sampling;
+    }
+    
     protected void logPerformanceMetrics() {
         this.doLogPerformanceMetrics = true;
     }
@@ -351,6 +374,147 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         state = State.DENSITIES_CALCULATED;
 
+    }
+
+    protected void findVoids() throws TwoPointVoidStatsException {
+
+        /* If a significant number of cells are empty ==> SPARSE_BACKGROUND sampling.
+           background density is the lowest bin's x value in a well formed histogram.
+          If all cells have values within stdev of avg ==> COMPLETE sampling
+           background density is the peak bin's x value in a well formed histogram.
+          Else: 
+             attempt to sample only the cells that are not empty nor above avg + stdev
+             and use COMPLETE sampling on them.
+             background density is the peak bin's x value in a well formed histogram
+             (though this later could be improved)
+         */
+        
+        long startTimeMillis = System.currentTimeMillis();
+        
+        int nXY = indexer.getNXY();
+        
+        // for reduced sampling of large sets, need these in scope:
+        int nCellsPerDimension = (int)Math.sqrt(indexer.nXY/1000);
+
+        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        
+        int nCellsPerDimensionForStats = (int)Math.sqrt(indexer.nXY/300.);
+        if (nCellsPerDimensionForStats > 1) {
+            nCellsPerDimensionForStats = 1;
+        }
+        Statistic statistic = stats.calculateCellDensities(nCellsPerDimensionForStats, indexer);
+        
+        if (sampling == null && interpretForSparseBackground == null) {
+        
+            float fractionEmpty = stats.fractionOfCellsWithoutPoints(statistic);
+            
+            if (fractionEmpty > 0.5) {
+                
+                sampling = VoidSampling.FOR_SPARSE_BACKGROUND;
+                
+                interpretForSparseBackground = Boolean.TRUE;
+            
+            } else {
+                            
+                boolean allAreSame = stats.allAreSame(statistic);
+                
+                interpretForSparseBackground = Boolean.FALSE;
+                
+                if ((nCellsPerDimensionForStats > 1) && allAreSame) {
+                    
+                    if (nXY >= 10000) {
+                        // reduce the sampling to a cell holding 1000 points 
+                        // and use the sampling that would be applied for 1000 points
+                        sampling = VoidSampling.COMPLETE_ON_RANDOM_SUBSET;
+                        
+                    } else {
+                        
+                        sampling = VoidSampling.COMPLETE;
+                    }
+                    
+                } else {
+                    
+                    interpretForSparseBackground = Boolean.TRUE;
+                    
+                    if (nCellsPerDimensionForStats > 1) {
+                        
+                        sampling = VoidSampling.FOR_SPARSE_BACKGROUND;
+                    
+                    } else {
+                        
+                        // the histogram that is later formed needs to be interpreted similarly to VoidSampling.FOR_SPARSE_BACKGROUND
+                        
+                        sampling = VoidSampling.COMPLETE;
+                    }
+                }
+            }
+        }
+        
+                
+        int nSampled = -1;
+       
+        if (sampling == null) {
+
+            this.sampling = VoidSampling.COMPLETE;
+        }        
+
+        if (debug) {
+            log.info("findVoid sampling=" + sampling.name() + " for " + nXY + " points");
+        }
+
+        if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {
+
+            voidFinder = new DivideAndConquerVoidFinder();
+            
+        } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
+
+            voidFinder = new CompleteSamplingVoidFinder();
+
+        } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_RANDOM_SUBSET.ordinal()) {
+
+            // xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi
+            int[] xyMinMaxCell = stats.chooseARandomCell(nCellsPerDimension, indexer);
+
+            voidFinder = new SubsetSamplingVoidFinder();
+
+            ((SubsetSamplingVoidFinder) voidFinder).setXSortedIdxLo(xyMinMaxCell[0]);
+            ((SubsetSamplingVoidFinder) voidFinder).setXSortedIdxHi(xyMinMaxCell[1]);
+            ((SubsetSamplingVoidFinder) voidFinder).setYSortedIdxLo(xyMinMaxCell[2]);
+            ((SubsetSamplingVoidFinder) voidFinder).setYSortedIdxHi(xyMinMaxCell[3]);
+
+            nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0]) * (xyMinMaxCell[3] - xyMinMaxCell[2]);
+
+        } else if (sampling.ordinal() == VoidSampling.FOR_SPARSE_BACKGROUND.ordinal()) {
+
+            voidFinder = new SparseSamplingVoidFinder();
+
+            ((SparseSamplingVoidFinder)voidFinder).setStatistic(statistic);
+
+        } else {
+            
+            throw new IllegalStateException("Did not configure a finder for " + sampling.toString() + "?");
+        }
+        
+        voidFinder.setSampling(sampling);
+        
+        voidFinder.findVoids(indexer);
+        
+        
+        if (doLogPerformanceMetrics) {
+
+            long stopTimeMillis = System.currentTimeMillis();
+
+            String str = "";
+            if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {
+                str = "O(n lg(n)) with n=";
+            } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
+                str = "O(n^2) with n=";
+            } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_RANDOM_SUBSET.ordinal()) {
+                str = "O(n1*n2) = O(" + nSampled + ")";
+            }
+            
+            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateBackgroundVia2PtVoidFit-->calculateTwoPointVoidDensities", str);
+        }
     }
 
     protected HistogramHolder createHistogram() throws TwoPointVoidStatsException {
@@ -633,142 +797,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         } catch (IOException e) {
             throw new TwoPointVoidStatsException(e);
-        }
-    }
-
-    protected void findVoids() throws TwoPointVoidStatsException {
-
-        /* If a significant number of cells are empty ==> SPARSE_BACKGROUND sampling.
-           background density is the lowest bin's x value in a well formed histogram.
-          If all cells have values within stdev of avg ==> COMPLETE sampling
-           background density is the peak bin's x value in a well formed histogram.
-          Else: 
-             attempt to sample only the cells that are not empty nor above avg + stdev
-             and use COMPLETE sampling on them.
-             background density is the peak bin's x value in a well formed histogram
-             (though this later could be improved)
-         */
-        
-        long startTimeMillis = System.currentTimeMillis();
-        
-        int nXY = indexer.getNXY();
-        
-        // for reduced sampling of large sets, need these in scope:
-        int nCellsPerDimension = (int)Math.sqrt(indexer.nXY/1000);
-
-        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
-        
-        int nCellsPerDimensionForStats = (int)Math.sqrt(indexer.nXY/300.);
-        if (nCellsPerDimensionForStats > 1) {
-            nCellsPerDimensionForStats = 1;
-        }
-        Statistic statistic = stats.calculateCellDensities(nCellsPerDimensionForStats, indexer);
-        
-        float fractionEmpty = stats.fractionOfCellsWithoutPoints(statistic);
-        
-        if (fractionEmpty > 0.5) {
-            
-            sampling = VoidSampling.FOR_SPARSE_BACKGROUND;
-            
-            interpretForSparseBackground = true;
-        
-        } else {
-                        
-            boolean allAreSame = stats.allAreSame(statistic);
-            
-            if ((nCellsPerDimensionForStats > 1) && allAreSame) {
-                
-                if (nXY >= 10000) {
-                    // reduce the sampling to a cell holding 1000 points 
-                    // and use the sampling that would be applied for 1000 points
-                    sampling = VoidSampling.COMPLETE_ON_RANDOM_SUBSET;
-                    
-                } else {
-                    
-                    sampling = VoidSampling.COMPLETE;
-                }
-                
-            } else {
-                
-                interpretForSparseBackground = true;
-                
-                if (nCellsPerDimensionForStats > 1) {
-                    
-                    sampling = VoidSampling.FOR_SPARSE_BACKGROUND;
-                
-                } else {
-                    
-                    // the histogram that is later formed needs to be interpreted similarly to VoidSampling.FOR_SPARSE_BACKGROUND
-                    
-                    sampling = VoidSampling.COMPLETE;
-                }
-            }
-        }
-        
-                
-        int nSampled = -1;
-       
-        if (sampling == null) {
-
-            this.sampling = VoidSampling.COMPLETE;
-        }        
-
-        if (debug) {
-            log.info("findVoid sampling=" + sampling.name() + " for " + nXY + " points");
-        }
-
-        if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {
-
-            voidFinder = new DivideAndConquerVoidFinder();
-            
-        } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
-
-            voidFinder = new CompleteSamplingVoidFinder();
-
-        } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_RANDOM_SUBSET.ordinal()) {
-
-            // xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi
-            int[] xyMinMaxCell = stats.chooseARandomCell(nCellsPerDimension, indexer);
-
-            voidFinder = new SubsetSamplingVoidFinder();
-
-            ((SubsetSamplingVoidFinder) voidFinder).setXSortedIdxLo(xyMinMaxCell[0]);
-            ((SubsetSamplingVoidFinder) voidFinder).setXSortedIdxHi(xyMinMaxCell[1]);
-            ((SubsetSamplingVoidFinder) voidFinder).setYSortedIdxLo(xyMinMaxCell[2]);
-            ((SubsetSamplingVoidFinder) voidFinder).setYSortedIdxHi(xyMinMaxCell[3]);
-
-            nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0]) * (xyMinMaxCell[3] - xyMinMaxCell[2]);
-
-        } else if (sampling.ordinal() == VoidSampling.FOR_SPARSE_BACKGROUND.ordinal()) {
-
-            voidFinder = new SparseSamplingVoidFinder();
-
-            ((SparseSamplingVoidFinder)voidFinder).setStatistic(statistic);
-
-        } else {
-            
-            throw new IllegalStateException("Did not configure a finder for " + sampling.toString() + "?");
-        }
-        
-        voidFinder.setSampling(sampling);
-        
-        voidFinder.findVoids(indexer);
-        
-        
-        if (doLogPerformanceMetrics) {
-
-            long stopTimeMillis = System.currentTimeMillis();
-
-            String str = "";
-            if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {
-                str = "O(n lg(n)) with n=";
-            } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
-                str = "O(n^2) with n=";
-            } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_RANDOM_SUBSET.ordinal()) {
-                str = "O(n1*n2) = O(" + nSampled + ")";
-            }
-            
-            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateBackgroundVia2PtVoidFit-->calculateTwoPointVoidDensities", str);
         }
     }
 
