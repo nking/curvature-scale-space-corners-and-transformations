@@ -698,6 +698,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             
             float limit, limitError;
             
+            if (interpretForSparseBackground == null) {
+                interpretForSparseBackground = Boolean.FALSE;
+            }
+            
             if (interpretForSparseBackground) {
                 
                 int yPeakIndex = MiscMath.findYMaxIndex(histogram.getYHist());

@@ -184,6 +184,24 @@ public class DistributionsTest extends BaseTwoPointTest {
                     String filePath = plotter2.writeFile2();
                     System.out.println("filePath=" + filePath);
                    
+                    if (false) {
+                        if (i == 2 && ii == 0) {
+                            StringBuilder xsb = new StringBuilder();
+                            StringBuilder ysb = new StringBuilder();
+        
+                            for (int z = 0; z < indexer.getNumberOfPoints(); z++) {
+                                if (z > 0) {
+                                    xsb.append("f, ");
+                                    ysb.append("f, ");
+                                }
+                                xsb.append(indexer.getX()[z]);
+                                ysb.append(indexer.getY()[z]);
+                            }
+                            System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+                            System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+                            int z = 1;
+                        }
+                    }
                 }
                 
                 twoPtC.findClusters();

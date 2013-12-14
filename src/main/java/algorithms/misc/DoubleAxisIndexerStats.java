@@ -192,7 +192,7 @@ public class DoubleAxisIndexerStats {
         
         for (int item : statistic.getItems()) {
         
-            if (item < (avg - stDev*factorStDev)) {
+            if ((item == 0) || (item < (avg - stDev*factorStDev)) ) {
             
                 return false;
             }
