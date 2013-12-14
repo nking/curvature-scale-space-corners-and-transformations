@@ -10,7 +10,27 @@ public class Statistic {
     
     protected final int[] m;
     
-    public Statistic(int[] items) {
+    /**
+     * the starting x coordinate for items
+     */
+    protected final float[] itemsX;
+    
+    /**
+     * the starting y coordinate for items
+     */
+    protected final float[] itemsY;
+    
+    /**
+     * the size of an x cell.  for example, item[0] starts at (x[0], y[0]) and extends to (x[0] + xSz, y[0] + ySz)
+     */
+    protected final float xSz;
+    
+    /**
+     * the size of y cell.
+     */
+    protected final float ySz;
+    
+    public Statistic(int[] items, float[] xCells, float[] yCells, float xDivSz, float yDivSz) {
         
         if (items == null) {
             throw new IllegalArgumentException("items cannot be null");
@@ -19,6 +39,14 @@ public class Statistic {
         this.n = items.length;
         
         this.m = items;
+        
+        this.xSz = xDivSz;
+        
+        this.ySz = yDivSz;
+        
+        this.itemsX = xCells;
+        
+        this.itemsY = yCells;
         
         calculateStats();
     }
@@ -34,6 +62,19 @@ public class Statistic {
     }
     public int getNumberOfItems() {
         return n;
+    }
+    
+    public float[] getItemsX() {
+        return itemsX;
+    }
+    public float[] getItemsY() {
+        return itemsY;
+    }
+    public float getXSz() {
+        return xSz;
+    }
+    public float getYSz() {
+        return ySz;
     }
     
     protected void calculateStats() {

@@ -48,6 +48,7 @@ public class DistributionsTest extends BaseTwoPointTest {
         
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
         PolygonAndPointPlotter plotter2 = new PolygonAndPointPlotter();
+        TwoPointCorrelationPlotter plotter3 = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
         
         long seed = System.currentTimeMillis();
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -140,6 +141,7 @@ public class DistributionsTest extends BaseTwoPointTest {
               
                 twoPtC.logPerformanceMetrics();
                 
+                //twoPtC.setBackground(0.2f, 0.1f);
                 twoPtC.calculateBackground();
                 
                 TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
@@ -183,6 +185,14 @@ public class DistributionsTest extends BaseTwoPointTest {
                     System.out.println("filePath=" + filePath);
                    
                 }
+                
+                twoPtC.findClusters();
+                
+                twoPtC.calculateHullsOfClusters();
+
+                plotter3.addPlot(twoPtC, plotLabel);
+                String filePath = plotter3.writeFile3();
+                System.out.println("filePath=" + filePath);
             }
         }
 

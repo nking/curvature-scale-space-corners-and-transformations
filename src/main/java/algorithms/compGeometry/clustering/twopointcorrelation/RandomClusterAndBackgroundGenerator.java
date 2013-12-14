@@ -258,17 +258,6 @@ public class RandomClusterAndBackgroundGenerator {
          *     Knowing that we held the area constant over i,
          *     we have n_i = n * fraction / (r_i)^2
          *     
-         *     for 4 annuli:
-         *         |  |    |      |         |
-         *         r0 r1   r2     r3        c
-         *         
-         *                                 1               1               1            1
-         *         n =  n*fraction *  ------------  + ------------ + ------------ + -----------
-         *                              (r_0)^2          (r_1)^2        (r_2)^2       (r_3)^2
-         *         
-         *               1              1               1               1            1
-         *         ----------- =   ------------  + ------------ + ------------ + -----------
-         *           fraction        (r_0)^2          (r_1)^2        (r_2)^2       (r_3)^2
          *           
          *  Then to create a density distribution that is radially increasing by r^2 towards center of group,
          *     choose the number of bins.
@@ -338,6 +327,14 @@ public class RandomClusterAndBackgroundGenerator {
             }
             //}
             offset += np;
+        }
+        
+        // if there are rounding errors in np so that an index remains unset at end of array, set it's value to xc, yc
+        for (int i = 0; i < x0.length; i++) {
+            if (x0[i] == 0 && y0[i] == 0) {
+                x0[i] = xc0;
+                y0[i] = yc0;
+            }
         }
     }
 

@@ -43,16 +43,48 @@ public class DoubleAxisIndexerStats {
             
             float y = indexer.getY()[i];
             
-            int xCell = (int) ((x - xyMinMax[0])/xDivSz);
+            int xCell = (int) ((x - xyMinMax[0])/xDivSz); 
             
             int yCell = (int) ((y - xyMinMax[2])/yDivSz);
             
-            int itemN = yCell*numberOfCellsInOneDimension + xCell;
+            int itemN = yCell*numberOfCellsInOneDimension + xCell; // (0,0) (1,0)
             
             items[itemN] =  items[itemN] + 1;   
         }
+        
+        // calculate the start x and y values of the cells in items[].
+        
+        float[] xCells = new float[items.length];
+        
+        float[] yCells = new float[items.length];
+        
+        int count = 0;
+        
+        for (int i = 0; i < numberOfCellsInOneDimension; i++) {
+            
+            float yStart = xyMinMax[2] + i*yDivSz;
+            
+            if (yStart > xyMinMax[3]) {
+                yStart = xyMinMax[3];
+            }
+            
+            for (int j = 0; j < numberOfCellsInOneDimension; j++) {
+                
+                float xStart = xyMinMax[0] + j*xDivSz;
+                
+                if (xStart > xyMinMax[1]) {
+                    xStart = xyMinMax[1];
+                }
+                
+                xCells[count] = xStart;
+                
+                yCells[count] = yStart;
+                
+                count++;
+            }
+        }
 
-        Statistic statistic = new Statistic(items);
+        Statistic statistic = new Statistic(items, xCells, yCells, xDivSz, yDivSz);
         
         return statistic;
     }
@@ -73,6 +105,24 @@ public class DoubleAxisIndexerStats {
         
         if (statistic == null) {
             throw new IllegalArgumentException("could not calculate statistics from given indexer");
+        }
+                
+        return allAreSame(statistic);
+    }
+    
+    /**
+     * looking at cells across the dataset to see if they have roughly equal numbers of points in them.
+     * 
+     * The division is by the x and y range of values.
+     * 
+     * @param statistic
+     * @param indexer
+     * @return whether all of the counts within cells are similar within one standard deviation
+     */
+    public boolean allAreSame(Statistic statistic) {
+                
+        if (statistic == null) {
+            throw new IllegalArgumentException("statistic cannot be null");
         }
                 
         float stDev = statistic.getStandardDeviation();
@@ -108,6 +158,22 @@ public class DoubleAxisIndexerStats {
             throw new IllegalArgumentException("could not calculate statistics from given indexer");
         }
                 
+        return doesNotHaveLargeGaps(statistic);
+    }
+
+    /**
+     * determine whether counts in each cell suggest that there are gaps in the data, that
+     * is whether some cells have significantly fewer counts than others.
+     * 
+     * @param statistic
+     * @return whether there are not cells with significantly fewer points in them than average
+     */
+    public boolean doesNotHaveLargeGaps(Statistic statistic) {
+                
+        if (statistic == null) {
+            throw new IllegalArgumentException("statistic cannot be null");
+        }
+                
         float stDev = statistic.getStandardDeviation();
         
         float avg = statistic.getAverage();
@@ -135,6 +201,18 @@ public class DoubleAxisIndexerStats {
         
         Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);
         
+        return fractionOfCellsWithoutPoints(statistic);
+    }
+    
+    /**
+     * determine whether counts in each cell suggest that there are gaps in the data, that
+     * is whether some cells have significantly fewer counts than others.
+     * 
+     * @param statistic
+     * @return whether there are not cells with significantly fewer points in them than average
+     */
+    public float fractionOfCellsWithoutPoints(Statistic statistic) {
+        
         if (statistic == null) {
             throw new IllegalArgumentException("could not calculate statistics from given indexer");
         }
@@ -153,12 +231,16 @@ public class DoubleAxisIndexerStats {
     /**
      * choose a random cell within the data were a cell is a division of the data by
      * numberOfCellsInOneDimension for each dimension.  it returns the cell boundaries
-     * in x and then y as indexes that are indexes relative to indexer.getX() and indexer.get().
+     * in x and then y as indexes that are indexes relative to 
+     * {indexer.getSortedXIndexes(), indexer.getSortedXIndexes(), indexer.getSortedYIndexes(),
+     * indexer.getSortedYIndexes()}
      * 
      * @param numberOfCellsInOneDimension
      * @param indexer
      * @return an array holding the index boundaries of the cell 
-     * as new int[]{xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi}
+     * as new int[]{xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi} where the indexes should be treated
+     * with respect to arrays {indexer.getSortedXIndexes(), indexer.getSortedXIndexes(), indexer.getSortedYIndexes(),
+     * indexer.getSortedYIndexes()}
      */
     public int[] chooseARandomCell(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
         

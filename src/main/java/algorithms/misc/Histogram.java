@@ -1222,8 +1222,10 @@ plotter.writeFile();
         }
 
         int nIntervalsSturges = (int)Math.ceil( Math.log(values.length)/Math.log(2) );
-
-        int nBins = Math.max(nIntervalsSturges, 10);
+        
+        //int nItervalsRice = (int)(2*Math.pow(values.length, 0.3333));
+        
+        int nBins = Math.max(nIntervalsSturges, 30);
 
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
@@ -1249,9 +1251,10 @@ plotter.writeFile();
             }
         }
         if (countsBelowMinAtTail > 0) {
+            
             maxx = xHist[lastLowCountIdx];
             
-            // keep nbins the same?
+            // keep nbins the same?            
             binWidth = calculateBinWidth(minx, maxx, nBins);
 
             Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);

@@ -188,6 +188,8 @@ public class DoubleAxisIndexer {
         this.sortedYIndexes = Arrays.copyOf(this.sortedXIndexes, nXY);
 
         MultiArrayMergeSort.sortBy1stArg(yPoints, xPoints, sortedYIndexes, nXY);
+        
+        //sortedYIndexes hold values that are indexes w.r.t the y array
 
         this.xSortedByY = xPoints;
         this.ySortedByY = yPoints;
@@ -327,6 +329,40 @@ public class DoubleAxisIndexer {
 
         return new float[]{xmin, xmax, ymin, ymax};
     }
+    
+    /**
+     * return the index w.r.t. indexer.sortedXIndexes for the yValue.
+     * the index frame of reference is needed for a subsequent use.
+     * 
+     * @param yValue
+     * @param sortedX
+     * @return
+     */
+    public int findSortedXIndexesForY(float yValue) {
+        
+        int idx = Arrays.binarySearch(ySortedByY, yValue);
+        
+        if (idx < 0) {
+            idx = -1*(idx + 1);
+        }
+        
+        if (idx > (nXY - 1)) {
+            idx = nXY - 1;
+        }
+        
+        int idx2 = sortedYIndexes[idx];
+        
+        // now we have idx2 as the index w.r.t indexer.x and indexer.y, 
+        // so just need to find idx2 value in indexer.sortedXIndexes and that's the answer
+                    
+        for (int ii = 0; ii < sortedXIndexes.length; ii++) {
+            if (idx2 == sortedXIndexes[ii]) {
+                return ii;
+            }
+        }
+        
+        throw new IllegalStateException("could not find index " + idx + " in indexer.sortedXIndexes");
+    }
 
     /**
      * @return the sortedXIndexes
@@ -412,4 +448,5 @@ public class DoubleAxisIndexer {
     public int getNumberOfPoints() {
         return nXY;
     }
+
 }
