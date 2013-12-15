@@ -6,7 +6,8 @@ import java.util.logging.Logger;
 public abstract class AbstractGroupFinder implements IGroupFinder {
 
     /**
-     * an array to hold each group as an item.  each item contains keys which hold the <xy>Point index.
+     * an array to hold each group as an item.  each item contains a key which is an index
+     * to arrays indexer.x, indexer.y and this.pointToGroupIndex
      */
     protected SimpleLinkedListNode[] groupMembership = null;
 
@@ -16,7 +17,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
     
     /*
      * array holding indexes for a point to the group it belongs to.
-     * note that the point index is relative to indexer.getXSortedByY
+     * note that the point index is relative to indexer.x and indexer.y
      */
     protected int[] pointToGroupIndex = null;
             
