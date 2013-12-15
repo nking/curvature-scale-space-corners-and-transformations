@@ -16,7 +16,7 @@ public class PolarAngleMergeSort {
     /**
      * value allowed in determining difference between 2 angles
      */
-    protected static final double eps = 0.0001;
+    protected static final double eps = 0.00000001;
 
 	/**
      *
