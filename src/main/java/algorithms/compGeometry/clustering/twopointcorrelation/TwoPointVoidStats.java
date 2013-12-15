@@ -36,36 +36,25 @@ import java.util.logging.Logger;
  * about the number density of points in both dimensions.
  *
  * Essentially one must learn before sampling and analysis, whether the majority of points
-   are in groups or are background points ahead of time.
-   The only way to know that ahead of time is by rough cell counts (in 2-dimensions) before
+   are in groups and have background points outside of the groups ahead of time or whether
+   there are no background points outside of groups.
+   The easiest way to approximate that ahead of time is by rough cell counts (in 2-dimensions) before
    making the 1-dimensional histogram of counts.
-   -- If a significant number of cells are empty, this is easily seen as SPARSE_BACKGROUND sampling
-      and then the background density is the lowest bin's x value in a well formed histogram
-   -- If all cells have values within stdev of avg it's an even distribution of points.
-      this is seen as needing COMPLETE sampling
-      and then the background density is the peak bin's x value in a well formed histogram
-   -- Else, we should avoid empty cells and avoid the cells with counts > avg + stdev
-      and then use COMPLETE sampling of that subset of cells
-      and then the background density is the peak bin's x value in a well formed histogram
-      -- Note that the cells should not be too large in number because that would be
-         biasing the histogram to remove the densities that represent the distance between
-         groups.
-      -- Note that for this case, we really want to be able to remove the groups after first approx
-         and then do a complete sampling on the data without those and determine the
-         background density as the peak's x bin as the answer from that.
-         the problem is that one needs to fit a profile to the groups
-         in order to subtract them and to believe that that profile is correct and differentiable
-         from a uniform background distribution (which are details of the 2-point correlation function...)
-
-         TODO: following up on extreme differences for distributions in the later before
- *       improving the sampling to match the above description
- *
+   -- (1) If a significant number of cells are empty, this seen as needing SPARSE_BACKGROUND interpretation
+      and then the background density is the lowest bin's x value in a well formed histogram GEV fit
+   -- (2) Else  the background density is the peak of the histogram or GEV fit in a well formed histogram
+   
+   The code automatically determines which of method (1) and (2) to use.
+  
+  If the user has better knowledge of which should be applied, can set that with:
+     setInterpretForSparseBackgroundToTrue() or setInterpretForSparseBackgroundToFalse()
+     
  <pre>
  * More specifically for the true background points:
  * -- The location of the 'background' points in two dimensional space are likely
  *    Poisson, that is their locations in a fixed interval of space are
  *    independent of one another and occurred randomly.
- * -- The areas between the smallest voids in such a distribution are well fit by
+ * -- The areas between voids in such a distribution are well fit by
  *    Generalized Extreme Value distributions. Extreme value distributions are used
  *    to describe the maximum or minimum of values drawn from a sample distribution
  *    that is essentially exponential.
@@ -86,16 +75,6 @@ import java.util.logging.Logger;
  *     stats = new TwoPointVoidStats(indexer);
  *     stats.setUseCompleteSampling(true);
  *     stats.calc();
- *
- * The value returned by the code is used by TwoPointCorrelation as an estimate
- * of the background density.  That density is used as "noise" which TwoPointCorrelation
- * looks for clusters in the signal higher than it by a threshhold factor that's
- * usually 2 or 3 (densities > threshold*noise).
- *
- * The runtimes for the code are still in progress, but roughly approximated
- * in 2 stages:
- * (1) calculating and fitting the background voids @see #findVoids@see(),
- * and (2) finding the groups within the data using a threshold from the background density.
  *
  * If debugging is turned on, plots are generated and those file paths are printed to
  * standard out, and statements are printed to standard out.
@@ -134,7 +113,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected boolean useDefaultFitting = false;
 
     /**
-     * the factor to use when comparing a value to average += standardDeviation*sigmaFactor.
+     * the factor to use when comparing a density to backgroundDensity*sigmaFactor
+     * or when comparing cell counts to average += standardDeviation*sigmaFactor.
      * It should be the same as TwoPointCorrelation.sigmaFactor.
      * It's value is usually between 2 and 3.
      */
@@ -184,7 +164,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     public VoidSampling getSampling() {
-        return VoidSampling.valueOf(sampling.name());
+        return sampling;
     }
 
     public Boolean getInterpretForSparseBackground() {
@@ -310,13 +290,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     /**
      * calculate the 2-point void densities and then calculate the
-     * statistics of those points.
+     * statistics of those points to get the background density and error.
      *
      * More specifically:
      * @see #findVoids()
-     *
-     * The sampled background is then fit with a GEV curve, and the peak centroid
-     * is the background density estimate.
      *
      * @throws TwoPointVoidStatsException
      */
@@ -400,17 +377,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected void findVoids() throws TwoPointVoidStatsException {
 
-        /* If a significant number of cells are empty ==> SPARSE_BACKGROUND sampling.
-           background density is the lowest bin's x value in a well formed histogram.
-          If all cells have values within stdev of avg ==> COMPLETE sampling
-           background density is the peak bin's x value in a well formed histogram.
-          Else:
-             attempt to sample only the cells that are not empty nor above avg + stdev
-             and use COMPLETE sampling on them.
-             background density is the peak bin's x value in a well formed histogram
-             (though this later could be improved)
-         */
-
         long startTimeMillis = System.currentTimeMillis();
 
         int nXY = indexer.getNXY();
@@ -436,8 +402,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 
             }
             
-System.out.println("nCellsPerDim=" + nCellsPerDimensionForStats + " fractionEmpty=" + fractionEmpty + " indexer.nXY=" + indexer.getNumberOfPoints());
-System.out.println("fractionNotAvg=" + stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor));
+            log.finest("nCellsPerDim=" + nCellsPerDimensionForStats + " fractionEmpty=" + fractionEmpty + " indexer.nXY=" + indexer.getNumberOfPoints());
+            log.finest("fractionNotAvg=" + stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor));
             
             sampling = VoidSampling.COMPLETE;
         }
@@ -680,7 +646,7 @@ System.out.println("fractionNotAvg=" + stats.fractionOfCellsOutSideOfAvgToleranc
             /* for interpretForSparseBackground:
                    background density is the lowest bin's x value in a well formed histogram.
                for all other sampling:
-                   background density is the peak bin's x value in a well formed histogram.
+                   background density is the peak in a well formed histogram.
             */
 
             float limit, limitError;
@@ -706,7 +672,7 @@ System.out.println("fractionNotAvg=" + stats.fractionOfCellsOutSideOfAvgToleranc
 
                 float xpeak = (areaAndXYTopCentroid[0] > 0) ? areaAndXYTopCentroid[1] : areaAndXYTopCentroid2[1];
                 
-System.out.println("GEV top centroid=" + areaAndXYTopCentroid[1] + " data top centroid=" + areaAndXYTopCentroid2[1] + " using xpeak=" + xpeak);
+                log.finest("GEV top centroid=" + areaAndXYTopCentroid[1] + " data top centroid=" + areaAndXYTopCentroid2[1] + " using xpeak=" + xpeak);
 
                 limit = (xpeak > 0) ? xpeak : bestFit.getXPeak();
             }
@@ -761,8 +727,8 @@ System.out.println("GEV top centroid=" + areaAndXYTopCentroid[1] + " data top ce
              *
              *      The deriv of f_fit w.r.t. sigma, k, and x is a very very long derivative...
              *
-             *      If need that formally one day, it's tedious, but possible to work out with the chain rule.
-             *      For now, will instead use chisq to approximate the standard deviation from the model.
+             *TODO: have the derivs and 2nd derivs now so will calculate this with the chain rule.
+             *Meanwhile, it's roughly approximated with chisq to approximate the standard deviation from the model.
              */
 
             // Error from one value is dependent upon having counted all in histogram.  we take the

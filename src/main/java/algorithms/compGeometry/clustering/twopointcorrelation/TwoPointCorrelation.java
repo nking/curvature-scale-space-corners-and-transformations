@@ -18,38 +18,67 @@ import java.util.logging.Logger;
 /**
   Find clusters in data.
   
-  The default method expects that there are background points in the data which are not part
-  of the groups.  The groups are found by statistics:  they are clustered 2 to 3 times more
-  than the background points.  The density of the background is determined, and pairs of 
-  points that are closer than 2 to 3 times that background density are in a group.
-     
-  There is an alternative method that can be invoked on datasets in which there are no
-  points outside of groups, that is no background points.
-     to use the alternative method:
-        useFindMethodForDataWithoutBackgroundPoints()
-         
-  The choice between the two is currently automated, 
-  but to override that, one can set :
-       useFindMethodForDataWithoutBackgroundPoints()
-       or useFindMethodForDataWithBackgroundPoints()
+  Clusters in the dataset are found by defining the background point density and finding
+  pairs of points whose separations are closer than a threshhold density estimated 
+  from the background point density.
+    
+  More specifically, the background points in two-dimensional space are Poissonian,
+  that is their locations in a fixed interval of space are independent of one
+  another and occur randomly.  The separation of these points, when no other points
+  are between them define voids whose distributions (that is, histograms) are well fit by 
+  by the Generalized Extreme Value (GEV) curve.
+  Extreme value curves are used to describe the maximum or minimum of values 
+  drawn from a sample distribution that is essentially exponential.
   
-  Use as an API:
-      TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
-      clusterFinder.calculateBackground();
-      clusterFinder.findClusters();
-      
-      // the results are available as group points or as convex hulls surrounding the groups:
+  There are 2 methods for determining clusters in this code:
+  
+  (1) For datasets in which there are background points:
+  The peak of the GEV should represent the background density.  The clusters are then
+  defined statistically as being 2 to 3 times 'above the background', that is having
+  separations 2 to 3 times more dense than the background density. The code by default 
+  uses a factor of 2.5, but methods are supplied to allow the user to set the background 
+  to 2 or 3 instead, and there's also a method to set the background manually.  
+  The later manual setting is useful for a case where perhaps one determined the 
+  background density in one dataset and need to apply that to a 2nd dataset which 
+  has the same background, but is 'saturated' with foreground points.  
+  
+  (2) For datasets in which there are no background points:
+  Datasets which are only points which should be in groups, and essentially have no
+  background points are referred to as sparse background datasets.
+  For these datasets, the background density is zero, so we define the level above
+  the background by the edges of the densities of the group.  This edge density
+  is already 2 to 3 times above the background so it is the threshold density for
+  membership already.  This threshold density is the first x bin in a well formed
+  histogram of 2-point densities.
+  
+  The code automatically determines which of method (1) and (2) to use.
+  
+  If the user has better knowledge of which should be applied, can set that with:
+     useFindMethodForDataWithoutBackgroundPoints() or useFindMethodForDataWithBackgroundPoints()
+  
+  To use the code with default settings:
+  
+       TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, totalNumberOfPoints);
+  
+       clusterFinder.calculateBackground();
+       
+       clusterFinder.findClusters();
+  
+  The results are available as group points or as convex hulls surrounding the groups:
       int n = clusterFinder.getNumberOfGroups()
       
-      // get the hull for groupId 0
-      ArrayPair hull0 = clusterFinder.getGroupHull(0)
+      To get the hull for groupId 0:
+          ArrayPair hull0 = clusterFinder.getGroupHull(0)
 
-      // get the points in groupId 0
-      ArrayPair group0 = clusterFinder.getGroup(int groupNumber)
+      To get the points in groupId 0:
+          ArrayPair group0 = clusterFinder.getGroup(int groupNumber)
       
-      // plot the results:
-      String plotFilePath = clusterFinder.plotClusters();
+      To plot the results:
+          String plotFilePath = clusterFinder.plotClusters();
 
+ If debugging is turned on, plots are generated and those file paths are printed to
+     standard out, and statements are printed to standard out.
+ 
   To set the background density manually:
       TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
       clusterFinder.setBackground(0.03f, 0.003f);
@@ -63,12 +92,16 @@ import java.util.logging.Logger;
      
          ArrayPair seeds = clusterFinder.getHullCentroids();
 
+  Note also that the code has the ability to refine a solution:  that is to determine groups and then
+  subtract them from the data and then re-determine the background density from the remaining points,
+  but it is not enabled at this time, but can be upon request.
 
   Use from the command line:
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
 
           java -cp bin/classes  algorithms.compGeometry.clustering.twopointcorrelation.TwoPointCorrelation --file /path/to/file/fileName.txt
 
+  
   @author nichole
  */
 public class TwoPointCorrelation {
@@ -199,10 +232,8 @@ public class TwoPointCorrelation {
     }
     
     /**
-     * for datasets where you know that there are no points outside of the groups,
-     * that is, there are no background points, set the method choice to
-     * that for no background points here.  This has to be set before
-     * findClusters() is invoked.
+     * for datasets where you know that there are no points outside of the groups.
+     * This has to be set before findClusters() is invoked.
      */
     public void useFindMethodForDataWithoutBackgroundPoints() {
         if (useFindMethodForHavingABackground) {
@@ -212,7 +243,8 @@ public class TwoPointCorrelation {
         this.automateTheFindMethodChoice = false;
     }
     /**
-     * for datasets with points that are known not to be in groups use this method.
+     * This is the default method.  It expects that there are background data points
+     * outside of groups findable in the dataset.
      * it's the default for datasets without large spatial gaps in them.
      */
     public void useFindMethodForDataWithBackgroundPoints() {
@@ -266,7 +298,7 @@ public class TwoPointCorrelation {
     }
 
     /**
-     * calculate background using the default method.
+     * calculate the background density if it has not been set manually by the user.
      *
      * @see TwoPointVoidStats.calc()
      *
@@ -281,7 +313,7 @@ public class TwoPointCorrelation {
         }
     }
 
-    public void reuseStatsForBackgroundCalculation(String minimaFilePath) throws TwoPointVoidStatsException, IOException {
+    void reuseStatsForBackgroundCalculation(String minimaFilePath) throws TwoPointVoidStatsException, IOException {
 
         TwoPointVoidStats minStats = new TwoPointVoidStats(indexer);
         minStats.setDebug(debug);
