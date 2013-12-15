@@ -33,7 +33,7 @@ import java.util.logging.Logger;
   There are 2 methods for determining clusters in this code:
   
   (1) For datasets in which there are background points:
-  The peak of the GEV should represent the background density.  The clusters are then
+  The peak of the GEV fit should represent the background density.  The clusters are then
   defined statistically as being 2 to 3 times 'above the background', that is having
   separations 2 to 3 times more dense than the background density. The code by default 
   uses a factor of 2.5, but methods are supplied to allow the user to set the background 
