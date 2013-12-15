@@ -374,8 +374,8 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             
             if (debug) {
                 try {
-                    String label = String.format("k=%4.4f <*>  s=%4.4f <*>  m=%4.4f <*>  n=%d  chi=%4.8f",
-                        vars[0], vars[1], vars[2], nIter, chiSqSum);
+                    String label = String.format("k=%4.4f <*>  s=%4.4f <*>  m=%4.4f <*>  n=%d  chi=%4.8f yscl=%.0f",
+                        vars[0], vars[1], vars[2], nIter, chiSqSum, this.yScale);
                     plotFit(yGEV, label);
                 } catch (IOException e) {
                     System.err.println(e.getMessage());
@@ -461,8 +461,8 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         
         if (debug) {
             try {
-                String label = String.format("k=%4.4f <*>  s=%4.4f <*>  m=%4.4f <*>  n=%d  chi=%4.8f",
-                    vars[0], vars[1], vars[2], nIter, bestYFit.getChiSqSum());
+                String label = String.format("k=%4.4f <*>  s=%4.4f <*>  m=%4.4f <*>  n=%d  chi=%4.8f  yscl=%.0f",
+                    vars[0], vars[1], vars[2], nIter, bestYFit.getChiSqSum(), this.yScale);
                 plotFit(bestYFit.getYFit(), label);
             } catch (IOException e) {
                 System.err.println(e.getMessage());
@@ -582,8 +582,8 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             if (debug) {
                 try {
                     String label = String.format(
-                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.8f",
-                        vars[0], vars[1], vars[2], nIter, chiSqSum);
+                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.8f  yscl=%.0f",
+                        vars[0], vars[1], vars[2], nIter, chiSqSum, this.yScale);
                     plotFit(yGEV, label);
                 } catch (IOException e) {
                     System.err.println(e.getMessage());

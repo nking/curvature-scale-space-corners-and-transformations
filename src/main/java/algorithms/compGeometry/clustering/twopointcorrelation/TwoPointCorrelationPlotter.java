@@ -1,6 +1,7 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.misc.MiscMath;
+import algorithms.util.ArrayPair;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
 import java.io.File;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+
 
 /**
 Convenience class to create a plot to visualize results of the
@@ -95,26 +97,24 @@ public class TwoPointCorrelationPlotter {
 
           //  ===== add group centroids =====
         dataSB.append("\n\n").append("var data_group_centroids = [\n");
+        ArrayPair centroids = twoPtCorr.getHullCentroids();
         for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
             if (i > 0) {
                 dataSB.append(",\n");
             }
-            dataSB.append("    {x:").append(twoPtCorr.xGroupHullCentroids[i])
-                .append(", y:").append(twoPtCorr.yGroupHullCentroids[i]).append(", name: ").append(i).append("}");
+            dataSB.append("    {x:").append(centroids.getX()[i])
+                .append(", y:").append(centroids.getY()[i]).append(", name: ").append(i).append("}");
         }
         dataSB.append("\n];\n");
 
 
         dataSB.append("\n").append("var data_polygons = [\n");
         for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
-            float[] xPolygon = twoPtCorr.getXGroupHull(i);
-            float[] yPolygon = twoPtCorr.getYGroupHull(i);
-            int nPolygonPoints = xPolygon.length;
-
+            ArrayPair hull = twoPtCorr.getGroupHull(i);
             dataSB.append("    [");
-            for (int ii = 0; ii < nPolygonPoints; ii++) {
-                String xStr = String.format("%.1f", xPolygon[ii]);
-                String yStr = String.format("%.1f", yPolygon[ii]);
+            for (int ii = 0; ii < hull.getX().length; ii++) {
+                String xStr = String.format("%.1f", hull.getX()[ii]);
+                String yStr = String.format("%.1f", hull.getY()[ii]);
                 if (ii > 0) {
                     dataSB.append(", ");
                 }
@@ -254,28 +254,27 @@ public class TwoPointCorrelationPlotter {
 
           //  ===== add group centroids =====
         dataSB.append("\n\n").append("var data_group_centroids = [\n");
+        ArrayPair centroids = twoPtCorr.getHullCentroids();
         for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
             if (i > 0) {
                 dataSB.append(",\n");
             }
-            dataSB.append("    {x:").append(twoPtCorr.xGroupHullCentroids[i])
-                .append(", y:").append(twoPtCorr.yGroupHullCentroids[i]).append(", name: ").append(i).append("}");
+            dataSB.append("    {x:").append(centroids.getX()[i])
+                .append(", y:").append(centroids.getY()[i]).append(", name: ").append(i).append("}");
         }
         dataSB.append("\n];\n");
 
 
         dataSB.append("\n").append("var data_groups = [\n");
         for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
-
-            float[] xGroupPoints = twoPtCorr.getXGroup(i);
-            float[] yGroupPoints = twoPtCorr.getYGroup(i);
-
-            int nPolygonPoints = xGroupPoints.length;
+            ArrayPair group = twoPtCorr.getGroup(i);
+        
+            int nPolygonPoints = group.getX().length;
 
             dataSB.append("    [");
             for (int ii = 0; ii < nPolygonPoints; ii++) {
-                String xStr = String.format("%.1f", xGroupPoints[ii]);
-                String yStr = String.format("%.1f", yGroupPoints[ii]);
+                String xStr = String.format("%.1f", group.getX()[ii]);
+                String yStr = String.format("%.1f", group.getY()[ii]);
                 if (ii > 0) {
                     dataSB.append(",\n");
                 }

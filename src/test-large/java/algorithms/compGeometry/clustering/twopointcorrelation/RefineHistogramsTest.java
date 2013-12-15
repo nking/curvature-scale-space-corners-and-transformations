@@ -188,8 +188,6 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
 
                 clusterFinder.findClusters();
 
-                clusterFinder.calculateHullsOfClusters();
-
                 clusterFinder.plotClusters();
             }
 

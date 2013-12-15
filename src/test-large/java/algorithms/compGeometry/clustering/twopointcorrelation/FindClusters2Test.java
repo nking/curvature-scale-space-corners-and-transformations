@@ -102,8 +102,6 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     i, numberOfClusters, twoPtC.indexer.nXY);
             }
 
-            twoPtC.calculateHullsOfClusters();
-
             float[] xf = null;
             float[] yf = null;
             HistogramHolder histogram = stats.getStatsHistogram();

@@ -135,12 +135,7 @@ public class MainRunner {
             Logger.getLogger(MainRunner.class.getName()).info("find clusters");
 
             clusterFinder.findClusters();
-
-
-            Logger.getLogger(MainRunner.class.getName()).info("calculate hull of clusters");
-
-            clusterFinder.calculateHullsOfClusters();
-
+            
 
             String plotFilePath = clusterFinder.plotClusters();
             

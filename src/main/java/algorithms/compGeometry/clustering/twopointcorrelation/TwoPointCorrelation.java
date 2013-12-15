@@ -5,6 +5,7 @@ import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.curves.GEVYFit;
 import algorithms.misc.MiscMath;
+import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.FileNotFoundException;
@@ -15,39 +16,56 @@ import java.lang.management.MemoryUsage;
 import java.util.logging.Logger;
 
 /**
-  Find clusters in data by looking for regions whose density is
-      2 or 3 times the background density (that is 2 or 3 sigma above 'error').
-      The default is 3.
-
-  The background density can be determined with the following methods:
-      FIT_TWO_POINT_VOIDS -
-         clusterFinder.calculateBackgroundVia2PtVoidFit(false);
-         returns an estimate of the background density
-         by calculating the density of rectangles holding only 2 points,
-         fitting a GEV curve to that distribution, and returning the point
-         at which 10% of the total area under the curve has occurred.
-      OR the background density can be set manually:
-          setBackground(float backgroundSurfaceDensity, float standardDeviationOfBackground);
-
+  Find clusters in data.
+  
+  The default method expects that there are background points in the data which are not part
+  of the groups.  The groups are found by statistics:  they are clustered 2 to 3 times more
+  than the background points.  The density of the background is determined, and pairs of 
+  points that are closer than 2 to 3 times that background density are in a group.
+     
+  There is an alternative method that can be invoked on datasets in which there are no
+  points outside of groups, that is no background points.
+     to use the alternative method:
+         useFindMethodForDataWithoutBackgroundPoints()
+         
+  You should chose the default method or the alternative method prior to using the code
+  because they are performed on very different kinds of datasets.
+  If for some reason, there is a need to have the code automate the decision, you can use:
+         automateTheChoiceOfFindMethod();
+  *Note that this isn't recommended simply because the dataset types for the different 
+  methods are very different, so not likely to be present in different runs of your datasets.
+  
+  
   Use as an API:
       TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
       clusterFinder.calculateBackground();
       clusterFinder.findClusters();
-      clusterFinder.calculateHullsOfClusters();
+      
+      // the results are available as group points or as convex hulls surrounding the groups:
+      int n = clusterFinder.getNumberOfGroups()
+      
+      // get the hull for groupId 0
+      ArrayPair hull0 = clusterFinder.getGroupHull(0)
+
+      // get the points in groupId 0
+      ArrayPair group0 = clusterFinder.getGroup(int groupNumber)
+      
+      // plot the results:
       String plotFilePath = clusterFinder.plotClusters();
 
-
+  To set the background density manually:
       TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
-      setBackground(0.03f, 0.003f);
+      clusterFinder.setBackground(0.03f, 0.003f);
       clusterFinder.findClusters();
-      clusterFinder.calculateHullsOfClusters();
       String plotFilePath = clusterFinder.plotClusters();
+
 
   Note:  For datasets in which the density of background points is high, if you don't
-     have the ability to reduce the data by a key characteristic, you might consider
+     have the ability to filter the data by a key characteristic, you might consider
      the results of this code as seeds for a Voronoi diagram or other code.
-     float[] xSeeds = clusterFinder.getXHullCentroids();
-     float[] ySeeds = clusterFinder.getYHullCentroids();
+     
+         ArrayPair seeds = clusterFinder.getHullCentroids();
+
 
   Use from the command line:
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
@@ -59,7 +77,7 @@ import java.util.logging.Logger;
 public class TwoPointCorrelation {
 
     protected enum STATE {
-        INITIALIZED, BACKGROUND_SET, CLUSTERS_FOUND, CLUSTER_HULLS_CALCULATED
+        INITIALIZED, BACKGROUND_SET, CLUSTERS_FOUND
     }
 
     protected enum BACKGROUND_METHOD {
@@ -67,11 +85,11 @@ public class TwoPointCorrelation {
     }
 
     protected final DoubleAxisIndexer indexer;
-    
+
     protected Boolean refineSolution = Boolean.FALSE;
-    
+
     protected boolean allowRefinement = false;
-    
+
     protected DoubleAxisIndexer tempRefineSolnIndexer = null;
 
     private float backgroundSurfaceDensity;
@@ -95,14 +113,6 @@ public class TwoPointCorrelation {
      */
     protected SimpleLinkedListNode[] groupHullIndexes = null;
 
-    /**
-     * centroid coordinates of the hulls for the groups.  note that the centroids
-     * are not derived from all points in the group, only from the hull polygon.
-     */
-    protected float[] xGroupHullCentroids = null;
-    protected float[] yGroupHullCentroids = null;
-    protected float[] groupHullSurfaceAreas = null;
-
     protected boolean persistTheMinimaStats = false;
     protected String indexerFilePath = null;
     protected String minimaStatsFilePath = null;
@@ -113,8 +123,12 @@ public class TwoPointCorrelation {
     protected boolean debug = false;
 
     protected boolean doLogPerformanceMetrics = false;
-    
+
     protected boolean setUseDownhillSimplexHistogramFitting = false;
+    
+    protected boolean useFindMethodForSparseBackground = false;
+    
+    protected boolean automateTheFindMethodChoice = false;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -186,10 +200,39 @@ public class TwoPointCorrelation {
     }
     
     /**
+     * for datasets where you know that there are no points outside of the groups,
+     * that is, there are no background points, set the method choice to
+     * that for no background points here.  This has to be set before
+     * findClusters() is invoked.
+     */
+    public void useFindMethodForDataWithoutBackgroundPoints() {
+        if (automateTheFindMethodChoice) {
+            throw new IllegalStateException("useFindMethodForSparseBackground and automateTheChoiceOfFindMethod cannot both be set");
+        }
+        this.useFindMethodForSparseBackground = true;
+    }
+    
+    /**
+     * this method is not recommended, but is to allow the code to choose between
+     * the default method of finding clusters based upon a density above the background
+     * density or the alternative method for finding clusters when there are no background
+     * points between the groups.
+     * The reason that it is not recommended is that the 2 types of datasets that the methods
+     * would be used on are so different
+     * that you likely know which you have before use of this code.
+     */
+    public void automateTheChoiceOfFindMethod() {
+        if (useFindMethodForSparseBackground) {
+            throw new IllegalStateException("useFindMethodForSparseBackground and automateTheChoiceOfFindMethod cannot both be set");
+        }
+        this.automateTheFindMethodChoice = true;
+    }
+
+    /**
      * if letting the code fit the background distribution, this method will use
      * a downhill simplex method wrapped in range searches to fit the distribution,
      * else the default method will be used which is a non-quadratic conjugate gradient
-     * solver. 
+     * solver.
      */
     /*
     public void setUseDownhillSimplexHistogramFitting() {
@@ -211,7 +254,7 @@ public class TwoPointCorrelation {
     public void setMinimumNumberInCluster(int minimumNumberForClusterMembership) {
         this.minimumNumberInCluster = minimumNumberForClusterMembership;
     }
-    
+
     public void setAllowRefinement() {
         allowRefinement = true;
     }
@@ -250,9 +293,15 @@ public class TwoPointCorrelation {
         if (setUseDownhillSimplexHistogramFitting) {
             minStats.setUseDownhillSimplexHistogramFitting();
         }
-        
+
         minStats.setStandardDeviationFactor(sigmaFactor);
         
+        if (useFindMethodForSparseBackground) {
+            minStats.setInterpretForSparseBackgroundToTrue();
+        } else if (automateTheFindMethodChoice) {
+            minStats.automateTheFindMethodChoice();
+        }
+
         minStats.calc(minimaFilePath);
 
         if (debug) {
@@ -279,28 +328,34 @@ public class TwoPointCorrelation {
         }
 
         TwoPointVoidStats voidStats = null;
-        
+
         if (refineSolution.booleanValue()) {
 
             voidStats = new TwoPointVoidStats(tempRefineSolnIndexer);
-            
+
             voidStats.setUseCompleteSampling();
-           
+
             voidStats.setInterpretForSparseBackgroundToTrue();
-                                
+
         } else {
-            
+
             voidStats = new TwoPointVoidStats(indexer);
         }
-        
+
+        if (useFindMethodForSparseBackground) {
+            voidStats.setInterpretForSparseBackgroundToTrue();
+        } else if (automateTheFindMethodChoice) {
+            voidStats.automateTheFindMethodChoice();
+        }
+
         voidStats.setDebug(debug);
-        
+
         voidStats.setStandardDeviationFactor(sigmaFactor);
 
         if (doLogPerformanceMetrics) {
             voidStats.logPerformanceMetrics();
         }
-        
+
         if (setUseDownhillSimplexHistogramFitting) {
             voidStats.setUseDownhillSimplexHistogramFitting();
         }
@@ -315,12 +370,8 @@ public class TwoPointCorrelation {
 
         this.backgroundSurfaceDensity = voidStats.getBackgroundSurfaceDensity();
         this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
-        
+
         //backgroundStats.releaseLargeVariables();
-        
-        if (refineSolution) {
-            tempRefineSolnIndexer = null;
-        }
 
         if (debug) {
             log.info("==>background density ="
@@ -383,10 +434,6 @@ public class TwoPointCorrelation {
         if (groupHullIndexes != null) {
             sumBytes += (arrayBytes + (groupHullIndexes.length*(overheadBytes + refBytes + intBytes)));
         }
-        if (xGroupHullCentroids != null) {
-            // float[] on the heap
-            sumBytes += 3*(arrayBytes + (xGroupHullCentroids.length*(arrayBytes)));
-        }
         if (groupFinder != null) {
             sumBytes += groupFinder.approximateMemoryUsed();
         }
@@ -425,17 +472,13 @@ public class TwoPointCorrelation {
 
         findGroups();
     }
-    
+
     public IGroupFinder getGroupFinder() {
         return groupFinder;
     }
 
     public String plotClusters(float xMin, float xMax, float yMin, float yMax)
         throws FileNotFoundException, IOException, TwoPointVoidStatsException {
-
-        if (state.ordinal() < STATE.CLUSTER_HULLS_CALCULATED.ordinal()) {
-            calculateHullsOfClusters();
-        }
 
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xMin, xMax, yMin, yMax);
         plotter.addPlot(this);
@@ -444,10 +487,6 @@ public class TwoPointCorrelation {
     }
 
     public String plotClusters() throws FileNotFoundException, IOException, TwoPointVoidStatsException {
-
-        if (state.ordinal() < STATE.CLUSTER_HULLS_CALCULATED.ordinal()) {
-            calculateHullsOfClusters();
-        }
 
         float[] xMinMax = MiscMath.calculateOuterRoundedMinAndMax(indexer.getX());
         float[] yMinMax = MiscMath.calculateOuterRoundedMinAndMax(indexer.getY());
@@ -466,15 +505,24 @@ public class TwoPointCorrelation {
     }
 
     protected void findGroups() throws TwoPointVoidStatsException, IOException {
-        
+
         long startTimeMillis = System.currentTimeMillis();
 
-        groupFinder = new DFSGroupFinder(backgroundSurfaceDensity, sigmaFactor);
-        
+        if ((this.backgroundStats != null) && (this.backgroundStats instanceof TwoPointVoidStats)
+            && ((TwoPointVoidStats)backgroundStats).getInterpretForSparseBackground().booleanValue()) {
+
+            // for method without any background points, we use the density of the edge points without a factor
+            groupFinder = new DFSGroupFinder(backgroundSurfaceDensity, 1.0f);
+
+        } else {
+
+            groupFinder = new DFSGroupFinder(backgroundSurfaceDensity, sigmaFactor);
+        }
+
         groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);
-        
+
         groupFinder.findGroups(indexer);
-        
+
         state = STATE.CLUSTERS_FOUND;
 
         if (doLogPerformanceMetrics) {
@@ -483,17 +531,17 @@ public class TwoPointCorrelation {
 
             printPerformanceMetrics(startTimeMillis, stopTimeMillis, "findGroups", indexer.getNXY());
         }
-        
+
         if (allowRefinement && !refineSolution && backgroundStats != null && backgroundStats instanceof TwoPointVoidStats) {
-            
+
             TwoPointVoidStats tmp = (TwoPointVoidStats)backgroundStats;
-            
+
             if (tmp.getInterpretForSparseBackground() != null && tmp.getInterpretForSparseBackground().booleanValue()) {
-            
+
                 if (tmp.getSampling() != null && tmp.getSampling().ordinal() == VoidSampling.COMPLETE.ordinal()) {
-                    
+
                     tempRefineSolnIndexer = createIndexerMinusGroupPoints();
-                    
+
                     if (tempRefineSolnIndexer != null) {
 
                         // subtract the groups to create a new indexer
@@ -501,63 +549,75 @@ public class TwoPointCorrelation {
 
                         state = STATE.INITIALIZED;
 
+                        /*
+                        float[] xymm = tempRefineSolnIndexer.findXYMinMax();
+                        PolygonAndPointPlotter p0 = new PolygonAndPointPlotter();
+                        p0.addPlot(indexer.getX(), indexer.getY(),
+                            indexer.getXErrors(), indexer.getYErrors(), "original");
+                        p0.writeFile3();
+                        p0.addPlot(tempRefineSolnIndexer.getX(), tempRefineSolnIndexer.getY(),
+                            tempRefineSolnIndexer.getXErrors(), tempRefineSolnIndexer.getYErrors(), "refining...");
+                        System.out.println(p0.writeFile3());
+                        */
+
                         findClusters();
-                        
+
+                        tempRefineSolnIndexer = null;
                     }
                 }
             }
         }
     }
-  
+
     private DoubleAxisIndexer createIndexerMinusGroupPoints() {
-        
+
         if (indexer == null) {
             throw new IllegalStateException("indexer cannot be null");
         }
         if (groupFinder == null) {
             throw new IllegalStateException("groupFinder cannot be null");
         }
-        
+
         int[] pointToGroupIndexes = groupFinder.getPointToGroupIndexes();
-        
+
         int numberInGroups = 0;
         for (int idx : pointToGroupIndexes) {
             if (idx > -1) {
                 numberInGroups++;
             }
         }
-        
+
         int n = indexer.getNumberOfPoints() - numberInGroups;
-        
+
         if (n == 0) {
             return null;
         }
-        
+
         float[] tmpx = new float[n];
         float[] tmpy = new float[n];
         float[] tmpxe = new float[n];
         float[] tmpye = new float[n];
-        
+
         int count = 0;
-        
+
         for (int i = 0; i < pointToGroupIndexes.length; i++) {
-            
+
             int groupId = pointToGroupIndexes[i];
-            
+
             if (groupId == -1) {
-             
+
                 tmpx[count] = indexer.getX()[i];
                 tmpy[count] = indexer.getY()[i];
                 tmpxe[count] = indexer.getXErrors()[i];
                 tmpye[count] = indexer.getYErrors()[i];
-                
+
                 count++;
             }
         }
-        
+
         DoubleAxisIndexer tmpIndexer = new DoubleAxisIndexer();
         tmpIndexer.sortAndIndexXThenY(tmpx, tmpy, tmpxe, tmpye, tmpx.length);
-                
+
         return tmpIndexer;
     }
 
@@ -569,7 +629,7 @@ public class TwoPointCorrelation {
         }
 
         int nGroups = groupFinder.getNumberOfGroups();
-        
+
         boolean[] insideClusters = new boolean[indexer.getNXY()];
 
         for (int i = 0; i < nGroups; i++) {
@@ -598,117 +658,12 @@ public class TwoPointCorrelation {
 
         return frac;
     }
-
-    /**
-     * calculate convex hulls of clusters and calculate the hull centroids and area
-     *
-     * @throws IOException
-     * @throws TwoPointVoidStatsException
-     */
-    public void calculateHullsOfClusters() throws IOException, TwoPointVoidStatsException {
-
-        if (state.ordinal() < STATE.CLUSTERS_FOUND.ordinal()) {
-            findClusters();
+    
+    public float[] calculateAreaAndCentroidOfHull(float[] xHull, float[] yHull) {
+        if (xHull == null || yHull == null) {
+            throw new IllegalArgumentException("neither xHull nor yHull can be null");
         }
-
-        long startTimeMillis = System.currentTimeMillis();
-        
-        int nGroups = (groupFinder != null) ? groupFinder.getNumberOfGroups() : 0;
-
-        groupHullIndexes = new SimpleLinkedListNode[nGroups];
-
-        xGroupHullCentroids = new float[nGroups];
-        yGroupHullCentroids = new float[nGroups];
-        groupHullSurfaceAreas = new float[nGroups];
-
-        // the indexes stored in the instance vars such as pointToGroupIndex are w.r.t. the arrays sorted by y
-        float[] x = indexer.getXSortedByY();
-        float[] y = indexer.getYSortedByY();
-
-        int nXY = indexer.getNXY();
-
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(indexer.getX()[indexer.getSortedXIndexes()[0]],
-            indexer.getX()[indexer.getSortedXIndexes()[nXY - 1]],
-            indexer.getY()[indexer.getSortedYIndexes()[0]], indexer.getY()[indexer.getSortedYIndexes()[nXY - 1]]);
-
-        for (int i = 0; i < nGroups; i++) {
-
-            groupHullIndexes[i] = new SimpleLinkedListNode();
-
-            int[] memberIndexes = getGroupFinder().getIndexes(i);
-            float[] xMember = getGroupFinder().getX(i, indexer);
-            float[] yMember = getGroupFinder().getY(i, indexer);
-            
-            float[] xhull = null;
-            float[] yhull = null;
-
-            if (xMember.length > 2) {
-                try {
-                    GrahamScan scan = new GrahamScan();
-                    scan.computeHull(xMember, yMember);
-
-                    xhull = scan.getXHull();
-                    yhull = scan.getYHull();
-                } catch (GrahamScanTooFewPointsException e) {
-                }
-            }
-
-            if (xhull == null) {
-
-                xhull = new float[xMember.length];
-                yhull = new float[xMember.length];
-                for (int ii = 0; ii < xMember.length; ii++) {
-                    xhull[ii] = xMember[ii];
-                    yhull[ii] = yMember[ii];
-                }
-            }
-
-            int hullMatchCount = 0;
-            // the hull is a subset of memberIndexes so point to the original coordinates
-            //   instead of creating a new instance data structure
-            for (int j = 0; j < xhull.length; j++) {
-
-                float xh = xhull[j];
-                float yh = yhull[j];
-
-                for (int k = 0; k < xMember.length; k++) {
-
-                    int pointIndex = memberIndexes[k];
-
-                    if ( (x[pointIndex] == xh) && (y[pointIndex] == yh) ) {
-                        groupHullIndexes[i].insert(pointIndex);
-                        hullMatchCount++;
-                        break;
-                    }
-                }
-            }
-
-            if (debug) {
-                try {
-                    plotter.addPlot(xMember, yMember, xhull, yhull, "");
-                    plotter.writeFile();
-                } catch (IOException e) {
-
-                }
-            }
-
-            float[] ca = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xhull, yhull);
-
-            if (ca != null) {
-                groupHullSurfaceAreas[i] = ca[0];
-                xGroupHullCentroids[i] = ca[1];
-                yGroupHullCentroids[i] = ca[2];
-            }
-        }
-
-        state = STATE.CLUSTER_HULLS_CALCULATED;
-
-        if (doLogPerformanceMetrics) {
-
-            long stopTimeMillis = System.currentTimeMillis();
-
-            printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateHullsOfClusters", nGroups);
-        }
+        return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xHull, yHull);
     }
 
     public int getNumberOfGroups() {
@@ -720,20 +675,20 @@ public class TwoPointCorrelation {
         if (groupFinder == null) {
             return null;
         }
-        
+
         int nGroups = groupFinder.getNumberOfGroups() ;
-        
+
         if (groupNumber >= nGroups) {
             throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
         }
 
         float[] xMember = getGroupFinder().getX(groupNumber, indexer);
         float[] yMember = getGroupFinder().getY(groupNumber, indexer);
-        
+
         float xCoordsAvg = 0;
         float yCoordsAvg = 0;
         int count = 0;
-        
+
         for (int i = 0; i < xMember.length; i++) {
             xCoordsAvg += xMember[i];
             yCoordsAvg += yMember[i];
@@ -745,127 +700,60 @@ public class TwoPointCorrelation {
         return new float[]{xCoordsAvg, yCoordsAvg};
     }
 
-    public float[] getXGroupHull(int groupNumber) {
+    public ArrayPair getGroupHull(int groupNumber) {
 
         if (groupFinder == null) {
             return null;
         }
-        
+
         int nGroups = groupFinder.getNumberOfGroups() ;
-        
+
         if (groupNumber >= nGroups) {
             throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
         }
 
-        float[] x = indexer.getX();
+        float[] xg = groupFinder.getX(groupNumber, indexer);
+        
+        float[] yg = groupFinder.getY(groupNumber, indexer);
+        
+        try {
+            
+            GrahamScan scan = new GrahamScan();
+            
+            scan.computeHull(xg, yg);
 
-        SimpleLinkedListNode hullNode = groupHullIndexes[groupNumber];
+            return new ArrayPair(scan.getXHull(), scan.getYHull());
 
-        float[] xhull = new float[hullNode.getKeys().length];
-        int count = 0;
+        } catch (GrahamScanTooFewPointsException e) {
 
-        while ((hullNode != null) && (hullNode.key != -1)) {
-
-            int pointIndex = hullNode.key;
-
-            xhull[count] = x[pointIndex];
-
-            hullNode = hullNode.next;
-            count++;
+            return new ArrayPair(new float[0], new float[0]);
         }
-
-        return xhull;
     }
 
-    public float[] getYGroupHull(int groupNumber) {
+    public ArrayPair getHullCentroids() {
 
         if (groupFinder == null) {
             return null;
         }
-        
+
         int nGroups = groupFinder.getNumberOfGroups() ;
+
+        float[] xc = new float[nGroups];
+        float[] yc = new float[nGroups];
         
-        if (groupNumber >= nGroups) {
-            throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
-        }
-
-        // the indexes stored in the instance vars such as pointToGroupIndex are w.r.t. the arrays sorted by y
-        float[] y = indexer.getY();
-
-        SimpleLinkedListNode hullNode = groupHullIndexes[groupNumber];
-
-        float[] yhull = new float[hullNode.getKeys().length];
-        int count = 0;
-
-        while ((hullNode != null) && (hullNode.key != -1)) {
-
-            int pointIndex = hullNode.key;
-
-            yhull[count] = y[pointIndex];
-
-            hullNode = hullNode.next;
-            count++;
-        }
-
-        return yhull;
-    }
-
-    public float[] getXHullCentroids() {
-        
-        if (groupFinder == null) {
-            return null;
-        }
-        
-        int nGroups = groupFinder.getNumberOfGroups() ;
-        
-        float[] seeds = new float[nGroups];
         for (int i = 0; i < nGroups; i++) {
-            seeds[i] = getXGroupHullCentroid(i);
-        }
-        return seeds;
-    }
-    public float[] getYHullCentroids() {
-        
-        if (groupFinder == null) {
-            return null;
-        }
-        
-        int nGroups = groupFinder.getNumberOfGroups() ;
-        
-        float[] seeds = new float[nGroups];
-        for (int i = 0; i < nGroups; i++) {
-            seeds[i] = getYGroupHullCentroid(i);
-        }
-        return seeds;
-    }
-
-    public float getXGroupHullCentroid(int groupNumber) {
-
-        if (groupFinder == null) {
-            return Float.MIN_VALUE;
+            
+            ArrayPair hull = getGroupHull(i);
+            
+            float[] ca = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(hull.getX(), hull.getY());
+            
+            xc[i] = ca[1];
+            
+            yc[i] = ca[2];
+            
         }
         
-        int nGroups = groupFinder.getNumberOfGroups();
-        
-        if (groupNumber >= nGroups) {
-            throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
-        }
-
-        return xGroupHullCentroids[groupNumber];
-    }
-    public float getYGroupHullCentroid(int groupNumber) {
-
-        if (groupFinder == null) {
-            return Float.MIN_VALUE;
-        }
-        
-        int nGroups = groupFinder.getNumberOfGroups();
-        
-        if (groupNumber >= nGroups) {
-            throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
-        }
-
-        return yGroupHullCentroids[groupNumber];
+        return new ArrayPair(xc, yc);
     }
 
     public float getBackgroundSurfaceDensity() {
@@ -892,15 +780,18 @@ public class TwoPointCorrelation {
     DoubleAxisIndexer getIndexer() {
         return indexer;
     }
-
-    public float[] getXGroup(int groupNumber) {
-
-        return (groupFinder != null) ? groupFinder.getX(groupNumber, indexer) : new float[0];
-    }
-
-    public float[] getYGroup(int groupNumber) {
-
-        return (groupFinder != null) ? groupFinder.getY(groupNumber, indexer) : new float[0];
+    
+    public ArrayPair getGroup(int groupNumber) {
+        
+        if (groupFinder == null) {
+            throw new IllegalStateException("groupFinder is null.  Please run findClusters() first.");
+        }
+                    
+        float[] xg = groupFinder.getX(groupNumber, indexer);
+        
+        float[] yg = groupFinder.getY(groupNumber, indexer);
+        
+        return new ArrayPair(xg, yg);      
     }
 
 }

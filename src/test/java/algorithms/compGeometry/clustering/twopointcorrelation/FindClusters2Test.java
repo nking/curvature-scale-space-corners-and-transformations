@@ -5,6 +5,7 @@ import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -92,10 +93,16 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     default:
                         break;
                 }
-
-                indexer.sortAndIndexXThenY(generator.x, generator.y,
-                    generator.xErrors, generator.yErrors, generator.x.length);
-
+               
+                /* to zoom in to confirm density estimate visually:
+                DoubleAxisIndexer tmp = new DoubleAxisIndexer();
+                tmp.sortAndIndexXThenY(
+                    Arrays.copyOf(indexer.getX(), 100), Arrays.copyOf(indexer.getY(), 100),
+                    Arrays.copyOf(indexer.getXErrors(), 100), Arrays.copyOf(indexer.getYErrors(), 100),
+                    100);
+                indexer = tmp;
+                */
+                
                 log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
 
@@ -113,65 +120,65 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
                 log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
-                TwoPointCorrelation twoPtC = new TwoPointCorrelation(
-                    generator.x, generator.y,
-                    generator.xErrors, generator.yErrors, generator.x.length);
+                TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
 
-                //twoPtC.setDebug(true);
+                twoPtC.setDebug(true);
                 
 //twoPtC.setUseDownhillSimplexHistogramFitting();
               
                 twoPtC.logPerformanceMetrics();
+                //twoPtC.setBackground(0.5f, 0.02f);
+                //twoPtC.setBackground(0.28f, 0.02f);
                 twoPtC.calculateBackground();
                 twoPtC.findClusters();
 
-                TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
-                HistogramHolder histogram = stats.statsHistogram;
-
-                String plotLabel = null;
-
-                GEVYFit bestFit = stats.bestFit;
-                if (bestFit != null) {
-                    
-                    // label needs:  x10, peak,  mean/peak, median/mean and x80/median
-                    plotLabel = String.format(
-                        "  (%d %d) best k=%.4f sigma=%.4f mu=%.4f chiSqSum=%.6f chst=%.1f",
-                        i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), bestFit.getChiSqStatistic()
-                    );
-                    if (debug) {
-                        log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
-                    }
-                }
+                String plotLabel = "";
                 
-                if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
-                    if (i == 0 && ii == 0) {
-                        StringBuilder xsb = new StringBuilder();
-                        StringBuilder ysb = new StringBuilder();
-                        StringBuilder xesb = new StringBuilder();
-                        StringBuilder yesb = new StringBuilder();
-    
-                        for (int z = 0; z < histogram.getYHist().length; z++) {
-                            if (z > 0) {
-                                xsb.append("f, ");
-                                ysb.append("f, ");
-                                xesb.append("f, ");
-                                yesb.append("f, ");
-                            }
-                            xsb.append(histogram.getXHist()[z]);
-                            ysb.append(histogram.getYHist()[z]);
-                            xesb.append(histogram.getXErrors()[z]);
-                            yesb.append(histogram.getYErrors()[z]);
+                if (twoPtC.backgroundStats != null) {
+                    TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
+                    HistogramHolder histogram = stats.statsHistogram;
+        
+                    GEVYFit bestFit = stats.bestFit;
+                    if (bestFit != null) {
+                        
+                        // label needs:  x10, peak,  mean/peak, median/mean and x80/median
+                        plotLabel = String.format(
+                            "  (%d %d) best k=%.4f sigma=%.4f mu=%.4f chiSqSum=%.6f chst=%.1f",
+                            i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), bestFit.getChiSqStatistic()
+                        );
+                        if (debug) {
+                            log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
                         }
-                        System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                        System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-                        System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
-                        System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
-                        int z = 1;
+                    }
+                    
+                    if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
+                        if (i == 1 && ii == 0) {
+                            StringBuilder xsb = new StringBuilder();
+                            StringBuilder ysb = new StringBuilder();
+                            StringBuilder xesb = new StringBuilder();
+                            StringBuilder yesb = new StringBuilder();
+        
+                            for (int z = 0; z < histogram.getYHist().length; z++) {
+                                if (z > 0) {
+                                    xsb.append("f, ");
+                                    ysb.append("f, ");
+                                    xesb.append("f, ");
+                                    yesb.append("f, ");
+                                }
+                                xsb.append(histogram.getXHist()[z]);
+                                ysb.append(histogram.getYHist()[z]);
+                                xesb.append(histogram.getXErrors()[z]);
+                                yesb.append(histogram.getYErrors()[z]);
+                            }
+                            System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+                            System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+                            System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+                            System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
+                            int z = 1;
+                        }
                     }
                 }
                 
-                twoPtC.calculateHullsOfClusters();
-
                 plotter.addPlot(twoPtC, plotLabel);
                 //plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();

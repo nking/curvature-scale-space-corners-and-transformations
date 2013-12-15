@@ -34,7 +34,7 @@ import java.util.logging.Logger;
  * histogram from the distribution, fits a Generalized Extreme Value
  * distribution to the histogram and interprets that based upon information
  * about the number density of points in both dimensions.
- * 
+ *
  * Essentially one must learn before sampling and analysis, whether the majority of points
    are in groups or are background points ahead of time.
    The only way to know that ahead of time is by rough cell counts (in 2-dimensions) before
@@ -44,21 +44,21 @@ import java.util.logging.Logger;
    -- If all cells have values within stdev of avg it's an even distribution of points.
       this is seen as needing COMPLETE sampling
       and then the background density is the peak bin's x value in a well formed histogram
-   -- Else, we should avoid empty cells and avoid the cells with counts > avg + stdev 
+   -- Else, we should avoid empty cells and avoid the cells with counts > avg + stdev
       and then use COMPLETE sampling of that subset of cells
       and then the background density is the peak bin's x value in a well formed histogram
       -- Note that the cells should not be too large in number because that would be
          biasing the histogram to remove the densities that represent the distance between
          groups.
       -- Note that for this case, we really want to be able to remove the groups after first approx
-         and then do a complete sampling on the data without those and determine the 
-         background density as the peak's x bin as the answer from that.  
+         and then do a complete sampling on the data without those and determine the
+         background density as the peak's x bin as the answer from that.
          the problem is that one needs to fit a profile to the groups
          in order to subtract them and to believe that that profile is correct and differentiable
          from a uniform background distribution (which are details of the 2-point correlation function...)
-         
+
          TODO: following up on extreme differences for distributions in the later before
- *       improving the sampling to match the above description 
+ *       improving the sampling to match the above description
  *
  <pre>
  * More specifically for the true background points:
@@ -93,8 +93,8 @@ import java.util.logging.Logger;
  * usually 2 or 3 (densities > threshold*noise).
  *
  * The runtimes for the code are still in progress, but roughly approximated
- * in 2 stages:  
- * (1) calculating and fitting the background voids @see #findVoids@see(), 
+ * in 2 stages:
+ * (1) calculating and fitting the background voids @see #findVoids@see(),
  * and (2) finding the groups within the data using a threshold from the background density.
  *
  * If debugging is turned on, plots are generated and those file paths are printed to
@@ -111,6 +111,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected VoidSampling sampling = null;
 
     protected Boolean interpretForSparseBackground = null;
+    
+    boolean automateTheFindMethodChoice = false;
 
     protected State state = null;
 
@@ -125,17 +127,17 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected boolean doLogPerformanceMetrics = false;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     // uses conjugate gradient method for non quadratic functions if = true, else downhill simplex.
     protected boolean useDefaultFitting = false;
-    
+
     /**
      * the factor to use when comparing a value to average += standardDeviation*sigmaFactor.
      * It should be the same as TwoPointCorrelation.sigmaFactor.
      * It's value is usually between 2 and 3.
      */
     protected float sigmaFactor = 2.5f;
-    
+
     //
     public HistogramHolder getStatsHistogram() {
         return statsHistogram;
@@ -152,19 +154,19 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * @param indexedSortedPoints indexed points sorted by Y
      */
     public TwoPointVoidStats(DoubleAxisIndexer indexedSortedPoints) {
-        
+
         super(indexedSortedPoints);
 
         state = State.POINTS_LOADED;
     }
 
     public TwoPointVoidStats(String persistedIndexerFilePath) throws IOException {
-        
+
         super(persistedIndexerFilePath);
 
         state = State.POINTS_LOADED;
     }
-    
+
     public void setUseDownhillSimplexHistogramFitting() {
         this.useDefaultFitting = false;
     }
@@ -194,7 +196,19 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected void setInterpretForSparseBackgroundToTrue() {
         this.interpretForSparseBackground = Boolean.TRUE;
     }
-    
+
+    /**
+     * this method is not recommended, but is to allow the code to choose between
+     * the default method of finding clusters based upon a density above the background
+     * density or the alternative method for finding clusters when there are no background
+     * points between the groups.
+     * The reason that it is not recommended is that the 2 types of datasets that the methods
+     * would be used on are so different
+     * that you likely know which you have before use of this code.
+     */
+    protected void automateTheFindMethodChoice() {
+        this.automateTheFindMethodChoice = true;
+    }
     /**
      * set the value of the variable 'sigmaFactor'.
      * @param stDevFactor
@@ -202,13 +216,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected void setStandardDeviationFactor(float stDevFactor) {
         this.sigmaFactor = stDevFactor;
     }
-    
+
     public void releaseLargeVariables() {
         if (voidFinder != null) {
             voidFinder.releaseLargeVariables();
         }
     }
-    
+
     protected void logPerformanceMetrics() {
         this.doLogPerformanceMetrics = true;
     }
@@ -302,7 +316,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * @throws TwoPointVoidStatsException
      */
     public void calc() throws TwoPointVoidStatsException {
-   
+
         calculateTwoPointVoidDensities();
 
         calculateStats();
@@ -314,9 +328,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
             calculateTwoPointVoidDensities();
         }
-        
+
         long startTimeMillis = System.currentTimeMillis();
-       
+
         // may need to release more memory.  if so, release point1 and point2
         //long memAvail = Util.getAvailableHeapMemory();
         //log.fine("memory available = " + memAvail);
@@ -324,7 +338,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (voidFinder != null) {
             log.fine("nXY=" + indexer.getNXY() + " nD=" + voidFinder.getNumberOfTwoPointDensities());
         }
-        
+
         /*
         if (indexer.getNXY() > 999) {
             statsHistogram = createHistogramWithHigherPeakResolution();
@@ -346,7 +360,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
 
         calculateStatsForBackground(statsHistogram, yMaxBin);
-        
+
         if (doLogPerformanceMetrics) {
 
             long stopTimeMillis = System.currentTimeMillis();
@@ -371,7 +385,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             return;
         }
 
-        long startTimeMillis = System.currentTimeMillis();        
+        long startTimeMillis = System.currentTimeMillis();
 
         findVoids();
 
@@ -385,82 +399,56 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
            background density is the lowest bin's x value in a well formed histogram.
           If all cells have values within stdev of avg ==> COMPLETE sampling
            background density is the peak bin's x value in a well formed histogram.
-          Else: 
+          Else:
              attempt to sample only the cells that are not empty nor above avg + stdev
              and use COMPLETE sampling on them.
              background density is the peak bin's x value in a well formed histogram
              (though this later could be improved)
          */
-        
+
         long startTimeMillis = System.currentTimeMillis();
-        
+
         int nXY = indexer.getNXY();
-        
+
         // for reduced sampling of large sets, need these in scope:
         int nCellsPerDimension = (int)Math.sqrt(indexer.nXY/1000);
 
         DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
-        
-        int nCellsPerDimensionForStats = (int)Math.sqrt(indexer.nXY/300.);
-        if (nCellsPerDimensionForStats < 1) {
-            nCellsPerDimensionForStats = 1;
-        }
-        Statistic statistic = stats.calculateCellDensities(nCellsPerDimensionForStats, indexer);
-        
-        if (sampling == null && interpretForSparseBackground == null) {
-        
-            float fractionEmpty = stats.fractionOfCellsWithoutPoints(statistic);
+
+        if (automateTheFindMethodChoice) {
             
-            if (fractionEmpty > 0.5) {
-                
-                sampling = VoidSampling.FOR_SPARSE_BACKGROUND;
-                
-                interpretForSparseBackground = Boolean.TRUE;
-            
-            } else {
-                            
-                float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor);
-                
-                interpretForSparseBackground = Boolean.FALSE;
-                
-                if ((nCellsPerDimensionForStats > 1) && (fractionOutliers < 0.1f)) {
-                    
-                    /*if (nXY >= 10000) {
-                        // reduce the sampling to a cell holding 1000 points 
-                        // and use the sampling that would be applied for 1000 points
-                        // this method can take longer than VoidSampling.COMPLETE due to increased complexity for converting y axis indexes
-                        sampling = VoidSampling.COMPLETE_ON_RANDOM_SUBSET;
-                        
-                    } else {*/
-                        
-                        sampling = VoidSampling.COMPLETE;
-                    //}
-                    
-                } else {
-                    
-                    interpretForSparseBackground = Boolean.TRUE;
-                    
-                    if (nCellsPerDimensionForStats > 1) {
-                        
-                        sampling = VoidSampling.FOR_SPARSE_BACKGROUND;
-                    
-                    } else {
-                        
-                        // the histogram that is later formed needs to be interpreted similarly to VoidSampling.FOR_SPARSE_BACKGROUND
-                        
-                        sampling = VoidSampling.COMPLETE;
-                    }
-                }
+            int nCellsPerDimensionForStats = (int)Math.sqrt(indexer.nXY/300.);
+            if (nCellsPerDimensionForStats < 9) {
+                nCellsPerDimensionForStats = 9;
             }
+            Statistic statistic = stats.calculateCellDensities(nCellsPerDimensionForStats, indexer);
+
+            float fractionEmpty = stats.fractionOfCellsWithoutPoints(statistic);
+
+            if (fractionEmpty > 0.3f) {
+
+                interpretForSparseBackground = Boolean.TRUE;
+                
+            }
+            
+System.out.println("nCellsPerDim=" + nCellsPerDimensionForStats + " fractionEmpty=" + fractionEmpty + " indexer.nXY=" + indexer.getNumberOfPoints());
+System.out.println("fractionNotAvg=" + stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor));
+            
+            sampling = VoidSampling.COMPLETE;
         }
         
-                
-        int nSampled = -1;
-       
         if (sampling == null) {
 
-            this.sampling = VoidSampling.COMPLETE;
-        }        
+            sampling = VoidSampling.COMPLETE;
+            
+        }
+        if (interpretForSparseBackground == null) {
+            
+            interpretForSparseBackground = Boolean.FALSE;
+        }
+
+
+        int nSampled = -1;
 
         if (debug) {
             log.info("findVoid sampling=" + sampling.name() + " for " + nXY + " points");
@@ -469,7 +457,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (sampling.ordinal() == VoidSampling.LEAST_COMPLETE.ordinal()) {
 
             voidFinder = new DivideAndConquerVoidFinder();
-            
+
         } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
 
             voidFinder = new CompleteSamplingVoidFinder();
@@ -488,22 +476,16 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0]) * (xyMinMaxCell[3] - xyMinMaxCell[2]);
 
-        } else if (sampling.ordinal() == VoidSampling.FOR_SPARSE_BACKGROUND.ordinal()) {
-
-            voidFinder = new SparseSamplingVoidFinder();
-
-            ((SparseSamplingVoidFinder)voidFinder).setStatistic(statistic);
-
         } else {
-            
+
             throw new IllegalStateException("Did not configure a finder for " + sampling.toString() + "?");
         }
-        
+
         voidFinder.setSampling(sampling);
-        
+
         voidFinder.findVoids(indexer);
-        
-        
+
+
         if (doLogPerformanceMetrics) {
 
             long stopTimeMillis = System.currentTimeMillis();
@@ -516,7 +498,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_RANDOM_SUBSET.ordinal()) {
                 str = "O(n1*n2) = O(" + nSampled + ")";
             }
-            
+
             printPerformanceMetrics(startTimeMillis, stopTimeMillis, "calculateBackgroundVia2PtVoidFit-->calculateTwoPointVoidDensities", str);
         }
     }
@@ -528,13 +510,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
 
         //int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
-        
+
         //HistogramHolder histogram = Histogram.createHistogramForSkewedData(
         //    nBins, voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors(), true);
 
         HistogramHolder histogram = Histogram.calculateSturgesHistogramRemoveZeroTail(
             voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors());
-        
+
         plotPairSeparations();
 
         return histogram;
@@ -545,7 +527,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
             calculateTwoPointVoidDensities();
         }
-        
+
         if (voidFinder == null) {
             return null;
         }
@@ -557,7 +539,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         HistogramHolder histogram = Histogram.createHistogramForSkewedDataForPeakResolution2(
             nBins, voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors(),
             minMax[0], minMax[1], 0);
-        
+
         plotPairSeparations();
 
         return histogram;
@@ -583,7 +565,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     protected GEVYFit fitBackgroundHistogram(HistogramHolder histogram, int yMaxBin) throws TwoPointVoidStatsException {
-        
+
         try {
 
             GEVYFit yfit = null;
@@ -612,7 +594,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                             gevRangeFittingParameters[2], gevRangeFittingParameters[3], 0.001f, 0.3f);
                 } else {
 
-                    yfit = 
+                    yfit =
                         ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZeroAndMu(
                             GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
                         gevRangeFittingParameters[0], gevRangeFittingParameters[1],
@@ -625,12 +607,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 if (useDefaultFitting) {
 
                     yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
-                    
+
                 } else {
-                    
+
                     yfit = ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZeroAndMu(
                         GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
-                }                
+                }
             }
 
             if (yfit == null) {
@@ -689,38 +671,43 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                     histogram.getXErrors(), histogram.getYErrors(), xf, yf, "");
                 plotter.writeFile3();
             }
-            
-            /* for SPARSE_BACKGROUND sampling:
+
+            /* for interpretForSparseBackground:
                    background density is the lowest bin's x value in a well formed histogram.
                for all other sampling:
                    background density is the peak bin's x value in a well formed histogram.
             */
-            
+
             float limit, limitError;
-            
+
             if (interpretForSparseBackground == null) {
                 interpretForSparseBackground = Boolean.FALSE;
             }
-            
+
             if (interpretForSparseBackground) {
-                
+
                 int yPeakIndex = MiscMath.findYMaxIndex(histogram.getYHist());
-                
+
                 limit = histogram.getXHist()[0];
-                
+
             } else {
-                
+
                 //limitStr = "top centroid";
-                
+
                 // centroid of area defined by the top portion of the fit where y >= ypeak/2
                 float[] areaAndXYTopCentroid = calculateCentroidOfTop(bestFit.getOriginalScaleX(), bestFit.getOriginalScaleYFit(), 0.5f);
+
+                float[] areaAndXYTopCentroid2 = calculateCentroidOfTop(histogram.getXHist(), histogram.getYHistFloat(), 0.5f);
+
+                float xpeak = (areaAndXYTopCentroid[0] > 0) ? areaAndXYTopCentroid[1] : areaAndXYTopCentroid2[1];
                 
-                limit = ((areaAndXYTopCentroid != null) && (areaAndXYTopCentroid[1] > 0)) 
-                    ? areaAndXYTopCentroid[1] : bestFit.getXPeak();
+System.out.println("GEV top centroid=" + areaAndXYTopCentroid[1] + " data top centroid=" + areaAndXYTopCentroid2[1] + " using xpeak=" + xpeak);
+
+                limit = (xpeak > 0) ? xpeak : bestFit.getXPeak();
             }
-            
+
             this.backgroundSurfaceDensity = limit;
-            
+
             if (debug) {
                 log.info(bestFit.toString());
             }
@@ -788,7 +775,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             if (debug) {
                 String interp = (interpretForSparseBackground) ? "sparse" : "complete";
-                log.info("estimating background from sampling= " + sampling.toString() 
+                log.info("estimating background from sampling= " + sampling.toString()
                 + " and interpretation=" + interp
                 + this.backgroundSurfaceDensity
                 + " w/ x error in histogram bin =" + errorInEstimateFromHistogram
@@ -875,7 +862,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     }
 
     protected void serializeTwoPointBackground(ObjectOutputStream oos) throws IOException {
-        
+
         if (voidFinder == null) {
             throw new IllegalStateException("no voidFinder to persist");
         }
@@ -919,7 +906,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected void deserializeTwoPointBackground(ObjectInputStream ois) throws IOException {
 
         voidFinder = new VoidReader(ois);
-        
+
     }
 
     void plotFit(PolygonAndPointPlotter plotter) {
@@ -931,7 +918,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             return;
         }
         try {
-            
+
             float[] xf = bestFit.getOriginalScaleX();
             float[] yf = bestFit.getOriginalScaleYFit();
 
@@ -980,7 +967,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     protected void plotPairSeparations(TwoPointVoidStatsPlotter plotter, float xmin,
         float xmax, float ymin, float ymax) {
-        
+
         if (voidFinder == null) {
             return;
         }

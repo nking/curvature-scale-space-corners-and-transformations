@@ -3,6 +3,7 @@ package algorithms.compGeometry.convexHull;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.util.PolygonAndPointPlotter;
 import junit.framework.Test;
 import junit.framework.TestSuite;

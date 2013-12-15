@@ -2,6 +2,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
+import algorithms.util.ArrayPair;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
@@ -48,27 +49,18 @@ public class FindClusters3Test extends TestCase {
 
         // generates fake errors when errors not present:
         TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
-        twoPtC.setDebug(debug);
+        twoPtC.setDebug(true);
 
         // 390 points
 
-        //twoPtC.setBackground(0.26f, 0.001f);
+        //twoPtC.setBackground(0.2725f, 0.001f);
         //twoPtC.findClusters();
 
-        //LEAST_COMPLETE
+        twoPtC.useFindMethodForDataWithoutBackgroundPoints();
+        //twoPtC.automateTheChoiceOfFindMethod();
+
         twoPtC.calculateBackground();
         twoPtC.findClusters();
-
-        PolygonAndPointPlotter pl = new PolygonAndPointPlotter(50, 150, 50, 150);
-        pl.addPlot(twoPtC.getGroupFinder().getX(0, indexer), twoPtC.getGroupFinder().getY(0, indexer), null, null, "");
-        pl.writeFile();
-        
-        //((DFSGroupFinder)twoPtC.getGroupFinder()).printMembership(indexer);
-        
-        pl.addPlot(twoPtC.getGroupFinder().getX(1, indexer), twoPtC.getGroupFinder().getY(1, indexer), null, null, "");
-        pl.writeFile();
-
-        twoPtC.calculateHullsOfClusters();
 
         TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
 
@@ -110,14 +102,13 @@ public class FindClusters3Test extends TestCase {
 
         assertTrue(twoPtC.getNumberOfGroups() == 2);
         
-        float[] xHC = twoPtC.getXHullCentroids();
-        float[] yHC = twoPtC.getYHullCentroids();
+        ArrayPair centroids = twoPtC.getHullCentroids();
         
-        assertTrue(xHC.length == 2);
-        assertTrue(yHC.length == 2);
-        assertTrue(xHC[0] < 100);
-        assertTrue(yHC[0] < 100);
-        assertTrue(xHC[1] > 100);
+        assertTrue(centroids.getX().length == 2);
+        assertTrue(centroids.getY().length == 2);
+        assertTrue(centroids.getX()[0] < 100);
+        assertTrue(centroids.getY()[0] < 100);
+        assertTrue(centroids.getX()[1] > 100);
         
         log.info( twoPtC.indexer.nXY + " points ... ");
 

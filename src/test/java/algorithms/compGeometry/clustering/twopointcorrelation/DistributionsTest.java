@@ -134,8 +134,7 @@ public class DistributionsTest extends BaseTwoPointTest {
                 plotter.writeFile();
                 
                 
-                TwoPointCorrelation twoPtC = new TwoPointCorrelation(
-                    generator.x, generator.y, generator.xErrors, generator.yErrors, generator.x.length);
+                TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
 
                 twoPtC.setDebug(true);                
               
@@ -206,8 +205,6 @@ public class DistributionsTest extends BaseTwoPointTest {
                 
                 twoPtC.findClusters();
                 
-                twoPtC.calculateHullsOfClusters();
-
                 plotter3.addPlot(twoPtC, plotLabel);
                 String filePath = plotter3.writeFile3();
                 System.out.println("filePath=" + filePath);

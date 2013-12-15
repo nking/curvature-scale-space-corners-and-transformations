@@ -1225,11 +1225,17 @@ plotter.writeFile();
         
         //int nItervalsRice = (int)(2*Math.pow(values.length, 0.3333));
         
-        int nBins = Math.max(nIntervalsSturges, 30);
+        int nBins = 25;
+        
+        if (values.length > 10000) {
+            nBins = 40;
+        }
+
+        nBins = Math.max(nIntervalsSturges, nBins);
 
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
-               
+       
         float minx = MiscMath.findMin(values);
         float maxx = MiscMath.findMax(values);
 
@@ -1239,7 +1245,7 @@ plotter.writeFile();
         
         float maxy = MiscMath.findMax(yHist);
 
-        int minCountsLimit = (int)Math.max(5, 0.1f*maxy);
+        int minCountsLimit = (int)Math.max(5, 0.03f*maxy);
         int countsBelowMinAtTail = 0;
         int lastLowCountIdx = yHist.length - 1;
         for (int i = (yHist.length - 1); i > -1; i--) {
@@ -1258,6 +1264,18 @@ plotter.writeFile();
             binWidth = calculateBinWidth(minx, maxx, nBins);
 
             Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
+        }
+        
+        // if there are a large number of points, we'd like to increase the resolution of the peak if needed
+        if (values.length > 10000) {
+            int nLeftOfPeak = MiscMath.findYMaxIndex(yHist);
+            int nIter = 0;
+            while (nIter < 30 && nLeftOfPeak < 3 && (yHist[nLeftOfPeak] > 100)) {
+                binWidth *= 0.8f;
+                Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
+                nLeftOfPeak = MiscMath.findYMaxIndex(yHist);
+                nIter++;
+            }
         }
           
         float[] yHistFloat = new float[yHist.length];

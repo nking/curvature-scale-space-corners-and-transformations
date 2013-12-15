@@ -65,8 +65,6 @@ public class PerformanceMetricsRunner {
         clusterFinder.calculateBackground();
 
         clusterFinder.findClusters();
-
-        clusterFinder.calculateHullsOfClusters();
         
         long t1 = (System.currentTimeMillis() - t0)/1000;
         
