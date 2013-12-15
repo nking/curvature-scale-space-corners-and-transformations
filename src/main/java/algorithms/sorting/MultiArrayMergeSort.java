@@ -10,10 +10,6 @@ import java.util.Arrays;
  * the result is a constant factor added to an internal constant for the O(n) for merge of single
  * sort.
  *
- * The method to sort 2 arrays by one and then the other, sortByYThenX, is approximated as:
- *
- * the algorithm does not sort in place, so does temporarily take up more memory as it sorts.
- *
  * constructed from pseudo-code in Cormen et al.
  * "Introduction to Algorithms"
  *
@@ -21,9 +17,8 @@ import java.util.Arrays;
  */
 public class MultiArrayMergeSort {
     
-	/**
-     * sort array using mergesort (divide, conquer, and combine) sorting the first 
-     * array a1 by increasing value and applying the same changes to a2.
+    /**
+     * sort by increasing value a1 and apply same changes to a2.
      * runtime is O(N * log_2(N))
      *
      * @param a1 array of points to be sorted
@@ -43,8 +38,7 @@ public class MultiArrayMergeSort {
     }
 
     /**
-     * sort array using mergesort (divide, conquer, and combine) sorting the first 
-     * array a1 by increasing value and applying the same changes to a2.
+     * sort by increasing value a1 and apply same changes to a2.
      * runtime is O(N * log_2(N))
      *
      * @param a1 array of points to be sorted
@@ -68,8 +62,7 @@ public class MultiArrayMergeSort {
     }
 
     /**
-     * sort array using mergesort (divide, conquer, and combine) sorting the first 
-     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * sort by increasing value a1 and apply same changes to a2 and a3.
      * runtime is O(N * log_2(N))
      *
      * @param a1 array of points to be sorted
@@ -94,8 +87,7 @@ public class MultiArrayMergeSort {
     }
 
     /**
-     * sort array using mergesort (divide, conquer, and combine) sorting the first 
-     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * sort by increasing value a1 and apply same changes to a2 and a3.
      * runtime is O(N * log_2(N))
      *
      * @param a1 array of points to be sorted
@@ -118,8 +110,7 @@ public class MultiArrayMergeSort {
     }
 
     /**
-     * sort array using mergesort (divide, conquer, and combine) sorting the first 
-     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * sort by increasing value a1 and apply same changes to a2 and a3.
      * runtime is O(N * log_2(N))
      *
      * @param a1 array of points to be sorted
@@ -143,8 +134,7 @@ public class MultiArrayMergeSort {
     }
 
     /**
-     * sort array using mergesort (divide, conquer, and combine) sorting the first 
-     * array a1 by increasing value and applying the same changes to a2 and a3.
+     * sort by increasing value a1 and apply same changes to a2.
      * runtime is O(N * log_2(N))
      *
      * @param a1 array of points to be sorted
@@ -164,10 +154,6 @@ public class MultiArrayMergeSort {
     }
 
     /**
-     * sort array using mergesort (divide, conquer, and combine) sorting the first 
-     * array a1 by increasing value and applying the same changes to a2 and a3.
-     * runtime is O(N * log_2(N))
-     *
      * @param a1 array of points to be sorted
      * @param a2 array of points to apply a1 sorting to also
      * @param a3 array of points to apply a1 sorting to also
