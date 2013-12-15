@@ -12,7 +12,8 @@ import algorithms.util.Stack;
  * method are only partially completed as soon as separation is found to be too large.
  * 
  * one test of 55 datapoints shows runtime complexity of O(N^1.8) for the recursive DFS
- * and O(N^1.88) for iterative DFS
+ * and O(N^1.88) for iterative DFS.  The advantage to the iterative DFS is in the reduced
+ * amount of memory used because the recursive loads a method frame for each invocation.
  * 
  * @author nichole
  */
