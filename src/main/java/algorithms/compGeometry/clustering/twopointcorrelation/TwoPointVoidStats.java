@@ -108,8 +108,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         POINTS_LOADED, DENSITIES_CALCULATED, HISTOGRAM_CREATED, HISTOGRAM_FITTED, STATS_FINALIZED
     }
 
+    // null is signficant, so don't set a default unless change the code where check for null
     protected VoidSampling sampling = null;
 
+    // null is signficant, so don't set a default unless change the code where check for null
     protected Boolean interpretForSparseBackground = null;
     
     boolean automateTheFindMethodChoice = false;
@@ -194,19 +196,22 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      * only be called from TwoPointCorrelation.
      */
     protected void setInterpretForSparseBackgroundToTrue() {
+        if (automateTheFindMethodChoice) {
+            throw new IllegalStateException("cannot have both 'automate' and 'set to sparse interpretation'");
+        }
         this.interpretForSparseBackground = Boolean.TRUE;
     }
+    protected void setInterpretForSparseBackgroundToFalse() {
+        if (automateTheFindMethodChoice) {
+            throw new IllegalStateException("cannot have both 'automate' and 'unset to sparse interpretation'");
+        }
+        this.interpretForSparseBackground = Boolean.FALSE;
+    }
 
-    /**
-     * this method is not recommended, but is to allow the code to choose between
-     * the default method of finding clusters based upon a density above the background
-     * density or the alternative method for finding clusters when there are no background
-     * points between the groups.
-     * The reason that it is not recommended is that the 2 types of datasets that the methods
-     * would be used on are so different
-     * that you likely know which you have before use of this code.
-     */
     protected void automateTheFindMethodChoice() {
+        if (interpretForSparseBackground != null) {
+            throw new IllegalStateException("cannot have both 'automate' and 'set or unset sparse interpretation'");
+        }
         this.automateTheFindMethodChoice = true;
     }
     /**

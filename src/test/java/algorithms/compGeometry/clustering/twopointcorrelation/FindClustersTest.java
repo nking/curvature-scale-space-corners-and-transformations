@@ -91,7 +91,6 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                     log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
-
                     if (writeToTmpData) {
                         // write to tmpdata if need to use in tests improve fits, histogram etc
                         String str = String.valueOf(count);
@@ -111,8 +110,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                     twoPtC.setDebug(true);
 
                     twoPtC.logPerformanceMetrics();
-//twoPtC.useFindMethodForDataWithoutBackgroundPoints();
-twoPtC.automateTheChoiceOfFindMethod();
+                    //twoPtC.useFindMethodForDataWithoutBackgroundPoints();
                     twoPtC.calculateBackground();
                     //twoPtC.setBackground(0.2f, 0.1f);
                     twoPtC.findClusters();

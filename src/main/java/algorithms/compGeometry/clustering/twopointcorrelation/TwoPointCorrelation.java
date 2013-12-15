@@ -26,15 +26,12 @@ import java.util.logging.Logger;
   There is an alternative method that can be invoked on datasets in which there are no
   points outside of groups, that is no background points.
      to use the alternative method:
-         useFindMethodForDataWithoutBackgroundPoints()
+        useFindMethodForDataWithoutBackgroundPoints()
          
-  You should chose the default method or the alternative method prior to using the code
-  because they are performed on very different kinds of datasets.
-  If for some reason, there is a need to have the code automate the decision, you can use:
-         automateTheChoiceOfFindMethod();
-  *Note that this isn't recommended simply because the dataset types for the different 
-  methods are very different, so not likely to be present in different runs of your datasets.
-  
+  The choice between the two is currently automated, 
+  but to override that, one can set :
+       useFindMethodForDataWithoutBackgroundPoints()
+       or useFindMethodForDataWithBackgroundPoints()
   
   Use as an API:
       TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, getTotalNumberOfPoints());
@@ -128,7 +125,9 @@ public class TwoPointCorrelation {
     
     protected boolean useFindMethodForSparseBackground = false;
     
-    protected boolean automateTheFindMethodChoice = false;
+    protected boolean useFindMethodForHavingABackground = false;
+    
+    protected boolean automateTheFindMethodChoice = true;
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -206,26 +205,22 @@ public class TwoPointCorrelation {
      * findClusters() is invoked.
      */
     public void useFindMethodForDataWithoutBackgroundPoints() {
-        if (automateTheFindMethodChoice) {
-            throw new IllegalStateException("useFindMethodForSparseBackground and automateTheChoiceOfFindMethod cannot both be set");
+        if (useFindMethodForHavingABackground) {
+            throw new IllegalStateException("useFindMethodForDataWithoutBackgroundPoints and useFindMethodForHavingABackground cannot both be set");
         }
         this.useFindMethodForSparseBackground = true;
+        this.automateTheFindMethodChoice = false;
     }
-    
     /**
-     * this method is not recommended, but is to allow the code to choose between
-     * the default method of finding clusters based upon a density above the background
-     * density or the alternative method for finding clusters when there are no background
-     * points between the groups.
-     * The reason that it is not recommended is that the 2 types of datasets that the methods
-     * would be used on are so different
-     * that you likely know which you have before use of this code.
+     * for datasets with points that are known not to be in groups use this method.
+     * it's the default for datasets without large spatial gaps in them.
      */
-    public void automateTheChoiceOfFindMethod() {
+    public void useFindMethodForDataWithBackgroundPoints() {
         if (useFindMethodForSparseBackground) {
-            throw new IllegalStateException("useFindMethodForSparseBackground and automateTheChoiceOfFindMethod cannot both be set");
+            throw new IllegalStateException("useFindMethodForDataWithoutBackgroundPoints and useFindMethodForHavingABackground cannot both be set");
         }
-        this.automateTheFindMethodChoice = true;
+        this.useFindMethodForHavingABackground = true;
+        this.automateTheFindMethodChoice = false;
     }
 
     /**
@@ -300,6 +295,8 @@ public class TwoPointCorrelation {
             minStats.setInterpretForSparseBackgroundToTrue();
         } else if (automateTheFindMethodChoice) {
             minStats.automateTheFindMethodChoice();
+        } else if (useFindMethodForHavingABackground) {
+            minStats.setInterpretForSparseBackgroundToFalse();
         }
 
         minStats.calc(minimaFilePath);
@@ -346,6 +343,8 @@ public class TwoPointCorrelation {
             voidStats.setInterpretForSparseBackgroundToTrue();
         } else if (automateTheFindMethodChoice) {
             voidStats.automateTheFindMethodChoice();
+        } else if (useFindMethodForHavingABackground) {
+            voidStats.setInterpretForSparseBackgroundToFalse();
         }
 
         voidStats.setDebug(debug);
