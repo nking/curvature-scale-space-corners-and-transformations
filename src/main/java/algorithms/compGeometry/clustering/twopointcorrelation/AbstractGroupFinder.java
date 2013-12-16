@@ -110,6 +110,8 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
                 latest = latest.next;
             }
             
+            log.info("  group " + i + " has " + count + " members before prune (min=" + minimumNumberInCluster + ")");
+            
             if (count < minimumNumberInCluster) {
                 
                 // remove this group and move up all groups w/ index > i by one index

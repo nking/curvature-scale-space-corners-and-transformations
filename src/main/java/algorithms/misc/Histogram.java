@@ -1221,7 +1221,7 @@ plotter.writeFile();
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
         }
 
-        int nIntervalsSturges = (int)Math.ceil( Math.log(values.length)/Math.log(2) );
+        int nIntervalsSturges = (int)Math.ceil( Math.log(values.length)/Math.log(2));
         
         //int nItervalsRice = (int)(2*Math.pow(values.length, 0.3333));
         
@@ -1232,7 +1232,7 @@ plotter.writeFile();
         }
 
         nBins = Math.max(nIntervalsSturges, nBins);
-
+        
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
        
@@ -1267,7 +1267,7 @@ plotter.writeFile();
         }
         
         // if there are a large number of points, we'd like to increase the resolution of the peak if needed
-        if (true || values.length > 10000) {
+        if (true || values.length > 1000) {
             int nLeftOfPeak = MiscMath.findYMaxIndex(yHist);
             int nIter = 0;
             while (nIter < 30 && nLeftOfPeak < 3 && (yHist[nLeftOfPeak] > 100)) {

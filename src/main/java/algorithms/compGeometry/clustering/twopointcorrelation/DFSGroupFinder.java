@@ -9,12 +9,12 @@ import algorithms.util.Stack;
  * use a Depth First Search algorithm to visit all nodes in a dataset and
  * put into groups those within  distance < threshhold * threshholdFactor from each other.
  * 
- * the number of times visit is called is < O(N^2) and the execution steps within that
- * method are only partially completed as soon as separation is found to be too large.
+ * the runtime complexity is a little larger, but on the order of O(N^2)
  * 
- * one test of 55 datapoints shows runtime complexity of O(N^1.8) for the recursive DFS
- * and O(N^1.88) for iterative DFS.  The advantage to the iterative DFS is in the reduced
- * amount of memory used because the recursive loads a method frame for each invocation.
+ * Note that the recursive solution has fewer visits, but the recursion requires a method
+ * frame to be loaded for each invocation. the method frame load and unload is expensive computationally,
+ * and the other caveat is that if the recursion is deep enough it may cause the program to
+ * become memory bound and that further decreases performance or can halt the program.
  * 
  * @author nichole
  */
@@ -74,9 +74,14 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             
             int uSortedXIndex = uNode.getKey();
             
-            //  the thrsh is a density
-            //   2./(uX-vX)  > thrsh ==>   2/thrsh > (uX-vX)
+            // we process the pair when their point density is higher than thrsh:
+            //  
+            //   2/sep_u_v  > thrsh  where thrsh is 2.5*the background linear density
             //
+            //   if want to stop the search along x axis when have surpassed an association distance,
+            //      we can see  2/thrsh > sep_u_v
+            //                  (2/thrsh) > u - v 
+            //                  (2/thrsh) + v > u
             
             float cr = 2.f/thrsh;
 
@@ -114,11 +119,13 @@ public class DFSGroupFinder extends AbstractGroupFinder {
                 // one last check using the true separation
                 
                 double sep = Math.sqrt(LinesAndAngles.distSquared(uX, uY, vX, vY));
-                
+                  
                 if (sep > cr) {
                     continue;
                 }
-                                          
+                
+                log.finest("  comparing: (" + uX + "," + uY + ")  (" + vX + "," + vY + ")  sep=" + sep + " cr=" + cr);
+                                    
                 color[vSortedXIndex] = 2;
                 
                 processPair(indexer, uSortedXIndex, vSortedXIndex);
@@ -143,12 +150,15 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         
         color[uSortedXIndex] = 1;
         
-        // we process the pair when their point density is higher than thrsh:  that is  (2 points/distance) > thrsh
+     // we process the pair when their point density is higher than thrsh:
         //  
-        //  2 points  <  thrsh * ( (ux-vx)^2 + (uy-vy)^2 )^(0.5) 
-        //  to see the max extent along y, set diff in x's to zero:  
-        //     2 points  <  thrsh * (uy-vy) so differences in y smaller than 2./thrsh are in a group
+        //   2/sep_u_v  > thrsh  where thrsh is 2.5*the background linear density
         //
+        //   if want to stop the search along x axis when have surpassed an association distance,
+        //      we can see  2/thrsh > sep_u_v
+        //                  (2/thrsh) > u - v 
+        //                  (2/thrsh) + v > u
+        
         float cr = 2.f/thrsh;
 
         float uX = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];
@@ -181,15 +191,15 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             if ((vY < minYAssoc) || (vY > maxYAssoc)) {
                 continue;
             }
-               
+            
             // one last check using the true separation
             
             double sep = Math.sqrt(LinesAndAngles.distSquared(uX, uY, vX, vY));
-            
+              
             if (sep > cr) {
                 continue;
             }
-                        
+            
             processPair(indexer, uSortedXIndex, vSortedXIndex);
             
             visit(vSortedXIndex);

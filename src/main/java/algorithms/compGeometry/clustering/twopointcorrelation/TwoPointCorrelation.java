@@ -127,7 +127,7 @@ public class TwoPointCorrelation {
     private float sigmaFactor = 2.5f;
     // we are looking for points which have density > sigmaFactor*backgroundAverage
 
-    protected int minimumNumberInCluster = 10;
+    protected int minimumNumberInCluster = 3;
 
     protected STATE state = null;
     protected BACKGROUND_METHOD bMethod = null;
@@ -794,9 +794,18 @@ public class TwoPointCorrelation {
             
             float[] ca = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(hull.getX(), hull.getY());
             
-            xc[i] = ca[1];
+            if (ca != null) {
+               
+                xc[i] = ca[1];
             
-            yc[i] = ca[2];
+                yc[i] = ca[2];
+            
+            } else {
+                
+                xc[i] = 0;
+            
+                yc[i] = 0;
+            }
             
         }
         

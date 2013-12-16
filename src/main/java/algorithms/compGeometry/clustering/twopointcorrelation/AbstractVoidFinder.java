@@ -221,6 +221,9 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
 
         float linearDensity = (float) (2.f / Math.sqrt(d));
 
+        log.finest("(" + indexer.getX()[idx0] + "," + indexer.getY()[idx0] + ") ("
+            + indexer.getX()[idx1] + "," + indexer.getY()[idx1] + ")  ld=" + linearDensity);
+
         // expand arrays by 100 if needed
         if ((nTwoPointSurfaceDensities + 2) > allTwoPointSurfaceDensities.length) {
             allTwoPointSurfaceDensities = Arrays.copyOf(allTwoPointSurfaceDensities, nTwoPointSurfaceDensities + 100);
