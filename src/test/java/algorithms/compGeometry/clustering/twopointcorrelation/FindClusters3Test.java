@@ -105,9 +105,6 @@ public class FindClusters3Test extends TestCase {
         
         assertTrue(centroids.getX().length == 2);
         assertTrue(centroids.getY().length == 2);
-        assertTrue(centroids.getX()[0] < 100);
-        assertTrue(centroids.getY()[0] < 100);
-        assertTrue(centroids.getX()[1] > 100);
         
         log.info( twoPtC.indexer.nXY + " points ... ");
 
