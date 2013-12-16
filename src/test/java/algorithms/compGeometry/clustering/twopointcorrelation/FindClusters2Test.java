@@ -32,10 +32,6 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
 
-        //SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
-        //srr.setSeed(System.currentTimeMillis());
-        //long seed = srr.nextLong();
-
         long seed = System.currentTimeMillis();
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -50,46 +46,111 @@ public class FindClusters2Test extends BaseTwoPointTest {
         //  all with the same number of clusters and cluster points, though
         //  randomly distributed.
 
-        int nSwitches = 2;
+        int nSwitches = 3;
 
         int nIterPerBackground = 1;
 
-        int m = nIterPerBackground*nSwitches;
+        int m = nIterPerBackground * nSwitches;
 
         DoubleAxisIndexer indexer = null;
 
         int count = 0;
         
         int nClusters = 3;
+        
+        /* creating 3 cases of moderate background density:
+         *    case 0:    90*100 = 9000 background points
+         *    case 1:  the case 0 9000 background points + 3 clusters that have a range of points from 30 to 60 with large separation
+         *    case 2:  the case 0 9000 background points + 3 clusters that have 1000, 300, 100 points           with large separation
+         */
+        
+        int numberOfBackgroundPoints = 9000;
+        
+        CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.LARGE;
+        
+        for (int ii = 0; ii < nIterPerBackground; ii++) { 
+            
+            float[] xb = new float[numberOfBackgroundPoints];
+            float[] yb = new float[numberOfBackgroundPoints];
 
-        for (int i = 0; i < nSwitches; i++) {
-
-            for (int ii = 0; ii < nIterPerBackground; ii++) {                
+            int xyStartOffset = 0;
+            
+            createRandomPointsInRectangle(sr, numberOfBackgroundPoints,
+                xmin, xmax, ymin, ymax, xb, yb, xyStartOffset);
+            
+            float[] xbe = new float[numberOfBackgroundPoints];
+            float[] ybe = new float[numberOfBackgroundPoints];
+            for (int i = 0; i < numberOfBackgroundPoints; i++) {
+                // simulate x error as a percent error of 0.03 for each bin
+                xbe[i] = xb[i] * 0.03f;
+                ybe[i] = (float) (Math.sqrt(yb[i]));
+            }
+            
+            
+            for (int i = 0; i < nSwitches; i++) {              
                                 
                 switch(i) {
-                    case 0:                        
-                        // essentially white noise
+                    
+                    case 0: {
+                        indexer = new DoubleAxisIndexer();
+                        indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
+                        break;
+                    }
+                    case 1: {
+                        int[] clusterNumbers = new int[]{60, 45, 30};
                         
-                        int minimumNumberOfPointsPerCluster = 30;
-                        int maximumNumberOfPointsPerCluster = 60;
-                        float backgroundPointFractionToClusters = 100.0f;
+                        int tot = numberOfBackgroundPoints + 60 + 45 + 30;
                         
-                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                            nClusters, minimumNumberOfPointsPerCluster, maximumNumberOfPointsPerCluster, 
-                            backgroundPointFractionToClusters);
+                        xb = Arrays.copyOf(xb, tot);
+                        yb = Arrays.copyOf(yb, tot);
+                        
+                        float[] xbc = new float[clusterNumbers.length];
+                        float[] ybc = new float[clusterNumbers.length];
+                        
+                        generator.createRandomClusters(sr, xmin, xmax, ymin, ymax,
+                            clusterNumbers, clusterSeparation, xb, yb,xbc, ybc, numberOfBackgroundPoints);
+                        
+                        xbe = Arrays.copyOf(xbe, tot);
+                        ybe = Arrays.copyOf(ybe, tot);
+                        for (int j = numberOfBackgroundPoints; j < tot; j++) {
+                            // simulate x error as a percent error of 0.03 for each bin
+                            xbe[j] = xb[j] * 0.03f;
+                            ybe[j] = (float) (Math.sqrt(yb[j]));
+                        }
+                        
+                        indexer = new DoubleAxisIndexer();
+                        indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
                         
                         break;
-                    case 1:
-                        
+                    }
+                    case 2: {
                         int[] clusterNumbers = new int[]{1000, 300, 100};
-                        int nBackgroundPoints = 10000;
-                        CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.LARGE;
                         
-                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                            clusterNumbers, nBackgroundPoints, clusterSeparation);
-                            
+                        int tot = numberOfBackgroundPoints + 1000 + 300 + 100;
+                        
+                        xb = Arrays.copyOf(xb, tot);
+                        yb = Arrays.copyOf(yb, tot);
+                        
+                        float[] xbc = new float[clusterNumbers.length];
+                        float[] ybc = new float[clusterNumbers.length];
+                        
+                        generator.createRandomClusters(sr, xmin, xmax, ymin, ymax,
+                            clusterNumbers, clusterSeparation, xb, yb,xbc, ybc, numberOfBackgroundPoints);
+                        
+                        xbe = Arrays.copyOf(xbe, tot);
+                        ybe = Arrays.copyOf(ybe, tot);
+                        for (int j = numberOfBackgroundPoints; j < tot; j++) {
+                            // simulate x error as a percent error of 0.03 for each bin
+                            xbe[j] = xb[j] * 0.03f;
+                            ybe[j] = (float) (Math.sqrt(yb[j]));
+                        }
+                        
+                        indexer = new DoubleAxisIndexer();
+                        indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
+                        
                         break;
-                   
+                    }
+
                     default:
                         break;
                 }

@@ -423,8 +423,40 @@ public class RandomClusterAndBackgroundGenerator {
 
         createRandomPointsInRectangle(sr, numberOfBackgroundPoints, xmin, xmax, ymin, ymax, x, y, 0);
 
-        /*
-         *  For n = 3
+        int startOffset = numberOfBackgroundPoints;
+        
+        createRandomClusters(sr, xmin, xmax, ymin, ymax, numberOfClusterPoints, clusterSeparation, x, y, xc, yc, startOffset);
+        
+        xErrors = new float[nTotalPoints];
+        yErrors = new float[nTotalPoints];
+        for (int i = 0; i < nTotalPoints; i++) {
+            // simulate x error as a percent error of 0.03 for each bin
+            xErrors[i] = x[i] * 0.03f;
+            yErrors[i] = (float) (Math.sqrt(y[i]));
+        }
+    }
+    
+    /**
+     * populate arrays xx and yy with clusters randomly populated for the given arguments.
+     * 
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfClusterPoints
+     * @param clusterSeparation
+     * @param xx
+     * @param yy
+     * @param startOffset
+     */
+    public void createRandomClusters(SecureRandom sr, float xmin, float xmax, float ymin, float ymax, 
+        int[] numberOfClusterPoints, CLUSTER_SEPARATION clusterSeparation, float[] xx, float[] yy, 
+        float[] xcenters, float[] ycenters, int startOffset) {
+        
+        int nClusters = (numberOfClusterPoints == null) ? 0 : numberOfClusterPoints.length;
+                
+        /*  For n = 3
          *
          *  |----max/n----|             |             |
          *  |             |             |             |
@@ -449,29 +481,18 @@ public class RandomClusterAndBackgroundGenerator {
             maxClusterRadius = 0.8f*(xmax - xmin) / (factor * nClusters);
             minDistanceBetweenClusterCenters = (factor * maxClusterRadius);
 
-
             createRandomSeparatedPoints(sr, xmin + maxClusterRadius, xmax - maxClusterRadius,
                 ymin + maxClusterRadius, ymax - maxClusterRadius,
-                nClusters, xc, yc, minDistanceBetweenClusterCenters);
-
-            int startOffset = numberOfBackgroundPoints;
-
+                nClusters, xcenters, ycenters, minDistanceBetweenClusterCenters);
+            
             for (int i = 0; i < nClusters; i++) {
 
                 int n = numberOfClusterPoints[i];
 
-                createRandomPointsAroundCenter(sr, maxClusterRadius, n, xc[i], yc[i], x, y, startOffset);
+                createRandomPointsAroundCenter(sr, maxClusterRadius, n, xcenters[i], ycenters[i], xx, yy, startOffset);
 
                 startOffset += n;
             }
-        }
-
-        xErrors = new float[nTotalPoints];
-        yErrors = new float[nTotalPoints];
-        for (int i = 0; i < nTotalPoints; i++) {
-            // simulate x error as a percent error of 0.03 for each bin
-            xErrors[i] = x[i] * 0.03f;
-            yErrors[i] = (float) (Math.sqrt(y[i]));
         }
     }
 
