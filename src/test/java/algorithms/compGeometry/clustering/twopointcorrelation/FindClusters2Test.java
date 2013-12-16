@@ -26,9 +26,9 @@ public class FindClusters2Test extends BaseTwoPointTest {
         log.info("test_Find_Clusters_Stats()");
 
         float xmin = 0;
-        float xmax = 300;
+        float xmax = 500;
         float ymin = 0;
-        float ymax = 300;
+        float ymax = 500;
 
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
 
@@ -62,8 +62,14 @@ public class FindClusters2Test extends BaseTwoPointTest {
          *    case 0:    90*100 = 9000 background points
          *    case 1:  the case 0 9000 background points + 3 clusters that have a range of points from 30 to 60 with large separation
          *    case 2:  the case 0 9000 background points + 3 clusters that have 1000, 300, 100 points           with large separation
-         */
-        
+         *    
+         * For 9000 points randomly and evenly distributed in a space of 1000 x 1000 units,
+         * there are sqrt(9000)/1000 in one dimension which is 0.095 points/unit space
+         * 
+         * For case 0, the peak of the distribution is found to be 0.18.  
+         *     
+         * 
+         */        
         int numberOfBackgroundPoints = 9000;
         
         CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.LARGE;
@@ -185,11 +191,14 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
                 twoPtC.setDebug(true);
                 
+                
+                //twoPtC.setAllowRefinement();
+                
 //twoPtC.setUseDownhillSimplexHistogramFitting();
               
                 twoPtC.logPerformanceMetrics();
+                //twoPtC.setBackground(0.35f, 0.02f);
                 //twoPtC.setBackground(0.5f, 0.02f);
-                //twoPtC.setBackground(0.28f, 0.02f);
                 twoPtC.calculateBackground();
                 twoPtC.findClusters();
 
@@ -255,7 +264,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 count++;
             }
         }
-
+        
         log.info("\n start computing stats for all sets");
 
         count = 0;
