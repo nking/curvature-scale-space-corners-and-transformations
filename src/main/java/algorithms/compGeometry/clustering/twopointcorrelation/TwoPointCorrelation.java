@@ -8,6 +8,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -100,7 +101,6 @@ import java.util.logging.Logger;
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
 
           java -cp bin/classes  algorithms.compGeometry.clustering.twopointcorrelation.TwoPointCorrelation --file /path/to/file/fileName.txt
-
   
   @author nichole
  */
@@ -362,9 +362,9 @@ public class TwoPointCorrelation {
 
             voidStats = new TwoPointVoidStats(tempRefineSolnIndexer);
 
-            voidStats.setUseCompleteSampling();
+            //voidStats.setUseCompleteSampling();
 
-            voidStats.setInterpretForSparseBackgroundToTrue();
+            //voidStats.setInterpretForSparseBackgroundToTrue();
 
         } else {
 
@@ -401,12 +401,28 @@ public class TwoPointCorrelation {
 
         this.backgroundSurfaceDensity = voidStats.getBackgroundSurfaceDensity();
         this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
-
+        
         //backgroundStats.releaseLargeVariables();
 
         if (debug) {
             log.info("==>background density ="
                 + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
+         
+            float xHalfInterval = (voidStats.statsHistogram.getXHist()[1] - voidStats.statsHistogram.getXHist()[0]) / 2.0f;
+            float xmin = 0;
+            float xmax = voidStats.statsHistogram.getXHist()[voidStats.statsHistogram.getXHist().length - 1] + xHalfInterval;
+            float ymin = 0;
+            float ymax = MiscMath.findMax(voidStats.statsHistogram.getYHistFloat());
+            
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+
+            try {
+                plotter.addPlot(voidStats.statsHistogram.getXHist(), voidStats.statsHistogram.getYHist(), 
+                    voidStats.bestFit.getOriginalScaleX(), voidStats.bestFit.getOriginalScaleYFit(), "");
+                plotter.writeFile2();
+            } catch (Exception e) {
+                Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());
+            }
         }
 
         state = STATE.BACKGROUND_SET;
@@ -567,7 +583,7 @@ public class TwoPointCorrelation {
 
             TwoPointVoidStats tmp = (TwoPointVoidStats)backgroundStats;
 
-            if (tmp.getInterpretForSparseBackground() != null && tmp.getInterpretForSparseBackground().booleanValue()) {
+            if ((indexer.getNumberOfPoints() >= 9000) /*tmp.getInterpretForSparseBackground() != null && tmp.getInterpretForSparseBackground().booleanValue()*/) {
 
                 if (tmp.getSampling() != null && tmp.getSampling().ordinal() == VoidSampling.COMPLETE.ordinal()) {
 
@@ -580,7 +596,7 @@ public class TwoPointCorrelation {
 
                         state = STATE.INITIALIZED;
 
-                        /*
+                        
                         float[] xymm = tempRefineSolnIndexer.findXYMinMax();
                         PolygonAndPointPlotter p0 = new PolygonAndPointPlotter();
                         p0.addPlot(indexer.getX(), indexer.getY(),
@@ -589,7 +605,7 @@ public class TwoPointCorrelation {
                         p0.addPlot(tempRefineSolnIndexer.getX(), tempRefineSolnIndexer.getY(),
                             tempRefineSolnIndexer.getXErrors(), tempRefineSolnIndexer.getYErrors(), "refining...");
                         System.out.println(p0.writeFile3());
-                        */
+                        
 
                         findClusters();
 

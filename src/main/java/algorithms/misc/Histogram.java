@@ -1267,7 +1267,7 @@ plotter.writeFile();
         }
         
         // if there are a large number of points, we'd like to increase the resolution of the peak if needed
-        if (values.length > 10000) {
+        if (true || values.length > 10000) {
             int nLeftOfPeak = MiscMath.findYMaxIndex(yHist);
             int nIter = 0;
             while (nIter < 30 && nLeftOfPeak < 3 && (yHist[nLeftOfPeak] > 100)) {
