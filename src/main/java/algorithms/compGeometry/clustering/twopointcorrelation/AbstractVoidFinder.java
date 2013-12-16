@@ -135,14 +135,25 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
             y1 = tmp;
         }
         
-        boolean doProcess = true;
+        float x0 = indexer.getX()[idx1];
+        float x1 = indexer.getX()[idx2];
         
+        boolean doProcess = true;
+
         for (int i = (xSortedIndex0 + 1); i < xSortedIndex1; i++) {
             
             int idx = sortedXIndexes[i];
+            
+            float xt = indexer.getX()[idx];
+  
+            // if there's a point in between them, this isn't a void.  if equal, it passes.
+            if (xt > x0 && xt < x1) {
+                doProcess = false;
+                break;
+            }
 
             // we already know that x is within bounds, just need to test yt and exit quickly if it is within bounds
-            float yt = y[idx];
+            float yt = y[idx];            
             
             if ((yt > y0) && (yt < y1)) {
                 // it's within bounds
@@ -153,7 +164,38 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         
         if (doProcess) {
             
-            processIndexedPair(idx1, idx2);
+            // if it has passed, we still need to look for the same x values 
+            //   for sortedXIndexes just before xSortedIndex0 and just after xSortedIndex1
+            
+            int t2Idx = xSortedIndex0 - 1;
+            
+            while (t2Idx > -1 && ( indexer.getX()[sortedXIndexes[t2Idx]] == x0 )) {
+                // check whether it's within boundaries
+                float y2t = y[t2Idx];  
+                if ((y2t > y0) && (y2t < y1)) {
+                    doProcess = false;
+                    break;
+                }
+                t2Idx--;
+            }
+            
+            if (doProcess) {
+                
+                t2Idx = xSortedIndex1 + 1;
+                
+                while ((t2Idx < (indexer.getNumberOfPoints() - 1)) && ( indexer.getX()[sortedXIndexes[t2Idx]] == x1 )) {
+                    float y2t = y[t2Idx];  
+                    if ((y2t > y0) && (y2t < y1)) {
+                        doProcess = false;
+                        break;
+                    }
+                    t2Idx++;
+                }
+                
+                if (doProcess) {
+                    processIndexedPair(idx1, idx2);
+                }
+            }            
         }
     }
 
