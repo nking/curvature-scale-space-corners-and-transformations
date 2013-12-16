@@ -2,6 +2,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import java.util.logging.Logger;
 
+import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.Stack;
 
 /**
@@ -73,14 +74,18 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             
             int uSortedXIndex = uNode.getKey();
             
-            float dens = 2.f/thrsh;
+            //  the thrsh is a density
+            //   2./(uX-vX)  > thrsh ==>   2/thrsh > (uX-vX)
+            //
+            
+            float cr = 2.f/thrsh;
 
             float uX = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];
-            float minXAssoc = uX - dens;
-            float maxXAssoc = uX + dens;
+            float minXAssoc = uX - cr;
+            float maxXAssoc = uX + cr;
             float uY = indexer.getY()[ sortedXIndexes[uSortedXIndex] ];
-            float minYAssoc = uY - dens;
-            float maxYAssoc = uY + dens;
+            float minYAssoc = uY - cr;
+            float maxYAssoc = uY + cr;
             
             // for each neighbor v of u
             for (int vSortedXIndex = 0; vSortedXIndex < sortedXIndexes.length; vSortedXIndex++) {
@@ -105,9 +110,15 @@ public class DFSGroupFinder extends AbstractGroupFinder {
                 if ((vY < minYAssoc) || (vY > maxYAssoc)) {
                     continue;
                 }
-                   
-                // if we're here, vX is within assoc distance of u and so is vY so this is a neighbor
-                       
+                
+                // one last check using the true separation
+                
+                double sep = Math.sqrt(LinesAndAngles.distSquared(uX, uY, vX, vY));
+                
+                if (sep > cr) {
+                    continue;
+                }
+                                          
                 color[vSortedXIndex] = 2;
                 
                 processPair(indexer, uSortedXIndex, vSortedXIndex);
@@ -138,14 +149,14 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         //  to see the max extent along y, set diff in x's to zero:  
         //     2 points  <  thrsh * (uy-vy) so differences in y smaller than 2./thrsh are in a group
         //
-        float dens = 2.f/thrsh;
+        float cr = 2.f/thrsh;
 
         float uX = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];
-        float minXAssoc = uX - dens;
-        float maxXAssoc = uX + dens;
+        float minXAssoc = uX - cr;
+        float maxXAssoc = uX + cr;
         float uY = indexer.getY()[ sortedXIndexes[uSortedXIndex] ];
-        float minYAssoc = uY - dens;
-        float maxYAssoc = uY + dens;
+        float minYAssoc = uY - cr;
+        float maxYAssoc = uY + cr;
         
         // iterate over uNode neighbors v.  can skip calc if color[v] != 0
         for (int vSortedXIndex = 1; vSortedXIndex < sortedXIndexes.length; vSortedXIndex++) {
@@ -171,7 +182,13 @@ public class DFSGroupFinder extends AbstractGroupFinder {
                 continue;
             }
                
-            // if we're here, vX is within assoc distance of u and so is vY so this is a neighbor
+            // one last check using the true separation
+            
+            double sep = Math.sqrt(LinesAndAngles.distSquared(uX, uY, vX, vY));
+            
+            if (sep > cr) {
+                continue;
+            }
                         
             processPair(indexer, uSortedXIndex, vSortedXIndex);
             
