@@ -134,15 +134,6 @@ public class TwoPointCorrelation {
 
     protected IGroupFinder groupFinder = null;
 
-    /**
-     * for groups already calculated in groupMembership, this is how to find the points
-     * of the convex hull for each group.
-     * For example, to find the convex hull of group # 0
-     *    groupHullIndexes[0] will return a linked list to the indexes of x and y
-     *    that form the hull for that group.
-     */
-    protected SimpleLinkedListNode[] groupHullIndexes = null;
-
     protected boolean persistTheMinimaStats = false;
     protected String indexerFilePath = null;
     protected String minimaStatsFilePath = null;
@@ -478,9 +469,6 @@ public class TwoPointCorrelation {
 
         sumBytes += indexer.approximateMemoryUsed();
 
-        if (groupHullIndexes != null) {
-            sumBytes += (arrayBytes + (groupHullIndexes.length*(overheadBytes + refBytes + intBytes)));
-        }
         if (groupFinder != null) {
             sumBytes += groupFinder.approximateMemoryUsed();
         }
