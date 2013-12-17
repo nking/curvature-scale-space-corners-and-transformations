@@ -158,12 +158,16 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
             } else if (yt > y1) {
                 continue;
             }
+            
+            if ( ((xt > x0) && (xt < x1)) || ((yt > y0) && (yt < y1)) ) {
 
-            // else we're in bounds of a rectangle whose corners are the 2 points x0,y0  x1,y1
-            doProcess = false;
+                // else we're in bounds of a rectangle or line whose corners are the 2 points x0,y0  x1,y1
+                doProcess = false;
 
-            break;
+                break;
+            }
 
+            log.finest("(" + x0 + "," + y0 +") (" + x1 + "," + y1 + ")  test " + xt + "," + yt + "  passed");
         }
         
         if (doProcess) {

@@ -1,6 +1,10 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.logging.Logger;
+
+import algorithms.misc.MiscMath;
 
 /**
  *
@@ -63,11 +67,40 @@ public class CompleteSamplingVoidFinderTest extends BaseTwoPointTest {
         CompleteSamplingVoidFinder voidFinder = new CompleteSamplingVoidFinder();
         voidFinder.setSampling(VoidSampling.COMPLETE);
         
+        voidFinder.setDebug(true);
+        
         voidFinder.findVoids(indexer);
+        
+        
+        try {
+
+            TwoPointVoidStatsPlotter plotter = new TwoPointVoidStatsPlotter();
+
+            float[] mm = indexer.findXYMinMax();
+
+            float xmn = MiscMath.roundDownByLargestPower(mm[0]);
+            float xmx = MiscMath.roundUpByLargestPower(mm[1]);
+            float ymn = MiscMath.roundDownByLargestPower(mm[2]);
+            float ymx = MiscMath.roundUpByLargestPower(mm[3]);
+
+            int[] t1 = Arrays.copyOf(voidFinder.getPoint1(), voidFinder.getNumberOfTwoPointDensities());
+            int[] t2 = Arrays.copyOf(voidFinder.getPoint2(), voidFinder.getNumberOfTwoPointDensities());
+
+            plotter.addTwoPointPlot(indexer.getX(), indexer.getY(), t1, t2,
+                xmin, xmax, ymin, ymax);
+
+            plotter.writeFile2();
+
+        } catch (IOException e) {
+            Logger.getLogger(SerializerUtil.class.getName()).severe(e.getMessage());
+        }
+        
         
         float[] linearDensities = voidFinder.getTwoPointDensities();
         
         assertNotNull(linearDensities);
+        
+        System.out.println("n densities=" + linearDensities.length);
         
         assertTrue(linearDensities.length == 20);
         
