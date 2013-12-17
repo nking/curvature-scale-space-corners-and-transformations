@@ -615,9 +615,9 @@ public class FindClusters2Test extends BaseTwoPointTest {
         log.info("SEED=" + seed);
     }
     
-    public void test_Find_Clusters_Stats_2() throws Exception {
+    public void test_Find_Clusters_Stats_3() throws Exception {
 
-        log.info("test_Find_Clusters_Stats_2()");
+        log.info("test_Find_Clusters_Stats_3()");
         
         /* Goal of this test is to examine the substructure created by increasing numbers of randomly 
            placed points.
