@@ -34,14 +34,14 @@ public class Histogram {
 
     protected static float calculateBinWidth(float minValue, float maxValue, int nBins) {
 
-        float xInterval = (maxValue - minValue)/nBins;
+        float xInterval = (maxValue - minValue)/(float)nBins;
 
         // expand interval if necessary to make sure the last point is in the last bin
-        if ((int) ((maxValue - minValue)/xInterval) != (nBins - 1)) {
+        if ((int) ((maxValue - minValue)/(float)xInterval) != (nBins - 1)) {
             float t = (maxValue + minValue)/2.0f;
             int powDelta = MiscMath.findPowerOf10(t);
             float pow10 = (float)Math.pow(10, powDelta);
-            xInterval = (maxValue - minValue + pow10)/nBins;
+            xInterval = (maxValue - minValue + pow10)/(float)nBins;
         }
 
         return xInterval;
@@ -88,7 +88,7 @@ public class Histogram {
         Arrays.fill(yHist, 0);
 
         for (int i = 0; i < nBins; i++) {
-            xHist[i] = aMin + i*binWidth + (binWidth/2.f);
+            xHist[i] = aMin + (float)i*binWidth + (binWidth/2.f);
         }
 
         for (int i = 0; i < a.length; i++) {
