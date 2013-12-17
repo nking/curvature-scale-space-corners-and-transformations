@@ -139,24 +139,17 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         float x1 = indexer.getX()[idx2];
         
         boolean doProcess = true;
-
+        
         for (int i = (xSortedIndex0 + 1); i < xSortedIndex1; i++) {
             
             int idx = sortedXIndexes[i];
             
             float xt = indexer.getX()[idx];
   
-            // if there's a point in between them, this isn't a void.  if equal, it passes.
-            if (xt > x0 && xt < x1) {
-                doProcess = false;
-                break;
-            }
-
-            // we already know that x is within bounds, just need to test yt and exit quickly if it is within bounds
-            float yt = y[idx];            
+            float yt = y[idx]; 
             
-            if ((yt > y0) && (yt < y1)) {
-                // it's within bounds
+            // if there's a point in between them, this isn't a void.  if equal, it passes.
+            if ((xt > x0) && (xt < x1) && (yt > y0) && (yt < y1)) {
                 doProcess = false;
                 break;
             }
@@ -191,7 +184,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
                     }
                     t2Idx++;
                 }
-                
+              
                 if (doProcess) {
                     processIndexedPair(idx1, idx2);
                 }
