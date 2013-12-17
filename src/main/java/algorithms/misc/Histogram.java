@@ -116,6 +116,44 @@ public class Histogram {
         createHistogram(a, nBins, aMin, aMax, xHist, yHist, xInterval);
     }
 
+    public static HistogramHolder createSimpleHistogram(
+        float[] values, float[] valueErrors) {
+
+        if (values == null || valueErrors == null || values.length != valueErrors.length) {
+            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        }
+
+        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
+        
+        int nBins = (int)(2*Math.pow(values.length, 0.3333));
+        
+        float binWidth = calculateBinWidth(minMax[0], minMax[1], nBins);
+
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+        
+        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], xHist, yHist, binWidth);
+
+        float[] yHistFloat = new float[yHist.length];
+        for (int i = 0; i < yHist.length; i++) {
+            yHistFloat[i] = (float) yHist[i];
+        }
+
+        float[] yErrors = new float[xHist.length];
+        float[] xErrors = new float[xHist.length];
+
+        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);
+
+        HistogramHolder histogram = new HistogramHolder();
+        histogram.setXHist(xHist);
+        histogram.setYHist(yHist);
+        histogram.setYHistFloat(yHistFloat);
+        histogram.setYErrors(yErrors);
+        histogram.setXErrors(xErrors);
+        
+        return histogram;
+    }
+    
     /**
      * create a histogram adjusted to have a range
      * representing most of the data and a number of bins which attempts to have
@@ -1214,6 +1252,19 @@ plotter.writeFile();
         return histogram;
     }
     
+    public static HistogramHolder defaultHistogramCreator(float[] values, float[] valueErrors) {
+        
+        if (values == null || valueErrors == null || values.length != valueErrors.length) {
+            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        }
+        
+        if (values.length < 100) {
+            return createSimpleHistogram(values, valueErrors);
+        }
+        
+        return calculateSturgesHistogramRemoveZeroTail(values, valueErrors);
+    }
+    
     public static HistogramHolder calculateSturgesHistogramRemoveZeroTail(
         float[] values, float[] valueErrors) {
     
@@ -1267,7 +1318,7 @@ plotter.writeFile();
         }
         
         // if there are a large number of points, we'd like to increase the resolution of the peak if needed
-        if (true || values.length > 1000) {
+        if (values.length > 100) {
             int nLeftOfPeak = MiscMath.findYMaxIndex(yHist);
             int nIter = 0;
             while (nIter < 30 && nLeftOfPeak < 3 && (yHist[nLeftOfPeak] > 100)) {

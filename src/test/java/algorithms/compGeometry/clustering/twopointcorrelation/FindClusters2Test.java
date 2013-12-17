@@ -224,18 +224,6 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 //plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();
 
-                /*
-                if (i == 1) {
-                    
-                    TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
-                    
-                    String voidDensFileName = "void_densities_001.txt";
-                    
-                    writeVoidDensitiesToTestResources(voidDensFileName, 
-                        stats.voidFinder.getTwoPointDensities(), stats.voidFinder.getTwoPointDensityErrors());
-                }
-                */
-                
                 count++;
             }
         }
@@ -267,7 +255,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
-        int nSwitches = 1;
+        int nSwitches = 4;
 
         int nIterPerBackground = 1;
 
@@ -282,11 +270,19 @@ public class FindClusters2Test extends BaseTwoPointTest {
         /* 
          *    case 0:    9000 background points in a 1000 x 1000 area
          *               grid divisions are 10.5 units each so the most frequent expected linear density is 2./10.5 = 0.19
-         *               The peak of the GEV and hence the density is found to be 0.098.<=====?? histogram needs improving!!!
+         *               The peak of the GEV and hence the density is found to be near 0.1. 
+         *               
          *    case 1:    a single cluster of 100 points in a 5x5 area of the 1000 x 1000 area without background points.
-         *               Expect that the most frequent separation is sqrt(100)/5 = 
+         *               Expect that the most frequent separation is sqrt(100)/5 = 2.0.  ld = 2./2 = 1.
+         *               The peak of the GEV and hence the density is found to be 1.6.
+         *               
          *    case 2:  
-         *
+         *               The 9000 background points in a 1000 x 1000 area with a single cluster of points in a 5 x 5 area.
+         *               Expect the most frequent separation to be near 0.1 still.
+         *               The peak of the GEV and hence the density is found to be 0.12.
+         *               
+         *    case 3:    The 9000 background points in a 1000 x 1000 area with 3 large clusters of varying density.
+         *    
          */        
         int numberOfBackgroundPoints = 9000;
         
@@ -392,7 +388,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     case 2: {
                         int[] clusterNumbers = new int[]{100};
                         
-                        int tot = numberOfBackgroundPoints + 100;
+                        int tot = numberOfBackgroundPoints + clusterNumbers[0];
                         
                         xb = Arrays.copyOf(xb, tot);
                         yb = Arrays.copyOf(yb, tot);
@@ -418,18 +414,14 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     }
                     
                     case 3: {
-                        int[] clusterNumbers = new int[]{1000, 300, 100};
+                        int[] clusterNumbers = new int[]{1000};
                         
-                        int tot = numberOfBackgroundPoints + 1000 + 300 + 100;
+                        int tot = numberOfBackgroundPoints + 1000;
                         
                         xb = Arrays.copyOf(xb, tot);
                         yb = Arrays.copyOf(yb, tot);
-                        
-                        float[] xbc = new float[clusterNumbers.length];
-                        float[] ybc = new float[clusterNumbers.length];
-                        
-                        generator.createRandomClusters(sr, xmin, xmax, ymin, ymax,
-                            clusterNumbers, clusterSeparation, xb, yb,xbc, ybc, numberOfBackgroundPoints);
+                                                
+                        generator.createRandomPointsAroundCenter(sr, 50, clusterNumbers[0], 400, 400, xb, yb, numberOfBackgroundPoints);
                         
                         xbe = Arrays.copyOf(xbe, tot);
                         ybe = Arrays.copyOf(ybe, tot);
@@ -449,30 +441,6 @@ public class FindClusters2Test extends BaseTwoPointTest {
                         break;
                 }
                
-                /* to zoom in to confirm density estimate visually:
-                DoubleAxisIndexer tmp = new DoubleAxisIndexer();
-                tmp.sortAndIndexXThenY(
-                    Arrays.copyOf(indexer.getX(), 100), Arrays.copyOf(indexer.getY(), 100),
-                    Arrays.copyOf(indexer.getXErrors(), 100), Arrays.copyOf(indexer.getYErrors(), 100),
-                    100);
-                indexer = tmp;
-                */
-                
-                log.info(" " + count + " (" + indexer.nXY + " points) ... ");
-
-
-                if (writeToTmpData) {
-                    // write to tmpdata if need to use in tests improve fits, histogram etc
-                    String str = String.valueOf(count);
-                    while (str.length() < 3) {
-                        str = "0" + str;
-                    }
-                    String fileNamePostfix = "_clusters_" + str + ".dat";
-                    String fileName = CreateClusterDataTest.indexerFileNamePrefix + fileNamePostfix;
-                    String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
-                    CreateClusterDataTest.writeIndexer(filePath, indexer);
-                }
-
                 log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
                 TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
@@ -514,17 +482,43 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 plotter.addPlot(twoPtC, plotLabel);
                 //plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();
-
-                /*
-                if (i == 2) {
+                
+                if (i == 2) {  
+                    assertTrue(twoPtC.getNumberOfGroups() == 1);
+                    /*
+                    System.out.println("nGroups = " + twoPtC.getNumberOfGroups());
+                    for (int j = 0; j < twoPtC.getNumberOfGroups(); j++) {
+                        System.out.println("group " + j);
+                        ArrayPair group = twoPtC.getGroup(j);
+                        for (int jj = 0; jj < group.getX().length; jj++) {
+                            System.out.println("   " + group.getX()[jj] + "," + group.getY()[jj]);
+                        }
+                    }*/
+                    int n0 = twoPtC.getGroup(0).getX().length;
+                    assertTrue(n0 >= 100 && (n0 <= 105));
+                } else if (i == 3) {
+                    assertTrue(twoPtC.getNumberOfGroups() == 2);
+                    ArrayPair hull;
+                    if (twoPtC.getGroup(0).getX().length > twoPtC.getGroup(1).getX().length) {
+                        hull = twoPtC.getGroupHull(0);
+                    } else {
+                        hull = twoPtC.getGroupHull(1);
+                    }
+                    float[] areaAndCenter = twoPtC.calculateAreaAndCentroidOfHull(hull.getX(), hull.getY());
+                    assertNotNull(areaAndCenter);
+                    float radius = (float) Math.sqrt(areaAndCenter[0]/(2.*Math.PI));
+                    assertTrue(radius <= 50.f);
+                }
+               
+                if (i == 0 || i == 1) {
                     
                     TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
                     
-                    String voidDensFileName = "void_densities_002.txt";
+                    String voidDensFileName = (i == 0) ? "void_densities_002.txt" : "void_densities_003.txt";
                     
                     writeVoidDensitiesToTestResources(voidDensFileName, 
                         stats.voidFinder.getTwoPointDensities(), stats.voidFinder.getTwoPointDensityErrors());
-                }*/
+                }
 
                 count++;
             }

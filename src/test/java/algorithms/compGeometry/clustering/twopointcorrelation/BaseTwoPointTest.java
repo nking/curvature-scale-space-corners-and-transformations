@@ -201,7 +201,7 @@ public class BaseTwoPointTest extends TestCase {
             writer = new FileWriter(new File(filePath));
             out = new BufferedWriter(writer);
             
-            out.write(values.length);
+            out.write(Integer.toString(values.length));
             out.write("\n");
 
             StringBuilder sb = new StringBuilder();

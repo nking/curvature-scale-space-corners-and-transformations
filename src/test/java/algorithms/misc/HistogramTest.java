@@ -28,16 +28,6 @@ public class HistogramTest extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-    }
-
     public void testPersistedHistograms() throws Exception {
         
         log.info("testPersistedHistograms");
@@ -66,10 +56,10 @@ public class HistogramTest extends TestCase {
 
                 int n = a.length;
 
-                HistogramHolder hist = Histogram.createHistogramForSkewedData(n, a, ae, false);
+                HistogramHolder hist = Histogram.defaultHistogramCreator(a, ae);
 
                 plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), new float[n], new float[n], label);
-                plotter.writeFile3();
+                plotter.writeFile2();
 
             }
         }
