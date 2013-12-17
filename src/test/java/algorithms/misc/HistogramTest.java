@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
@@ -14,6 +15,9 @@ import java.io.PipedOutputStream;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
@@ -34,6 +38,43 @@ public class HistogramTest extends TestCase {
         super.tearDown();
     }
 
+    public void testPersistedHistograms() throws Exception {
+        
+        log.info("testPersistedHistograms");
+        
+        // tests to set up for regression tests for a range of datasets
+        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        
+        File[] data = ResourceFinder.findFilesInTestResources("void_densities_");
+        
+        if (data != null) {
+            
+            for (File file : data) {
+                String label = "";
+                String fn = file.getName();
+                Pattern p = Pattern.compile("void\\_densities\\_(.*?)\\.txt");
+                Matcher m = p.matcher(fn);
+                if (m.matches()) {
+                    label = m.group(1);
+                }
+                
+                ArrayPair pair = readTestFile(file);
+                
+                float[] a = pair.getX();
+                float[] ae = pair.getY();
+
+                int n = a.length;
+
+                HistogramHolder hist = Histogram.createHistogramForSkewedData(n, a, ae, false);
+
+                plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), new float[n], new float[n], label);
+                plotter.writeFile3();
+
+            }
+        }
+    }
+    
     /**
      * Test of createHistogram method, of class Histogram.
      */
@@ -222,19 +263,27 @@ public class HistogramTest extends TestCase {
         }
     }
 
-    protected float[] a = null;
-    protected float[] ae = null;
-    protected int nValues = 0;
-
-    protected void readTestFile(String fileName) throws Exception {
-
+    protected ArrayPair readTestFile(String fileName) throws Exception {
+       
         String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        File file = new File(filePath);
+        
+        return readTestFile(file);
+    }
+    
+    protected ArrayPair readTestFile(File file) throws Exception {
+        
+        float[] a = null;
+        float[] ae = null;
+        int nValues = 0;
+        
         FileReader reader = null;
         BufferedReader in = null;
 
         try {
             int count = 0;
-            reader = new FileReader(new File(filePath));
+            reader = new FileReader(file);
             in = new BufferedReader(reader);
 
             String line = in.readLine();
@@ -251,9 +300,17 @@ public class HistogramTest extends TestCase {
                 line = in.readLine();
                 count++;
             }
+            
+            ArrayPair r = new ArrayPair( Arrays.copyOf(a, nValues), Arrays.copyOf(ae, nValues));
+            
+            return r;
+            
         } finally {
             if (reader != null) {
                 reader.close();
+            }
+            if (in != null) {
+                in.close();
             }
         }
     }
@@ -275,7 +332,9 @@ public class HistogramTest extends TestCase {
         int count = 0;
         for (String fileName : files) {
 
-            readTestFile(fileName);
+            ArrayPair pair = readTestFile(fileName);
+            float[] a = pair.getX();
+            float[] ae = pair.getY();
 
             int n = 20;
 

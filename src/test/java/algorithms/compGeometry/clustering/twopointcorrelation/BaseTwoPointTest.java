@@ -3,6 +3,11 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.util.ResourceFinder;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -184,4 +189,38 @@ public class BaseTwoPointTest extends TestCase {
         CreateClusterDataTest.writeIndexer(filePath, indexer);
     }
 
+    static void writeVoidDensitiesToTestResources(String fileName, float[] values, float[] valueErrors) 
+        throws Exception {
+
+        String filePath = ResourceFinder.getAFilePathInTestResources(fileName);
+
+        FileWriter writer = null;
+        BufferedWriter out = null;
+
+        try {
+            writer = new FileWriter(new File(filePath));
+            out = new BufferedWriter(writer);
+            
+            out.write(values.length);
+            out.write("\n");
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < values.length; i++) {
+                
+                sb.append(values[i]).append("\t").append(valueErrors[i]).append("\n");
+            }
+            
+            out.write(sb.toString());
+            
+            out.flush();
+            
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
+            if (out != null) {
+                out.close();
+            }
+        }
+    }
 }

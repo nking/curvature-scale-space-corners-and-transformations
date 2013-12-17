@@ -23,7 +23,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void test_Find_Clusters_Stats() throws Exception {
+    public void est_Find_Clusters_Stats() throws Exception {
 
         log.info("test_Find_Clusters_Stats()");
 
@@ -57,8 +57,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
            0  0   1   2   3  
            
               The background density is found as 1.77.  critical density = 2.5*1.77 = 4.425.
-              
-              
+                            
          */
 
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
@@ -72,7 +71,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
-        int nSwitches = 1;
+        int nSwitches = 2;
 
         int nIterPerBackground = 1;
 
@@ -89,17 +88,6 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
             int xyStartOffset = 0;
             
-            /*
-            createRandomPointsInRectangle(sr, numberOfBackgroundPoints,
-                xmin, xmax, ymin, ymax, xb, yb, xyStartOffset);
-            */
-            
-            /* 
-             *           |  10 x 10 and 9000 points.  94.9 points x dim in 10 cells = 1 pt/cell
-             *           |
-             *           |
-             *    --------
-             */
             // make a uniform grid of background points:
             int nDiv = (int) Math.ceil(Math.sqrt(numberOfBackgroundPoints));
             double divXSz = (xmax - xmin)/nDiv;
@@ -142,13 +130,12 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 switch(i) {
                     
                     case 0: {
-                    /*    indexer = new DoubleAxisIndexer();
+                        indexer = new DoubleAxisIndexer();
                         indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
                         break;
                     }
 
                     case 1: {
-                      */  
                         xb = Arrays.copyOf(xb, xb.length + 7);
                         yb = Arrays.copyOf(yb, yb.length + 7);
                         
@@ -190,30 +177,6 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     default:
                         break;
                 }
-               
-                /* to zoom in to confirm density estimate visually:
-                DoubleAxisIndexer tmp = new DoubleAxisIndexer();
-                tmp.sortAndIndexXThenY(
-                    Arrays.copyOf(indexer.getX(), 100), Arrays.copyOf(indexer.getY(), 100),
-                    Arrays.copyOf(indexer.getXErrors(), 100), Arrays.copyOf(indexer.getYErrors(), 100),
-                    100);
-                indexer = tmp;
-                */
-                
-                log.info(" " + count + " (" + indexer.nXY + " points) ... ");
-
-
-                if (writeToTmpData) {
-                    // write to tmpdata if need to use in tests improve fits, histogram etc
-                    String str = String.valueOf(count);
-                    while (str.length() < 3) {
-                        str = "0" + str;
-                    }
-                    String fileNamePostfix = "_clusters_" + str + ".dat";
-                    String fileName = CreateClusterDataTest.indexerFileNamePrefix + fileNamePostfix;
-                    String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
-                    CreateClusterDataTest.writeIndexer(filePath, indexer);
-                }
 
                 log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
@@ -222,14 +185,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 twoPtC.setDebug(true);
                 twoPtC.useFindMethodForDataWithBackgroundPoints();
                 
-                
-                //twoPtC.setAllowRefinement();
-                
-//twoPtC.setUseDownhillSimplexHistogramFitting();
-              
                 twoPtC.logPerformanceMetrics();
-                //twoPtC.setBackground(0.35f, 0.02f);
-                //twoPtC.setBackground(0.5f, 0.02f);
                 twoPtC.calculateBackground();
                 twoPtC.findClusters();
 
@@ -254,6 +210,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     
                 }
                 
+                /*
                 System.out.println("nGroups = " + twoPtC.getNumberOfGroups());
                 for (int j = 0; j < twoPtC.getNumberOfGroups(); j++) {
                     System.out.println("group " + j);
@@ -261,12 +218,24 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     for (int jj = 0; jj < group.getX().length; jj++) {
                         System.out.println("   " + group.getX()[jj] + "," + group.getY()[jj]);
                     }
-                }
+                }*/
                 
                 plotter.addPlot(twoPtC, plotLabel);
                 //plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();
 
+                /*
+                if (i == 1) {
+                    
+                    TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
+                    
+                    String voidDensFileName = "void_densities_001.txt";
+                    
+                    writeVoidDensitiesToTestResources(voidDensFileName, 
+                        stats.voidFinder.getTwoPointDensities(), stats.voidFinder.getTwoPointDensityErrors());
+                }
+                */
+                
                 count++;
             }
         }
@@ -278,9 +247,9 @@ public class FindClusters2Test extends BaseTwoPointTest {
         log.info("SEED=" + seed);
     }
     
-    public void est_Find_Clusters_Stats() throws Exception {
+    public void test_Find_Clusters_Stats_2() throws Exception {
 
-        log.info("test_Find_Clusters_Stats()");
+        log.info("test_Find_Clusters_Stats_2()");
 
         float xmin = 0;
         float xmax = 1000;
@@ -298,7 +267,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
-        int nSwitches = 2;
+        int nSwitches = 1;
 
         int nIterPerBackground = 1;
 
@@ -310,16 +279,14 @@ public class FindClusters2Test extends BaseTwoPointTest {
         
         int nClusters = 3;
         
-        /* creating 3 cases of moderate background density:
-         *    case 0:    90*100 = 9000 background points in a 1000 x 1000 area
-         *    case 1:    a single cluster of 100 points in a 5x5 area of the 1000 x 1000 area
+        /* 
+         *    case 0:    9000 background points in a 1000 x 1000 area
+         *               grid divisions are 10.5 units each so the most frequent expected linear density is 2./10.5 = 0.19
+         *               The peak of the GEV and hence the density is found to be 0.098.<=====?? histogram needs improving!!!
+         *    case 1:    a single cluster of 100 points in a 5x5 area of the 1000 x 1000 area without background points.
+         *               Expect that the most frequent separation is sqrt(100)/5 = 
          *    case 2:  
-         *    
-         * For 9000 points randomly and evenly distributed in a space of 1000 x 1000 units,
-         * there are sqrt(9000)/1000 in one dimension which is 0.095 points/unit space
-         * 
-         * For case 0, the peak of the distribution is found to be 0.098 as expected.  
-         * For case 1, expected is 1.0, and peak of distr is <>1.13?
+         *
          */        
         int numberOfBackgroundPoints = 9000;
         
@@ -368,9 +335,8 @@ public class FindClusters2Test extends BaseTwoPointTest {
             }
             float t0 = MiscMath.findMax(xb);
             float t1 = MiscMath.findMax(yb);
-            double diag = Math.sqrt(2)*(divYSz*divYSz);
-            double dens = 2./diag;
-            System.out.println("grid diag=" + diag + " 2./diag=" + dens);
+            double dens = 2./divYSz;
+            System.out.println("grid division=" + divYSz + " 2./div=" + dens);
             
             float[] xbe = new float[numberOfBackgroundPoints];
             float[] ybe = new float[numberOfBackgroundPoints];
@@ -513,6 +479,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
                 twoPtC.setDebug(true);
                 
+                twoPtC.useFindMethodForDataWithBackgroundPoints();
                 
                 //twoPtC.setAllowRefinement();
                 
@@ -542,46 +509,22 @@ public class FindClusters2Test extends BaseTwoPointTest {
                             log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
                         }
                     }
-                    
-                    if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
-                        if (i == 1 && ii == 0) {
-                            StringBuilder xsb = new StringBuilder();
-                            StringBuilder ysb = new StringBuilder();
-                            StringBuilder xesb = new StringBuilder();
-                            StringBuilder yesb = new StringBuilder();
-        
-                            for (int z = 0; z < histogram.getYHist().length; z++) {
-                                if (z > 0) {
-                                    xsb.append("f, ");
-                                    ysb.append("f, ");
-                                    xesb.append("f, ");
-                                    yesb.append("f, ");
-                                }
-                                xsb.append(histogram.getXHist()[z]);
-                                ysb.append(histogram.getYHist()[z]);
-                                xesb.append(histogram.getXErrors()[z]);
-                                yesb.append(histogram.getYErrors()[z]);
-                            }
-                            System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                            System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-                            System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
-                            System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
-                            int z = 1;
-                        }
-                    }
                 }
                 
                 plotter.addPlot(twoPtC, plotLabel);
                 //plotter.addPlotWithoutHull(twoPtC, plotLabel);
                 plotter.writeFile();
 
-                if (i == 0) {
-                    //assertTrue(twoPtC.getNumberOfGroups() >= nClusters);
-                    if (twoPtC.getNumberOfGroups() > 0) {
-                        log.severe("Note:  for seed=" + seed + " and i=" + i + ", ii=" + ii 
-                            + " solution should not find clusters: " + nClusters);
-                    }
-                }
+                /*
+                if (i == 2) {
+                    
+                    TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
+                    
+                    String voidDensFileName = "void_densities_002.txt";
+                    
+                    writeVoidDensitiesToTestResources(voidDensFileName, 
+                        stats.voidFinder.getTwoPointDensities(), stats.voidFinder.getTwoPointDensityErrors());
+                }*/
 
                 count++;
             }

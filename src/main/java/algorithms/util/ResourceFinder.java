@@ -2,6 +2,7 @@ package algorithms.util;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
@@ -117,6 +118,31 @@ public class ResourceFinder {
             throw new IOException("could not find file at " + filePath);
         }
         return filePath;
+    }
+    
+    public static File[] findFilesInTestResources(String fileNamePrefix) throws IOException {
+        
+        String dirPath = findTestDirectory() + sep + "resources";
+        
+        File resDir = new File(dirPath);
+
+        File[] files = resDir.listFiles(new PrefixFileFilter(fileNamePrefix));
+        
+        return files;
+    }
+    
+    protected static class PrefixFileFilter implements FileFilter {
+        protected final String prefix;
+        public PrefixFileFilter(String prefixForFileName) {
+            this.prefix = prefixForFileName;
+        }
+        @Override
+        public boolean accept(File pathname) {
+            if (pathname.getName().startsWith(prefix)) {
+                return true;
+            }
+            return false;
+        }
     }
 
     public static String findFileInCWD(String serializationFileName) throws IOException {
