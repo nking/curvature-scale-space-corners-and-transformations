@@ -628,6 +628,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 limit = histogram.getXHist()[0];
 
+                log.info("interpreting the density for a sparse background");
+                
             } else {
 
                 //limitStr = "top centroid";
@@ -639,8 +641,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 float xpeak = (areaAndXYTopCentroid[0] > 0) ? areaAndXYTopCentroid[1] : areaAndXYTopCentroid2[1];
                 
-                log.finest("GEV top centroid=" + areaAndXYTopCentroid[1] + " data top centroid=" + areaAndXYTopCentroid2[1] + " using xpeak=" + xpeak);
+                log.info("GEV top centroid=" + areaAndXYTopCentroid[1] + " data top centroid=" + areaAndXYTopCentroid2[1] + " using xpeak=" + xpeak);
 
+                log.info("interpreting the density for a non-sparse background");
+                
                 limit = (xpeak > 0) ? xpeak : bestFit.getXPeak();
             }
 

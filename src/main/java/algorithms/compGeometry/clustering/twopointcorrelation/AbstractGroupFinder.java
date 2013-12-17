@@ -91,7 +91,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
      */
     protected void prune() {
         
-        log.info("number of groups before prune=" + nGroups);
+        log.finest("number of groups before prune=" + nGroups);
         
         /*
          * [------] 0
@@ -110,7 +110,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
                 latest = latest.next;
             }
             
-            log.info("  group " + i + " has " + count + " members before prune (min=" + minimumNumberInCluster + ")");
+            log.finest("  group " + i + " has " + count + " members before prune (min=" + minimumNumberInCluster + ")");
             
             if (count < minimumNumberInCluster) {
                 
@@ -139,7 +139,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
             }
         }
         
-        log.info("number of groups after prune=" + nGroups);
+        log.finest("number of groups after prune=" + nGroups);
     }
 
     protected void checkAndExpandGroupMembershipArray() {

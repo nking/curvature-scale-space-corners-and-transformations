@@ -33,7 +33,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         
         super(threshhold, threshholdFactor);
         
-        thrsh = threshhold * threshholdFactor;
+        thrsh = threshhold * threshholdFactor;        
     }
     
     public void constructLogger() {
@@ -43,6 +43,8 @@ public class DFSGroupFinder extends AbstractGroupFinder {
     @Override
     protected void findClusters(DoubleAxisIndexer indexer) {
              
+        log.info("using a critical density of " + threshhold + " * " + threshholdFactor + " = " + thrsh);
+        
         // traverse the data by ordered x values using indexer.getSortedXIndexes() so can break when exceed critical distance
         
         this.indexer = indexer;

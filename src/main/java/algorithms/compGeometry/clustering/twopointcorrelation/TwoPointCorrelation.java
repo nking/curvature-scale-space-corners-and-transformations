@@ -574,7 +574,9 @@ public class TwoPointCorrelation {
             if ((indexer.getNumberOfPoints() >= 9000) /*tmp.getInterpretForSparseBackground() != null && tmp.getInterpretForSparseBackground().booleanValue()*/) {
 
                 if (tmp.getSampling() != null && tmp.getSampling().ordinal() == VoidSampling.COMPLETE.ordinal()) {
-
+                    
+                    log.info("refining the solution by subtracting the points in groups to redetermine the background density");
+                    
                     tempRefineSolnIndexer = createIndexerMinusGroupPoints();
 
                     if (tempRefineSolnIndexer != null) {
