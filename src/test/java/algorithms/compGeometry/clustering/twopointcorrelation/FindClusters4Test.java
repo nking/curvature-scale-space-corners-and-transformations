@@ -326,7 +326,7 @@ public class FindClusters4Test extends BaseTwoPointTest {
                     twoPtC.useFindMethodForDataWithBackgroundPoints();
                 }
                 
-                twoPtC.setAllowRefinement();
+                //twoPtC.setAllowRefinement();
                 
 //twoPtC.setUseDownhillSimplexHistogramFitting();
               
