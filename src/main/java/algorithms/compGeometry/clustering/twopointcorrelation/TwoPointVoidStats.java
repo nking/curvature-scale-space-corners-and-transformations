@@ -321,13 +321,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             log.fine("nXY=" + indexer.getNXY() + " nD=" + voidFinder.getNumberOfTwoPointDensities());
         }
 
-        /*
-        if (indexer.getNXY() > 999) {
-            statsHistogram = createHistogramWithHigherPeakResolution();
-        } else {*/
-            statsHistogram = createHistogram();
-        //}
-
+        statsHistogram = createHistogram();
+        
         state = State.HISTOGRAM_CREATED;
 
         //int yMaxBin = Histogram.findMax(histogram.getYHist());
@@ -480,36 +475,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
             calculateTwoPointVoidDensities();
         }
 
-        //int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
-
-        //HistogramHolder histogram = Histogram.createHistogramForSkewedData(
-        //    nBins, voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors(), true);
-
-        HistogramHolder histogram = Histogram.calculateSturgesHistogramRemoveZeroTail(
+        HistogramHolder histogram = Histogram.defaultHistogramCreator(
             voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors());
-
-        plotPairSeparations();
-
-        return histogram;
-    }
-
-    protected HistogramHolder createHistogramWithHigherPeakResolution() throws TwoPointVoidStatsException {
-
-        if (state.ordinal() < State.DENSITIES_CALCULATED.ordinal()) {
-            calculateTwoPointVoidDensities();
-        }
-
-        if (voidFinder == null) {
-            return null;
-        }
-
-        int nBins = (indexer.getNumberOfPoints() < 100) ? defaultNBins/2 : defaultNBins;
-
-        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(voidFinder.getTwoPointDensities());
-
-        HistogramHolder histogram = Histogram.createHistogramForSkewedDataForPeakResolution2(
-            nBins, voidFinder.getTwoPointDensities(), voidFinder.getTwoPointDensityErrors(),
-            minMax[0], minMax[1], 0);
 
         plotPairSeparations();
 
