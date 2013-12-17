@@ -237,6 +237,44 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         assertNotNull(stats.getBestFit());
     }
 
+    public void testCalc_4() throws Exception {
+
+        log.info("testCalc_4");
+
+        SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
+        srr.setSeed( System.currentTimeMillis() );
+        long seed = srr.nextLong();
+
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        //sr.setSeed( seed );
+        sr.setSeed(-2384802679227907254l);
+
+        log.info("using SEED=" + seed);
+
+        float xmin = 0;
+        float xmax = 300;
+        float ymin = 0;
+        float ymax = 300;
+
+        createPoints((3), new int[]{3},
+            RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
+            xmin, xmax, ymin, ymax, sr, false);
+
+        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        indexer.sortAndIndexXThenY(generator.x, generator.y,
+            generator.xErrors, generator.yErrors, generator.x.length);
+
+        TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
+        stats.setDebug(debug);
+        //stats.setStandardDeviationFactor(2.5f);
+        
+        stats.calc();
+
+        assertTrue(stats.voidFinder.getTwoPointDensities().length == 10);
+        
+        assertNotNull(stats.getBestFit());
+    }
+
     public void checkRuntimes() throws Exception {
 
         int[] nn = new int[]{10, 1000, 1000000};

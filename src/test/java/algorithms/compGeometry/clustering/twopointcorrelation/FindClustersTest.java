@@ -126,7 +126,7 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                             // label needs:  x10, peak,  mean/peak, median/mean and x80/median
                             plotLabel = String.format(
-                                "  (%d %d) best k=%.4f sigma=%.4f mu=%.4f chiSqSum=%.6f chst=%.1f",
+                                "(%d %d) k=%.4f s=%.4f m=%.4f chSq=%.6f chst=%.1f",
                                 i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), bestFit.getChiSqStatistic()
                             );
                             if (debug) {

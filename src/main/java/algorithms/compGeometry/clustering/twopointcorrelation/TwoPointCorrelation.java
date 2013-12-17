@@ -346,7 +346,7 @@ public class TwoPointCorrelation {
         if ((bMethod != null) && (bMethod.ordinal() == BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {
             return;
         }
-
+        
         TwoPointVoidStats voidStats = null;
 
         if (refineSolution.booleanValue()) {
@@ -594,8 +594,6 @@ public class TwoPointCorrelation {
                         p0.writeFile3();
                         p0.addPlot(tempRefineSolnIndexer.getX(), tempRefineSolnIndexer.getY(),
                             tempRefineSolnIndexer.getXErrors(), tempRefineSolnIndexer.getYErrors(), "refining...");
-                        System.out.println(p0.writeFile3());
-                        
 
                         findClusters();
 
