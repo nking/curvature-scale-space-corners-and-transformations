@@ -147,12 +147,23 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
             float xt = indexer.getX()[idx];
   
             float yt = y[idx]; 
-            
-            // if there's a point in between them, this isn't a void.  if equal, it passes.
-            if ((xt > x0) && (xt < x1) && (yt > y0) && (yt < y1)) {
-                doProcess = false;
-                break;
+
+            // quickly let points outside of boundaries pass
+            if (xt < x0) {
+                continue;
+            } else if (xt > x1) {
+                continue;
+            } else if (yt < y0) {
+                continue;
+            } else if (yt > y1) {
+                continue;
             }
+
+            // else we're in bounds of a rectangle whose corners are the 2 points x0,y0  x1,y1
+            doProcess = false;
+
+            break;
+
         }
         
         if (doProcess) {
