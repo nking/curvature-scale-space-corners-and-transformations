@@ -74,7 +74,6 @@
         <echo message="debugTests:                 run tests and use jdwp"/>
         <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
         <echo message="debugLargeTest:             debug test with -Dtest= fqn of test and jdwp"/>
-    	<echo message="runCoverage:                run code coverage tools"/>
         <echo message="javadoc:                    create javadocs"/>
         <echo message="runEmma                     run code coverage for non-third party classes"/>
         <echo message="runFindbugs                 static analysis for non-third party classes"/>
