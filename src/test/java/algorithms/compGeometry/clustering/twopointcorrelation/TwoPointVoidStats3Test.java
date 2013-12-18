@@ -33,29 +33,29 @@ public class TwoPointVoidStats3Test extends BaseTwoPointTest {
         float ymin = 0;
         float ymax = 300;
 
-        System.out.println("*1*");
+        log.fine("*1*");
         
         createPoints((30+40+60), new int[]{30, 40, 60},
             RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
             xmin, xmax, ymin, ymax, sr, false);
 
-        System.out.println("*2*");
+        log.fine("*2*");
         
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
         indexer.sortAndIndexXThenY(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
-        System.out.println("*3*");
+        log.fine("*3*");
         
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         stats.setDebug(false);
         //stats.setStandardDeviationFactor(2.5f);
         
-        System.out.println("*4*");
+        log.fine("*4*");
         
         stats.calc();
 
-        System.out.println("*5*");
+        log.fine("*5*");
         
         assertNotNull(stats.getBestFit());
     }

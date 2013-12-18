@@ -11,6 +11,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.logging.Logger;
+
 import junit.framework.TestCase;
 
 /**
@@ -24,6 +26,8 @@ public class BaseTwoPointTest extends TestCase {
 
     protected RandomClusterAndBackgroundGenerator generator = null;
 
+    protected static Logger log0 = Logger.getLogger(BaseTwoPointTest.class.getName());
+    
     @Override
     protected void setUp() throws Exception {
 
@@ -171,10 +175,10 @@ public class BaseTwoPointTest extends TestCase {
             xesb.append(xpe[z]);
             yesb.append(ype[z]);
         }
-        System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-        System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-        System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
-        System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
+        log0.fine("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+        log0.fine("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+        log0.fine("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+        log0.fine("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
     }
 
     static void writeIndexerToTmpData(DoubleAxisIndexer indexer, int count) throws IOException {

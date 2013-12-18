@@ -88,7 +88,7 @@ public class GEVChiSquareMinimization2Test extends TestCase {
                 histogram.getXErrors(), histogram.getYErrors(), xf, yf, String.valueOf(i));
             plotter.writeFile();
 
-            System.out.println(yfit.toString());
+            log.fine(yfit.toString());
 
             log.info("see plot for " + i);
 /*

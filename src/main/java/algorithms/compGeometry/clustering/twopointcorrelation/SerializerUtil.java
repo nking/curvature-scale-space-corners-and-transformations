@@ -141,7 +141,7 @@ public class SerializerUtil {
                     y[i] = ois.readFloat();
                     ex[i] = ois.readFloat();
                     ey[i] = ois.readFloat();
-                    //System.out.println("**i=" + i + " x=" + x[i] + " y=" + y[i] + " errx=" + ex[i] + " erry=" + ey[i]);
+                    //log.fine("**i=" + i + " x=" + x[i] + " y=" + y[i] + " errx=" + ex[i] + " erry=" + ey[i]);
                 }
 
                 indexer.sortAndIndexXThenY(x, y, ex, ey, nXY);
@@ -151,7 +151,7 @@ public class SerializerUtil {
                 for (int i = 0; i < nXY; i++) {
                     x[i] = ois.readFloat();
                     y[i] = ois.readFloat();
-                    //System.out.println("**i=" + i + " x=" + x[i] + " y=" + y[i]);
+                    //log.info("**i=" + i + " x=" + x[i] + " y=" + y[i]);
                 }
 
                 indexer.sortAndIndexXThenY(x, y, nXY);

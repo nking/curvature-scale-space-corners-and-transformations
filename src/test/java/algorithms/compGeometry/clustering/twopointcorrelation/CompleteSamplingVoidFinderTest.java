@@ -100,7 +100,7 @@ public class CompleteSamplingVoidFinderTest extends BaseTwoPointTest {
         
         assertNotNull(linearDensities);
         
-        System.out.println("n densities=" + linearDensities.length);
+        log.info("n densities=" + linearDensities.length);
         
         assertTrue(linearDensities.length == 20);
         

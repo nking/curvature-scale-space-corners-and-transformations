@@ -181,7 +181,7 @@ public class DistributionsTest extends BaseTwoPointTest {
                     }
                     
                     String filePath = plotter2.writeFile2();
-                    System.out.println("filePath=" + filePath);
+                    log.fine("filePath=" + filePath);
                    
                     if (false) {
                         if (i == 2 && ii == 0) {
@@ -196,8 +196,8 @@ public class DistributionsTest extends BaseTwoPointTest {
                                 xsb.append(indexer.getX()[z]);
                                 ysb.append(indexer.getY()[z]);
                             }
-                            System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                            System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+                            log.fine("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+                            log.fine("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
                             int z = 1;
                         }
                     }
@@ -207,7 +207,7 @@ public class DistributionsTest extends BaseTwoPointTest {
                 
                 plotter3.addPlot(twoPtC, plotLabel);
                 String filePath = plotter3.writeFile3();
-                System.out.println("filePath=" + filePath);
+                log.fine("filePath=" + filePath);
                 
                 if (i == 2) {
                     int n = twoPtC.getNumberOfGroups();

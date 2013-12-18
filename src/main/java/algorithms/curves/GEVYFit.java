@@ -210,7 +210,7 @@ public class GEVYFit implements IYFit {
         float total2 = 0;
         for (int i = 0; i < yfit.length; i++) {
             //String str = String.format("[%d] %.7e, %.1f => %.1f %.3f", i, histogram.xHist[i], ygev[i], total2, (total2/total));
-            //System.out.println(str);
+            //log.info(str);
             if (total2 < limit05) {
                 x05PercentIndex = i;
             }

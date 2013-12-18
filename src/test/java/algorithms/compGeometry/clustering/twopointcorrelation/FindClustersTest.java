@@ -17,9 +17,9 @@ public class FindClustersTest extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void test_Find_Clusters_Stats() throws Exception {
+    public void testFindClustersStats() throws Exception {
 
-        log.info("test_Find_Clusters_Stats()");
+        log.info("testFindClustersStats()");
 
         float xmin = 0;
         float xmax = 300;
@@ -150,10 +150,10 @@ public class FindClustersTest extends BaseTwoPointTest {
                                     xesb.append(histogram.getXErrors()[z]);
                                     yesb.append(histogram.getYErrors()[z]);
                                 }
-                                System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                                System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-                                System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
-                                System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
+                                log.fine("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+                                log.fine("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+                                log.fine("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+                                log.fine("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
                                 int z = 1;
                             }
                         }
@@ -173,8 +173,8 @@ public class FindClustersTest extends BaseTwoPointTest {
                             xsb.append(xg[j]);
                             ysb.append(yg[j]);
                         }
-                        System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                        System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+                        log.fine("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+                        log.fine("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
                     }
                     */
 

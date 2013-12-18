@@ -706,7 +706,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         try {
             plotter.addPlot(x, y, xe, ye, x, yGEV, label);
             String filePath = plotter.writeFile2();
-            System.out.println("*** filePath=" + filePath);
+            log.finest("*** filePath=" + filePath);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());
         }

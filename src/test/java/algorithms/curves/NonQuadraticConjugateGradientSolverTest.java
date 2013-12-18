@@ -2,6 +2,7 @@ package algorithms.curves;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 import algorithms.util.Errors;
 import algorithms.util.PolygonAndPointPlotter;
@@ -9,6 +10,8 @@ import junit.framework.TestCase;
 
 public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+    
     public void estFitCurve() throws Exception {
         
         // while revising code, if not on a development branch, don't assert results
@@ -63,7 +66,7 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
     
     public void estFitRandomCurves() throws Exception {
         
-        System.out.println("testFitRandomCurves");
+        log.info("testFitRandomCurves");
         
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
         
@@ -77,7 +80,7 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         seed = 1386620575944l;
         sr.setSeed( seed );
         
-        System.out.println("SEED=" + seed);
+        log.info("SEED=" + seed);
         
         float[] kRange = new float[]{0.001f, 2.0f};
         float[] sRange = new float[]{0.025f, 1.0f};
@@ -158,17 +161,17 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
                             xesb.append(xe[z]);
                             yesb.append(ye[z]);
                         }
-                        System.out.println("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                        System.out.println("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-                        System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
-                        System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
+                        log.info("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
+                        log.info("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
+                        log.info("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+                        log.info("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
                     }
                 }
             }
             
             nX >>= 1;
         }
-        System.out.println(" plot is at path=" + path);
+        log.fine(" plot is at path=" + path);
     }
     
     public void testAFit() throws Exception {

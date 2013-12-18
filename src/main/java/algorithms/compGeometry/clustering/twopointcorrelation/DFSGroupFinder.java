@@ -267,8 +267,8 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         }
         
         /*
-        System.out.println(groupId + ") processPair  (" + tmpux + "," + tmpuy + ")");
-        System.out.println(groupId + ") processPair  (" + tmpvx + "," + tmpvy + ")");
+        log.fine(groupId + ") processPair  (" + tmpux + "," + tmpuy + ")");
+        log.fine(groupId + ") processPair  (" + tmpvx + "," + tmpvy + ")");
         */
     }
  

@@ -309,7 +309,7 @@ public class RandomClusterAndBackgroundGenerator {
             
             double n = fraction * numberOfPoints/f;
             
-            System.out.println("n_" + i + " = " + n + " r_i=" + ri + " f_i=" + f
+            log.finest("n_" + i + " = " + n + " r_i=" + ri + " f_i=" + f
                 + " (maxRadius=" + maxRadius 
                 + " rOuter=" + rOuter + " rInner=" + rInner + ")");
             

@@ -19,9 +19,9 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void testCalc_0() throws Exception {
+    public void testCalc0() throws Exception {
 
-        log.info("testCalc_0()");
+        log.info("testCalc0()");
 
         /* Create a simple rectangle of values with 4 minima areas to find
          *
@@ -201,9 +201,9 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
     }
 
-    public void testCalc_3() throws Exception {
+    public void testCalc3() throws Exception {
 
-        log.info("testCalc_3");
+        log.info("testCalc3");
 
         SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
         srr.setSeed( System.currentTimeMillis() );
@@ -237,9 +237,9 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         assertNotNull(stats.getBestFit());
     }
 
-    public void testCalc_4() throws Exception {
+    public void testCalc4() throws Exception {
 
-        log.info("testCalc_4");
+        log.info("testCalc4");
 
         SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
         srr.setSeed( System.currentTimeMillis() );

@@ -2,6 +2,7 @@ package algorithms.compGeometry.convexHull;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.logging.Logger;
 
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.util.PolygonAndPointPlotter;
@@ -11,6 +12,8 @@ import junit.framework.TestCase;
 
 public class GrahamScanTest extends TestCase {
 
+    protected static Logger log = Logger.getLogger(GrahamScanTest.class.getName());
+    
     /**
      * @see TestCase#setUp()
      */
@@ -64,7 +67,7 @@ public class GrahamScanTest extends TestCase {
 
     }
 
-    public void estCalculateConvexHull6() throws Exception {
+    public void testCalculateConvexHull6() throws Exception {
 
         int ntries = 1;
 
@@ -93,7 +96,7 @@ public class GrahamScanTest extends TestCase {
 
     }
 
-    public void estCalculateConvexHull7() throws Exception {
+    public void testCalculateConvexHull7() throws Exception {
 
         float[] x = new float[]{2503.197f, 2364.4219f, 2562.4644f, 2562.4644f, 2335.7095f};
         float[] y = new float[]{638.1283f,  783.9287f,  799.73816f, 799.73816f, 1011.5769f};
@@ -235,7 +238,7 @@ public class GrahamScanTest extends TestCase {
      * @return static Test
      */
     public static Test suite() {
-        System.out.println("Creating a TestSuite for GrahamScan");
+        log.fine("Creating a TestSuite for GrahamScan");
         return new TestSuite(GrahamScanTest.class);
     }
 

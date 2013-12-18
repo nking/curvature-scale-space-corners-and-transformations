@@ -130,7 +130,7 @@ public class LinesAndAngles {
      * @return
      */
     public static double calculatePolarSineTheta(double x1, double y1, double x2, double y2) {
-        //System.out.println("(" + x1 + "," + y1 + ")," + "(" + x2 + "," + y2 + ")");
+        // log.info("(" + x1 + "," + y1 + ")," + "(" + x2 + "," + y2 + ")");
         // determine quadrant of points
 
         if (x2 == x1) {
@@ -178,7 +178,7 @@ public class LinesAndAngles {
     }
 
     public static double calculatePolarSineTheta(float x1, float y1, float x2, float y2) {
-        //System.out.println("(" + x1 + "," + y1 + ")," + "(" + x2 + "," + y2 + ")");
+        // log.info("(" + x1 + "," + y1 + ")," + "(" + x2 + "," + y2 + ")");
         // determine quadrant of points
         if (x2 == x1) {
             if (y2 == y1) {

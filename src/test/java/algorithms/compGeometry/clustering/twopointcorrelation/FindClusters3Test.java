@@ -32,9 +32,9 @@ public class FindClusters3Test extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void test_Find_Clusters() throws Exception {
+    public void testFindClusters() throws Exception {
 
-        log.info("test_Find_Clusters()");
+        log.info("testFindClusters()");
 
         DoubleAxisIndexer indexer = CreateClusterDataTest.getWikipediaDBScanExampleData();
         // dug these points out of http://upload.wikimedia.org/wikipedia/commons/0/05/DBSCAN-density-data.svg

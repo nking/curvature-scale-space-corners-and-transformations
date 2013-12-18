@@ -18,9 +18,9 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void test_Find_Clusters_Stats() throws Exception {
+    public void testFindClustersStats() throws Exception {
 
-        log.info("test_Find_Clusters_Stats()");
+        log.info("testFindClustersStats()");
 
         /* case 0:
                sampling the grid, there are 12 void separations of size 1

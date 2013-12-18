@@ -19,11 +19,11 @@ public class FindClusters4Test extends BaseTwoPointTest {
 
     boolean writeToTmpData = false;
 
-    protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+    
+    public void testFindClustersStats() throws Exception {
 
-    public void test_Find_Clusters_Stats() throws Exception {
-
-        log.info("test_Find_Clusters_Stats()");
+        log.info("testFindClustersStats()");
         
         /* 
          *    case 0:    9000 background points in a 1000 x 1000 area
@@ -368,12 +368,12 @@ public class FindClusters4Test extends BaseTwoPointTest {
                 if (i == 2) {  
                     assertTrue(twoPtC.getNumberOfGroups() == 1);
                     /*
-                    System.out.println("nGroups = " + twoPtC.getNumberOfGroups());
+                    log.info("nGroups = " + twoPtC.getNumberOfGroups());
                     for (int j = 0; j < twoPtC.getNumberOfGroups(); j++) {
-                        System.out.println("group " + j);
+                        log.info("group " + j);
                         ArrayPair group = twoPtC.getGroup(j);
                         for (int jj = 0; jj < group.getX().length; jj++) {
-                            System.out.println("   " + group.getX()[jj] + "," + group.getY()[jj]);
+                            log.info("   " + group.getX()[jj] + "," + group.getY()[jj]);
                         }
                     }*/
                     int n0 = twoPtC.getGroup(0).getX().length;
@@ -471,11 +471,10 @@ public class FindClusters4Test extends BaseTwoPointTest {
                                 xesb.append(histogram.getXErrors()[z]);
                                 yesb.append(histogram.getYErrors()[z]);
                             }
-                            System.out.println("float[] x = new float[]{" + xsb.append("f").toString() + "};");
-                            System.out.println("float[] y = new float[]{" + ysb.append("f").toString() + "};");
-                            System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
-                            System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
-                            int z = 1;
+                            log.fine("float[] x = new float[]{" + xsb.append("f").toString() + "};");
+                            log.fine("float[] y = new float[]{" + ysb.append("f").toString() + "};");
+                            log.fine("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+                            log.fine("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
                         }
                     }
                 }

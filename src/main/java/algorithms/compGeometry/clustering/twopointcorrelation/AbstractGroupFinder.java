@@ -278,6 +278,9 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         return a;
     }
     
+    /**
+     * print the groups membership to standard out
+     */
     public void printMembership(DoubleAxisIndexer indexer) {
         
         System.out.println(nGroups + " Groups:");

@@ -13,9 +13,9 @@ public class FittingStatsTest extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void test_Fit_Stats() throws Exception {
+    public void testFitStats() throws Exception {
 
-        log.info("test_Fit_Stats()");
+        log.info("testFitStats()");
 
         float xmin = 0;
         float xmax = 300;

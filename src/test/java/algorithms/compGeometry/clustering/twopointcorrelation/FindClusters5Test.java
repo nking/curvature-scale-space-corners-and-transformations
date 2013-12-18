@@ -18,9 +18,9 @@ public class FindClusters5Test extends BaseTwoPointTest {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public void test_Find_Clusters_Stats() throws Exception {
+    public void testFindClustersStats() throws Exception {
 
-        log.info("test_Find_Clusters_Stats()");
+        log.info("testFindClustersStats()");
         
         /* Goal of this test is to examine the substructure created by increasing numbers of randomly 
            placed points.
