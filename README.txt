@@ -1,40 +1,144 @@
 two-point-correlation 
 ================================================================
-finds clusters in data by looking for regions 
-whose density is 2.5 times the background density (that is 2.5 sigma 
-above 'noise').
 
-Given x, y, xerror, and yerror data points, the code calculates 
-the two-point density function of rectangular voids, fits that 
-with a Generalized Extreme Value (GEV) distribution to determine 
-the background density, and uses that as a threshold for finding 
-clusters. The results are available as data and visualized through 
-generated html plots.
+Find clusters in data in an unsupervised manner by calculating 
+the two-point density function of rectangular voids, by fitting 
+a GEV (generalized extreme value) curve to the density histogram 
+to estimate the background, and then using that times a 
+threshold factor (default is 2.5) to find groups of data points 
+closer than the critical density.  The results are available as 
+data and visualized through generated html plots.
 
-The algorithm assumes that the data contains background points 
-and clustered points whose 2 distributions are different from one 
-another, but roughly homogeneous within their own. It assumes that 
-the distributions do not need to be fit well for the rough range of 
-the background density to be learned.
+More about the density distribution:
 
-More specifically:
+The location of the 'background' points in two dimensional 
+space are likely Poisson, that is their locations in a fixed 
+interval of space are independent of one another and occur 
+randomly.
+ 
+The 2-point void densities are formed into a histogram that 
+is well fit by Generalized Extreme Value (GEV) curves. 
+Extreme value distributions are used to describe the maximum 
+or minimum of values drawn from a sample distribution that 
+is essentially exponential.
 
-The location of the 'background' points in two dimensional space are 
-likely Poisson, that is their locations in a fixed interval of space 
-are independent of one another and occurred randomly. The areas between 
-the smallest voids in such a distribution are well fit by 
-Generalized Extreme Value (GEV) distributions. Extreme value 
-distributions are used to describe the maximum or minimum of values 
-drawn from a sample distribution that is essentially exponential.
+There are 2 methods for determining clusters in this code:
+  
+  (1) For datasets in which there are background points:
+  The peak of the GEV fit should represent the background density.  
+  The clusters are then defined statistically as being 2 to 3 
+  times 'above the background', that is having separations 2 to 
+  3 times more dense than the background density. The code by 
+  default uses a factor of 2.5, but methods are supplied to 
+  allow the user to set the background to 2 or 3 instead, and 
+  there's also a method to set the background manually.  The 
+  later manual setting is useful for a case where perhaps one 
+  determined the background density in one dataset and need to 
+  apply that to a 2nd dataset which has the same background, 
+  but is 'saturated' with foreground points.  
+  
+  (2) For datasets in which there are no background points:
+  Datasets which are only points which should be in groups, and 
+  essentially have no background points are referred to as 
+  sparse background datasets.  For these datasets, the 
+  background density is zero, so we define the level above the 
+  background by the edges of the densities of the group.  This 
+  edge density is already  much larger than the background so it 
+  is the threshold density for membership already.  This 
+  threshold density is the first x bin in a well formed 
+  histogram of 2-point densities.
 
-The fits improve as N, the number of data points, increases.
+The code automatically determines which of method (1) and (2) to 
+use.
+  
+  If the user has better knowledge of which should be applied, 
+  can set that with:
+     useFindMethodForDataWithoutBackgroundPoints() 
+  or useFindMethodForDataWithBackgroundPoints()
 
-The GEV curve contains 3 independent fitting parameters and the curve 
-is an exponential combined with a polynomial, so it's resulting fitted 
-parameters are not unique, but the curve is useful for characterizing 
-the background point distribution and then integrating under the curve. 
-The points within a cluster are distributed radially, and those are not 
-modeled separately.
+
+The GEV curve contains 3 independent fitting parameters and the 
+curve is an exponential combined with a polynomial, so it's 
+resulting fitted parameters are not unique, but the curve is 
+useful for characterizing the background point distribution by 
+then integrating under the curve.
+ 
+The points within a cluster are may have interesting 
+distributions that can be better modeled after they've been 
+found by these means.
+
+Usage as an API:
+{{{
+To use the code with default settings:
+  
+       TwoPointCorrelation clusterFinder = new 
+           TwoPointCorrelation(x, y, xErrors, yErrors, 
+           totalNumberOfPoints);
+  
+       clusterFinder.calculateBackground();
+       
+       clusterFinder.findClusters();
+  
+  The results are available as group points or as convex hulls 
+  surrounding the groups:
+      int n = clusterFinder.getNumberOfGroups()
+      
+      int groupNumber = 0;
+
+      To get the hull for groupId 0:
+          ArrayPair hull0 = 
+              clusterFinder.getGroupHull(groupNumber);
+
+      To get the points in groupId 0:
+          ArrayPair group0 = clusterFinder.getGroup(groupNumber)
+      
+      To plot the results:
+          String plotFilePath = clusterFinder.plotClusters();
+
+ If debugging is turned on, plots are generated and those file 
+ paths are printed to standard out, and statements are printed 
+ to standard out.
+ 
+  To set the background density manually:
+      TwoPointCorrelation clusterFinder = 
+          new TwoPointCorrelation(x, y, xErrors, yErrors, 
+          totalNumberOfPoints);
+      clusterFinder.setBackground(0.03f, 0.003f);
+      clusterFinder.findClusters();
+      String plotFilePath = clusterFinder.plotClusters();
+}}}
+
+
+If the centers of the cluster hulls are needed for something 
+else, seeds for a Voronoi diagram, for instance, one can use:
+{{{
+    ArrayPair seeds = clusterFinder.getHullCentroids();
+}}}
+
+The scatter plots and histograms below use d3.js (http://d3js.org d3)
+
+Note that improvements in the histogram code is *in progress*.  
+Currently datasets with a small number of points may have less 
+than ideal solutions.
+
+Note also that the code has the ability to refine a solution:  
+that is to determine groups and then subtract them from the data 
+and then re-determine the background density from the remaining 
+points.  The ability is not enabled by default, but can be with 
+the method setAllowRefinement().
+More information is in docs/clustering_and_refinement.pdf
+
+-------
+
+The citation for use of this code in a publication is:
+    `http://code.google.com/p/two-point-correlation/`, 
+    Nichole King,  "Unsupervised Clustering Based Upon Voids in 
+    Two-Point Correlation". March 15, 2013. <date accessed>
+
+
+The license for using the source code is the MIT open source
+license.  See LICENSE.txt
+
 
 -----
 Build
@@ -50,32 +154,6 @@ To build:
 
 To run the tests:
   ant runTests
-
------------
-Use the API
------------
-    TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, n);
-    clusterFinder.calculateBackground();
-    clusterFinder.findClusters();
-    clusterFinder.calculateHullsOfClusters();
-    String plotFilePath = clusterFinder.plotClusters();
-
-This adjusts the the background calculation to be a smaller value to 
-compensate for the sparsity of background points that were needed in 
-the two point void calculation.
-
-To set the background value yourself:
-    TwoPointCorrelation clusterFinder = new TwoPointCorrelation(x, y, xErrors, yErrors, n);
-    clusterFinder.setBackground(0.03f, 0.003f);
-    clusterFinder.findClusters();
-    clusterFinder.calculateHullsOfClusters();
-    String plotFilePath = clusterFinder.plotClusters();
-    
-
-If the centers of the cluster hulls are needed for something else, 
-seeds for a Voronoi diagram, for instance, one can use:
-    float[] xSeeds = clusterFinder.getXHullCentroids();
-    float[] ySeeds = clusterFinder.getYHullCentroids();
 
 -------------------------
 Use from the Command Line
@@ -102,33 +180,16 @@ on a computer with characteristics:
 JVM characteristics:
     J2SE 1.6, 64-bit HotSpot server w/ initial heap size 512 MB and max heap size 1024 MB.
 
-Measurements are from the April 27, 2013 code version tagged as v20130427.
+Measurements are from the April 27, 2013 code version tagged as v20131213.
 
-Note that the runtime (RT) dependency of voidFits on M is not well constrained due to the iterations needed
-to construct a histogram and perform a fit.
-
-    N   |  voidDens  big-oh              mem  | voidFits    M       mem   | Find Clusters  | Sys load |  Total RT
- points |  RT[sec]                       [kB] |  RT[sec]  density   [kB]  |    RT[sec]     | at start |    [sec]
-        |                                     |           points          |                |          |
+    N    |  voidDens  RT complexity      mem  | Find Clusters   | Sys load |  Total RT
+ points  |  RT[sec]                      [MB] |     RT[sec]     | at start |    [sec]
+         |                                    |                 |          |
 --------------------------------------------------------------------------------------------------------------------------
-     99 |      22    O(N^4)              31.2 |   23        589     38.6  |     0          |   1.09   |     60
-        |                                     |                           |                |          |
+      99 |      0    O(N^4)              0.2  |     0           |   1.4    |      0
 
-     99 |      25    O(N^4)              26.1 |   25        494     37.1  |     0          |   1.09   |     60
-        |                                     |                           |                |          |
+    1089 |      0  O((1.5*N/2)^1.8)        2  |     0           |   1.4    |      1
 
-   1089 |       0  O((1.5*N/2)^1.8)      72.7 |    1       1380     87.5  |     0          |   1.32   |      1
-        |                                     |                           |                |          |
+   13332 |      8  O(N^2.2)                1  |     1           |   1.4    |     12
 
-   1089 |       0  O((1.5*N/2)^1.8)      72.2 |    1       1351     87.0  |     0          |   1.14   |      1
-        |                                     |                           |                |          |
-
-  12625 |      39  O(N^2.2)             909.3 |   40      17442    909.3  |     5          |   1.14   |     84
-        |                                     |                           |                |          |
-
-  13635 |      46  O(N^2.2)            1008.7 |   47      19317    826.1  |     6          |   1.32   |    103
-        |                                     |                           |                |          |
-
-  Extrapolating to N=100,000 points, expect roughly RT ~ 110 * 100 sec ~ 183 min ~ 3hr and will 
-  need 10 MB of memory using similar architecture, system load, and jvm properties.
-  (Note, the N relationships are *very* roughly approximated and will be improved at a later date.)
+  105100 |     10  O(N^2.2)              0.6  |    204          |   1.8    |    222
