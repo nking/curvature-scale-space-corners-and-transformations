@@ -6,9 +6,6 @@ import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
-
 /**
  * @author nichole
  */
@@ -53,8 +50,6 @@ public class FindClustersTest extends BaseTwoPointTest {
         int nSwitches = 3;
 
         int nIterPerBackground = 5;
-
-        int m = nIterPerBackground*nSwitches;
 
         DoubleAxisIndexer indexer = null;
 
@@ -118,7 +113,9 @@ public class FindClustersTest extends BaseTwoPointTest {
                     String plotLabel = "";
 
                     TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
-                    if (stats != null) {
+                    
+                    if (twoPtC.backgroundStats != null && twoPtC.backgroundStats instanceof TwoPointVoidStats) {
+                        
                         HistogramHolder histogram = stats.statsHistogram;
 
                         GEVYFit bestFit = stats.bestFit;

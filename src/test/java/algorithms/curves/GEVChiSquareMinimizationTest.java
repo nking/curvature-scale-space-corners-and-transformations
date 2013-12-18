@@ -66,11 +66,10 @@ public class GEVChiSquareMinimizationTest extends TestCase {
         yfits[2].setYFit(y);
 
         chiSqMin = new GEVChiSquareMinimization(x, y, dx, dx);
-        chiSqMin.sortFromMinToMax(yfits, 0, 2);
+        
+        chiSqMin.setDebug(true);
+        
 
-        assertTrue(yfits[0].getChiSqSum() == 1.0f);
-        assertTrue(yfits[1].getChiSqSum() == 5.0f);
-        assertTrue(yfits[2].getChiSqSum() == 10.0f);
     }
 
     public void testGetSectionBoundariesFromGrid() throws Exception {

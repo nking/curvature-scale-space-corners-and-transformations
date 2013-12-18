@@ -398,7 +398,7 @@ public class RandomClusterAndBackgroundGenerator {
             y0[xyStartOffset + i] = sr.nextFloat()*yHeight;
         }
     }
-
+    
     protected void createPoints(int numberOfBackgroundPoints, int[] numberOfClusterPoints,
         CLUSTER_SEPARATION clusterSeparation,
         float xmin, float xmax, float ymin, float ymax, SecureRandom sr, boolean useRandomForErrors) {

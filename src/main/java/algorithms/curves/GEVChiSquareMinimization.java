@@ -123,7 +123,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                 bestFit.getChiSqStatistic());
 
-            log.info(str);
+            log.fine(str);
         }
 
         return bestFit;
@@ -186,7 +186,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
-            log.info(str);
+            log.fine(str);
         }
 
         float yErrSquareSum = calcYErrSquareSum();
@@ -201,7 +201,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                 bestFit.getChiSqStatistic());
 
-            log.info(str);
+            log.fine(str);
         }
 
         return bestFit;
@@ -241,7 +241,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
-            log.info(str);
+            log.fine(str);
         }
 
         float yErrSquareSum = calcYErrSquareSum();
@@ -256,7 +256,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                 bestFit.getChiSqStatistic());
 
-            log.info(str);
+            log.fine(str);
         }
 
         if ((bestFit == null) || (bestFit.getChiSqStatistic() > chiSqStatisticLimit)) {
@@ -271,7 +271,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                log.info(str);
+                log.fine(str);
             }
 
             if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -291,7 +291,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                    log.info(str);
+                    log.fine(str);
                 }
 
                 if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -312,7 +312,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                    log.info(str);
+                    log.fine(str);
                 }
 
                 if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -335,7 +335,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                    log.info(str);
+                    log.fine(str);
                 }
 
                 if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -359,7 +359,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                     yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum,
                     yfit.getChiSqStatistic());
 
-                    log.info(str);
+                    log.fine(str);
                 }
 
                 if ((bestFit == null) || ((yfit != null) && (yfit.getChiSqStatistic() < bestFit.getChiSqStatistic()))) {
@@ -431,7 +431,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
                     plotFit(yfit, label);
 
-                    log.info(label);
+                    log.fine(label);
                 }
 
                 if ( (bestFit == null) || (yfit.getChiSqSum() < bestFit.getChiSqSum()) ) {
@@ -540,7 +540,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
         if (debug) {
             String str = String.format("kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f mu=%.7f", kMin, kMax, sigmaMin, sigmaMax, mu);
-            log.info(str);
+            log.fine(str);
         }
 
         float yErrSquareSum = calcYErrSquareSum();
@@ -556,7 +556,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
         if (debug) {
             String str2 = String.format("reduced=> kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f",
                 kMin, kMax, sigmaMin, sigmaMax);
-            log.info(str2);
+            log.fine(str2);
         }
 
         GEVYFit bestFit = fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu, yErrSquareSum, weightMethod, yNorm);
@@ -565,7 +565,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
             String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
                 bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(),
                 yErrSquareSum, bestFit.getChiSqStatistic());
-            log.info(str);
+            log.fine(str);
         }
 
         boolean statisticIsHigh = (bestFit.getChiSqStatistic() > 10);
@@ -589,8 +589,8 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
             if (debug) {
                 String str = String.format("reduced=> kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f mu=%.7f",
                     kMin, kMax, sigmaMin, sigmaMax, mu);
-                log.info(str);
-                log.info("switch to fine grid of ranges + downhill simplex for each");
+                log.fine(str);
+                log.fine("switch to fine grid of ranges + downhill simplex for each");
             }
 
             int kPower = MiscMath.findPowerOf10(bestFit.getK());
@@ -605,7 +605,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                 if (debug) {
                     String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
                         yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum, yfit.getChiSqStatistic());
-                    log.info(str);
+                    log.fine(str);
                 }
 
                 if (yfit.getChiSqSum() < bestFit.getChiSqSum()) {
@@ -616,11 +616,11 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                         String str = String.format("fit: k=%.7f s=%.7f m=%.7f chisq=%.1f yerrsq=%.1f chistatistic=%.1f",
                             bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), yErrSquareSum,
                             bestFit.getChiSqStatistic());
-                        log.info(str);
+                        log.fine(str);
                     }
 
                     if (bestFit.getChiSqStatistic() > 2) {
-                        log.info("statistic is too high!");
+                        log.fine("statistic is too high!");
                     } else {
                         break;
                     }
@@ -638,7 +638,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
             plotFit(bestFit, label);
 
-            log.info("fitted gev has chisqsum=" + bestFit.getChiSqSum() + " while curve yerrsqsum=" + yErrSquareSum);
+            log.fine("fitted gev has chisqsum=" + bestFit.getChiSqSum() + " while curve yerrsqsum=" + yErrSquareSum);
         }
 
         return bestFit;
@@ -668,7 +668,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
         if (debug) {
             String str = String.format("*kMin=%.7f kMax=%.7f sigmaMin=%.7f sigmaMax=%.7f", kMin, kMax, sigmaMin, sigmaMax);
-            log.info(str);
+            log.fine(str);
         }
 
         float yErrSquareSum = calcYErrSquareSum();
@@ -709,7 +709,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                 if (debug && (yfit != null)) {
                     String label = String.format("k=%.1e s=%.1e m=%.1e chisq=%.1f yerrsq=%.1f",
                         yfit.getK(), yfit.getSigma(), yfit.getMu(), yfit.getChiSqSum(), yErrSquareSum);
-                    log.info(label);
+                    log.fine(label);
                 }
 
                 if ( (bestFit == null) || (yfit.getChiSqSum() < bestFit.getChiSqSum()) ) {
@@ -726,7 +726,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
             plotFit(bestFit, label);
 
             if (debug) {
-                log.info(label);
+                log.fine(label);
             }
         }
 
@@ -992,7 +992,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
                 String dstr = String.format("  <==> same chisqsum=%.1f yerrsqsum=%.1f",
                     currentBestFit.getChiSqSum(), currentBestFit.getYDataErrSq());
-                log.info(dstr);
+                log.fine(dstr);
 
 
                 nLoIter++;

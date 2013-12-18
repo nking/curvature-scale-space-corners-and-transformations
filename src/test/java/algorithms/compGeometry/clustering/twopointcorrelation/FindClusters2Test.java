@@ -1,12 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.curves.GEVYFit;
-import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscMath;
-import algorithms.misc.Statistic;
-import algorithms.util.ArrayPair;
-import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.logging.Logger;
@@ -184,9 +178,9 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 
                 String plotLabel = "";
                 
-                if (twoPtC.backgroundStats != null) {
+                if (twoPtC.backgroundStats != null && twoPtC.backgroundStats instanceof TwoPointVoidStats) {
+                    
                     TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
-                    HistogramHolder histogram = stats.statsHistogram;
         
                     GEVYFit bestFit = stats.bestFit;
                     if (bestFit != null) {

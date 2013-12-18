@@ -3,7 +3,6 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -65,7 +64,8 @@ public class FindClusters3Test extends TestCase {
 
         String plotLabel = "";
 
-        if (stats != null && ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit != null) {
+        if (twoPtC.backgroundStats != null && twoPtC.backgroundStats instanceof TwoPointVoidStats 
+            && ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit != null) {
 
             // centroid of area defined by the top portion of the fit where y >= ypeak/2
             float[] areaAndXYTopCentroid = TwoPointVoidStats.calculateCentroidOfTop(
