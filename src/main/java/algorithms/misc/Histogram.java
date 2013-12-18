@@ -1072,7 +1072,8 @@ plotter.writeFile();
 
             float c = aveErrorOfAllPoints;
 
-            xHistErrorsOutput[i] = c;
+            // estimating it as binWidth/2. any point has x value = bin center +- binWidth/2
+            xHistErrorsOutput[i] = xInterval/2.0f; //c;
 
             //float a = (float)Math.sqrt(sumErrorBinSquared * (1.0f - (1.0f/yHist.length));
             float ai = sumErrorBinSquared;
@@ -1136,6 +1137,67 @@ plotter.writeFile();
             float s = sigmaDfDxSquared + sigmaDfDySquared + covXY;
 
             sum += s;
+        }
+
+        sum = (float) Math.sqrt(sum);
+
+        return sum;
+    }
+    
+    /**
+     * determine the errors in determining the width of the histogram for points with y above yLimit.  This is meant to 
+     * determine the error in calculations of things like fwhm.
+     * 
+     * @param xHist
+     * @param yHist
+     * @param xErrors
+     * @param yErrors
+     * @param yLimit
+     * @return
+     */
+    public static float calculateHistogramWidthYLimitError(float[] xHist, float[] yHist,
+        float[] xErrors, float[] yErrors, float yMaxFactor) {
+
+        /* 
+         * Errors in histogram:
+         *
+         *    error in Y is sqrt(Y) and that is already in standard units.
+         *    error in X is resolvability, which is bin size = (xHist[1]-xHist[0])/2.
+         *
+         *                                | df |^2               | df |^2         df   df
+         *      (sigma_f)^2 =  (sigma_x)^2|----|   +  (sigma_y)^2|----|    +  2 * -- * -- * cov_ab
+         *                                | dx |                 | dy |           dx   dy
+         *
+         *      For uncorrelated variables the covariance terms are zero.
+         *
+         *      if f = XY, and X and Y are not correlated, we have:
+         *          sigma^2  =  xError^2*(Y^2)  +  yError^2*(X^2) 
+         *          
+         *      For FWHM we have sum of f = sum(X_i*Y_i)_(i < yLimit)/ Y_i
+         *       
+         *          err^2 = xError^2*(Y_i/Y_i) = xError^2
+         */
+        int yPeakIdx = MiscMath.findYMaxIndex(yHist);
+        float yLimit = yMaxFactor * yHist[yPeakIdx];
+        int yLimitIdx = -1;
+        for (int i = 0; i < xHist.length; i++) {
+            if (i > yPeakIdx) {
+                if (yHist[i] > yLimit) {
+                    yLimitIdx = i;
+                } else {
+                    break;
+                }
+            } else {
+                yLimitIdx = i;
+            }
+        }
+        
+        float sum = 0.0f;
+        for (int i = 0; i <= yLimitIdx; i++) {
+
+            float xeSquare = xErrors[i]*xErrors[i];
+
+            sum += xeSquare;
         }
 
         sum = (float) Math.sqrt(sum);

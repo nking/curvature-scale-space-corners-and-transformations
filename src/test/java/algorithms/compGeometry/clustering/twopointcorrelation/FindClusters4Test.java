@@ -445,9 +445,9 @@ public class FindClusters4Test extends BaseTwoPointTest {
                 }
 
                 log.info(
-                    "expected density = " + expectedDensity + "  calc density = " + twoPtC.getBackgroundSurfaceDensity()
+                    "expected density = " + expectedDensity + "  calc density = " + twoPtC.getBackgroundDensity()
                     + " npoints=" + numberOfBackgroundPoints + " xmax=" + xmax + "  (2/griddiv) = " + tpdiv
-                    + "  r=exp/calc=" + (expectedDensity/twoPtC.getBackgroundSurfaceDensity()));
+                    + "  r=exp/calc=" + (expectedDensity/twoPtC.getBackgroundDensity()));
                 
                 
                 if (i == 1) {

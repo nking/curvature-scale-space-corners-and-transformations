@@ -20,8 +20,15 @@ import java.util.logging.Logger;
  */
 public abstract class AbstractPointBackgroundStats implements IPointBackgroundStats {
 
-    protected float backgroundSurfaceDensity;
-    protected float backgroundSurfaceDensityError;
+    /**
+     * an estimate of the background density which is a linear density
+     */
+    protected float backgroundDensity;
+    
+    /**
+     * a minimum error for the backgroundDensity
+     */
+    protected float backgroundDensityError;
 
     protected final DoubleAxisIndexer indexer;
     protected boolean didReadPerisistedIndexer = false;
@@ -163,16 +170,19 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
     }
 
     /**
-     * @return the backgroundSurfaceDensity
+     * @return the backgroundDensity
      */
-    public float getBackgroundSurfaceDensity() {
-        return this.backgroundSurfaceDensity;
+    public float getBackgroundDensity() {
+        return this.backgroundDensity;
     }
 
     /**
-     * @return the backgroundSurfaceDensityError
+     * return the error on the background density.  NOTE that most implementations
+     * will probably return a minimum error.  the formal error would include other terms.
+     * 
+     * @return the backgroundDensityError
      */
-    public float getBackgroundSurfaceDensityError() {
-        return this.backgroundSurfaceDensityError;
+    public float getBackgroundDensityError() {
+        return this.backgroundDensityError;
     }
 }

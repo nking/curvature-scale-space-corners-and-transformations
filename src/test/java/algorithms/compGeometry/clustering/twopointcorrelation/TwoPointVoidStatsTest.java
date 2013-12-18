@@ -84,8 +84,8 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         //stats.setStandardDeviationFactor(2.5f);        
         stats.calc();
 
-        float bSurfDens    = stats.getBackgroundSurfaceDensity();
-        float bSurfDensErr = stats.getBackgroundSurfaceDensityError();
+        float bSurfDens    = stats.getBackgroundDensity();
+        float bSurfDensErr = stats.getBackgroundDensityError();
 
         String filePath = stats.persistTwoPointBackground();
         assertNotNull(filePath);

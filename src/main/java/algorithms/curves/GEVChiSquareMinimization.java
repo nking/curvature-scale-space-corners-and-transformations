@@ -1371,6 +1371,7 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
 
         yfits[0].kSolutionResolution = yfits[0].getK() - yfits[1].getK();
         yfits[0].sigmaSolutionResolution = yfits[0].getSigma() - yfits[1].getSigma();
+        yfits[0].muSolutionResolution = yfits[0].getMu() - yfits[1].getMu();
         if (yfits[0].getYFit() != null) {
             yfits[0].setChiSqStatistic(calculateChiSquareStatistic(yfits[0].getYFit(), weightMethod));
         }

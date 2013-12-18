@@ -13,6 +13,7 @@ public class GEVYFit implements IYFit {
     protected float chiSqStatistic = Float.MAX_VALUE;
     float kSolutionResolution;
     float sigmaSolutionResolution;
+    float muSolutionResolution;
     protected float yDataErrSq;
 
     // these are only set internally.  values of -1 mean the stats haven't been calculated
@@ -118,6 +119,10 @@ public class GEVYFit implements IYFit {
 
     public float getSigmaResolution() {
         return sigmaSolutionResolution;
+    }
+    
+    public float getMuSolutionResolution() {
+        return muSolutionResolution;
     }
 
     public float getChiSqSum() {

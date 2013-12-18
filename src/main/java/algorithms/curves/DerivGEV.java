@@ -818,7 +818,7 @@ public class DerivGEV {
      * @param x
      * @return
      */
-    static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x) {
+    public static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x) {
      
         // ∂^2f/∂k∂k 
         
@@ -845,7 +845,7 @@ public class DerivGEV {
      * @param dydk
      * @return
      */
-    static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x, double dydk) {
+    public static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x, double dydk) {
 
         // ∂^2f/∂k∂k = estimate as (dydk_2 - dydk)/dk
         
@@ -874,7 +874,7 @@ public class DerivGEV {
      * @param dydk
      * @return
      */
-    static double estimateDY2DKDSigma(float yConst, float mu, float k, float sigma, float x, double dydk) {
+    public static double estimateDY2DKDSigma(float yConst, float mu, float k, float sigma, float x, double dydk) {
 
         // ∂^2f/∂k∂sigma 
         
@@ -904,7 +904,7 @@ public class DerivGEV {
      * @param dydk
      * @return
      */
-    static double estimateDY2DKDMu(float yConst, float mu, float k, float sigma, float x, double dydk) {
+    public static double estimateDY2DKDMu(float yConst, float mu, float k, float sigma, float x, double dydk) {
 
         // ∂^2f/∂k∂mu 
         
@@ -933,7 +933,7 @@ public class DerivGEV {
      * @param dydsigma
      * @return
      */
-    static double estimateDY2DSigmaDSigma(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
+    public static double estimateDY2DSigmaDSigma(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
 
         // ∂^2f/∂sigma∂sigma = estimate as (dyds_2 - dyds)/ds
         
@@ -962,7 +962,7 @@ public class DerivGEV {
      * @param dydsigma
      * @return
      */
-    static double estimateDY2DMuDMu(float yConst, float mu, float k, float sigma, float x, double dydmu) {
+    public static double estimateDY2DMuDMu(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
         // ∂^2f/∂mu∂mu
         
@@ -991,7 +991,7 @@ public class DerivGEV {
      * @param dydsigma
      * @return
      */
-    static double estimateDY2DMuDK(float yConst, float mu, float k, float sigma, float x, double dydmu) {
+    public static double estimateDY2DMuDK(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
         // ∂^2f/∂mu∂k
         
@@ -1020,7 +1020,7 @@ public class DerivGEV {
      * @param dydsigma
      * @return
      */
-    static double estimateDY2DMuDSigma(float yConst, float mu, float k, float sigma, float x, double dydmu) {
+    public static double estimateDY2DMuDSigma(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
         // ∂^2f/∂mu∂sigma
         
@@ -1049,7 +1049,7 @@ public class DerivGEV {
      * @param dydsigma
      * @return
      */
-    static double estimateDY2DSigmaDK(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
+    public static double estimateDY2DSigmaDK(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
 
         // ∂^2f/∂sigma∂k = estimate as (dy2_ds_dk - dyds)/dk
         
@@ -1078,7 +1078,7 @@ public class DerivGEV {
      * @param dydsigma
      * @return
      */
-    static double estimateDY2DSigmaDMu(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
+    public static double estimateDY2DSigmaDMu(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
 
         // ∂^2f/∂sigma∂mu = estimate as (dy2_ds_dk - dyds)/dk
         

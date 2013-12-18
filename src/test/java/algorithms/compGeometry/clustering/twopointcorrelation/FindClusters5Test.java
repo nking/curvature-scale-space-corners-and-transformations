@@ -139,7 +139,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
             
             nGroupsFound[ii] = twoPtC.getNumberOfGroups();
             expectedLinearDensities[ii] = (float)expectedDensity;
-            calcLinearDensities[ii] = twoPtC.getBackgroundSurfaceDensity();
+            calcLinearDensities[ii] = twoPtC.getBackgroundDensity();
                         
         }
         

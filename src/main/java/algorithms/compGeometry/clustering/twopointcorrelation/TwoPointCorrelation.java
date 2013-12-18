@@ -20,10 +20,10 @@ import java.util.logging.Logger;
   Find clusters in data.
   
   Clusters in the dataset are found by defining the background point density and finding
-  pairs of points whose separations are closer than a threshhold density estimated 
+  pairs of points whose separations are closer than a threshold density estimated 
   from the background point density.
     
-  More specifically, the background points in two-dimensional space are Poissonian,
+  More specifically, the background points in two-dimensional space are Poisson,
   that is their locations in a fixed interval of space are independent of one
   another and occur randomly.  The separation of these points, when no other points
   are between them define voids whose distributions (that is, histograms) are well fit by 
@@ -72,7 +72,8 @@ import java.util.logging.Logger;
           ArrayPair hull0 = clusterFinder.getGroupHull(0)
 
       To get the points in groupId 0:
-          ArrayPair group0 = clusterFinder.getGroup(int groupNumber)
+          int groupNumber = 0;
+          ArrayPair group0 = clusterFinder.getGroup(groupNumber)
       
       To plot the results:
           String plotFilePath = clusterFinder.plotClusters();
@@ -122,7 +123,7 @@ public class TwoPointCorrelation {
 
     protected DoubleAxisIndexer tempRefineSolnIndexer = null;
 
-    private float backgroundSurfaceDensity;
+    private float backgroundDensity;
     private float backgroundError;
     private float sigmaFactor = 2.5f;
     // we are looking for points which have density > sigmaFactor*backgroundAverage
@@ -277,9 +278,9 @@ public class TwoPointCorrelation {
         allowRefinement = true;
     }
 
-    public void setBackground(float backgroundSurfaceDensity, float standardDeviationOfBackground) {
+    public void setBackground(float backgroundDensity, float standardDeviationOfBackground) {
 
-        this.backgroundSurfaceDensity = backgroundSurfaceDensity;
+        this.backgroundDensity = backgroundDensity;
 
         this.backgroundError = standardDeviationOfBackground;
 
@@ -328,12 +329,12 @@ public class TwoPointCorrelation {
             backgroundStats = minStats;
         }
 
-        this.backgroundSurfaceDensity = minStats.getBackgroundSurfaceDensity();
-        this.backgroundError = minStats.getBackgroundSurfaceDensityError();
+        this.backgroundDensity = minStats.getBackgroundDensity();
+        this.backgroundError = minStats.getBackgroundDensityError();
 
         if (debug) {
             log.info("background density ="
-                + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
+                + this.backgroundDensity + " with error =" + this.backgroundError);
         }
 
         state = STATE.BACKGROUND_SET;
@@ -390,14 +391,14 @@ public class TwoPointCorrelation {
             minimaStatsFilePath = voidStats.persistTwoPointBackground();
         }
 
-        this.backgroundSurfaceDensity = voidStats.getBackgroundSurfaceDensity();
-        this.backgroundError = voidStats.getBackgroundSurfaceDensityError();
+        this.backgroundDensity = voidStats.getBackgroundDensity();
+        this.backgroundError = voidStats.getBackgroundDensityError();
         
         //backgroundStats.releaseLargeVariables();
 
         if (debug) {
             log.info("==>background density ="
-                + this.backgroundSurfaceDensity + " with error =" + this.backgroundError);
+                + this.backgroundDensity + " with error =" + this.backgroundError);
          
             float xHalfInterval = (voidStats.statsHistogram.getXHist()[1] - voidStats.statsHistogram.getXHist()[0]) / 2.0f;
             float xmin = 0;
@@ -547,11 +548,11 @@ public class TwoPointCorrelation {
             && ((TwoPointVoidStats)backgroundStats).getInterpretForSparseBackground().booleanValue()) {
 
             // for method without any background points, we use the density of the edge points without a factor
-            groupFinder = new DFSGroupFinder(backgroundSurfaceDensity, 1.0f);
+            groupFinder = new DFSGroupFinder(backgroundDensity, 1.0f);
 
         } else {
 
-            groupFinder = new DFSGroupFinder(backgroundSurfaceDensity, sigmaFactor);
+            groupFinder = new DFSGroupFinder(backgroundDensity, sigmaFactor);
         }
 
         groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);
@@ -800,11 +801,17 @@ public class TwoPointCorrelation {
         return new ArrayPair(xc, yc);
     }
 
-    public float getBackgroundSurfaceDensity() {
-        return backgroundSurfaceDensity;
+    public float getBackgroundDensity() {
+        return backgroundDensity;
     }
 
-    public float getBackgroundSurfaceDensityError() {
+    /**
+     * get the error on determining the background density.  NOTE that this is only the
+     * minimum error for most implementations.
+     * 
+     * @return
+     */
+    public float getBackgroundDensityError() {
         return backgroundError;
     }
 

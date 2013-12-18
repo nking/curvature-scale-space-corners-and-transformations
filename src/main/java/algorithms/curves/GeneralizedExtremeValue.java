@@ -342,35 +342,12 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
     /**
      * Errors in fitting the curve can be calculated via chain rule of derivatives of the fit:
      *
-     *                                  (   (      ( x-mu))-(1/k))
-     *                                  (-1*(1 + k*(-----))      )
-     *                         1        (   (      (sigma))      )  (      ( x-mu))(-1-(1/k))
-     *     f(y) = y_const * ----- * exp                           * (1 + k*(-----))
-     *                      sigma                                   (      (sigma))
-     *
-     *                               | df |^2               | df |^2         df   df
-     *     (sigma_f)^2 =  (sigma_x)^2|----|   +  (sigma_y)^2|----|    +  2 * -- * -- * cov_x,y
-     *                               | dx |                 | dy |           dx   dy
-     *
-     *     For uncorrelated variables the covariance terms are zero.
-     *         else, cov(x,y) = <(x - mu_x)(y - mu_y)>
-     *
-     *     For example, for just 2 variables, x and y the equation for f(y) = XY reduces to:
-     *         sigma^2  =  (Y^2)*xError^2  +  (X^2)*yError^2 + xError^2*yError^2
-     *
-     *     For the GEV, the equation differentials should be x, y, k, and sigma.
-     *     (Within use of this code, mu is set rather than fit, so it's contribution is different.)
-     *
-     *     At this time, the full errors are not calculated, and instead the chi square
-     *     is used.
-     *
-     *     TODO: The full derivative could be calculated if needed.
      *
      * @param y1 the y data array
      * @param yGEV the generated GEV y model array
      * @return the mean error of the fit
      */
-    public static float calculateTotalMeanFittingError(float[] y1, float[] yGEV) {
+    public static float calculateChiSq(float[] y1, float[] yGEV) {
 
         float yNorm = MiscMath.findMax(y1);
 
@@ -387,7 +364,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return chiSum;
     }
 
-    public static float calculateTotalMeanFittingError(int[] y1, float[] yGEV) {
+    public static float calculateChiSq(int[] y1, float[] yGEV) {
 
         float yNorm = MiscMath.findMax(y1);
 
@@ -404,6 +381,119 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return sum;
     }
 
+
+    /**
+     return the error in fitting the GEV curve
+     
+                                 | dy_fit |^2            | dy_fit |^2            | dy_fit|^2            |dy_fit|^2
+       (err_y_fit)^2 =  (err_x)^2|--------|   + (err_k)^2|--------|   + (err_s)^2|-------|   + (err_m)^2|------|
+                                 |   dx   |              |   dk   |              |  ds   |              |  dm  |
+     * @param bestFit2
+     * @return
+     */
+    public static double calculateFittingErrorSquared(GEVYFit yFit, float xPoint) {
+        
+        if (yFit == null) {
+            return Float.POSITIVE_INFINITY;
+        }
+      
+        int yMaxIdx = MiscMath.findYMaxIndex(yFit.getYFit());
+        
+        if (yMaxIdx == -1) {
+            return Float.POSITIVE_INFINITY;
+        }
+        
+        float xPeak = yFit.getX()[yMaxIdx];
+        
+        // since we don't have an error in the parameters, we'll make a rough
+        //   guess with the parameters in bestFit compared to prior bestFit.
+        //  the error in the parameters, k, sigma, and mu are assumed to be smaller
+        //  than those deltas in order for the best fit to have a better fit.
+        //  we can use the full delta to overestimate the error, or assume that
+        //  the error has to be smaller than half of the delta otherwise the prior Fit
+        //  value would have been kept.  very very rough approx for parameter errors...
+        
+        float kDelta = yFit.getKResolution()/2.f;
+        float sigmaDelta = yFit.getSigmaResolution()/2.f;
+        float muDelta = yFit.getMuSolutionResolution()/2.f;
+        
+        float yConst = yFit.getYScale();
+        float mu = yFit.getMu();
+        float k = yFit.getK();
+        float sigma = yFit.getSigma();
+        
+        float xDelta = yFit.getX()[1] - yFit.getX()[0];
+        
+        double dydx = DerivGEV.derivWRTX(yConst, mu, k, sigma, xPoint);
+        
+        double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, xPoint);
+        
+        double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, xPoint);
+        
+        double dydm = DerivGEV.derivWRTMu(yConst, mu, k, sigma, xPoint);
+        
+        // since x is always given as a number, exclude it from propagation
+        double err = /*Math.pow(xDelta*dydx, 2)*/ + Math.pow(kDelta*dydk, 2) + Math.pow(sigmaDelta*dyds, 2) + Math.pow(muDelta*dydm, 2);
+        
+//System.out.println("error in x alone: " + Math.sqrt( Math.pow(xDelta*dydx, 2) )/yFit.getYScale());
+        
+        return (float)err/(yFit.getYScale() * yFit.getYScale());
+    }
+    
+    /**
+     * calculate the error in an area / height calculation for y=0 to y > yLimitFraction where y is
+     * yLimitFraction to to the right of the peak.  This is useful for determining errors for things
+     * like FWHM for example.
+     * 
+     * For FWHM we have sum of f = sum(X_i*Y_i)_(i < yLimit)/ Y_i
+               
+          err^2 = xError^2*(Y_i/Y_i) = xError^2
+              
+          it reduces to the sum of the errors in x.  no pde's...    
+     * 
+     * @param yFit
+     * @param yLimitFraction
+     * @return
+     */
+    public static double calculateWidthFittingError(GEVYFit yFit, float yMaxFactor) {
+        
+        if (yFit == null) {
+            return Float.POSITIVE_INFINITY;
+        }
+        
+        int yPeakIdx = MiscMath.findYMaxIndex(yFit.getOriginalScaleX());
+        float yLimit = yMaxFactor * yFit.getOriginalScaleYFit()[yPeakIdx];
+        int yLimitIdx = -1;
+        for (int i = 0; i < yFit.getOriginalScaleX().length; i++) {
+            if (i > yPeakIdx) {
+                if (yFit.getOriginalScaleYFit()[i] > yLimit) {
+                    yLimitIdx = i;
+                } else {
+                    break;
+                }
+            } else {
+                yLimitIdx = i;
+            }
+        }
+        
+        // xError[i] should be formally calculated, but the approximation that it can be determined no
+        //   better than  the bin center +- binwidth/2  is a minimum error.
+        //   a safe addition to that (added in quadrature) would be an error in x derived from chi square
+        //   but that is not done here
+        
+        float xDelta = yFit.getX()[1] - yFit.getX()[0];
+        float xErrorSq = (xDelta*xDelta/4.f);
+        
+        float sum = 0.0f;
+        for (int i = 0; i <= yLimitIdx; i++) {
+            sum += xErrorSq;
+        }
+
+        sum = (float) Math.sqrt(sum);
+      
+        return sum;
+    }
+    
     public static float[] generateNormalizedCurve(float[] x1, float k, float sigma, float mu) {
 
         if (sigma == 0) {

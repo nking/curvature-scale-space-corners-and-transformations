@@ -32,12 +32,12 @@ public interface IPointBackgroundStats {
     /**
      * @return the backgroundSurfaceDensity
      */
-    public float getBackgroundSurfaceDensity();
+    public float getBackgroundDensity();
 
     /**
      * @return the backgroundSurfaceDensityError
      */
-    public float getBackgroundSurfaceDensityError();
+    public float getBackgroundDensityError();
     
     public void releaseLargeVariables();
 

@@ -128,7 +128,7 @@ public class TwoPointCorrelationPlotter {
         }
         dataSB.append("];\n");
 
-        String sdStr = String.format("'%.6f'", twoPtCorr.getBackgroundSurfaceDensity());
+        String sdStr = String.format("'%.6f'", twoPtCorr.getBackgroundDensity());
         dataSB.append("\n").append("var plot_label_").append(plotNumber).append("=").append(sdStr).append("\n;");
 
         // ======= add RENDER statement ==========
@@ -288,7 +288,7 @@ public class TwoPointCorrelationPlotter {
         }
         dataSB.append("];\n");
 
-        String sdStr = String.format("'%.6f'", twoPtCorr.getBackgroundSurfaceDensity());
+        String sdStr = String.format("'%.6f'", twoPtCorr.getBackgroundDensity());
         dataSB.append("\n").append("var plot_label_").append(plotNumber).append("=").append(sdStr).append(";\n");
 
         // ======= add RENDER statement ==========

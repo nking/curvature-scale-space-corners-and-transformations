@@ -201,11 +201,9 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 plotter.writeFile();
 
                 log.info(
-                    "expected density = " + expectedDensity + "  calc density = " + twoPtC.getBackgroundSurfaceDensity()
+                    "expected density = " + expectedDensity + "  calc density = " + twoPtC.getBackgroundDensity()
                     + " npoints=" + numberOfBackgroundPoints + " xmax=" + xmax + "  (2/griddiv) = " + tpdiv
-                    + "  r=exp/calc=" + (expectedDensity/twoPtC.getBackgroundSurfaceDensity()));
-                // is expectedDensity always <= found surface density?
-                // assertTrue( Math.abs(expectedDensity - twoPtC.getBackgroundSurfaceDensity()) < 0.25*expectedDensity);
+                    + "  r=exp/calc=" + (expectedDensity/twoPtC.getBackgroundDensity()));
                 
                 count++;
             }

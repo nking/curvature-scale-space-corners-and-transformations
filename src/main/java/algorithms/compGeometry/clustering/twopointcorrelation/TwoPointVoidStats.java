@@ -3,6 +3,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.compGeometry.convexHull.GrahamScan;
+import algorithms.curves.DerivGEV;
 import algorithms.curves.FailedToConvergeException;
 import algorithms.curves.GEVChiSquareMinimization;
 import algorithms.curves.GEVYFit;
@@ -628,101 +629,71 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 limit = histogram.getXHist()[0];
 
+                int limitIndex = bestFit.getXPeakIndex();
+                
+                limitError = histogram.getXErrors()[limitIndex];
+                
                 log.info("interpreting the density for a sparse background");
                 
             } else {
 
                 //limitStr = "top centroid";
 
-                // centroid of area defined by the top portion of the fit where y >= ypeak/2
+                // centroid of area defined by the top portion of the fit or histogram where y >= ypeak/2
                 float[] areaAndXYTopCentroid = calculateCentroidOfTop(bestFit.getOriginalScaleX(), bestFit.getOriginalScaleYFit(), 0.5f);
 
                 float[] areaAndXYTopCentroid2 = calculateCentroidOfTop(histogram.getXHist(), histogram.getYHistFloat(), 0.5f);
-
+                
                 float xpeak = (areaAndXYTopCentroid[0] > 0) ? areaAndXYTopCentroid[1] : areaAndXYTopCentroid2[1];
                 
                 log.info("GEV top centroid=" + areaAndXYTopCentroid[1] + " data top centroid=" + areaAndXYTopCentroid2[1] + " using xpeak=" + xpeak);
 
                 log.info("interpreting the density for a non-sparse background");
                 
-                limit = (xpeak > 0) ? xpeak : bestFit.getXPeak();
+                if (xpeak > 0) {
+                    
+                    limit = xpeak;
+                    
+                    float areaAndXYTopCentroidError = (float)GeneralizedExtremeValue.calculateWidthFittingError(bestFit, 0.5f);
+                    
+                    limitError = areaAndXYTopCentroidError;
+                    
+                } else {
+                    
+                    limit = bestFit.getXPeak();
+                    
+                    float areaAndXYTopCentroid2Error = Histogram.calculateHistogramWidthYLimitError(
+                        histogram.getXHist(), histogram.getYHistFloat(), histogram.getXErrors(), histogram.getYErrors(),
+                        0.5f);
+                    
+                    limitError = areaAndXYTopCentroid2Error;
+                }                                
             }
 
-            this.backgroundSurfaceDensity = limit;
+            this.backgroundDensity = limit;
 
             if (debug) {
                 log.info(bestFit.toString());
-            }
+            }            
 
-            int limitIndex = bestFit.getXPeakIndex();
-            limitError = histogram.getXErrors()[limitIndex];
-
-
-            /* Errors add in quadrature:
-             *
-             *    * errors in histogram
-             *    * errors in GEV fitting
-             *
-             * Errors in histogram:
-             *
-             *    error in Y is sqrt(Y) and that is already in standard units.
-             *    error in X is resolvability, which is bin size = (xHist[1]-xHist[0])/2.
-             *
-             *                                | df |^2               | df |^2         df   df
-             *          (err_f)^2 =  (err_x)^2|----|     +  (err_y)^2|----|    +  2 * -- * -- * cov_ab
-             *                                | dx |                 | dy |           dx   dy
-             *
-             *      For uncorrelated variables the covariance terms are zero.
-             *
-             * Errors in fitting:
-             *
-             *    It looks like the error in the fit could very roughly be math.sqrt(chisq)/nPoints, that is close to
-             *        the chi square statistic which uses degrees of freedom instead of nPoints.
-             *
-             *    But, more formally, errors are based on fitting 2 variable parameters and 1 fixed parameter and on x and y.
-             *    The 2 parameters are GEV.sigma and GEV.k (we use a fixed mu usually)
-             *
-             *                                    | df_fit |^2               | df_fit |^2
-             *          (err_f_fit)^2 =  (err_x)^2|--------|     +  (err_y)^2|--------|
-             *                                    |   dx   |                 |   dy   |
-             *
-             *                             | df_fit |^2                       |  df_fit  |^2
-             *            +  (err_GEV.k)^2 |--------|     +  (err_GEV.sigma)^2|----------|
-             *                             | dGEV.k |                         |dGEV.sigma|
-             *
-             *                                          (   (      ( x-mu))-(1/k))
-             *                                          (-1*(1 + k*(-----))      )
-             *                                 1        (   (      (sigma))      )  (      ( x-mu))(-1-(1/k))
-             *      where f_fit = y_const * ----- * exp                           * (1 + k*(-----))
-             *                               sigma                                  (      (sigma))
-             *
-             *      The deriv of f_fit w.r.t. sigma, k, and x is a very very long derivative...
-             *
-             *TODO: have the derivs and 2nd derivs now so will calculate this with the chain rule.
-             *Meanwhile, it's roughly approximated with chisq to approximate the standard deviation from the model.
-             */
-
-            // Error from one value is dependent upon having counted all in histogram.  we take the
-            //  error for our single bin as an average over all because of that.
-            float errorInEstimateFromHistogram = limitError;
-
-            float gevTotalMeanFittingError =
-                GeneralizedExtremeValue.calculateTotalMeanFittingError(bestFit.getX(), bestFit.getYFit());
-
-            float errorInFitting = gevTotalMeanFittingError / histogram.getYHist().length;
-
-            // add errors in quadrature
-            this.backgroundSurfaceDensityError = (float) (Math.sqrt(
-                errorInEstimateFromHistogram * errorInEstimateFromHistogram + errorInFitting * errorInFitting));
-
+            this.backgroundDensityError = limitError;
+            
             if (debug) {
-                String interp = (interpretForSparseBackground) ? "sparse" : "complete";
-                log.info("estimating background from sampling= " + sampling.toString()
-                + " and interpretation=" + interp
-                + this.backgroundSurfaceDensity
-                + " w/ x error in histogram bin =" + errorInEstimateFromHistogram
-                + " gev fitting error for one point =" + errorInFitting
-                + " error in the histogram x bin at y peak = " + limitError);
+
+                // as comparison, log that roughly derived from chi square sum
+                float gevTotalMeanFittingEmpiricalError = (float)Math.sqrt(
+                    GeneralizedExtremeValue.calculateChiSq(bestFit.getX(), bestFit.getYFit()));
+
+                // empirical error for one bin:
+                float empiricalErrorInFitting = gevTotalMeanFittingEmpiricalError / histogram.getYHist().length;
+                
+                String interp = (interpretForSparseBackground) ? " sparse " : " complete ";
+                log.info("\nestimating background from sampling= " + sampling.toString()
+                    + " and interpretation=" + interp 
+                    + "\ndens=" + this.backgroundDensity
+                    + "\nw/ centroid error in area/y =" + backgroundDensityError
+                    + "\ngev empirically estimated fitting error for one histogram bin =" + empiricalErrorInFitting
+                );
             }
 
             if (debug && (bestFit.getChiSqSum() > bestFit.getYDataErrSq())) {
