@@ -1,6 +1,8 @@
 package algorithms.compGeometry;
 
 import algorithms.misc.MiscMath;
+import algorithms.util.ArrayPair;
+
 import java.util.Arrays;
 
 /**
@@ -1150,7 +1152,7 @@ public class LinesAndAngles {
      * @param topFraction
      * @return
      */
-    public static XY createPolygonOfTopFWFractionMax(float[] x, float[] y, float topFraction) {
+    public static ArrayPair createPolygonOfTopFWFractionMax(float[] x, float[] y, float topFraction) {
 
         float[] xTopPolygon = new float[x.length + 3];
         float[] yTopPolygon = new float[y.length + 3];
@@ -1305,7 +1307,7 @@ public class LinesAndAngles {
         xTopPolygon[xTopPolygon.length - 1] = xTopPolygon[0];
         yTopPolygon[xTopPolygon.length - 1] = yTopPolygon[0];
 
-        XY xy = new XY(xTopPolygon, yTopPolygon);
+        ArrayPair xy = new ArrayPair(xTopPolygon, yTopPolygon);
 
         return xy;
     }

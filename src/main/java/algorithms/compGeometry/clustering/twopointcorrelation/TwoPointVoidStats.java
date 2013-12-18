@@ -1,7 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.compGeometry.LinesAndAngles;
-import algorithms.compGeometry.XY;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.curves.FailedToConvergeException;
@@ -15,6 +14,7 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.misc.Statistic;
+import algorithms.util.ArrayPair;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -739,7 +739,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
     static float[] calculateCentroidOfTop(float[] xfit, float[] yfit, float frac) {
 
-        XY xy = LinesAndAngles.createPolygonOfTopFWFractionMax(xfit, yfit, frac);
+        ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(xfit, yfit, frac);
 
         return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xy.getX(), xy.getY());
     }

@@ -208,6 +208,11 @@ public class DistributionsTest extends BaseTwoPointTest {
                 plotter3.addPlot(twoPtC, plotLabel);
                 String filePath = plotter3.writeFile3();
                 System.out.println("filePath=" + filePath);
+                
+                if (i == 2) {
+                    int n = twoPtC.getNumberOfGroups();
+                    assertTrue(n == 3);
+                }
             }
         }
 

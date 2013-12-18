@@ -1,7 +1,8 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.compGeometry.LinesAndAngles;
-import algorithms.compGeometry.XY;
+import algorithms.util.ArrayPair;
+
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
@@ -41,7 +42,7 @@ public class TwoPointVoidStats2Test extends BaseTwoPointTest {
         float[] x = new float[]{2.5f, 3.0f, 5.0f, 7.0f, 8.0f};
         float[] y = new float[]{2.0f, 5.0f, 8.0f, 5.1f, 2.0f};
         // assert results internal to calculateCentroidOfTop first
-        XY resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 0.5f);
+        ArrayPair resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 0.5f);
         assertNotNull(resultXY);
         assertTrue(resultXY.getX().length == 6);
         assertTrue(resultXY.getY().length == 6);
