@@ -122,11 +122,20 @@ public class Histogram {
         if (values == null || valueErrors == null || values.length != valueErrors.length) {
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
         }
-
-        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
         
         int nBins = (int)(2*Math.pow(values.length, 0.3333));
         
+        return createSimpleHistogram(nBins, values, valueErrors);
+    }
+    
+    public static HistogramHolder createSimpleHistogram(int nBins, float[] values, float[] valueErrors) {
+
+        if (values == null || valueErrors == null || values.length != valueErrors.length) {
+            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        }
+
+        float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
+                
         float binWidth = calculateBinWidth(minMax[0], minMax[1], nBins);
 
         float[] xHist = new float[nBins];
@@ -153,7 +162,6 @@ public class Histogram {
         
         return histogram;
     }
-    
     /**
      * create a histogram adjusted to have a range
      * representing most of the data and a number of bins which attempts to have

@@ -3,10 +3,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscMath;
-import algorithms.misc.Statistic;
 import algorithms.util.ArrayPair;
-import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.logging.Logger;
@@ -153,7 +150,6 @@ public class FindClusters4Test extends BaseTwoPointTest {
             double tpdiv = 1./divYSz; // divYSz is the separation of 2 points
             double expectedDensity = Math.sqrt(numberOfBackgroundPoints)/(xmax-xmin);
             log.info("grid division=" + divYSz + "   and  density from grid size=" + tpdiv);
- System.out.println("grid division=" + divYSz + "   and  density from grid size=" + tpdiv);
             
             float[] xbe = new float[numberOfBackgroundPoints];
             float[] ybe = new float[numberOfBackgroundPoints];
@@ -167,6 +163,9 @@ public class FindClusters4Test extends BaseTwoPointTest {
             float[] yclust = null;
             float[] xcluste = null;
             float[] ycluste = null;
+            
+            float[] xg5 = null;
+            float[] yg5 = null;
             
             for (int i = 0; i < nSwitches; i++) {
                                 
@@ -194,7 +193,7 @@ public class FindClusters4Test extends BaseTwoPointTest {
                         
                         xcluste = new float[tot];
                         ycluste = new float[tot];
-                        for (int j = xcluste.length; j < tot; j++) {
+                        for (int j = 0; j < tot; j++) {
                             // simulate x error as a percent error of 0.03 for each bin
                             xcluste[j] = xclust[j] * 0.03f;
                             ycluste[j] = (float) (Math.sqrt(yclust[j]));
@@ -294,17 +293,22 @@ public class FindClusters4Test extends BaseTwoPointTest {
                         xb = Arrays.copyOf(xb, tot);
                         yb = Arrays.copyOf(yb, tot);
                         
-                        float[] xbc = new float[clusterNumbers.length];
-                        float[] ybc = new float[clusterNumbers.length];
-                        
                         generator.createRandomPointsAroundCenter(sr, 50, clusterNumbers[0], 400, 400, xb, yb, numberOfBackgroundPoints);
                         
                         xbe = Arrays.copyOf(xbe, tot);
                         ybe = Arrays.copyOf(ybe, tot);
+                        int ci = 0;
+                        xg5 = new float[clusterNumbers[0]];
+                        yg5 = new float[clusterNumbers[0]];
                         for (int j = numberOfBackgroundPoints; j < tot; j++) {
                             // simulate x error as a percent error of 0.03 for each bin
                             xbe[j] = xb[j] * 0.03f;
                             ybe[j] = (float) (Math.sqrt(yb[j]));
+                            
+                            // for test assertion, store group
+                            xg5[ci] = xb[j];
+                            yg5[ci] = yb[j];
+                            ci++;
                         }
                         
                         indexer = new DoubleAxisIndexer();
@@ -332,7 +336,7 @@ public class FindClusters4Test extends BaseTwoPointTest {
               
                 twoPtC.logPerformanceMetrics();
                 
-                //twoPtC.setBackground(0.125f, 0.015f);
+                //twoPtC.setBackground(0.13f, 0.015f);
                 twoPtC.calculateBackground();
                 
                 twoPtC.findClusters();
@@ -386,9 +390,51 @@ public class FindClusters4Test extends BaseTwoPointTest {
                     assertNotNull(areaAndCenter);
                     float radius = (float) Math.sqrt(areaAndCenter[0]/(2.*Math.PI));
                     assertTrue(radius <= 50.f);
+                } else if (i == 4 || ii == 5) {
+                    // assertion that shouldn't change too much w/ other component improvements
+                    assertTrue(twoPtC.getNumberOfGroups() <= 0.2 * indexer.getNumberOfPoints());    
+                }
+                
+                if (i == 5) {
+                    log.info("assert case 5 results");
+                    // assert that the points added as a group were found as a group:
+                    int largestGroupId = -1;
+                    int maxN = Integer.MIN_VALUE;
+                    for (int j = 0; j < twoPtC.getNumberOfGroups(); j++) {
+                        if (twoPtC.getGroup(j).getX().length > maxN) {
+                            maxN = twoPtC.getGroup(j).getX().length;
+                            largestGroupId = j;
+                        }
+                    }
+                    ArrayPair group = twoPtC.getGroup(largestGroupId);
+                    boolean[] found = new boolean[xg5.length];
+                    for (int j = 0; j < xg5.length; j++) {
+                        float xx = xg5[j];
+                        float yy = yg5[j];
+                        for (int jj = 0; jj < group.getX().length; jj++) {
+                            if ((Math.abs(group.getX()[jj] - xx) < 0.0001f) && (Math.abs(group.getY()[jj] - yy)) < 0.0001f) {
+                                found[j] = true;
+                                break;
+                            }
+                        }
+                    }
+                    int cf = 0;
+                    for (int j = 0; j < found.length; j++) {
+                        if (found[j]) {
+                            cf++;
+                        } else {
+                            log.info("did not find point (" + xg5[j] + "," + yg5[j] + ")");
+                        }
+                    }
+                    log.info("====> expected " + found.length + " and found=" + cf + " and group size=" + group.getX().length);
+                    // Missing some of the points if use the calculated background density of 0.16655745 f.
+                    //     expected 1000 and found=976 and group size=1039.  so recovered 98% of the large group. <====
+                    // if use a manual density of 0.13f we recover each point of the group plus those randomly placed near:
+                    //     expected 1000 and found=1000 and group size=1082
+                    // Note that the smaller 100 point group was not recovered.
                 }
                
-                if (false && i == 0 || i == 1) {
+                if (false && ((i == 0) || (i == 1))) {
                     
                     TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
                     
@@ -402,8 +448,37 @@ public class FindClusters4Test extends BaseTwoPointTest {
                     "expected density = " + expectedDensity + "  calc density = " + twoPtC.getBackgroundSurfaceDensity()
                     + " npoints=" + numberOfBackgroundPoints + " xmax=" + xmax + "  (2/griddiv) = " + tpdiv
                     + "  r=exp/calc=" + (expectedDensity/twoPtC.getBackgroundSurfaceDensity()));
-                // is expectedDensity always <= found surface density?
-                // assertTrue( Math.abs(expectedDensity - twoPtC.getBackgroundSurfaceDensity()) < 0.25*expectedDensity);
+                
+                
+                if (i == 1) {
+                    if (twoPtC.backgroundStats != null && twoPtC.backgroundStats instanceof TwoPointVoidStats) {
+                        HistogramHolder histogram = ((TwoPointVoidStats)twoPtC.backgroundStats).statsHistogram;
+                        if (histogram != null) {
+                            StringBuilder xsb = new StringBuilder();
+                            StringBuilder ysb = new StringBuilder();
+                            StringBuilder xesb = new StringBuilder();
+                            StringBuilder yesb = new StringBuilder();
+    
+                            for (int z = 0; z < histogram.getYHist().length; z++) {
+                                if (z > 0) {
+                                    xsb.append("f, ");
+                                    ysb.append("f, ");
+                                    xesb.append("f, ");
+                                    yesb.append("f, ");
+                                }
+                                xsb.append(histogram.getXHist()[z]);
+                                ysb.append(histogram.getYHist()[z]);
+                                xesb.append(histogram.getXErrors()[z]);
+                                yesb.append(histogram.getYErrors()[z]);
+                            }
+                            System.out.println("float[] x = new float[]{" + xsb.append("f").toString() + "};");
+                            System.out.println("float[] y = new float[]{" + ysb.append("f").toString() + "};");
+                            System.out.println("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
+                            System.out.println("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
+                            int z = 1;
+                        }
+                    }
+                }
                 
                 count++;
             }

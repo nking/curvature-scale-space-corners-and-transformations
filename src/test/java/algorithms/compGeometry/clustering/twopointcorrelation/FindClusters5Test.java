@@ -1,14 +1,8 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscMath;
-import algorithms.misc.Statistic;
-import algorithms.util.ArrayPair;
-import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -38,21 +32,19 @@ public class FindClusters5Test extends BaseTwoPointTest {
                
            And track, N, linear density, and the number of groups found.
            
-              N    calculateLinearDensity    expectedLinearDensity   nGroups
-              100  0.1241                    0.0100                    0
-              450  0.0907                    0.0212                    2
-              900  0.0945                    0.0300                   10
-             4500  0.0918                    0.0671                  475
-             9000  0.0892                    0.0949                  975
-            14500  0.0911                    0.1204                  706
-            19000  0.0918                    0.1378                  235
-            24500  0.0904                    0.1565                   48
-            29000  0.0911                    0.1703                   15
+                  N=(100)  calcLinDens=(0.1236)  expectedLinDens=(0.0100)  nGroups=(0)
+                  N=(450)  calcLinDens=(0.1489)  expectedLinDens=(0.0212)  nGroups=(0)
+                  N=(900)  calcLinDens=(0.1564)  expectedLinDens=(0.0300)  nGroups=(0)
+                  N=(4500)  calcLinDens=(0.1580)  expectedLinDens=(0.0671)  nGroups=(125)
+                  N=(9000)  calcLinDens=(0.1536)  expectedLinDens=(0.0949)  nGroups=(665)
+                  N=(14500)  calcLinDens=(0.1716)  expectedLinDens=(0.1204)  nGroups=(1391)
+                  N=(19000)  calcLinDens=(0.1747)  expectedLinDens=(0.1378)  nGroups=(2160)
+                  N=(24500)  calcLinDens=(0.1553)  expectedLinDens=(0.1565)  nGroups=(2922)
+                  N=(29000)  calcLinDens=(0.1544)  expectedLinDens=(0.1703)  nGroups=(2980)
                SEED=1386750505246
                
-            Can see that after N=9000, the number of clusters introduced is large and the groups
-            implied by the clusters quickly saturates to essentially one large group by N=29000
-            
+            Can see that after N=1000, begin to see groups for from randomly close points.
+                roughly nGroups is less than or equal to (0.2*N)
          */
         
         int[] numberOfBackgroundPoints = new int[]{100,450,900,4500,9000,14500,19000,24500,29000};
@@ -72,7 +64,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
-        seed = 1386750505246l;
+        //seed = 1386750505246l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -148,7 +140,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
             nGroupsFound[ii] = twoPtC.getNumberOfGroups();
             expectedLinearDensities[ii] = (float)expectedDensity;
             calcLinearDensities[ii] = twoPtC.getBackgroundSurfaceDensity();
-            
+                        
         }
         
         log.info("\n start computing stats for all sets");
@@ -160,6 +152,8 @@ public class FindClusters5Test extends BaseTwoPointTest {
             
             log.info(str.toString());
             
+            // assertion that shouldn't change too much w/ other component improvements
+            assertTrue(nGroupsFound[i] <= 0.2 * numberOfBackgroundPoints[i]);
         }
 
         log.info("SEED=" + seed);

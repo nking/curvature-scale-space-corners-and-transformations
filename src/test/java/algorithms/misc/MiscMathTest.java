@@ -1,6 +1,9 @@
 package algorithms.misc;
 
+import java.security.SecureRandom;
 import java.util.logging.Logger;
+
+import algorithms.util.PolygonAndPointPlotter;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
@@ -182,6 +185,39 @@ public class MiscMathTest extends TestCase {
         i = 16;
         s = MiscMath.taylor(onePlusX, i);
         assertTrue(Math.abs(s - -3.38) < 0.1);
+    }
+    
+    public void testPoissonRandom() throws Exception {
+                
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        
+        long seed = System.currentTimeMillis();
+        //seed = 1386750505246l;
+
+        sr.setSeed(seed);
+        log.info("SEED=" + seed);
+        
+        int nIter = 100;
+        
+        int lambda = 2;
+        
+        float[] values = new float[nIter];
+        float[] valueErrors = new float[nIter];
+        
+        for (int i = 0; i < nIter; i++) {
+        
+            int rInt = MiscMath.poissonRandom(sr, lambda);
+        
+            values[i] = rInt;
+            valueErrors[i] = 0.03f*rInt;            
+        }
+        
+        int nBins = (int) MiscMath.findMax(values);
+        
+        HistogramHolder hist = Histogram.createSimpleHistogram(nBins, values, valueErrors);
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), null, null, "");
+        plotter.writeFile();
     }
 
     /**

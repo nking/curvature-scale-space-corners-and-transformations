@@ -1,5 +1,7 @@
 package algorithms.misc;
 
+import java.security.SecureRandom;
+
 /**
  *
  * @author nichole
@@ -308,6 +310,33 @@ public class MiscMath {
         stdev = (float) Math.sqrt(stdev/(float)(count - 1));
 
         return new float[]{mean, stdev};
+    }
+    
+    /*
+     http://en.wikipedia.org/wiki/Poisson_distribution
+         algorithm poisson random number (Knuth):
+     
+     @param sr an instance of secure random which is a strong random number generator
+     @param lambda a value less than 4 roughly looks like the tested dataset histograms
+     */
+    public static int poissonRandom(SecureRandom sr, int lambda) {
+
+        double L = Math.exp(-lambda);
+
+        int k = 0;
+
+        double p = 1;
+
+        do {
+            k = k + 1;
+
+            double u = sr.nextDouble();
+
+            p = p * u;
+
+        } while (p > L);
+
+        return k - 1;
     }
 
     //public static double naturalLogOfNegative(double negativeNumber) {
