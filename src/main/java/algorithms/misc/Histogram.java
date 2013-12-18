@@ -116,8 +116,7 @@ public class Histogram {
         createHistogram(a, nBins, aMin, aMax, xHist, yHist, xInterval);
     }
 
-    public static HistogramHolder createSimpleHistogram(
-        float[] values, float[] valueErrors) {
+    public static HistogramHolder createSimpleHistogram(float[] values, float[] valueErrors) {
 
         if (values == null || valueErrors == null || values.length != valueErrors.length) {
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");

@@ -669,7 +669,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
              *    error in X is resolvability, which is bin size = (xHist[1]-xHist[0])/2.
              *
              *                                | df |^2               | df |^2         df   df
-             *      (sigma_f)^2 =  (sigma_x)^2|----|   +  (sigma_y)^2|----|    +  2 * -- * -- * cov_ab
+             *          (err_f)^2 =  (err_x)^2|----|     +  (err_y)^2|----|    +  2 * -- * -- * cov_ab
              *                                | dx |                 | dy |           dx   dy
              *
              *      For uncorrelated variables the covariance terms are zero.
@@ -683,11 +683,11 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
              *    The 2 parameters are GEV.sigma and GEV.k (we use a fixed mu usually)
              *
              *                                    | df_fit |^2               | df_fit |^2
-             *      (sigma_f_fit)^2 =  (sigma_x)^2|--------|   +  (sigma_y)^2|--------|
+             *          (err_f_fit)^2 =  (err_x)^2|--------|     +  (err_y)^2|--------|
              *                                    |   dx   |                 |   dy   |
              *
              *                             | df_fit |^2                       |  df_fit  |^2
-             *          +  (sigma_GEV.k)^2 |--------|   +  (sigma_GEV.sigma)^2|----------|
+             *            +  (err_GEV.k)^2 |--------|     +  (err_GEV.sigma)^2|----------|
              *                             | dGEV.k |                         |dGEV.sigma|
              *
              *                                          (   (      ( x-mu))-(1/k))
