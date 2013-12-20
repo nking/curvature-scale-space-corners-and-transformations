@@ -129,7 +129,7 @@ public class PerformanceMetricsRunner {
                         break;
                     }
                     default: {
-                        int[] clusterNumbers = new int[]{2000, 3000, 100};
+                        int[] clusterNumbers = new int[]{1000, 300, 100};
                         int nBackgroundPoints = 100000;
                         CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.LARGE;
                         

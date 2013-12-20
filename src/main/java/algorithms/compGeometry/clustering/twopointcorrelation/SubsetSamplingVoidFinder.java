@@ -4,13 +4,9 @@ import java.util.logging.Logger;
 
 public class SubsetSamplingVoidFinder extends AbstractVoidFinder {
         
-    protected int xSortedIdxLo = -1;
+    protected int sortedIdxLo = -1;
     
-    protected int xSortedIdxHi = -1;
-    
-    protected int ySortedIdxLo = -1;
-    
-    protected int ySortedIdxHi = -1;
+    protected int sortedIdxHi = -1;
     
     public void constructLogger() {
         this.log = Logger.getLogger(this.getClass().getName());
@@ -28,82 +24,44 @@ public class SubsetSamplingVoidFinder extends AbstractVoidFinder {
         super.initializeVariables();
         
         // if not set by user
-        if (xSortedIdxLo == -1) {
+        if (sortedIdxLo == -1) {
             
-            this.xSortedIdxLo = 0;
+            this.sortedIdxLo = 0;
 
-            this.xSortedIdxHi = indexer.getNXY();
-
-            this.ySortedIdxLo = 0;
-
-            this.ySortedIdxHi = indexer.getNXY();
+            this.sortedIdxHi = indexer.getNXY();
         }
     }
     
     /**
-     * set the low index of the range of x indexes.  the indexes are w.r.t. the array
+     * set the low index of the range of indexes.  the indexes are w.r.t. the array
      * indexer.sortedXIndexes.
      * 
      * @param idx
      */
-    public void setXSortedIdxLo(int idx) {
-        this.xSortedIdxLo = idx;
+    public void setSortedIdxLo(int idx) {
+        this.sortedIdxLo = idx;
     }
     
     /**
-     * set the high index of the range of x indexes.  the indexes are w.r.t. the array
+     * set the high index of the range of indexes.  the indexes are w.r.t. the array
      * indexer.sortedXIndexes.
      * 
      * @param idx
      */
-    public void setXSortedIdxHi(int idx) {
-        this.xSortedIdxHi = idx;
-    }
-    
-    /**
-     * set the low index of the range of y indexes.  the indexes are w.r.t. the array
-     * indexer.sortedYIndexes.
-     * 
-     * @param idx
-     */
-    public void setYSortedIdxLo(int idx) {
-        this.ySortedIdxLo = idx;
-    }
-    
-    /**
-     * set the high index of the range of y indexes.  the indexes are w.r.t. the array
-     * indexer.sortedYIndexes.
-     * 
-     * @param idx
-     */
-    public void setYSortedIdxHi(int idx) {
-        this.ySortedIdxHi = idx;
+    public void setSortedIdxHi(int idx) {
+        this.sortedIdxHi = idx;
     }
 
     /**
-     * find voids by looking for other points within bounds of pairs
-     * 
+     * find voids by excluding pairs of points that contain other points within their bounds
      */
     protected void findVoidsByPairBounds() {
        
-        for (int uSortedXIndex = xSortedIdxLo; uSortedXIndex < xSortedIdxHi; uSortedXIndex++) {
+        for (int uSortedXIndex = sortedIdxLo; uSortedXIndex < sortedIdxHi; uSortedXIndex++) {
             
-            for (int vSortedXIndex = ySortedIdxLo; vSortedXIndex < ySortedIdxHi; vSortedXIndex++) {
-
-                // this is an index w.r.t. indexer.sortedYIndexes, so either need to provide
-                //   another implementation of processIndexedRegion that is expecting that the
-                //   2nd index is w.r.t. indexer.sortedYIndexes or convert the index to one
-                //   relative to indexer.sortedXIndexes.  the later should be easier to maintain.
-                
-                float yValue = indexer.getY()[vSortedXIndex];
-                
-                int idx2 = indexer.findSortedXIndexesForY(yValue);
-                
-                if (uSortedXIndex == idx2) {
-                    continue;
-                }
+            for (int vSortedXIndex = (uSortedXIndex + 1); vSortedXIndex < sortedIdxHi; vSortedXIndex++) {
                                 
-                processIndexedRegion(uSortedXIndex, idx2);
+                processIndexedRegion(uSortedXIndex, vSortedXIndex);
             }
         }
     }

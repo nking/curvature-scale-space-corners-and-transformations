@@ -107,7 +107,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
 //twoPtC.setUseDownhillSimplexHistogramFitting();
               
             twoPtC.logPerformanceMetrics();
-                
+            
             //twoPtC.setBackground(0.125f, 0.015f);
             twoPtC.calculateBackground();
                 

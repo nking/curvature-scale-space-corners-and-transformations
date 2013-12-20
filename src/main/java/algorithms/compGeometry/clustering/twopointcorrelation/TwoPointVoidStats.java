@@ -396,19 +396,44 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 interpretForSparseBackground = Boolean.TRUE;
                 
+                sampling = VoidSampling.COMPLETE;
+                
+            } else if (nXY > 10000) {
+                
+                sampling = VoidSampling.COMPLETE_ON_SUBSET;
+                
+                if (nXY > 50000) {
+                    
+                    nCellsPerDimension = 4;
+                    
+                } else if (nXY > 20000) {
+                    
+                    nCellsPerDimension = 3;
+                    
+                } else {
+                    
+                    nCellsPerDimension = 2;
+                }
+                
+            } else {
+                
+                sampling = VoidSampling.COMPLETE;
+                
             }
-            
-            log.finest("nCellsPerDim=" + nCellsPerDimensionForStats + " fractionEmpty=" + fractionEmpty + " indexer.nXY=" + indexer.getNumberOfPoints());
+                                        
+            log.finest("nCellsPerDim=" + nCellsPerDimensionForStats + " fractionEmpty=" + fractionEmpty 
+                + " indexer.nXY=" + indexer.getNumberOfPoints());
             log.finest("fractionNotAvg=" + stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor));
-            
-            sampling = VoidSampling.COMPLETE;
         }
         
+//sampling = VoidSampling.COMPLETE_ON_SUBSET;
+
         if (sampling == null) {
 
             sampling = VoidSampling.COMPLETE;
-            
+
         }
+        
         if (interpretForSparseBackground == null) {
             
             interpretForSparseBackground = Boolean.FALSE;
@@ -429,19 +454,18 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             voidFinder = new CompleteSamplingVoidFinder();
 
-        } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_RANDOM_SUBSET.ordinal()) {
+        } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_SUBSET.ordinal()) {
 
-            // xIndexLo, int xIndexHi, int yIndexLo, int yIndexHi
-            int[] xyMinMaxCell = stats.chooseARandomCell(nCellsPerDimension, indexer);
+            // indexLo, int indexHi 
+            // this chooses along the diagonal to keep x and y range the same to avoid needing to search along y more
+            int[] xyMinMaxCell = stats.chooseARandomDiagonalCell(nCellsPerDimension, indexer);
 
             voidFinder = new SubsetSamplingVoidFinder();
 
-            ((SubsetSamplingVoidFinder) voidFinder).setXSortedIdxLo(xyMinMaxCell[0]);
-            ((SubsetSamplingVoidFinder) voidFinder).setXSortedIdxHi(xyMinMaxCell[1]);
-            ((SubsetSamplingVoidFinder) voidFinder).setYSortedIdxLo(xyMinMaxCell[2]);
-            ((SubsetSamplingVoidFinder) voidFinder).setYSortedIdxHi(xyMinMaxCell[3]);
+            ((SubsetSamplingVoidFinder) voidFinder).setSortedIdxLo(xyMinMaxCell[0]);
+            ((SubsetSamplingVoidFinder) voidFinder).setSortedIdxHi(xyMinMaxCell[1]);
 
-            nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0]) * (xyMinMaxCell[3] - xyMinMaxCell[2]);
+            nSampled = (xyMinMaxCell[1] - xyMinMaxCell[0]) * (xyMinMaxCell[1] - xyMinMaxCell[0]);
 
         } else {
 
@@ -462,7 +486,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 str = "O(n lg(n)) with n=";
             } else if (sampling.ordinal() == VoidSampling.COMPLETE.ordinal()) {
                 str = "O(n^2) with n=";
-            } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_RANDOM_SUBSET.ordinal()) {
+            } else if (sampling.ordinal() == VoidSampling.COMPLETE_ON_SUBSET.ordinal()) {
                 str = "O(n1*n2) = O(" + nSampled + ")";
             }
 

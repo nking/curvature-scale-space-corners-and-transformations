@@ -68,7 +68,7 @@ public class CompleteSamplingVoidFinderTest extends BaseTwoPointTest {
         voidFinder.setSampling(VoidSampling.COMPLETE);
         
         voidFinder.setDebug(true);
-        
+       
         voidFinder.findVoids(indexer);
         
         

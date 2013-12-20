@@ -140,6 +140,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         
         boolean doProcess = true;
         
+        // O(1) to O(N-1) at worse
         for (int i = (xSortedIndex0 + 1); i < xSortedIndex1; i++) {
             
             int idx = sortedXIndexes[i];

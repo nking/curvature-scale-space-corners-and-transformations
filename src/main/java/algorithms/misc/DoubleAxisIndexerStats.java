@@ -241,6 +241,56 @@ public class DoubleAxisIndexerStats {
     }
 
     /**
+     * choose randomly a diagonal cell from a grid of size (Math.sqrt(indexer.nXY)/numberOfCellsInOneDimension)^2
+     * 
+     * @param numberOfCellsInOneDimension
+     * @param indexer
+     * @return start and end indexes w.r.t. indexer.sortedXIndexes
+     */
+    public int[] chooseARandomDiagonalCell(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
+        
+        if (numberOfCellsInOneDimension < 1) {
+            throw new IllegalArgumentException("numberOfCellsInOneDimension must be larger than 0");
+        }
+        
+        Random sr = null;
+        
+        try {
+         
+            sr = SecureRandom.getInstance("SHA1PRNG");
+            
+        } catch (NoSuchAlgorithmException e) {
+            
+            log.severe(e.getMessage());
+            
+            sr = new Random();
+        }
+        
+        long seed = System.currentTimeMillis();
+        seed = 1386620575944l;
+        sr.setSeed(seed);
+        
+        int nXY = indexer.getNXY();
+                                
+        int xDivIndexesSz = nXY/numberOfCellsInOneDimension;
+        
+        if (xDivIndexesSz == 0) {
+            // somehow, the dataset size is < 4...
+            xDivIndexesSz = 1;
+        }
+        
+        int anXIndex = (int)(sr.nextFloat()*(nXY - xDivIndexesSz));
+                        
+        int xCell = (int) (anXIndex/xDivIndexesSz);
+        
+        int xIndexLo = xCell*xDivIndexesSz;
+  
+        int xIndexHi = xIndexLo + xDivIndexesSz;
+                        
+        return new int[]{xIndexLo, xIndexHi};
+    }
+    
+    /**
      * choose a random cell within the data were a cell is a division of the data by
      * numberOfCellsInOneDimension for each dimension.  it returns the cell boundaries
      * in x and then y as indexes that are indexes relative to 
