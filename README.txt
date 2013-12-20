@@ -180,16 +180,31 @@ on a computer with characteristics:
 JVM characteristics:
     J2SE 1.6, 64-bit HotSpot server w/ initial heap size 512 MB and max heap size 1024 MB.
 
-Measurements are from the April 27, 2013 code version tagged as v20131213.
+Measurements are from the December 19, 2013 code version tagged as v20131219.
 
-    N    |  voidDens  RT complexity      mem  | Find Clusters   | Sys load |  Total RT
- points  |  RT[sec]                      [MB] |     RT[sec]     | at start |    [sec]
-         |                                    |                 |          |
---------------------------------------------------------------------------------------------------------------------------
-      99 |      0    O(N^4)              0.2  |     0           |   1.4    |      0
+Note, these will be updated for the latest changes soon.
+RT complexity for findVoids() is less than O(N^2) but it invokes functions that 
+vary from O(1) to O(N-1) as it compares the range between points. RT complexity 
+for findGroups() is a little worse than O(N^2).
 
-    1089 |      0  O((1.5*N/2)^1.8)        2  |     0           |   1.4    |      1
+Empirically derived runtimes follow.
 
-   13332 |      8  O(N^2.2)                1  |     1           |   1.4    |     12
 
-  105100 |     10  O(N^2.2)              0.6  |    204          |   1.8    |    222
+    N      |      findVoids()   |     findClusters()   | Sys load |  Total RT
+ points    |  RT[sec]   mem[MB] |  RT[sec]     mem[MB] | at start |    [sec]
+           |                    |                      |          |
+------------------------------------------------------------------------------
+        99 |      0        0.2  |       0         0.2  |     0.7  |       0
+
+      1089 |      0         20  |       0         20   |     0.7  |       1
+
+     11400 |      2          3  |       1          3   |     1    |      12
+
+     13332 |      3          3  |       1          4   |     0.7  |       6
+
+    101400 |     57         14  |     424          18  |     1    |     488
+
+Note that for the datasets with number of points > 15000, the void density 
+is determined through partial sampling rather than complete sampling, so 
+there may be a need occasionally to override the automatic decision for 
+sampling in the code.
