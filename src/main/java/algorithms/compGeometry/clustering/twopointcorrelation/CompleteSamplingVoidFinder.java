@@ -4,19 +4,22 @@ import java.util.logging.Logger;
 
 /**
  * RT complexity for findVoids()
- * 
- * findVoids() is < O(N^2), but it invokes processIndexedRegion which can be O(1) to O(N-1).
- * best time: < O(N^2)
- * worse time: < O(N^3)
- * 
+ *
+ * findVoids() is N^2/2 - N/2 which is < O(N^2),
+ * but it invokes processIndexedRegion which can be O(1) to O(N-1).
+ *
+ * total RT complexity:
+ *     best time:  is N^2 - N   which is < O(N^2)
+ *     worse time: is N^3 - N^2 which is < O(N^3)
+ *
  * @author nichole
  */
 public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
-    
+
     public void constructLogger() {
         this.log = Logger.getLogger(this.getClass().getName());
-    }   
-    
+    }
+
     @Override
     protected void findVoidsImpl() {
 
