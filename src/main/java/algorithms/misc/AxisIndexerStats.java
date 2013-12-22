@@ -5,9 +5,9 @@ import java.security.SecureRandom;
 import java.util.Random;
 import java.util.logging.Logger;
 
-import algorithms.compGeometry.clustering.twopointcorrelation.DoubleAxisIndexer;
+import algorithms.compGeometry.clustering.twopointcorrelation.AxisIndexer;
 
-public class DoubleAxisIndexerStats {
+public class AxisIndexerStats {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -26,7 +26,7 @@ public class DoubleAxisIndexerStats {
      * @param indexer
      * @return statistic the basic statistics of the point counts within the cells
      */
-    public Statistic calculateCellDensities(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
+    public Statistic calculateCellDensities(int numberOfCellsInOneDimension, AxisIndexer indexer) {
         
         if (numberOfCellsInOneDimension == 0) {
             throw new IllegalArgumentException("numberOfCellsInOneDimension must be larger than 0");
@@ -106,7 +106,7 @@ public class DoubleAxisIndexerStats {
      * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
      * @return whether all of the counts within cells are similar within one standard deviation
      */
-    public float fractionOfCellsOutSideOfAvgTolerance(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer, float factorStDev) {
+    public float fractionOfCellsOutSideOfAvgTolerance(int numberOfCellsInOneDimension, AxisIndexer indexer, float factorStDev) {
         
         Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);
         
@@ -160,7 +160,7 @@ public class DoubleAxisIndexerStats {
      * factorStDev is usually a value of 2 or 3.  The value should be equal to TwoPointCorrelation.sigmaFactor.
      * @return whether there are not cells with significantly fewer points in them than average
      */
-    public boolean doesNotHaveLargeGaps(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer, float factorStDev) {
+    public boolean doesNotHaveLargeGaps(int numberOfCellsInOneDimension, AxisIndexer indexer, float factorStDev) {
         
         Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);
         
@@ -209,7 +209,7 @@ public class DoubleAxisIndexerStats {
      * @param indexer
      * @return whether there are not cells with significantly fewer points in them than average
      */
-    public float fractionOfCellsWithoutPoints(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
+    public float fractionOfCellsWithoutPoints(int numberOfCellsInOneDimension, AxisIndexer indexer) {
         
         Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);
         
@@ -247,7 +247,7 @@ public class DoubleAxisIndexerStats {
      * @param indexer
      * @return start and end indexes w.r.t. indexer.sortedXIndexes
      */
-    public int[] chooseARandomDiagonalCell(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
+    public int[] chooseARandomDiagonalCell(int numberOfCellsInOneDimension, AxisIndexer indexer) {
         
         if (numberOfCellsInOneDimension < 1) {
             throw new IllegalArgumentException("numberOfCellsInOneDimension must be larger than 0");
@@ -304,7 +304,7 @@ public class DoubleAxisIndexerStats {
      * with respect to arrays {indexer.getSortedXIndexes(), indexer.getSortedXIndexes(), indexer.getSortedYIndexes(),
      * indexer.getSortedYIndexes()}
      */
-    public int[] chooseARandomCell(int numberOfCellsInOneDimension, DoubleAxisIndexer indexer) {
+    public int[] chooseARandomCell(int numberOfCellsInOneDimension, AxisIndexer indexer) {
         
         if (numberOfCellsInOneDimension < 1) {
             throw new IllegalArgumentException("numberOfCellsInOneDimension must be larger than 0");

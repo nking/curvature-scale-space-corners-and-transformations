@@ -8,7 +8,7 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
-import algorithms.compGeometry.clustering.twopointcorrelation.DoubleAxisIndexer;
+import algorithms.compGeometry.clustering.twopointcorrelation.AxisIndexer;
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator;
 import algorithms.compGeometry.clustering.twopointcorrelation.TwoPointCorrelation;
 
@@ -67,7 +67,7 @@ public class InputFileReaderTest extends TestCase {
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed( System.currentTimeMillis() );
         
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
         
         indexer = generator.createIndexerWithRandomPoints(sr, 0, 300, 100, 300,
             3, 30, 60, 0.1f);
@@ -146,7 +146,7 @@ public class InputFileReaderTest extends TestCase {
         return filePath;
     }
     
-    protected String writeFile(DoubleAxisIndexer indexer) throws NoSuchAlgorithmException, IOException {
+    protected String writeFile(AxisIndexer indexer) throws NoSuchAlgorithmException, IOException {
         
         String filePath = getLocalPath() + "/tmp.txt";
         

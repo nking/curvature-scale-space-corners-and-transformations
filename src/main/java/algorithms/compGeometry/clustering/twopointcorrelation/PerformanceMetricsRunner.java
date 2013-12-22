@@ -45,7 +45,7 @@ public class PerformanceMetricsRunner {
         bean = null;
     }
 
-    protected static void run(DoubleAxisIndexer indexer) throws IOException, TwoPointVoidStatsException {
+    protected static void run(AxisIndexer indexer) throws IOException, TwoPointVoidStatsException {
 
         Logger log = Logger.getLogger(PerformanceMetricsRunner.class.getName());
 
@@ -98,7 +98,7 @@ public class PerformanceMetricsRunner {
                 //sr.setSeed( seed );
                 sr.setSeed(-2384802679227907254l);
 
-                DoubleAxisIndexer indexer = null;
+                AxisIndexer indexer = null;
 
                 int count = 0;
 

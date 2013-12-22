@@ -10,7 +10,7 @@ import algorithms.curves.GEVYFit;
 import algorithms.curves.GeneralizedExtremeValue;
 import algorithms.curves.ICurveFitter;
 import algorithms.curves.NonQuadraticConjugateGradientSolver;
-import algorithms.misc.DoubleAxisIndexerStats;
+import algorithms.misc.AxisIndexerStats;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
@@ -136,7 +136,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
      *
      * @param indexedSortedPoints indexed points sorted by Y
      */
-    public TwoPointVoidStats(DoubleAxisIndexer indexedSortedPoints) {
+    public TwoPointVoidStats(AxisIndexer indexedSortedPoints) {
 
         super(indexedSortedPoints);
 
@@ -380,7 +380,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         // for reduced sampling of large sets, need these in scope:
         int nCellsPerDimension = (int)Math.sqrt(indexer.nXY/1000);
 
-        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        AxisIndexerStats stats = new AxisIndexerStats();
 
         if (automateTheFindMethodChoice) {
             

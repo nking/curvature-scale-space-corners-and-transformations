@@ -2,7 +2,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 public interface IVoidFinder {
     
-    public void findVoids(DoubleAxisIndexer indexer) throws TwoPointVoidStatsException;
+    public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException;
         
     public void processIndexedRegion(int xSortedIndex0, int xSortedIndex1);
     

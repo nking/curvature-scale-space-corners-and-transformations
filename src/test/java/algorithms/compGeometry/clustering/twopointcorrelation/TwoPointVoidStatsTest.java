@@ -74,7 +74,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         Arrays.fill(generator.xErrors, 0.1f);
         Arrays.fill(generator.yErrors, 0.1f);
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
@@ -129,7 +129,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         generator.xErrors = Errors.populateXErrorsByPointSeparation(generator.x);
         generator.yErrors = Errors.populateYErrorsBySqrt(generator.y);
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
@@ -186,7 +186,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         Arrays.fill(generator.xErrors, 0.1f);
         Arrays.fill(generator.yErrors, 0.1f);
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
@@ -224,7 +224,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
             xmin, xmax, ymin, ymax, sr, false);
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
@@ -260,7 +260,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
             xmin, xmax, ymin, ymax, sr, false);
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 

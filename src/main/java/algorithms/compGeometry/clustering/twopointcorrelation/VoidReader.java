@@ -19,7 +19,7 @@ public class VoidReader extends AbstractVoidFinder {
         // do nothing
     }
     
-    public void findVoids(DoubleAxisIndexer indexer) throws TwoPointVoidStatsException {
+    public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException {
         
         if (indexer == null) {
             throw new IllegalArgumentException("indexer cannot be null");

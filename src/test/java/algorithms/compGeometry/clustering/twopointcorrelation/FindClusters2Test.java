@@ -68,7 +68,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
         TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
         
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
 
         int count = 0;
                                 
@@ -117,7 +117,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                 switch(i) {
                     
                     case 0: {
-                        indexer = new DoubleAxisIndexer();
+                        indexer = new AxisIndexer();
                         indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
                         break;
                     }
@@ -156,7 +156,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                             ybe[j] = (float) (Math.sqrt(yb[j]));
                         }
                         
-                        indexer = new DoubleAxisIndexer();
+                        indexer = new AxisIndexer();
                         indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
                         break;
                     }

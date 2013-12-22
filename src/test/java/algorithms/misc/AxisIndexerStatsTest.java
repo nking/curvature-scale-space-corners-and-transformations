@@ -2,14 +2,14 @@ package algorithms.misc;
 
 import java.util.logging.Logger;
 
-import algorithms.compGeometry.clustering.twopointcorrelation.DoubleAxisIndexer;
+import algorithms.compGeometry.clustering.twopointcorrelation.AxisIndexer;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
 /**
  * @author nichole
  */
-public class DoubleAxisIndexerStatsTest extends TestCase {
+public class AxisIndexerStatsTest extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
@@ -25,7 +25,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
 
     public void testCalculateCellDensities() throws Exception {
         
-        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        AxisIndexerStats stats = new AxisIndexerStats();
         
         // uniform grid of data:
         
@@ -58,7 +58,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         
         int numberOfCellsInOneDimension = 2;
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
         
         Statistic stat = stats.calculateCellDensities(numberOfCellsInOneDimension, indexer);
@@ -73,7 +73,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
 
     public void testAllAreSame() throws Exception {
         
-        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        AxisIndexerStats stats = new AxisIndexerStats();
         
         // uniform grid of data:
         float[] x = new float[] {
@@ -91,7 +91,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         
         int numberOfCellsInOneDimension = 2;
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
      
         float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
@@ -102,7 +102,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
 
     public void testAllAreSame1() throws Exception {
         
-        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        AxisIndexerStats stats = new AxisIndexerStats();
         
         // non-uniform grid of data:     
         float[] x = new float[] {
@@ -132,7 +132,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         
         int numberOfCellsInOneDimension = 3;
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
      
         float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
@@ -143,7 +143,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
     
     public void testDoesNotHaveLargeGaps() throws Exception {
         
-        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        AxisIndexerStats stats = new AxisIndexerStats();
                 
         // non-uniform grid of data:     
         float[] x = new float[]{218.1512f, 232.56003f, 225.71799f, 225.52974f, 238.3025f, 235.99251f, 232.96109f, 233.68304f, 234.1696f, 220.51595f, 232.26994f, 226.22328f, 237.55748f, 244.25894f, 223.36075f, 241.24117f, 226.13882f, 214.61447f, 242.71104f, 204.799f, 218.23727f, 229.08458f, 221.59837f, 218.7572f, 243.17923f, 242.39685f, 224.7857f, 236.365f, 225.3001f, 212.45642f, 224.8136f, 244.4183f, 207.19066f, 236.01744f, 223.24132f, 248.17422f, 212.62167f, 209.55269f, 224.45036f, 232.42712f, 222.2786f, 231.22614f, 221.14526f, 229.75624f, 218.80176f, 241.49721f, 227.30006f, 206.87608f, 220.51303f, 226.21199f, 220.67516f, 199.45528f, 224.56296f, 235.71365f, 240.96512f, 242.27036f, 227.9635f, 220.15996f, 229.43198f, 225.10834f, 228.0837f, 244.20505f, 225.27882f, 215.1037f, 217.9359f, 247.48227f, 228.60823f, 200.44337f, 238.61826f, 225.85907f, 234.93889f, 215.45676f, 232.1994f, 234.53941f, 249.36598f, 225.32014f, 225.72946f, 240.72382f, 215.85005f, 224.43669f, 238.11147f, 224.34297f, 226.0046f, 223.16518f, 222.43759f, 214.88931f, 221.80898f, 244.6719f, 225.45143f, 217.85916f, 220.20998f, 209.39114f, 240.44106f, 248.62483f, 242.61313f, 207.42282f, 242.23578f, 223.79904f, 248.1001f, 227.87749f, 228.33998f, 238.91415f, 211.57442f, 206.0472f, 209.39365f, 214.61388f, 238.37091f, 223.53722f, 227.25137f, 230.74257f, 227.89406f, 218.81905f, 235.14294f, 221.19919f, 212.40334f, 238.19682f, 213.90637f, 251.80894f, 222.9282f, 228.20782f, 226.65034f, 223.11444f, 243.83336f, 225.06972f, 227.34834f, 222.25087f, 238.2076f, 238.16049f, 232.5808f, 211.7746f, 227.14288f, 228.27638f, 210.40715f, 230.92743f, 235.79675f, 238.87746f, 245.70233f, 202.40227f, 217.86363f, 225.52228f, 208.41345f, 221.73334f, 221.1519f, 217.2659f, 230.89616f, 245.19687f, 223.68724f, 234.68631f, 217.21776f, 222.04758f, 233.67758f, 225.68886f, 232.68733f, 232.75336f, 207.19171f, 228.3215f, 223.91824f, 223.82977f, 226.62216f, 219.68735f, 229.7342f, 233.52643f, 221.62625f, 229.18611f, 219.09312f, 224.36111f, 226.07347f, 219.00882f, 202.20615f, 217.10646f, 235.29436f, 246.57762f, 243.84923f, 225.32973f, 221.7708f, 226.20473f, 234.63855f, 213.86049f, 214.782f, 222.54984f, 212.83641f, 239.83676f, 228.02705f, 220.2326f, 211.46083f, 210.53883f, 232.44615f, 227.80014f, 227.9168f, 239.19153f, 239.22458f, 207.56326f, 233.01915f, 243.80598f, 237.33998f, 225.21086f, 208.42322f, 250.34872f, 236.20177f, 237.88596f, 216.45091f, 222.61682f, 222.9629f, 213.66772f, 235.72508f, 246.7094f, 138.37814f, 125.55033f, 141.84143f, 137.75615f, 134.0103f, 148.64076f, 147.74936f, 138.38106f, 140.08469f, 119.58264f, 127.10661f, 133.79674f, 139.67924f, 153.21951f, 121.13883f, 130.96573f, 149.00731f, 151.45619f, 137.6643f, 133.10727f, 119.50993f, 132.8048f, 124.3806f, 153.64142f, 148.7988f, 128.22923f, 129.61905f, 134.69962f, 137.70581f, 137.49382f, 128.25005f, 137.14253f, 133.49791f, 120.39836f, 119.52856f, 153.79695f, 150.31061f, 157.21675f, 131.88263f, 116.692444f, 142.5648f, 138.29584f, 132.80635f, 116.15137f, 137.24922f, 142.42163f, 141.01306f, 138.5083f, 157.34299f, 126.712906f, 132.84357f, 108.556725f, 124.99874f, 134.7508f, 112.32603f, 133.60898f, 131.90495f, 136.12473f, 135.26006f, 125.88304f, 144.2479f, 126.43564f, 126.73911f, 146.47742f, 136.8093f, 139.72318f, 146.36969f, 124.9775f, 113.85495f, 134.79144f, 144.31783f, 134.51233f, 133.35156f, 141.18823f, 134.94223f, 142.85753f, 138.05428f, 126.37114f, 137.26166f, 129.78285f, 134.35165f, 148.91716f, 140.38568f, 127.66412f, 132.0164f, 121.17002f, 125.31237f, 149.46422f, 126.65373f, 118.80971f, 132.14644f, 122.10546f, 135.33078f, 136.47575f, 128.24728f, 135.13399f, 142.02403f, 146.27043f, 153.80745f, 153.30568f, 134.86528f, 107.900276f, 148.4513f, 153.28734f, 119.90191f, 124.909096f, 133.06111f, 133.5698f, 129.61578f, 131.76993f, 132.44374f, 148.21054f, 140.51f, 134.11406f, 150.08981f, 112.273285f, 135.75444f, 144.2753f, 132.62875f, 134.56602f, 113.028885f, 140.05405f, 128.25365f, 127.267784f, 140.8912f, 128.58958f, 145.22127f, 117.36466f, 127.01857f, 127.428276f, 114.88858f, 143.0261f, 141.85052f, 134.78848f, 148.31677f, 131.79912f, 133.12163f, 153.33469f, 116.29544f, 139.52013f, 110.33788f, 128.4847f, 133.08777f, 151.06474f, 147.77527f, 149.5546f, 142.47823f, 122.60432f, 116.951805f, 140.63051f, 138.69652f, 140.59795f, 114.85799f, 152.11646f, 122.10403f, 145.15947f, 136.6195f, 120.011284f, 152.61067f, 132.87674f, 144.65625f, 129.76782f, 131.79045f, 141.4031f, 135.13255f, 158.45381f, 142.2841f, 136.96524f, 138.03156f, 134.41908f, 138.2384f, 133.7136f, 120.054756f, 112.786125f, 131.98788f, 116.88737f, 135.5947f, 150.79138f, 130.83281f, 110.04017f, 148.04402f, 151.46436f, 125.16138f, 137.04494f, 127.30955f, 134.20204f, 131.21373f, 135.83212f, 143.91174f, 134.13037f, 137.57271f, 146.13586f, 112.980385f, 116.64752f, 152.50322f, 133.86565f, 130.60901f, 123.724915f, 138.48338f, 133.2843f, 124.70931f, 132.97792f, 151.26955f, 133.0703f, 130.80939f, 133.6558f, 147.33437f, 134.3183f, 115.09254f, 139.20045f, 139.32576f, 137.31981f, 129.82704f, 120.06133f, 120.51498f, 138.64655f, 154.71745f, 133.67398f, 132.31725f, 127.65642f, 129.95853f, 146.99472f, 132.46326f, 138.16515f, 128.69817f, 128.21936f, 156.64624f, 133.75893f, 125.797455f, 134.42725f, 142.91171f, 142.35597f, 135.72992f, 139.26979f, 150.09f, 135.71893f, 115.37175f, 119.601944f, 123.99951f, 130.41478f, 132.22966f, 134.7253f, 125.6438f, 43.972515f, 45.579704f, 58.770737f, 42.544533f, 63.240532f, 47.924923f, 32.70428f, 69.95853f, 39.684914f, 46.231686f, 61.771015f, 53.588554f, 33.887714f, 37.132137f, 50.854202f, 54.747723f, 42.448254f, 47.178288f, 38.926914f, 63.475994f, 59.91641f, 43.956116f, 45.50094f, 34.799007f, 58.774395f, 41.29745f, 51.40714f, 52.9671f, 45.794037f, 50.953323f, 66.82527f, 56.649086f, 49.10386f, 51.486618f, 61.63773f, 51.857006f, 50.63338f, 50.329163f, 59.41421f, 63.415997f, 40.803345f, 31.071695f, 42.091446f, 57.23561f, 54.051342f, 34.182327f, 54.374664f, 46.509075f, 74.48453f, 48.65245f, 28.654697f, 42.18705f, 58.761513f, 48.314323f, 42.30949f, 50.028034f, 69.03088f, 33.779644f, 34.64454f, 40.282623f, 47.61997f, 52.223083f, 63.26082f, 42.438313f, 68.03711f, 54.13566f, 27.603893f, 48.27768f, 70.40103f, 53.2234f, 25.602186f, 47.70453f, 28.387987f, 42.78449f, 26.420815f, 58.25467f, 48.217133f, 49.62429f, 57.49454f, 27.00857f, 35.229813f, 36.01097f, 47.48988f, 66.68636f, 55.862514f, 48.2802f, 49.83084f, 46.734856f, 41.192234f, 50.15772f, 49.229053f, 48.03859f, 27.031744f, 64.675156f, 33.449226f, 44.441914f, 27.585623f, 45.269176f, 43.731575f, 54.611324f, 64.2264f, 28.372164f, 61.448013f, 61.449448f, 52.777134f, 43.081066f, 48.306408f, 58.367264f, 43.292137f, 42.273853f, 59.02506f, 50.533974f, 27.57755f, 47.007137f, 41.46226f, 64.68877f, 37.528435f, 58.21288f, 57.1027f, 44.23185f, 40.340645f, 65.85647f, 67.155396f, 59.18882f, 47.28062f, 47.13514f, 49.937305f, 33.521725f, 66.63697f, 49.448856f, 55.142414f, 65.857574f, 23.036114f, 54.40857f, 47.15495f, 56.346756f, 48.5092f, 48.18348f, 60.427444f, 62.86696f, 48.22868f, 30.630003f, 60.46225f, 32.9378f, 30.721731f, 51.060513f, 44.07f, 37.117313f, 43.987453f, 44.80299f, 49.13941f, 32.064617f, 68.811676f, 59.221897f, 46.67035f, 58.051037f, 31.839012f, 61.323112f, 35.511303f, 57.90964f, 24.644295f, 45.732113f, 45.66881f, 53.65721f, 65.01109f, 43.775707f, 53.298347f, 30.284227f, 46.08111f, 51.192623f, 49.09114f, 56.651318f, 35.88882f, 55.51568f, 39.73773f, 74.01297f, 52.917946f, 50.59352f, 39.544456f, 39.693317f, 45.86445f, 29.000834f, 40.571373f, 40.229588f, 43.0231f, 56.625843f, 66.2988f, 44.988506f, 53.692787f, 47.125973f, 50.487793f, 48.743206f, 53.395027f, 28.86628f, 48.61093f, 45.58564f, 34.304375f, 67.10715f, 22.936066f, 48.670124f, 72.04473f, 53.46151f, 64.50049f, 70.3844f, 48.43984f, 60.94235f, 25.30266f, 30.097958f, 40.732964f, 45.40124f, 48.146194f, 38.50803f, 50.289196f, 46.407276f, 48.913853f, 37.001995f, 54.865578f, 63.258102f, 49.897213f, 47.62973f, 54.2333f, 47.609707f, 46.56884f, 48.355183f, 45.75496f, 46.78592f, 27.582226f, 35.357338f, 51.100296f, 28.471472f, 58.689987f, 56.710903f, 43.404137f, 52.8223f, 34.878956f, 53.542347f, 33.47577f, 31.829699f, 47.5754f, 49.084507f, 55.30211f, 54.337307f, 47.744614f, 48.11709f, 31.27006f, 60.367928f, 65.94179f, 52.933243f, 42.725502f, 58.56619f, 31.434711f, 47.549767f, 39.03609f, 26.777573f, 59.63787f, 41.96872f, 48.285236f, 45.13884f, 45.307953f, 45.789646f, 44.073704f, 55.419632f, 65.04265f, 56.57353f, 48.33966f, 43.12184f, 46.186623f, 26.210566f, 26.813612f, 50.86721f, 58.349564f, 53.33783f, 55.800144f, 59.241207f};
@@ -152,7 +152,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         
         int numberOfCellsInOneDimension = 3;
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
      
         boolean same = stats.doesNotHaveLargeGaps(numberOfCellsInOneDimension, indexer, 2.5f);
@@ -162,7 +162,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
     
     public void testDoesNotHaveLargeGaps2() throws Exception {
         
-        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        AxisIndexerStats stats = new AxisIndexerStats();
                 
         float[] x = new float[] {
             0,  1,  2,  3, 
@@ -179,7 +179,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         
         int numberOfCellsInOneDimension = 3;
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
      
         float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
@@ -190,7 +190,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
     
     public void testChooseARandomCell() throws Exception {
         
-        DoubleAxisIndexerStats stats = new DoubleAxisIndexerStats();
+        AxisIndexerStats stats = new AxisIndexerStats();
         
         float[] x = new float[] {
             0,  1,  2,  3, 
@@ -207,7 +207,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         
         int numberOfCellsInOneDimension = 2;
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
         
         int[] indexRanges = stats.chooseARandomCell(numberOfCellsInOneDimension, indexer);

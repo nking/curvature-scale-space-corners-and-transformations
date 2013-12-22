@@ -62,7 +62,7 @@ public class DistributionsTest extends BaseTwoPointTest {
 
         int m = nIterPerBackground*nSwitches;
 
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
 
         int count = 0;
         

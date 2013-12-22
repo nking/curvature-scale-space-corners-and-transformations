@@ -58,7 +58,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         float[] x95s = new float[m];
         float[] chiSqStats = new float[m];
 
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
 
         int count = 0;
 

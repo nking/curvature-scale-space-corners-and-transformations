@@ -61,7 +61,7 @@ public class CompleteSamplingVoidFinderTest extends BaseTwoPointTest {
             ybe[i] = (float) (Math.sqrt(yb[i]));
         }
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xb.length);
         
         CompleteSamplingVoidFinder voidFinder = new CompleteSamplingVoidFinder();

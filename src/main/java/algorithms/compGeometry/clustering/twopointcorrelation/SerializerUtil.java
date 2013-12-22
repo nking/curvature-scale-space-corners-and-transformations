@@ -27,7 +27,7 @@ public class SerializerUtil {
         return path;
     }
 
-    public static String serializeIndexer(DoubleAxisIndexer dain) throws IOException {
+    public static String serializeIndexer(AxisIndexer dain) throws IOException {
 
         String resDirectory = SerializerUtil.findTmpDataDirectory();
 
@@ -49,7 +49,7 @@ public class SerializerUtil {
         return serializeIndexer(dain, filePath);
     }
 
-    public static String serializeIndexer(DoubleAxisIndexer dain, String filePath) throws IOException {
+    public static String serializeIndexer(AxisIndexer dain, String filePath) throws IOException {
 
         File file = new File(filePath);
 
@@ -104,11 +104,11 @@ public class SerializerUtil {
         }
     }
 
-    public static DoubleAxisIndexer readPersistedPoints(String persistedPointsFilePath) throws IOException {
+    public static AxisIndexer readPersistedPoints(String persistedPointsFilePath) throws IOException {
         return readPersistedPoints(persistedPointsFilePath, persistedPointsFilePath.contains("with_errors"));
     }
 
-    public static DoubleAxisIndexer readPersistedPoints(String persistedPointsFilePath,
+    public static AxisIndexer readPersistedPoints(String persistedPointsFilePath,
         boolean containsErrorArrays) throws IOException {
 
         File file = new File(persistedPointsFilePath);
@@ -120,7 +120,7 @@ public class SerializerUtil {
         ObjectInputStream ois = null;
 
         try {
-            DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+            AxisIndexer indexer = new AxisIndexer();
 
             fis = new FileInputStream(file);
 

@@ -27,7 +27,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
     
     protected final float thrsh;
     
-    protected DoubleAxisIndexer indexer = null;
+    protected AxisIndexer indexer = null;
     
     public DFSGroupFinder(float threshhold, float threshholdFactor) {
         
@@ -41,7 +41,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
     }   
     
     @Override
-    protected void findClusters(DoubleAxisIndexer indexer) {
+    protected void findClusters(AxisIndexer indexer) {
              
         log.info("using a critical density of " + threshhold + " * " + threshholdFactor + " = " + thrsh);
         
@@ -210,7 +210,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         color[uSortedXIndex] = 2;
     }
     
-    protected void processPair(DoubleAxisIndexer indexer, int uSortedXIndex, int vSortedXIndex) {
+    protected void processPair(AxisIndexer indexer, int uSortedXIndex, int vSortedXIndex) {
         
         //log.finest("processPair " + uSortedXIndex + ":" + vSortedXIndex);           
         

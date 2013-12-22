@@ -8,11 +8,11 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class DoubleAxisIndexerTest extends TestCase {
+public class AxisIndexerTest extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
-    public DoubleAxisIndexerTest(String testName) {
+    public AxisIndexerTest(String testName) {
         super(testName);
     }
 
@@ -59,7 +59,7 @@ public class DoubleAxisIndexerTest extends TestCase {
         };
 
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
 
         float[] minMaxes = indexer.findXYMinMax();
@@ -90,7 +90,7 @@ public class DoubleAxisIndexerTest extends TestCase {
             y[i] = i;
         }
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, npoints);
 
         int[] xIndexes = indexer.getSortedXIndexes();
@@ -136,7 +136,7 @@ public class DoubleAxisIndexerTest extends TestCase {
             count--;
         }
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, npoints);
 
         int[] xIndexes = indexer.getSortedXIndexes();
@@ -179,7 +179,7 @@ public class DoubleAxisIndexerTest extends TestCase {
             count--;
         }
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, npoints);
 
         int[] xIndexes = indexer.getSortedXIndexes();
@@ -227,7 +227,7 @@ public class DoubleAxisIndexerTest extends TestCase {
             y[i] = sr.nextFloat()*(float)(npoints - 1);
         }
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, npoints);
 
         // compare results of sorted indexes

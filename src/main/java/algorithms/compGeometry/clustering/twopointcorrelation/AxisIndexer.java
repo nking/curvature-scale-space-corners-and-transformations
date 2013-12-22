@@ -13,7 +13,7 @@ import java.util.Arrays;
  * 'behavior' of this class.
 
    Usage:
-      DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+      AxisIndexer indexer = new AxisIndexer();
 
       // sort and index if errors do not need to be stored:
       indexer.sortAndIndexXThenY(xPoints, yPoints, nXYPoints);
@@ -23,7 +23,7 @@ import java.util.Arrays;
 
  * @author nichole
  */
-public class DoubleAxisIndexer {
+public class AxisIndexer {
 
     /**
      * a copy of the original xPoints array given to the code before sorting.
@@ -81,7 +81,7 @@ public class DoubleAxisIndexer {
      */
     protected float[] ySortedByY = null;
 
-    public DoubleAxisIndexer() {
+    public AxisIndexer() {
     }
 
     public int getNXY() {

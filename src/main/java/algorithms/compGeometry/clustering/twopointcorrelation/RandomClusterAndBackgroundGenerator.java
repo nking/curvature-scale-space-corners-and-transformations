@@ -33,7 +33,7 @@ public class RandomClusterAndBackgroundGenerator {
         return (x == null) ? 0 : x.length;
     }
 
-    public DoubleAxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
+    public AxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
 
         float xmin = 0;
         float xmax = 300;
@@ -43,7 +43,7 @@ public class RandomClusterAndBackgroundGenerator {
         return createIndexerWithRandomPoints(xmin, xmax, ymin, ymax);
     }
 
-    public DoubleAxisIndexer createIndexerWithRandomPoints(float xmin,
+    public AxisIndexer createIndexerWithRandomPoints(float xmin,
         float xmax, float ymin, float ymax) throws NoSuchAlgorithmException {
 
         SecureRandom srr = SecureRandom.getInstance("SHA1PRNG");
@@ -116,18 +116,18 @@ public class RandomClusterAndBackgroundGenerator {
         return createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax, nClusters, nBackgroundPoints, clusterSep);
     }
 
-    public DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+    public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
 
         createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
 
         return indexer;
     }
 
-    public DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+    public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters) {
 
@@ -148,13 +148,13 @@ public class RandomClusterAndBackgroundGenerator {
 
         createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
 
         return indexer;
     }
 
-    public DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+    public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters, CLUSTER_SEPARATION clusterSeparation) {
 
@@ -172,7 +172,7 @@ public class RandomClusterAndBackgroundGenerator {
 
         createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
 
         return indexer;
@@ -496,7 +496,7 @@ public class RandomClusterAndBackgroundGenerator {
         }
     }
 
-    public DoubleAxisIndexer createIndexerWithRandomPointsAroundCenterWithDSquared(
+    public AxisIndexer createIndexerWithRandomPointsAroundCenterWithDSquared(
         SecureRandom sr, int numberOfClusterPoints,
         float xmin, float xmax, float ymin, float ymax, float maximumRadius) {
 
@@ -535,7 +535,7 @@ public class RandomClusterAndBackgroundGenerator {
             yErrors[i] = (float) (Math.sqrt(y[i]));
         }
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
 
         return indexer;

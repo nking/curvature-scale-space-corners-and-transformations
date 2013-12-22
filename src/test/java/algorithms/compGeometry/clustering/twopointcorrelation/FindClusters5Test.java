@@ -69,7 +69,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
         
         for (int ii = 0; ii < numberOfBackgroundPoints.length; ii++) { 
             
@@ -92,7 +92,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
                 ybe[i] = (float) (Math.sqrt(yb[i]));
             }
             
-            indexer = new DoubleAxisIndexer();
+            indexer = new AxisIndexer();
             
             indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
                         

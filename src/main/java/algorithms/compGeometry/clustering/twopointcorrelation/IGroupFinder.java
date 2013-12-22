@@ -2,7 +2,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 public interface IGroupFinder {
     
-    public void findGroups(DoubleAxisIndexer indexer);
+    public void findGroups(AxisIndexer indexer);
     
     public SimpleLinkedListNode[] getGroupMembershipList();
     
@@ -12,13 +12,13 @@ public interface IGroupFinder {
     
     public void setMinimumNumberInCluster(int n);
     
-    public float[] getX(int groupId, DoubleAxisIndexer indexer);
+    public float[] getX(int groupId, AxisIndexer indexer);
     
-    public float[] getY(int groupId, DoubleAxisIndexer indexer);
+    public float[] getY(int groupId, AxisIndexer indexer);
     
     public int[] getIndexes(int groupId);
     
-    public void printMembership(DoubleAxisIndexer indexer);
+    public void printMembership(AxisIndexer indexer);
     
     public long approximateMemoryUsed();
     

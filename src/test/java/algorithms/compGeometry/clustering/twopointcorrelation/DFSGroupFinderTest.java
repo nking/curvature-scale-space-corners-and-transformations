@@ -60,7 +60,7 @@ public class DFSGroupFinderTest extends TestCase {
         };
 
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, x.length);
         
         float xmin = indexer.getX()[ indexer.getSortedXIndexes()[0] ];

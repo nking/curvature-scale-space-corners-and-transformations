@@ -56,7 +56,7 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
                 continue;
             }
 
-            DoubleAxisIndexer indexer = CreateClusterDataTest.readIndexer(filePath);
+            AxisIndexer indexer = CreateClusterDataTest.readIndexer(filePath);
 
             plotter.addPlot(indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors(), null, null, String.valueOf(i));
             plotter.writeFile();
@@ -242,7 +242,7 @@ public class RefineHistogramsTest extends BaseTwoPointTest {
 
     public class TwoPointVoidStatsExt extends TwoPointVoidStats {
 
-        public TwoPointVoidStatsExt(DoubleAxisIndexer indexedSortedPoints) {
+        public TwoPointVoidStatsExt(AxisIndexer indexedSortedPoints) {
             super(indexedSortedPoints);
         }
 

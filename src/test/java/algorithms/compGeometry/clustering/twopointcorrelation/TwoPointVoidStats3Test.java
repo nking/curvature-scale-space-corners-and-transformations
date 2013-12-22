@@ -41,7 +41,7 @@ public class TwoPointVoidStats3Test extends BaseTwoPointTest {
 
         log.fine("*2*");
         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 

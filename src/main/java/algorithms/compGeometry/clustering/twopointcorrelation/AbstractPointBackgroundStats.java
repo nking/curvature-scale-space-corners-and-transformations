@@ -30,11 +30,11 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
      */
     protected float backgroundDensityError;
 
-    protected final DoubleAxisIndexer indexer;
+    protected final AxisIndexer indexer;
     protected boolean didReadPerisistedIndexer = false;
     protected boolean debug = false;
 
-    public AbstractPointBackgroundStats(DoubleAxisIndexer indexedSortedPoints) {
+    public AbstractPointBackgroundStats(AxisIndexer indexedSortedPoints) {
         if (indexedSortedPoints == null) {
             throw new IllegalArgumentException("indexedSortedPoints cannot be null");
         }

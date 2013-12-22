@@ -6,7 +6,7 @@ public class TwoPointIdentityFactoryTest extends TestCase {
 
     public void testCreate() throws Exception {
                         
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         int nPoints = 5000;
         float[] x = new float[nPoints];
         float[] y = new float[nPoints];

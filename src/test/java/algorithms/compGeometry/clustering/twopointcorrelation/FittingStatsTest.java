@@ -49,7 +49,7 @@ public class FittingStatsTest extends BaseTwoPointTest {
         float[] x80s = new float[m];
         float[] x95s = new float[m];
 
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
 
         int count = 0;
 

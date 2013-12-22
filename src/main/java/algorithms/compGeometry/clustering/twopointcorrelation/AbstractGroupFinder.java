@@ -42,7 +42,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         this.debug = setDebugToTrue;
     }
     
-    protected void initializeVariables(DoubleAxisIndexer indexer) {
+    protected void initializeVariables(AxisIndexer indexer) {
 
         pointToGroupIndex = new int[indexer.getNumberOfPoints()];
         
@@ -56,11 +56,11 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         }
     }
     
-    protected abstract void findClusters(DoubleAxisIndexer indexer);
+    protected abstract void findClusters(AxisIndexer indexer);
     
     public abstract void constructLogger();
     
-    public void findGroups(DoubleAxisIndexer indexer) {
+    public void findGroups(AxisIndexer indexer) {
                 
         constructLogger();
         
@@ -194,7 +194,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         return sumBytes;
     }
     
-    public float[] getX(int groupId, DoubleAxisIndexer indexer) {
+    public float[] getX(int groupId, AxisIndexer indexer) {
         
         if (nGroups == 0) {
             return new float[0];
@@ -215,7 +215,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         return x;
     }
     
-    public float[] getY(int groupId, DoubleAxisIndexer indexer) {
+    public float[] getY(int groupId, AxisIndexer indexer) {
         
         if (nGroups == 0) {
             return new float[0];
@@ -281,7 +281,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
     /**
      * print the groups membership to standard out
      */
-    public void printMembership(DoubleAxisIndexer indexer) {
+    public void printMembership(AxisIndexer indexer) {
         
         System.out.println(nGroups + " Groups:");
         

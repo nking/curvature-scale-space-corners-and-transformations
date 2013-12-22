@@ -52,7 +52,7 @@ public class SerializerUtilTest extends TestCase {
             y[i] = i;
         }
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, npoints);
 
         String result = SerializerUtil.serializeIndexer(indexer);
@@ -64,7 +64,7 @@ public class SerializerUtilTest extends TestCase {
         assertTrue(fl.isFile());
         assertTrue(fl.exists());
 
-        DoubleAxisIndexer indexer2 = SerializerUtil.readPersistedPoints(result);
+        AxisIndexer indexer2 = SerializerUtil.readPersistedPoints(result);
 
         assertTrue(indexer2.getNumberOfPoints() == indexer.getNumberOfPoints());
 

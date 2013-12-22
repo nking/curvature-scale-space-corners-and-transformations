@@ -51,7 +51,7 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         int nIterPerBackground = 5;
 
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
 
         int count = 0;
 

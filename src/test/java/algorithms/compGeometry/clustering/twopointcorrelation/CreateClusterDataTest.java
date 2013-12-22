@@ -79,7 +79,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
         int m = nIterPerBackground*6;
 
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
 
         int count = 0;
 
@@ -181,7 +181,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
         int m = nIterPerBackground*6;
 
-        DoubleAxisIndexer indexer = null;
+        AxisIndexer indexer = null;
 
         int count = 0;
 
@@ -259,7 +259,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
                         break;
                 }
 
-                indexer = new DoubleAxisIndexer();
+                indexer = new AxisIndexer();
                 indexer.sortAndIndexXThenY(generator.x, generator.y, generator.xErrors, generator.yErrors, generator.x.length);
 
                 String countStr = String.valueOf(count);
@@ -276,7 +276,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
             }
         }
 
-        indexer = new DoubleAxisIndexer();
+        indexer = new AxisIndexer();
 
         // write the wikipedia data set to a file:
         indexer = CreateClusterDataTest.getWikipediaDBScanExampleData();
@@ -379,7 +379,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         return (filePath.contains(spatialDistrFewOutliers));
     }
 
-    public static DoubleAxisIndexer readIndexer(String filePath) throws IOException {
+    public static AxisIndexer readIndexer(String filePath) throws IOException {
         return SerializerUtil.readPersistedPoints(filePath, true);
     }
 
@@ -414,7 +414,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         }
     }
 
-    public static void writeIndexer(String filePath, DoubleAxisIndexer indexer) throws IOException {
+    public static void writeIndexer(String filePath, AxisIndexer indexer) throws IOException {
         SerializerUtil.serializeIndexer(indexer, filePath);
     }
 
@@ -447,7 +447,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
     protected class TwoPointVoidStatsExt extends TwoPointVoidStats {
 
-        public TwoPointVoidStatsExt(DoubleAxisIndexer indexer) {
+        public TwoPointVoidStatsExt(AxisIndexer indexer) {
             super(indexer);
         }
 
@@ -459,7 +459,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         }
     }
 
-    public static DoubleAxisIndexer getWikipediaDBScanExampleData() {
+    public static AxisIndexer getWikipediaDBScanExampleData() {
 
         // dug these points out of http://upload.wikimedia.org/wikipedia/commons/0/05/DBSCAN-density-data.svg
 
@@ -559,7 +559,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
             ye[i] = 0.1f;
         }
 
-        DoubleAxisIndexer indexer = new DoubleAxisIndexer();
+        AxisIndexer indexer = new AxisIndexer();
         indexer.sortAndIndexXThenY(x, y, xe, ye, x.length);
 
         return indexer;

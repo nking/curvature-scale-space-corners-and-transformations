@@ -41,7 +41,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             for (int i = 0; i < nIter; i++) {
 
                 // compare the distributions for 'SPARSELY' populated background
-                DoubleAxisIndexer indexer = indexer = createIndexerWithRandomPoints(
+                AxisIndexer indexer = indexer = createIndexerWithRandomPoints(
                     sr, xmin, xmax, ymin, ymax, 3, 35, 60, 0.1f);
 
                 TwoPointVoidStats stats = new TwoPointVoidStats(indexer);

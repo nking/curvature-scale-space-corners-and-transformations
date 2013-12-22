@@ -42,10 +42,10 @@ import algorithms.misc.MiscMath;
  *                     k     (x - mu)^(k+1)      (   (x - mu)^k)
  *     y = y_const * ----- * (------)       * exp( - (------)  )
  *                   sigma   (sigma )            (   (sigma )  )
- *                   
- *                     k                    
+ *
+ *                     k
  *       = y_const * ----- * (z)^(k+1) * exp( -1*(z)^k )
- *                   sigma                  
+ *                   sigma
  *
  *     k > 0
  *     sigma > 0
@@ -136,7 +136,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         return generateCurve(x, parameters[0], parameters[1], parameters[2]);
     }
-    
+
     /*
      *                          (   (      ( x-mu))-(1/k))
      *                          (-1*(1 + k*(-----))      )
@@ -147,29 +147,29 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
      * mu is  the location parameter
      * sigma is the scale parameter and is > 0
      * k is the shape parameter
-     * 
-     * 
+     *
+     *
      * Components needed in the derivatives:
-     * 
+     *
      *   Let z = (1 + k*( (x-mu)/sigma )
-     *   
+     *
      *   f1 = exp( -1. * ( z^(-1./k) ) ) = exp(a)
-     *   
+     *
      *   f2 = z^(-1. - (1/k)) = exp(b)
-     *            
+     *
      *   then y = (yconst/sigma) * f1 * f2
      */
     public static Double generateYGEV(float xPoint, float k, float sigma, float mu) {
-        
+
         if (sigma == 0) {
             //throw new IllegalArgumentException("sigma must be > 0");
             return null;
         }
-        
+
         if (k == 0) {
             return generateYEVTypeI(xPoint, sigma, mu);
         }
-        
+
         // if k == 0, use Gumbel which is Type I
         // if k > 0, use Frechet which is Type II
         // if k < 0, use Weibull which is Type III.  Not using k < 0 in this project
@@ -177,7 +177,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         float z = 1.f + k * ((xPoint - mu)/sigma);
 
         boolean zIsNegative = (z < 0);
-        
+
         if (zIsNegative) {
             z *= -1;
         }
@@ -190,12 +190,12 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         }
 
         float b = (float) Math.pow(z, (-1.f - (1.f/k)));
-        
+
         if (Float.isInfinite(b)) {
             // k is very small
             return generateYEVTypeI(xPoint, sigma, mu);
         }
-        
+
         if (Float.isNaN(a) || Float.isNaN(b)) {
             // or return 0?
             return null;
@@ -208,9 +208,9 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
             return Double.valueOf(t);
         }
     }
-    
+
     public static Double generateYEVTypeI(float xPoint, float sigma, float mu) {
-        
+
         if (sigma == 0) {
             throw new IllegalArgumentException("sigma must be > 0");
         }
@@ -218,12 +218,12 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         double z = (xPoint - mu)/sigma;
 
         double a = (float) (-1.f - Math.exp(-1.0f*z));
-         
+
         double yGEV = (float) ((1.f/sigma) * Math.exp(a));
 
         return yGEV;
     }
-    
+
 
     public float[] generateCurve(float[] x1, float k, float sigma, float mu) {
 
@@ -241,9 +241,9 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         for (int i = 0; i < x1.length; i++) {
 
             float z = 1.f + k*((x1[i] - mu)/sigma);
-            
+
             boolean zIsNegative = (z < 0);
-            
+
             if (zIsNegative) {
                 z *= -1.f;
             }
@@ -301,7 +301,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         return yGEV;
     }
-    
+
     public static float[] generateEVTypeICurve(float[] x1, float sigma, float mu) {
 
         if (sigma == 0) {
@@ -384,7 +384,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
     /**
      return the error in fitting the GEV curve
-     
+
                                  | dy_fit |^2            | dy_fit |^2            | dy_fit|^2            |dy_fit|^2
        (err_y_fit)^2 =  (err_x)^2|--------|   + (err_k)^2|--------|   + (err_s)^2|-------|   + (err_m)^2|------|
                                  |   dx   |              |   dk   |              |  ds   |              |  dm  |
@@ -392,19 +392,19 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
      * @return
      */
     public static double calculateFittingErrorSquared(GEVYFit yFit, float xPoint) {
-        
+
         if (yFit == null) {
             return Float.POSITIVE_INFINITY;
         }
-      
+
         int yMaxIdx = MiscMath.findYMaxIndex(yFit.getYFit());
-        
+
         if (yMaxIdx == -1) {
             return Float.POSITIVE_INFINITY;
         }
-        
+
         float xPeak = yFit.getX()[yMaxIdx];
-        
+
         // since we don't have an error in the parameters, we'll make a rough
         //   guess with the parameters in bestFit compared to prior bestFit.
         //  the error in the parameters, k, sigma, and mu are assumed to be smaller
@@ -412,55 +412,55 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         //  we can use the full delta to overestimate the error, or assume that
         //  the error has to be smaller than half of the delta otherwise the prior Fit
         //  value would have been kept.  very very rough approx for parameter errors...
-        
+
         float kDelta = yFit.getKResolution()/2.f;
         float sigmaDelta = yFit.getSigmaResolution()/2.f;
         float muDelta = yFit.getMuSolutionResolution()/2.f;
-        
+
         float yConst = yFit.getYScale();
         float mu = yFit.getMu();
         float k = yFit.getK();
         float sigma = yFit.getSigma();
-        
+
         float xDelta = yFit.getX()[1] - yFit.getX()[0];
-        
+
         double dydx = DerivGEV.derivWRTX(yConst, mu, k, sigma, xPoint);
-        
+
         double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, xPoint);
-        
+
         double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, xPoint);
-        
+
         double dydm = DerivGEV.derivWRTMu(yConst, mu, k, sigma, xPoint);
-        
+
         // since x is always given as a number, exclude it from propagation
         double err = /*Math.pow(xDelta*dydx, 2)*/ + Math.pow(kDelta*dydk, 2) + Math.pow(sigmaDelta*dyds, 2) + Math.pow(muDelta*dydm, 2);
-        
+
 //System.out.println("error in x alone: " + Math.sqrt( Math.pow(xDelta*dydx, 2) )/yFit.getYScale());
-        
+
         return (float)err/(yFit.getYScale() * yFit.getYScale());
     }
-    
+
     /**
      * calculate the error in an area / height calculation for y=0 to y > yLimitFraction where y is
      * yLimitFraction to to the right of the peak.  This is useful for determining errors for things
      * like FWHM for example.
-     * 
+     *
      * For FWHM we have sum of f = sum(X_i*Y_i)_(i < yLimit)/ Y_i
-               
+
           err^2 = xError^2*(Y_i/Y_i) = xError^2
-              
-          it reduces to the sum of the errors in x.  no pde's...    
-     * 
+
+          it reduces to the sum of the errors in x.  no pde's...
+     *
      * @param yFit
      * @param yLimitFraction
      * @return
      */
     public static double calculateWidthFittingError(GEVYFit yFit, float yMaxFactor) {
-        
+
         if (yFit == null) {
             return Float.POSITIVE_INFINITY;
         }
-        
+
         int yPeakIdx = MiscMath.findYMaxIndex(yFit.getOriginalScaleX());
         float yLimit = yMaxFactor * yFit.getOriginalScaleYFit()[yPeakIdx];
         int yLimitIdx = -1;
@@ -475,25 +475,25 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
                 yLimitIdx = i;
             }
         }
-        
+
         // xError[i] should be formally calculated, but the approximation that it can be determined no
         //   better than  the bin center +- binwidth/2  is a minimum error.
         //   a safe addition to that (added in quadrature) would be an error in x derived from chi square
         //   but that is not done here
-        
+
         float xDelta = yFit.getX()[1] - yFit.getX()[0];
         float xErrorSq = (xDelta*xDelta/4.f);
-        
+
         float sum = 0.0f;
         for (int i = 0; i <= yLimitIdx; i++) {
             sum += xErrorSq;
         }
 
         sum = (float) Math.sqrt(sum);
-      
+
         return sum;
     }
-    
+
     public static float[] generateNormalizedCurve(float[] x1, float k, float sigma, float mu) {
 
         if (sigma == 0) {
@@ -511,14 +511,14 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         return yGEV;
     }
-    
+
     public static float[] genCurve(float[] x1, float k, float sigma, float mu) {
 
         if (sigma == 0) {
             //throw new IllegalArgumentException("sigma must be > 0");
             return null;
         }
-        
+
         if (k == 0) {
             return generateEVTypeICurve(x1, sigma, mu);
         }
@@ -528,21 +528,23 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         for (int i = 0; i < x1.length; i++) {
 
             float z = 1.f + k*((x1[i] - mu)/sigma);
-            
+
             boolean zIsNegative = (z < 0);
-            
+
             if (zIsNegative) {
                 z *= -1.f;
             }
 
             float a = -1.f*(float) Math.pow(z, (-1.f/k));
-            
+
             if (Float.isInfinite(a)) {
                 // k is extremely small, use approx when k = 0
                 return generateEVTypeICurve(x1, sigma, mu);
             }
 
             float b = (float) Math.pow(z, (-1.f - (1.f/k)));
+
+            // for extremely small or large numbers, may have overflow here
 
             if (Float.isInfinite(b)) {
                 // k is extremely small, use approx when k = 0

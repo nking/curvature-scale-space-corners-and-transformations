@@ -36,7 +36,7 @@ public class FindClusters3Test extends TestCase {
 
         log.info("testFindClusters()");
 
-        DoubleAxisIndexer indexer = CreateClusterDataTest.getWikipediaDBScanExampleData();
+        AxisIndexer indexer = CreateClusterDataTest.getWikipediaDBScanExampleData();
         // dug these points out of http://upload.wikimedia.org/wikipedia/commons/0/05/DBSCAN-density-data.svg
 
         float xmin = MiscMath.findMin(indexer.getX());

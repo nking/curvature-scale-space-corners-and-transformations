@@ -38,24 +38,24 @@ public class BaseTwoPointTest extends TestCase {
 
     public void testNeededForJunitRuntime() {}
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
+    protected AxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
         return generator.createIndexerWithRandomPoints();
     }
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints(float xmin,
+    protected AxisIndexer createIndexerWithRandomPoints(float xmin,
         float xmax, float ymin, float ymax) throws NoSuchAlgorithmException {
 
         return generator.createIndexerWithRandomPoints(xmin, xmax, ymin, ymax);
     }
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+    protected AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
 
         return generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
             nClusters, nBackgroundPoints, clusterSeparation);
     }
 
-    protected DoubleAxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
+    protected AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters) {
 

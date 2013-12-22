@@ -25,7 +25,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
     
     protected boolean debug = false;
     
-    protected DoubleAxisIndexer indexer = null;
+    protected AxisIndexer indexer = null;
  
     public AbstractVoidFinder() {
         
@@ -84,7 +84,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
     
     public abstract void constructLogger();
         
-    public void findVoids(DoubleAxisIndexer indexer) throws TwoPointVoidStatsException {
+    public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException {
                 
         if (indexer == null) {
             throw new IllegalArgumentException("indexer cannot be null");

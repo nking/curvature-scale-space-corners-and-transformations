@@ -115,13 +115,13 @@ public class TwoPointCorrelation {
         FIT_TWO_POINT_VOIDS, USER_SUPPLIED, DESERIALIZED
     }
 
-    protected final DoubleAxisIndexer indexer;
+    protected final AxisIndexer indexer;
 
     protected Boolean refineSolution = Boolean.FALSE;
 
     protected boolean allowRefinement = false;
 
-    protected DoubleAxisIndexer tempRefineSolnIndexer = null;
+    protected AxisIndexer tempRefineSolnIndexer = null;
 
     private float backgroundDensity;
     private float backgroundError;
@@ -167,7 +167,7 @@ public class TwoPointCorrelation {
      */
     public TwoPointCorrelation(float[] xPoints, float[] yPoints, int nXYPoints) {
 
-        this.indexer = new DoubleAxisIndexer();
+        this.indexer = new AxisIndexer();
 
         float[] xPointErrors = Errors.populateYErrorsBySqrt(xPoints);
         float[] yPointErrors = Errors.populateYErrorsBySqrt(yPoints);
@@ -179,7 +179,7 @@ public class TwoPointCorrelation {
 
     public TwoPointCorrelation(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nXYPoints) {
 
-        this.indexer = new DoubleAxisIndexer();
+        this.indexer = new AxisIndexer();
 
         indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
 
@@ -193,9 +193,9 @@ public class TwoPointCorrelation {
         state = STATE.INITIALIZED;
     }
 
-    public TwoPointCorrelation(DoubleAxisIndexer doubleAxisIndexer) throws IOException {
+    public TwoPointCorrelation(AxisIndexer axisIndexer) throws IOException {
 
-        this.indexer = doubleAxisIndexer;
+        this.indexer = axisIndexer;
 
         state = STATE.INITIALIZED;
     }
@@ -605,7 +605,7 @@ public class TwoPointCorrelation {
         }
     }
 
-    private DoubleAxisIndexer createIndexerMinusGroupPoints() {
+    private AxisIndexer createIndexerMinusGroupPoints() {
 
         if (indexer == null) {
             throw new IllegalStateException("indexer cannot be null");
@@ -651,7 +651,7 @@ public class TwoPointCorrelation {
             }
         }
 
-        DoubleAxisIndexer tmpIndexer = new DoubleAxisIndexer();
+        AxisIndexer tmpIndexer = new AxisIndexer();
         tmpIndexer.sortAndIndexXThenY(tmpx, tmpy, tmpxe, tmpye, tmpx.length);
 
         return tmpIndexer;
@@ -828,7 +828,7 @@ public class TwoPointCorrelation {
     public float[] getYErrors() {
         return indexer.getYErrors();
     }
-    DoubleAxisIndexer getIndexer() {
+    AxisIndexer getIndexer() {
         return indexer;
     }
     
