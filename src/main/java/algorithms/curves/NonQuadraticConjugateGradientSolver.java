@@ -16,10 +16,10 @@ import algorithms.util.PolygonAndPointPlotter;
    to make an iterative solution for chi-square minimization 
    of a non-linear, non-quadratic GEV model's difference from the data.
    
-   This solution uses a preconditioner matrix with ICU0 function to help
+   This solution uses a pre-conditioner matrix with ICU0 function to help
    determine the next stop and direction. 
  
-  Useful for implementing the code below was reading:
+   Useful for implementing the code below was reading:
    
    
    http://en.wikipedia.org/wiki/Fletcher-Reeves#Nonlinear_conjugate_gradient
@@ -195,21 +195,29 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
     protected static float eps = 1e-8f;
     
     protected static float convergedEps = 0.00001f;
-    
+        
     public NonQuadraticConjugateGradientSolver(float[] xPoints, float[] yPoints,
         float[] xErrPoints, float[] yErrPoints) {
 
         super(xPoints, yPoints, xErrPoints, yErrPoints);
-        
-        try {
-            plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
-        } catch (IOException e) {
-            log.severe(e.getMessage());
-        }
     }    
 
     public void setMaximumNumberOfIterations(int maxNumber) {
         this.maxIterations = maxNumber;
+    }
+    
+    @Override
+    public void setDebug(boolean doUseDebug) {
+        
+        super.setDebug(doUseDebug);
+        
+        if (debug) {
+            try {
+                plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+            } catch (IOException e) {
+                log.severe(e.getMessage());
+            }
+        }
     }
     
     /**
@@ -703,6 +711,10 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
 
     protected void plotFit(float[] yGEV, String label) throws IOException {
 
+        if (plotter == null) {
+            throw new IllegalStateException("set debug in order to use plotFit");
+        }
+        
         try {
             plotter.addPlot(x, y, xe, ye, x, yGEV, label);
             String filePath = plotter.writeFile2();

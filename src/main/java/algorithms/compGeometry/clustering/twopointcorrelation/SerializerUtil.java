@@ -154,7 +154,7 @@ public class SerializerUtil {
                     //log.info("**i=" + i + " x=" + x[i] + " y=" + y[i]);
                 }
 
-                indexer.sortAndIndexXThenY(x, y, nXY);
+                indexer.sortAndIndexX(x, y, nXY);
             }
 
             return indexer;

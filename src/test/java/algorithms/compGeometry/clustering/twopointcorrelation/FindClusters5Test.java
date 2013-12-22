@@ -64,7 +64,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
-        //seed = 1386750505246l;
+        seed = 1387695377745l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -106,9 +106,9 @@ public class FindClusters5Test extends BaseTwoPointTest {
                 
 //twoPtC.setUseDownhillSimplexHistogramFitting();
               
-            twoPtC.logPerformanceMetrics();
+            //twoPtC.logPerformanceMetrics();
             
-            //twoPtC.setBackground(0.125f, 0.015f);
+            //twoPtC.setBackground(0.25f, 0.015f);
             twoPtC.calculateBackground();
                 
             twoPtC.findClusters();

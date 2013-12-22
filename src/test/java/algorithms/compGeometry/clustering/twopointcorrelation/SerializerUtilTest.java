@@ -53,7 +53,7 @@ public class SerializerUtilTest extends TestCase {
         }
 
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, npoints);
+        indexer.sortAndIndexX(x, y, npoints);
 
         String result = SerializerUtil.serializeIndexer(indexer);
 
@@ -68,7 +68,7 @@ public class SerializerUtilTest extends TestCase {
 
         assertTrue(indexer2.getNumberOfPoints() == indexer.getNumberOfPoints());
 
-        for (int ii = 0; ii < 5; ii++) {
+        for (int ii = 0; ii < 3; ii++) {
             float[] array1;
             float[] array2;
             switch(ii) {
@@ -81,18 +81,10 @@ public class SerializerUtilTest extends TestCase {
                     array2 = indexer2.getY();
                     break;
                 case 2:
-                    array1 = indexer.getXSortedByY();
-                    array2 = indexer2.getXSortedByY();
-                    break;
-                case 3:
-                    array1 = indexer.getYSortedByY();
-                    array2 = indexer2.getYSortedByY();
-                    break;
-                case 4:
                     array1 = indexer.getXErrors();
                     array2 = indexer2.getXErrors();
                     break;
-                case 5:
+                case 3:
                     array1 = indexer.getYErrors();
                     array2 = indexer2.getYErrors();
                     break;

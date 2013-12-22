@@ -27,6 +27,7 @@ import algorithms.misc.MiscMath;
  *                     1
  *     y = y_const * ----- * exp( -z -exp(-z))
  *                   sigma
+ *     
  *     sigma > 0
  *
  * Extreme Value Type II:

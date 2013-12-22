@@ -9,6 +9,7 @@ import algorithms.curves.GEVChiSquareMinimization;
 import algorithms.curves.GEVYFit;
 import algorithms.curves.GeneralizedExtremeValue;
 import algorithms.curves.ICurveFitter;
+import algorithms.curves.NQCGSWrapper;
 import algorithms.curves.NonQuadraticConjugateGradientSolver;
 import algorithms.misc.DoubleAxisIndexerStats;
 import algorithms.misc.Histogram;
@@ -421,9 +422,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 
             }
                                         
-            log.finest("nCellsPerDim=" + nCellsPerDimensionForStats + " fractionEmpty=" + fractionEmpty 
-                + " indexer.nXY=" + indexer.getNumberOfPoints());
-            log.finest("fractionNotAvg=" + stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor));
+            log.fine("nCellsPerDim=" + nCellsPerDimensionForStats + " fractionEmpty=" + fractionEmpty 
+                + " indexer.nXY=" + indexer.getNumberOfPoints() + "  avg of cells=" + statistic.getAverage()
+                + "  cellXSize=" + statistic.getXSz() + " cell counts=" + Arrays.toString(statistic.getItems()));
+            log.fine("fractionNotAvg=" + stats.fractionOfCellsOutSideOfAvgTolerance(statistic, sigmaFactor));
         }
         
 //sampling = VoidSampling.COMPLETE_ON_SUBSET;
@@ -537,9 +539,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
             if (useDefaultFitting) {
 
+                /*
                 chiSqMin = new NonQuadraticConjugateGradientSolver(
                     histogram.getXHist(), histogram.getYHistFloat(), histogram.getXErrors(), histogram.getYErrors());
-
+                */
+                chiSqMin = new NQCGSWrapper(
+                    histogram.getXHist(), histogram.getYHistFloat(), histogram.getXErrors(), histogram.getYErrors());
+                
             } else {
 
                 chiSqMin = new GEVChiSquareMinimization(
@@ -552,9 +558,17 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 if (useDefaultFitting) {
 
+                    /*
                     yfit = ((NonQuadraticConjugateGradientSolver)chiSqMin)
                         .fitCurveParametersAllAtOnce(gevRangeFittingParameters[0], gevRangeFittingParameters[1],
                             gevRangeFittingParameters[2], gevRangeFittingParameters[3], 0.001f, 0.3f);
+                    */
+                    yfit = ((NQCGSWrapper)chiSqMin).fitCurveKGreaterThanZero(
+                        GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
+                        gevRangeFittingParameters[0], gevRangeFittingParameters[1],
+                        gevRangeFittingParameters[2], gevRangeFittingParameters[3]
+                    );
+                    
                 } else {
 
                     yfit =

@@ -59,7 +59,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         int numberOfCellsInOneDimension = 2;
         
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
         
         Statistic stat = stats.calculateCellDensities(numberOfCellsInOneDimension, indexer);
         
@@ -92,7 +92,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         int numberOfCellsInOneDimension = 2;
         
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
      
         float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
             (numberOfCellsInOneDimension, indexer, 2.5f);
@@ -133,7 +133,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         int numberOfCellsInOneDimension = 3;
         
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
      
         float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
             (numberOfCellsInOneDimension, indexer, 2.5f);
@@ -153,7 +153,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         int numberOfCellsInOneDimension = 3;
         
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
      
         boolean same = stats.doesNotHaveLargeGaps(numberOfCellsInOneDimension, indexer, 2.5f);
         
@@ -180,7 +180,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         int numberOfCellsInOneDimension = 3;
         
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
      
         float fractionOutliers = stats.fractionOfCellsOutSideOfAvgTolerance
             (numberOfCellsInOneDimension, indexer, 2.5f);
@@ -208,7 +208,7 @@ public class DoubleAxisIndexerStatsTest extends TestCase {
         int numberOfCellsInOneDimension = 2;
         
         DoubleAxisIndexer indexer = new DoubleAxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
         
         int[] indexRanges = stats.chooseARandomCell(numberOfCellsInOneDimension, indexer);
         

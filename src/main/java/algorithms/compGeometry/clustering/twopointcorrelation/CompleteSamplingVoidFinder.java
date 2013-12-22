@@ -28,10 +28,10 @@ public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
 
     /**
      * find voids by looking for other points within bounds of pairs
-     * 
+     *
      */
     protected void findVoidsByPairBounds() {
-                
+
         // look at every pair of points and keep only if their bounds do not include other points
         //          * (ii,jj)
         //
@@ -39,9 +39,9 @@ public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
 
         // this is < O(N^2), but processIndexedRegion can be O(1) to O(N-1)
         for (int uSortedXIndex = 0; uSortedXIndex < indexer.getNumberOfPoints(); uSortedXIndex++) {
-            
+
             for (int vSortedXIndex = (uSortedXIndex + 1); vSortedXIndex < indexer.getNumberOfPoints(); vSortedXIndex++) {
-                
+
                 processIndexedRegion(uSortedXIndex, vSortedXIndex);
             }
         }

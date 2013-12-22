@@ -241,7 +241,8 @@ public class DoubleAxisIndexerStats {
     }
 
     /**
-     * choose randomly a diagonal cell from a grid of size (Math.sqrt(indexer.nXY)/numberOfCellsInOneDimension)^2
+     * choose randomly a diagonal cell from a grid of size (Math.sqrt(indexer.nXY)/numberOfCellsInOneDimension)^2.
+     * the indexes are diagonal, but the location of the points is not (unless the data are in a grid, that is)
      * 
      * @param numberOfCellsInOneDimension
      * @param indexer
