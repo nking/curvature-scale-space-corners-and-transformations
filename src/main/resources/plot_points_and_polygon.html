@@ -56,9 +56,8 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             display: inline;
         }
         text {
-            text-anchor: middle;
             dominant-baseline: central;
-            font-size: 8pt;
+            font-size: 10pt;
         }
         .box .center {
             stroke-dasharray: 3,3;
@@ -92,17 +91,17 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             /* Sizing and scales. */
             var w = 500,
                 h = 500,
-                padding = 40,
+                padding = 55,
                 x = d3.scale.linear().domain([xm0, xm1]).range([padding, w - padding]),
                 y = d3.scale.linear().domain([ym0, ym1]).range([h - padding, padding]);
 
             var svg = d3.select("#" + plotId).append("svg").attr("width", w).attr("height", h);
 
             /* axes with ticks */
-            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10);
+            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickPadding(10);
             svg.append("g").attr("class", "y axis").attr("transform", "translate(" + (1*padding) + ",0)").call(yAxis);
 
-            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10);
+            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10).tickPadding(10);
             svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + (h - 1*padding) + ")").call(xAxis);
 
             /* grid for axes */
@@ -188,8 +187,8 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
 
             svg.append("svg:g").attr("class", "text")
                 .append("svg:text").attr("class", "label").attr("text-anchor", "start")
-                .attr("x", w/2)
-                .attr("y", h/10)
+                .attr("x", 1.0*padding)
+                .attr("y", 0.65*padding)
                 .attr("stroke", "red")
                 .text(plotLabel);
         }

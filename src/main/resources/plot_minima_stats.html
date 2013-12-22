@@ -89,9 +89,9 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
         function renderPlot(plotId, points, lines, xmin, xmax, ymin, ymax) {
 
             /* Sizing and scales. */
-            var w = 450,
-                h = 450,
-                padding = 40,
+            var w = 500,
+                h = 500,
+                padding = 55,
                 x = d3.scale.linear().domain([xmin, xmax]).range([padding, w - padding]),
                 y = d3.scale.linear().domain([ymin, ymax]).range([h - padding, padding]),
                 c1 = d3.scale.log(1, 100).range("orange", "brown"),
@@ -102,10 +102,10 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             var svg = d3.select("#" + plotId).append("svg").attr("width", w).attr("height", h);
 
             /* axes with ticks */
-            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10);
+            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickPadding(10);
             svg.append("g").attr("class", "y axis").attr("transform", "translate(" + (1*padding) + ",0)").call(yAxis);
 
-            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10);
+            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10).tickPadding(10);
             svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + (h - 1*padding) + ")").call(xAxis);
 
             /* grid for axes */
