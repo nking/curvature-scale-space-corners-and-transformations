@@ -6,29 +6,29 @@ import java.util.logging.Logger;
 import algorithms.compGeometry.LinesAndAngles;
 
 public abstract class AbstractVoidFinder implements IVoidFinder {
-    
+
     protected float[] allTwoPointSurfaceDensities = null;
-    
+
     protected float[] allTwoPointSurfaceDensitiesErrors = null;
-    
+
     protected int nTwoPointSurfaceDensities = 0;
-    
+
     protected int[] point1 = null;
-    
+
     protected int[] point2 = null;
-    
+
     protected ITwoPointIdentity twoPointIdentities = null;
-    
+
     protected VoidSampling sampling = null;
-    
+
     protected Logger log = null;
-    
+
     protected boolean debug = false;
-    
+
     protected AxisIndexer indexer = null;
- 
+
     public AbstractVoidFinder() {
-        
+
     }
 
     @Override
@@ -45,62 +45,62 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
     public int getNumberOfTwoPointDensities() {
         return nTwoPointSurfaceDensities;
     }
-    
+
     public int[] getPoint1() {
         return point1;
     }
-    
+
     public int[] getPoint2() {
         return point2;
     }
-    
+
     public void setSampling(VoidSampling sampling) {
         this.sampling = sampling;
     }
     public VoidSampling getSampling() {
         return this.sampling;
     }
-    
+
     public void setDebug(boolean setDebugToTrue) {
         this.debug = setDebugToTrue;
     }
-    
+
     protected void initializeVariables() {
 
         allTwoPointSurfaceDensities = new float[100];
         point1 = new int[100];
         point2 = new int[100];
-        twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.getNXY());        
+        twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.getNXY());
     }
-    
+
     public void releaseLargeVariables() {
         allTwoPointSurfaceDensities = null;
         twoPointIdentities = null;
         point2 = null;
         point1 = null;
     }
-    
+
     protected abstract void findVoidsImpl();
-    
+
     public abstract void constructLogger();
-        
+
     public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException {
-                
+
         if (indexer == null) {
             throw new IllegalArgumentException("indexer cannot be null");
         }
-        
+
         this.indexer = indexer;
-        
+
         constructLogger();
-        
+
         initializeVariables();
-                
+
         findVoidsImpl();
-        
+
         condenseArrays();
     }
-    
+
     /**
      * process the region bounded by the pair if the region is found to be a void
      * bounded only by the 2 given points referenced by the indexes.
@@ -111,43 +111,43 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
      * @param xSortedIndex1 index within indexer.sortedXIndexes which is an index to reference a point in indexer's x and y
      */
     public void processIndexedRegion(int xSortedIndex0, int xSortedIndex1) {
-        
+
         if (xSortedIndex0 > xSortedIndex1) {
             int tmp = xSortedIndex0;
             xSortedIndex0 = xSortedIndex1;
             xSortedIndex1 = tmp;
         }
-        
+
         int[] sortedXIndexes = indexer.getSortedXIndexes();
-        
+
         float[] y = indexer.getY();
-        
+
         int idx1 = sortedXIndexes[xSortedIndex0];
         int idx2 = sortedXIndexes[xSortedIndex1];
-        
+
         // x's are already ordered by increasing x
         float y0 = y[idx1];
         float y1 = y[idx2];
-       
+
         if (y0 > y1) {
             float tmp = y0;
             y0 = y1;
             y1 = tmp;
         }
-        
+
         float x0 = indexer.getX()[idx1];
         float x1 = indexer.getX()[idx2];
-        
+
         boolean doProcess = true;
-        
-        // O(1) to O(N-1) at worse
+
+        // O(1) to O(N-2) at worse
         for (int i = (xSortedIndex0 + 1); i < xSortedIndex1; i++) {
-            
+
             int idx = sortedXIndexes[i];
-            
+
             float xt = indexer.getX()[idx];
-  
-            float yt = y[idx]; 
+
+            float yt = y[idx];
 
             // quickly let points outside of boundaries pass
             if (xt < x0) {
@@ -159,7 +159,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
             } else if (yt > y1) {
                 continue;
             }
-            
+
             if ( ((xt > x0) && (xt < x1)) || ((yt > y0) && (yt < y1)) ) {
 
                 // else we're in bounds of a rectangle or line whose corners are the 2 points x0,y0  x1,y1
@@ -170,41 +170,41 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
 
             log.finest("(" + x0 + "," + y0 +") (" + x1 + "," + y1 + ")  test " + xt + "," + yt + "  passed");
         }
-        
+
         if (doProcess) {
-            
-            // if it has passed, we still need to look for the same x values 
+
+            // if it has passed, we still need to look for the same x values
             //   for sortedXIndexes just before xSortedIndex0 and just after xSortedIndex1
-            
+
             int t2Idx = xSortedIndex0 - 1;
-            
+
             while (t2Idx > -1 && ( indexer.getX()[sortedXIndexes[t2Idx]] == x0 )) {
                 // check whether it's within boundaries
-                float y2t = y[t2Idx];  
+                float y2t = y[t2Idx];
                 if ((y2t > y0) && (y2t < y1)) {
                     doProcess = false;
                     break;
                 }
                 t2Idx--;
             }
-            
+
             if (doProcess) {
-                
+
                 t2Idx = xSortedIndex1 + 1;
-                
+
                 while ((t2Idx < (indexer.getNumberOfPoints() - 1)) && ( indexer.getX()[sortedXIndexes[t2Idx]] == x1 )) {
-                    float y2t = y[t2Idx];  
+                    float y2t = y[t2Idx];
                     if ((y2t > y0) && (y2t < y1)) {
                         doProcess = false;
                         break;
                     }
                     t2Idx++;
                 }
-              
+
                 if (doProcess) {
                     processIndexedPair(idx1, idx2);
                 }
-            }            
+            }
         }
     }
 
@@ -248,9 +248,9 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         }
     }
 
-    
+
     protected void condenseArrays() throws TwoPointVoidStatsException {
-        
+
         if (nTwoPointSurfaceDensities == 0) {
             //throw new TwoPointVoidStatsException("No pairs were found isolated within an area");
         }
@@ -262,7 +262,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
 
         allTwoPointSurfaceDensitiesErrors =
             calulateTwoPointDensityErrors(allTwoPointSurfaceDensities, point1, point2,
-            indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors());        
+            indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors());
 
         // release twoPointIdentities to free up memory
         /*twoPointIdentities = null;
@@ -270,7 +270,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         mb.gc();*/
 
     }
-    
+
     /**
      * Calculate the 2 point density errors following the chain rule
      *
@@ -351,7 +351,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
      */
     @Override
     public long approximateMemoryUsed() {
-        
+
         String arch = System.getProperty("sun.arch.data.model");
 
         boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
@@ -363,7 +363,7 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         int intBytes = (is32Bit) ? 4 : 8;
         int arrayBytes = 32/8;
         int refBytes = nbits/8;
-        
+
         long sumBytes = 0;
 
         // 4 array references

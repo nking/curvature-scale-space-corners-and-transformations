@@ -52,11 +52,11 @@ public class DistributionsTest extends BaseTwoPointTest {
         
         long seed = System.currentTimeMillis();
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        seed = 1386991714037l;
+        //seed = 1386991714037l;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
-        int nSwitches = 5;
+        int nSwitches = 6;
 
         int nIterPerBackground = 1;
 
@@ -66,7 +66,7 @@ public class DistributionsTest extends BaseTwoPointTest {
 
         int count = 0;
         
-        int nClusters = 3;
+        int nClusters = 6;
 
         for (int i = 0; i < nSwitches; i++) {
             
@@ -97,7 +97,7 @@ public class DistributionsTest extends BaseTwoPointTest {
                     }
                     case 2: {
                         // 2 groups of uniformly filled random points
-                        indexer = createIndexerWithRandomPoints(sr, 
+                        indexer = createIndexerWithRandomPoints(sr,
                             xmin, xmax, ymin, ymax,
                             3, 200, 300, 0.01f);
                         
@@ -116,6 +116,14 @@ public class DistributionsTest extends BaseTwoPointTest {
                         // background with 3 groups in it
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             nClusters, 200, 300, 1f);
+                        break;
+                    }
+                    case 5: {
+                        // 2 groups of uniformly filled random points
+                        indexer = createIndexerWithRandomPoints(sr,
+                            xmin, xmax, ymin, ymax,
+                            7, 200, 300, 3.f);
+                        
                         break;
                     }
                                         
@@ -139,6 +147,8 @@ public class DistributionsTest extends BaseTwoPointTest {
                 twoPtC.setDebug(true);                
               
                 twoPtC.logPerformanceMetrics();
+                
+                //twoPtC.setThresholdFactorToThree();
                 
                 //twoPtC.setBackground(0.2f, 0.1f);
                 twoPtC.calculateBackground();

@@ -51,7 +51,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
      
-        seed = 1386750505246l;
+        //seed = 1386750505246l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);

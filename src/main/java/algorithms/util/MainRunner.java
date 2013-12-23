@@ -112,9 +112,9 @@ public class MainRunner {
 
             // default is 2.5
             if (useTwo) {
-                clusterFinder.setSigmaFactorToTwo();
+                clusterFinder.setThresholdFactorToTwo();
             } else if (useThree) {
-                clusterFinder.setSigmaFactorToThree();
+                clusterFinder.setThresholdFactorToThree();
             }
 
 

@@ -128,7 +128,7 @@ public class TwoPointCorrelation {
     private float sigmaFactor = 2.5f;
     // we are looking for points which have density > sigmaFactor*backgroundAverage
 
-    protected int minimumNumberInCluster = 3;
+    protected int minimumNumberInCluster = 5;
 
     protected STATE state = null;
     protected BACKGROUND_METHOD bMethod = null;
@@ -200,19 +200,19 @@ public class TwoPointCorrelation {
         state = STATE.INITIALIZED;
     }
 
-    public void setSigmaFactorToTwo() {
+    public void setThresholdFactorToTwo() {
         if (debug) {
             log.info("threshhold=2.0");
         }
         sigmaFactor = 2.0f;
     }
-    public void setSigmaFactorToTwoPointFive() {
+    public void setThresholdFactorToTwoPointFive() {
         if (debug) {
             log.info("threshhold=2.5");
         }
         sigmaFactor = 2.5f;
     }
-    public void setSigmaFactorToThree() {
+    public void setThresholdFactorToThree() {
         if (debug) {
             log.info("threshhold=3.0");
         }
@@ -830,6 +830,13 @@ public class TwoPointCorrelation {
     }
     AxisIndexer getIndexer() {
         return indexer;
+    }
+    
+    public int getMinimumNumberForGroupMembership() {
+        return minimumNumberInCluster;
+    }
+    public void setMinimumNumberForGroupMembership(int minNumber) {
+        this.minimumNumberInCluster = minNumber;
     }
     
     public ArrayPair getGroup(int groupNumber) {

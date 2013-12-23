@@ -10,7 +10,7 @@ public class TwoPointIdentityFactoryTest extends TestCase {
         int nPoints = 5000;
         float[] x = new float[nPoints];
         float[] y = new float[nPoints];
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
         
         TwoPointBinarySearchTree bt = (TwoPointBinarySearchTree) TwoPointIdentityFactory.create(indexer.getNXY());
         

@@ -16,10 +16,10 @@ import algorithms.util.PolygonAndPointPlotter;
    to make an iterative solution for chi-square minimization 
    of a non-linear, non-quadratic GEV model's difference from the data.
    
-   This solution uses a preconditioner matrix with ICU0 function to help
+   This solution uses a pre-conditioner matrix with ICU0 function to help
    determine the next stop and direction. 
  
-  Useful for implementing the code below was reading:
+   Useful for implementing the code below was reading:
    
    
    http://en.wikipedia.org/wiki/Fletcher-Reeves#Nonlinear_conjugate_gradient
@@ -195,21 +195,29 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
     protected static float eps = 1e-8f;
     
     protected static float convergedEps = 0.00001f;
-    
+        
     public NonQuadraticConjugateGradientSolver(float[] xPoints, float[] yPoints,
         float[] xErrPoints, float[] yErrPoints) {
 
         super(xPoints, yPoints, xErrPoints, yErrPoints);
-        
-        try {
-            plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
-        } catch (IOException e) {
-            log.severe(e.getMessage());
-        }
     }    
 
     public void setMaximumNumberOfIterations(int maxNumber) {
         this.maxIterations = maxNumber;
+    }
+    
+    @Override
+    public void setDebug(boolean doUseDebug) {
+        
+        super.setDebug(doUseDebug);
+        
+        if (debug) {
+            try {
+                plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+            } catch (IOException e) {
+                log.severe(e.getMessage());
+            }
+        }
     }
     
     /**
@@ -385,7 +393,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             // if solution has stalled, start with the min start point, else the max start points
             if ((nIter > 3) && (nSameSequentially > 2)) {
                 
-                if (!hasTriedAltSteps) {
+                /*if (!hasTriedAltSteps) {
                     
                     bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
                 
@@ -424,10 +432,10 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                     
                     nIter = 0;
 
-                } else {
+                } else {*/
                     // let end or let continue
                     nIter = maxIterations;
-                }
+                //}
             }
             
             for (int k = 0; k <= varStopIdx; k++) {
@@ -478,8 +486,13 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             
             float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
     
+            float degreesOfFreedom = yGEV.length - 3 - 1;
+
+            float chiSqStatistic = chiSqSumForLineSearch[0]/degreesOfFreedom;
+            
             bestYFit = new GEVYFit();
             bestYFit.setChiSqSum(chiSqSumForLineSearch[0]);
+            bestYFit.setChiSqStatistic(chiSqStatistic);
             bestYFit.setK(vars[0]);
             bestYFit.setSigma(vars[1]);
             bestYFit.setMu(vars[2]);
@@ -657,8 +670,13 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
 
         float chisqsum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
 
+        float degreesOfFreedom = yGEV.length - 3 - 1;
+
+        float chiSqStatistic = chiSqSumForLineSearch[0]/degreesOfFreedom;
+        
         GEVYFit yfit = new GEVYFit();
         yfit.setChiSqSum(chisqsum);
+        yfit.setChiSqStatistic(chiSqStatistic);
         yfit.setK(vars[0]);
         yfit.setSigma(vars[1]);
         yfit.setMu(vars[2]);
@@ -703,6 +721,10 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
 
     protected void plotFit(float[] yGEV, String label) throws IOException {
 
+        if (plotter == null) {
+            throw new IllegalStateException("set debug in order to use plotFit");
+        }
+        
         try {
             plotter.addPlot(x, y, xe, ye, x, yGEV, label);
             String filePath = plotter.writeFile2();

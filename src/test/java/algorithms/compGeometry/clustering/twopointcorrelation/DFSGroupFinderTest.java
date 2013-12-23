@@ -59,14 +59,16 @@ public class DFSGroupFinderTest extends TestCase {
            10, 10,          10, 10, 10, 10, 10
         };
 
-
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
+
         
-        float xmin = indexer.getX()[ indexer.getSortedXIndexes()[0] ];
-        float xmax = indexer.getX()[ indexer.getSortedXIndexes()[indexer.getNumberOfPoints() - 1] ];
-        float ymin = indexer.getY()[ indexer.getSortedYIndexes()[0] ];
-        float ymax = indexer.getY()[ indexer.getSortedYIndexes()[indexer.getNumberOfPoints() - 1] ];
+        float[] xmmm = indexer.findXYMinMax();
+        
+        float xmin = xmmm[0];
+        float xmax = xmmm[1];
+        float ymin = xmmm[2];
+        float ymax = xmmm[3];
         
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(
             xmin, xmax, ymin, ymax

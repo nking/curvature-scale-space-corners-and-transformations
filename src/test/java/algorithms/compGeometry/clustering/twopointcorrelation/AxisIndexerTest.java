@@ -60,7 +60,7 @@ public class AxisIndexerTest extends TestCase {
 
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, x.length);
+        indexer.sortAndIndexX(x, y, x.length);
 
         float[] minMaxes = indexer.findXYMinMax();
 
@@ -70,8 +70,8 @@ public class AxisIndexerTest extends TestCase {
         assertTrue(minMaxes[3] == 10.0f);
     }
 
-    public void testSortAndIndexXThenY() throws Exception {
-        log.info("testSortAndIndexXThenY()");
+    public void testsortAndIndexX() throws Exception {
+        log.info("testsortAndIndexX()");
 
         int npoints = 100;
 
@@ -91,31 +91,26 @@ public class AxisIndexerTest extends TestCase {
         }
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, npoints);
+        indexer.sortAndIndexX(x, y, npoints);
 
         int[] xIndexes = indexer.getSortedXIndexes();
-        int[] yIndexes = indexer.getSortedYIndexes();
 
         float[] xOriginal = indexer.getX();
         float[] yOriginal = indexer.getY();
 
         for (int i = 0; i < npoints; i++) {
             assertTrue(xIndexes[i] == i);
-            assertTrue(yIndexes[i] == i);
 
             int xIndex = xIndexes[i];
             assertTrue(xOriginal[xIndex] == i);
             assertTrue(yOriginal[xIndex] == i);
 
-            int yIndex = yIndexes[i];
-            assertTrue(xOriginal[yIndex] == i);
-            assertTrue(yOriginal[yIndex] == i);
         }
     }
 
-    public void testSortAndIndexXThenY_0() throws Exception {
+    public void testsortAndIndexX_0() throws Exception {
 
-        log.info("testSortAndIndexXThenY_0()");
+        log.info("testsortAndIndexX_0()");
 
         int npoints = 100;
 
@@ -137,10 +132,9 @@ public class AxisIndexerTest extends TestCase {
         }
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, npoints);
+        indexer.sortAndIndexX(x, y, npoints);
 
         int[] xIndexes = indexer.getSortedXIndexes();
-        int[] yIndexes = indexer.getSortedYIndexes();
 
         float[] xOriginal = indexer.getX();
         float[] yOriginal = indexer.getY();
@@ -149,16 +143,12 @@ public class AxisIndexerTest extends TestCase {
             int xIndex = xIndexes[i];
             assertTrue(xOriginal[xIndex] == i);
             assertTrue(yOriginal[xIndex] == i);
-
-            int yIndex = yIndexes[i];
-            assertTrue(xOriginal[yIndex] == i);
-            assertTrue(yOriginal[yIndex] == i);
         }
     }
 
-    public void testSortAndIndexXThenY_1() throws Exception {
+    public void testsortAndIndexX_1() throws Exception {
 
-        log.info("testSortAndIndexXThenY_1()");
+        log.info("testsortAndIndexX_1()");
 
         int npoints = 100;
 
@@ -180,10 +170,9 @@ public class AxisIndexerTest extends TestCase {
         }
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, npoints);
+        indexer.sortAndIndexX(x, y, npoints);
 
         int[] xIndexes = indexer.getSortedXIndexes();
-        int[] yIndexes = indexer.getSortedYIndexes();
 
         float[] xOriginal = indexer.getX();
         float[] yOriginal = indexer.getY();
@@ -192,23 +181,18 @@ public class AxisIndexerTest extends TestCase {
         for (int i = 0; i < npoints; i++) {
 
             int xIndex = xIndexes[i];
-            int yIndex = yIndexes[i];
-
+            
             assertTrue(xIndex == count);
-            assertTrue(yIndex == i);
 
             assertTrue(xOriginal[xIndex] == i);
             assertTrue(yOriginal[xIndex] == count);
-
-            assertTrue(xOriginal[yIndex] == count);
-            assertTrue(yOriginal[yIndex] == i);
 
             count--;
         }
     }
 
-    public void testSortAndIndexXThenY_2() throws Exception {
-        log.info("testSortAndIndexXThenY_2()");
+    public void testsortAndIndexX_2() throws Exception {
+        log.info("testsortAndIndexX_2()");
 
         int npoints = 100;
 
@@ -228,21 +212,17 @@ public class AxisIndexerTest extends TestCase {
         }
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, npoints);
+        indexer.sortAndIndexX(x, y, npoints);
 
         // compare results of sorted indexes
         int[] sortedIndexes = null;
         float[] sortedValues = null;
         int caseCount = 0;
-        for (int i = 1; i < 2; i++) {
+        for (int i = 0; i < 1; i++) {
             switch(caseCount) {
                 case 0:
                     sortedIndexes = indexer.getSortedXIndexes();
                     sortedValues = indexer.getX();
-                    break;
-                case 1:
-                    sortedIndexes = indexer.getSortedYIndexes();
-                    sortedValues = indexer.getY();
                     break;
                 default:
                     break;

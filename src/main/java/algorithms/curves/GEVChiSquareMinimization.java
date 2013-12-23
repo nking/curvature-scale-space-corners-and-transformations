@@ -5,7 +5,6 @@ import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -437,7 +436,6 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
                 if ( (bestFit == null) || (yfit.getChiSqSum() < bestFit.getChiSqSum()) ) {
                     bestFit = yfit;
                 }
-
             }
         }
 

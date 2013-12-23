@@ -58,29 +58,18 @@ public class AxisIndexer {
     protected int[] sortedXIndexes = null;
 
     /**
-     * array whose values hold indexes of y.  the order of items in sortedYIndexes
-     * is order of increasing value of y, in other words minimum y is in sortedYIndexes[0]
-     * and maximum y is in sortedYIndexes[y.length - 1]
-     */
-    protected int[] sortedYIndexes = null;
-
-    /**
      * number of points in arrays x or y
      */
     protected int nXY;
 
-    /**
-     * a copy of the reference to xPoints which contains data which have now been altered by
-     * sorting and are in the state of 'sorted in increasing order by Y' along with array ySortedByY
-     */
-    protected float[] xSortedByY = null;
-
-    /**
-     * a copy of the reference to yPoints which contains data which have now been altered by
-     * sorting and are in the state of 'sorted in increasing order by Y' along with array xSortedByY
-     */
-    protected float[] ySortedByY = null;
-
+    protected float xmin = Float.MAX_VALUE;
+    
+    protected float ymin = xmin;
+    
+    protected float xmax = Float.MIN_VALUE;
+    
+    protected float ymax = xmax;
+    
     public AxisIndexer() {
     }
 
@@ -101,9 +90,6 @@ public class AxisIndexer {
         float[] xErrors
         float[] yErrors
         int[] sortedXIndexes
-        int[] sortedYIndexes
-        float[] xSortedByY
-        float[] ySortedByY
         int nXY;
                                                      32-bit platform          64-bit platform
                                                 Field   Size on          Field   Size on
@@ -135,8 +121,8 @@ public class AxisIndexer {
 
         int overheadBytes = 16;
 
-        // 6 float and int arrays on the heap
-        long sumBits = 6*(arrayRefBits + (n*32));
+        // 4 float and 1 int arrays on the heap
+        long sumBits = 5*(arrayRefBits + (n*nbits));
 
         if (xErrors != null) {
             // 2 float arrays on the heap
@@ -184,15 +170,19 @@ public class AxisIndexer {
         }
 
         MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);
-
-        this.sortedYIndexes = Arrays.copyOf(this.sortedXIndexes, nXY);
-
-        MultiArrayMergeSort.sortBy1stArg(yPoints, xPoints, sortedYIndexes, nXY);
         
-        //sortedYIndexes hold values that are indexes w.r.t the y array
-
-        this.xSortedByY = xPoints;
-        this.ySortedByY = yPoints;
+        xmin = xPoints[0];
+        
+        xmax = xPoints[xPoints.length - 1];
+        
+        for (float yp : yPoints) {
+            if (yp > ymax) {
+                ymax = yp;
+            }
+            if (yp < ymin) {
+                ymin = yp;
+            }
+        }
     }
 
     /**
@@ -206,7 +196,7 @@ public class AxisIndexer {
      * @param yPoints
      * @param nPoints
      */
-    public void sortAndIndexXThenY(float[] xPoints, float[] yPoints, int nPoints) {
+    public void sortAndIndexX(float[] xPoints, float[] yPoints, int nPoints) {
 
         this.x = Arrays.copyOf(xPoints, nPoints);
         this.y = Arrays.copyOf(yPoints, nPoints);
@@ -222,12 +212,18 @@ public class AxisIndexer {
 
         MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);
 
-        this.sortedYIndexes = Arrays.copyOf(this.sortedXIndexes, nXY);
-
-        MultiArrayMergeSort.sortBy1stArg(yPoints, xPoints, sortedYIndexes, nXY);
-
-        this.xSortedByY = xPoints;
-        this.ySortedByY = yPoints;
+        xmin = xPoints[0];
+        
+        xmax = xPoints[xPoints.length - 1];
+        
+        for (float yp : yPoints) {
+            if (yp > ymax) {
+                ymax = yp;
+            }
+            if (yp < ymin) {
+                ymin = yp;
+            }
+        }
     }
      
     /**
@@ -278,104 +274,16 @@ public class AxisIndexer {
         return true;
     }
 
-    /**
-     * find the min and max of the indexes in xSortedByY and ySortedByY specified
-     * by xyIndexes
-     *
-     * @param xyIndexes
-     * @return
-     */
-    public float[] findXYMinMax(int[] xyIndexes) {
-
-        float xmin = Float.MAX_VALUE;
-        float ymin = xmin;
-        float xmax = Float.MIN_VALUE;
-        float ymax = xmax;
-
-        for (int index : xyIndexes) {
-            float xp = xSortedByY[index];
-            float yp = ySortedByY[index];
-
-            if (xp < xmin) {
-                xmin = xp;
-            }
-            if (yp < ymin) {
-                ymin = yp;
-            }
-            if (xp > xmax) {
-                xmax = xp;
-            }
-            if (yp > ymax) {
-                ymax = yp;
-            }
-        }
-
-        return new float[]{xmin, xmax, ymin, ymax};
-    }
-
     public float[] findXYMinMax() {
 
-        int index = sortedXIndexes[0];
-        float xmin = x[index];
-
-        index = sortedXIndexes[x.length - 1];
-        float xmax = x[index];
-
-        index = sortedYIndexes[0];
-        float ymin = y[index];
-
-        index = sortedYIndexes[y.length - 1];
-        float ymax = y[index];
-
         return new float[]{xmin, xmax, ymin, ymax};
     }
-    
-    /**
-     * return the index w.r.t. indexer.sortedXIndexes for the yValue.
-     * the index frame of reference is needed for a subsequent use.
-     * 
-     * @param yValue
-     * @param sortedX
-     * @return
-     */
-    public int findSortedXIndexesForY(float yValue) {
-        
-        int idx = Arrays.binarySearch(ySortedByY, yValue);
-        
-        if (idx < 0) {
-            idx = -1*(idx + 1);
-        }
-        
-        if (idx > (nXY - 1)) {
-            idx = nXY - 1;
-        }
-        
-        int idx2 = sortedYIndexes[idx];
-        
-        // now we have idx2 as the index w.r.t indexer.x and indexer.y, 
-        // so just need to find idx2 value in indexer.sortedXIndexes and that's the answer
-                    
-        for (int ii = 0; ii < sortedXIndexes.length; ii++) {
-            if (idx2 == sortedXIndexes[ii]) {
-                return ii;
-            }
-        }
-        
-        throw new IllegalStateException("could not find index " + idx + " in indexer.sortedXIndexes");
-    }
-
+ 
     /**
      * @return the sortedXIndexes
      */
     public int[] getSortedXIndexes() {
         return sortedXIndexes;
-    }
-
-    /**
-     * @return the sortedYIndexes
-     */
-    public int[] getSortedYIndexes() {
-        return sortedYIndexes;
     }
 
     /**
@@ -394,38 +302,6 @@ public class AxisIndexer {
      */
     public float[] getY() {
         return y;
-    }
-
-    /**
-     * return reference to the original array which is now sorted by y
-     *
-     * @return the x
-     */
-    public float[] getXSortedByY() {
-        return xSortedByY;
-    }
-
-    /**
-     * return reference to the original array which is now sorted by y
-     *
-     * @return the y
-     */
-    public float[] getYSortedByY() {
-        return ySortedByY;
-    }
-
-    protected int findIndexForValue(int[] array, int value) {
-        
-        if (array.equals(this.ySortedByY)) {
-            return Arrays.binarySearch(ySortedByY, value);  
-        } 
-        
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] == value) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     /**

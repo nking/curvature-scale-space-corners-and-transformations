@@ -27,6 +27,7 @@ import algorithms.misc.MiscMath;
  *                     1
  *     y = y_const * ----- * exp( -z -exp(-z))
  *                   sigma
+ *     
  *     sigma > 0
  *
  * Extreme Value Type II:
@@ -535,7 +536,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
                 z *= -1.f;
             }
 
-            float a = -1.f*(float) Math.pow(z, (-1.f/k));
+            float a = -1.f*(float) Math.pow(z, (-1.f/k)); // = -Inf when z=0.317, k=5.05e-4
 
             if (Float.isInfinite(a)) {
                 // k is extremely small, use approx when k = 0

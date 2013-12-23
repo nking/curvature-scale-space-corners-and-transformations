@@ -36,8 +36,7 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
 
-
-        //seed = 1387019322723l;
+        //seed = 1387775326745l;
 
         sr.setSeed(seed);
         log.info("SEED=" + seed);
@@ -131,7 +130,7 @@ public class FindClustersTest extends BaseTwoPointTest {
                             }
                         }
 
-                        if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
+                        if (true) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
                             if (i == 2 && ii == 2) {
                                 StringBuilder xsb = new StringBuilder();
                                 StringBuilder ysb = new StringBuilder();
