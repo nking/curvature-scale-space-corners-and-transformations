@@ -1,24 +1,26 @@
-[EMMA v2.0.5312 report, generated Thu Dec 19 21:53:22 PST 2013]
+[EMMA v2.0.5312 report, generated Sun Dec 22 22:15:21 PST 2013]
 -------------------------------------------------------------------------------
 OVERALL COVERAGE SUMMARY:
 
-[class, %]	[method, %]	[block, %]	[name]
-92%  (49/53)!	70%  (442/632)!	65%  (19682/30160)!	all classes
+[class, %]	[method, %]	[block, %]	[line, %]	[name]
+92%  (49/53)!	70%  (440/629)!	65%  (19359/29871)!	63%  (3596.7/5683)!	all classes
 
 OVERALL STATS SUMMARY:
 
 total packages:	7
 total classes:	53
-total methods:	632
+total methods:	629
+total executable files:	46
+total executable lines:	5683
 
 COVERAGE BREAKDOWN BY PACKAGE:
 
-[class, %]	[method, %]	[block, %]	[name]
-88%  (7/8)!	71%  (35/49)	54%  (813/1498)!	algorithms.util
-100% (5/5)	70%  (56/80)	58%  (2448/4206)!	algorithms.misc
-100% (1/1)	69%  (20/29)!	61%  (1716/2831)!	algorithms.compGeometry
-89%  (24/27)!	67%  (184/275)!	65%  (6476/9992)!	algorithms.compGeometry.clustering.twopointcorrelation
-100% (8/8)	70%  (114/162)	66%  (6407/9640)!	algorithms.curves
-100% (1/1)	82%  (9/11)	89%  (655/734)	algorithms.sorting
-100% (3/3)	92%  (24/26)	93%  (1167/1259)	algorithms.compGeometry.convexHull
+[class, %]	[method, %]	[block, %]	[line, %]	[name]
+88%  (7/8)!	71%  (35/49)	54%  (813/1498)!	58%  (185.7/321)!	algorithms.util
+100% (5/5)	71%  (57/80)	58%  (2451/4206)!	56%  (505.9/899)!	algorithms.misc
+100% (1/1)	69%  (20/29)!	61%  (1716/2831)!	57%  (279.6/492)!	algorithms.compGeometry
+100% (8/8)	70%  (114/163)!	64%  (6081/9563)!	61%  (978.5/1600)!	algorithms.curves
+89%  (24/27)!	67%  (181/271)!	66%  (6476/9780)!	65%  (1291.3/1974)!	algorithms.compGeometry.clustering.twopointcorrelation
+100% (1/1)	82%  (9/11)	89%  (655/734)	88%  (139/158)	algorithms.sorting
+100% (3/3)	92%  (24/26)	93%  (1167/1259)	91%  (216.7/239)	algorithms.compGeometry.convexHull
 -------------------------------------------------------------------------------
