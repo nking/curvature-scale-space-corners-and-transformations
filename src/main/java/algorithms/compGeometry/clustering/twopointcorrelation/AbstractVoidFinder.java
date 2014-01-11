@@ -28,7 +28,6 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
     protected AxisIndexer indexer = null;
 
     public AbstractVoidFinder() {
-
     }
 
     @Override
@@ -71,13 +70,6 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         point1 = new int[100];
         point2 = new int[100];
         twoPointIdentities = TwoPointIdentityFactory.create(this.indexer.getNXY());
-    }
-
-    public void releaseLargeVariables() {
-        allTwoPointSurfaceDensities = null;
-        twoPointIdentities = null;
-        point2 = null;
-        point1 = null;
     }
 
     protected abstract void findVoidsImpl();

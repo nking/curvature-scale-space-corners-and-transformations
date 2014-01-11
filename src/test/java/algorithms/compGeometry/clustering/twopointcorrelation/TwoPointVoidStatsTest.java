@@ -3,6 +3,10 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.Errors;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.logging.Logger;
@@ -75,7 +79,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         Arrays.fill(generator.yErrors, 0.1f);
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(generator.x, generator.y,
+        indexer.sortAndIndexX(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
@@ -95,6 +99,40 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         boolean didRead = stats.readTwoPointBackground(filePath);
         assertTrue(didRead);
+        
+        
+        // test VoidReader while we have a filePath for a persisted dataset
+        InputStream fis = null;
+        ObjectInputStream ois = null;
+        boolean threwException = false;
+        try {
+            fis = new FileInputStream(fl);
+            ois = new ObjectInputStream(fis);
+            VoidReader reader = new VoidReader(ois);
+            reader.setSampling(VoidSampling.N_A);
+            assertNotNull(reader.getTwoPointDensities());
+            assertNotNull(reader.getTwoPointDensityErrors());
+            assertTrue(reader.getNumberOfTwoPointDensities() > 0);
+            reader.findVoids(indexer);
+            reader.findVoids(null);
+        } catch (IOException e1) {
+            Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        } finally {
+            assertTrue(threwException);
+            try {
+                if (fis != null) {
+                    fis.close();
+                }
+                if (ois != null) {
+                    ois.close();
+                }
+            } catch (IOException e1) {
+                Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());
+            }
+        }
+       
     }
 
     public void testCalulateAndHistogramBinErrors() throws Exception {
@@ -130,7 +168,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         generator.yErrors = Errors.populateYErrorsBySqrt(generator.y);
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(generator.x, generator.y,
+        indexer.sortAndIndexX(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
@@ -187,7 +225,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         Arrays.fill(generator.yErrors, 0.1f);
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(generator.x, generator.y,
+        indexer.sortAndIndexX(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
@@ -225,7 +263,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             xmin, xmax, ymin, ymax, sr, false);
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(generator.x, generator.y,
+        indexer.sortAndIndexX(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
@@ -261,7 +299,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             xmin, xmax, ymin, ymax, sr, false);
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(generator.x, generator.y,
+        indexer.sortAndIndexX(generator.x, generator.y,
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);

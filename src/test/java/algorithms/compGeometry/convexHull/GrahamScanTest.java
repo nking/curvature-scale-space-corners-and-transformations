@@ -66,6 +66,67 @@ public class GrahamScanTest extends TestCase {
         }
 
     }
+    
+    public void testScanExceptions() throws Exception {
+
+        boolean threwException = false;
+        float[] x = new float[]{0, 2, 7, 2, 2, 3};
+        float[] y = new float[]{2, 2, 1, 6, 0};
+        
+        try {
+            GrahamScan scan = new GrahamScan();
+            scan.computeHull(null, y);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        try {
+            GrahamScan scan = new GrahamScan();
+            scan.computeHull(x, null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+
+        
+        try {
+            GrahamScan scan = new GrahamScan();
+            scan.computeHull(x, y);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        x = new float[]{0, 2};
+        y = new float[]{2, 2};
+        try {
+            GrahamScan scan = new GrahamScan();
+            scan.computeHull(x, y);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        
+        float[] xx = new float[]{0, 2, 2};
+        float[] yy = new float[]{2, 2, 2};
+        try {
+            GrahamScan scan = new GrahamScan();
+            scan.computeHull(xx, yy);
+        } catch (GrahamScanTooFewPointsException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        try {
+            GrahamScan scan = new GrahamScan();
+            scan.populateHull();
+        } catch (GrahamScanTooFewPointsException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+    }
 
     public void testCalculateConvexHull6() throws Exception {
 

@@ -78,5 +78,20 @@ public class TwoPointHashMapTest extends TestCase {
             }
         }
     }
+    
+    public void testConstructor() {
+
+        int nData = 46350;
+
+        boolean threwException = false;
+        
+        try {
+            TwoPointHashMap identities = new TwoPointHashMap(nData);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+    }
 
 }

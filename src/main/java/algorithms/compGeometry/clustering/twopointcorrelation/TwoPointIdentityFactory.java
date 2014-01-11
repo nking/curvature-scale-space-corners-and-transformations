@@ -8,7 +8,7 @@ import algorithms.util.Util;
  * @author nichole
  */
 public class TwoPointIdentityFactory {
-
+    
     public static ITwoPointIdentity create(int indexerNXY) {
 
         if (indexerNXY <= TwoPointHashMap.nMax) {

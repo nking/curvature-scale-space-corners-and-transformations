@@ -23,9 +23,7 @@ public interface IVoidFinder {
     
     public float[] calulateTwoPointDensityErrors(float[] densities, int[] point1Indexes, 
         int[] point2Indexes, float[] xp, float[] yp, float[] xpe, float[] ype);
-    
-    public void releaseLargeVariables();
-    
+        
     public long approximateMemoryUsed();
     
     public void setDebug(boolean setDebugToTrue);

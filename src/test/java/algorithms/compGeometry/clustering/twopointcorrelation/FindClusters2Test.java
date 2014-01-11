@@ -118,7 +118,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                     
                     case 0: {
                         indexer = new AxisIndexer();
-                        indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
+                        indexer.sortAndIndexX(xb, yb, xbe, ybe, xbe.length);
                         break;
                     }
 
@@ -157,7 +157,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
                         }
                         
                         indexer = new AxisIndexer();
-                        indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
+                        indexer.sortAndIndexX(xb, yb, xbe, ybe, xbe.length);
                         break;
                     }
                                         

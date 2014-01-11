@@ -203,12 +203,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         this.sigmaFactor = stDevFactor;
     }
 
-    public void releaseLargeVariables() {
-        if (voidFinder != null) {
-            voidFinder.releaseLargeVariables();
-        }
-    }
-
     protected void logPerformanceMetrics() {
         this.doLogPerformanceMetrics = true;
     }

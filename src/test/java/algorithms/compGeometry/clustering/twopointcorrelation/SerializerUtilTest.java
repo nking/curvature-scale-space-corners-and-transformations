@@ -1,6 +1,8 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import java.io.File;
+import java.io.IOException;
+
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
@@ -38,22 +40,38 @@ public class SerializerUtilTest extends TestCase {
         File dir = new File(result);
         assertTrue(dir.isDirectory());
     }
+    
+    public void testSerializeIndexer() throws Exception {
+        System.out.println("testSerializeIndexer()");
+        
+        serializeIndexer(false);
+        serializeIndexer(true);
+    }
 
     /**
      * Test of serializeIndexer method, of class SerializerUtil.
      */
-    public void testSerializeIndexer() throws Exception {
+    public void serializeIndexer(boolean includeErrors) throws Exception {
         int npoints = 100;
 
         float[] x = new float[npoints];
         float[] y = new float[npoints];
+        float[] xe = new float[npoints];
+        float[] ye = new float[npoints];
         for (int i = 0; i < npoints; i++) {
             x[i] = i;
             y[i] = i;
+            xe[i] = 0.1f*x[i];
+            ye[i] = 0.1f*y[i];
         }
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexX(x, y, npoints);
+        
+        if (includeErrors) {
+            indexer.sortAndIndexX(x, y, xe, ye, npoints);
+        } else {
+            indexer.sortAndIndexX(x, y, npoints);
+        }
 
         String result = SerializerUtil.serializeIndexer(indexer);
 
@@ -68,7 +86,7 @@ public class SerializerUtilTest extends TestCase {
 
         assertTrue(indexer2.getNumberOfPoints() == indexer.getNumberOfPoints());
 
-        for (int ii = 0; ii < 3; ii++) {
+        for (int ii = 0; ii < 4; ii++) {
             float[] array1;
             float[] array2;
             switch(ii) {
@@ -104,5 +122,19 @@ public class SerializerUtilTest extends TestCase {
                 }
             }
         }
+        
+        boolean threwException = false;
+        try {
+            SerializerUtil.readPersistedPoints("txtxtxt");
+        } catch (IOException ex) {
+            threwException = true;
+        }
+        assertTrue(threwException);
     }
+
+    public void test0() throws Exception {
+        // this isn't used, but completes the coverage
+        SerializerUtil util = new SerializerUtil();
+    }
+
 }

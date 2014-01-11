@@ -8,7 +8,7 @@ import java.util.Arrays;
  */
 public class XYStack {
 
-     public float[] x = null;
+    public float[] x = null;
 
     public float[] y = null;
 
@@ -51,14 +51,14 @@ public class XYStack {
         return y[nXY-1];
     }
     public float peekNextToTopX() {
-        if (nXY == 1) {
+        if (nXY < 2) {
             return Float.NEGATIVE_INFINITY;
         }
         return x[nXY-2];
     }
 
     public float peekNextToTopY() {
-        if (nXY == 1) {
+        if (nXY < 2) {
             return Float.NEGATIVE_INFINITY;
         }
         return y[nXY-2];

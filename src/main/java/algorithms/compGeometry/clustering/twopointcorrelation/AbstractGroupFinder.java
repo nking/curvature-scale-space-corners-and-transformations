@@ -44,6 +44,10 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
     
     protected void initializeVariables(AxisIndexer indexer) {
 
+        if (indexer == null) {
+            throw new IllegalArgumentException("indexer cannot be null");
+        }
+        
         pointToGroupIndex = new int[indexer.getNumberOfPoints()];
         
         Arrays.fill(pointToGroupIndex, -1);
@@ -61,6 +65,10 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
     public abstract void constructLogger();
     
     public void findGroups(AxisIndexer indexer) {
+        
+        if (indexer == null) {
+            throw new IllegalArgumentException("indexer cannot be null");
+        }
                 
         constructLogger();
         
@@ -143,13 +151,14 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
     }
 
     protected void checkAndExpandGroupMembershipArray() {
+        
+        if (groupMembership == null) {
+            throw new IllegalStateException("groupMembership cannot be null");
+        }
 
         if (groupMembership.length < (nGroups + 1)) {
             int oldN = groupMembership.length;
-            int n = (int) (1.5f * oldN);
-            if (n < (oldN + 1)) {
-                n = oldN + 1;
-            }
+            int n = (oldN == 0) ? 10 : (int) (1.5f * oldN);
 
             groupMembership = Arrays.copyOf(groupMembership, n);
             for (int k = oldN; k < n; k++) {
@@ -203,6 +212,10 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
             throw new IllegalArgumentException("groupId=" + groupId + " is outside of range of nGroups=" + nGroups);
         }
         
+        if (indexer == null) {
+            throw new IllegalArgumentException("indexer cannot be null");
+        }
+        
         int[] indexes = getIndexes(groupId);
         
         float[] x = new float[indexes.length];
@@ -222,6 +235,10 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
         }
         if (groupId > (nGroups - 1) || (groupId < 0)) {
             throw new IllegalArgumentException("groupId=" + groupId + " is outside of range of nGroups=" + nGroups);
+        }
+        
+        if (indexer == null) {
+            throw new IllegalArgumentException("indexer cannot be null");
         }
         
         int[] indexes = getIndexes(groupId);
@@ -282,6 +299,10 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
      * print the groups membership to standard out
      */
     public void printMembership(AxisIndexer indexer) {
+        
+        if (indexer == null) {
+            throw new IllegalArgumentException("indexer cannot be null");
+        }
         
         System.out.println(nGroups + " Groups:");
         

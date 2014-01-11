@@ -102,7 +102,7 @@ class TwoPointBinarySearchTree implements ITwoPointIdentity {
         return x;
     }
 
-    public void insert(int i0, int i1) {
+    protected void insert(int i0, int i1) {
         Node y = null;
         Node x = root;
         while (x != null) {
@@ -113,7 +113,9 @@ class TwoPointBinarySearchTree implements ITwoPointIdentity {
                 x = x.getRight();
             }
         }
+
         Node z = new Node(i0, i1);
+        z.parent = y;
         if (y == null) {
             root = z;
         } else if (y.compare(z) > 1) {

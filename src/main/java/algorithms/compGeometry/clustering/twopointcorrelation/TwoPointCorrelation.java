@@ -172,7 +172,7 @@ public class TwoPointCorrelation {
         float[] xPointErrors = Errors.populateYErrorsBySqrt(xPoints);
         float[] yPointErrors = Errors.populateYErrorsBySqrt(yPoints);
 
-        indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
+        indexer.sortAndIndexX(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
 
         state = STATE.INITIALIZED;
     }
@@ -181,7 +181,7 @@ public class TwoPointCorrelation {
 
         this.indexer = new AxisIndexer();
 
-        indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
+        indexer.sortAndIndexX(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
 
         state = STATE.INITIALIZED;
     }
@@ -394,9 +394,8 @@ public class TwoPointCorrelation {
         this.backgroundDensity = voidStats.getBackgroundDensity();
         this.backgroundError = voidStats.getBackgroundDensityError();
         
-        //backgroundStats.releaseLargeVariables();
-
         if (debug) {
+            
             log.info("==>background density ="
                 + this.backgroundDensity + " with error =" + this.backgroundError);
          
@@ -652,7 +651,7 @@ public class TwoPointCorrelation {
         }
 
         AxisIndexer tmpIndexer = new AxisIndexer();
-        tmpIndexer.sortAndIndexXThenY(tmpx, tmpy, tmpxe, tmpye, tmpx.length);
+        tmpIndexer.sortAndIndexX(tmpx, tmpy, tmpxe, tmpye, tmpx.length);
 
         return tmpIndexer;
     }

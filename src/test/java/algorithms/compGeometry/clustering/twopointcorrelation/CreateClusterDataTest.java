@@ -129,7 +129,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
                         break;
                 }
 
-                indexer.sortAndIndexXThenY(generator.x, generator.y, generator.xErrors, generator.yErrors, generator.x.length);
+                indexer.sortAndIndexX(generator.x, generator.y, generator.xErrors, generator.yErrors, generator.x.length);
 
                 String fileName = indexerFileNamePrefix + numberOfClusters + fileNamePostfix;
                 String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
@@ -260,7 +260,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
                 }
 
                 indexer = new AxisIndexer();
-                indexer.sortAndIndexXThenY(generator.x, generator.y, generator.xErrors, generator.yErrors, generator.x.length);
+                indexer.sortAndIndexX(generator.x, generator.y, generator.xErrors, generator.yErrors, generator.x.length);
 
                 String countStr = String.valueOf(count);
                 while (countStr.length() < 3) {
@@ -560,7 +560,7 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
         }
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xe, ye, x.length);
+        indexer.sortAndIndexX(x, y, xe, ye, x.length);
 
         return indexer;
     }

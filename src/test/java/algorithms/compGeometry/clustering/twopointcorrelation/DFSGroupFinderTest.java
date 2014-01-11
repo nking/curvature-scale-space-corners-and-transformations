@@ -112,6 +112,96 @@ public class DFSGroupFinderTest extends TestCase {
             assertTrue(f);
         }
         
+        assertNotNull(groupFinder.getPointToGroupIndexes());
+        
+        groupFinder.printMembership(indexer);
+        
+        // test some exceptions
+        boolean threwException = false;
+        try {
+            float[] xa = groupFinder.getX(1, null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        
+        threwException = false;
+        try {
+            float[] xa = groupFinder.getX(100, null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        
+        threwException = false;
+        try {
+            float[] ya = groupFinder.getY(1, null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        
+        threwException = false;
+        try {
+            float[] ya = groupFinder.getY(100, null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        
+        threwException = false;
+        try {
+            int[] ia = groupFinder.getIndexes(100);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+    }
+    
+    public void testExceptions() throws Exception {
+        
+        boolean threwException;
+        
+        DFSGroupFinder groupFinder = new DFSGroupFinder(2.0f, 1.0f);
+        groupFinder.setDebug(true);
+        
+        threwException = false;
+        try {
+            groupFinder.findGroups(null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        
+        threwException = false;
+        try {
+            groupFinder.initializeVariables(null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        
+        threwException = false;
+        try {
+            groupFinder.printMembership(null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        float[] xa = groupFinder.getX(1, null);
+        assertTrue(xa.length == 0);
+        
+        assertTrue(groupFinder.getY(1, null).length == 0);
+        
+        assertTrue(groupFinder.getIndexes(1).length == 0);
+        
     }
 
 }

@@ -39,7 +39,5 @@ public interface IPointBackgroundStats {
      */
     public float getBackgroundDensityError();
     
-    public void releaseLargeVariables();
-
     public long approximateMemoryUsed();
 }

@@ -89,25 +89,31 @@ public class GrahamScan {
         points.push( x[p0Index], y[p0Index]);
         points.push( x[1], y[1]);
         //points.push( x[2], y[2]);
+        
+        float topX, topY;
 
         // for i = 3 to m
         //    while angle between next-to-top(S), top(S) and p_i makes a nonleft turn
         //        do pop(S)
         //    push(pi, S)
         for (int i = 2; i < nPointsUsable; i++) {
-
+    
+            topX = points.peekTopX();
+            topY = points.peekTopY();
+            
             double direction = LinesAndAngles.direction(
-                points.peekNextToTopX(), points.peekNextToTopY(),
-                points.peekTopX(), points.peekTopY(),
+                points.peekNextToTopX(), points.peekNextToTopY(), topX, topY,
                 x[i], y[i]);
             
-            while (/*!Double.isNaN(direction) && */ direction > 0 && !points.isEmpty()) {
+            while (!points.isEmpty() /*&& !Double.isNaN(direction)*/ && (direction > 0)) {
 
                 points.pop();
 
+                topX = points.peekTopX();
+                topY = points.peekTopY();
+                
                 direction = LinesAndAngles.direction(
-                    points.peekNextToTopX(), points.peekNextToTopY(),
-                    points.peekTopX(), points.peekTopY(),
+                    points.peekNextToTopX(), points.peekNextToTopY(), topX, topY,
                     x[i], y[i]);                
             }
 
@@ -125,10 +131,10 @@ public class GrahamScan {
         return this.yHull;
     }
 
-    protected void populateHull() {
+    protected void populateHull() throws GrahamScanTooFewPointsException {
 
         if (points == null) {
-            return;
+            throw new GrahamScanTooFewPointsException("Points cannot be null.  Use computeHull first.");
         }
         
         int n = points.getNPoints() + 1;

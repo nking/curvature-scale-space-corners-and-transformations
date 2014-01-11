@@ -64,6 +64,33 @@ public class XYStackTest extends TestCase {
             assertTrue( Math.abs(yCheck3 - result3[1]) < 0.01);
         }
     }
+    
+    public void testEmptyStack() {
+        XYStack stack = new XYStack();
+        assertTrue(Float.isInfinite(stack.peekTopX()));
+        assertTrue(Float.isInfinite(stack.peekTopY()));
+        assertTrue(Float.isInfinite(stack.peekNextToTopX()));
+        assertTrue(Float.isInfinite(stack.peekNextToTopY()));
+        assertNull(stack.pop());
+        assertTrue(stack.isEmpty());
+        
+        stack = new XYStack(100);
+        for (int i = 0; i < 10; i++) {
+            stack.push(i, i);
+        }
+        stack.compressArrays();
+        assertTrue(stack.getNPoints() == 10);
+        assertTrue(stack.x.length == 10);
+    }
+
+    public void testPush() {
+        XYStack stack = new XYStack(10);
+        for (int i = 0; i < 11; i++) {
+            stack.push(i, i);
+        }
+        assertTrue(stack.getNPoints() == 11);
+        assertTrue(stack.x.length > 10);
+    }
 
     protected float[] createRandomNumbers(SecureRandom sr, int n) {
         float[] x = new float[n];

@@ -1,6 +1,8 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.compGeometry.clustering.twopointcorrelation.TwoPointIdentityFactory;
+
 import java.util.logging.Logger;
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -136,13 +138,13 @@ public class PolarAngleMergeSortTest extends TestCase {
     	 *            2,0
     	 */
         // points should have been sorted by y and decr x already
-    	double[] xx = {2,7,0,2,2};
-    	double[] yy = {0,1,2,2,6};
+    	float[] xx = {2,7,0,2,2};
+    	float[] yy = {0,1,2,2,6};
 
         int nUsable = PolarAngleMergeSort.sort(2, 0, xx, yy);
 
-        double[] expectedxx = {2, 7, 2, 0};
-    	double[] expectedyy = {0, 1, 6, 2};
+        float[] expectedxx = {2, 7, 2, 0};
+        float[] expectedyy = {0, 1, 6, 2};
 
     	for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
@@ -166,15 +168,15 @@ public class PolarAngleMergeSortTest extends TestCase {
         *    0 1<> 3 4 5 6 7
         */
     	
-    	xx = new double[] {2.0, 7.0, 0.0, 2.0, 3.0, 2.0};
-    	yy = new double[] {0.0, 1.0, 2.0, 2.0, 2.0, 6.0};
+    	xx = new float[] {2.0f, 7.0f, 0.0f, 2.0f, 3.0f, 2.0f};
+    	yy = new float[] {0.0f, 1.0f, 2.0f, 2.0f, 2.0f, 6.0f};
     	
     	
-        expectedxx = new double[]{2.0, 7.0, 3.0, 2.0, 2.0, 0.0};
-        expectedyy = new double[]{0.0, 1.0, 2.0, 2.0, 6.0, 2.0};
+        expectedxx = new float[]{2.0f, 7.0f, 3.0f, 2.0f, 2.0f, 0.0f};
+        expectedyy = new float[]{0.0f, 1.0f, 2.0f, 2.0f, 6.0f, 2.0f};
         
-    	double[] polarAngle = new double[xx.length];
-    	PolarAngleMergeSort.sort(2.0, 0.0, xx, yy, 0, xx.length - 1, polarAngle);
+        double[] polarAngle = new double[xx.length];
+    	PolarAngleMergeSort.sort(2.0f, 0.0f, xx, yy, 0, xx.length - 1, polarAngle);
         for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
@@ -184,8 +186,8 @@ public class PolarAngleMergeSortTest extends TestCase {
         
     	nUsable = PolarAngleMergeSort.sort(2, 0, xx, yy);
 
-    	expectedxx = new double[]{2.0, 7.0, 3.0, 2.0, 0.0};
-        expectedyy = new double[]{0.0, 1.0, 2.0, 6.0, 2.0};
+    	expectedxx = new float[]{2.0f, 7.0f, 3.0f, 2.0f, 0.0f};
+        expectedyy = new float[]{0.0f, 1.0f, 2.0f, 6.0f, 2.0f};
         
         for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
@@ -217,13 +219,13 @@ public class PolarAngleMergeSortTest extends TestCase {
          *     0    1    2    3    4    5
     	 */
 
-        double[] xx = {2, 3, 1,   4, 5};
-    	double[] yy = {1, 2, 2.5, 3, 4};
+        float[] xx = {2, 3, 1,   4, 5};
+        float[] yy = {1, 2, 2.5f, 3, 4};
 
         int nUsable = PolarAngleMergeSort.sort(2, 1, xx, yy);
 
-        double[] expectedxx = {2, 5, 1};
-    	double[] expectedyy = {1, 4, 2.5};
+        float[] expectedxx = new float[]{2, 5, 1};
+        float[] expectedyy = new float[]{1, 4, 2.5f};
 
     	for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
@@ -255,13 +257,13 @@ public class PolarAngleMergeSortTest extends TestCase {
          *     0    1    2    3    4
     	 */
 
-        double[] xx = {3, 2, 4, 1};
-    	double[] yy = {1, 2, 3, 3};
+        float[] xx = {3, 2, 4, 1};
+        float[] yy = {1, 2, 3, 3};
 
         int nUsable = PolarAngleMergeSort.sort(3, 1, xx, yy);
 
-        double[] expectedxx = {3, 4, 1};
-    	double[] expectedyy = {1, 3, 3};
+        float[] expectedxx = {3, 4, 1};
+        float[] expectedyy = {1, 3, 3};
 
     	for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
@@ -293,13 +295,13 @@ public class PolarAngleMergeSortTest extends TestCase {
          *     0    1    2    3    4
     	 */
 
-        double[] xx = {3, 1, 4, 2};
-    	double[] yy = {1, 3, 3, 2};
+        float[] xx = {3, 1, 4, 2};
+        float[] yy = {1, 3, 3, 2};
 
         int nUsable = PolarAngleMergeSort.sort(3, 1, xx, yy);
 
-        double[] expectedxx = {3, 4, 1};
-    	double[] expectedyy = {1, 3, 3};
+        float[] expectedxx = {3, 4, 1};
+        float[] expectedyy = {1, 3, 3};
 
     	for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
@@ -314,18 +316,67 @@ public class PolarAngleMergeSortTest extends TestCase {
     	 *            2,0
     	 */
 
-        double[] xx = {2,4,2,0,2};
-    	double[] yy = {0,1,2,2,5};
+        float[] xx = {2,4,2,0,2};
+    	float[] yy = {0,1,2,2,5};
 
         PolarAngleMergeSort.sort(2, 0, xx, yy);
 
-        double[] expectedxx = {2, 4, 2, 0};
-    	double[] expectedyy = {0, 1, 5, 2};
+        float[] expectedxx = {2, 4, 2, 0};
+    	float[] expectedyy = {0, 1, 5, 2};
 
     	for (int i=0; i < expectedxx.length; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
         }
+    }
+    
+    public void testSortExceptions() {
+
+        boolean threwException;
+        float[] xx = {2,4,2,0};
+        float[] yy = {0,1,2,2,5};
+
+        threwException = false;
+        try {
+            PolarAngleMergeSort.sort(2, 0, null, yy);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            PolarAngleMergeSort.sort(2, 0, xx, null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            PolarAngleMergeSort.sort(2, 0, xx, yy);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        int n = 0;
+        try {
+            n = PolarAngleMergeSort.sort(2, 0, new float[]{1.0f}, new float[]{1.0f});
+            assertTrue(n == 1);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(n == 1);
+        assertFalse(threwException);
+
+    }
+    
+    public void test0() throws Exception {
+        // make coverage reports happy: work around for class built purely for static methods. constructor not directly used...
+        PolarAngleMergeSort t = new PolarAngleMergeSort();
+        assertNotNull(t);
     }
 
     /**

@@ -74,7 +74,7 @@ public class FittingStatsTest extends BaseTwoPointTest {
                         break;
                 }
 
-                indexer.sortAndIndexXThenY(generator.x, generator.y,
+                indexer.sortAndIndexX(generator.x, generator.y,
                     generator.xErrors, generator.yErrors, generator.x.length);
 
                 log.info(" " + count + "(" + indexer.nXY + " points) ... ");

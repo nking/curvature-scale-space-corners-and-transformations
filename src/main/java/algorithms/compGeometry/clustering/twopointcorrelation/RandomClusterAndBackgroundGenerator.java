@@ -122,7 +122,7 @@ public class RandomClusterAndBackgroundGenerator {
         createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);
 
         return indexer;
     }
@@ -149,7 +149,7 @@ public class RandomClusterAndBackgroundGenerator {
         createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);
 
         return indexer;
     }
@@ -173,7 +173,7 @@ public class RandomClusterAndBackgroundGenerator {
         createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);
 
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);
 
         return indexer;
     }
@@ -536,7 +536,7 @@ public class RandomClusterAndBackgroundGenerator {
         }
         
         AxisIndexer indexer = new AxisIndexer();
-        indexer.sortAndIndexXThenY(x, y, xErrors, yErrors, x.length);
+        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);
 
         return indexer;
     }

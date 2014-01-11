@@ -3,6 +3,8 @@ package algorithms.sorting;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.logging.Logger;
+
+import algorithms.compGeometry.convexHull.PolarAngleMergeSort;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -105,8 +107,40 @@ public class MultiArrayMergeSortTest extends TestCase {
         // ===   test   exceptions ====
         caughtException = true;
         try {
+            MultiArrayMergeSort.sortBy1stArg(null, null, null, y.length);
+        } catch (IllegalArgumentException t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortBy1stArg(x, null, null, y.length);
+        } catch (IllegalArgumentException t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortBy1stArg(x, y, null, y.length);
+        } catch (IllegalArgumentException t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortBy1stArg(new float[]{1,2,3}, new float[]{1,2}, new int[]{1,2}, 4);
+        } catch (IllegalArgumentException t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
             MultiArrayMergeSort.sortBy1stArg(y, null, null, y.length);
-        } catch (Throwable t) {
+        } catch (IllegalArgumentException t) {
             caughtException = true;
         }
         assertTrue(caughtException);
@@ -114,7 +148,7 @@ public class MultiArrayMergeSortTest extends TestCase {
         caughtException = true;
         try {
             MultiArrayMergeSort.sortBy1stArg(x, null, null, x.length);
-        } catch (Throwable t) {
+        } catch (IllegalArgumentException t) {
             caughtException = true;
         }
         assertTrue(caughtException);
@@ -122,10 +156,12 @@ public class MultiArrayMergeSortTest extends TestCase {
         caughtException = true;
         try {
             MultiArrayMergeSort.sortBy1stArg(y, x, null, x.length);
-        } catch (Throwable t) {
+        } catch (IllegalArgumentException t) {
             caughtException = true;
         }
         assertTrue(caughtException);
+        
+        
     }
 
     public void testSortBy1stArgThen2nd(){
@@ -213,6 +249,36 @@ public class MultiArrayMergeSortTest extends TestCase {
             assertTrue( Math.abs(ex[i] - x[i]) < 0.01);
             assertTrue( Math.abs(ey[i] - y[i]) < 0.01);
         }
+    	
+    	boolean caughtException = true;
+        try {
+            MultiArrayMergeSort.sortBy1stArgThen2nd(null, null);
+        } catch (IllegalArgumentException t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortBy1stArgThen2nd(new float[]{1f,2f}, null);
+        } catch (IllegalArgumentException t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        caughtException = true;
+        try {
+            MultiArrayMergeSort.sortBy1stArgThen2nd(new float[]{1f,2f}, new float[]{1f,2f,3f});
+        } catch (IllegalArgumentException t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+    }
+    
+    public void test0() throws Exception {
+        // make coverage reports happy: work around for class built purely for static methods. constructor not directly used...
+        MultiArrayMergeSort t = new MultiArrayMergeSort();
+        assertNotNull(t);
     }
 
     /**

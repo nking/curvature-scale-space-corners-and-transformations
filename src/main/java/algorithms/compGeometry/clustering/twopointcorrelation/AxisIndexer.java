@@ -126,8 +126,11 @@ public class AxisIndexer {
 
         if (xErrors != null) {
             // 2 float arrays on the heap
-            sumBits += (2*(arrayRefBits + (xErrors.length * 32)));
+            sumBits += (2*(arrayRefBits + (xErrors.length * nbits)));
         }
+
+        // 5 primitives
+        sumBits += 5*nbits;
 
         long sumBytes = (sumBits/8) + overheadBytes;
 
@@ -155,7 +158,7 @@ public class AxisIndexer {
      * @param yPointErrors
      * @param nPoints
      */
-    public void sortAndIndexXThenY(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nPoints) {
+    public void sortAndIndexX(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nPoints) {
 
         this.x = Arrays.copyOf(xPoints, nPoints);
         this.y = Arrays.copyOf(yPoints, nPoints);
@@ -225,55 +228,7 @@ public class AxisIndexer {
             }
         }
     }
-     
-    /**
-     * given 2 points defined by their indexes with respect to the
-     * array sortedXIndexes, return true if there are no other points
-     * within their bounds.
-     *
-     * @param xSortedIndex1 index of first point's location in the array sortedXIndexes
-     * @param xSortedIndex2 index of second point's location in the array sortedXIndexes
-     *
-     * @return true if there are no other points within the bounds of the 2 referenced
-     * by their indexes
-     */
-    protected boolean hasNoOtherPointsWithinBounds(int xSortedIndex1, int xSortedIndex2) {
     
-        if (xSortedIndex1 > xSortedIndex2) {
-            int tmp = xSortedIndex1;
-            xSortedIndex1 = xSortedIndex2;
-            xSortedIndex2 = tmp;
-        }
-        
-        int idx1 = sortedXIndexes[xSortedIndex1];
-        int idx2 = sortedXIndexes[xSortedIndex2];
-        
-        // x's are already ordered by increasing x
-        float y0 = y[idx1];
-        float y1 = y[idx2];
-       
-        if (y0 > y1) {
-            float tmp = y0;
-            y0 = y1;
-            y1 = tmp;
-        }
-        
-        for (int i = (xSortedIndex1 + 1); i < xSortedIndex2; i++) {
-            
-            int idx = sortedXIndexes[i];
-
-            // we already know that x is within bounds, just need to test yt and exit quickly if it is within bounds
-            float yt = y[idx];
-            
-            if ( !((yt < y0) || (yt > y1)) ) {
-                // it's not outside of bounds
-                return false;
-            }
-        }
-        
-        return true;
-    }
-
     public float[] findXYMinMax() {
 
         return new float[]{xmin, xmax, ymin, ymax};

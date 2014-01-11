@@ -3,7 +3,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import java.util.Arrays;
 
 /**
- * a node holding only a integer key and the next reference
+ * a node holding only a integer key and the next reference.  the key must be larger than -1.
  *
  * @author nichole
  */
@@ -37,7 +37,7 @@ public class SimpleLinkedListNode {
     
     public SimpleLinkedListNode insert(int insertKey) {
         if (insertKey == -1) {
-            throw new IllegalArgumentException("key must be larger than -1");
+            throw new IllegalArgumentException("insertKey must be larger than -1");
         }
         if (this.key == -1) {
             key = insertKey;
@@ -54,19 +54,9 @@ public class SimpleLinkedListNode {
         return node;
     }
 
-    /*
-    SimpleLinkedListNode latest = this;
-    while (latest != null) {
-        if (latest.key == key) {
-            return latest;
-        }
-        latest = latest.next;
-    }
-    */
-
     public SimpleLinkedListNode insertIfDoesNotAlreadyExist(int insertKey) {
         if (insertKey == -1) {
-            throw new IllegalArgumentException("key must be larger than -1");
+            throw new IllegalArgumentException("insertKey must be larger than -1");
         }
         if (insertKey == this.key) {
             return null;
@@ -75,24 +65,20 @@ public class SimpleLinkedListNode {
             key = insertKey;
             return this;
         }
-
-        if (next == null) {
-            next = new SimpleLinkedListNode(insertKey);
-            return next;
-        } else {
-        	SimpleLinkedListNode last = next;
-            if (last.key == insertKey) {
+        
+        SimpleLinkedListNode last = this;
+        SimpleLinkedListNode current = next;
+        while (current != null) {
+            if (current.key == insertKey) {
                 return null;
             }
-            while (last.next != null) {
-                if (last.key == insertKey) {
-                    return null;
-                }
-                last = last.next;
-            }
-            last.next = new SimpleLinkedListNode(insertKey);
-            return last.next;
+            last = current;
+            current = current.next;
         }
+        
+        last.next = new SimpleLinkedListNode(insertKey);
+        return last.next;
+        
     }
 
     public void delete(SimpleLinkedListNode node) {
@@ -100,24 +86,25 @@ public class SimpleLinkedListNode {
         if (key == -1) {
             return;
         }
+        
+        // if its the first node, we have to transfer data
+        if (this.equals(node)) {
+            if (this.next == null) {
+                this.key = -1;
+            } else {
+                this.key = next.key;
+                this.next = next.next;
+            }
+            return;
+        }
 
-        SimpleLinkedListNode last = null;
-        SimpleLinkedListNode current = this;
+        // start w/ 2nd node because we've already searched the first
+        SimpleLinkedListNode last = this;
+        SimpleLinkedListNode current = this.next;
 
         while (current != null) {
             if (current.equals(node)) {
-                if (last == null) {
-                    if (next != null) {
-                        // this is the first node in the list.  reassign field values to next
-                        this.key = next.key;
-                        this.next = next.next;
-                    } else {
-                        // this is the first and only node
-                        this.key = -1;
-                    }
-                } else {
-                    last.next = current.next;
-                }
+                last.next = current.next;               
                 break;
             }
             last = current;
@@ -130,25 +117,25 @@ public class SimpleLinkedListNode {
         if (deleteKey == -1) {
             return;
         }
+        
+        // if its the first node, we have to transfer data
+        if (this.key == deleteKey) {
+            if (this.next == null) {
+                this.key = -1;
+            } else {
+                this.key = next.key;
+                this.next = next.next;
+            }
+            return;
+        }
+        
+        // start w/ 2nd node because we've already searched the first
+        SimpleLinkedListNode last = this;
+        SimpleLinkedListNode current = this.next;
 
-        SimpleLinkedListNode last = null;
-        SimpleLinkedListNode current = this;
-
-        while (current != null && current.key != -1) {
+        while (current != null) {
             if (current.key == deleteKey) {
-                if (last == null) {
-                    if (next != null) {
-                        // this is the first node in the list.  reassign field values to next
-                        this.key = next.key;
-                        this.next = next.next;
-                    } else {
-                        // this is the first and only node
-                        this.key = -1;
-                    }
-                } else {
-                    // else, this node is not the first in the list, we can skip over it to delete it
-                    last.next = current.next;
-                }
+                last.next = current.next;               
                 break;
             }
             last = current;
@@ -234,4 +221,12 @@ public class SimpleLinkedListNode {
         return sumBytes;
     }
     
+    @Override
+    public boolean equals(Object arg0) {
+        if (!(arg0 instanceof SimpleLinkedListNode)) {
+            return false;
+        }
+        SimpleLinkedListNode other = (SimpleLinkedListNode)arg0;
+        return (other.key == this.key);
+    }
 }

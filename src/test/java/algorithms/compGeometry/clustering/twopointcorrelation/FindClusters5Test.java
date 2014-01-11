@@ -94,7 +94,7 @@ public class FindClusters5Test extends BaseTwoPointTest {
             
             indexer = new AxisIndexer();
             
-            indexer.sortAndIndexXThenY(xb, yb, xbe, ybe, xbe.length);
+            indexer.sortAndIndexX(xb, yb, xbe, ybe, xbe.length);
                         
             log.info(" " + ii + " (" + indexer.nXY + " points) ... ");
 

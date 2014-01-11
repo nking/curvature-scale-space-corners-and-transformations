@@ -38,30 +38,6 @@ public class MultiArrayMergeSort {
     }
 
     /**
-     * sort by increasing value a1 and apply same changes to a2.
-     * runtime is O(N * log_2(N))
-     *
-     * @param a1 array of points to be sorted
-     * @param a2 array of points to apply a1 sorting to also
-     * @param nLength the number of points to sort in a1 starting with item 0
-     */
-    public static void sortBy1stArg(float[] a1, float[] a2, int nLength) {
-        if (a1 == null) {
-        	throw new IllegalArgumentException("a1 cannot be null");
-        }
-        if (a2 == null) {
-        	throw new IllegalArgumentException("a2 cannot be null");
-        }
-        if (a1.length < nLength) {
-        	throw new IllegalArgumentException("number of items in a1 must be at least nLength");
-        }
-        if (a2.length < nLength) {
-        	throw new IllegalArgumentException("number of items in a2 must be at least nLength");
-        }
-        sortBy1stArg(a1, a2, 0, nLength - 1);
-    }
-
-    /**
      * sort by increasing value a1 and apply same changes to a2 and a3.
      * runtime is O(N * log_2(N))
      *
@@ -77,11 +53,11 @@ public class MultiArrayMergeSort {
         if (a2 == null) {
         	throw new IllegalArgumentException("a2 cannot be null");
         }
-        if (a1.length < nLength) {
-        	throw new IllegalArgumentException("number of items in a1 must be at least nLength");
+        if (a3 == null) {
+            throw new IllegalArgumentException("a3 cannot be null");
         }
-        if (a2.length < nLength) {
-        	throw new IllegalArgumentException("number of items in a2 must be at least nLength");
+        if ((a1.length != nLength) || (a2.length != nLength) || (a3.length != nLength)) {
+            throw new IllegalArgumentException("number of items in a1 and a2 and a3 must be equal to nLength");
         }
         sortBy1stArg(a1, a2, a3, 0, nLength - 1);
     }
@@ -150,7 +126,7 @@ public class MultiArrayMergeSort {
         if (a1.length != a2.length) {
         	throw new IllegalArgumentException("number of items in a1 must be the same as in a2");
         }
-        sortBy1stArgThen2nd(a1, a2, 0, a1.length - 1, true);
+        sortBy1stArgThen2nd(a1, a2, 0, a1.length - 1);
     }
 
     /**
@@ -161,7 +137,7 @@ public class MultiArrayMergeSort {
      * @param idxHi stopping index of sorting of a1, inclusive
      * @param incrA2 a2 should be sorted by increasing value also
      */
-    private static void sortBy1stArgThen2nd(float[] a1, float[] a2, int idxLo, int idxHi, boolean incrA2) {
+    private static void sortBy1stArgThen2nd(float[] a1, float[] a2, int idxLo, int idxHi) {
 
         int indexMid = -1;
 
@@ -169,9 +145,9 @@ public class MultiArrayMergeSort {
 
             indexMid = (idxLo + idxHi)/2;
 
-            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid, incrA2);
-            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi, incrA2);
-            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi, incrA2);
+            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid);
+            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi);
+            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi);
         }
     }
 
@@ -298,9 +274,8 @@ public class MultiArrayMergeSort {
      * @param idxLo first index of first subarray for sorting
      * @param idxMid first index of second subarray for sorting
      * @param idxHi last index of second subarray for sorting
-     * @param incrA2 sort by a2 increasing values.  if false, will use decreasing values.
      */
-    private static void mergeBy1stArgThen2nd( float[] a1, float[] a2, int idxLo, int idxMid, int idxHi, boolean incrA2) {
+    private static void mergeBy1stArgThen2nd( float[] a1, float[] a2, int idxLo, int idxMid, int idxHi) {
 
                                                             // cost  times          where n'=(indexHi - indexLo)
                                                             // c01   1
@@ -331,12 +306,6 @@ public class MultiArrayMergeSort {
                 // compare the a2 values.  lowest a2 value should be moved to the left
                 float lx = a2Left[leftPos];                                                // c04   p'
                 float rx = a2Right[rightPos];                                               // c04   p'
-
-                // if sort by decreasing, we can reverse the lx and rx
-                if (!incrA2) {                                                        // c04   p'
-                    lx = rx;                                                         // c04   p'
-                    rx = a2Left[leftPos];                                                  // c04   p'
-                }
 
                 if (lx <= rx) {                                                      // 4*c04   p' for total of either block
                     a2[k] = a2Left[leftPos];

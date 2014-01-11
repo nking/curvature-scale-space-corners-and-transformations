@@ -1,5 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.compGeometry.clustering.twopointcorrelation.TwoPointBinarySearchTree.Node;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
@@ -21,6 +22,27 @@ public class TwoPointBinarySearchTreeTest extends TestCase {
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
+    }
+
+    /**
+     * Test of storeIfDoesNotContain method, of class TwoPointIdentities.
+     */
+    public void testInsert() {
+        ITwoPointIdentity identities = new TwoPointBinarySearchTree();
+        for (int i = 1; i < 121; i++) {
+            for (int j = (i + 1); j < 121; j++) {
+                ((TwoPointBinarySearchTree)identities).insert(i, j);
+            }
+        }
+        boolean stored = false;
+        for (int i = 1; i < 121; i++) {
+            for (int j = (i + 1); j < 121; j++) {
+                Node node = ((TwoPointBinarySearchTree)identities).search(i, j);
+                assertTrue(node.a0 == i && node.a1 == j);
+                stored = identities.storeIfDoesNotContain(i, j);
+                assertFalse(stored);
+            }
+        }
     }
 
     /**

@@ -14,21 +14,24 @@ import java.util.logging.Logger;
  *
  * For datasets with N larger than 46340, the binary search tree impl should be
  * used instead.
+ * This is because this object uses perfect hashing and smallest space
+ * complexity for fastest store and search options.
  *
- * Note also that if the total available memory is less than that needed
- * by backing arrays, one should run this program to use a larger minimum
- * amount of memory (-Xms4046m for example.  make sure this is available to your program.).
+ * Note that if the total available memory is less than that needed
+ * by the backing arrays, one should run this program to use a larger minimum
+ * amount of memory (-Xms4046m for example.  Make sure this is available to your program.).
+ * 
  * The TwoPointIdentityFactory will check available memory before returning
  * an instance of this class.
  * 
  * TODO:  if memory does not need to be conserved, could consider making many
- *    instances of TwoPointHashMap (Math.ceiling(N/46340.) instances)
+ *    instances of TwoPointHashMap (each with n = Math.ceiling(N/46340.))
  *    to divide N into ranges kept within each TwoPointHashMap instance.
  *
  * This data structure is optimized for inserts and comparisons.
  *
  * Runtime complexity:
- *    inserts are O(1), just the cost of the hash function, so asymptotically constant for large N
+ *    inserts are O(1), just the cost of the hash function, so asymptotically constant for large N.
  *    comparisons are also O(1)
  *
  * Space complexity:

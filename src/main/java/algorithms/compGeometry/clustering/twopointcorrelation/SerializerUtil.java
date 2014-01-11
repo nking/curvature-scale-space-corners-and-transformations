@@ -144,7 +144,7 @@ public class SerializerUtil {
                     //log.fine("**i=" + i + " x=" + x[i] + " y=" + y[i] + " errx=" + ex[i] + " erry=" + ey[i]);
                 }
 
-                indexer.sortAndIndexXThenY(x, y, ex, ey, nXY);
+                indexer.sortAndIndexX(x, y, ex, ey, nXY);
 
             } else {
 
