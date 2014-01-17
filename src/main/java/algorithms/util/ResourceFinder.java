@@ -46,7 +46,16 @@ public class ResourceFinder {
 
     public static String findResourcesDirectory(String subDir) throws IOException {
 
-        return findDirectory(subDir + sep + "resources");
+        String dirPath = findResourcesDirectory();
+        
+        String filePath = dirPath + sep + subDir;
+        
+        File f = new File(filePath);
+        if (!f.exists()) {
+            throw new IOException("could not find resources sub-directory named " + subDir);
+        }
+        
+        return filePath;
     }
 
     public static String findResourcesDirectory() throws IOException {
@@ -143,20 +152,6 @@ public class ResourceFinder {
             }
             return false;
         }
-    }
-
-    public static String findFileInCWD(String serializationFileName) throws IOException {
-
-        ClassLoader cls = ResourceFinder.class.getClassLoader();
-
-        URL basedir = cls.getResource(".");
-        if (basedir == null) {
-            throw new IOException("base path not found for " + serializationFileName);
-        }
-
-        String filePath = basedir.getPath() + sep + serializationFileName;
-
-        return filePath;
     }
 
     public static String getAFilePathInCWD(String fileName) throws IOException {

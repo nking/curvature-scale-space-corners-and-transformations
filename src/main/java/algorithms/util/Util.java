@@ -4,7 +4,7 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.ManagementFactory;
 
 public class Util {
-
+    
     /**
     get the memory available to the heap as the total memory available to the JVM
     minus the amount of heap used.  

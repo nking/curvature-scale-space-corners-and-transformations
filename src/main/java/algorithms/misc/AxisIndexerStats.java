@@ -200,21 +200,6 @@ public class AxisIndexerStats {
         
         return true;
     }
-
-    /**
-     * determine whether counts in each cell suggest that there are gaps in the data, that
-     * is whether some cells have significantly fewer counts than others.
-     * 
-     * @param numberOfCellsInOneDimension
-     * @param indexer
-     * @return whether there are not cells with significantly fewer points in them than average
-     */
-    public float fractionOfCellsWithoutPoints(int numberOfCellsInOneDimension, AxisIndexer indexer) {
-        
-        Statistic statistic = calculateCellDensities(numberOfCellsInOneDimension, indexer);
-        
-        return fractionOfCellsWithoutPoints(statistic);
-    }
     
     /**
      * determine whether counts in each cell suggest that there are gaps in the data, that

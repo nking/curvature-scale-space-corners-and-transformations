@@ -61,25 +61,6 @@ public class HistogramHolder implements Externalizable {
         return sumBytes;
     }
 
-    public int calculateHalfYMaxIndexPastYMax() {
-
-        if (yHistFloat == null) {
-            return -1;
-        }
-
-        int yMaxIndex = MiscMath.findYMaxIndex(yHistFloat);
-
-        int halfMaxIndex = -1;
-        float halfMax = yHistFloat[yMaxIndex]/2.0f;
-
-        for (int i = yMaxIndex; i < yHistFloat.length; i++) {
-            if (halfMax <= yHistFloat[i]) {
-                halfMaxIndex = i;
-            }
-        }
-        return halfMaxIndex;
-    }
-
     /**
      * @return the xHist
      */

@@ -116,27 +116,6 @@ public class MiscMathTest extends TestCase {
 
         assertTrue(MiscMath.roundUpByLargestPower(5.0f) == 5.0f);
     }
-
-    public void testFindMeanAndStDev() {
-
-        int[][] data = new int[2][2];
-        data[0] = new int[]{1,1};
-        data[1] = new int[]{1,1};
-
-        float[] meanStDv = MiscMath.findMeanAndStDev(data);
-
-        assertTrue(meanStDv[0] == 1);
-        assertTrue(meanStDv[1] == 0);
-
-        data = new int[2][2];
-        data[0] = new int[]{2,4};
-        data[1] = new int[]{2,4};
-
-        meanStDv = MiscMath.findMeanAndStDev(data);
-
-        assertTrue(Math.abs(meanStDv[0] - 3) < 0.01);
-        assertTrue(Math.abs(meanStDv[1] - 1.155) < 0.01);//1+1+1+1 ==> sqrt(4/3)
-    }
     
     public void testTaylor() throws Exception {
         double s;
@@ -218,6 +197,11 @@ public class MiscMathTest extends TestCase {
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
         plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), null, null, "");
         plotter.writeFile();
+    }
+    
+    public void test0() throws Exception {
+        // constructor isn't used, this is to complete the coverage.
+        MiscMath mm = new MiscMath();
     }
 
     /**

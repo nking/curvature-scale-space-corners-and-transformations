@@ -45,6 +45,18 @@ public class StackTest extends TestCase {
 
             count--;
         }
+        
+        
+        boolean threwException = false;
+        try {
+            stack.insert(-1);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        stack = new Stack();
+        assertNull(stack.pop());
     }
 
 }

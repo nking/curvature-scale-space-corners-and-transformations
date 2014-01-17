@@ -96,18 +96,6 @@ public class MiscMath {
         return min;
     }
 
-    public static int findYMinIndex(float[] a) {
-        float min = Float.MAX_VALUE;
-        int index = -1;
-        for (int i = 0; i < a.length; i++) {
-            if ((a[i] < min) && !Float.isInfinite(a[i])) {
-                min = a[i];
-                index = i;
-            }
-        }
-        return index;
-    }
-
     /**
      * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
      * @param a
@@ -136,26 +124,6 @@ public class MiscMath {
         int index = -1;
         for (int i = 0; i < a.length; i++) {
             if ((a[i] > max) && (a[i] < Integer.MAX_VALUE)) {
-                max = a[i];
-                index = i;
-            }
-        }
-        return index;
-    }
-
-    /**
-     * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
-     * @param a
-     * @return
-     */
-    public static int findYMaxIndex(float[] a, int lookAfterIndex) {
-        if (a == null) {
-            return -1;
-        }
-        float max = Float.MIN_VALUE;
-        int index = -1;
-        for (int i = (lookAfterIndex + 1); i < a.length; i++) {
-            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) && (a[i] < Float.MAX_VALUE)) {
                 max = a[i];
                 index = i;
             }
@@ -263,53 +231,6 @@ public class MiscMath {
         float r = (float) (m * pow10);
 
         return r;
-    }
-
-    public static float[] findMeanAndStDev(float[] values) {
-
-        float mean = 0;
-
-        for (int i = 0; i < values.length; i++) {
-            mean += values[i];
-        }
-        mean /= values.length;
-
-        float stdev = 0;
-        for (int i = 0; i < values.length; i++) {
-            float a = (values[i] - mean);
-            stdev += ( a*a );
-        }
-        stdev = (float) Math.sqrt(stdev/(values.length - 1));
-
-        return new float[]{mean, stdev};
-    }
-
-    public static float[] findMeanAndStDev(int[][] values) {
-
-        float mean = 0;
-
-        int count = 0;
-
-        for (int i = 0; i < values.length; i++) {
-            for (int j = 0; j < values.length; j++) {
-                mean += values[i][j];
-                count++;
-            }
-        }
-        mean /= (float)count;
-
-        float stdev = 0;
-        for (int i = 0; i < values.length; i++) {
-
-            for (int j = 0; j < values.length; j++) {
-
-                float a = (values[i][j] - mean);
-                stdev += ( a*a );
-            }
-        }
-        stdev = (float) Math.sqrt(stdev/(float)(count - 1));
-
-        return new float[]{mean, stdev};
     }
     
     /*
