@@ -41,9 +41,6 @@ public class LinesAndAngles {
     public static double crossProduct(double x1, double y1, double x2, double y2) {
         return ((x1*y2) - (x2*y1));
     }
-    public static double crossProduct(float x1, float y1, float x2, float y2) {
-        return ((x1*y2) - (x2*y1));
-    }
 
     public static boolean linesIntersect(int x1, int y1,
         int x2, int y2, int x3, int y3, int x4, int y4) {
@@ -78,17 +75,6 @@ public class LinesAndAngles {
 
         int x21 = x2 - x1;
         int y21 = y2 - y1;
-
-        return crossProduct(x31, y31, x21, y21);
-    }
-
-    public static double direction(double x1, double y1, double x2, double y2, double x3, double y3) {
-
-        double x31 = x3 - x1;
-        double y31 = y3 - y1;
-
-        double x21 = x2 - x1;
-        double y21 = y2 - y1;
 
         return crossProduct(x31, y31, x21, y21);
     }

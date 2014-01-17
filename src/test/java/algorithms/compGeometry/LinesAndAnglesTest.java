@@ -64,6 +64,18 @@ public class LinesAndAnglesTest extends TestCase {
      */
     public void testLinesIntersect() {
         log.info("linesIntersect");
+        /*               @
+         *       |
+         *       |
+         *          *   
+         *       |
+         *       |
+         *       |
+         *  -----@-------
+         *       |
+         *       *
+         *       |
+         */
         int x1 = 0;
         int y1 = -1;
         int x2 = 1;
@@ -83,6 +95,18 @@ public class LinesAndAnglesTest extends TestCase {
      */
     public void testLinesIntersect2() {
         log.info("result");
+        /*    
+         *       |
+         *       |  @
+         *       *   
+         *       |
+         *       |
+         *       |
+         *  -----*--@----
+         *       |
+         *       |
+         *       |
+         */
         int x1 = 0;
         int y1 = 0;
         int x2 = 0;
@@ -96,35 +120,65 @@ public class LinesAndAnglesTest extends TestCase {
         boolean result = LinesAndAngles.linesIntersect(x1, y1, x2, y2, x3, y3, x4, y4);
         assertFalse(result);
     }
-
-    /*
-    public void testDirection() {
-        log.info("direction");
+    
+    public void testLinesIntersect3() {
+        log.info("testLinesIntersect3");
+        /*    
+         *       |
+         *       |  
+         *       *   
+         *       |
+         *       |
+         *       |
+         *  -----*------
+         *       |
+         *       @
+         *       |
+         */
         int x1 = 0;
         int y1 = 0;
         int x2 = 0;
-        int y2 = 0;
-        int x3 = 0;
-        int y3 = 0;
-        int expResult = 0;
-        int result = LinesAndAngles.direction(x1, y1, x2, y2, x3, y3);
-        assertEquals(expResult, result);
-    }
+        int y2 = 2;
 
-    public void testOnSegment() {
-        log.info("onSegment");
+        int x3 = 0;
+        int y3 = -1;
+        int x4 = 0;
+        int y4 = 3;
+
+        boolean result = LinesAndAngles.linesIntersect(x1, y1, x2, y2, x3, y3, x4, y4);
+        assertTrue(result);
+    }
+    public void testLinesIntersect4() {
+        log.info("testLinesIntersect4");
+        /*    
+         *       |
+         *       |
+         *  ---@-*-*--@-
+         *       |
+         *       |
+         */
         int x1 = 0;
         int y1 = 0;
-        int x2 = 0;
+        int x2 = 2;
         int y2 = 0;
-        int x3 = 0;
-        int y3 = 0;
-        boolean expResult = false;
-        boolean result = LinesAndAngles.onSegment(x1, y1, x2, y2, x3, y3);
-        assertEquals(expResult, result);
-    }
-    */
 
+        int x3 = -1;
+        int y3 = 0;
+        int x4 = 3;
+        int y4 = 0;
+
+        boolean result = LinesAndAngles.linesIntersect(x1, y1, x2, y2, x3, y3, x4, y4);
+        assertTrue(result);
+
+
+        int[] seed0 = new int[]{2, 1};
+        int[] line0 = new int[]{3, 2, 4, 0};
+        int[] seed1 = new int[]{4, 1};        
+        result = LinesAndAngles.linesIntersect(line0[0], line0[1], line0[2], line0[3], seed0[0], seed0[1], seed1[0], seed1[1]);
+        assertTrue(result);
+
+    }
+ 
     public void testIntersectionOf2Lines() {
 
         /*
@@ -352,8 +406,10 @@ public class LinesAndAnglesTest extends TestCase {
         log.info("direction0=" + direction0 + "\ndirection1=" + direction1
             + "\ndirection2=" + direction2 + "\ndirection3=" + direction3
             + "\ndirection4=" + direction4 + "\ndirection5=" + direction5);
+        
+        
     }
-
+    
     public void testSegmentIsWithinSegment() throws Exception {
 
         // ==== horizontal line

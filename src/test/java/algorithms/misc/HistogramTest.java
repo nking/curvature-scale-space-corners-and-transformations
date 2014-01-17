@@ -61,6 +61,22 @@ public class HistogramTest extends TestCase {
                 plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), new float[n], new float[n], label);
                 plotter.writeFile2();
 
+                boolean threwException = false;
+                try {
+                    Histogram.defaultHistogramCreator(null, ae);
+                } catch (IllegalArgumentException e) {
+                    threwException = true;
+                }
+                assertTrue(threwException);
+                
+                
+                threwException = false;
+                try {
+                    Histogram.defaultHistogramCreator(a, null);
+                } catch (IllegalArgumentException e) {
+                    threwException = true;
+                }
+                assertTrue(threwException);
             }
         }
     }
@@ -154,8 +170,31 @@ public class HistogramTest extends TestCase {
             assertTrue(yhe < yh);
         }
 
-        HistogramHolder hist = Histogram.createHistogramForSkewedData(nBins, aa, aae, false);
-        //assertTrue(hist.xHist.length == nBins);
+        
+        boolean threwException = false;
+        try {
+            Histogram.createHistogram(null, nBins, xHistErrorsOutput, yHist);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            Histogram.createHistogram(aa, nBins, null, yHist);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            Histogram.createHistogram(null, nBins, xHistErrorsOutput, null);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
     }
 
     /**
@@ -189,68 +228,74 @@ public class HistogramTest extends TestCase {
             assertTrue(yHist[i] == (i + 2));
             assertTrue(xHist[i] == (i + 2 + 0.5));
         }
-    }
-
-    /**
-     * Test of createHistogram method, of class Histogram.
-     */
-    public void testCreateHistogram_3args() {
-
-        log.info("testCreateHistogram_3args");
-
-        float[] aa = new float[]{
-            2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
-            7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11,
-            12, 13, 14, 15
-        };
-        float[] aae = Errors.populateYErrorsBySqrt(aa);
-
-        int nBins = 12;
-
-        HistogramHolder result = Histogram.createHistogramForSkewedData(nBins, aa, aae, false);
-
-        assertTrue(result.getXHist().length >= 6);
-    }
-
-    /**
-     * Test of calulateHistogramBinErrors method, of class Histogram.
-     */
-    public void testCalulateHistogramBinErrors() {
-
-        log.info("calulateHistogramBinErrors");
-
-        float[] values = new float[]{
-            200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
-            300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300,
-            400, 400, 400, 400, 400, 400, 400, 400, 400, 400, 400, 400, 400,
-            500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
-            600, 600, 600, 600, 600, 600, 600, 600, 600, 600,
-            700, 700, 700, 700, 700, 700, 700, 700, 700,
-            800, 800, 800, 800, 800, 800, 800, 800,
-            900, 900, 900, 900, 900, 900, 900,
-            1000, 1000, 1000, 1000, 1000,
-            1100, 1100, 1100, 1100, 1100,
-            1200, 1200, 1200, 1200, 1200,
-            1300, 1300, 1300, 1300, 1300,
-            1400, 1400, 1400, 1400, 1400,
-            1500, 1500, 1500, 1500, 1500
-        };
-        float[] valueErrors = new float[values.length];
-        for (int i = 0; i < values.length; i++) {
-            valueErrors[i] = values[i]/10.0f;
+        
+        boolean threwException = false;
+        try {
+            Histogram.createHistogram(null, nBins, 2, 5, xHist, yHist);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
         }
-
-        HistogramHolder hist = Histogram.createHistogramForSkewedData(values.length,
-            values, valueErrors, false);
-
-        for (int i = 0; i < hist.xHist.length; i++) {
-            float xh = hist.xHist[i];
-            float yh = hist.yHist[i];
-            float xhe = hist.xErrors[i];
-            float yhe = hist.yErrors[i];
-            assertTrue(xhe < xh);
-            //assertTrue(yhe < yh);
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            Histogram.createHistogram(aa, nBins, 2, 5, null, yHist);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
         }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            Histogram.createHistogram(aa, nBins, 2, 5, xHist, null);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+
+        threwException = false;
+        try {
+            Histogram.createHistogram(null, nBins, 2, 5, xHist, yHist, 2);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            Histogram.createHistogram(aa, nBins, 2, 5, null, yHist, 2);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            Histogram.createHistogram(aa, nBins, 2, 5, xHist, null, 2);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+    }
+    
+    public void testCalculateHistogramWidthYLimitError() throws Exception {
+        System.out.println("testCalculateHistogramWidthYLimitError()");
+        
+        /* 1.0|     *
+         *    |        *
+         * 0.5|  *     
+         *    |           *
+         *   0|_______________
+         *    0  1  2  3  4
+         */
+        float[] xHist = new float[]{1.0f, 2.0f, 3.0f,  4.0f};
+        float[] yHist = new float[]{0.5f, 1.0f, 0.75f, 0.25f};
+        float[] xErrors = new float[]{0.1f, 0.1f, 0.1f, 0.1f};
+        float[] yErrors = new float[]{0.1f, 0.1f, 0.1f, 0.1f};
+        float yMaxFactor = 1;
+        float tmp = Histogram.calculateHistogramWidthYLimitError(xHist, yHist, xErrors, yErrors, yMaxFactor);
+        assertTrue(Math.abs(tmp - 0.141f) < 0.01f);
     }
 
     protected ArrayPair readTestFile(String fileName) throws Exception {
@@ -305,46 +350,6 @@ public class HistogramTest extends TestCase {
         }
     }
 
-    /**
-     * Test of testCreateHistogram_0 method, of class Histogram.
-     */
-    public void testCreateHistogram_0() throws Exception {
-
-        log.info("testCreateHistogram_0");
-
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-
-        String[] files = new String[]{
-            "density_dense_001.txt", "density_moderate_001.txt", "density_sparse_001.txt",
-            "density_dense_002.txt", "density_moderate_002.txt", "density_sparse_002.txt",
-            "density_dense_003.txt", "density_moderate_003.txt", "density_sparse_003.txt"};
-
-        int count = 0;
-        for (String fileName : files) {
-
-            ArrayPair pair = readTestFile(fileName);
-            float[] a = pair.getX();
-            float[] ae = pair.getY();
-
-            int n = 20;
-
-            HistogramHolder hist = Histogram.createHistogramForSkewedData(n, a, ae, false);
-
-            plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), new float[n], new float[n], Integer.toString(count) + "b");
-            plotter.writeFile3();
-
-            for (int i = 0; i < hist.getXHist().length; i++) {
-                float x = hist.getXHist()[i];
-                float xe = hist.getXErrors()[i];
-                float y = hist.getYHist()[i];
-                float ye = hist.getYErrors()[i];
-                int z = 1;
-            }
-
-            count++;
-        }
-    }
-
     public void testReadWriteExternal() throws Exception {
 
         float[] aa = new float[]{
@@ -353,10 +358,38 @@ public class HistogramTest extends TestCase {
             12, 13, 14, 15
         };
         float[] aae = Errors.populateYErrorsBySqrt(aa);
+        
+        boolean threwException = false;
+        try {
+            HistogramHolder histogram = Histogram.createSimpleHistogram(null, aae);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        threwException = false;
+        try {
+            HistogramHolder histogram = Histogram.createSimpleHistogram(aa, null);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        threwException = false;
+        try {
+            HistogramHolder histogram = Histogram.createSimpleHistogram(10, null, aae);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        threwException = false;
+        try {
+            HistogramHolder histogram = Histogram.createSimpleHistogram(10, aa, null);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
 
-        int nBins = 12;
-
-        HistogramHolder histogram = Histogram.createHistogramForSkewedData(nBins, aa, aae, false);
+        
+        HistogramHolder histogram = Histogram.createSimpleHistogram(aa, aae);
 
 
         PipedOutputStream pipedOut = null;
@@ -458,4 +491,7 @@ public class HistogramTest extends TestCase {
         }
     }
 
+    public void test0() throws Exception {
+        Histogram h = new Histogram();
+    }
 }
