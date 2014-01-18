@@ -33,7 +33,6 @@ public class GEVYFitTest extends TestCase {
 
         float[] x = new float[]{1,  2, 3, 4, 5, 6, 7, 8, 9};
         float[] y = new float[]{9,  8, 7, 6, 5, 4, 3, 2, 1};
-
         /*
          *   *
          *      *
@@ -56,6 +55,10 @@ public class GEVYFitTest extends TestCase {
             assertTrue(curvePointArea == expectedArea[i]);
         }
 
+        for (int i = 0; i < x.length; i++) {
+            assertTrue(yfit.getX(i) == x[i]);
+        }
+
         float xScale = 2.0f;
         float yScale = 3.0f;
         yfit.setXScale(xScale);
@@ -73,5 +76,14 @@ public class GEVYFitTest extends TestCase {
             assertTrue(histBinArea == expectedArea[i]);
             assertTrue(curvePointArea == expectedArea[i]);
         }
+        
+        assertTrue(yfit.getXPeak() == 1);
+        assertTrue(yfit.getXScale() == xScale);
+        assertTrue(yfit.getYScale() == yScale);
+    }
+    
+    public void test0() throws Exception {
+        // for coverage tool:
+        CurveMisc cm = new CurveMisc();
     }
 }

@@ -326,7 +326,7 @@ public class DerivGEVTest extends TestCase {
             Double d = DerivGEV.derivWRTSigma(yConst, mu2, k2, s2, xp[i]);
             
             // modification by 2nd derivs for sigma is more complex
-            // (∂^2f/∂sigma∂sigma)
+            // (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma)
             double delta = 0.0001f*s2;
             Double d2 = DerivGEV.derivWRTSigma(yConst, mu2, k2, (float)(s2 + delta), xp[i]);
             Double dd = (d2-d)/delta;
@@ -477,7 +477,7 @@ public class DerivGEVTest extends TestCase {
             Double d = DerivGEV.derivWRTSigma(yConst, mu2, k2, s2, xp[i]);
             
             // modification by 2nd derivs for mu is more complex
-            // (∂^2f/∂mu∂mu)
+            // (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu)
             double delta = 0.0001f*mu2;
             Double d2 = DerivGEV.derivWRTMu(yConst, (float)(mu2 + delta), k2, s2, xp[i]);
             Double dd = (d2-d)/delta;

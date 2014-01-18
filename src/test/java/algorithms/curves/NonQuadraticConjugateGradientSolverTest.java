@@ -14,7 +14,7 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
-    public void estFitCurve() throws Exception {
+    public void testFitCurve() throws Exception {
 
         // while revising code, if not on a development branch, don't assert results
         boolean assertResults = false;
@@ -44,6 +44,7 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         float[] yGEV = gev.generateCurve(xp, k, sigma, mu);
 
         NonQuadraticConjugateGradientSolver fitCurve = new NonQuadraticConjugateGradientSolver(xp, yGEV, Errors.populateYErrorsBySqrt(xp), ye);
+        fitCurve.setMaximumNumberOfIterations(100);
 
         // TODO:  problem fitting parameters in <>  k=1.4680 <0.09> s=0.1307 <0.05> m=0.1543 <0.106> (nx=40,i=21) chi=0.013889
 
@@ -55,7 +56,8 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         float muMax = xp[xp.length - 1];
 
         //GEVYFit yFit = fitCurve.fitCurve(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
-        GEVYFit yFit = fitCurve.fitCurveParametersSeparately(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
+        //GEVYFit yFit = fitCurve.fitCurveParametersSeparately(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
+        GEVYFit yFit = fitCurve.fitCurveParametersAllAtOnce(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
         //GEVYFit yFit = fitCurve.fitCurve(kMin, kMax, sigmaMin, sigmaMax, mu);
 
         if (assertResults) {
@@ -202,22 +204,30 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         float[] xe = new float[]{0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f, 0.0064315237f};
         float[] ye = new float[]{0.06368805f, 0.05134599f, 0.053022746f, 0.056779608f, 0.06454764f, 0.07324291f, 0.08237399f, 0.09312447f, 0.102609545f, 0.112454824f, 0.122811265f, 0.1344264f, 0.14482236f, 0.15727329f, 0.16736402f, 0.18021643f, 0.18822077f, 0.20053904f, 0.21431826f, 0.22658357f, 0.23538195f, 0.2489218f, 0.25953734f, 0.27523327f, 0.28748488f, 0.2942547f, 0.30991468f, 0.32356742f, 0.34100977f, 0.36846435f, 0.3814147f, 0.40344337f, 0.42271626f, 0.44184867f, 0.46721852f, 0.5086379f, 0.5280288f, 0.56130296f, 0.59482855f, 0.6136231f};
         
-         NonQuadraticConjugateGradientSolver solver =
-             new NonQuadraticConjugateGradientSolver(x, y, xe, ye);
-                
-        //GEVChiSquareMinimization solver = new GEVChiSquareMinimization(x, y, xe, ye);
-
-        solver.setDebug(true);
-
-        GEVYFit fit = solver.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
-        //GEVYFit fit = solver.fitCurveKGreaterThanZeroAllAtOnce(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
-
-        if (fit != null) {
+        for (int i = 0; i < 2; i++) {
             
-            String label = String.format("chisq=%.8f k=%.4e s=%.4e m=%.4e",
-                fit.getChiSqSum(), fit.getK(), fit.getSigma(), fit.getMu());
-            
-            //plotFit(fit, label, solver);
+            NonQuadraticConjugateGradientSolver solver = new NonQuadraticConjugateGradientSolver(
+                x, y, xe, ye);
+
+            // GEVChiSquareMinimization solver = new GEVChiSquareMinimization(x,
+            // y, xe, ye);
+
+            solver.setDebug(true);
+
+            GEVYFit fit;
+            if (i == 0) {
+                fit = solver.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+            } else {
+                fit = solver.fitCurveKGreaterThanZeroAllAtOnce(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+            }
+
+            if (fit != null) {
+
+                String label = String.format("chisq=%.8f k=%.4e s=%.4e m=%.4e",
+                    fit.getChiSqSum(), fit.getK(), fit.getSigma(), fit.getMu());
+
+                // plotFit(fit, label, solver);
+            }
         }
     }
     

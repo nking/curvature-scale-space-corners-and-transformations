@@ -138,27 +138,15 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
 
         float[] w = new float[yModel.length];
 
-        if (wdc != null) {
-            if (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.INVERSE_Y.ordinal()) {
-                for (int i = 0; i < w.length; i++) {
-                    w[i] = 1.0f/(yScale*y[i]);
-                }
-            } else if (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.MODEL_Y.ordinal()) {
-                for (int i = 0; i < w.length; i++) {
-                    w[i] = yModel[i]*yScale;
-                }
-            } else {
-                boolean hasValidValues = hasValidValues(ye);
-                if (hasValidValues) {
-                    for (int i = 0; i < w.length; i++) {
-                        w[i] = ye[i]*yScale;
-                    }
-                } else {
-                    throw new IllegalStateException("dy has invalid values");
-                }
+        if ((wdc != null) && (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.INVERSE_Y.ordinal())) {
+            for (int i = 0; i < w.length; i++) {
+                w[i] = 1.0f/(yScale*y[i]);
             }
-        } else {
-            // defaults to using errors
+         } else if ((wdc != null) && (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.MODEL_Y.ordinal())) {
+            for (int i = 0; i < w.length; i++) {
+                w[i] = yModel[i]*yScale;
+            }
+         } else {
             boolean hasValidValues = hasValidValues(ye);
             if (hasValidValues) {
                 for (int i = 0; i < w.length; i++) {

@@ -8,6 +8,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PolygonAndPointPlotter;
 
 /**
+ * <pre>
    Class to find the minimum difference between a GEV model function(k, sigma, mu)
    and normalized data with errors.
    
@@ -37,151 +38,151 @@ import algorithms.util.PolygonAndPointPlotter;
      The function f is called the objective function or cost function.
      
       The vector x is an n-vector of independent variables: 
-         vars = [var_1, var_2, …, var_n]^T is a member of set Real numbers. 
-         The variables var_1, …, var_n are often referred to as decision variables. 
+         vars = [var<sub>1</sub>, var<sub>2</sub>, &hellip;, var<sub>n</sub>]<sup>T</sup> is a member of set Real numbers. 
+         The variables var<sub>1</sub>, &hellip;, var<sub>n</sub> are often referred to as decision variables. 
      
       The optimization problem above can be viewed as a decision problem that involves 
-      finding the “best” vector var of the decision variables over all possible vectors in Ω. 
-      By the “best” vector we mean the one that results in the-smallest value of 
+      finding the best vector var of the decision variables over all possible vectors in &#937;. 
+      By the best vector we mean the one that results in the-smallest value of 
       the objective function. 
       
-      This vector is called the minimizer of f over Ω. 
+      This vector is called the minimizer of f over &#937;. 
       It is possible that there may be many minimizers. In this case, finding 
       any of the minimizers will suffice.
           
        Df is the first derivative of f(vars) and is 
-           [partial deriv f/partial deriv var_1, partial deriv f/partial deriv var_1, ...]
+           [partial deriv f/partial deriv var<sub>1</sub>, partial deriv f/partial deriv var<sub>1</sub>, &hellip;]
        
-       ∇f = the gradient of f. 
-       ∇f = (Df)^T
+       &nabla;f = the gradient of f. 
+       &nabla;f = (Df)<sup>T</sup>
        
        F(vars) is the 2nd derivative of f and is sometimes called the Hessian.
-                                 | ∂^2f/∂^2_var_1       ...    ∂^2f/∂_var_n d_var_1
-          F(vars) = D^2f(vars) = |         ...          ...         ...
-                                 | ∂^2f/∂_var_1 d_var_n ...    ∂^2f/∂^2_var_n
+                                 | &#8706;<sup>2</sup>f/&#8706;<sup>2</sup>var<sub>1</sub>       &#8230;    &#8706;<sup>2</sup>f/&#8706;var<sub>n</sub>&#8706;var<sub>1</sub>
+          F(vars) = D<sup>2</sup>f(vars) =   |    &#8230;           &#8230;     &#8230;
+                                 | &#8706;<sup>2</sup>f/&#8706;var<sub>1</sub>&#8706;var<sub>n</sub>   &#8230;    &#8706;<sup>2</sup>f/&#8706;<sup>2</sup>var<sub>n</sub>
        
-       Example:  Let f(x1, x2) = 5(x_1) + 8(x_2) + (x_1)(x_2) − (x_1)^2 − 2(x_2)^2
-             Df(x) = (∇f(x))^T = [∂f/dx_1, ∂f/dx2] = [5 + x_2 - 2x_1,  8 + x_1 - 4x_2]
+       Example:  Let f(x1, x2) = 5(x<sub>1</sub>) + 8(x<sub>2</sub>) + (x<sub>1</sub>)(x<sub>2</sub>) &#8722; (x<sub>1</sub>)<sup>2</sup> &#8722; 2(x<sub>2</sub>)<sup>2</sup>
+             Df(x) = (&nabla;f(x))<sup>T</sup> = [&#8706;f/&#8706;x<sub>1</sub>, &#8706;f/&#8706;x<sup>2</sup>] = [5 + x<sub>2</sub> &#8722; 2x<sub>1</sub>,  8 + x<sub>1</sub> &#8722; 4x<sub>2</sub>]
              
-                                 | -2  1 |
-             F(x) = D^2f(x)    = |  1 -4 |
+                                | -2  1 |
+             F(x) = D<sup>2</sup>f(x)    = |  1 -4 |
              
        --------------------------------------------------------------------------------
        
        f(k, sigma, mu) = the GEV function
        
-       Df = [∂f/∂k, ∂f/∂sigma, ∂f/∂mu]
+       Df = [&#8706;/&#8706;k, &#8706;/&#8706;sigma, &#8706;/&#8706;mu]
        
-                     |   ∂f/∂k   |
-       ∇f = (Df)^T = | ∂f/∂sigma |
-                     |   ∂f/∂mu  |
+                     |   &#8706;/&#8706;k   |
+       &nabla;f = (Df)<sup>T</sup> =   | &#8706;/&#8706;sigma |
+                     |   &#8706;/&#8706;mu  |
             
-                                              | ∂^2f/∂k∂k       ∂^2f/∂sigma∂k        ∂^2f/∂mu∂k     |
-       F(k, sigma, mu) = D^2f(k, sigma, mu) = | ∂^2f/∂k∂sigma   ∂^2f/∂sigma∂sigma    ∂^2f/∂mu∂sigma |
-                                              | ∂^2f/∂k∂mu      ∂^2f/∂sigma∂mu       ∂^2f/∂mu∂mu    |
+                                              | &#8706;<sup>2</sup>/&#8706;k&#8706;k     &#8706;<sup>2</sup>/&#8706;sigma&#8706;k        &#8706;<sup>2</sup>/&#8706;mu&#8706;k     |
+       F(k, sigma, mu) = D<sup>2</sup>f(k, sigma, mu) =   | &#8706;<sup>2</sup>/&#8706;k&#8706;sigma   &#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma    &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma |
+                                              | &#8706;<sup>2</sup>/&#8706;k&#8706;mu      &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu       &#8706;<sup>2</sup>/&#8706;mu&#8706;mu    |
             
-       M = D^2f(k, sigma, mu)
+       M = D<sup>2</sup>f(k, sigma, mu)
        
-                                | ∂^2f/∂k∂k        ∂^2f/∂k∂sigma       ∂^2f/∂k∂mu     |     |   ∂f/∂k   |
-       M^(-1) * ∇f = M^T * ∇f = | ∂^2f/∂sigma∂k    ∂^2f/∂sigma∂sigma   ∂^2f/∂sigma∂mu |  *  | ∂f/∂sigma |
-                                | ∂^2f/∂mu∂k       ∂^2f/∂mu∂sigma      ∂^2f/∂mu∂mu    |     |   ∂f/∂mu  |
+                                | &#8706;<sup>2</sup>/&#8706;k&#8706;k        &#8706;<sup>2</sup>/&#8706;k&#8706;sigma       &#8706;<sup>2</sup>/&#8706;k&#8706;mu     |     |   &#8706;/&#8706;k   |
+       M^(-1) * &nabla;f = M<sup>T</sup> * &nabla;f =  | &#8706;<sup>2</sup>/&#8706;sigma&#8706;k    &#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma   &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu |  *  | &#8706;/&#8706;sigma |
+                                | &#8706;<sup>2</sup>/&#8706;mu&#8706;k       &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma      &#8706;<sup>2</sup>/&#8706;mu&#8706;mu    |     |   &#8706;/&#8706;mu  |
                                 
-                                | (∂^2f/∂k∂k) * (∂f/∂k) +  (∂^2f/∂k∂sigma) * (∂f/∂sigma) + (∂^2f/∂k∂mu) * (∂f/∂mu)          |
-                              = | (∂^2f/∂sigma∂k) * (∂f/∂k) + (∂^2f/∂sigma∂sigma) * (∂f/∂sigma) + (∂^2f/∂sigma∂mu)*(∂f/∂mu) |
-                                | (∂^2f/∂mu∂k)*(∂f/∂k) + (∂^2f/∂mu∂sigma)*(∂f/∂sigma) + (∂^2f/∂mu∂mu)*(∂f/∂mu)              |
+                                | (&#8706;<sup>2</sup>/&#8706;k&#8706;k * (&#8706;/&#8706;k) +  (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) * (&#8706;/&#8706;sigma) + (&#8706;<sup>2</sup>/&#8706;k&#8706;mu) * (&#8706;/&#8706;mu)          |
+                              = | (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k) * (&#8706;/&#8706;k) + (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) * (&#8706;/&#8706;sigma) + (&#8706;<sup>2</sup>/&#8706;sigma&#8706;mu)*(&#8706;/&#8706;mu) |
+                                | (&#8706;<sup>2</sup>/&#8706;mu&#8706;k)*(&#8706;/&#8706;k) + (&#8706;<sup>2</sup>/&#8706;mu&#8706;sigma)*(&#8706;/&#8706;sigma) + (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu)*(&#8706;/&#8706;mu)              |
                                 
-       Can use Incomplete Cholesky factorization with fill 0 on M^(-1) to create the pre-conditioning matrix.
+       Can use Incomplete Cholesky factorization with fill 0 on M<sup>(-1)</sup> to create the pre-conditioning matrix.
        
            http://netlib.org/linalg/html_templates/node64.html#figdilu
            
-           Let S be the non-zero set ({i,j} : a_i_j != 0 )
+           Let S be the non-zero set ({i,j} : a<sub>ij</sub> != 0 )
            
-            for i = 1, 2, ...
-                set d_i_i = a_i_i
-            for i = 1, 2, ...
-                set d_i_i = 1/d_i_i
-                for j = i + 1, i + 2, ...                       
+            for i = 1, 2, &#8230;
+                set d<sub>ii</sub> = a<sub>ii</sub>
+            for i = 1, 2, &#8230;
+                set d<sub>ii</sub> = 1/d<sub>ii</sub>
+                for j = i + 1, i + 2, &#8230;                       
                 if (i, j) in set S and (j, i) in set S then
-                    set d_j_j = d_j_j - a_j_i * d_i_i * a_i_j
+                    set d<sub>jj</sub> = d<sub>jj</sub> - a<sub>ji</sub> * d<sub>ii</sub> * a<sub>ij</sub>
             
-            set d(1,1) = (∂^2f/∂k∂k)
-            set d(2,2) = (∂^2f/∂sigma∂sigma)
-            set d(3,3) = (∂^2f/∂mu∂mu)
+            set d(1,1) = (&#8706;<sup>2</sup>/&#8706;k&#8706;k)
+            set d(2,2) = (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma)
+            set d(3,3) = (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu)
             
             i = 1:
-                    set d(1,1) = 1./d(1,1) = 1./(∂^2f/∂k∂k)
+                    set d(1,1) = 1./d(1,1) = 1./(&#8706;<sup>2</sup>/&#8706;k&#8706;k)
                 
-                    | (1,1) (1,2) (1,3) | = | 1/(∂^2f/∂k∂k)   
-                d = | (2,1) (2,2) (2,3) | = |                    (∂^2f/∂sigma∂sigma)  
-                    | (3,1) (3,2) (3,3) | = |                                             (∂^2f/∂mu∂mu) |
+                    | (1,1) (1,2) (1,3) | = | 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k)   
+                d = | (2,1) (2,2) (2,3) | = |                     (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma)  
+                    | (3,1) (3,2) (3,3) | = |                                             (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu) |
                   
                 j=2:
-                    set d(2,2) = (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma)
+                    set d(2,2) = (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma)
                 j=3:
-                    set d(3,3) = (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu)
+                    set d(3,3) = (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu) - (&#8706;<sup>2</sup>/&#8706;mu&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;mu)
                     
             i = 2:
-                    set d(2,2) = 1./d(2,2) = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                    set d(2,2) = 1./d(2,2) = ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
                     
-                    | (1,1) (1,2) (1,3) | = | 1/(∂^2f/∂k∂k)   
+                    | (1,1) (1,2) (1,3) | = | 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k)   
                 d = | (2,1) (2,2) (2,3) | = |                latest d(2,2)  
-                    | (3,1) (3,2) (3,3) | = |                                             (∂^2f/∂mu∂mu) |
+                    | (3,1) (3,2) (3,3) | = |                                             (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu) |
                     
                 j=3:
                     set d(3,3) = d(3,3) - a(3,2) * d(2,2) * a(2,3)
                                =
-                                 ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                 ( (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu) - (&#8706;<sup>2</sup>/&#8706;mu&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;mu) )
                                  -
                                  (
-                                    (∂^2f/∂mu∂sigma)
+                                    (&#8706;<sup>2</sup>/&#8706;mu&#8706;sigma)
                                     *
-                                    ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                    ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
                                     *
-                                    ∂^2f/∂sigma∂mu
+                                    &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu
                                  )
                                   
             i = 3:
                     set d(3,3) = 1./d(3,3)
                     
                         = 1./(
-                                 ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                 ( (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu) - (&#8706;<sup>2</sup>/&#8706;mu&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;mu) )
                                  -
                                  (
-                                    (∂^2f/∂mu∂sigma)
+                                    (&#8706;<sup>2</sup>/&#8706;mu&#8706;sigma)
                                     *
-                                    ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                    ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
                                     *
-                                    ∂^2f/∂sigma∂mu
+                                    &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu
                                  )
                              ) 
                              
                              
     Then using the ICU0 matrix as preconditioner:
            
-                                        | d(1,1)   0        0      |     |   ∂f/∂k   |
-        (M_icuo)^(-1) * ∇f = M^T * ∇f = | 0        d(2,2)   0      |  *  | ∂f/∂sigma |
-                                        | 0        0        d(3,3) |     |   ∂f/∂mu  |
+                                        | d(1,1)   0        0      |     |   &#8706;/&#8706;k   |
+        (M_icuo)<sup>(-1)</sup> * &nabla;f = M<sup>T</sup> * &nabla;f =     | 0        d(2,2)   0      |  *  | &#8706;/&#8706;sigma |
+                                        | 0        0        d(3,3) |     |   &#8706;/&#8706;mu  |
                                     
-                                        | d(1,1) * (∂f/∂k)     |
-                                      = | d(2,2) * (∂f/∂sigma) |
-                                        | d(3,3) * (∂f/∂mu)    |
+                                        | d(1,1) * (&#8706;/&#8706;k)     |
+                                      = | d(2,2) * (&#8706;/&#8706;sigma) |
+                                        | d(3,3) * (&#8706;/&#8706;mu)    |
 
-             where d(1,1) is 1./(∂^2f/∂k∂k)
-                   d(2,2) is ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+             where d(1,1) is 1./(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k)
+                   d(2,2) is ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
                    d(3,3) is 1./(
-                                     ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                                     ( (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu) - (&#8706;<sup>2</sup>/&#8706;mu&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;mu) )
                                      -
                                      (
-                                        (∂^2f/∂mu∂sigma)
+                                        (&#8706;<sup>2</sup>/&#8706;mu&#8706;sigma)
                                         *
-                                        ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                                        ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
                                         *
-                                        ∂^2f/∂sigma∂mu
+                                        &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu
                                      )
                                  ) 
                                  
-       Note that below in the code, r is ∇f.
-       
+       Note that below in the code, r is &nabla;f.
+  </pre>
   @author nichole
  */
 public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
@@ -689,36 +690,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         return yfit;
     }
 
-    protected boolean isAcceptableMin(float[] vars, float eps, float kMin,
-        float kMax, float sigmaMin, float sigmaMax, float muMin, float muMax) {
-        
-        if (vars[0] >= kMin && vars[0] <= kMax) {
-            if (vars[1] >= sigmaMin && vars[1] <= sigmaMax) {
-                if (vars[2] >= muMin && vars[2] <= muMax) {
-                    return true;
-                }
-            }
-        }
-        
-        // return false
-        // temporarily allow it to explore all space to see if it runs away
-        return true;
-    }
-    
-    protected boolean isAcceptableMin(float[] vars, float eps, float kMin,
-        float kMax, float sigmaMin, float sigmaMax) {
-        
-        if (vars[0] >= kMin && vars[0] <= kMax) {
-            if (vars[1] >= sigmaMin && vars[1] <= sigmaMax) {
-                return true;
-            }
-        }
-        
-        // return false
-        // temporarily allow it to explore all space to see if it runs away
-        return true;
-    }
-
     protected void plotFit(float[] yGEV, String label) throws IOException {
 
         if (plotter == null) {
@@ -733,13 +704,5 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());
         }
     }
-      
-    protected boolean residualsAreSame(float[] rPrev, float[] r) {
-        float limit = eps;//Float.MIN_VALUE;
-        if ( (Math.abs(rPrev[0] - r[0]) < limit) && (Math.abs(rPrev[1] - r[1]) < limit)
-            && (Math.abs(rPrev[2] - r[2]) < limit) ) {
-            return true;
-        }
-        return false;
-    }
+    
 }

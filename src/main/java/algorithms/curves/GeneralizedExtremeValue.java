@@ -127,17 +127,6 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return yGEV;
     }
 
-    public float[] generateCurve(float[] parameters) {
-        if (parameters == null) {
-            throw new IllegalArgumentException("parameters cannot be null");
-        }
-        if (parameters.length != 3) {
-            throw new IllegalArgumentException("parameters must hold k, sigma, and mu");
-        }
-
-        return generateCurve(x, parameters[0], parameters[1], parameters[2]);
-    }
-
     /*
      *                          (   (      ( x-mu))-(1/k))
      *                          (-1*(1 + k*(-----))      )
@@ -283,26 +272,6 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return yGEV;
     }
 
-    public float[] generateEVTypeICurve(float sigma, float mu) {
-
-        if (sigma == 0) {
-            throw new IllegalArgumentException("sigma must be > 0");
-        }
-
-        float[] yGEV = new float[x.length];
-
-        for (int i = 0; i < x.length; i++) {
-
-            float z = (x[i] - mu)/sigma;
-
-            float a = (float) (-1.f - Math.exp(-1.0f*z));
-
-            yGEV[i] = (float) ((1.f/sigma) * Math.exp(a));
-        }
-
-        return yGEV;
-    }
-
     public static float[] generateEVTypeICurve(float[] x1, float sigma, float mu) {
 
         if (sigma == 0) {
@@ -364,24 +333,6 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         return chiSum;
     }
-
-    public static float calculateChiSq(int[] y1, float[] yGEV) {
-
-        float yNorm = MiscMath.findMax(y1);
-
-        float sum = 0.f;
-
-        for (int i = 0; i < yGEV.length; i++) {
-
-            float z = (yGEV[i] - y1[i])/yNorm;
-            z *= z;
-
-            sum += z;
-        }
-
-        return sum;
-    }
-
 
     /**
      return the error in fitting the GEV curve

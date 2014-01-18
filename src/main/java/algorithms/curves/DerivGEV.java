@@ -58,7 +58,6 @@ public class DerivGEV {
      *
               One solution is to calculate the GEV with slightly different values of k near the given k to get delta GEV/deltaK.
      *
-     *
      *   deriv of -z^(-1/k) w.r.t. sigma is
      *       (1/k) * z^(-1 - (1/k)) * dzdsigma
      *
@@ -126,6 +125,7 @@ public class DerivGEV {
      *              yconst
      *   dydmu    = ------ * ( f1 * df2dmu + f2 * df1dmu )
      *              sigma
+     *  
      */
 
     protected static Logger log = Logger.getLogger(DerivGEV.class.getName());
@@ -786,8 +786,8 @@ public class DerivGEV {
         // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
         // to the first derivative
         //
-        // k component to residuals = d(1,1) * (∂f/∂k)
-        //       where d(1,1) is 1./(∂^2f/∂k∂k)
+        // k component to residuals = d(1,1) * (&#8706;/&#8706;k)
+        //       where d(1,1) is 1./(&#8706;<sup>2</sup>/&#8706;k&#8706;k), that is 1./(&#8706;<sup>2</sup>/&#8706;k&#8706;k)
 
         Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
 
@@ -806,10 +806,10 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂k∂k empirically.
+     * estimate &#8706;<sup>2</sup>/&#8706;k&#8706;k empirically.
      *
-     * The method uses the tested DerivGEV.derivWRTK() for ∂f/∂k and plugs in different k's
-     * to estimate ∂^2f/∂k∂k.
+     * The method uses the tested DerivGEV.derivWRTK() for dfdk and plugs in different k's
+     * to estimate d2fdkdk
      *
      * @param mu
      * @param k
@@ -818,8 +818,6 @@ public class DerivGEV {
      * @return
      */
     public static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x) {
-
-        // ∂^2f/∂k∂k
 
         Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
 
@@ -833,10 +831,11 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂k∂k empirically.  the method accepts dydk as a given to allow easier
+     * estimate &#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k empirically.  
+     * the method accepts dydk as a given to allow easier
      * resuse in other equations, but has to trust that dydk was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
      * @param mu
      * @param k
      * @param sigma
@@ -845,8 +844,6 @@ public class DerivGEV {
      * @return
      */
     public static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x, double dydk) {
-
-        // ∂^2f/∂k∂k = estimate as (dydk_2 - dydk)/dk
 
         float factor = 0.0001f;
 
@@ -862,10 +859,11 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂k∂sigma empirically.  the method accepts dydk as a given to allow easier
+     * estimate &#8706;<sup>2</sup>/&#8706;k&#8706;sigma, &#8706;<sup>2</sup>/&#8706;k&#8706;sigma empirically.  
+     * the method accepts dydk as a given to allow easier
      * resuse in other equations, but has to trust that dydk was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
      * @param mu
      * @param k
      * @param sigma
@@ -875,7 +873,7 @@ public class DerivGEV {
      */
     public static double estimateDY2DKDSigma(float yConst, float mu, float k, float sigma, float x, double dydk) {
 
-        // ∂^2f/∂k∂sigma
+        // &#8706;<sup>2</sup>/&#8706;k&#8706;sigma
 
         float factor = 0.0001f;
 
@@ -891,10 +889,11 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂k∂mu empirically.  the method accepts dydk as a given to allow easier
+     * estimate &#8706;<sup>2</sup>/&#8706;k&#8706;mu, that is &#8706;<sup>2</sup>/&#8706;k&#8706;mu empirically.  
+     * the method accepts dydk as a given to allow easier
      * resuse in other equations, but has to trust that dydk was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
      * @param yConst
      * @param mu
      * @param k
@@ -905,7 +904,7 @@ public class DerivGEV {
      */
     public static double estimateDY2DKDMu(float yConst, float mu, float k, float sigma, float x, double dydk) {
 
-        // ∂^2f/∂k∂mu
+        // &#8706;<sup>2</sup>/&#8706;k&#8706;mu
 
         float factor = 0.0001f;
 
@@ -921,10 +920,11 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂sigma∂sigma empirically.  the method accepts dydsigma as a given to allow easier
+     * estimate &#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma, that is &#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma empirically.  
+     * the method accepts dydsigma as a given to allow easier
      * resuse in other equations, but has to trust that dydsigma was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
      * @param mu
      * @param k
      * @param sigma
@@ -934,7 +934,7 @@ public class DerivGEV {
      */
     public static double estimateDY2DSigmaDSigma(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
 
-        // ∂^2f/∂sigma∂sigma = estimate as (dyds_2 - dyds)/ds
+        // &#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma = estimate as (dyds_2 - dyds)/ds
 
         float factor = 0.0001f;
 
@@ -950,10 +950,12 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂mu∂mu empirically.  the method accepts dydsigma as a given to allow easier
+     * estimate &#8706;<sup>2</sup>/&#8706;mu&#8706;mu, that is &#8706;<sup>2</sup>/&#8706;mu&#8706;mu empirically.  
+     * the method accepts dydsigma as a given to allow easier
      * resuse in other equations, but has to trust that dydmu was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
+     * 
      * @param mu
      * @param k
      * @param sigma
@@ -963,7 +965,7 @@ public class DerivGEV {
      */
     public static double estimateDY2DMuDMu(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
-        // ∂^2f/∂mu∂mu
+        // &#8706;<sup>2</sup>/&#8706;mu&#8706;mu
 
         float factor = 0.0001f;
 
@@ -979,10 +981,13 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂mu∂k empirically.  the method accepts dydsigma as a given to allow easier
+     * 
+     * estimate &#8706;<sup>2</sup>/&#8706;mu&#8706;k, that is &#8706;<sup>2</sup>/&#8706;mu&#8706;k empirically.  
+     * the method accepts dydsigma as a given to allow easier
      * resuse in other equations, but has to trust that dydmu was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
+     * 
      * @param mu
      * @param k
      * @param sigma
@@ -992,7 +997,7 @@ public class DerivGEV {
      */
     public static double estimateDY2DMuDK(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
-        // ∂^2f/∂mu∂k
+        // &#8706;<sup>2</sup>/&#8706;mu&#8706;k
 
         float factor = 0.0001f;
 
@@ -1008,10 +1013,13 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂mu∂sigma empirically.  the method accepts dydsigma as a given to allow easier
+     * 
+     * estimate &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma, that is &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma empirically.  
+     * the method accepts dydsigma as a given to allow easier
      * resuse in other equations, but has to trust that dydmu was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
+     * 
      * @param mu
      * @param k
      * @param sigma
@@ -1021,7 +1029,7 @@ public class DerivGEV {
      */
     public static double estimateDY2DMuDSigma(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
-        // ∂^2f/∂mu∂sigma
+        // &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma
 
         float factor = 0.0001f;
 
@@ -1037,10 +1045,13 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂sigma∂k empirically.  the method accepts dydsigma as a given to allow easier
+     * 
+     * estimate &#8706;<sup>2</sup>/&#8706;sigma&#8706;k, that is &#8706;<sup>2</sup>/&#8706;sigma&#8706;k empirically.  
+     * the method accepts dydsigma as a given to allow easier
      * resuse in other equations, but has to trust that dydsigma was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
+     * 
      * @param mu
      * @param k
      * @param sigma
@@ -1050,7 +1061,7 @@ public class DerivGEV {
      */
     public static double estimateDY2DSigmaDK(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
 
-        // ∂^2f/∂sigma∂k = estimate as (dy2_ds_dk - dyds)/dk
+        // &#8706;<sup>2</sup>/&#8706;sigma&#8706;k = estimate as (dy2_ds_dk - dyds)/dk
 
         float factor = 0.0001f;
 
@@ -1066,10 +1077,13 @@ public class DerivGEV {
     }
 
     /**
-     * estimate ∂^2f/∂sigma∂mu empirically.  the method accepts dydsigma as a given to allow easier
+     * 
+     * estimate &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu, that is &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu empirically.  
+     * the method accepts dydsigma as a given to allow easier
      * resuse in other equations, but has to trust that dydsigma was derived with the
      * same k, sigma, mu, and x.
-     *
+     * 
+     * 
      * @param mu
      * @param k
      * @param sigma
@@ -1079,7 +1093,7 @@ public class DerivGEV {
      */
     public static double estimateDY2DSigmaDMu(float yConst, float mu, float k, float sigma, float x, double dydsigma) {
 
-        // ∂^2f/∂sigma∂mu = estimate as (dy2_ds_dk - dyds)/dk
+        // &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu = estimate as (dy2_ds_dk - dyds)/dk
 
         float factor = 0.0001f;
 
@@ -1100,10 +1114,10 @@ public class DerivGEV {
         // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
         // to the first derivative
         //
-        // sigma component to residuals = d(2,2) * (∂f/∂sigma)
-        //       where d(2,2) is ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+        // sigma component to residuals = d(2,2) * (&#8706;/&#8706;sigma)
+        //       where d(2,2) is ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
 
-        // ∂f/∂sigma
+        // &#8706;/&#8706;sigma
         Double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);
 
         if (dyds == null) {
@@ -1111,22 +1125,22 @@ public class DerivGEV {
         }
 
 
-        // ∂^2f/∂sigma∂sigma
+        // &#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma
         double d2ydsds = estimateDY2DSigmaDSigma(yConst, mu, k, sigma, x, dyds);
 
 
-        // (∂^2f/∂sigma∂k) = estimate as (dydsigma_1 - dydsigma)/dsigma
+        // (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k) = estimate as (dydsigma_1 - dydsigma)/dsigma
         double d2ydsdk = estimateDY2DSigmaDK(yConst, mu, k, sigma, x, dyds);
 
-        // ∂f/∂k
+        // &#8706;/&#8706;k
         Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
 
         if (dydk != null) {
 
-            // ∂^2f/∂k∂k
+            // &#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k
             double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());
 
-            // ∂^2f/∂k∂sigma
+            // &#8706;<sup>2</sup>/&#8706;k&#8706;sigma
             double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dydk.doubleValue());
 
             double modification = d2ydsds - (d2ydsdk / d2ydkdk) * d2ydkds;
@@ -1151,43 +1165,43 @@ public class DerivGEV {
         // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
         // to the first derivative
         //
-        // sigma component to residuals = d(3,3) * (∂f/∂mu)
+        // sigma component to residuals = d(3,3) * (&#8706;/&#8706;mu)
         /*
            where  d(3,3) is 1./(
-                     ( (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu) )
+                     ( (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu) - (&#8706;<sup>2</sup>/&#8706;mu&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;mu) )
                      -
                      (
-                        ∂^2f/∂mu∂sigma
+                        &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma
                         *
-                        ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                        ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
                         *
-                        ∂^2f/∂sigma∂mu
+                        &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu
                      )
                  )
 
-                Let pt1 = (∂^2f/∂mu∂mu) - (∂^2f/∂mu∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂mu)
+                Let pt1 = (&#8706;<sup>2</sup>/&#8706;mu&#8706;mu) - (&#8706;<sup>2</sup>/&#8706;mu&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;mu)
 
-                Let pt2_1 = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
+                Let pt2_1 = ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
 
-                Let pt2 = ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )
+                Let pt2 = ( &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma * pt2_1 * &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu )
 
             d(3,3) = 1./( pt1 - pt2)
         */
 
-        // ∂f/∂mu
+        // &#8706;/&#8706;mu
         Double dydmu = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x);
 
         if (dydmu == null) {
             return 0;
         }
 
-        // ∂f/∂sigma
+        // &#8706;/&#8706;sigma
         Double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);
         if (dyds == null) {
             return 0;
         }
 
-        // ∂^2f/∂sigma∂sigma
+        // &#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma
         double d2ydsds = estimateDY2DSigmaDSigma(yConst, mu, k, sigma, x, dyds.doubleValue());
 
         if (d2ydsds == 0) {
@@ -1195,23 +1209,23 @@ public class DerivGEV {
         }
 
 
-        // ∂^2f/∂mu∂mu
+        // &#8706;<sup>2</sup>/&#8706;mu&#8706;mu
         double d2ydmdm = estimateDY2DMuDMu(yConst, mu, k, sigma, x, dydmu.doubleValue());
 
-        // ∂f/∂k
+        // &#8706;/&#8706;k
         Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);
 
         double pt1;
 
         if (dydk != null) {
 
-            // ∂^2f/∂mu∂k
+            // &#8706;<sup>2</sup>/&#8706;mu&#8706;k
             double d2ydmdk = estimateDY2DMuDK(yConst, mu, k, sigma, x, dydmu.doubleValue());
 
-            // ∂^2f/∂k∂k
+            // &#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k
             double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());
 
-            // ∂^2f/∂k∂mu
+            // &#8706;<sup>2</sup>/&#8706;k&#8706;mu
             double d2ydkdm = estimateDY2DKDMu(yConst, mu, k, sigma, x, dydk.doubleValue());
 
             pt1 = d2ydmdm - (d2ydmdk*d2ydkdm / d2ydkdk);
@@ -1221,18 +1235,18 @@ public class DerivGEV {
             pt1 = d2ydmdm;
         }
 
-        // (∂^2f/∂sigma∂k) = estimate as (dydsigma_1 - dydsigma)/dsigma
+        // (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k) = estimate as (dydsigma_1 - dydsigma)/dsigma
         double d2ydsdk = estimateDY2DSigmaDK(yConst, mu, k, sigma, x, dyds.doubleValue());
 
         double d2ydmds = estimateDY2DMuDSigma(yConst, mu, k, sigma, x, dydmu.doubleValue());
 
-        // ∂^2f/∂sigma∂mu
+        // &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu
         double d2ydsdm = estimateDY2DSigmaDMu(yConst, mu, k, sigma, x, dyds.doubleValue());
 
-        // d(3,3) = 1./( (pt1) - ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu ))
+        // d(3,3) = 1./( (pt1) - ( &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma * pt2_1 * &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu ))
         //
-        // pt2_1 = ( 1./ ( (∂^2f/∂sigma∂sigma) - (∂^2f/∂sigma∂k)*( 1/(∂^2f/∂k∂k) ) * (∂^2f/∂k∂sigma) ) )
-        // Let pt2 = ( ∂^2f/∂mu∂sigma * pt2_1 * ∂^2f/∂sigma∂mu )
+        // pt2_1 = ( 1./ ( (&#8706;<sup>2</sup>/&#8706;sigma&#8706;sigma) - (&#8706;<sup>2</sup>/&#8706;sigma&#8706;k)*( 1/(&#8706;<sup>2</sup>/&#8706;k&#8706;k, that is &#8706;<sup>2</sup>/&#8706;k&#8706;k) ) * (&#8706;<sup>2</sup>/&#8706;k&#8706;sigma) ) )
+        // Let pt2 = ( &#8706;<sup>2</sup>/&#8706;mu&#8706;sigma * pt2_1 * &#8706;<sup>2</sup>/&#8706;sigma&#8706;mu )
 
         double pt2, pt2_1;
 
@@ -1242,10 +1256,10 @@ public class DerivGEV {
 
         } else if (d2ydsdk != 0 && dydk != null) {
 
-            // ∂^2f/∂sigma∂k
+            // &#8706;<sup>2</sup>/&#8706;sigma&#8706;k
             double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());
 
-            // ∂^2f/∂k∂sigma
+            // &#8706;<sup>2</sup>/&#8706;k&#8706;sigma
             double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dydk.doubleValue());
 
             pt2_1 = d2ydsds - (d2ydsdk * d2ydkds / d2ydkdk);
@@ -1337,10 +1351,12 @@ public class DerivGEV {
     }
 
     /**
-     * retrieve the second deriv of GEV ∂^2f/∂k∂mu.
+     * 
+     * retrieve the second deriv of GEV &#8706;<sup>2</sup>/&#8706;k&#8706;mu, that is &#8706;<sup>2</sup>/&#8706;k&#8706;mu
      *
      * Note:  the method hasn't been tested yet and will be compared to the results from method estimateDY2DKDMu.
-     *
+     * 
+     * 
      * @param yConst
      * @param mu
      * @param k
@@ -1428,7 +1444,8 @@ public class DerivGEV {
     }
 
     /*
-     Can see that calculating the formula for the partial derivative ∂^2f/∂k∂mu
+     
+     Can see that calculating the formula for the partial derivative &#8706;<sup>2</sup>/&#8706;k&#8706;mu
      is time consuming and error prone so will only implement the "estimate" methods hereafter.
 
 
@@ -1436,7 +1453,7 @@ public class DerivGEV {
      df2dk     = f2 * ( (-1-(1/k)) * dzdk/z  +  (1/k^2) * ln(z) )
      dzdk = (x-mu)/sigma
 
-     ∂^2f/∂k∂mu
+     &#8706;<sup>2</sup>/&#8706;k&#8706;mu
          = ∂/∂mu ( (yconst/sigma) * ( f1 * df2dk + f2 * df1dk )  )
          = (yconst/sigma) * ∂/∂mu( f1 * df2dk )  + (yconst/sigma) * ∂/∂mu(f2 * df1dk )
          = (yconst/sigma) *  pt1                 + (yconst/sigma) * pt2
@@ -1530,6 +1547,7 @@ public class DerivGEV {
 
                      pt2_0_1_0 = ∂/∂mu( ln ( -1*(sigma + k*(x-mu))/sigma )
                                = (k*sigma)/(sigma + k*(x-mu))
+
 
 */
 }

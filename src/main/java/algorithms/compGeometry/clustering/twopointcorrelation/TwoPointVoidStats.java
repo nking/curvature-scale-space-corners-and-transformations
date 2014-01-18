@@ -50,7 +50,7 @@ import java.util.logging.Logger;
   If the user has better knowledge of which should be applied, can set that with:
      setInterpretForSparseBackgroundToTrue() or setInterpretForSparseBackgroundToFalse()
      
- <pre>
+ 
  * More specifically for the true background points:
  * -- The location of the 'background' points in two dimensional space are likely
  *    Poisson, that is their locations in a fixed interval of space are
@@ -66,7 +66,7 @@ import java.util.logging.Logger;
  *    background point distribution and analyzing the distribution for the most
  *    frequently occurring densities (the peak) and the smallest densities for
  *    sparse background data sets.
- * </pre>
+ * 
  *
  * Usage:
  *    TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
@@ -585,12 +585,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 }
             }
 
-            boolean didCalculateFitStats = yfit.calculateStatsAsStepFunction();
-            if (!didCalculateFitStats) {
-                if (debug) {
-                    plotPairSeparations();
-                }
-                throw new TwoPointVoidStatsException("histogram of linear densities was not fittable");
+            if (debug) {
+                plotPairSeparations();
             }
 
             return yfit;

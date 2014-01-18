@@ -2,18 +2,6 @@ package algorithms.curves;
 
 public class CurveMisc {
 
-    public static float calculateArea(float[] x, float[] y,
-        boolean isStepFunction, float xScaleFactor, float yScaleFactor) {
-
-        float total = 0f;
-
-        for (int i = 0; i < x.length; i++) {
-            total += calculateArea(x, y, i, isStepFunction, xScaleFactor, yScaleFactor);
-        }
-
-        return total;
-    }
-
     public static float calculateArea(float[] x, float[] y, int xyIndex,
         boolean isStepFunction, float xScaleFactor, float yScaleFactor) {
 
