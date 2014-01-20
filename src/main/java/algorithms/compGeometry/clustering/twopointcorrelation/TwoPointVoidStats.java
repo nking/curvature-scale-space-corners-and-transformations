@@ -704,7 +704,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 float empiricalErrorInFitting = gevTotalMeanFittingEmpiricalError / histogram.getYHist().length;
                 
                 String interp = (interpretForSparseBackground) ? " sparse " : " complete ";
-                log.info("\nestimating background from sampling= " + sampling.toString()
+                log.info("\nestimating background from sampling = " + sampling.toString()
                     + " and interpretation=" + interp 
                     + "\ndens=" + this.backgroundDensity
                     + "\nw/ centroid error in area/y =" + backgroundDensityError
@@ -729,57 +729,6 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(xfit, yfit, frac);
 
         return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xy.getX(), xy.getY());
-    }
-
-    protected float[] calcAreaAndCentroid(float[] x, float[] y, int[] regionIndexes) {
-
-        if (regionIndexes.length == 1) {
-            return null;
-        } else if (regionIndexes.length == 2) {
-
-            float xp0 = x[regionIndexes[0]];
-            float yp0 = y[regionIndexes[0]];
-
-            float xp1 = x[regionIndexes[1]];
-            float yp1 = y[regionIndexes[1]];
-
-            float xc = (xp0 + xp1) / 2.f;
-            float yc = (yp0 + yp1) / 2.f;
-
-            double dist = Math.sqrt(Math.pow((xp0 - xp1), 2) + Math.pow((yp0 - yp1), 2));
-            double height = (dist > 0) ? 1 : Math.pow(1, Math.getExponent(dist));
-            float area = (float) (height * dist);
-
-            return new float[]{area, xc, yc};
-        }
-
-        float[] xPolygon = new float[regionIndexes.length];
-        float[] yPolygon = new float[regionIndexes.length];
-        for (int i = 0; i < regionIndexes.length; i++) {
-            int index = regionIndexes[i];
-            xPolygon[i] = x[index];
-            yPolygon[i] = y[index];
-        }
-
-        if (xPolygon.length > 2) {
-
-            try {
-                GrahamScan scan = new GrahamScan();
-                scan.computeHull(xPolygon, yPolygon);
-
-                float[] xHull = scan.getXHull();
-                float[] yHull = scan.getYHull();
-
-                return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xHull, yHull);
-
-            } catch (GrahamScanTooFewPointsException e) {
-                return null;
-            }
-
-        } else {
-
-            return null;
-        }
     }
 
     public int getNumberOfDensityPoints() {
@@ -808,6 +757,9 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         for (int i = 0; i < voidFinder.getNumberOfTwoPointDensities(); i++) {
             oos.writeFloat(voidFinder.getTwoPointDensityErrors()[i]);
         }
+        if (sampling != null) {
+            oos.writeUTF(sampling.name());
+        }
 
         oos.flush();
     }
@@ -828,7 +780,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 state = State.DENSITIES_CALCULATED;
             }
         }
-
+        
         return didDeserialize;
     }
 
@@ -836,6 +788,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         voidFinder = new VoidReader(ois);
 
+        this.sampling = ((VoidReader)voidFinder).getSampling();
     }
 
     void plotFit(PolygonAndPointPlotter plotter) {
@@ -859,19 +812,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         }
 
     }
-    void plot(TwoPointVoidStatsPlotter plotter, float xmin, float xmax, float ymin, float ymax) {
-
-        try {
-            if (statsHistogram != null) {
-
-                plotPairSeparations(plotter, xmin, xmax, ymin, ymax);
-
-                plotter.writeFile2();
-            }
-
-        } catch (IOException e) {
-        }
-    }
+    
     protected void plotPairSeparations() {
 
         try {

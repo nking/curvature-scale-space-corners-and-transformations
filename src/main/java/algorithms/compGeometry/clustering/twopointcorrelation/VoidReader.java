@@ -10,9 +10,9 @@ public class VoidReader extends AbstractVoidFinder {
         
         super();
         
-        deserializeTwoPointBackground(ois);
-        
         this.sampling = VoidSampling.N_A;
+        
+        deserializeTwoPointBackground(ois);        
     }
     
     public void setSampling(VoidSampling sampling) {
@@ -64,6 +64,13 @@ public class VoidReader extends AbstractVoidFinder {
         }
         for (int i = 0; i < nTwoPointSurfaceDensities; i++) {
             this.allTwoPointSurfaceDensitiesErrors[i] = ois.readFloat();
+        }
+        try {
+            String s = ois.readUTF();
+            if (s != null && s.length() > 0) {
+                sampling = VoidSampling.resolve(s);
+            }
+        } catch(IOException e) {
         }
     }
 

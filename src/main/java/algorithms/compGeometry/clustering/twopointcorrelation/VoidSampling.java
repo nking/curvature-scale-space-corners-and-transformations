@@ -6,5 +6,15 @@ public enum VoidSampling {
     LEAST_COMPLETE, 
     COMPLETE_ON_SUBSET,
     FOR_SPARSE_BACKGROUND,
-    N_A
+    N_A;
+    
+    public static VoidSampling resolve(String name) {
+        for (VoidSampling vs : VoidSampling.values()) {
+            if (vs.name().equals(name)) {
+                return vs;
+            }
+        }
+        return null;
+    }
+    
 }

@@ -37,7 +37,7 @@ public class FittingStatsTest extends BaseTwoPointTest {
         //  randomly distributed.
 
         // ===== see tests in tests_larger for larger number of iterations ====
-        int nIterPerBackground = 0;
+        int nIterPerBackground = 1;
 
         int m = nIterPerBackground*3;
         

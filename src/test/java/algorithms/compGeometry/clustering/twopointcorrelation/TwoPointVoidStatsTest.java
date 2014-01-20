@@ -311,6 +311,21 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         assertTrue(stats.voidFinder.getTwoPointDensities().length == 10);
         
         assertNotNull(stats.getBestFit());
+
+        
+        String indexerFilePath = stats.persistIndexer();
+        stats = new TwoPointVoidStats(indexerFilePath);
+        stats.setDebug(debug);
+        stats.calc();
+        assertTrue(stats.voidFinder.getTwoPointDensities().length == 10);
+        assertNotNull(stats.getBestFit());
+        
+        String backgroundPointsFilePath = stats.persistTwoPointBackground();
+        stats = new TwoPointVoidStats(indexerFilePath);
+        stats.setDebug(debug);
+        stats.calc(backgroundPointsFilePath);
+        assertTrue(stats.voidFinder.getTwoPointDensities().length == 10);
+        assertNotNull(stats.getBestFit());
     }
 
     public void checkRuntimes() throws Exception {
@@ -330,6 +345,27 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             double permutations = 0.375*n*n - n;
             log.info( "[1] N=" + n + " niterations=" + permutations);
         }
+    }
+    
+    public void testExceptions() throws Exception {
+        
+        boolean threwException = false;
+        try {
+            AxisIndexer indexer = null;
+            AbstractPointBackgroundStats stats = new TwoPointVoidStats(indexer);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
+        
+        threwException = false;
+        try {
+            AxisIndexer indexer = new AxisIndexer();
+            AbstractPointBackgroundStats stats = new TwoPointVoidStats(indexer);
+        } catch(IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue(threwException);
     }
 
     protected static long computeDiv(int n, int k) {

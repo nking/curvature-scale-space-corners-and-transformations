@@ -44,6 +44,7 @@ public class MainRunner {
             System.out.println("     optional:  --threesigma");
             System.out.println("     optional:  --background 0.3 (requires backgrounderror guesstimate at least)");
             System.out.println("     optional:  --backgrounderror 0.1");
+            System.out.println("     optional:  --debug");
             return null;
         }
 
@@ -51,6 +52,7 @@ public class MainRunner {
 
         boolean useTwo = false;
         boolean useThree = false;
+        boolean debug = false;
 
         Float bckgnd = null;
         Float bckgndErr = null;
@@ -83,6 +85,9 @@ public class MainRunner {
                     i++;
                     arguments.put("backgrounderror", tmp);
                 }
+            } else if (args[i].equals("--debug")) {
+                debug = true;
+                arguments.put("debug", "true");
             } else {
                 System.out.println("WARNING, not an option: " + args[i]);
             }
@@ -107,7 +112,11 @@ public class MainRunner {
             clusterFinder = new TwoPointCorrelation(
                 reader.getX(), reader.getY(), reader.getXErrors(), reader.getYErrors(), reader.getX().length);
 
-            clusterFinder.setDebug(false);
+            if (debug) {
+                clusterFinder.setDebug(true);
+            } else {
+                clusterFinder.setDebug(false);
+            }
 
 
             // default is 2.5
