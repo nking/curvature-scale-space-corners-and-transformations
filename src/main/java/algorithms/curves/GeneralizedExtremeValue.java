@@ -29,6 +29,7 @@ import algorithms.misc.MiscMath;
  *                   sigma
  *     
  *     sigma > 0
+ *     k = 0
  *
  * Extreme Value Type II:
  *                     k     (sigma)^(k+1)      (   (sigma)^k)
@@ -48,7 +49,7 @@ import algorithms.misc.MiscMath;
  *       = y_const * ----- * (z)^(k+1) * exp( -1*(z)^k )
  *                   sigma
  *
- *     k > 0
+ *     k < 0
  *     sigma > 0
  *     x > 0
  *
@@ -143,9 +144,9 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
      *
      *   Let z = (1 + k*( (x-mu)/sigma )
      *
-     *   f1 = exp( -1. * ( z^(-1./k) ) ) = exp(a)
+     *   f1 = exp( -1. * ( z^(-1./k) ) )
      *
-     *   f2 = z^(-1. - (1/k)) = exp(b)
+     *   f2 = z^(-1. - (1/k))
      *
      *   then y = (yconst/sigma) * f1 * f2
      */
@@ -156,44 +157,44 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
             return null;
         }
 
-        if (k == 0) {
+        // if k =~ 0, use Gumbel which is Type I
+        if (k == 0 || Float.isInfinite(1.f/k)) {
             return generateYEVTypeI(xPoint, sigma, mu);
-        }
-
-        // if k == 0, use Gumbel which is Type I
+        }        
         // if k > 0, use Frechet which is Type II
         // if k < 0, use Weibull which is Type III.  Not using k < 0 in this project
 
         float z = 1.f + k * ((xPoint - mu)/sigma);
+        float a,b;
 
         boolean zIsNegative = (z < 0);
+        // When z is negative, need to use alternative methods for exponentiation:
+        // 
+        // For z^(g/h)
+        //
+        // For the continuous real exponentiation operator, negative base isn't allowed
+        // For the discrete real exponentiation operator,
+        //    fractional exponents with odd denominators are allowed.
+        //    (-z)^(g/h) = ((-z)^g)^(1/h) = ((-1)^g)(z^(g/h))
+        // For the complex exponentiation operator, that is complex bases, 
+        //    the results are not continuous and are infinite.
+        //    the principal value is
+        //        (-1)^(g/h) * ((1./z)^(g/h))
 
         if (zIsNegative) {
-            z *= -1;
+            float invNegZ = -1.0f*(1.0f/z);
+            float neg1Pow = -1.0f; // TODO:  revisit this
+            a = -1.f * neg1Pow * (float) Math.pow(invNegZ, (-1.f/k));
+            b = neg1Pow * (float) Math.pow(invNegZ, (-1.f - (1.f/k)));
+        } else {
+            a = -1.f * (float) Math.pow(z, (-1.f/k));
+            b = (float) Math.pow(z, (-1.f - (1.f/k)));
         }
-
-        float a = -1.f * (float) Math.pow(z, (-1.f/k));
-
-        if (Float.isInfinite(a)) {
-            // k is very small
-            return generateYEVTypeI(xPoint, sigma, mu);
-        }
-
-        float b = (float) Math.pow(z, (-1.f - (1.f/k)));
-
-        if (Float.isInfinite(b)) {
-            // k is very small
-            return generateYEVTypeI(xPoint, sigma, mu);
-        }
-
+        
         if (Float.isNaN(a) || Float.isNaN(b)) {
             // or return 0?
             return null;
         } else {
-            if (zIsNegative) {
-                a *= -1.f;
-                b *= -1.f;
-            }
             float t = (float) ((1.f/sigma) * Math.exp(a) * b);
             return Double.valueOf(t);
         }
@@ -207,61 +208,60 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         double z = (xPoint - mu)/sigma;
 
-        double a = (float) (-1.f - Math.exp(-1.0f*z));
+        double a = (float) (-1.f*z - Math.exp(-1.0f*z));
 
         double yGEV = (float) ((1.f/sigma) * Math.exp(a));
 
         return yGEV;
     }
 
-
     public float[] generateCurve(float[] x1, float k, float sigma, float mu) {
 
         if (sigma == 0) {
-            //throw new IllegalArgumentException("sigma must be > 0");
             return null;
         }
-
-        if (k == 0) {
+        // if k =~ 0, use Gumbel which is Type I
+        if (k == 0 || Float.isInfinite(1.f/k)) {
             return generateEVTypeICurve(x1, sigma, mu);
         }
-
+        
         float[] yGEV = new float[x1.length];
 
         for (int i = 0; i < x1.length; i++) {
 
             float z = 1.f + k*((x1[i] - mu)/sigma);
+            float a,b;
 
             boolean zIsNegative = (z < 0);
-
+            // When z is negative, need to use alternative methods for exponentiation:
+            //
+            // For z^(g/h)
+            //
+            // For the continuous real exponentiation operator, negative base isn't allowed
+            // For the discrete real exponentiation operator,
+            //    fractional exponents with odd denominators are allowed.
+            //    (-z)^(g/h) = ((-z)^g)^(1/h) = ((-1)^g)(z^(g/h))
+            // For the complex exponentiation operator, that is complex bases,
+            //    the results are not continuous and are infinite.
+            //    the principal value is
+            //        (-1)^(g/h) * ((1./z)^(g/h))
+            
             if (zIsNegative) {
-                z *= -1.f;
-            }
-
-            float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
-            if (Float.isInfinite(a)) {
-                // k is extremely small, use approx when k = 0
-                return generateEVTypeICurve(x1, sigma, mu);
-            }
-
-            float b = (float) Math.pow(z, (-1.f - (1.f/k)));
-
-            if (Float.isInfinite(b)) {
-                // k is extremely small, use approx when k = 0
-                return generateEVTypeICurve(x1, sigma, mu);
+                float invNegZ = -1.0f*(1.0f/z);
+                float neg1Pow = -1.0f; // TODO:  revisit this
+                a = -1.f * neg1Pow * (float) Math.pow(invNegZ, (-1.f/k));
+                b = neg1Pow * (float) Math.pow(invNegZ, (-1.f - (1.f/k)));
+            } else {
+                a = -1.f * (float) Math.pow(z, (-1.f/k));
+                b = (float) Math.pow(z, (-1.f - (1.f/k)));
             }
 
             if (Float.isNaN(a) || Float.isNaN(b)) {
                 // return null;
                 yGEV[i] = 0;
             } else {
-                if (zIsNegative) {
-                    a *= -1.f;
-                    b *= -1.f;
-                }
                 float t = (float) ((1.f/sigma) * Math.exp(a) * b);
-                if (t < 0) {
+                if (t < 0 || Float.isNaN(t)) {
                     yGEV[i] = 0;
                 } else {
                     yGEV[i] = t;
@@ -284,7 +284,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
             float z = (x1[i] - mu)/sigma;
 
-            float a = (float) (-1.f - Math.exp(-1.0f*z));
+            float a = (float) (-1.f*z - Math.exp(-1.0f*z));
 
             yGEV[i] = (float) ((1.f/sigma) * Math.exp(a));// times Math.exp(z) too???
         }
@@ -457,7 +457,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         float yMax = MiscMath.findMax(yGEV);
 
-        for (int i = 0; i < yGEV.length; i++){
+        for (int i = 0; i < yGEV.length; i++) {
             yGEV[i] /= yMax;
         }
 
@@ -467,11 +467,10 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
     public static float[] genCurve(float[] x1, float k, float sigma, float mu) {
 
         if (sigma == 0) {
-            //throw new IllegalArgumentException("sigma must be > 0");
             return null;
         }
-
-        if (k == 0) {
+        // if k =~ 0, use Gumbel which is Type I
+        if (k == 0 || Float.isInfinite(1.f/k)) {
             return generateEVTypeICurve(x1, sigma, mu);
         }
 
@@ -479,40 +478,38 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
         for (int i = 0; i < x1.length; i++) {
 
-            float z = 1.f + k*((x1[i] - mu)/sigma);
+            float z = 1.f + k * ((x1[i] - mu)/sigma);
+            float a,b;
 
             boolean zIsNegative = (z < 0);
+            // When z is negative, need to use alternative methods for exponentiation:
+            //
+            // For z^(g/h)
+            //
+            // For the continuous real exponentiation operator, negative base isn't allowed
+            // For the discrete real exponentiation operator,
+            //    fractional exponents with odd denominators are allowed.
+            //    (-z)^(g/h) = ((-z)^g)^(1/h) = ((-1)^g)(z^(g/h))
+            // For the complex exponentiation operator, that is complex bases,
+            //    the results are not continuous and are infinite.
+            //    the principal value is
+            //        (-1)^(g/h) * ((1./z)^(g/h))
 
             if (zIsNegative) {
-                z *= -1.f;
-            }
-
-            float a = -1.f*(float) Math.pow(z, (-1.f/k)); // = -Inf when z=0.317, k=5.05e-4
-
-            if (Float.isInfinite(a)) {
-                // k is extremely small, use approx when k = 0
-                return generateEVTypeICurve(x1, sigma, mu);
-            }
-
-            float b = (float) Math.pow(z, (-1.f - (1.f/k)));
-
-            // for extremely small or large numbers, may have overflow here
-
-            if (Float.isInfinite(b)) {
-                // k is extremely small, use approx when k = 0
-                return generateEVTypeICurve(x1, sigma, mu);
+                float invNegZ = -1.0f*(1.0f/z);
+                float neg1Pow = -1.0f; // TODO:  revisit this
+                a = -1.f * neg1Pow * (float) Math.pow(invNegZ, (-1.f/k));
+                b = neg1Pow * (float) Math.pow(invNegZ, (-1.f - (1.f/k)));
+            } else {
+                a = -1.f * (float) Math.pow(z, (-1.f/k));
+                b = (float) Math.pow(z, (-1.f - (1.f/k)));
             }
 
             if (Float.isNaN(a) || Float.isNaN(b)) {
-                // return null;
                 yGEV[i] = 0;
             } else {
-                if (zIsNegative) {
-                    a *= -1.f;
-                    b *= -1.f;
-                }
                 float t = (float) ((1.f/sigma) * Math.exp(a) * b);
-                if (t < 0) {
+                if (t < 0 || Float.isNaN(t)) {
                     yGEV[i] = 0;
                 } else {
                     yGEV[i] = t;
