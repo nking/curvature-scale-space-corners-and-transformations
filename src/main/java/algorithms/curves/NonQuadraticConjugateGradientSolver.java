@@ -393,50 +393,8 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             
             // if solution has stalled, start with the min start point, else the max start points
             if ((nIter > 3) && (nSameSequentially > 2)) {
-                
-                /*if (!hasTriedAltSteps) {
-                    
-                    bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
-                
-                    for (int k = 0; k < vars.length; k++) {
-                        DerivGEV.exploreChangeInVars(vars, varsMin, varsMax, x, y, ye, r, chiSqSumForLineSearch, k);
-                        if (r[k] != 0) {
-                            vars[k] += r[k];
-                            chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
-                        }
-                    }
-                    
-                    bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
-                    
-                    hasTriedAltSteps = true;
-                    nSameSequentially = 0;
-                    lastChiSqSum = Float.MAX_VALUE;
-                    
-                } else if (true && !hasTriedMinStarts && (chiSqSumForLineSearch[0] > 0.001f)) {
-                    
-                    bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
-                    
-                    kVar = kMin;
-                    sigmaVar = sigmaMin;
-                    muVar = muMin;
-                    
-                    vars[0] = kVar;
-                    vars[1] = sigmaVar;
-                    vars[2] = muVar;
-                    nSameSequentially = 0;
-                    lastChiSqSum = Float.MAX_VALUE;
-
-                    chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
-
-                    hasTriedMinStarts = true;
-                    hasTriedAltSteps = false;
-                    
-                    nIter = 0;
-
-                } else {*/
-                    // let end or let continue
-                    nIter = maxIterations;
-                //}
+                                    
+                  nIter = maxIterations;
             }
             
             for (int k = 0; k <= varStopIdx; k++) {

@@ -257,7 +257,6 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
             }
 
             if (Float.isNaN(a) || Float.isNaN(b)) {
-                // return null;
                 yGEV[i] = 0;
             } else {
                 float t = (float) ((1.f/sigma) * Math.exp(a) * b);
@@ -286,7 +285,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
 
             float a = (float) (-1.f*z - Math.exp(-1.0f*z));
 
-            yGEV[i] = (float) ((1.f/sigma) * Math.exp(a));// times Math.exp(z) too???
+            yGEV[i] = (float) ((1.f/sigma) * Math.exp(a));
         }
 
         return yGEV;
