@@ -145,40 +145,41 @@ public class DerivGEV {
     public static double derivWRTX(float yConst, float mu, float k, float sigma, float x) {
 
         double z = 1. + k *( (x-mu)/sigma );
-
-        /*if (z < 0) {
-            return estimateDerivUsingDeltaK(mu, k, sigma, x);
-        }*/
-
-        boolean zIsNegative = (z < 0);
-
-        if (zIsNegative) {
-            z *= -1;
-        }
-
-        float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
-        if (zIsNegative) {
-            a *= -1.f;
-        }
-
-        double f1 = Math.exp( a );
-        double f2 = Math.pow(z, (-1. - (1./k)) );
-
-        if (zIsNegative) {
-            f2 *= -1.f;
-        }
+        double a, f1, f2;
 
         double dzdx = k/sigma;
-
-        double df2dx = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdx;
-
-        double df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;
+        
+        boolean zIsNegative = (z < 0);
+        // When z is negative, need to use alternative methods for exponentiation:
+        // For z^(g/h)
+        // For the complex exponentiation operator, that is complex bases, 
+        //    the results are not continuous and are infinite.
+        //    the principal value is
+        //        (-1)^(g/h) * ((1./z)^(g/h))
 
         if (zIsNegative) {
-            df2dx *= -1.f;
-            df1dx *= -1.f;
+            double invNegZ = -1.0*(1.0/z);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));
+            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );
+        } else {
+            a = -1.*Math.pow(z, (-1./k));
+            f2 = Math.pow(z, (-1. - (1./k)) );
         }
+
+        f1 = Math.exp( a );
+        
+        double df2dx, df1dx;
+
+        if (zIsNegative) {
+            double invNegZ = -1.0*(1.0/z);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            df2dx = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdx;
+            df1dx = f1 * neg1Pow * (1./k) * Math.pow(invNegZ, (-1. - (1./k))) * dzdx;
+        } else {
+            df2dx = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdx;
+            df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;
+        } 
 
         double dydx = (yConst/sigma) * ( f1 * df2dx + f2 * df1dx );
 
@@ -200,29 +201,27 @@ public class DerivGEV {
     public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
 
         double z = 1. + k *( (x-mu)/sigma );
-
-        /*if (z < 0) {
-            return estimateDerivUsingDeltaK(mu, k, sigma, x);
-        }*/
-
+        double a, f1, f2;
+        
         boolean zIsNegative = (z < 0);
+        // When z is negative, need to use alternative methods for exponentiation:
+        // For z^(g/h)
+        // For the complex exponentiation operator, that is complex bases, 
+        //    the results are not continuous and are infinite.
+        //    the principal value is
+        //        (-1)^(g/h) * ((1./z)^(g/h))
 
         if (zIsNegative) {
-            z *= -1;
+            double invNegZ = -1.0*(1.0/z);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));
+            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );
+        } else {
+            a = -1.*Math.pow(z, (-1./k));
+            f2 = Math.pow(z, (-1. - (1./k)) );
         }
 
-        float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
-        if (zIsNegative) {
-            a *= -1.f;
-        }
-
-        double f1 = Math.exp( a );
-        double f2 = Math.pow(z, (-1. - (1./k)) );
-
-        if (zIsNegative) {
-            f2 *= -1.f;
-        }
+        f1 = Math.exp( a );
 
         // df1dk     = f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
 
@@ -232,22 +231,26 @@ public class DerivGEV {
         //    use a taylor series approximation for negative values plus handling for the number of cycles
         // so df1dk and df2dk are approximated with very small deltas
 
-        float deltaK = 0.0001f;
+        double deltaK = 0.0001;
 
         double k_1 = k + deltaK;
         double z_1 = 1. + k_1 *( (x-mu)/sigma );
-        if (zIsNegative) {
-            z_1 *= -1;
+        
+        boolean z_1IsNegative = (z < 0);
+        double a_1, f2_1;
+        
+        if (z_1IsNegative) {
+            double invNegZ = -1.0*(1.0/z_1);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            a_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1./k_1));
+            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );
+            f2_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );
+        } else {
+            a_1 = -1. * Math.pow(z_1, (-1./k_1));
+            f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );
         }
 
-        float a_1 = -1.f*(float) Math.pow(z_1, (-1.f/k_1));
-
-        double f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );
-
-        if (zIsNegative) {
-            a_1 *= -1.f;
-            f2_1 *= -1.f;
-        }
+        f1 = Math.exp( a );
 
         double df1dk = (Math.exp( a_1 ) - f1)/deltaK;
 
@@ -355,42 +358,48 @@ public class DerivGEV {
     public static double derivWRTSigma(float yConst, float mu, float k, float sigma, float x) {
 
         double z = 1. + k *( (x-mu)/sigma );
+        double a, f1, f2, df2dsigma, df1dsigma;
 
         //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
         //double f2 = Math.pow(z, (-1. - (1./k)) );
 
         boolean zIsNegative = (z < 0);
-
-        if (zIsNegative) {
-            z *= -1;
-        }
-
-        float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
-        if (zIsNegative) {
-            a *= -1.f;
-        }
-
-        double f0 = (yConst/sigma);
-        double f1 = Math.exp( a );
-        double f2 = Math.pow(z, (-1. - (1./k)) );
-
-        if (zIsNegative) {
-            f2 *= -1.f;
-        }
+        // When z is negative, need to use alternative methods for exponentiation:
+        // 
+        // For z^(g/h)
+        //
+        // For the continuous real exponentiation operator, negative base isn't allowed
+        // For the discrete real exponentiation operator,
+        //    fractional exponents with odd denominators are allowed.
+        //    (-z)^(g/h) = ((-z)^g)^(1/h) = ((-1)^g)(z^(g/h))
+        // For the complex exponentiation operator, that is complex bases, 
+        //    the results are not continuous and are infinite.
+        //    the principal value is
+        //        (-1)^(g/h) * ((1./z)^(g/h))
 
         double dzdsigma = -1. * k * (x-mu) * Math.pow(sigma, -2.);
-
-        //(-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
-        double df2dsigma = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdsigma;
-
-        //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-        double df1dsigma =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdsigma;
-
+        
         if (zIsNegative) {
-            df2dsigma *= -1.f;
-            df1dsigma *= -1.f;
+            double invNegZ = -1.0*(1.0/z);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            a = -1. * neg1Pow * Math.pow(invNegZ, (-1./k));
+            f1 = Math.exp( a );
+            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)));
+            //(-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
+            df2dsigma = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdsigma;
+            //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+            df1dsigma =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdsigma;
+        } else {
+            a = -1. * Math.pow(z, (-1./k));
+            f1 = Math.exp( a );
+            f2 = Math.pow(z, (-1. - (1.f/k)));
+            //(-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
+            df2dsigma = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdsigma;
+            //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+            df1dsigma =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdsigma;
         }
+               
+        double f0 = (yConst/sigma);
 
         double df0dsigma = -1.f*yConst/(sigma*sigma);
 
@@ -446,36 +455,40 @@ public class DerivGEV {
         //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
         //double f2 = Math.pow(z, (-1. - (1./k)) );
 
-        boolean zIsNegative = (z < 0);
-
-        if (zIsNegative) {
-            z *= -1;
-        }
-
-        float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
-        if (zIsNegative) {
-            a *= -1.f;
-        }
-
-        double f1 = Math.exp( a );
-        double f2 = Math.pow(z, (-1. - (1./k)) );
-
-        if (zIsNegative) {
-            f2 *= -1.f;
-        }
-
+        double a, f1, f2, df1dmu, df2dmu;
+        
         double dzdmu = -1. * k/sigma;
-
-        //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
-        double df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;
-
-        //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-        double df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;
+        
+        boolean zIsNegative = (z < 0);
+        // When z is negative, need to use alternative methods for exponentiation:
+        // For z^(g/h)
+        // For the complex exponentiation operator, that is complex bases, 
+        //    the results are not continuous and are infinite.
+        //    the principal value is
+        //        (-1)^(g/h) * ((1./z)^(g/h))
 
         if (zIsNegative) {
-            df2dmu *= -1.f;
-            df1dmu *= -1.f;
+            double invNegZ = -1.0*(1.0/z);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));
+            f1 = Math.exp( a );
+            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );
+            
+            //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+            df2dmu = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdmu;
+
+            //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+            df1dmu =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdmu;
+        } else {
+            a = -1.*Math.pow(z, (-1./k));
+            f1 = Math.exp( a );
+            f2 = Math.pow(z, (-1. - (1./k)) );
+          
+            //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+            df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;
+
+            //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+            df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;
         }
 
         double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );
@@ -1368,33 +1381,45 @@ public class DerivGEV {
 
         double z = 1. + k *( (x-mu)/sigma );
 
-        boolean zIsNegative = (z < 0);
+        //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
+        //double f2 = Math.pow(z, (-1. - (1./k)) );
 
-        if (zIsNegative) {
-            z *= -1;
-        }
-
-        float a = -1.f*(float) Math.pow(z, (-1.f/k));
-
-        if (zIsNegative) {
-            a *= -1.f;
-        }
-
-        double f1 = Math.exp( a );
-        double f2 = Math.pow(z, (-1. - (1./k)) );
-
-        if (zIsNegative) {
-            f2 *= -1.f;
-        }
-
+        double a, f1, f2, df1dmu, df2dmu;
+        
         double dzdmu = -1. * k/sigma;
+        
+        boolean zIsNegative = (z < 0);
+        // When z is negative, need to use alternative methods for exponentiation:
+        // For z^(g/h)
+        // For the complex exponentiation operator, that is complex bases, 
+        //    the results are not continuous and are infinite.
+        //    the principal value is
+        //        (-1)^(g/h) * ((1./z)^(g/h))
 
-        //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
-        double df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;
+        if (zIsNegative) {
+            double invNegZ = -1.0*(1.0/z);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));
+            f1 = Math.exp( a );
+            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );
+            
+            //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+            df2dmu = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdmu;
 
-        //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-        double df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;
+            //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+            df1dmu =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdmu;
+        } else {
+            a = -1.*Math.pow(z, (-1./k));
+            f1 = Math.exp( a );
+            f2 = Math.pow(z, (-1. - (1./k)) );
+          
+            //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
+            df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;
 
+            //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+            df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;
+        }
+        
         float deltaK = 0.0001f;
         float deltaMu = 0.0001f;
         double k_1 = k + deltaK;
@@ -1402,24 +1427,28 @@ public class DerivGEV {
         double z_1 = 1. + k_1 *( (x-mu)/sigma );
         double z_1_1 = 1. + k_1 *( (x-mu_1)/sigma );
 
-        if (zIsNegative) {
-            df2dmu *= -1.f;
-            df1dmu *= -1.f;
-            z_1 *= -1.f;
-            z_1_1 *= -1.f;
+        double a_1, f2_1;
+        if (z_1 < 0) {
+            double invNegZ = -1.0*(1.0/z_1);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            a_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1./k_1));
+            f2_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );
+        } else {
+            a_1 = -1. * Math.pow(z_1, (-1./k_1));
+            f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );
         }
-
-        // approximating  df1dk and df2dk  to avoid the correction needed for log(negative number)
-        float a_1 = -1.f*(float) Math.pow(z_1, (-1.f/k_1));
-        float a_1_1 = -1.f*(float) Math.pow(z_1_1, (-1.f/k_1));
-        double f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );
-        double f2_1_1 = Math.pow(z_1_1, (-1. - (1./k_1)) );
-        if (zIsNegative) {
-            a_1 *= -1.f;
-            a_1_1 *= -1.f;
-            f2_1 *= -1.f;
-            f2_1_1 *= -1.f;
+        
+        double a_1_1, f2_1_1;
+        if (z_1_1 < 0) {
+            double invNegZ = -1.0*(1.0/z_1_1);
+            double neg1Pow = -1.0; // TODO:  revisit this
+            a_1_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1.f/k_1));
+            f2_1_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );
+        } else {
+            a_1_1 = -1. * Math.pow(z_1_1, (-1.f/k_1));
+            f2_1_1 = Math.pow(z_1_1, (-1. - (1./k_1)) );
         }
+        
         double f1_1 = Math.exp( a_1 );
         double df1dk = (Math.exp( a_1 ) - f1)/deltaK;
         double df1dk_1 = (Math.exp( a_1_1 ) - f1_1)/deltaK;
