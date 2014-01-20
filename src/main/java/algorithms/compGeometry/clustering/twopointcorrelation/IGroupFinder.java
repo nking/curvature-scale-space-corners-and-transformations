@@ -1,5 +1,11 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+/**
+ * interface for classes that find groups of points based upon the background threshhold density.
+ * 
+ * @author nichole
+ *
+ */
 public interface IGroupFinder {
     
     public void findGroups(AxisIndexer indexer);

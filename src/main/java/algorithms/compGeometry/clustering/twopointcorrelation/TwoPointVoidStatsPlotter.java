@@ -11,25 +11,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 
 /**
-   quick code to visualize data in TwoPointVoidStats.
-
-   It edits an html file to add variables and invocations of render functions.
-   The path to the created html will be printed to standard out.
-
-   Usage:
-
-      TwoPointVoidStatsPlotter plotter = new TwoPointVoidStatsPlotter();
-
-      plotter.addTwoPointPlot(x, y, point1Indexes, point2Indexes, xmin, xmax, ymin, ymax);
-
-      plotter.addHistogram(twoPointSurfaceDensities, xHistogramMax, minStatsHistogram.xHist.length);
-
-  where point1Indexes and point2Indexes are arrays of indexes to the indexes of arrays {x, y};
-  The 2 points found form the rectangle boundaries of a void.
-
-  the twoPointSurfaceDensities are the densities of the voids and are parallel
-  to point1Indexes and point2Indexes.
-
+  code to produce plots for visualizing the results of and debugging TwoPointVoidStats
+   
  * @author nichole
  */
 public class TwoPointVoidStatsPlotter {

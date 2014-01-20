@@ -5,21 +5,23 @@ import algorithms.sorting.MultiArrayMergeSort;
 import java.util.Arrays;
 
 /**
- * Solves the Convex Hull problem w/ a stack S of candidate points.
- *
- * Given a set of Q points returns the vertices of the ConvexHull(Q) in counterclockwise
- * order.   a convex hull is the smallest convex polygon that will include all points in Q.
- *
- * Graham's Scan runs in O(n lg n).
- *   (in contrast to Jarvis's March which runs in O(nh) where h is the number of
- *   vertices in the convex hull.)
- * Will adjust this after estimates...
- *
- * Both use a technique called 'rotational sweep' to process vertices in the order
- * of the polar angles they form with a reference vertex.
- *
- * constructed from pseudo-code in Cormen et al. "Introduction to Algorithms
- *
+  <pre>
+  Solves the Convex Hull problem w/ a stack S of candidate points.
+ 
+  Given a set of Q points returns the vertices of the ConvexHull(Q) in counterclockwise
+  order.   a convex hull is the smallest convex polygon that will include all points in Q.
+ 
+  Graham's Scan runs in O(n lg n).
+    (in contrast to Jarvis's March which runs in O(nh) where h is the number of
+    vertices in the convex hull.)
+  Will adjust this after estimates...
+ 
+  Both use a technique called 'rotational sweep' to process vertices in the order
+  of the polar angles they form with a reference vertex.
+ 
+  constructed from pseudo-code in Cormen et al. "Introduction to Algorithms
+ </pre>
+ 
  * @author Nichole King
  */
 public class GrahamScan {

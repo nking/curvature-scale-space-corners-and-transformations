@@ -1,5 +1,10 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+/**
+ * interface for classes that find the voids in the dataset
+ * 
+ * @author nichole
+ */
 public interface IVoidFinder {
     
     public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException;

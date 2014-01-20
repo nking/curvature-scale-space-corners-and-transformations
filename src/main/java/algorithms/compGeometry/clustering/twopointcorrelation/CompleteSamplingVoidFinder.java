@@ -3,6 +3,10 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import java.util.logging.Logger;
 
 /**
+ * <pre>
+ * an implementation of VoidFinder that uses complete sampling to determine the background (void)
+ * point density.
+ * 
  * RT complexity for findVoids()
  *
  * findVoids() is N^2/2 - N/2 which is < O(N^2),
@@ -11,7 +15,7 @@ import java.util.logging.Logger;
  * total RT complexity:
  *     best time:  is N^2 - N   which is < O(N^2)
  *     worse time: is N^3 - N^2 which is < O(N^3)
- *
+ *</pre>
  * @author nichole
  */
 public class CompleteSamplingVoidFinder extends AbstractVoidFinder {

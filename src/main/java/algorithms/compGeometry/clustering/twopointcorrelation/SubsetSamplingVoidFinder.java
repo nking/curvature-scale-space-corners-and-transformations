@@ -2,6 +2,13 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import java.util.logging.Logger;
 
+/**
+ * an instance of IVoidFinder that uses a subsection of the AxisIndexer data.
+ * Note that the subset indexes are applied to the x and y axes of AxisIndexer data.
+ * 
+ * @author nichole
+ *
+ */
 public class SubsetSamplingVoidFinder extends AbstractVoidFinder {
         
     protected int sortedIdxLo = -1;

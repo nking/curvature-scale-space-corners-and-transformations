@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
+ * <pre>
  * A holder for two-point identities, where the identities are the indexes
  * of the indexer internal arrays.  N is the size of the dataset, that is
  * the indexer.nXY.
@@ -36,7 +37,7 @@ import java.util.logging.Logger;
  *
  * Space complexity:
  *    O(N)
- *
+ *</pre>
  * @author nichole
  */
 class TwoPointHashMap implements ITwoPointIdentity {

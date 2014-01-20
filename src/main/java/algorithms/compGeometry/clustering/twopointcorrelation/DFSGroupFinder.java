@@ -6,8 +6,10 @@ import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.Stack;
 
 /**
- * use a Depth First Search algorithm to visit all nodes in a dataset and
- * put into groups those within  distance < threshhold * threshholdFactor from each other.
+ * <pre>
+ * An implementation of IGroupFinder that uses a depth first search algorithm
+ * to visit all nodes in a dataset and put into groups those within 
+ * distance < threshhold * threshholdFactor from each other.
  * 
  * the runtime complexity is a little larger, but on the order of O(N^2)
  * 
@@ -15,6 +17,7 @@ import algorithms.util.Stack;
  * frame to be loaded for each invocation. the method frame load and unload is expensive computationally,
  * and the other caveat is that if the recursion is deep enough it may cause the program to
  * become memory bound and that further decreases performance or can halt the program.
+ * </pre>
  * 
  * @author nichole
  */

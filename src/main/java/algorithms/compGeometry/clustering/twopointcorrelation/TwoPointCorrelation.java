@@ -17,6 +17,7 @@ import java.lang.management.MemoryUsage;
 import java.util.logging.Logger;
 
 /**
+ <pre>
   Find clusters in data.
   
   Clusters in the dataset are found by defining the background point density and finding
@@ -102,6 +103,7 @@ import java.util.logging.Logger;
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
 
           java -cp bin/classes  algorithms.compGeometry.clustering.twopointcorrelation.TwoPointCorrelation --file /path/to/file/fileName.txt
+  </pre>
   
   @author nichole
  */

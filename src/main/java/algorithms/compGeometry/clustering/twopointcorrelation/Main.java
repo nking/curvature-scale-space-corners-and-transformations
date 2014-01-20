@@ -5,12 +5,12 @@ import algorithms.util.InputFileReader;
 import algorithms.util.MainRunner;
 
 /**
-
+<pre>
   Usage from the command line:
       Requires a tab delimited text file with 4 columns: x, y, xErrors, yErrors.
 
           java -jar two-point-correlation.jar --file /path/to/file/fileName.txt
-
+</pre>
   @author nichole
  */
 public class Main {

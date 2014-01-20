@@ -14,6 +14,7 @@ import java.io.Reader;
 
 
 /**
+<pre>
 Convenience class to create a plot to visualize results of the
 Two-Point correlation code.
 
@@ -28,7 +29,7 @@ The path to the output file is printed to standard out.
       plotter.writeFile();
 
    Note that multiple uses of addPlot will append to existing html file for this instance.
-
+</pre>
 @author nichole
 */
 public class TwoPointCorrelationPlotter {

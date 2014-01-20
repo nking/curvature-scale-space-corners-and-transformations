@@ -12,23 +12,25 @@ import java.util.Arrays;
 public class LinesAndAngles {
 
     /**
-     * determine the cross product and return negative number if the 2nd
-     * set of values, p1, are clockwise from the first, p1, w.r.t. origin (0,0).
-     *
-     *    o P2
-     *    .
-     *    .
-     *    .   o P1      <--- P2 is counterclockwise from P1
-     *    .
-     *    0
-     *
-     *          o P2
-     *          .
-     *  P1 o    .       <--- P2 is clockwise from P1
-     *          .
-     *          .
-     *          0
-     *
+     <pre>
+      determine the cross product and return negative number if the 2nd
+      set of values, p1, are clockwise from the first, p1, w.r.t. origin (0,0).
+      
+          o P2
+          .
+          .
+          .   o P1      <--- P2 is counterclockwise from P1
+          .
+          0
+      
+                o P2
+                .
+        P1 o    .       <--- P2 is clockwise from P1
+                .
+                .
+                0
+     </pre>
+     
      * @param x1
      * @param y1
      * @param x2
@@ -224,24 +226,26 @@ public class LinesAndAngles {
         return dx2 + dy2;
     }
 
-    /** from http://en.wikipedia.org/wiki/Line-line_intersection
-         *
-         *    (x1, y1)
-         *         *
-         *          \    (x4, y4)
-         *           \      *
-         *            \    /
-         *             \  /
-         *              \/
-         *            P /\
-         *             /  \
-         *            /    \
-         *           /      \
-         *          *        \
-         *    (x3, y3)        \
-         *                     \
-         *                      *
-         *                  (x2, y2)
+    /** <pre>from http://en.wikipedia.org/wiki/Line-line_intersection
+          
+              (x1, y1)
+                   *
+                    \    (x4, y4)
+                     \      *
+                      \    /
+                       \  /
+                        \/
+                      P /\
+                       /  \
+                      /    \
+                     /      \
+                    *        \
+              (x3, y3)        \
+                               \
+                                *
+                            (x2, y2)
+           <pre>
+         * 
          * @param x1
          * @param y1
          * @param x2
@@ -554,23 +558,23 @@ public class LinesAndAngles {
     }
 
     /*
-     *
-     * determine angle subtended by line and point where we are returning the angle
-     * (NOTE:  set the first point as the one near the ngle of interest)
-     *
-     *      (x1,y1)
-     *         /
-     *        /      *(xPoint,yPoint)
-     *       /
-     *      /theta
-     *   (x0,y0)
-     *
-     *
+     <pre>
+      determine angle subtended by line and point where we are returning the angle
+      (NOTE:  set the first point as the one near the ngle of interest)
+     
+           (x1,y1)
+              /
+             /      *(xPoint,yPoint)
+            /
+           /theta
+        (x0,y0)
+     
+     <pre>
      */
     public static double angleBetweenPointAndLine(float x0, float y0, float x1, float y1,
         float xPoint, float yPoint) {
 
-        /*
+        /* <pre>
          * Use Law of Cosines
          *
          *                   (x1, y1)
@@ -589,6 +593,7 @@ public class LinesAndAngles {
          *                             *(xp,yp)
          *
          *  cosine A = (b^2 + c^2 - a^2)/2bc
+         * <pre>
          */
 
         double bsq = distSquared(x0, y0, xPoint, yPoint);
@@ -605,31 +610,33 @@ public class LinesAndAngles {
     }
 
     /**
-     * For Clockwise, solving theta = C in diagram below.
-     * For Counter Clockwise, solving theta = A in diagram below.
-     *
-     *                   (xp, yp)
-     *                      *
-     *                    .
-     *        side c    .  \/.             Law of cosines
-     *                .    B               c^2 = a^2 + b^2 - 2ab cos C
-     *              .         .            or  a^2 = b^2 + c^2 - 2bc cos A
-     *            .
-     *          .              . side a
-     * (x0,y0)*  _\A
-     *            .             .
-     *                .
-     *                    .      .
-     *            side b      . C/
-     *                             *(x1,y1)
-     *
-     *   Right triangle cosine and sine
-     *     r /
-     *      /
-     *     /theta    xTopPolygon = r * cos(theta)
-     *    -------
-     *       xTopPolygon
-     *
+       <pre>
+       For Clockwise, solving theta = C in diagram below.
+       For Counter Clockwise, solving theta = A in diagram below.
+      
+                         (xp, yp)
+                            *
+                          .
+              side c    .  \/.             Law of cosines
+                      .    B               c^2 = a^2 + b^2 - 2ab cos C
+                    .         .            or  a^2 = b^2 + c^2 - 2bc cos A
+                  .
+                .              . side a
+       (x0,y0)*  _\A
+                  .             .
+                      .
+                          .      .
+                  side b      . C/
+                                   *(x1,y1)
+      
+         Right triangle cosine and sine
+           r /
+            /
+           /theta    xTopPolygon = r * cos(theta)
+          -------
+             xTopPolygon
+     </pre>
+     
      * @param x0
      * @param y0
      * @param x1
@@ -692,7 +699,7 @@ public class LinesAndAngles {
         float xpp = x0 + (float)((xPoint - x0)*Math.cos(thetaTransformCW) - (yPoint - y0)*Math.sin(thetaTransformCW));
         float ypp = y0 + (float)((yPoint - y0)*Math.cos(thetaTransformCW) + (xPoint - x0)*Math.sin(thetaTransformCW));
 
-        /*
+        /* <pre>
          *   right triangles have already been handled, so we can limit cases by (xpp, ypp) position
          *      relative to 0:1
          * _________________   _________________   _________________
@@ -712,7 +719,7 @@ public class LinesAndAngles {
          * |    0     1     |  |    0     1     |  |    0     1     |       for the answer
          * | P              |  |       P        |  |             P  |
          * ------------------  ------------------  ------------------
-         *
+         *</pre>
          */
 
         double bsq = distSquared(x00, y00, x11, y11);
@@ -1191,7 +1198,8 @@ public class LinesAndAngles {
             yTopPolygon = Arrays.copyOf(yTopPolygon, (polygonCount + 2));
         }
 
-        /* (0)                     | (1)                     | (2)                   | (3)
+        /* <pre>
+         * (0)                     | (1)                     | (2)                   | (3)
          *           peak          |           peak          |         peak          |            peak
          *                         |                         |                       |
          *                         |     pt_i+1    pt_j-1    |                       |
@@ -1207,6 +1215,7 @@ public class LinesAndAngles {
          *                                                                           |  ----------------------
          *                                                                           |
          *                                                                           | <no point>      <no point>
+         * </pre>
          */
 
         // interpolate first point

@@ -7,7 +7,7 @@ import algorithms.misc.MiscMath;
 
 public class DerivGEV {
 
-    /*
+    /*<pre>
      *                          (   (      ( x-mu))-(1/k))
      *                          (-1*(1 + k*(-----))      )
      *                 1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
@@ -125,7 +125,7 @@ public class DerivGEV {
      *              yconst
      *   dydmu    = ------ * ( f1 * df2dmu + f2 * df1dmu )
      *              sigma
-     *  
+     * </pre>
      */
 
     protected static Logger log = Logger.getLogger(DerivGEV.class.getName());

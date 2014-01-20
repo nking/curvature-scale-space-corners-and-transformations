@@ -27,16 +27,17 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
- * Class to estimate a background density for a set of points in which
- * the background density will be used by the calling program to find
- * clusters, that is groups of points associated by proximity, in the data.
- *
- * It calculates the two-point density function of rectangular voids, creates a
- * histogram from the distribution, fits a Generalized Extreme Value
- * distribution to the histogram and interprets that based upon information
- * about the number density of points in both dimensions.
- *
- * Essentially one must learn before sampling and analysis, whether the majority of points
+  <pre>
+  Class to estimate a background density for a set of points in which
+  the background density will be used by the calling program to find
+  clusters, that is groups of points associated by proximity, in the data.
+ 
+  It calculates the two-point density function of rectangular voids, creates a
+  histogram from the distribution, fits a Generalized Extreme Value
+  distribution to the histogram and interprets that based upon information
+  about the number density of points in both dimensions.
+ 
+  Essentially one must learn before sampling and analysis, whether the majority of points
    are in groups and have background points outside of the groups ahead of time or whether
    there are no background points outside of groups.
    The easiest way to approximate that ahead of time is by rough cell counts (in 2-dimensions) before
@@ -50,36 +51,35 @@ import java.util.logging.Logger;
   If the user has better knowledge of which should be applied, can set that with:
      setInterpretForSparseBackgroundToTrue() or setInterpretForSparseBackgroundToFalse()
      
+  More specifically for the true background points:
+  -- The location of the 'background' points in two dimensional space are likely
+     Poisson, that is their locations in a fixed interval of space are
+     independent of one another and occurred randomly.
+  -- The areas between voids in such a distribution are well fit by
+     Generalized Extreme Value distributions. Extreme value distributions are used
+     to describe the maximum or minimum of values drawn from a sample distribution
+     that is essentially exponential.
+     The fits improve as N, the number of data points, increases.
+  -- The GEV curve contains 3 independent fitting parameters and the curve is
+     an exponential combined with a polynomial, so it's resulting fitted
+     parameters are not unique, but the curve is useful for characterizing the
+     background point distribution and analyzing the distribution for the most
+     frequently occurring densities (the peak) and the smallest densities for
+     sparse background data sets. 
  
- * More specifically for the true background points:
- * -- The location of the 'background' points in two dimensional space are likely
- *    Poisson, that is their locations in a fixed interval of space are
- *    independent of one another and occurred randomly.
- * -- The areas between voids in such a distribution are well fit by
- *    Generalized Extreme Value distributions. Extreme value distributions are used
- *    to describe the maximum or minimum of values drawn from a sample distribution
- *    that is essentially exponential.
- *    The fits improve as N, the number of data points, increases.
- * -- The GEV curve contains 3 independent fitting parameters and the curve is
- *    an exponential combined with a polynomial, so it's resulting fitted
- *    parameters are not unique, but the curve is useful for characterizing the
- *    background point distribution and analyzing the distribution for the most
- *    frequently occurring densities (the peak) and the smallest densities for
- *    sparse background data sets.
- * 
- *
- * Usage:
- *    TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
- *    stats.calc();
- *
- * For a more detailed fit to the background, one can use TwoPointVoidStats:
- *     stats = new TwoPointVoidStats(indexer);
- *     stats.setUseCompleteSampling(true);
- *     stats.calc();
- *
- * If debugging is turned on, plots are generated and those file paths are printed to
- * standard out, and statements are printed to standard out.
- *
+  Usage:
+     TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
+     stats.calc();
+ 
+  For a more detailed fit to the background, one can use TwoPointVoidStats:
+      stats = new TwoPointVoidStats(indexer);
+      stats.setUseCompleteSampling(true);
+      stats.calc();
+ 
+  If debugging is turned on, plots are generated and those file paths are printed to
+  standard out, and statements are printed to standard out.
+ </pre>
+ 
  * @author nichole
  */
 public class TwoPointVoidStats extends AbstractPointBackgroundStats {

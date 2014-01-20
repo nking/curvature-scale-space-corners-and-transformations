@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.logging.Logger;
 
+/**
+ * a class to read a persisted set of background void points
+ * 
+ * @author nichole
+ */
 public class VoidReader extends AbstractVoidFinder {
 
     public VoidReader(ObjectInputStream ois) throws IOException {

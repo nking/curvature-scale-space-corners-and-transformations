@@ -1,7 +1,8 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 /**
- *
+ * interface for classes used to hold a point identity pair uniquely.
+ * 
  * @author nichole
  */
 public interface ITwoPointIdentity {

@@ -3,56 +3,58 @@ package algorithms.curves;
 import algorithms.misc.MiscMath;
 
 /**
- * Generate curves following the Generalized Extreme Value probability density
- * function.
- *
- *                          (   (      ( x-mu))-(1/k))
- *                          (-1*(1 + k*(-----))      )
- *                 1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
- * y = y_const * ----- * exp                           * (1 + k*(-----))
- *               sigma                                   (      (sigma))
- *
- * mu is  the location parameter
- * sigma is the scale parameter and is > 0
- * k is the shape parameter
- *
- *
- * if k != 0,
- *     1 + (k * (x-mu)/sigma) > 0
- *
- *
- * Let z = (x-mu)/sigma
- *
- * Extreme Value Type I:
- *                     1
- *     y = y_const * ----- * exp( -z -exp(-z))
- *                   sigma
- *     
- *     sigma > 0
- *     k = 0
- *
- * Extreme Value Type II:
- *                     k     (sigma)^(k+1)      (   (sigma)^k)
- *     y = y_const * ----- * (-----)       * exp( - (-----)  )
- *                   sigma   (  x  )            (   (  x  )  )
- *
- *     k  > 0
- *     sigma > 0
- *     x > 0
- *
- * Extreme Value Type III:
- *                     k     (x - mu)^(k+1)      (   (x - mu)^k)
- *     y = y_const * ----- * (------)       * exp( - (------)  )
- *                   sigma   (sigma )            (   (sigma )  )
- *
- *                     k
- *       = y_const * ----- * (z)^(k+1) * exp( -1*(z)^k )
- *                   sigma
- *
- *     k < 0
- *     sigma > 0
- *     x > 0
- *
+  <pre>
+  Generate curves following the Generalized Extreme Value probability density
+  function.
+ 
+                           (   (      ( x-mu))-(1/k))
+                           (-1*(1 + k*(-----))      )
+                  1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
+  y = y_const * ----- * exp                           * (1 + k*(-----))
+                sigma                                   (      (sigma))
+ 
+  mu is  the location parameter
+  sigma is the scale parameter and is > 0
+  k is the shape parameter
+ 
+ 
+  if k != 0,
+      1 + (k * (x-mu)/sigma) > 0
+ 
+ 
+  Let z = (x-mu)/sigma
+ 
+  Extreme Value Type I:
+                      1
+      y = y_const * ----- * exp( -z -exp(-z))
+                    sigma
+      
+      sigma > 0
+      k = 0
+ 
+  Extreme Value Type II:
+                      k     (sigma)^(k+1)      (   (sigma)^k)
+      y = y_const * ----- * (-----)       * exp( - (-----)  )
+                    sigma   (  x  )            (   (  x  )  )
+ 
+      k  > 0
+      sigma > 0
+      x > 0
+ 
+  Extreme Value Type III:
+                      k     (x - mu)^(k+1)      (   (x - mu)^k)
+      y = y_const * ----- * (------)       * exp( - (------)  )
+                    sigma   (sigma )            (   (sigma )  )
+ 
+                      k
+        = y_const * ----- * (z)^(k+1) * exp( -1*(z)^k )
+                    sigma
+ 
+      k < 0
+      sigma > 0
+      x > 0
+ 
+ </pre>
  * @author nichole
  */
 public class GeneralizedExtremeValue implements ICurveGenerator {
@@ -128,7 +130,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
         return yGEV;
     }
 
-    /*
+    /* <pre>
      *                          (   (      ( x-mu))-(1/k))
      *                          (-1*(1 + k*(-----))      )
      *                 1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
@@ -149,6 +151,7 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
      *   f2 = z^(-1. - (1/k))
      *
      *   then y = (yconst/sigma) * f1 * f2
+     *</pre>
      */
     public static Double generateYGEV(float xPoint, float k, float sigma, float mu) {
 
@@ -334,11 +337,13 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
     }
 
     /**
+     <pre>
      return the error in fitting the GEV curve
 
                                  | dy_fit |^2            | dy_fit |^2            | dy_fit|^2            |dy_fit|^2
        (err_y_fit)^2 =  (err_x)^2|--------|   + (err_k)^2|--------|   + (err_s)^2|-------|   + (err_m)^2|------|
                                  |   dx   |              |   dk   |              |  ds   |              |  dm  |
+     </pre>
      * @param bestFit2
      * @return
      */
@@ -392,16 +397,18 @@ public class GeneralizedExtremeValue implements ICurveGenerator {
     }
 
     /**
-     * calculate the error in an area / height calculation for y=0 to y > yLimitFraction where y is
-     * yLimitFraction to to the right of the peak.  This is useful for determining errors for things
-     * like FWHM for example.
-     *
-     * For FWHM we have sum of f = sum(X_i*Y_i)_(i < yLimit)/ Y_i
+      <pre>
+      calculate the error in an area / height calculation for y=0 to y > yLimitFraction where y is
+      yLimitFraction to to the right of the peak.  This is useful for determining errors for things
+      like FWHM for example.
+     
+      For FWHM we have sum of f = sum(X_i*Y_i)_(i < yLimit)/ Y_i
 
           err^2 = xError^2*(Y_i/Y_i) = xError^2
 
           it reduces to the sum of the errors in x.  no pde's...
-     *
+     </pre>
+     
      * @param yFit
      * @param yLimitFraction
      * @return

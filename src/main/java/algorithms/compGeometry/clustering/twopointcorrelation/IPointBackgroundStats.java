@@ -3,7 +3,7 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import java.io.IOException;
 
 /**
- * interface for classes which supply an estimate of the background density
+ * interface for classes which supply an estimate of the background void density
  *
  * @author nichole
  */

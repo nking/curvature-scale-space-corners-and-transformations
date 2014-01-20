@@ -1,5 +1,10 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+/**
+ * enumeration of types of sampling for the background void points
+ * 
+ * @author nichole
+ */
 public enum VoidSampling {
 
     COMPLETE, 

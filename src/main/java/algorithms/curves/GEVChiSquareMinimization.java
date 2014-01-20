@@ -8,26 +8,25 @@ import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 /**
- * 
- * A chi square minimization routine for the Generalized Extreme Value function.
- * It has been tailored for use with the two-point correlation algorithm,
- * that is for k > 0.
- *
- * If one knows the range of parameter space for k and sigma, it is better to
- * use methods which calculate the fit with that better knowledge.
- *
- * mu is  the location parameter
- * sigma is the scale parameter and is > 0
- * k is the shape parameter
- *
- *                          (   (      ( x-mu))-(1/k))
- *                          (-1*(1 + k*(-----))      )
- *                 1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
- * y = y_const * ----- * exp                           * (1 + k*(-----))
- *               sigma                                   (      (sigma))
- *
- * 
- * 
+  <pre>
+  A chi square minimization routine for the Generalized Extreme Value function.
+  It has been tailored for use with the two-point correlation algorithm,
+  that is for k > 0.
+ 
+  If one knows the range of parameter space for k and sigma, it is better to
+  use methods which calculate the fit with that better knowledge.
+ 
+  mu is  the location parameter
+  sigma is the scale parameter and is > 0
+  k is the shape parameter
+ 
+                           (   (      ( x-mu))-(1/k))
+                           (-1*(1 + k*(-----))      )
+                  1        (   (      (sigma))      )   (      ( x-mu))(-1-(1/k))
+  y = y_const * ----- * exp                           * (1 + k*(-----))
+                sigma                                   (      (sigma))
+ </pre> 
+ 
  * @author nichole
  */
 public class GEVChiSquareMinimization extends AbstractCurveFitter {
@@ -59,19 +58,21 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
     }
 
     /**
-     * Fit the curve using a simple constraint for mu and a narrow range of possible values
-     * for k and sigma.
-     *
-     * Mu is usually found to be the maximum of the y array of the data because the
-     * code is intended to be used on GEV distributions, more specifically, those of
-     * EV Type I and Type II with k > 0.
-     *
-     *
-     * The initial k range is 0.001f to 10.f
-     * and the initial sigma range is kMin * x[0] to kMax * x[x.length - 1];
-     *
-     * The method uses one iteration of a downhill simplex method for fitting.
-     *
+      <pre>
+      Fit the curve using a simple constraint for mu and a narrow range of possible values
+      for k and sigma.
+     
+      Mu is usually found to be the maximum of the y array of the data because the
+      code is intended to be used on GEV distributions, more specifically, those of
+      EV Type I and Type II with k > 0.
+     
+     
+      The initial k range is 0.001f to 10.f
+      and the initial sigma range is kMin * x[0] to kMax * x[x.length - 1];
+     
+      The method uses one iteration of a downhill simplex method for fitting.    
+     </pre>
+     
      * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
      *    the best choice if errors are available.
      * @return yfit the best fitting curve
@@ -95,18 +96,20 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
     }
 
     /**
-     * Fit the curve using a simple constraint for mu and a narrow range of possible values
-     * for k and sigma.
-     *
-     * Mu is usually found to be the maximum of the y array of the data because the
-     * code is intended to be used on GEV distributions, more specifically, those of
-     * EV Type I and Type II with k > 0.
-     *
-     * The initial k range is 0.001f to 10.f
-     * and the initial sigma range is kMin * x[0] to kMax * x[x.length - 1];
-     *
-     * The method uses one iteration of a downhill simplex method for fitting.
-     *
+     <pre>
+      Fit the curve using a simple constraint for mu and a narrow range of possible values
+      for k and sigma.
+     
+      Mu is usually found to be the maximum of the y array of the data because the
+      code is intended to be used on GEV distributions, more specifically, those of
+      EV Type I and Type II with k > 0.
+     
+      The initial k range is 0.001f to 10.f
+      and the initial sigma range is kMin * x[0] to kMax * x[x.length - 1];
+     
+      The method uses one iteration of a downhill simplex method for fitting.
+     </pre>
+     
      * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
      *    the best choice if errors are available.
      * @param mu
@@ -148,18 +151,20 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
     }
 
     /**
-     * Fit the curve using a simple constraint for mu and a narrow range of possible values
-     * for k and sigma.
-     *
-     * Mu is usually found to be the maximum of the y array of the data because the
-     * code is intended to be used on GEV distributions, more specifically, those of
-     * EV Type I and Type II with k > 0.
-     *
-     * The initial k range is 0.001f to 10.f
-     * and the initial sigma range is kMin * x[0] to kMax * x[x.length - 1];
-     *
-     * The method uses one iteration of a downhill simplex method for fitting.
-     *
+     <pre>
+      Fit the curve using a simple constraint for mu and a narrow range of possible values
+      for k and sigma.
+     
+      Mu is usually found to be the maximum of the y array of the data because the
+      code is intended to be used on GEV distributions, more specifically, those of
+      EV Type I and Type II with k > 0.
+     
+      The initial k range is 0.001f to 10.f
+      and the initial sigma range is kMin * x[0] to kMax * x[x.length - 1];
+     
+      The method uses one iteration of a downhill simplex method for fitting.
+     </pre>
+     
      * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
      *    the best choice if errors are available.
      * @param mu
@@ -312,11 +317,13 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
     }
 
      /**
-     * Fit curve within range of given parameters.  Internally, uses the Neder-Meade downhill
-     * simplex method and ranges of k, sigma and mu.  If the best fitting chi-square statistic
-     * is larger than 100, it repeats the process using different start conditions for
-     * the simplex method and keeps the best result.
-     *
+     <pre>
+      Fit curve within range of given parameters.  Internally, uses the Neder-Meade downhill
+      simplex method and ranges of k, sigma and mu.  If the best fitting chi-square statistic
+      is larger than 100, it repeats the process using different start conditions for
+      the simplex method and keeps the best result.
+     </pre>
+     
      * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
      *    the best choice if errors are available.
      * @return yfit the best fitting curve
@@ -384,12 +391,14 @@ public class GEVChiSquareMinimization extends AbstractCurveFitter {
     }
 
     /**
-     * Fit curve within range of given parameters.  Internally, uses the Neder-Meade downhill
-     * simplex method and no additional iterations combined with range reduction such as
-     * is used by the fitCurveKGreaterThanZero method without min and max arguments.
-     *
-     * The mu parameter is fit for x[0] through x[yConstIndex] only.
-     *
+     <pre>
+     Fit curve within range of given parameters.  Internally, uses the Neder-Meade downhill
+     simplex method and no additional iterations combined with range reduction such as
+      is used by the fitCurveKGreaterThanZero method without min and max arguments.
+     
+      The mu parameter is fit for x[0] through x[yConstIndex] only.
+     </pre>
+     
      * @param weightMethod the method for determining the tolerance of fit to a point.  the errors weight is
      *    the best choice if errors are available.
      * @param kMin

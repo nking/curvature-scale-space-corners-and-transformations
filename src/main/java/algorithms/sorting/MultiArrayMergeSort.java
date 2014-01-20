@@ -3,6 +3,7 @@ package algorithms.sorting;
 import java.util.Arrays;
 
 /**
+ * <pre>
  * merge sort worse case runtime is O(N * log_2(N))
  *
  * The method to sort 2 arrays below uses divide and conquer paradigm and sorts one additional array
@@ -12,7 +13,8 @@ import java.util.Arrays;
  *
  * constructed from pseudo-code in Cormen et al.
  * "Introduction to Algorithms"
- *
+ * <pre>
+ * 
  * @author Nichole King
  */
 public class MultiArrayMergeSort {

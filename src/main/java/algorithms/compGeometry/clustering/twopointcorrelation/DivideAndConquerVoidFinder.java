@@ -2,6 +2,13 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import java.util.logging.Logger;
 
+/**
+ * an implementation of IVoidFinder that uses a divide and conquer approach to sampling the
+ * data.
+ * 
+ * @author nichole
+ *
+ */
 public class DivideAndConquerVoidFinder extends AbstractVoidFinder {
 
     @Override
@@ -17,6 +24,7 @@ public class DivideAndConquerVoidFinder extends AbstractVoidFinder {
     
 
     /**
+     * <pre>
      * A divide and conquer approach to finding the rectangular areas
      * containing only two points.  
      *
@@ -29,7 +37,7 @@ public class DivideAndConquerVoidFinder extends AbstractVoidFinder {
      *                       ==> this has a solution that is O(N lg2 N)
      * 
      * Note: It does not completely sample every pair of points.
-     *
+     *</pre>
      * @param xIndexLo
      * @param xIndexHi
      * @param yIndexLo

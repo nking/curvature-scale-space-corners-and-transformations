@@ -4,22 +4,18 @@ import algorithms.sorting.MultiArrayMergeSort;
 import java.util.Arrays;
 
 /**
- * Class to hold x and y array of points whose values have been
- * indexed by increasing x and y.  The class is useful for finding
- * the intersection of regions of points.
- *
- * The error arrays are also stored as member variables to keep them
- * ordered parallel to the x and y arrays, though they are not part of the
- * 'behavior' of this class.
+ * <pre>
+  Class to hold x and y array of points whose values have been
+  indexed by increasing x and y. 
+  The error arrays are also stored as member variables to keep them
+  ordered parallel to the x and y arrays.
 
    Usage:
       AxisIndexer indexer = new AxisIndexer();
 
-      // sort and index if errors do not need to be stored:
-      indexer.sortAndIndexXThenY(xPoints, yPoints, nXYPoints);
-
       // else sort and index using method with errors
-      indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);
+      indexer.sortAndIndexXThenY(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);      
+</pre>
 
  * @author nichole
  */

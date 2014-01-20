@@ -1,19 +1,21 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 /**
- * A holder for two-point identities, where the identities are the indexes
- * of the indexer internal arrays.  N is the size of the dataset, that is
- * the indexer.nXY.
- * *
- * Runtime complexity:
- *    inserts are     O(lg₂(N)) at best and O(N) at worse.
- *    comparisons are O(lg₂(N))
- *
- * Space complexity:
- *    O(N)
- *
- * Note, could implement a balanced tree to make inserts at worse O(lg₂(N)).
- *
+ <pre>
+  A holder for two-point identities, where the identities are the indexes
+  of the indexer internal arrays.  N is the size of the dataset, that is
+  the indexer.nXY.
+  
+  Runtime complexity:
+     inserts are     O(lg₂(N)) at best and O(N) at worse.
+     comparisons are O(lg₂(N))
+ 
+  Space complexity:
+     O(N)
+ 
+  Note, could implement a balanced tree to make inserts at worse O(lg₂(N)).
+ </pre>
+ 
  * @author nichole
  */
 class TwoPointBinarySearchTree implements ITwoPointIdentity {
