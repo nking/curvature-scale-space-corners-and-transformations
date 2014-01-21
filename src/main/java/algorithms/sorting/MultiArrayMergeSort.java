@@ -15,7 +15,7 @@ import java.util.Arrays;
  * "Introduction to Algorithms"
  * <pre>
  * 
- * @author Nichole King
+ * @author nichole
  */
 public class MultiArrayMergeSort {
     

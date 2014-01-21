@@ -9,7 +9,7 @@ import java.util.Arrays;
  * same polar angle from P0.
 
  *
- * @author Nichole King
+ * @author nichole
  */
 public class PolarAngleMergeSort {
 

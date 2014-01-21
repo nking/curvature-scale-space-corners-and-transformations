@@ -22,7 +22,7 @@ import java.util.Arrays;
   constructed from pseudo-code in Cormen et al. "Introduction to Algorithms
  </pre>
  
- * @author Nichole King
+ * @author nichole
  */
 public class GrahamScan {
 

@@ -3,6 +3,7 @@ package algorithms.util;
 import algorithms.compGeometry.clustering.twopointcorrelation.SimpleLinkedListNode;
 
 /**
+ * <pre>
  * a Last In First Out structure with
  * 
  *   insert: O(1)
@@ -10,7 +11,7 @@ import algorithms.compGeometry.clustering.twopointcorrelation.SimpleLinkedListNo
  *   pop: O(1)
  *   
  *   isEmpty: O(1)
- *   
+ * </pre>  
  * @author nichole
  *
  */
