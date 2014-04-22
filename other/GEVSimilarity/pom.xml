@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.climbwithyourfeet.software</groupId>
+    <artifactId>gevSimilarity</artifactId>
+    <version>0.1</version>
+    <packaging>jar</packaging>
+    <name>GEV Curve Similarity By Parameters</name>
+    <organization>
+    </organization>
+    <description>explore GEV surve similarity for ranges of parameters</description>
+    <developers>
+        <developer>
+            <name>Nichole King</name>
+        </developer>
+    </developers>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>central repository (2)</name>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+            <id>jzy3d-releases</id>
+            <name>Jzy3d Snapshots</name>
+            <url>http://www.jzy3d.org/maven/releases</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>${java.source.version}</source>
+                    <target>${java.target.version}</target>
+                    <encoding>UTF-8</encoding>
+                    <verbose>true</verbose>
+                    <fork>true</fork>
+                    <executable>${JAVA_HOME}/bin/javac</executable>
+                    <compilerVersion>${java.target.version}</compilerVersion>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.4.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>2.3</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.15</version>
+                <configuration>
+                    <argLine>-XX:-UseSplitVerifier</argLine>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <java.util.logging.config.file>${project.build.directory}/test-classes/logging.properties</java.util.logging.config.file>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>key-check</id>
+                        <phase>pre-compile</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <encoding>UTF-8</encoding>
+                            <failonerror>true</failonerror>
+                            <target>
+                                <echo message="check that two-point-correlation.jar exists in ../../dist" />
+                                <exec dir="${basedir}" executable="/usr/bin/find" 
+                                    outputProperty="classesExist" failOnError="true">
+                                    <arg line="../../dist -name 'two-point-correlation.jar'"/>
+                                </exec>
+                                <!-- <echo message="classesExist=${classesExist}" /> -->
+                                <fail message="*** run 'package' for the main project two-point-correlation to build the expected jar file ***">
+                                    <condition>
+                                        <matches string="${classesExist}" pattern="^$"/>
+                                    </condition>
+                                </fail>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
+        <dependency>
+            <groupId>org.jzy3d</groupId>
+            <artifactId>jzy3d-api</artifactId>
+            <version>0.9.1</version>
+        </dependency>
+        <dependency>
+            <groupId>algorithms.compGeometry.clustering</groupId>
+            <artifactId>twopointcorrelation</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../../dist/two-point-correlation.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.5</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+     <properties>
+        <java.source.version>1.7</java.source.version>
+        <java.target.version>1.7</java.target.version>
+    </properties>
+
+</project>
