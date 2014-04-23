@@ -22,11 +22,6 @@
             <name>central repository (2)</name>
             <url>http://repo1.maven.org/maven2</url>
         </repository>
-        <repository>
-            <id>jzy3d-releases</id>
-            <name>Jzy3d Snapshots</name>
-            <url>http://www.jzy3d.org/maven/releases</url>
-        </repository>
     </repositories>
 
     <build>
@@ -68,6 +63,7 @@
                     <systemPropertyVariables>
                         <java.util.logging.config.file>${project.build.directory}/test-classes/logging.properties</java.util.logging.config.file>
                     </systemPropertyVariables>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
             </plugin>
 
@@ -106,9 +102,9 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>org.jzy3d</groupId>
-            <artifactId>jzy3d-api</artifactId>
-            <version>0.9.1</version>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.0.17</version>
         </dependency>
         <dependency>
             <groupId>algorithms.compGeometry.clustering</groupId>

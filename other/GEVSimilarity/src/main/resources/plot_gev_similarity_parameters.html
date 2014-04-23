@@ -190,17 +190,6 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
         
         function _renderPlot(suffix, points) {
             /* dots */
-            var xmax, xmin;
-            if (suffix == '_k') {
-                xmin = window['k0'];
-                xmax = window['k1'];
-            } else if (suffix == '_s') {
-                xmin = window['s0'];
-                xmax = window['s1'];
-            } else {
-                xmin = window['m0'];
-                xmax = window['m1'];
-            }
             var pointGroup = window['svg' + suffix].append("svg:g").attr("class","points");
             var pointGroupDetails = pointGroup.selectAll("circle.points").data(points).enter();
             

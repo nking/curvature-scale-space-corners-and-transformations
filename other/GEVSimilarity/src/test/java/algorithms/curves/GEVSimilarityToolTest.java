@@ -279,12 +279,21 @@ public class GEVSimilarityToolTest extends TestCase {
 
             log.info(sb2.toString());            
 
+            boolean doWrite = false;
             // plot the parameters
-            if ((i == 0) || ((i % 100) == 0) ){
+            if ((i == 0) || ((i % 100) == 0) ) {
+                                
+                if (paramsPlotter != null) {
+                    System.out.println("i=" + i + " n=" + end);
+                    paramsPlotter.writeFile(nci2);
+                }
+                
                 nci2++;
+                
                 int ymin = i;
                 paramsPlotter = new GEVSimilarityParametersPlotter(
                     ymin, ymin + 100, k0, k1, sigma0, sigma1, m0, m1);
+                
             }
             
             float[] yy = new float[indexes.length];
@@ -297,11 +306,13 @@ public class GEVSimilarityToolTest extends TestCase {
                 sPoints[j] = sigmas[ indexes[j] ];
                 mPoints[j] = mus[ indexes[j] ];
             }
-                        
-            paramsPlotter.addPlot(yy, kPoints, sPoints, mPoints);
-                        
-            paramsPlotter.writeFile(nci2);
-        }        
+            
+            paramsPlotter.addToPlot(yy, kPoints, sPoints, mPoints);
+            
+        }
+        
+        paramsPlotter.writeFile(nci2);
+        
     }
   
     protected boolean isNearlyAllZeros(float[] y) {

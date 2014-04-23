@@ -1,31 +1,79 @@
 package algorithms.util;
 
-import java.io.BufferedReader;
+import java.awt.Color;
+import java.awt.Paint;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.util.Arrays;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartRenderingInfo;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.LogarithmicAxis;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.data.Range;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
 
 /**
- * a scatterplot writer.  the current output is html.
+ * a scatterplot writer to write 3 png files for k, sigma, and mu respectively.
  * 
- * NOTE:  this will be changed to produce png output instead of html soon
- * because the svg is too large in some of the html files for rendering
- * in a thin client.
+ * <pre>
+ * suggested usage:
+ * 
+ *     GEVSimilarityParametersPlotter plotter = new GEVSimilarityParametersPlotter(
+ *         0, 100, 1E-3, 1E+3, 1E-1, 1E+1, -10, 10);
+ *  
+ *     plotter.addToPlot(yPointsPt1, kPointsPt1, sigmaPointsPt1, muPointsPt1);
+ *     plotter.addToPlot(yPointsPt2, kPointsPt2, sigmaPointsPt2, muPointsPt2);
+ * 
+ *     plotter.writeToFile(0);
+ * 
+ *     plotter.clearPlotter();
+ * 
+ *     plotter.addToPlot(yPointsPt3, kPointsPt3, sigmaPointsPt3, muPointsPt3);
+ * 
+ *     plotter.writeToFile(1);
+ * 
+ * This will have written files:
+ *     
+ * 
+ * </pre>
  * 
  * @author nichole
  */
 public class GEVSimilarityParametersPlotter {
-
-    protected final StringBuffer plotContent;
-
-    protected int plotNumber = 0;
     
     protected final int yMin;
     protected final int yMax;
+    protected final float kMin;
+    protected final float kMax;
+    protected final float sigmaMin;
+    protected final float sigmaMax;
+    protected final float muMin;
+    protected final float muMax;
+    
+    protected int plotWidth = 4000;
+    protected int plotHeight = 4000;
+    
+    protected float[] y;
+    protected float[] k;
+    protected float[] s;
+    protected float[] m;
+    protected int n = 0;
+    
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+    
+    private enum PARAM {
+        K, SIGMA, MU
+    }
 
     public GEVSimilarityParametersPlotter(int yMinimum, int yMaximum, float kMin, float kMax, 
         float sigmaMin, float sigmaMax, float muMin, float muMax) 
@@ -33,184 +81,158 @@ public class GEVSimilarityParametersPlotter {
 
         this.yMin = yMinimum;
         this.yMax = yMaximum;
-        
-        plotContent = getTemplateHtmlPlot();
-        
-        
-        StringBuffer dataSB = new StringBuffer();
-        dataSB.append("\n\ncreateSVG('plot").append(plotNumber).append("', ")
-            .append(yMin).append(", ").append(yMax).append(", ")
-            .append(Float.toString(kMin)).append(", ")
-            .append(Float.toString(kMax)).append(", ")
-            .append(Float.toString(sigmaMin)).append(", ")
-            .append(Float.toString(sigmaMax)).append(", ")
-            .append(Float.toString(muMin)).append(", ")
-            .append(Float.toString(muMax))
-            .append( ");\n");
-        
-        String srchFor = "/* === DO NOT REMOVE THIS == END DATA */";
-        int insertOffset = plotContent.indexOf(srchFor);
-        if (insertOffset == -1) {
-            throw new IllegalStateException("cannot find END DATA marker");
-        }
-        plotContent.insert(insertOffset, dataSB.toString());
-        dataSB = null;
-        
-        
-        // ========== add the PLOT DIVS ==============
-        StringBuffer plotDivs = new StringBuffer();
-        plotDivs.append("<div id='plot").append(plotNumber).append("' class='plot'>\n");
-        plotDivs.append("  <div id='plot").append(plotNumber).append("_k' class='plotInner'></div>\n");
-        plotDivs.append("  <div id='plot").append(plotNumber).append("_s' class='plotInner'></div>\n");
-        plotDivs.append("  <div id='plot").append(plotNumber).append("_m' class='plotInner'></div>\n");
-        plotDivs.append("</div>\n\n");
-        
-        srchFor = "<!-- === DO NOT REMOVE THIS == END PLOT DIVS -->";
-        insertOffset = plotContent.indexOf(srchFor);
-        if (insertOffset == -1) {
-            throw new IllegalStateException("cannot find END DATA marker");
-        }
-        plotContent.insert(insertOffset, plotDivs.toString());
-        plotDivs = null;
-
+        this.kMin = kMin;
+        this.kMax = kMax;
+        this.sigmaMin = sigmaMin;
+        this.sigmaMax = sigmaMax;
+        this.muMin = muMin;
+        this.muMax = muMax;
+    }
+    
+    public void clearPlotter() {
+        n = 0;
+        y = null;
+        k = null;
+        s = null;
+        m = null;
     }
 
-    public void addPlot(float[] y, float[] kPoints, float[] sigmaPoints, float[] muPoints) {
+    public void addToPlot(float[] yPoints, float[] kPoints, float[] sigmaPoints, float[] muPoints) {
 
-        StringBuffer dataSB = new StringBuffer();
-
-        String kDataStr = "k_points_" + Integer.toString(plotNumber);
-        String sDataStr = "s_points_" + Integer.toString(plotNumber);
-        String mDataStr = "m_points_" + Integer.toString(plotNumber);
-
-        //  ===== add points data =====
-        dataSB.append("\n\n").append("var ").append(kDataStr).append(" = [\n");
-        for (int i = 0; i < kPoints.length; i++) {
-            if (i > 0) {
-                dataSB.append(", ");
-                if (i % 10 == 0) {
-                    dataSB.append("\n");
-                }
-            }
-            dataSB.append("{x:").append(kPoints[i]).append(", y:").append(y[i]).append("}");            
-        }
-        dataSB.append("\n];\n");
-
-
-        dataSB.append("\n\n").append("var ").append(sDataStr).append(" = [\n");
-        for (int i = 0; i < sigmaPoints.length; i++) {
-            if (i > 0) {
-                dataSB.append(", ");
-                if (i % 10 == 0) {
-                    dataSB.append("\n");
-                }
-            }
-            dataSB.append("{x:").append(sigmaPoints[i]).append(", y:").append(y[i]).append("}");
-        }
-        dataSB.append("\n];\n");
-
-
-        dataSB.append("\n").append("var ").append(mDataStr).append(" = [\n");
-        for (int i = 0; i < muPoints.length; i++) {
-            if (i > 0) {
-                dataSB.append(", ");
-                if (i % 10 == 0) {
-                    dataSB.append("\n");
-                }
-            }
-            dataSB.append("{x:").append(muPoints[i]).append(", y:").append(y[i]).append("}");
-        }
-        dataSB.append("\n];\n");
-
-        // ======= add RENDER statements ==========
-        dataSB.append("\n\nrenderK(").append(kDataStr).append(");\n");
+        int addN = yPoints.length;
         
-        dataSB.append("\n\nrenderS(").append(sDataStr).append(");\n");
-        
-        dataSB.append("\n\nrenderM(").append(mDataStr).append(");\n");
-        
-        
-
-        String srchFor = "/* === DO NOT REMOVE THIS == END DATA */";
-        int insertOffset = plotContent.indexOf(srchFor);
-        if (insertOffset == -1) {
-            throw new IllegalStateException("cannot find END DATA marker");
+        if (n == 0) {
+            y = new float[addN];
+            k = new float[addN];
+            s = new float[addN];
+            m = new float[addN];
+        } else {
+            y = Arrays.copyOf(y, n + addN);
+            k = Arrays.copyOf(k, n + addN);
+            s = Arrays.copyOf(s, n + addN);
+            m = Arrays.copyOf(m, n + addN);
         }
-        plotContent.insert(insertOffset, dataSB.toString());
-        dataSB = null;
-
-        plotNumber++;
-    }
-
-    protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, IOException {
-        return getTemplateHtmlPlot("plot_gev_similarity_parameters.html");
-    }
-
-    protected StringBuffer getTemplateHtmlPlot(String fileName) throws FileNotFoundException, IOException {
-
-        StringBuffer sb = new StringBuffer();
-
-        Reader reader = null;
-        BufferedReader in = null;
-
-        try {
-            String path = ResourceFinder.findFileInResources(fileName);
-
-            reader = new FileReader(new File(path));
-            in = new BufferedReader(reader);
-
-            String line = in.readLine();
-
-            while (line != null) {
-                sb.append(line).append("\n");
-                line = in.readLine();
-            }
-
-        } catch(IOException e) {
-
-            ClassLoader cls = ResourceFinder.class.getClassLoader();
-
-            InputStream input = cls.getResourceAsStream(fileName);
-
-            if (input == null) {
-                throw new IOException("could not find file " + fileName);
-            }
-
-            reader = new InputStreamReader(input);
-            in = new BufferedReader(reader);
-
-            String line = in.readLine();
-
-            while (line != null) {
-                sb.append(line).append("\n");
-                line = in.readLine();
-            }
-
-        } finally {
-            if (in != null) {
-                in.close();
-            }
-            if (reader != null) {
-                reader.close();
-            }
-        }
-
-        return sb;
-    }
-
-    public String writeFile() throws IOException {
-        return writeToFile(this.plotContent.toString(), "gev_similarity_parameters.html");
-    }
-
-    public String writeFile(int num) throws IOException {
-        return writeToFile(this.plotContent.toString(), "gev_similarity_parameters_" + Integer.toString(num) + ".html");
-    }
-
-    protected String writeToFile(String fileContent, String fileName) throws IOException {
-
-        String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);
         
-        return copyFilePath;
+        for (int i = 0; i < addN; i++) {
+            y[i + n] = yPoints[i];
+            k[i + n] = kPoints[i];
+            s[i + n] = sigmaPoints[i];
+            m[i + n] = muPoints[i];
+        }
+        
+        n += addN;
     }
 
+    protected void writeToBinary(String suffix) throws IOException {
+        
+        BufferedImage img = writeToBinary(PARAM.K);
+        String filePath = writeToPng(img, "gev_similarity_k" + suffix + ".png"); 
+        log.info("wrote " + filePath);
+       
+        img = writeToBinary(PARAM.SIGMA);
+        filePath = writeToPng(img, "gev_similarity_s" + suffix + ".png"); 
+        log.info("wrote " + filePath);
+        
+        img = writeToBinary(PARAM.MU);
+        filePath = writeToPng(img, "gev_similarity_m" + suffix + ".png"); 
+        log.info("wrote " + filePath);
+    }
+    
+    protected String writeToPng(BufferedImage img, String fileName) throws IOException {
+        
+        String dirPath = ResourceFinder.findDirectory("target");
+        String filePath = dirPath + System.getProperty("file.separator") + fileName;
+        
+        File file = new File(filePath);
+        
+        ImageIO.write(img, "png", file);
+        
+        return filePath;
+    }
+   
+    private BufferedImage writeToBinary(PARAM param) {
+        
+        XYSeriesCollection data = new XYSeriesCollection();
+        
+        boolean useLog = true;
+        
+        float[] x;
+        float xMin, xMax;
+        if (param == PARAM.K) {
+            x = k;
+            xMin = kMin;
+            xMax = kMax;
+        } else if (param == PARAM.SIGMA) {
+            x = s;
+            xMin = sigmaMin;
+            xMax = sigmaMax;
+        } else /*if (param == PARAM.MU)*/ {
+            x = m;
+            xMin = muMin;
+            xMax = muMax;
+            useLog = false;
+        }
+        
+        XYSeries series = new XYSeries("");
+        for (int i = 0; i < n; i++) {
+            series.add(x[i], y[i]);
+        }
+        data.addSeries(series);
+        
+        JFreeChart chart = ChartFactory.createScatterPlot(
+            null,
+            param.toString(), null, 
+            (XYDataset)data
+        );
+        
+        Paint bPaint = new Color(255, 255, 255, 0);
+        
+        chart.setBackgroundPaint(bPaint);
+        
+        final XYPlot plot = chart.getXYPlot();
+        
+        Range xRange = new Range(xMin, xMax);
+        Range yRange = new Range(yMin, yMax);
+        
+        NumberAxis yAxis = new NumberAxis();
+        NumberAxis xAxis = null;
+        if (useLog) {
+            xAxis = new LogarithmicAxis(param.toString());
+        } else {
+            xAxis = new NumberAxis(param.toString());
+        }
+        xAxis.setRange(xRange, true, false);
+        yAxis.setRange(yRange, true, false);
+        yAxis.setTickUnit(new NumberTickUnit(1));
+        
+        
+        plot.setDomainAxis(xAxis);
+        plot.setRangeAxis(yAxis);
+        
+        plot.setBackgroundPaint(bPaint);
+        plot.setDomainGridlinePaint(Color.BLACK);
+        plot.setRangeGridlinePaint(Color.BLACK);
+        
+        ChartRenderingInfo chartInfo 
+            = new ChartRenderingInfo();
+        //    = new ChartRenderingInfo(new StandardEntityCollection());
+        
+        int imageType = BufferedImage.TYPE_INT_ARGB;
+        
+        // in the absence of an X11 environment, may need to set this:
+        System.setProperty("java.awt.headless", "true");
+               
+        BufferedImage bImg = chart.createBufferedImage(500, 1400, imageType, chartInfo);
+        
+        return bImg;
+    }
+    
+    public void writeFile() throws IOException {
+        writeToBinary("");
+    }
+
+    public void writeFile(int num) throws IOException {
+        writeToBinary("_" + Integer.toString(num));
+    }
+    
 }
