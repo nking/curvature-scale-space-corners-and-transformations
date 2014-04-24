@@ -120,7 +120,7 @@ public class GEVSimilarityToolTest extends TestCase {
         }
         
         
-        tool.plotResults();
+        tool2.plotResults();
         
         String dirPath = ResourceFinder.findDirectory("target");
         File resDir = new File(dirPath);
