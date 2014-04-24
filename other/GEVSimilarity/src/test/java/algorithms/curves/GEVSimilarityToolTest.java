@@ -1,8 +1,8 @@
 package algorithms.curves;
 
-import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.GEVSimilarityParametersPlotter;
-import java.util.Arrays;
+import algorithms.util.ResourceFinder;
+import java.io.File;
+import java.io.FileFilter;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -19,7 +19,8 @@ public class GEVSimilarityToolTest extends TestCase {
     protected boolean debug = true;
 
     protected boolean enable = true;
-
+    
+    
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -29,7 +30,113 @@ public class GEVSimilarityToolTest extends TestCase {
     protected void tearDown() throws Exception {
         super.tearDown();
     }
-
+    
+    public void testPersist() throws Exception {
+        
+        GEVSimilarityTool tool = new GEVSimilarityTool();
+        tool.resetForNWithinTen(1.0f);
+        tool.calculateCurveDiffs();
+        
+        tool.persist();
+        
+        GEVSimilarityTool tool2 = new GEVSimilarityTool();
+        tool2.readPersisted();
+        
+        assertTrue(tool.powersOfTenK == tool2.powersOfTenK);
+        assertTrue(tool.powersOfTenS == tool2.powersOfTenS);
+        assertTrue(tool.powersOfTenM == tool2.powersOfTenM);
+        assertTrue(tool.nx == tool2.nx);
+        
+        assertTrue(tool.k0 > 0.0f);
+        assertTrue(Math.abs(tool.k0 - tool2.k0) < 0.01*tool.k0);
+        assertTrue(tool.sigma0 > 0.0f);
+        assertTrue(Math.abs(tool.sigma0 - tool2.sigma0) < 0.01*tool.sigma0);
+        assertTrue(tool.xMinusMu0 > 0.0f);
+        assertTrue(Math.abs(tool.xMinusMu0 - tool2.xMinusMu0) < 0.01*tool.xMinusMu0);
+        
+        assertTrue(Math.abs(tool.nWithinTen - 1.0) < 0.001);
+        assertTrue(Math.abs(tool2.nWithinTen - 1.0) < 0.001);
+        
+        assertTrue(tool.nKPermutations > 0.0f);
+        assertTrue(Math.abs(tool.nKPermutations - tool2.nKPermutations) < 0.01*tool.nKPermutations);
+        
+        assertTrue(tool.nSigmaPermutations > 0.0f);
+        assertTrue(Math.abs(tool.nSigmaPermutations - tool2.nSigmaPermutations) < 0.01*tool.nSigmaPermutations);
+        
+        assertTrue(tool.nXMinusMuPermutations > 0.0f);
+        assertTrue(Math.abs(tool.nXMinusMuPermutations - tool2.nXMinusMuPermutations) < 0.01*tool.nXMinusMuPermutations);
+        
+        assertTrue(tool.fctr > 0.0f);
+        assertTrue(Math.abs(tool.fctr - tool2.fctr) < 0.01*tool.fctr);
+        
+        assertTrue(tool.nCurves == tool2.nCurves);
+        assertTrue(tool.nCurves > 0);
+        
+        assertTrue(tool.nc == tool2.nc);
+        assertTrue(tool.nc > 0);
+        
+        assertTrue(tool.calculatedCurveDiffs);
+        assertTrue(tool2.calculatedCurveDiffs);
+        
+        for (int i = 0; i < tool.nCurves; i++) {
+            for (int j = 0; j < tool.nx; j++) {
+                float d = Math.abs(tool.curves[i][j] - tool2.curves[i][j]);
+                float eps = Math.abs(tool.curves[i][j]*0.01f);
+                assertTrue(d <= eps);
+            }
+        }
+        
+        for (int j = 0; j < tool.nx; j++) {
+            float d = Math.abs(tool.x[j] - tool2.x[j]);
+            float eps = Math.abs(tool.x[j]*0.01f);
+            assertTrue(d <= eps);
+        }
+        
+        for (int i = 0; i < tool.nCurves; i++) {
+            
+            float d = Math.abs(tool.ks[i] - tool2.ks[i]);
+            assertTrue(d <= Math.abs(tool.ks[i]*0.01));
+            
+            d = Math.abs(tool.sigmas[i] - tool2.sigmas[i]);
+            assertTrue(d <= Math.abs(tool.sigmas[i]*0.01));
+            
+            d = tool.xminusmus[i] - tool2.xminusmus[i];
+            assertTrue(d <= Math.abs(tool.xminusmus[i]*0.01));
+            
+            d = Math.abs(tool.mus[i] - tool2.mus[i]);
+            assertTrue(d <= Math.abs(tool.mus[i]*0.01));
+        }
+        
+        for (int i = 0; i < tool.nc; i++) {
+            
+            float d = Math.abs(tool.diff[i] - tool2.diff[i]);
+            assertTrue(d <= Math.abs(tool.diff[i]*0.01));
+            
+            assertTrue(tool.diffIndexes[i].length == tool2.diffIndexes[i].length);
+            for (int j = 0; j < tool.diffIndexes[i].length; j++) {
+                d = Math.abs(tool.diffIndexes[i][j] - tool2.diffIndexes[i][j]);
+                assertTrue(d <= Math.abs(tool.diffIndexes[i][j]*0.01));
+            }
+        }
+        
+        
+        tool.plotResults();
+        
+        String dirPath = ResourceFinder.findDirectory("target");
+        File resDir = new File(dirPath);
+        File[] files = resDir.listFiles(new FileTypeFilter(".png"));
+        assertNotNull(files);
+        assertTrue(files.length > 0);
+        int count = 0;
+        for (File file : files) {
+            String fileName = file.getName();
+            if (fileName.contains("_0")) {
+                count++;
+            }
+        }
+        assertTrue(count > 0);
+    }
+    
     public void test0() throws Exception {
 
         log.info("test0()");
@@ -37,351 +144,44 @@ public class GEVSimilarityToolTest extends TestCase {
         if (!enable) {
             return;
         }
-
-        int nx = 20;
-        float[] x = new float[nx];
-        for (int i = 0; i < nx; i++) {
-            x[i] = 1.f/(float)i;
-        }
         
-        PolygonAndPointPlotter plotter = null;
-
-        // for nWithinTen=4 and starts at 1e-3 with powersOfTen=5, test0    took 232.141 sec 
-        /* int powersOfTenK = 8; int powersOfTenS = 5; int powersOfTenM = 4;
-        float k0 = 1e-5f; float sigma0 = 1e-2f; float xMinusMu0 = 1e-3f;
-        float nWithinTen = 4.f;
-            ==> took 408 sec
-        */
+        int persistFileNum = 2;
         
-        /*
-        int powersOfTenK = 6;
-        int powersOfTenS = 5;
-        int powersOfTenM = 4;
-        float k0 = 1e-3f;
-        float sigma0 = 1e-2f;
-        float xMinusMu0 = 1e-3f;        
-        float nWithinTen = 10.f;
-            ===> 519 min = 8.65 h
-        */
-        
-        int powersOfTenK = 6;
-        int powersOfTenS = 5;
-        int powersOfTenM = 4;
-        
-        float k0 = 1e-3f;
-        float sigma0 = 1e-2f;
-        float xMinusMu0 = 1e-3f;
-        
-        float nWithinTen = 1.f;
-        
-        float nKPermutations = nWithinTen * powersOfTenK;
-        float nSigmaPermutations = nWithinTen * powersOfTenS;
-        float nXMinusMuPermutations = nWithinTen * powersOfTenM;
-        float fctr = 10.f/nWithinTen;
-        
-        int nCurves = (int)(nKPermutations * nSigmaPermutations * 
-            nXMinusMuPermutations * nx);
-        
-        float[][] curves = new float[nCurves][];
-        for (int i = 0; i < nCurves; i++) {
-            curves[i] = new float[nx];
-        }
-        float[] ks = new float[nCurves];
-        float[] sigmas = new float[nCurves];
-        float[] xminusmus = new float[nCurves];
-        float[] mus = new float[nCurves];
-        
-        int nc = 0;
-        
-        float k00 = k0;
-        for (int i = 0; i < nKPermutations; i++) {
-            float nk = (i % nWithinTen);
-            if (nk == 0.f) {
-                k00 *= 10;
-            }
-            float k = (nk == 0) ? k00 : nk*fctr*k00;
-            
-            float s00 = sigma0;
-            for (int ii = 0; ii < nSigmaPermutations; ii++) { 
-                float ns = (ii % nWithinTen);
-                if (ns == 0.f) {
-                    s00 *= 10;
-                }
-                float sigma = (ns == 0) ? s00 : ns*fctr*s00;
-                
-                float m00 = xMinusMu0;
-                for (int iii = 0; iii < nXMinusMuPermutations; iii++) {
-                    float nxm = (iii % nWithinTen);
-                    if (nxm == 0.f) {
-                        m00 *= 10;
-                    }
-                    float xMinusMu = (nxm == 0) ? m00 : nxm*fctr*m00;
-                    
-                    for (int iiii = 0; iiii < nx; iiii++) {
-                        float x0 = x[iiii];
-                        float mu = x0 - xMinusMu;
-                        
-                        float[] y = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);
-                        
-                        if (!isNearlyAllZeros(y) && !isNearlyAllOnes(y)) {
-                            curves[nc] = y;
-                            ks[nc] = k;
-                            sigmas[nc] = sigma;
-                            xminusmus[nc] = xMinusMu;
-                            mus[nc] = mu;
-                            nc++;
-                        }
-                    }
-                }
-            }
-        }
-                
-        // capture similarity of a spectra compared to all others as a set of
-        //    similar.
-        double epsDiff = 1e-2;
-        boolean[] inASetAlready = new boolean[nCurves];
-        
-        // store diff and each member of similarity set
-        // float[] diff;  char[][]indexes
-        log.info("nCurves=" + nCurves);
-        float[] diff = new float[nCurves];
-        Arrays.fill(diff, Float.MAX_VALUE);
-        char[][] diffIndexes = new char[nCurves][];
-        
-        StringBuffer sb = new StringBuffer();
-        
-        nc = 0;
-        for (int i = 0; i < nCurves; i++) {
-            if (inASetAlready[i]) {
-                continue;
-            }
-            
-            float[] y0 = curves[i];
-            
-            if (sb.length() > 0) {
-                sb = sb.delete(0, sb.length());
-            }
-            
-            for (int ii = i; ii < nCurves; ii++) {
-                if (inASetAlready[ii]) {
-                    continue;
-                }
-                
-                float[] y1 = curves[ii];
-                
-                double diffSumSSq = 0.f;
-                for (int iii = 0; iii < y0.length; iii++) {
-                    float d = y0[iii] - y1[iii];
-                    diffSumSSq += (d * d);
-                }
-                
-                if (diffSumSSq > 0) {
-                                        
-                    float d = (float) Math.sqrt(diffSumSSq);
-                    
-                    if (d < epsDiff) {
-                        if (sb.length() == 0) {
-                            diff[nc] = d;
-                            sb.append(Integer.toString(i));
-                            inASetAlready[i] = true;
-                        }
-                        sb.append(",").append(Integer.toString(ii));
-                        inASetAlready[ii] = true;
-                    }
-                }
-            }
-            if (sb.length() > 0) {
-                diffIndexes[nc] = sb.toString().toCharArray();
-                nc++;
-            }
-        }
-        
-        // sort by similarity
-        //sort(diff, diffIndexes, 0 , nc - 1);
-        
-        log.info("nc=" + nc);
-        
-        int end = (nc > 4000) ? 4000 : nc;
-        //end = nc;
-        int nci = -1;
-        int nci2 = -1;
-        
-        
-        float k1 = (float) (k0 * Math.pow(10, powersOfTenK));
-        float sigma1 = (float) (sigma0 * Math.pow(10, powersOfTenS));
-        float m0 = -10;
-        float m1 = 10;
-        GEVSimilarityParametersPlotter paramsPlotter = null;
-                
-        for (int i = 0; i < end; i++) {
-            String[] indexesStr = new String(diffIndexes[i]).split(",");
-            int[] indexes = new int[indexesStr.length];
-            for (int j = 0; j < indexesStr.length; j++) {
-                indexes[j] = Integer.valueOf(indexesStr[j]).intValue();
-            }
-            
-            float[] y = curves[indexes[0]];
-            
-            String lbl = String.format("%d)", i);
-            
-            if ((i == 0) || (i == 1000) || (i == 2000)){
-                nci++;
-                plotter = new PolygonAndPointPlotter();
-            }
-            plotter.addPlot(x, y, x, y, lbl);
-            switch (nci) {
-                case 0:
-                    plotter.writeFile();
-                    break;
-                case 1:
-                    plotter.writeFile2();
-                    break;
-                default:
-                    plotter.writeFile3();
-                    break;
-            } 
-            
-            StringBuffer sb2 = new StringBuffer(100);
-            sb2.append(Integer.toString(i)).append(") [").append(new String(diffIndexes[i])).append("]")
-                .append("  diff=").append(Float.toString(diff[i]));
-            sb2.append("\n   k=");
-            for (int j = 0; j < indexes.length; j++) {
-                float k = ks[indexes[j]];
-                sb2.append(k);
-                if (j < (indexes.length - 1)) {
-                    sb2.append(",");
-                }
-            }
-            sb2.append("  sigma=");
-            for (int j = 0; j < indexes.length; j++) {
-                float s = sigmas[indexes[j]];
-                sb2.append(s);
-                if (j < (indexes.length - 1)) {
-                    sb2.append(",");
-                }
-            }
-            sb2.append("  mu=");
-            for (int j = 0; j < indexes.length; j++) {
-                float m = mus[indexes[j]];
-                sb2.append(m);
-                if (j < (indexes.length - 1)) {
-                    sb2.append(",");
-                }
-            }
-            sb2.append("  x-mu=");
-            for (int j = 0; j < indexes.length; j++) {
-                float m = xminusmus[indexes[j]];
-                sb2.append(m);
-                if (j < (indexes.length - 1)) {
-                    sb2.append(",");
-                }
-            }
-
-            log.info(sb2.toString());            
-
-            boolean doWrite = false;
-            // plot the parameters
-            if ((i == 0) || ((i % 100) == 0) ) {
-                                
-                if (paramsPlotter != null) {
-                    System.out.println("i=" + i + " n=" + end);
-                    paramsPlotter.writeFile(nci2);
-                }
-                
-                nci2++;
-                
-                int ymin = i;
-                paramsPlotter = new GEVSimilarityParametersPlotter(
-                    ymin, ymin + 100, k0, k1, sigma0, sigma1, m0, m1);
-                
-            }
-            
-            float[] yy = new float[indexes.length];
-            Arrays.fill(yy, i);
-            float[] kPoints = new float[indexes.length];
-            float[] sPoints = new float[indexes.length];
-            float[] mPoints = new float[indexes.length];
-            for (int j = 0; j < indexes.length; j++) {
-                kPoints[j] = ks[ indexes[j] ];
-                sPoints[j] = sigmas[ indexes[j] ];
-                mPoints[j] = mus[ indexes[j] ];
-            }
-            
-            paramsPlotter.addToPlot(yy, kPoints, sPoints, mPoints);
-            
-        }
-        
-        paramsPlotter.writeFile(nci2);
-        
-    }
-  
-    protected boolean isNearlyAllZeros(float[] y) {
-        int n = 0;
-        for (int i = 0; i < y.length; i++) {
-            if (y[i] < 1E-2) {
-                n++;
-            }
-        }
-        return (n > (y.length - 2));
-    }
-    
-    protected boolean isNearlyAllOnes(float[] y) {
-        int n = 0;
-        for (int i = 0; i < y.length; i++) {
-            if (y[i] > 0.98) {
-                n++;
-            }
-        }
-        return (n > (y.length - 2));
-    }
-
-    private void sort(float[] a, char[][] b) {
-        if (a == null || b == null) {
+        boolean usePersisted = false;
+        boolean persist = true;
+              
+        if (usePersisted && persist) {
+            System.err.println("Cannot have usePersisted=true and persist=true");
             return;
         }
-        log.info("sort " + a.length + " items");
-        sort(a, b, 0, a.length - 1);
-    }
-
-    /** 
-     * use quick sort to sort a by increasing value and perform same swaps on b
-     * @param a
-     * @param b
-     * @param idxLo
-     * @param idxHi last index to be sorted in a, inclusive
-     */
-    private void sort(float[] a, char[][] b, int idxLo, int idxHi) {
-        if (idxLo < idxHi) {
-            int idxMid = partition(a, b, idxLo, idxHi);
-            sort(a, b, idxLo, idxMid - 1);
-            sort(a, b, idxMid + 1, idxHi);
-        }
-    }
-
-    private int partition(float[] a, char[][] b, int idxLo, int idxHi) {
-        float x = a[idxHi];
-        int store = idxLo - 1;
         
-        for (int i = idxLo; i < idxHi; i++) {
-            if (a[i] <= x) {
-                store++;
-                float swap = a[store];
-                a[store] = a[i];
-                a[i] = swap;
-                char[] swap2 = b[store];
-                b[store] = b[i];
-                b[i] = swap2;
+        GEVSimilarityTool tool = new GEVSimilarityTool();
+
+        if (usePersisted) {
+            tool.readPersisted(persistFileNum);
+        } else {
+            tool.calculateCurveDiffs();
+        }
+        
+        if (persist) {
+            tool.persist(persistFileNum);
+        }
+        
+        tool.plotResults();
+    }
+  
+    protected static class FileTypeFilter implements FileFilter {
+        protected final String suffix;
+        public FileTypeFilter(String fileType) {
+            this.suffix = fileType;
+        }
+        @Override
+        public boolean accept(File pathname) {
+            if (pathname.getName().endsWith(suffix)) {
+                return true;
             }
+            return false;
         }
-        
-        float swap = a[store + 1];
-        a[store + 1] = a[idxHi];
-        a[idxHi] = swap;
-        
-        char[] swap2 = b[store + 1];
-        b[store + 1] = b[idxHi];
-        b[idxHi] = swap2;
-        
-        return store + 1;
     }
+
 }

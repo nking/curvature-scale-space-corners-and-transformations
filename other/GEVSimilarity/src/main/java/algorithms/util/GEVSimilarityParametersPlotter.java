@@ -228,10 +228,18 @@ public class GEVSimilarityParametersPlotter {
     }
     
     public void writeFile() throws IOException {
+        if (n == 0) {
+            return;
+        }
+        
         writeToBinary("");
     }
 
     public void writeFile(int num) throws IOException {
+        if (n == 0) {
+            return;
+        }
+        
         writeToBinary("_" + Integer.toString(num));
     }
     
