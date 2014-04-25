@@ -1,0 +1,69 @@
+--------------------
+Project Description:
+--------------------
+The project, GEVSimilarity, is a small side project to examine whether or
+not a smaller range of parameters can be used to generate curves that
+represent the whole range of possible curves.   
+
+
+------------
+Required
+------------
+(1) Java 7 or later
+(2) maven2
+(3) C++
+(4) autotools (autoconf, automake)
+
+
+-----------
+Building
+-----------
+(1) The Java portion:
+
+    (a) mvn clean compile
+
+    (b) mvn test -Dtest=algorithms.curves.GEVSimilarityToolTest
+
+    This creates a large log file containing statements about
+    the similar and unique curves.  The log file is in
+    target/sure-fire-reports/algorithms.curves.GEVSimilarityToolTest-output.txt
+
+    It also creates transparent images in target/ as png files
+    that can be viewed as layers together with the file to see the
+    range of parameters.
+
+    It also creates the curves for the similar spectra as an html file
+    for ease of seeing the similar curves and their parameter dependent
+    evolution.
+
+(2) The C++ portion:
+
+    (a) aclocal
+        generates m4 files and sub-directory
+
+    (b) autoconf
+        generates configure from configure.ac
+
+    (c) automake -a -c
+        to generate Makefile.in
+
+    (d) ./configure --with-boostinc=<location of boost tr1 subdirectory in c++ headers>
+        generates the Makefile
+            example:  
+                ./configure --with-boostinc=/usr/include/c++/4.2.1/tr1
+
+    (e) make
+        compiles the sources into objects, links, and creates target executables
+
+    Then to run the code, 
+        make runtest
+
+
+    This reads the logfile target/sure-fire-reports/algorithms.curves.GEVSimilarityToolTest-output.txt
+    
+    The code calculates the smallest set of parameters (k, sigma, and mu) which can represent
+    the entire range of curves.
+
+    The results are printed to 
+        target/parameters/
+
