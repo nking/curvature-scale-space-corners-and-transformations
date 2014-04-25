@@ -205,7 +205,7 @@ public class GEVSimilarityTool {
                     diffSumSSq += (d * d);
                 }
                 
-                if (diffSumSSq > 0) {
+                //if (diffSumSSq > 0) {
                                         
                     float d = (float) Math.sqrt(diffSumSSq);
                     
@@ -218,11 +218,15 @@ public class GEVSimilarityTool {
                         sb.append(",").append(Integer.toString(ii));
                         inASetAlready[ii] = true;
                     }
-                }
+                //}
             }
             if (sb.length() > 0) {
                 diffIndexes[nc] = sb.toString().toCharArray();
                 nc++;
+            }
+            if (!inASetAlready[i]) {
+                // this is unique
+                log.info(String.format("UNIQUE:  k=%e  sigma=%e  x-mu=%e  mu=%e", ks[i], sigmas[i], xminusmus[i], mus[i]));
             }
         }
      
