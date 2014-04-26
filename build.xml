@@ -15,7 +15,7 @@
 
     src/main/resources resource files, including persisted for use in future runs
 
-    doc                Javadocs for developers
+    docs               Javadocs for developers
 
     src/test           unit tests small enough to run with every build
 
@@ -40,7 +40,7 @@
     <property name="classes.dir"         value="${basedir}/bin"/>
     <property name="resources.dir"       value="${basedir}/src/main/resources"/>
     <property name="src.out.dir"         value="${classes.dir}/classes"/>
-    <property name="doc.dir"             value="${basedir}/doc"/>
+    <property name="doc.dir"             value="${basedir}/docs"/>
     <property name="tests.dir"           value="${basedir}/src/test/java"/>
     <property name="aspects.dir"         value="${basedir}/src/test/aspects"/>
     <property name="tests.out.dir"       value="${classes.dir}/test-classes"/>

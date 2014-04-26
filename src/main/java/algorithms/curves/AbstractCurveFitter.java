@@ -101,7 +101,7 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
      * The best results for the fit are usually from using errors for the
      * fit.
      *
-     * @param yModel
+     * @param yNormalizedModel
      * @param wdc
      * @return
      */

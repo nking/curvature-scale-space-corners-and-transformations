@@ -939,9 +939,9 @@ public class LinesAndAnglesTest extends TestCase {
 
                 resultAngle = LinesAndAngles.angleBetweenPointAndLine(x0, y0, x1, y1, xp, yp, false);
 
-                log.info("angle01=" + angle01 + " angle0p=" + angle0p
+                /*log.info("angle01=" + angle01 + " angle0p=" + angle0p
                     + " resultAngle=" + resultAngle + " expectedAngle=" + expectedAngle
-                    + " xp=" + xp + " yp=" + yp);
+                    + " xp=" + xp + " yp=" + yp);*/
 
                 double diff = Math.abs(expectedAngle - resultAngle);
                 if ( ((expectedAngle > 6.26) || (expectedAngle < 0.02)) && (diff > 0.1)) {
