@@ -6,6 +6,12 @@ not a smaller range of parameters can be used to generate curves that
 represent the whole range of possible curves.   
 
 
+NOTE:  the project is in progress and the build process has not yet been
+    adjusted for other operating systems (specifically, setting the path for the
+    boost libraries might need to be improved).  A list for known
+    OS builds will be here when tests on one system are complete.
+
+
 ------------
 Required
 ------------
