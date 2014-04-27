@@ -9,6 +9,8 @@
 
 // for assert
 #include <assert.h>
+// for SYSTEM_EXIT
+#include <cstdlib>
 #include <iostream>
 #include "main/c++/algorithms/curves/GEVSimilarityParameters.h"
 
