@@ -4,8 +4,8 @@
  * 
  * <pre>
  * Given sets of similar curves which were assigned variable numbers for the 
- * unique parameters of {k, sigma, and mu}, the code finds the smallest set of the
- * variable numbers which represent all curves.
+ * unique parameters of {k, sigma, and mu}, the code finds the smallest set of 
+ * the variable numbers which represent all curves.
  * 
  * For example, similar curves are listed in a row and the parameter sets 
  * are the numbers:
@@ -18,6 +18,9 @@
  * 
  * The "Universe" of the solution set is not known ahead of time, because
  * the goal is to only use 1 set from each row in the final "Universe" of sets.
+ * 
+ * runtime complexity is estimated as O(N lg_2(N)) + approx O(N^2 * m)
+ * where m is the average number of variables in a row.
  * 
  * </pre>
  *
