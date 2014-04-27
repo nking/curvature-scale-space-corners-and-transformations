@@ -13,10 +13,8 @@
 #include <tr1/unordered_map>
 #include <string>
 
+using std::string;
 using std::tr1::unordered_map;
-using std::make_pair;
-
-using namespace std;
 
 namespace gev {
     
@@ -55,6 +53,8 @@ public:
     
     uint32_t _floatToIntBits(float f);
     float _intBitsToFloat(uint32_t b);
+    
+    bool isnan(float s);
 
     void decodeToParams(float* k, float* sigma, float* mu);
     

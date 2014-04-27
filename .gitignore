@@ -20,4 +20,5 @@ junit*properties
 /other/GEVSimilarity/INSTALL
 /other/GEVSimilarity/compile
 /other/GEVSimilarity/depcomp
+Makefile.in
 *.Po

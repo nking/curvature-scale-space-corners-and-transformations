@@ -25,7 +25,6 @@
 using namespace std;
 
 using std::tr1::unordered_map;
-using std::make_pair;
 
 using gev::ParametersKey;
     

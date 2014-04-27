@@ -7,9 +7,13 @@ libGEVSimilarityParameters_adir = ../../../../../lib
 libGEVSimilarityParameters_a_HEADERS = \
     GEVSimilarityParameters.h \
     ParametersKey.h \
+    ParametersEncoder.h \
+    MinUnknownUniverseCover.h \
     Defs.h
 
 libGEVSimilarityParameters_a_SOURCES = \
 	$(libGEVSimilarityParameters_a_HEADERS) \
 	ParametersKey.cpp \
+	ParametersEncoder.cpp \
+	MinUnknownUniverseCover.cpp \
 	GEVSimilarityParameters.cpp 

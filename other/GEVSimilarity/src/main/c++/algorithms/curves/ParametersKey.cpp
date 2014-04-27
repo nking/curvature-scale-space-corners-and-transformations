@@ -45,7 +45,7 @@ namespace gev {
         //return f;
     }    
     
-    bool isnan(float s) {
+    bool ParametersKey::isnan(float s) {
         // By IEEE 754 rule, NaN is not equal to NaN
         return s != s;
     }

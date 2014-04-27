@@ -6,6 +6,8 @@ AC_INIT([GEVSimilarityParameters],[2.0],[nichole@climbwithyourfeet.com])
 # check if the source folder is correct
 AC_CONFIG_SRCDIR([src/main/c++/algorithms/curves/GEVSimilarityParameters.cpp])
 
+# to put host information into variable space
+AC_CANONICAL_HOST
 
 # Look for a C compiler (before anything can set CFLAGS)
 AC_PROG_CC
@@ -47,10 +49,41 @@ AC_TYPE_SIZE_T
 
 # distribute additional compiler and linker flags
 ## NOTE: to make files as input for coverage reports, add to AM_CXXFLAGS: -fprofile-arcs -ftest-coverage -lgcov
-AC_SUBST(AM_CXXFLAGS, "$AM_CXXFLAGS -stdlib=libstdc++")
 AC_SUBST(CPPFLAGS, "-Wall -W -pipe -g -Wno-unused-parameter -Wno-unused-variable -Wno-reorder $CPPFLAGS $boostinc_include")
 AC_SUBST([AM_LDFLAGS])
 AC_SUBST([LIBS])
+
+
+AC_MSG_CHECKING([OS-specific settings for ${host}])
+case "${host}" in
+	*darwin*)
+		AC_MSG_RESULT([${host}])
+		AC_MSG_CHECKING([for OS/X version])
+		kernel=`uname -r`
+		case "${kernel}" in
+			8.*)
+				AC_MSG_RESULT([Mac OS X 10.4 Tiger])
+				;;
+			9.*)
+				AC_MSG_RESULT([Mac OS X 10.5 Leopard])
+				;;
+			10.*)
+				AC_MSG_RESULT([Mac OS X 10.6 Snow Leopard])
+				;;
+			13.*)
+   				AM_CXXFLAGS="$AM_CXXFLAGS -stdlib=libstdc++"
+				AC_MSG_RESULT([Mac OS X 10.9 Mavericks. setting libstdc++])
+				;;
+			*)
+				AC_MSG_RESULT([Mac OS X (Darwin ${kernel} kernel)])
+				;;
+		esac
+		;;
+esac
+
+#AC_MSG_RESULT(["$AM_CXXFLAGS"])
+
+AC_SUBST(AM_CXXFLAGS, "$AM_CXXFLAGS")
 
 
 # Checks for header files.
