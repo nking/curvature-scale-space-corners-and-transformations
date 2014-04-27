@@ -141,7 +141,8 @@ void test3() {
     
     std::cout << "test3 " ;
     
-    // use random variables and save them to assert no collisions in map hash
+    // use random variables and save them to assert collisions for unique keys 
+    //     are still saved
     
     ParametersKey *key = new ParametersKey(0.0001f, 0.001f, 0.01f);
     
@@ -157,7 +158,7 @@ void test3() {
     float sigma;
     float mu;
     
-    int nIter = 1000;
+    int nIter = 10000;
     unsigned long nExpected = 0;
     for (int i = 0; i < nIter; i++) {
         long r = random();
@@ -249,6 +250,8 @@ void test3() {
 
 int main(int argc, char** argv) {
 
+    std::cout << "ParametersKey_test: ";
+    
     test0();
     
     test1();

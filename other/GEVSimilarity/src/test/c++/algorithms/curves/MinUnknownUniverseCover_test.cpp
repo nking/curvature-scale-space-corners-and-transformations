@@ -48,6 +48,8 @@ void test0() {
 
 int main(int argc, char** argv) {
 
+    std::cout << "MinUnknownUniverseCover_test: ";
+    
     test0();
     
     std::cout << " " << std::endl;
