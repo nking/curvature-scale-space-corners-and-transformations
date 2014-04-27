@@ -7,6 +7,8 @@ junit*properties
 /other/GEVSimilarity/Makefile
 /other/GEVSimilarity/src/main/c++/algorithms/curves/Makefile
 /other/GEVSimilarity/src/test/c++/algorithms/curves/Makefile
+/other/GEVSimilarity/src/main/c++/algorithms/curves/Makefile.in
+/other/GEVSimilarity/src/test/c++/algorithms/curves/Makefile.in
 /other/GEVSimilarity/Makefile.in
 /other/GEVSimilarity/img
 /other/GEVSimilarity/aclocal.m4
