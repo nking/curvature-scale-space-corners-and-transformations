@@ -8,9 +8,7 @@
 #include "ParametersKey.h"
 
 namespace gev {
-    
-    //ParametersKey::ParametersKey() {}
-    
+        
     ParametersKey::ParametersKey(float k, float sigma, float mu) {
         kKey = _floatToIntBits(k);
         sigmaKey = _floatToIntBits(sigma);
@@ -63,8 +61,6 @@ namespace gev {
     }
     
     void ParametersKey::_createKey() {
-                    
-        size_t sz = sizeof(uint32_t);
 
         _writeIntToCharBytes(&kKey);
 
@@ -83,18 +79,6 @@ namespace gev {
             char b = (char) a;
             key.push_back(b);
         }
-        /*
-         num = 953267991  [23, 183, 209, 56]
-         num = 981668463  [111, 18, 131, 58]
-         num = 1008981770 [10, 215, 35, 60]
-         b = []
-         for i in range(0, 4) :
-             shift = i * 8
-             a=(num >> shift) & 0xff
-             b.append(a)
-         
-         print b
-         */
     }
     
     uint32_t ParametersKey::_getKKey() const {

@@ -11,7 +11,6 @@
 
 #include <stdint.h>
 #include <tr1/unordered_map>
-//#include <tr1/functional_hash.h>
 #include <string>
 
 using std::tr1::unordered_map;
@@ -24,9 +23,7 @@ namespace gev {
 class ParametersKey {
 
 public:
-    
-    //ParametersKey();
-    
+        
     ParametersKey(const ParametersKey&);
     
     ParametersKey(float k, float sigma, float mu);
@@ -50,7 +47,7 @@ public:
     // retrieval from unordered_map for unique keys.
     
     // The identity for this class is k, sigma, and mu which are 32-bit floats.
-    // those floats are converted to their 32-bit equivalents (IEEE 754).
+    // those floats are converted to their 32-bit integer equivalents (IEEE 754).
     // Then a string is created from them as code points.
     // The char data type is usually 8 bits and string is composed of chars.
     // So the identity of this class is 3 32-bit fields written as a 12 element 
@@ -104,11 +101,9 @@ namespace std {
                 string tmp = pk._getKey();
                 return hash<string>()(tmp);
             }
-        };                
+        };
     }
     
-    //??? _M_eq
-    // key_equal key_eq() const
     template<> struct equal_to<gev::ParametersKey> {
         bool operator()(const gev::ParametersKey& pk0, const gev::ParametersKey& pk1) const {
             if (pk0._getKKey() != pk1._getKKey()) { return false; }
@@ -118,5 +113,5 @@ namespace std {
         }
     };
     
-};
+}
 #endif

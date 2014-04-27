@@ -15,7 +15,7 @@
 #include <stdlib.h>
 // for int32_t
 #include <stdint.h>
-// for coutno matching function for call to 'make_pair<gev::ParametersKey, int> '
+// for cout
 #include <iostream>
 // for unordered_map
 #include <tr1/unordered_map>
