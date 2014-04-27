@@ -6,12 +6,19 @@ AC_INIT([GEVSimilarityParameters],[2.0],[nichole@climbwithyourfeet.com])
 # check if the source folder is correct
 AC_CONFIG_SRCDIR([src/main/c++/algorithms/curves/GEVSimilarityParameters.cpp])
 
-# Checks for programs
 
-# check for C++ compiler
-AC_PROG_CXXCPP
+# Look for a C compiler (before anything can set CFLAGS)
+AC_PROG_CC
+
+# Look for a C++ compiler
 AC_PROG_CXX
+
+# Look for a C pre-processor
+AC_PROG_CPP
+
 AC_PROG_RANLIB
+
+#AC_PROG_CXXCPP
 
 # automake initialisation (mandatory) and check for minimal automake API version 1.11
 AM_INIT_AUTOMAKE([1.11])

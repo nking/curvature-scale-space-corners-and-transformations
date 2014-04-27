@@ -6,5 +6,8 @@ SUBDIRS = \
 runtest: src/test/c++/algorithms/curves/GEVSimilarityParameters_test
 	./src/test/c++/algorithms/curves/GEVSimilarityParameters_test
 
+runtest0: src/test/c++/algorithms/curves/ParametersKey_test
+	./src/test/c++/algorithms/curves/ParametersKey_test
+
 valgrind: all 
         valgrind --leak-check=yes --leak-check=full --read-var-info=yes --track-origins=yes --show-reachable=yes -v ./src/test/c++/algorithms/curves/GEVSimilarityParameters_test

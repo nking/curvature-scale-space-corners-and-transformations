@@ -7,6 +7,8 @@
 #ifndef ALGORITHMS_CURVES_GEVSIMILARITYPARAMETERS_TEST_H
 #define ALGORITHMS_CURVES_GEVSIMILARITYPARAMETERS_TEST_H
 
+// for assert
+#include <assert.h>
 #include <iostream>
 #include "main/c++/algorithms/curves/GEVSimilarityParameters.h"
 

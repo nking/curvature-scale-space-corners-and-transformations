@@ -54,8 +54,7 @@ public class GEVSimilarityTool {
         init();
     }
     
-    private void init() {
-        
+    private void init() {        
         powersOfTenK = 6;
         powersOfTenS = 5;
         powersOfTenM = 4;

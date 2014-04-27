@@ -16,6 +16,8 @@ junit*properties
 /other/GEVSimilarity/configure
 /other/GEVSimilarity/install-sh
 /other/GEVSimilarity/missing
-/other/GEVSimilarity/
-/other/GEVSimilarity/
-/other/GEVSimilarity/
+/other/GEVSimilarity/COPYING
+/other/GEVSimilarity/INSTALL
+/other/GEVSimilarity/compile
+/other/GEVSimilarity/depcomp
+*.Po
