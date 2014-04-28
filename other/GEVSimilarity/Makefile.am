@@ -12,7 +12,10 @@ runtest0: src/test/c++/algorithms/curves/ParametersKey_test
 runtest00: src/test/c++/algorithms/curves/ParametersEncoder_test
 	./src/test/c++/algorithms/curves/ParametersEncoder_test
 
-runtest000: src/test/c++/algorithms/curves/MinUnknownUniverseCover_test
+runtest000: src/test/c++/algorithms/curves/Sorter_test
+	./src/test/c++/algorithms/curves/Sorter_test
+
+runtest0000: src/test/c++/algorithms/curves/MinUnknownUniverseCover_test
 	./src/test/c++/algorithms/curves/MinUnknownUniverseCover_test
 
 valgrind: 

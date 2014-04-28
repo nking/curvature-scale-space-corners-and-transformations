@@ -32,6 +32,7 @@
 #include <vector>
 #include <tr1/unordered_map>
 #include "Defs.h"
+#include "Sorter.h"
 
 using std::vector;
 using std::tr1::unordered_map;

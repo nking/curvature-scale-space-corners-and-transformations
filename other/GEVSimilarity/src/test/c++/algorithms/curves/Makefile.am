@@ -4,6 +4,7 @@ bin_PROGRAMS = \
     GEVSimilarityParameters_test \
     ParametersKey_test \
     ParametersEncoder_test \
+    Sorter_test \
     MinUnknownUniverseCover_test
 
 GEVSimilarityParameters_test_SOURCES = \
@@ -17,6 +18,9 @@ ParametersEncoder_test_SOURCES = \
 
 MinUnknownUniverseCover_test_SOURCES = \
     MinUnknownUniverseCover_test.cpp
+
+Sorter_test_SOURCES = \
+    Sorter_test.cpp
 
 GEVSimilarityParameters_test_LDADD = \
     $(top_builddir)/src/main/c++/algorithms/curves/libGEVSimilarityParameters.a \
@@ -34,3 +38,6 @@ MinUnknownUniverseCover_test_LDADD = \
     $(top_builddir)/src/main/c++/algorithms/curves/libGEVSimilarityParameters.a \
     $(AM_LDFLAGS)
 
+Sorter_test_LDADD = \
+    $(top_builddir)/src/main/c++/algorithms/curves/libGEVSimilarityParameters.a \
+    $(AM_LDFLAGS)

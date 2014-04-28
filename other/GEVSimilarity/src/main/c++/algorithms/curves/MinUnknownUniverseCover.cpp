@@ -55,6 +55,24 @@ namespace gev {
         const unordered_map<int, int> *inputVariableFrequencyMap, 
         vector<int>* outputCoverVariables) {
         
+        outputCoverVariables->clear();
+        vector<int> counts;
+        
+        for (unordered_map<int, int>::const_iterator iter = 
+            inputVariableFrequencyMap->begin();  
+            iter != inputVariableFrequencyMap->end(); ++iter) {
+            
+            int var = iter->first;
+            int count = iter->second;
+            
+            outputCoverVariables->push_back(var);
+            counts.push_back(count);
+        }
+        
+        // sort by frequency
+        Sorter *sorter = new Sorter();
+        sorter->sort(&counts, outputCoverVariables);
+        delete sorter;
     }
     
     void MinUnknownUniverseCover::_findMinRepresentativeCover(

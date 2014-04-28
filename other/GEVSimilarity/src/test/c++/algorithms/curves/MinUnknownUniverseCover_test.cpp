@@ -95,8 +95,8 @@ void test0() {
     } else {
         assert(outputCoverVariables[1] == 1);
     }
-    assert(outputCoverVariables[8] == 0);
     assert(
+        outputCoverVariables[2] == 0 ||
         outputCoverVariables[2] == 2 || outputCoverVariables[2] == 3 ||
         outputCoverVariables[2] == 4 || outputCoverVariables[2] == 6 ||
         outputCoverVariables[2] == 7 || outputCoverVariables[2] == 8
