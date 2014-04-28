@@ -27,8 +27,8 @@ using std::vector;
 using std::tr1::unordered_map;
 using gev::MinUnknownUniverseCover;
     
-void addVector(vector< vector<int> >* a) {
-    vector<int> b;
+void addSet(vector< unordered_set<int> >* a) {
+    unordered_set<int> b;
     a->push_back(b);
 }
 
@@ -38,7 +38,7 @@ void test0() {
          
     MinUnknownUniverseCover *coverCalculator = new MinUnknownUniverseCover();
     
-    vector<vector<int> > encodedVariants;
+    vector< unordered_set<int> > encodedVariants;
     
     /*
      0 1  2  3
@@ -47,22 +47,22 @@ void test0() {
                  5
                      7  8
      */
-    addVector(&encodedVariants);
-    encodedVariants[0].push_back(0);
-    encodedVariants[0].push_back(1);
-    encodedVariants[0].push_back(2);
-    encodedVariants[0].push_back(3);
-    addVector(&encodedVariants);
-    encodedVariants[1].push_back(1);
-    addVector(&encodedVariants);
-    encodedVariants[2].push_back(4);
-    encodedVariants[2].push_back(5);
-    encodedVariants[2].push_back(6);
-    addVector(&encodedVariants);
-    encodedVariants[3].push_back(5);
-    addVector(&encodedVariants);
-    encodedVariants[4].push_back(7);
-    encodedVariants[4].push_back(8);
+    addSet(&encodedVariants);
+    encodedVariants[0].insert(0);
+    encodedVariants[0].insert(1);
+    encodedVariants[0].insert(2);
+    encodedVariants[0].insert(3);
+    addSet(&encodedVariants);
+    encodedVariants[1].insert(1);
+    addSet(&encodedVariants);
+    encodedVariants[2].insert(4);
+    encodedVariants[2].insert(5);
+    encodedVariants[2].insert(6);
+    addSet(&encodedVariants);
+    encodedVariants[3].insert(5);
+    addSet(&encodedVariants);
+    encodedVariants[4].insert(7);
+    encodedVariants[4].insert(8);
     
     
     unordered_map<int, int> frequencyMap;
@@ -105,33 +105,30 @@ void test0() {
     
     
     coverCalculator->_findMinRepresentativeCover(&encodedVariants,
-        &frequencyMap, &outputCoverVariables);
+        &outputCoverVariables);
+        
+    // 1, 5, 7 || 8
+    assert(outputCoverVariables.size() == 3);
     
-    // 0, 1, 5, 7 || 8
-    assert(outputCoverVariables.size() == 4);
-    
-    bool *found = (bool*)calloc(4, sizeof(bool));
+    bool *found = (bool*)calloc(3, sizeof(bool));
     for (unsigned long i = 0; i < outputCoverVariables.size(); i++) {
         int var = outputCoverVariables[i];
         switch(var) {
-            case 0:
+            case 1:
                 found[0] = true;
                 break;
-            case 1:
-                found[1] = true;
-                break;
             case 5:
-                found[2] = true;
+                found[1] = true;
                 break;
             case 7:
             case 8:
-                found[3] = true;
+                found[2] = true;
                 break;
             default:
                 break;
         }
     }
-    for (unsigned long i = 0; i < 4; i++) {
+    for (unsigned long i = 0; i < 3; i++) {
         assert(found[i]);
     }
     

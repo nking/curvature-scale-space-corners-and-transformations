@@ -16,7 +16,7 @@ namespace gev {
     }
         
     void MinUnknownUniverseCover::calculateCover(
-        const vector<vector<int> >* inputVariables,
+        const vector< unordered_set<int> >* inputVariables,
         vector<int>* outputCoverVariables) {
         
         unordered_map<int, int> frequencyMap;
@@ -25,22 +25,22 @@ namespace gev {
         
         _initializeVariableCover(&frequencyMap, outputCoverVariables);
         
-        // note that frequencyMap gets modified in next method
-        _findMinRepresentativeCover(inputVariables, &frequencyMap, outputCoverVariables);
+        _findMinRepresentativeCover(inputVariables, outputCoverVariables);
         
     }
     
     void MinUnknownUniverseCover::_populateVariableFrequencyMap(
-        const vector<vector<int> >* inputVariables,
+        const vector< unordered_set<int> >* inputVariables,
         unordered_map<int, int> *outVariableFrequencyMap) {
                 
         for (unsigned long i = 0; i < inputVariables->size(); i++) {
             
-            vector<int> row = (*inputVariables)[i];
+            unordered_set<int> row = (*inputVariables)[i];
             
-            for (unsigned long j = 0; j < row.size(); j++) {
+            for (unordered_set<int>::const_iterator iter = row.begin();
+                iter != row.end(); ++iter) {
                 
-                int v = row[j];
+                int v = *iter;
                 
                 if (outVariableFrequencyMap->find(v) == outVariableFrequencyMap->end()) {
                     outVariableFrequencyMap->insert(make_pair(v, 1));
@@ -76,9 +76,67 @@ namespace gev {
     }
     
     void MinUnknownUniverseCover::_findMinRepresentativeCover(
-        const vector<vector<int> >* inputVariables, 
-        unordered_map<int, int> *outVariableFrequencyMap,
+        const vector< unordered_set<int> >* inputVariables, 
         vector<int>* outputCoverVariables) {
+        
+        unsigned long len = outputCoverVariables->size();
+        
+        unordered_map<int, int> lookupIndexesMap;
+        for (unsigned long i = 0; i < len; i++) {
+            int var = (*outputCoverVariables)[i];
+            lookupIndexesMap.insert(make_pair(var, i));
+        }
+        
+        
+        unordered_set<int> chose;
+        
+        bool *doRemove = (bool*)calloc(len, sizeof(bool));
+        
+        for (unsigned long i = 0; i < len; i++) {
+            
+            if (doRemove[i]) {
+                continue;
+            }
+            
+            int var = (*outputCoverVariables)[i];
+            
+            chose.insert(var);
+                        
+            // search each row of inputVariables, and if var is in it, mark 
+            //   the remaining as doRemove
+            for (unsigned long ii = 0; ii < inputVariables->size(); ii++) {
+                
+                unordered_set<int> row = (*inputVariables)[ii];
+                
+                if (row.find(var) == row.end()) {
+                    continue;
+                }
+                
+                for (unordered_set<int>::const_iterator iter = row.begin();
+                iter != row.end(); ++iter) {
+                
+                    int v = *iter;
+                                            
+                    if ((v != var) && (chose.find(v) == chose.end())) { 
+                        int index = lookupIndexesMap.find(v)->second;
+                        doRemove[index] = true;
+                    }
+                }
+            }
+        }
+        
+        vector<int> keep;
+        
+        for (unsigned long i = 0; i < outputCoverVariables->size(); i++) {
+            if (!doRemove[i]) {
+                int var = (*outputCoverVariables)[i];
+                keep.push_back(var);
+            }
+        }
+        
+        free(doRemove);
+        
+        outputCoverVariables->swap(keep);
         
         // TODO: when there are more than one variable as the possible choice to 
         //   represent a row, choose the one which is closer to answers already

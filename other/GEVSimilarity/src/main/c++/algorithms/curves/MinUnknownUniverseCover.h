@@ -31,11 +31,13 @@
 
 #include <vector>
 #include <tr1/unordered_map>
+#include <tr1/unordered_set>
 #include "Defs.h"
 #include "Sorter.h"
 
 using std::vector;
 using std::tr1::unordered_map;
+using std::tr1::unordered_set;
 using std::make_pair;
 
 namespace gev {
@@ -46,7 +48,7 @@ public:
     
     virtual ~MinUnknownUniverseCover();
     
-    void calculateCover(const vector<vector<int> >* inputVariables,
+    void calculateCover(const vector< unordered_set<int> >* inputVariables,
         vector<int>* outputCoverVariables);
         
     /*
@@ -59,7 +61,7 @@ public:
      * and value is the number of times that variables is in inputVariables.
      */
     void _populateVariableFrequencyMap(
-        const vector<vector<int> >* inputVariables,
+        const vector< unordered_set<int> >* inputVariables,
         unordered_map<int, int> *outVariableFrequencyMap);
     
     /*
@@ -88,8 +90,8 @@ public:
      the minimum number of variables which can generate all curves in
      inputVariables.
      */
-    void _findMinRepresentativeCover(const vector<vector<int> >* inputVariables, 
-        unordered_map<int, int> *variableFrequencyMap,
+    void _findMinRepresentativeCover(
+        const vector< unordered_set<int> >* inputVariables, 
         vector<int>* outputCoverVariables);
     
 private:
