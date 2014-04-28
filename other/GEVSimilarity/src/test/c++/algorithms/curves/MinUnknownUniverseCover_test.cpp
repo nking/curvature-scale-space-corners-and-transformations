@@ -71,7 +71,7 @@ void test0() {
         &frequencyMap);
     
     assert(frequencyMap.size() == 9);
-    assert(frequencyMap[0] == 0);
+    assert(frequencyMap[0] == 1);
     assert(frequencyMap[1] == 2);
     assert(frequencyMap[2] == 1);
     assert(frequencyMap[3] == 1);

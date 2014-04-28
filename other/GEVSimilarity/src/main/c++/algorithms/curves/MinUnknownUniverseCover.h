@@ -35,6 +35,7 @@
 
 using std::vector;
 using std::tr1::unordered_map;
+using std::make_pair;
 
 namespace gev {
 class MinUnknownUniverseCover {

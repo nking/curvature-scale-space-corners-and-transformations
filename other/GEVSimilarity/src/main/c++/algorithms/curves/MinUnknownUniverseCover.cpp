@@ -33,7 +33,22 @@ namespace gev {
     void MinUnknownUniverseCover::_populateVariableFrequencyMap(
         const vector<vector<int> >* inputVariables,
         unordered_map<int, int> *outVariableFrequencyMap) {
-        
+                
+        for (unsigned long i = 0; i < inputVariables->size(); i++) {
+            
+            vector<int> row = (*inputVariables)[i];
+            
+            for (unsigned long j = 0; j < row.size(); j++) {
+                
+                int v = row[j];
+                
+                if (outVariableFrequencyMap->find(v) == outVariableFrequencyMap->end()) {
+                    outVariableFrequencyMap->insert(make_pair(v, 1));
+                } else {
+                    (*outVariableFrequencyMap)[v]++;
+                }
+            }
+        }
     }
     
     void MinUnknownUniverseCover::_initializeVariableCover(
@@ -48,7 +63,7 @@ namespace gev {
         vector<int>* outputCoverVariables) {
         
         // TODO: when there are more than one variable as the possible choice to 
-        //   represent a row, the one which is closer to answers already
+        //   represent a row, choose the one which is closer to answers already
         //   present in outputCoverVariables.  (closer can be roughly estimated
         //   as smaller difference between the variable numbers.)
     }
