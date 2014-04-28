@@ -30,9 +30,11 @@
 #define ALGORITHMS_CURVES_MINUKNOWNUNIVERSECOVER_H
 
 #include <vector>
+#include <tr1/unordered_map>
 #include "Defs.h"
 
 using std::vector;
+using std::tr1::unordered_map;
 
 namespace gev {
 class MinUnknownUniverseCover {
@@ -42,9 +44,52 @@ public:
     
     virtual ~MinUnknownUniverseCover();
     
-    void calculateCover(vector<vector<int> >* inputVariants,
-        vector<int>* outputCoverVariants);
+    void calculateCover(const vector<vector<int> >* inputVariables,
+        vector<int>* outputCoverVariables);
         
+    /*
+     read inputVariables to populate the count frequency map 
+     outVariableFrequencyMap.
+     runtime is O(nRows * m) where m is the average number of variables per row.
+     
+     @param inputVariables rows of input variable numbers
+     @param outVariableFrequencyMap the output is a map with key=variable number
+     * and value is the number of times that variables is in inputVariables.
+     */
+    void _populateVariableFrequencyMap(
+        const vector<vector<int> >* inputVariables,
+        unordered_map<int, int> *outVariableFrequencyMap);
+    
+    /*
+     read the variable count frequency from inputVariableFrequencyMap to 
+     populate outputCoverVariables, ordered by decreasing count frequency.
+     runtime is O(n) + O(n lg_2(n)) where n is the number of keys in the map.
+     @param inputVariableFrequencyMap map with key=variable number and value is 
+     the variable count
+     @param outputCoverVariables list of the inputVariableFrequencyMap ordered 
+     by decreasing count.  
+     */
+    void _initializeVariableCover(
+        const unordered_map<int, int> *inputVariableFrequencyMap, 
+        vector<int>* outputCoverVariables);
+    
+    /*     
+     runtime is O(nRows * nRows * m) where m is the avg number of variables 
+     per row.
+     @param inputVariables rows of input variable numbers where each row 
+     represents curves that are similar and the variable numbers represent
+     parameters that produced a similar curve in that row.
+     @param variableFrequencyMap map with key=variable number and value is 
+     the variable count.  Note that outVariableFrequencyMap gets modified in
+     this method as it is re-used for another purpose.
+     @param outputCoverVariables output list of variables that represent
+     the minimum number of variables which can generate all curves in
+     inputVariables.
+     */
+    void _findMinRepresentativeCover(const vector<vector<int> >* inputVariables, 
+        unordered_map<int, int> *variableFrequencyMap,
+        vector<int>* outputCoverVariables);
+    
 private:
     DISALLOW_COPY_AND_ASSIGN(MinUnknownUniverseCover);
         
