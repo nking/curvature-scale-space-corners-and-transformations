@@ -83,9 +83,6 @@ public:
      @param inputVariables rows of input variable numbers where each row 
      represents curves that are similar and the variable numbers represent
      parameters that produced a similar curve in that row.
-     @param variableFrequencyMap map with key=variable number and value is 
-     the variable count.  Note that outVariableFrequencyMap gets modified in
-     this method as it is re-used for another purpose.
      @param outputCoverVariables output list of variables that represent
      the minimum number of variables which can generate all curves in
      inputVariables.
