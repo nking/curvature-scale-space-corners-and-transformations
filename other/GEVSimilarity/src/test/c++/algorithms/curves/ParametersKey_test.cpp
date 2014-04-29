@@ -27,7 +27,7 @@ using namespace std;
 using std::tr1::unordered_map;
 
 using gev::ParametersKey;
-    
+
 void test0() {
 
     std::cout << "test0 " ;
@@ -116,7 +116,7 @@ void test2() {
     
     // don't put types on make_pair<gev::ParametersKey, int>  template or compiler won't find default defin
     variantsMap.insert(
-        make_pair<gev::ParametersKey, int> (*key, 1));
+        make_pair<gev::ParametersKey, int>(*key, 1));
         
     assert(variantsMap.size() == 1);
     
@@ -125,7 +125,7 @@ void test2() {
     assert(variantsMap.find(*key2) != variantsMap.end());
     
     variantsMap.insert(
-        make_pair<gev::ParametersKey, int> (*key, 2));
+        make_pair<gev::ParametersKey, int>(*key, 2));
         
     assert(variantsMap.size() == 1);
     
@@ -142,7 +142,9 @@ void test3() {
     std::cout << "test3 " ;
     
     // use random variables and save them to assert collisions for unique keys 
-    //     are still saved
+    //     are still saved... I don't have a list of keys that should collide
+    //     for the current hash implementation, so the test is for when random
+    //     throws create 2 keys that collide.
     
     ParametersKey *key = new ParametersKey(0.0001f, 0.001f, 0.01f);
     
@@ -158,9 +160,10 @@ void test3() {
     float sigma;
     float mu;
     
-    int nIter = 10000;
+    unsigned long nIter = 100000;
+    
     unsigned long nExpected = 0;
-    for (int i = 0; i < nIter; i++) {
+    for (unsigned long i = 0; i < nIter; i++) {
         long r = random();
         k = key->_intBitsToFloat((uint32_t)r);
         while (k != k) {
@@ -251,7 +254,7 @@ void test3() {
 int main(int argc, char** argv) {
 
     std::cout << "ParametersKey_test: ";
-    
+        
     test0();
     
     test1();

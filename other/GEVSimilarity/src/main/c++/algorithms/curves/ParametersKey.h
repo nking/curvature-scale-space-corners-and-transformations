@@ -30,23 +30,23 @@ public:
     
     // For quickest implementation of determining the unique set of ParametersKey
     // instances, code using this class will use the boost unordered_map. 
-    // The unordered_map presumably implements perfect hashing 
+    // The unordered_map presumably implements perfect dynamic hashing 
     // for the keys it supports: string, wstring, float, double, long double
-    // when there are collisions.  the internal hash_value functions return
-    // a type of size_t, so presumably the hash function can only provide
-    // perfect hashing for input <= 32 bit, so the unordered_map must be using
-    // methods to create internal data structures to keep track of entries
-    // with different key_equals that collide.
+    // by creating internal data structures to store collisions of items which
+    // are not the same by key_equals, but do collide because of the hash.
+    // the boost internal hash_value functions return a type of size_t, so 
+    // presumably the hash function can only provide perfect hashing (if that) 
+    // for input <= 32 bit.
     //
     // In order to use ParametersKey as a key, I need to either convert the
-    //  identity to a string, or provide a hashing function.
+    // identity to a string, or provide a hashing function.
     // Creating a string key is the easiest for now and allows quick testing
     // that all values even when they collide lead to successful storage and
     // retrieval from unordered_map for unique keys.
     
     // The identity for this class is k, sigma, and mu which are 32-bit floats.
-    // those floats are converted to their 32-bit integer equivalents (IEEE 754).
-    // Then a string is created from them as code points.
+    // Those floats are converted to their 32-bit integer equivalents (IEEE 754).
+    // Then a string is created from them as unicode character code points.
     // The char data type is usually 8 bits and string is composed of chars.
     // So the identity of this class is 3 32-bit fields written as a 12 element 
     // char array.
