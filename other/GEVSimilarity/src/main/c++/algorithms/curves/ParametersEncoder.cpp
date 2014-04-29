@@ -64,8 +64,8 @@ namespace gev {
                     
                     for (int i = 0; i < nVars; i++) {
                         
-                        ParametersKey *key = new ParametersKey(k[0], sigma[0], 
-                            mu[0]);
+                        ParametersKey *key = new ParametersKey(k[i], sigma[i], 
+                            mu[i]);
                         
                         unordered_map<gev::ParametersKey, int>::const_iterator 
                             iter = varMap.find(*key);
