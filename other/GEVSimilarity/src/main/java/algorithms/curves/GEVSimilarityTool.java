@@ -3,6 +3,7 @@ package algorithms.curves;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.GEVSimilarityParametersPlotter;
 import algorithms.util.ResourceFinder;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -28,11 +29,11 @@ public class GEVSimilarityTool {
     protected int nx;
     protected float k0;
     protected float sigma0;
-    protected float xMinusMu0;
-    protected float nWithinTen; // when = 10.f, runtime = 8 hrs
+    protected float mu0;
+    protected float nWithinTen; 
     protected float nKPermutations;
     protected float nSigmaPermutations;
-    protected float nXMinusMuPermutations;
+    protected float nMuPermutations;
     protected float fctr;
     protected int nCurves;
     
@@ -41,7 +42,6 @@ public class GEVSimilarityTool {
     protected float[] x;
     protected float[] ks;
     protected float[] sigmas;
-    protected float[] xminusmus;
     protected float[] mus;
     protected int nc;
         
@@ -61,7 +61,7 @@ public class GEVSimilarityTool {
         nx = 20;
         k0 = 1e-3f;
         sigma0 = 1e-2f;
-        xMinusMu0 = 1e-3f;
+        mu0 = 1e-3f;
         
         nc = 0;
         
@@ -81,11 +81,11 @@ public class GEVSimilarityTool {
         nWithinTen = nwt;
         nKPermutations = nWithinTen * powersOfTenK;
         nSigmaPermutations = nWithinTen * powersOfTenS;
-        nXMinusMuPermutations = nWithinTen * powersOfTenM;
+        nMuPermutations = nWithinTen * powersOfTenM;
         fctr = 10.f/nWithinTen;
     
         nCurves = (int)(nKPermutations * nSigmaPermutations * 
-            nXMinusMuPermutations * nx);
+            nMuPermutations);
             
         curves = new float[nCurves][];
         for (int i = 0; i < nCurves; i++) {
@@ -94,7 +94,6 @@ public class GEVSimilarityTool {
     
         ks = new float[nCurves];
         sigmas = new float[nCurves];
-        xminusmus = new float[nCurves];
         mus = new float[nCurves];
         
         diff = new float[nCurves];
@@ -114,73 +113,83 @@ public class GEVSimilarityTool {
         initNWithinTenVars(nwt);
     }
     
-    public void calculateCurveDiffs() {
+    protected void generateCurves() {
         
-        log.info("calculateCurveDiffs nCurves=" + nCurves);
+        log.info("generateCurves nCurves=" + nCurves + " nWithinTen=" + nWithinTen + " fctr=" + fctr);
 
         long t0 = System.nanoTime();
         
         float k00 = k0;
         for (int i = 0; i < nKPermutations; i++) {
             float nk = (i % nWithinTen);
-            if (nk == 0.f) {
+            if ((i > 0) && (nk == 0.f)) {
                 k00 *= 10;
             }
             float k = (nk == 0) ? k00 : nk*fctr*k00;
-            
             float s00 = sigma0;
             for (int ii = 0; ii < nSigmaPermutations; ii++) { 
                 float ns = (ii % nWithinTen);
-                if (ns == 0.f) {
+                if ((ii > 0) && (ns == 0.f)) {
                     s00 *= 10;
                 }
                 float sigma = (ns == 0) ? s00 : ns*fctr*s00;
                 
-                float m00 = xMinusMu0;
-                for (int iii = 0; iii < nXMinusMuPermutations; iii++) {
+                float m00 = mu0;
+                for (int iii = 0; iii < nMuPermutations; iii++) {
                     float nxm = (iii % nWithinTen);
-                    if (nxm == 0.f) {
+                    if ((iii > 0) && (nxm == 0.f)) {
                         m00 *= 10;
                     }
-                    float xMinusMu = (nxm == 0) ? m00 : nxm*fctr*m00;
-                    
-                    for (int iiii = 0; iiii < nx; iiii++) {
-                        float x0 = x[iiii];
-                        float mu = x0 - xMinusMu;
+                    float mu = (nxm == 0) ? m00 : nxm*fctr*m00;
+                         
+                    float[] y = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);
                         
-                        float[] y = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);
-                        
-                        if (!isNearlyAllZeros(y) && !isNearlyAllOnes(y)) {
-                            curves[nc] = y;
-                            ks[nc] = k;
-                            sigmas[nc] = sigma;
-                            xminusmus[nc] = xMinusMu;
-                            mus[nc] = mu;
-                            nc++;
+                    if (!isNearlyAllZeros(y) && !isNearlyAllOnes(y)) {
+                        if (nc == 76) {
+                            System.out.println("*****k=" + k + " sigma=" + sigma + " mu" + mu);
                         }
+                        curves[nc] = y;
+                        ks[nc] = k;
+                        sigmas[nc] = sigma;
+                        mus[nc] = mu;
+                        nc++;
                     }
                 }
             }
         }
-
+        
+        log.info("generated nc=" + nc + " curves" );
+        
         // expecting runtime complexity to be O(nCurves) for creating curves
         long t1 = System.nanoTime();
-        long time = (t1 - t0)*1000000000;
+        long time = (t1 - t0)/1000000000;
         log.info("runtime for creating curves = " + time + " seconds");
+    }
+
+    public void calculateCurveDiffs() {
+        
+        log.info("calculateCurveDiffs");
+
+        generateCurves();
+        
+
+        long t1 = System.nanoTime();
                 
         // capture similarity of a spectra compared to all others as a set of
         //    similar.
-        double epsDiff = 1e-2;
+        double epsDiff = 0.1;
         boolean[] inASetAlready = new boolean[nCurves];
         
         // store diff and each member of similarity set
-        log.info("nCurves=" + nCurves);
+        log.info("looking for similarities between " + nc + " curves");
         Arrays.fill(diff, Float.MAX_VALUE);
         
         StringBuffer sb = new StringBuffer();
         
+        int end = nc;
+        
         nc = 0;
-        for (int i = 0; i < nCurves; i++) {
+        for (int i = 0; i < end; i++) {
             if (inASetAlready[i]) {
                 continue;
             }
@@ -191,7 +200,7 @@ public class GEVSimilarityTool {
                 sb = sb.delete(0, sb.length());
             }
             
-            for (int ii = i; ii < nCurves; ii++) {  // cost  is less than  nCurves * nCurves * nx
+            for (int ii = (i + 1); ii < end; ii++) {  // cost  is less than  nCurves * nCurves
                 if (inASetAlready[ii]) {
                     continue;
                 }
@@ -224,20 +233,19 @@ public class GEVSimilarityTool {
                 nc++;
             }
             if (!inASetAlready[i]) {
-                // this is unique
-                log.info(String.format("UNIQUE:  k=%e  sigma=%e  x-mu=%e  mu=%e", ks[i], sigmas[i], xminusmus[i], mus[i]));
+                log.info(String.format("UNIQUE:  k=%e  sigma=%e  mu=%e", ks[i], sigmas[i], mus[i]));
             }
         }
      
         calculatedCurveDiffs = true;
 
-        // expected runtime complexity for diff finding is less than nCurves * nCurves * nx
-        // for default params, nCurves=(10*6 + 10*5 + 10*4)*20=3000 so complexity is less than O(180_000_000)
+        // nc is < nCurves
+        // expected runtime complexity for diff finding is less than nc * nc *
         long t2 = System.nanoTime();
-        time = (t2 - t1)*1000000000;
+        long time = (t2 - t1)/1000000000;
         log.info("runtime for finding similar among curves = " + time + " seconds");
     }
-
+    
     protected boolean isNearlyAllZeros(float[] y) {
         int n = 0;
         for (int i = 0; i < y.length; i++) {
@@ -256,48 +264,6 @@ public class GEVSimilarityTool {
             }
         }
         return (n > (y.length - 2));
-    }
-
-    /** 
-     * use quick sort to sort a by increasing value and perform same swaps on b
-     * @param a
-     * @param b
-     * @param idxLo
-     * @param idxHi last index to be sorted in a, inclusive
-     */
-    private void sort(float[] a, char[][] b, int idxLo, int idxHi) {
-        if (idxLo < idxHi) {
-            int idxMid = partition(a, b, idxLo, idxHi);
-            sort(a, b, idxLo, idxMid - 1);
-            sort(a, b, idxMid + 1, idxHi);
-        }
-    }
-
-    private int partition(float[] a, char[][] b, int idxLo, int idxHi) {
-        float x = a[idxHi];
-        int store = idxLo - 1;
-        
-        for (int i = idxLo; i < idxHi; i++) {
-            if (a[i] <= x) {
-                store++;
-                float swap = a[store];
-                a[store] = a[i];
-                a[i] = swap;
-                char[] swap2 = b[store];
-                b[store] = b[i];
-                b[i] = swap2;
-            }
-        }
-        
-        float swap = a[store + 1];
-        a[store + 1] = a[idxHi];
-        a[idxHi] = swap;
-        
-        char[] swap2 = b[store + 1];
-        b[store + 1] = b[idxHi];
-        b[idxHi] = swap2;
-        
-        return store + 1;
     }
 
     public void plotResults() throws IOException {
@@ -361,36 +327,29 @@ public class GEVSimilarityTool {
             StringBuffer sb2 = new StringBuffer(100);
             sb2.append(Integer.toString(i)).append(") [").append(new String(diffIndexes[i])).append("]")
                 .append("  diff=").append(Float.toString(diff[i]));
-            sb2.append("\n   k=");
-            for (int j = 0; j < indexes.length; j++) {
-                float k = ks[indexes[j]];
-                sb2.append(k);
-                if (j < (indexes.length - 1)) {
-                    sb2.append(",");
+            
+            for (int nv = 0; nv < 3; nv++) {
+                float[] a;
+                switch(nv) {
+                    case 0:
+                        sb2.append("\n   k=");
+                        a = ks;
+                        break;
+                    case 1:
+                        sb2.append("  sigma=");
+                        a = sigmas;
+                        break;
+                    default:
+                        sb2.append("  mu=");
+                        a = mus;
+                        break;
                 }
-            }
-            sb2.append("  sigma=");
-            for (int j = 0; j < indexes.length; j++) {
-                float s = sigmas[indexes[j]];
-                sb2.append(s);
-                if (j < (indexes.length - 1)) {
-                    sb2.append(",");
-                }
-            }
-            sb2.append("  mu=");
-            for (int j = 0; j < indexes.length; j++) {
-                float m = mus[indexes[j]];
-                sb2.append(m);
-                if (j < (indexes.length - 1)) {
-                    sb2.append(",");
-                }
-            }
-            sb2.append("  x-mu=");
-            for (int j = 0; j < indexes.length; j++) {
-                float m = xminusmus[indexes[j]];
-                sb2.append(m);
-                if (j < (indexes.length - 1)) {
-                    sb2.append(",");
+                for (int j = 0; j < indexes.length; j++) {
+                    float v = a[indexes[j]];
+                    sb2.append(v);
+                    if (j < (indexes.length - 1)) {
+                        sb2.append(",");
+                    }
                 }
             }
 
@@ -400,7 +359,6 @@ public class GEVSimilarityTool {
             if ((i == 0) || ((i % 100) == 0) ) {
                                 
                 if (paramsPlotter != null) {
-System.out.println("i=" + i + " n=" + end + " nci2=" + nci2);
                     paramsPlotter.writeFile(nci2);
                 }
                 
@@ -434,12 +392,18 @@ System.out.println("i=" + i + " n=" + end + " nci2=" + nci2);
         readPersisted(0);
     }
     
+    private String getFilePath(int fileNumber) throws IOException {
+        String fileName = "similarity_" + Integer.toString(fileNumber) + ".dat";
+        String filePath = ResourceFinder.findDirectory("tmpdata2");
+        filePath = filePath + System.getProperty("file.separator") + fileName;
+        return filePath;
+    }
+    
     public void readPersisted(int fileNumber) throws IOException {
         
         log.info("readPersisted");
         
-        String fileName = "similarity_" + Integer.toString(fileNumber) + ".dat";
-        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
+        String filePath = getFilePath(fileNumber);   
         
         FileInputStream fis = null;
         ObjectInputStream ois = null;
@@ -454,17 +418,15 @@ System.out.println("i=" + i + " n=" + end + " nci2=" + nci2);
             nx = ois.readInt();
             k0 = ois.readFloat();
             sigma0 = ois.readFloat();
-            xMinusMu0 = ois.readFloat();
+            mu0 = ois.readFloat();
             nWithinTen = ois.readFloat();
             nc = ois.readInt();
-            
             nKPermutations = nWithinTen * powersOfTenK;
             nSigmaPermutations = nWithinTen * powersOfTenS;
-            nXMinusMuPermutations = nWithinTen * powersOfTenM;
+            nMuPermutations = nWithinTen * powersOfTenM;
             fctr = 10.f/nWithinTen;
             nCurves = (int)(nKPermutations * nSigmaPermutations * 
-                nXMinusMuPermutations * nx);
-            
+                nMuPermutations);
             curves = new float[nCurves][];
             for (int i = 0; i < nCurves; i++) {
                 curves[i] = new float[nx];
@@ -486,11 +448,6 @@ System.out.println("i=" + i + " n=" + end + " nci2=" + nci2);
             sigmas = new float[nCurves];
             for (int i = 0; i < nCurves; i++) {
                 sigmas[i] = ois.readFloat();
-            }
-            
-            xminusmus = new float[nCurves];
-            for (int i = 0; i < nCurves; i++) {
-                xminusmus[i] = ois.readFloat();
             }
             
             mus = new float[nCurves];
@@ -535,13 +492,15 @@ System.out.println("i=" + i + " n=" + end + " nci2=" + nci2);
         
         log.info("persist");
         
-        String fileName = "similarity_" + Integer.toString(fileNumber) + ".dat";
-        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
+        String filePath = getFilePath(fileNumber);
         
         FileOutputStream fos = null;
         ObjectOutputStream oos = null;
         
         try {
+            File fl = new File(filePath);
+            fl.delete();
+            fl.createNewFile();
             fos = new FileOutputStream(filePath);
             oos = new ObjectOutputStream(fos);
             
@@ -551,7 +510,7 @@ System.out.println("i=" + i + " n=" + end + " nci2=" + nci2);
             oos.writeInt(nx);
             oos.writeFloat(k0);
             oos.writeFloat(sigma0);
-            oos.writeFloat(xMinusMu0);
+            oos.writeFloat(mu0);
             oos.writeFloat(nWithinTen);
             oos.writeInt(nc);
             
@@ -571,10 +530,6 @@ System.out.println("i=" + i + " n=" + end + " nci2=" + nci2);
             
             for (int i = 0; i < nCurves; i++) {
                 oos.writeFloat(sigmas[i]);
-            }
-            
-            for (int i = 0; i < nCurves; i++) {
-                oos.writeFloat(xminusmus[i]);
             }
             
             for (int i = 0; i < nCurves; i++) {

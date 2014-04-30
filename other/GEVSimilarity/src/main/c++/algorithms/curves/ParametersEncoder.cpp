@@ -182,9 +182,6 @@ namespace gev {
     void ParametersEncoder::_parseLine(const char *line, const int digit0, 
         const int digitn, float *k, float *sigma, float *mu, const int nVars) {
         
-        // read x-mu, but discard it
-        float *xmm = (float*)malloc(nVars * sizeof(float));
-        
         int nPos = digit0;
         
         for (int i = digit0; i < digitn; i++) {
@@ -193,12 +190,8 @@ namespace gev {
             
             nPos = _parseLineForNextNVars(line, nPos, digitn, sigma, nVars);
             
-            nPos = _parseLineForNextNVars(line, nPos, digitn, mu, nVars);
-            
-            nPos = _parseLineForNextNVars(line, nPos, digitn, xmm, nVars);
-        }
-        
-        free(xmm);
+            nPos = _parseLineForNextNVars(line, nPos, digitn, mu, nVars);            
+        }        
     }
     
     int ParametersEncoder::_parseLineForNextNVars(const char *line, const int digit0, 

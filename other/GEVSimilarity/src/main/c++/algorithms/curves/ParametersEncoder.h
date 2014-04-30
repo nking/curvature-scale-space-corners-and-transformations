@@ -67,11 +67,10 @@ public:
      * Example:
      *   k=0.010000001,0.020000001,0.020000001,0.020000001,0.020000001\
      *   sigma=0.099999994,0.099999994,0.099999994,0.099999994,0.099999994\
-     *   mu=-0.010000001,-0.008571431,-0.009090915,-0.009090915,-0.008571431\
-     *   x-mu=0.010000001,0.080000006,0.10000001,0.10000001,0.080000006
+     *   mu=-0.010000001,-0.008571431,-0.009090915,-0.009090915,-0.008571431
      * 
      * NOTE:  the code expects to find and read the file:
-     *     tmpdata/algorithms.curves.GEVSimilarityToolTest-output.txt
+     *     tmpdata2/algorithms.curves.GEVSimilarityToolTest-output.txt
      * </pre>
      * 
      * @param outputEncodedVariables a vector holding each line of the file
@@ -86,7 +85,7 @@ public:
     
     /*
      read log file described in readFile(vector<vector<int> >* encodedVariants)
-     @param fileName file that will be found in directory tmpdata
+     @param fileName file that will be found in directory tmpdata2
      @param encodedVariants 
      */
     void _readFile(string fileName, 

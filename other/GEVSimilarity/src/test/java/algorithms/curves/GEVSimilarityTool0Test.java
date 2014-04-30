@@ -48,8 +48,8 @@ public class GEVSimilarityTool0Test extends TestCase {
         assertTrue(Math.abs(tool.k0 - tool2.k0) < 0.01*tool.k0);
         assertTrue(tool.sigma0 > 0.0f);
         assertTrue(Math.abs(tool.sigma0 - tool2.sigma0) < 0.01*tool.sigma0);
-        assertTrue(tool.xMinusMu0 > 0.0f);
-        assertTrue(Math.abs(tool.xMinusMu0 - tool2.xMinusMu0) < 0.01*tool.xMinusMu0);
+        assertTrue(tool.mu0 > 0.0f);
+        assertTrue(Math.abs(tool.mu0 - tool2.mu0) < 0.01*tool.mu0);
         
         assertTrue(Math.abs(tool.nWithinTen - 1.0) < 0.001);
         assertTrue(Math.abs(tool2.nWithinTen - 1.0) < 0.001);
@@ -60,8 +60,8 @@ public class GEVSimilarityTool0Test extends TestCase {
         assertTrue(tool.nSigmaPermutations > 0.0f);
         assertTrue(Math.abs(tool.nSigmaPermutations - tool2.nSigmaPermutations) < 0.01*tool.nSigmaPermutations);
         
-        assertTrue(tool.nXMinusMuPermutations > 0.0f);
-        assertTrue(Math.abs(tool.nXMinusMuPermutations - tool2.nXMinusMuPermutations) < 0.01*tool.nXMinusMuPermutations);
+        assertTrue(tool.nMuPermutations > 0.0f);
+        assertTrue(Math.abs(tool.nMuPermutations - tool2.nMuPermutations) < 0.01*tool.nMuPermutations);
         
         assertTrue(tool.fctr > 0.0f);
         assertTrue(Math.abs(tool.fctr - tool2.fctr) < 0.01*tool.fctr);
@@ -97,8 +97,8 @@ public class GEVSimilarityTool0Test extends TestCase {
             d = Math.abs(tool.sigmas[i] - tool2.sigmas[i]);
             assertTrue(d <= Math.abs(tool.sigmas[i]*0.01));
             
-            d = tool.xminusmus[i] - tool2.xminusmus[i];
-            assertTrue(d <= Math.abs(tool.xminusmus[i]*0.01));
+            d = tool.mus[i] - tool2.mus[i];
+            assertTrue(d <= Math.abs(tool.mus[i]*0.01));
             
             d = Math.abs(tool.mus[i] - tool2.mus[i]);
             assertTrue(d <= Math.abs(tool.mus[i]*0.01));

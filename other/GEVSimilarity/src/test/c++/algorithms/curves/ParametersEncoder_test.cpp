@@ -112,9 +112,7 @@ void test1_0() {
     lineStr.append(",0.020000001,0.020000001  sigma=0.099999994,0.099999994,0.09");
     lineStr.append("9999994,0.099999994,0.099999994,0.099999994,0.099999994  ");
     lineStr.append("mu=-0.010000001,-0.008571431,-0.009090915,-0.009090915,");
-    lineStr.append("-0.008571431,-0.009090915,-0.009090915  x-mu=0.010000001,");
-    lineStr.append("0.080000006,0.10000001,0.10000001,0.080000006,0.10000001,");
-    lineStr.append("0.10000001");
+    lineStr.append("-0.008571431,-0.009090915,-0.009090915");
       
     const float expected[] = {0.010000001,0.020000001,0.020000001,0.020000001,
         0.020000001,0.020000001,0.020000001};
@@ -152,9 +150,7 @@ void test1_1() {
     lineStr.append(",0.020000001,0.020000001  sigma=0.099999994,0.099999994,0.09");
     lineStr.append("9999994,0.099999994,0.099999994,0.099999994,0.099999994  ");
     lineStr.append("mu=-0.010000001,-0.008571431,-0.009090915,-0.009090915,");
-    lineStr.append("-0.008571431,-0.009090915,-0.009090915  x-mu=0.010000001,");
-    lineStr.append("0.080000006,0.10000001,0.10000001,0.080000006,0.10000001,");
-    lineStr.append("0.10000001");
+    lineStr.append("-0.008571431,-0.009090915,-0.009090915");
       
     const float expected[] = {0.099999994,0.099999994,0.099999994,
         0.099999994,0.099999994,0.099999994,0.099999994};
@@ -185,47 +181,6 @@ void test1_1() {
     delete encoder;
 }
 
-void test1_2() {
-    
-    std::cout << "test1_2 " ;
-    
-    string lineStr = "k=0.010000001,0.020000001,0.020000001,0.020000001,0.020000001";
-    lineStr.append(",0.020000001,0.020000001  sigma=0.099999994,0.099999994,0.09");
-    lineStr.append("9999994,0.099999994,0.099999994,0.099999994,0.099999994  ");
-    lineStr.append("mu=-0.010000001,-0.008571431,-0.009090915,-0.009090915,");
-    lineStr.append("-0.008571431,-0.009090915,-0.009090915  x-mu=0.010000001,");
-    lineStr.append("0.080000006,0.10000001,0.10000001,0.080000006,0.10000001,");
-    lineStr.append("0.10000001");
-      
-    const float expected[] = {0.010000001,0.080000006,0.10000001,0.10000001,
-        0.080000006,0.10000001,0.10000001};
-    
-    ParametersEncoder *encoder = new ParametersEncoder();
-    
-    const char *line = lineStr.c_str();
-    
-    int digit0 = lineStr.find(" x-mu");
-    int digitn = lineStr.length();
-    
-    int nVars = 7;
-    float *array = (float*)malloc(nVars * sizeof(float));
-    
-    encoder->_parseLineForNextNVars(line, digit0, digitn, array, nVars);
-    
-    for (int i = 0; i < nVars; i++) {
-        float diff = expected[i] - array[i];
-        if (diff < 0) {
-            diff *= -1;
-        }
-        float eps = expected[i] * 0.1;
-        assert(diff < eps);
-    }
-        
-    free(array);
-    
-    delete encoder;
-}
-
 void test2_0() {
     
     std::cout << "test2_0 " ;
@@ -234,9 +189,7 @@ void test2_0() {
     lineStr.append(",0.020000001,0.020000001  sigma=0.099999994,0.099999994,0.09");
     lineStr.append("9999994,0.099999994,0.099999994,0.099999994,0.099999994  ");
     lineStr.append("mu=-0.010000001,-0.008571431,-0.009090915,-0.009090915,");
-    lineStr.append("-0.008571431,-0.009090915,-0.009090915  x-mu=0.010000001,");
-    lineStr.append("0.080000006,0.10000001,0.10000001,0.080000006,0.10000001,");
-    lineStr.append("0.10000001");
+    lineStr.append("-0.008571431,-0.009090915,-0.009090915");
       
     const float kExpected[] = {0.010000001,0.020000001,0.020000001,0.020000001,
         0.020000001,0.020000001,0.020000001};
@@ -305,7 +258,7 @@ void test3() {
     
     string path = encoder->_getProjectBaseDirectoryPath();
     
-    assert(path.find("tmpdata") != string::npos);
+    assert(path.find("tmpdata2") != string::npos);
     
     delete encoder;
 }
@@ -348,7 +301,6 @@ int main(int argc, char** argv) {
     
     test1_0();
     test1_1();
-    test1_2();
     
     //test3();
     
