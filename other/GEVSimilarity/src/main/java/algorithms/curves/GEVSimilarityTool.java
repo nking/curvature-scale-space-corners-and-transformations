@@ -120,34 +120,39 @@ public class GEVSimilarityTool {
         long t0 = System.nanoTime();
         
         float k00 = k0;
-        for (int i = 0; i < nKPermutations; i++) {
+        for (int i = 0; i <= nKPermutations; i++) {
             float nk = (i % nWithinTen);
-            if ((i > 0) && (nk == 0.f)) {
+            if (nk == 0.f) {
                 k00 *= 10;
+            } else if (nk == 1) {
+                continue;
             }
             float k = (nk == 0) ? k00 : nk*fctr*k00;
+            
             float s00 = sigma0;
-            for (int ii = 0; ii < nSigmaPermutations; ii++) { 
+            for (int ii = 0; ii <= nSigmaPermutations; ii++) { 
                 float ns = (ii % nWithinTen);
-                if ((ii > 0) && (ns == 0.f)) {
+                if (ns == 0.f) {
                     s00 *= 10;
+                } else if (ns == 1) {
+                    continue;
                 }
                 float sigma = (ns == 0) ? s00 : ns*fctr*s00;
                 
                 float m00 = mu0;
-                for (int iii = 0; iii < nMuPermutations; iii++) {
+                for (int iii = 0; iii <= nMuPermutations; iii++) {
                     float nxm = (iii % nWithinTen);
-                    if ((iii > 0) && (nxm == 0.f)) {
+                    if (nxm == 0.f) {
                         m00 *= 10;
+                    } else if (nxm == 1) {
+                        continue;
                     }
                     float mu = (nxm == 0) ? m00 : nxm*fctr*m00;
-                         
+ 
                     float[] y = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);
                         
                     if (!isNearlyAllZeros(y) && !isNearlyAllOnes(y)) {
-                        if (nc == 76) {
-                            System.out.println("*****k=" + k + " sigma=" + sigma + " mu" + mu);
-                        }
+System.out.format("%d)  K=%f  SIGMA=%f  MU=%f  [%d,%d,%d]\n", nc, k, sigma, mu, i, ii, iii);                       
                         curves[nc] = y;
                         ks[nc] = k;
                         sigmas[nc] = sigma;
@@ -184,7 +189,7 @@ public class GEVSimilarityTool {
         log.info("looking for similarities between " + nc + " curves");
         Arrays.fill(diff, Float.MAX_VALUE);
         
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         
         int end = nc;
         
@@ -323,8 +328,8 @@ public class GEVSimilarityTool {
                     plotter.writeFile3();
                     break;
             } 
-            
-            StringBuffer sb2 = new StringBuffer(100);
+ //TODO: check indexes 0 and 1           
+            StringBuilder sb2 = new StringBuilder(100);
             sb2.append(Integer.toString(i)).append(") [").append(new String(diffIndexes[i])).append("]")
                 .append("  diff=").append(Float.toString(diff[i]));
             
