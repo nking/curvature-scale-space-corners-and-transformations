@@ -17,7 +17,7 @@ namespace gev {
   
     // TODO:  improve the format of the output file one day
     void ParametersEncoder::readFile(
-        vector< unordered_set<int> >* outputEncodedVariables) {
+        vector< unordered_set<uint32_t> >* outputEncodedVariables) {
         
         string fileName = "algorithms.curves.GEVSimilarityToolTest-output.txt";
         
@@ -25,12 +25,15 @@ namespace gev {
     }
     
     void ParametersEncoder::_readFile(string fileName, 
-        vector< unordered_set<int> >* outputEncodedVariables) {
+        vector< unordered_set<uint32_t> >* outputEncodedVariables) {
         
-        string filePath = _getProjectBaseDirectoryPath();
+        string filePath = _getProjectTmpDirectoryPath();
         filePath = filePath.append("/");
         filePath = filePath.append(fileName);
-        char buf[256];
+        uint32_t buffSz = 100*2048;
+        char buf[buffSz];
+        
+        uint32_t count = 0;
         
         FILE *fl = NULL;
         try {
@@ -39,60 +42,60 @@ namespace gev {
                 bool doRead = !feof(fl);
                 while (doRead) {
                     
-                    // values are the variable numbers
-                    unordered_map<ParametersKey, int> varMap;
-                                        
-                    char *line = fgets(buf, 256, fl);
+                    char *line = fgets(buf, buffSz, fl);
                     if (line == NULL) {
                         break;
                     }
-                    
+                                        
                     int digit0 = 0;
                     int digitn = strlen(line) - 1;
-                    while ((int)line[digit0] < 33) {digit0++;}
-                    while ((int)line[digitn] < 33) {digitn--;}
-                    
-                    int nVars = _getNVarsOfAParameter(line, digit0, digitn);
-                    
+                    while ((uint32_t)line[digit0] < 33) {digit0++;}
+                    while ((uint32_t)line[digitn] < 33) {digitn--;}
+     
+                    uint32_t nVars = _getNVarsOfAParameter(line, digit0, digitn);
+                     
                     float *k = (float *)malloc(nVars * sizeof(float));
                     float *sigma = (float *)malloc(nVars * sizeof(float));
                     float *mu = (float *)malloc(nVars * sizeof(float));
                     
                     _parseLine(line, digit0, digitn, k, sigma, mu, nVars);
                     
-                    unordered_set<int> similar;
+                    unordered_set<uint32_t> similar;
                     
-                    for (int i = 0; i < nVars; i++) {
+                    for (uint32_t i = 0; i < nVars; i++) {
                         
                         ParametersKey *key = new ParametersKey(k[i], sigma[i], 
                             mu[i]);
                         
-                        unordered_map<gev::ParametersKey, int>::const_iterator 
-                            iter = varMap.find(*key);
+                        unordered_map<gev::ParametersKey, uint32_t>::const_iterator 
+                            iter = variableMap.find(*key);
                         
-                        int varNum;
-                        if (iter == varMap.end()) {                            
+                        uint32_t varNum;
+                        if (iter == variableMap.end()) {                            
                             
-                            varNum = varMap.empty() ? 0 : varMap.size();
+                            varNum = variableMap.empty() ? 0 : variableMap.size();
                             
-                            varMap.insert(
-                                make_pair<gev::ParametersKey, int>(*key, varNum));                            
-                        
+                            variableMap.insert(
+                                make_pair<gev::ParametersKey, uint32_t>(*key, varNum));
+   
                         } else {
                             
                             varNum = (*iter).second;
+   
                         }
                         
                         similar.insert(varNum);
                         
                         delete key;
                     }
-                    
+
                     outputEncodedVariables->push_back(similar);
                     
                     free(k);
                     free(sigma);
                     free(mu);
+                    
+                    count++;
                 }
             }
         } catch (std::exception e) {
@@ -109,16 +112,17 @@ namespace gev {
         }
     }
     
-    void ParametersEncoder::writeFile(vector<int>* encodedCoverVariables) {
+    void ParametersEncoder::writeFile(vector<uint32_t>* encodedCoverVariables) {
         
     }
     
     void ParametersEncoder::_writeFile(string fileName, 
-        vector<int>* encodedCoverVariables) {
+        vector<uint32_t>* encodedCoverVariables) {
+        
         
     }
     
-    string ParametersEncoder::_getProjectBaseDirectoryPath() {
+    string ParametersEncoder::_getProjectTmpDirectoryPath() {
         
         string cwd = _getCWD();
         
@@ -151,14 +155,14 @@ namespace gev {
         return cwd;
     }
     
-    int ParametersEncoder::_getNVarsOfAParameter(const char *line, 
-        const int digit0, const int digitn) {
+    uint32_t ParametersEncoder::_getNVarsOfAParameter(const char *line, 
+        const uint32_t digit0, const uint32_t digitn) {
         
-        int nCommas = 0;
+        uint32_t nCommas = 0;
         
         bool foundK = false;
         
-        for (int i = digit0; i < digitn; i++) {
+        for (uint32_t i = digit0; i < digitn; i++) {
             char c = line[i];
             if (foundK) {
                 if (c == ',') {
@@ -179,27 +183,28 @@ namespace gev {
         return (nCommas + 1);
     }
     
-    void ParametersEncoder::_parseLine(const char *line, const int digit0, 
-        const int digitn, float *k, float *sigma, float *mu, const int nVars) {
+    void ParametersEncoder::_parseLine(const char *line, const uint32_t digit0, 
+        const uint32_t digitn, float *k, float *sigma, float *mu, 
+        const uint32_t nVars) {
         
-        int nPos = digit0;
-        
-        for (int i = digit0; i < digitn; i++) {
-            
-            nPos = _parseLineForNextNVars(line, nPos, digitn, k, nVars);
-            
-            nPos = _parseLineForNextNVars(line, nPos, digitn, sigma, nVars);
-            
-            nPos = _parseLineForNextNVars(line, nPos, digitn, mu, nVars);            
-        }        
+        uint32_t nPos = digit0;
+                    
+        nPos = _parseLineForNextNVars(line, nPos, digitn, k, nVars);
+
+        nPos = _parseLineForNextNVars(line, nPos, digitn, sigma, nVars);
+
+        nPos = _parseLineForNextNVars(line, nPos, digitn, mu, nVars);            
     }
     
-    int ParametersEncoder::_parseLineForNextNVars(const char *line, const int digit0, 
-        const int digitn, float *a, const int nVars) {
+    uint32_t ParametersEncoder::_parseLineForNextNVars(const char *line, 
+        const uint32_t digit0, const uint32_t digitn, float *a, 
+        const uint32_t nVars) {
+        
         bool foundEq = false;
-        int n = 0;
-        int digitF0 = -1;
-        int i = -1;
+        uint32_t sentinel = -1;
+        uint32_t n = 0;
+        uint32_t digitF0 = sentinel;
+        uint32_t i = sentinel;
         for (i = digit0; i < digitn; i++) {
             char c = line[i];
             if (foundEq) {
@@ -207,30 +212,31 @@ namespace gev {
                     // parse float from digitF0 to digitFn
                     a[n] = _convertToFloat(line, digitF0, i);
                     n++;
-                    digitF0 = -1;
+                    digitF0 = sentinel;
                 } else if (c == ' ') {
                     break;
-                } else if (digitF0 == -1) {
+                } else if (digitF0 == sentinel) {
                     digitF0 = i;
                 }
             } else if (c == '=') {
                 foundEq = true;
             }
         }
+        
         a[n] = _convertToFloat(line, digitF0, i);
         n++;
-                
+        
         return i;
     }
     
     float ParametersEncoder::_convertToFloat(const char *line, 
-        const int digitBegin, const int digitEnd) {
+        const uint32_t digitBegin, const uint32_t digitEnd) {
         
-        int len = digitEnd - digitBegin + 1;
+        uint32_t len = digitEnd - digitBegin + 1;
         
         char buffer[len];
         
-        for (int i = 0; i < len; i++) {
+        for (uint32_t i = 0; i < len; i++) {
             buffer[i] = line[i + digitBegin];
         }
         

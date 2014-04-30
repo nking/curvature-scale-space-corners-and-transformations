@@ -13,10 +13,13 @@
 #include <time.h>
 // srandom and random are in  stdlib.h so can include that or cstdlib
 #include <stdlib.h>
-// for int32_t
+// for uint32_t
 #include <stdint.h>
+// for remove
+#include <stdio.h>
 // for cout
 #include <iostream>
+#include <vector>
 #include "main/c++/algorithms/curves/ParametersKey.h"
 #include "main/c++/algorithms/curves/ParametersEncoder.h"
 
@@ -256,7 +259,7 @@ void test3() {
     string cwd = encoder->_getCWD();
     assert(cwd.length() > 0);
     
-    string path = encoder->_getProjectBaseDirectoryPath();
+    string path = encoder->_getProjectTmpDirectoryPath();
     
     assert(path.find("tmpdata2") != string::npos);
     
@@ -269,24 +272,68 @@ void test4() {
          
     ParametersEncoder *encoder = new ParametersEncoder();
     
-    vector< unordered_set<int> > encodedVariables;
+    vector< unordered_set<uint32_t> > encodedVariables;
     
-    // TODO: put test file name here
-    string inFileName = "";
+    string inFileName = "test-data.txt";
     
-    // TODO: test readFile
     encoder->_readFile(inFileName, &encodedVariables);
     
-    // TODO: assert results
+    assert(encodedVariables.size() == 405);
+    
+    // spot checks for expected:
+    assert(encodedVariables[0].size() == 13);
+    
+    assert(encodedVariables[404].size() == 2);
+    
+    delete encoder;
+}
+
+void test5() {
+
+    std::cout << "test5 " ;
+         
+    ParametersEncoder *encoder = new ParametersEncoder();
+    
+    vector< unordered_set<uint32_t> > encodedVariables;
+    
+    string inFileName = "test-data.txt";
+    
+    encoder->_readFile(inFileName, &encodedVariables);
     
     
-    // TODO: test writeFile
-    string outFileName = "";
-    vector<int> encodedCover;
+    string outFileName = "delete.txt";
+    string filePath = encoder->_getProjectTmpDirectoryPath();
+    filePath = filePath.append("/");
+    filePath = filePath.append(outFileName);
+    
+    std::remove(filePath.c_str());
+    
+    vector<uint32_t> encodedCover;
+    encodedCover.push_back(1);
+    encodedCover.push_back(20);
+    encodedCover.push_back(30);
     
     encoder->_writeFile(outFileName, &encodedCover);
     
-    // TODO: assert results
+    
+    FILE *fl = NULL;
+    try {
+        fl = fopen(filePath.c_str(), "r");
+        if (fl != NULL) {
+            assert(!feof(fl));
+        }
+    } catch (std::exception e) {
+        cerr << "Error: " << e.what() << endl;
+        if (fl != NULL) {
+            fclose(fl);
+            fl = NULL;
+        }
+        throw;
+    }
+    if (fl != NULL) {
+        fclose(fl);
+        fl = NULL;
+    }
     
     delete encoder;
 }
@@ -302,9 +349,11 @@ int main(int argc, char** argv) {
     test1_0();
     test1_1();
     
-    //test3();
+    test3();
     
-    //test4();
+    test4();
+    
+    //test5();
     
     
     std::cout << " " << std::endl;

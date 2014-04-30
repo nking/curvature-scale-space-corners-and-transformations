@@ -9,6 +9,8 @@
 #define ALGORITHMS_CURVES_PARAMETERSENCODER_H
 
 #include "Defs.h"
+//for uint32_t
+#include <stdint.h>
 // for EINVAL
 #include <errno.h>
 // for NULL
@@ -49,7 +51,8 @@ public:
      * and is called algorithms.curves.GEVSimilarityToolTest-output.txt.
      * That file should be parsed using cat and grep to keep only lines
      * containing "k=".  
-     * cat algorithms.curves.GEVSimilarityToolTest-output.txt | grep "k=" > out.txt
+     * cat algorithms.curves.GEVSimilarityToolTest-output.txt \
+     *     | grep "k=" > | grep -v Uniq > out.txt
      * 
      * Each line in the file then contains without a line break:
      *    k=comma separated values <2 spaces> sigma=comma sep vals <2 spaces> \
@@ -81,7 +84,7 @@ public:
      * Note that for this file, each parameter set is already unique,
      * but the method handles the case in which they weren't too.
      */
-    void readFile(vector< unordered_set<int> >* outputEncodedVariables);
+    void readFile(vector< unordered_set<uint32_t> >* outputEncodedVariables);
     
     /*
      read log file described in readFile(vector<vector<int> >* encodedVariants)
@@ -89,21 +92,21 @@ public:
      @param encodedVariants 
      */
     void _readFile(string fileName, 
-        vector< unordered_set<int> >* outputEncodedVariables);
+        vector< unordered_set<uint32_t> >* outputEncodedVariables);
     
-    void writeFile(vector<int>* encodedCoverVariables);
+    void writeFile(vector<uint32_t>* encodedCoverVariables);
     
-    void _writeFile(string fileName, vector<int>* encodedCoverVariables);
+    void _writeFile(string fileName, vector<uint32_t>* encodedCoverVariables);
 
     string _getCWD();
     
-    string _getProjectBaseDirectoryPath();
+    string _getProjectTmpDirectoryPath();
     
-    int _getNVarsOfAParameter(const char *line, const int digit0, 
-        const int digitn);
+    uint32_t _getNVarsOfAParameter(const char *line, const uint32_t digit0, 
+        const uint32_t digitn);
     
-    void _parseLine(const char *line, const int digit0, const int digitn, 
-        float *k, float *sigma, float *mu, const int nVars);
+    void _parseLine(const char *line, const uint32_t digit0, const uint32_t digitn, 
+        float *k, float *sigma, float *mu, const uint32_t nVars);
     
     /*
      * parse the portion of the line between digit0 and digitn to fill array a
@@ -115,8 +118,8 @@ public:
      * @param a float array that will be filled with the parsed numbers
      * @param nVars the number of variables to be parsed
      */
-    int _parseLineForNextNVars(const char *line, const int digit0, 
-        const int digitn, float *a, const int nVars);
+    uint32_t _parseLineForNextNVars(const char *line, const uint32_t digit0, 
+        const uint32_t digitn, float *a, const uint32_t nVars);
     
     /*
      * parse the float found in line from characters digitBegin to
@@ -126,15 +129,15 @@ public:
      * @param digitEnd the index of the last character in line to be included in
      * the float.
      */
-    float _convertToFloat(const char *line, const int digitBegin, 
-        const int digitEnd);
+    float _convertToFloat(const char *line, const uint32_t digitBegin, 
+        const uint32_t digitEnd);
     
 private:
     DISALLOW_COPY_AND_ASSIGN(ParametersEncoder);
         
-    /* map holding the read file content w/ values = unique variant numbers
+    /* map holding the read file content w/ values = unique variable numbers
      */
-    unordered_map<ParametersKey, int> variantsMap;
+    unordered_map<ParametersKey, uint32_t> variableMap;
     
 };
 } // end namespace
