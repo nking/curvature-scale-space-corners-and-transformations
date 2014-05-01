@@ -152,7 +152,6 @@ public class GEVSimilarityTool {
                     float[] y = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);
                         
                     if (!isNearlyAllZeros(y) && !isNearlyAllOnes(y)) {
-System.out.format("%d)  K=%f  SIGMA=%f  MU=%f  [%d,%d,%d]\n", nc, k, sigma, mu, i, ii, iii);                       
                         curves[nc] = y;
                         ks[nc] = k;
                         sigmas[nc] = sigma;

@@ -114,12 +114,70 @@ namespace gev {
     
     void ParametersEncoder::writeFile(vector<uint32_t>* encodedCoverVariables) {
         
+        string fileName = "gev_similarity_min_ranges-output.txt";
+        
+        _writeFile(fileName, encodedCoverVariables);
     }
     
     void ParametersEncoder::_writeFile(string fileName, 
         vector<uint32_t>* encodedCoverVariables) {
         
+        string filePath = _getProjectTmpDirectoryPath();
+        filePath = filePath.append("/");
+        filePath = filePath.append(fileName);
         
+        // create a reverse map to lookup vars
+        unordered_map<uint32_t, gev::ParametersKey> revLookupMap;
+        
+        for (unordered_map<gev::ParametersKey, uint32_t>::const_iterator 
+            iter = variableMap.begin(); iter != variableMap.end(); ++iter) {
+             
+            revLookupMap.insert( make_pair(iter->second, iter->first));
+        }
+        
+        
+        FILE *fl = NULL;
+        try {
+            fl = fopen(filePath.c_str(), "w");
+            if (fl != NULL) {
+                
+                fprintf(fl, "#k        sigma        mu\n");
+                fflush(fl);
+                
+                for (unsigned long i = 0; i < encodedCoverVariables->size(); i++) {
+                
+                    uint32_t varNum = (*encodedCoverVariables)[i];
+                    
+                    ParametersKey key = revLookupMap.find(varNum)->second;
+                    
+                    float k;
+                    float sigma;
+                    float mu;
+                    
+                    key.decodeToParams(&k, &sigma, &mu);
+                    
+                    fprintf(fl, "%e  %e  %e\n", k, sigma, mu);
+
+                    if (i % 100 == 0) {
+                        fflush(fl);
+                    }
+                }
+                printf("wrote to outfile: %s", filePath.c_str());
+            } else {
+                printf("ERROR: unable to open outfile: %s", filePath.c_str());
+            }
+        } catch (std::exception e) {
+            cerr << "Error: " << e.what() << endl;
+            if (fl != NULL) {
+                fclose(fl);
+                fl = NULL;
+            }
+            throw;
+        }
+        if (fl != NULL) {
+            fclose(fl);
+            fl = NULL;
+        }
     }
     
     string ParametersEncoder::_getProjectTmpDirectoryPath() {
@@ -137,7 +195,7 @@ namespace gev {
         }
         
         string bDir = cwd.substr(0, found + srch.length());
-        printf("base directory = %s\n", bDir.c_str());
+        //printf("base directory = %s\n", bDir.c_str());
 
         // windows OS handles forward slash?  
         

@@ -320,7 +320,21 @@ void test5() {
     try {
         fl = fopen(filePath.c_str(), "r");
         if (fl != NULL) {
+            
             assert(!feof(fl));
+            uint32_t buffSz = 256;
+            char buf[buffSz];
+            
+            char *line = fgets(buf, buffSz, fl);
+            
+            int count = 0;
+            
+            while (line != NULL) {
+                assert(strlen(line) > 3);
+                line = fgets(buf, buffSz, fl);
+                count++;
+            }
+            assert(count == 4);
         }
     } catch (std::exception e) {
         cerr << "Error: " << e.what() << endl;
@@ -353,8 +367,7 @@ int main(int argc, char** argv) {
     
     test4();
     
-    //test5();
-    
+    test5();
     
     std::cout << " " << std::endl;
 

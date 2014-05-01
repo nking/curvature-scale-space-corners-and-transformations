@@ -112,26 +112,26 @@ void test2() {
     assert(*key == *key2);
     
     // spot check that the hash_value and object equals are working as expected:
-    unordered_map<ParametersKey, int> variantsMap;
+    unordered_map<ParametersKey, int> variablesMap;
     
     // don't put types on make_pair<gev::ParametersKey, int>  template or compiler won't find default defin
-    variantsMap.insert(
+    variablesMap.insert(
         make_pair<gev::ParametersKey, int>(*key, 1));
         
-    assert(variantsMap.size() == 1);
+    assert(variablesMap.size() == 1);
     
-    assert(variantsMap.find(*key) != variantsMap.end());
+    assert(variablesMap.find(*key) != variablesMap.end());
     
-    assert(variantsMap.find(*key2) != variantsMap.end());
+    assert(variablesMap.find(*key2) != variablesMap.end());
     
-    variantsMap.insert(
+    variablesMap.insert(
         make_pair<gev::ParametersKey, int>(*key, 2));
         
-    assert(variantsMap.size() == 1);
+    assert(variablesMap.size() == 1);
     
-    assert(variantsMap.find(*key) != variantsMap.end());    
+    assert(variablesMap.find(*key) != variablesMap.end());    
     
-    assert(variantsMap.find(*key2) != variantsMap.end());
+    assert(variablesMap.find(*key2) != variablesMap.end());
     
     delete key;
     delete key2;
@@ -148,7 +148,7 @@ void test3() {
     
     ParametersKey *key = new ParametersKey(0.0001f, 0.001f, 0.01f);
     
-    unordered_map<ParametersKey, int> variantsMap;
+    unordered_map<ParametersKey, int> variablesMap;
     vector<float> ks;
     vector<float> sigmas;
     vector<float> mus;
@@ -209,20 +209,20 @@ void test3() {
 
             ParametersKey *key = new ParametersKey(k, sigma, mu);
             
-            variantsMap.insert(
+            variablesMap.insert(
                 make_pair<gev::ParametersKey, int> (*key, 2));
             
             delete key;
         }
     }
-    assert(variantsMap.size() == nExpected);
+    assert(variablesMap.size() == nExpected);
     
     bool* allAreFound = (bool*)calloc(nExpected, sizeof(bool));
     
     const unsigned long notFound = -1;
     
-    for (unordered_map<ParametersKey, int >::iterator iter = variantsMap.begin();
-        iter != variantsMap.end(); ++iter ) {
+    for (unordered_map<ParametersKey, int >::iterator iter = variablesMap.begin();
+        iter != variablesMap.end(); ++iter ) {
 
         ParametersKey key = iter->first;
         
