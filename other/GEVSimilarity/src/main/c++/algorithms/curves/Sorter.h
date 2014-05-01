@@ -11,6 +11,8 @@
 #ifndef ALGORITHMS_CURVES_SORTER_H
 #define ALGORITHMS_CURVES_SORTER_H
 
+// for int32_t
+#include <stdint.h>
 #include <vector>
 #include "Defs.h"
 
@@ -30,15 +32,17 @@ public:
      @param a vector of values to be sorted in decreasing ordering
      @param b vector to receive same changes as performed on vector a.
      */
-    void sort(vector<int>* a, vector<int>* b);
-    
+    void sort(vector<uint32_t>& a, vector<uint32_t>& b);
+        
 private:
     DISALLOW_COPY_AND_ASSIGN(Sorter);
         
-    void _sort(vector<int>* a, vector<int>* b, int idxLo, int idxHi);
+    void _sort(vector<uint32_t>& a, vector<uint32_t>& b, long idxLo, 
+        long idxHi);
     
-    int _partition(vector<int>* a, vector<int>* b, int idxLo, int idxHi);
-    
+    long _partition(vector<uint32_t>& a, vector<uint32_t>& b, long idxLo, 
+        long idxHi);
+
 };
 } // end namespace
 #endif

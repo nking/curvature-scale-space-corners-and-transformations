@@ -16,49 +16,59 @@ namespace gev {
     }
     
     // use quicksort to sort in place at avg runtime cost of O(N lg2 (N))
-    void Sorter::sort(vector<int>* a, vector<int>* b) {
-        if (a->empty()) {
+    void Sorter::sort(vector<uint32_t>& a, vector<uint32_t>& b) {
+        if (a.empty()) {
             return;
         }
-        if (a->size() != b->size()) {
+        if (a.size() != b.size()) {
             return;
         }
-        _sort(a, b, 0, a->size() - 1);
+        _sort(a, b, 0, a.size() - 1);
     }
     
-    void Sorter::_sort(vector<int>* a, vector<int>* b, int idxLo, int idxHi) {
+    void Sorter::_sort(vector<uint32_t>& a, vector<uint32_t>& b, long idxLo, 
+        long idxHi) {
+        
         if (idxLo < idxHi) {
-            int idxMid = _partition(a, b, idxLo, idxHi);
+            long idxMid = _partition(a, b, idxLo, idxHi);
             _sort(a, b, idxLo, idxMid - 1);
             _sort(a, b, idxMid + 1, idxHi);
         }
     }
     
-    int Sorter::_partition(vector<int>* a, vector<int>* b, int idxLo, int idxHi) {
-        int x = (*a)[idxHi];
-        int store = idxLo - 1;
-        
-        for (int i = idxLo; i < idxHi; i++) {
-            if ((*a)[i] > x) {
-                store++;
-                int swap = (*a)[i];
-                (*a)[i] = (*a)[store];
-                (*a)[store] = swap;
+    long Sorter::_partition(vector<uint32_t>& a, vector<uint32_t>& b, 
+        long idxLo, long idxHi) {
                 
-                swap = (*b)[i];
-                (*b)[i] = (*b)[store];
-                (*b)[store] = swap;
+        uint32_t x = a[idxHi];
+        long store = idxLo - 1;
+ 
+        for (long i = idxLo; i < idxHi; i++) {
+            if (a[i] > x) {
+                store++;
+                if (i != store) {
+                    long swap = a[i];
+                    a[i] = a[store];
+                    a[store] = swap;
+
+                    swap = b[i];
+                    b[i] = b[store];
+                    b[store] = swap;
+                }
             }
         }
-        int swap = (*a)[store + 1];
-        (*a)[store + 1] = (*a)[idxHi];
-        (*a)[idxHi] = swap;
+
+        store++;
+        if (store != idxHi) {
+            long swap = a[store];
+            a[store] = a[idxHi];
+            a[idxHi] = swap;
+
+            swap = b[store];
+            b[store] = b[idxHi];
+            b[idxHi] = swap;
+        }
         
-        swap = (*b)[store + 1];
-        (*b)[store + 1] = (*b)[idxHi];
-        (*b)[idxHi] = swap;
-        
-        return store + 1;
+        return store;
     }
     
 } // end namespace

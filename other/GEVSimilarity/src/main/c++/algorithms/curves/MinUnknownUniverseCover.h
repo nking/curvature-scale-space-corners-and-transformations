@@ -29,6 +29,8 @@
 #ifndef ALGORITHMS_CURVES_MINUKNOWNUNIVERSECOVER_H
 #define ALGORITHMS_CURVES_MINUKNOWNUNIVERSECOVER_H
 
+// for uint32_t
+#include <stdint.h>
 #include <vector>
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
@@ -48,8 +50,8 @@ public:
     
     virtual ~MinUnknownUniverseCover();
     
-    void calculateCover(const vector< unordered_set<int> >* inputVariables,
-        vector<int>* outputCoverVariables);
+    void calculateCover(vector< unordered_set<uint32_t> >& inputVariables,
+        vector<uint32_t>& outputCoverVariables);
         
     /*
      read inputVariables to populate the count frequency map 
@@ -61,8 +63,8 @@ public:
      * and value is the number of times that variables is in inputVariables.
      */
     void _populateVariableFrequencyMap(
-        const vector< unordered_set<int> >* inputVariables,
-        unordered_map<int, int> *outVariableFrequencyMap);
+        vector< unordered_set<uint32_t> >& inputVariables,
+        unordered_map<uint32_t, uint32_t>& outVariableFrequencyMap);
     
     /*
      read the variable count frequency from inputVariableFrequencyMap to 
@@ -74,8 +76,8 @@ public:
      by decreasing count.  
      */
     void _initializeVariableCover(
-        const unordered_map<int, int> *inputVariableFrequencyMap, 
-        vector<int>* outputCoverVariables);
+        unordered_map<uint32_t, uint32_t>& inputVariableFrequencyMap, 
+        vector<uint32_t>& outputCoverVariables);
     
     /*     
      runtime is O(nRows * nRows * m) where m is the avg number of variables 
@@ -88,8 +90,8 @@ public:
      inputVariables.
      */
     void _findMinRepresentativeCover(
-        const vector< unordered_set<int> >* inputVariables, 
-        vector<int>* outputCoverVariables);
+        vector< unordered_set<uint32_t> >& inputVariables, 
+        vector<uint32_t>& outputCoverVariables);
     
 private:
     DISALLOW_COPY_AND_ASSIGN(MinUnknownUniverseCover);

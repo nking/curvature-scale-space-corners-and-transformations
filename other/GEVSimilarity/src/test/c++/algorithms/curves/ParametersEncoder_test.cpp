@@ -276,7 +276,7 @@ void test4() {
     
     string inFileName = "test-data.txt";
     
-    encoder->_readFile(inFileName, &encodedVariables);
+    encoder->_readFile(inFileName, encodedVariables);
     
     assert(encodedVariables.size() == 405);
     
@@ -298,7 +298,7 @@ void test5() {
     
     string inFileName = "test-data.txt";
     
-    encoder->_readFile(inFileName, &encodedVariables);
+    encoder->_readFile(inFileName, encodedVariables);
     
     
     string outFileName = "delete.txt";
@@ -313,7 +313,7 @@ void test5() {
     encodedCover.push_back(20);
     encodedCover.push_back(30);
     
-    encoder->_writeFile(outFileName, &encodedCover);
+    encoder->_writeFile(outFileName, encodedCover);
     
     
     FILE *fl = NULL;
@@ -322,7 +322,7 @@ void test5() {
         if (fl != NULL) {
             
             assert(!feof(fl));
-            uint32_t buffSz = 256;
+            long buffSz = 256;
             char buf[buffSz];
             
             char *line = fgets(buf, buffSz, fl);

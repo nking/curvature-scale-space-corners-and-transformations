@@ -27,9 +27,9 @@ using std::vector;
 using std::tr1::unordered_map;
 using gev::MinUnknownUniverseCover;
     
-void addSet(vector< unordered_set<int> >* a) {
-    unordered_set<int> b;
-    a->push_back(b);
+void addSet(vector< unordered_set<uint32_t> >& a) {
+    unordered_set<uint32_t> b;
+    a.push_back(b);
 }
 
 void test0() {
@@ -38,7 +38,7 @@ void test0() {
          
     MinUnknownUniverseCover *coverCalculator = new MinUnknownUniverseCover();
     
-    vector< unordered_set<int> > encodedVariants;
+    vector< unordered_set<uint32_t> > encodedVariants;
     
     /*
      0 1  2  3
@@ -47,28 +47,28 @@ void test0() {
                  5
                      7  8
      */
-    addSet(&encodedVariants);
+    addSet(encodedVariants);
     encodedVariants[0].insert(0);
     encodedVariants[0].insert(1);
     encodedVariants[0].insert(2);
     encodedVariants[0].insert(3);
-    addSet(&encodedVariants);
+    addSet(encodedVariants);
     encodedVariants[1].insert(1);
-    addSet(&encodedVariants);
+    addSet(encodedVariants);
     encodedVariants[2].insert(4);
     encodedVariants[2].insert(5);
     encodedVariants[2].insert(6);
-    addSet(&encodedVariants);
+    addSet(encodedVariants);
     encodedVariants[3].insert(5);
-    addSet(&encodedVariants);
+    addSet(encodedVariants);
     encodedVariants[4].insert(7);
     encodedVariants[4].insert(8);
     
     
-    unordered_map<int, int> frequencyMap;
+    unordered_map<uint32_t, uint32_t> frequencyMap;
     
-    coverCalculator->_populateVariableFrequencyMap(&encodedVariants,
-        &frequencyMap);
+    coverCalculator->_populateVariableFrequencyMap(encodedVariants,
+        frequencyMap);
     
     assert(frequencyMap.size() == 9);
     assert(frequencyMap[0] == 1);
@@ -83,10 +83,10 @@ void test0() {
     
     
     
-    vector<int> outputCoverVariables;
+    vector<uint32_t> outputCoverVariables;
     
-    coverCalculator->_initializeVariableCover(&frequencyMap,
-        &outputCoverVariables);
+    coverCalculator->_initializeVariableCover(frequencyMap,
+        outputCoverVariables);
     
     assert(outputCoverVariables.size() == 9);
     assert(outputCoverVariables[0] == 1 || outputCoverVariables[0] == 5);
@@ -104,8 +104,8 @@ void test0() {
 
     
     
-    coverCalculator->_findMinRepresentativeCover(&encodedVariants,
-        &outputCoverVariables);
+    coverCalculator->_findMinRepresentativeCover(encodedVariants,
+        outputCoverVariables);
         
     // 1, 5, 7 || 8
     assert(outputCoverVariables.size() == 3);

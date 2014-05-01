@@ -24,6 +24,11 @@ void test0() {
     
     GEVSimilarityParameters *params = new GEVSimilarityParameters();
     
+    string inFileName = "test-data.txt";
+    string outFileName = "delete.txt";
+    
+    params->calculateMinSet(inFileName, outFileName);
+    
     delete params;
 }
 

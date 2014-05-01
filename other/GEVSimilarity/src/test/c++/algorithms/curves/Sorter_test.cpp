@@ -29,8 +29,8 @@ void test0() {
     
     Sorter *sorter = new Sorter();
     
-    vector<int> a;
-    vector<int> b;
+    vector<uint32_t> a;
+    vector<uint32_t> b;
     
     a.push_back(3);
     a.push_back(10);
@@ -41,9 +41,9 @@ void test0() {
     b.push_back(1);
     b.push_back(0);
     b.push_back(3);
-    
-    sorter->sort(&a, &b);
         
+    sorter->sort(a, b);
+    
     assert(a[0] == 20);
     assert(a[1] == 10);
     assert(a[2] == 3);
@@ -63,32 +63,32 @@ void test1() {
     
     Sorter *sorter = new Sorter();
     
-    vector<int> a;
-    vector<int> aIndexes;
-    vector<int> aOriginal;
+    vector<uint32_t> a;
+    vector<uint32_t> aIndexes;
+    vector<uint32_t> aOriginal;
     
     // random tests    
     time_t seed = time(NULL);
     srandom(seed);
-    
+        
     unsigned long nIter = 200000;
     for (unsigned long i = 0; i < nIter; i++) {
         long r = random();
-        int number = (int)r;
+        uint32_t number = (uint32_t)r;
         // we're only using positive numbers the using code, but testing for +-
         a.push_back(number);
         aOriginal.push_back(number);
-        aIndexes.push_back(i);
+        aIndexes.push_back((uint32_t)i);
     }
-    
-    sorter->sort(&a, &aIndexes);
+
+    sorter->sort(a, aIndexes);
     
     assert(a.size() == nIter);
     assert(aIndexes.size() == nIter);
     
     for (unsigned long i = 1; i < nIter; i++) {
         assert(a[i] <= a[i-1]);
-        int index = aIndexes[i];
+        uint32_t index = aIndexes[i];
         assert(aOriginal[index] == a[i]);
     }
     

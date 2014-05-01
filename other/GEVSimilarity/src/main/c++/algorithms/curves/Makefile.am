@@ -2,7 +2,7 @@ AM_CXXFLAGS = -I$(top_srcdir)/src @AM_CXXFLAGS@
 
 lib_LIBRARIES = libGEVSimilarityParameters.a
 
-#libGEVSimilarityParameters_adir = ../../../../../lib
+libGEVSimilarityParameters_adir = ../../../../../lib
 
 libGEVSimilarityParameters_a_HEADERS = \
     GEVSimilarityParameters.h \

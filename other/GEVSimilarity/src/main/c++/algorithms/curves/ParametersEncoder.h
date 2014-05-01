@@ -84,7 +84,7 @@ public:
      * Note that for this file, each parameter set is already unique,
      * but the method handles the case in which they weren't too.
      */
-    void readFile(vector< unordered_set<uint32_t> >* outputEncodedVariables);
+    void readFile(vector< unordered_set<uint32_t> >& outputEncodedVariables);
     
     /*
      read log file described in readFile(vector<vector<int> >* encodedVariants)
@@ -92,21 +92,21 @@ public:
      @param encodedVariants 
      */
     void _readFile(string fileName, 
-        vector< unordered_set<uint32_t> >* outputEncodedVariables);
+        vector< unordered_set<uint32_t> >& outputEncodedVariables);
     
-    void writeFile(vector<uint32_t>* encodedCoverVariables);
+    void writeFile(vector<uint32_t>& encodedCoverVariables);
     
-    void _writeFile(string fileName, vector<uint32_t>* encodedCoverVariables);
+    void _writeFile(string fileName, vector<uint32_t>& encodedCoverVariables);
 
     string _getCWD();
     
     string _getProjectTmpDirectoryPath();
     
-    uint32_t _getNVarsOfAParameter(const char *line, const uint32_t digit0, 
-        const uint32_t digitn);
+    long _getNVarsOfAParameter(const char *line, const long digit0, 
+        const long digitn);
     
-    void _parseLine(const char *line, const uint32_t digit0, const uint32_t digitn, 
-        float *k, float *sigma, float *mu, const uint32_t nVars);
+    void _parseLine(const char *line, const long digit0, const long digitn, 
+        float *k, float *sigma, float *mu, const long nVars);
     
     /*
      * parse the portion of the line between digit0 and digitn to fill array a
@@ -118,8 +118,8 @@ public:
      * @param a float array that will be filled with the parsed numbers
      * @param nVars the number of variables to be parsed
      */
-    uint32_t _parseLineForNextNVars(const char *line, const uint32_t digit0, 
-        const uint32_t digitn, float *a, const uint32_t nVars);
+    long _parseLineForNextNVars(const char *line, const long digit0, 
+        const long digitn, float *a, const long nVars);
     
     /*
      * parse the float found in line from characters digitBegin to
@@ -129,8 +129,8 @@ public:
      * @param digitEnd the index of the last character in line to be included in
      * the float.
      */
-    float _convertToFloat(const char *line, const uint32_t digitBegin, 
-        const uint32_t digitEnd);
+    float _convertToFloat(const char *line, const long digitBegin, 
+        const long digitEnd);
     
 private:
     DISALLOW_COPY_AND_ASSIGN(ParametersEncoder);
