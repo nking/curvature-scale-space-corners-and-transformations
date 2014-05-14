@@ -21,6 +21,7 @@
 #include <tr1/unordered_set>
 #include <tr1/unordered_map>
 #include "ParametersKey.h"
+#include "Sorter.h"
 
 using std::string;
 using std::vector;

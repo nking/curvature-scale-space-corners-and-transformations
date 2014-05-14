@@ -50,7 +50,5 @@ namespace gev {
         
         delete encoder;
     }
-    
-    
-    
+
 } // end namespace

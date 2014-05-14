@@ -30,7 +30,7 @@ namespace gev {
         string filePath = _getProjectTmpDirectoryPath();
         filePath = filePath.append("/");
         filePath = filePath.append(fileName);
-        long buffSz = 100*2048;
+        long buffSz = 10000*2048;
         char buf[buffSz];
         
         long count = 0;
@@ -46,14 +46,14 @@ namespace gev {
                     if (line == NULL) {
                         break;
                     }
-                                        
-                    int digit0 = 0;
-                    int digitn = strlen(line) - 1;
+                                                            
+                    long digit0 = 0;
+                    long digitn = strlen(line) - 1;
                     while ((long)line[digit0] < 33) {digit0++;}
                     while ((long)line[digitn] < 33) {digitn--;}
-     
+                                            
                     long nVars = _getNVarsOfAParameter(line, digit0, digitn);
-                     
+                    
                     float *k = (float *)malloc(nVars * sizeof(float));
                     float *sigma = (float *)malloc(nVars * sizeof(float));
                     float *mu = (float *)malloc(nVars * sizeof(float));
@@ -61,7 +61,7 @@ namespace gev {
                     _parseLine(line, digit0, digitn, k, sigma, mu, nVars);
                     
                     unordered_set<uint32_t> similar;
-                    
+                                        
                     for (long i = 0; i < nVars; i++) {
                         
                         ParametersKey *key = new ParametersKey(k[i], sigma[i], 
@@ -81,14 +81,13 @@ namespace gev {
                         } else {
                             
                             varNum = (*iter).second;
-   
                         }
                         
                         similar.insert(varNum);
                         
                         delete key;
                     }
-
+                    
                     outputEncodedVariables.push_back(similar);
                     
                     free(k);
@@ -135,29 +134,44 @@ namespace gev {
             revLookupMap.insert( make_pair(iter->second, iter->first));
         }
         
+        long len = encodedCoverVariables.size();
+        
+        float *k = (float*)malloc(len * sizeof(float));
+        float *sigma = (float*)malloc(len * sizeof(float));
+        float *mu = (float*)malloc(len * sizeof(float));
+        
+        for (unsigned long i = 0; i < len; i++) {
+                
+            uint32_t varNum = encodedCoverVariables[i];
+
+            ParametersKey key = revLookupMap.find(varNum)->second;
+
+            float kv;
+            float sigmav;
+            float muv;
+
+            key.decodeToParams(&kv, &sigmav, &muv);
+
+            k[i] = kv;
+            sigma[i] = sigmav;
+            mu[i] = muv;
+        }
+        
+        //TODO:  sort by k, sigma, then mu
+        Sorter *sorter = new Sorter();
+        sorter->sort(k, sigma, mu, len);
+        delete sorter;
         
         FILE *fl = NULL;
         try {
             fl = fopen(filePath.c_str(), "w");
             if (fl != NULL) {
                 
-                fprintf(fl, "#k        sigma        mu\n");
+                fprintf(fl, "#k             sigma          mu\n");
                 fflush(fl);
                 
-                for (unsigned long i = 0; i < encodedCoverVariables.size(); i++) {
-                
-                    uint32_t varNum = encodedCoverVariables[i];
-                    
-                    ParametersKey key = revLookupMap.find(varNum)->second;
-                    
-                    float k;
-                    float sigma;
-                    float mu;
-                    
-                    key.decodeToParams(&k, &sigma, &mu);
-                    
-                    fprintf(fl, "%e  %e  %e\n", k, sigma, mu);
-
+                for (unsigned long i = 0; i < len; i++) {
+                    fprintf(fl, "%e  %e  %e\n", k[i], sigma[i], mu[i]);
                     if (i % 100 == 0) {
                         fflush(fl);
                     }
@@ -172,12 +186,18 @@ namespace gev {
                 fclose(fl);
                 fl = NULL;
             }
+            free(k);
+            free(sigma);
+            free(mu);
             throw;
         }
         if (fl != NULL) {
             fclose(fl);
             fl = NULL;
         }
+        free(k);
+        free(sigma);
+        free(mu);
     }
     
     string ParametersEncoder::_getProjectTmpDirectoryPath() {
@@ -234,7 +254,7 @@ namespace gev {
         }
         
         if (!foundK) {
-            cerr << "Error reading line: %s" << string(line).c_str() << endl;
+            cerr << "Error reading line: " << string(line).c_str() << endl;
             throw EINVAL;
         }
         

@@ -23,6 +23,8 @@ namespace gev {
         
         _populateVariableFrequencyMap(inputVariables, frequencyMap);
         
+        printf("%lu unique parameter sets\n", frequencyMap.size());
+        
         _initializeVariableCover(frequencyMap, outputCoverVariables);
         
         _findMinRepresentativeCover(inputVariables, outputCoverVariables);
@@ -88,7 +90,7 @@ namespace gev {
         }
         
         
-        unordered_set<uint32_t> chose;
+        unordered_set<uint32_t> chose; 
         
         bool *doRemove = (bool*)calloc(len, sizeof(bool));
         
@@ -125,18 +127,16 @@ namespace gev {
             }
         }
         
-        vector<uint32_t> keep;
+        outputCoverVariables.erase( outputCoverVariables.begin(),
+            outputCoverVariables.end());
         
-        for (unsigned long i = 0; i < outputCoverVariables.size(); i++) {
-            if (!doRemove[i]) {
-                int var = outputCoverVariables[i];
-                keep.push_back(var);
-            }
+        for (unordered_set<uint32_t>::const_iterator iter = chose.begin();
+            iter != chose.end(); ++iter) {
+                
+            int v = *iter;
+            
+            outputCoverVariables.push_back(v);
         }
-        
-        free(doRemove);
-        
-        outputCoverVariables.swap(keep);
         
         // TODO: when there are more than one variable as the possible choice to 
         //   represent a row, choose the one which is closer to answers already
