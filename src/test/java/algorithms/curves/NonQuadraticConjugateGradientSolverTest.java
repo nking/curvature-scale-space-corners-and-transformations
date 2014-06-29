@@ -22,14 +22,6 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         float k = 1.80f;
         float sigma = 0.85f;
         float mu = 0.441f;
-        /*k = 0.294f;
-        sigma = 0.141f;
-        mu = 0.254f;*/
-        /*
-        k = 0.294f;
-        sigma = 2.141f;
-        mu = 0.254f;
-        */
 
         float[] xp = new float[30];
         float[] ye = new float[30];
@@ -72,12 +64,12 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
         log.info("testFitRandomCurves");
 
+        boolean createPlots = true;
+        
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0.f, 1.0f, 0f, 1.3f);
 
         int n = 50;
         int nX = 40;
-
-        // do for number of x points being 40, 30, 20, 10
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -116,35 +108,29 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
                 float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(xp, k, s, m);
 
-                //if (nX == 40 && i == 45) {//40,17 40,20  40,24  40,25   40,44 40,45   20,3
                 NonQuadraticConjugateGradientSolver solver =
                     new NonQuadraticConjugateGradientSolver(xp, yGEV, xe, ye);
 
-                    solver.setDebug(true);
-
-                //GEVYFit fit = solver.fitCurveParametersSeparately(kRange[0], kRange[1], sRange[0], sRange[1], mRange[0], mRange[1]);
-
                 GEVYFit fit = solver.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
                 assertNotNull(fit);
-                //}
 
+                if (createPlots) {
+                    
+                    String label = String.format(
+                        "k=%4.4f <%2.2f>  s=%4.4f <%2.2f>  m=%4.4f <%2.3f>  (nx=%d,i=%d)  chi=%4.6f",
+                        fit.getK(), k,
+                        fit.getSigma(), s,
+                        fit.getMu(), m,
+                        nX, i, fit.getChiSqSum());
 
-                String label = String.format(
-                    "k=%4.4f <%2.2f>  s=%4.4f <%2.2f>  m=%4.4f <%2.3f>  (nx=%d,i=%d)  chi=%4.6f",
-                    fit.getK(), k,
-                    fit.getSigma(), s,
-                    fit.getMu(), m,
-                    nX, i, fit.getChiSqSum());
+                    plotter.addPlot(xp, yGEV, xe, ye, fit.getX(), fit.getYFit(), label);
 
-                plotter.addPlot(xp, yGEV, xe, ye, fit.getX(), fit.getYFit(), label);
+                    path = plotter.writeFile2();
+                }
 
-                path = plotter.writeFile2();
+                System.out.println(fit.getChiSqStatistic() + "(" + nX + ", " + i + ")");
 
-
-                //assertTrue(fit.getChiSqSum() < 0.05f);
-                //assertTrue(Math.abs(fit.getK() - k)     < k*0.4);
-                //assertTrue(Math.abs(fit.getSigma() - s) < s*0.25);
-                //assertTrue(Math.abs(fit.getMu() - m)    < 0.3);
+                assertTrue(fit.getChiSqStatistic() < 1e-4);
 
                 if (false) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
                     if (nX == 40 && i == 36) {
@@ -175,7 +161,10 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
             nX >>= 1;
         }
-        log.fine(" plot is at path=" + path);
+        
+        if (createPlots) {
+            log.fine(" plot is at path=" + path);
+        }
     }
 
     public void testAFit() throws Exception {
@@ -206,27 +195,37 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
         
         for (int i = 0; i < 2; i++) {
             
-            NonQuadraticConjugateGradientSolver solver = new NonQuadraticConjugateGradientSolver(
-                x, y, xe, ye);
-
-            // GEVChiSquareMinimization solver = new GEVChiSquareMinimization(x,
-            // y, xe, ye);
-
-            solver.setDebug(true);
-
             GEVYFit fit;
+            
             if (i == 0) {
-                fit = solver.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
-            } else {
+                
+                NonQuadraticConjugateGradientSolver solver = new NonQuadraticConjugateGradientSolver(
+                    x, y, xe, ye);
+                
                 fit = solver.fitCurveKGreaterThanZeroAllAtOnce(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
-            }
+                
+                if (fit != null) {
 
-            if (fit != null) {
+                    String label = String.format("chisq=%.8f k=%.4e s=%.4e m=%.4e",
+                        fit.getChiSqSum(), fit.getK(), fit.getSigma(), fit.getMu());
 
-                String label = String.format("chisq=%.8f k=%.4e s=%.4e m=%.4e",
-                    fit.getChiSqSum(), fit.getK(), fit.getSigma(), fit.getMu());
+                    plotFit2(fit, label, solver);
+                }
+                
+            } else {
 
-                // plotFit(fit, label, solver);
+                GEVChiSquareMinimization solver = new GEVChiSquareMinimization(x,
+                    y, xe, ye);
+            
+                fit = solver.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+                
+                if (fit != null) {
+
+                    String label = String.format("chisq=%.8f k=%.4e s=%.4e m=%.4e",
+                        fit.getChiSqSum(), fit.getK(), fit.getSigma(), fit.getMu());
+
+                    plotFit(fit, label, solver);
+                }
             }
         }
     }
@@ -243,7 +242,27 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
 
         try {
             plotter.addPlot(solver.x, solver.y, solver.xe, solver.ye, yfit.getX(), yfit.getYFit(), label);
-            plotter.writeFile3();
+            String filePath = plotter.writeFile3();
+            System.out.println("filePath=" + filePath);
+        } catch (Exception e) {
+            Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());
+        }
+    }
+    
+    protected void plotFit2(GEVYFit yfit, String label, NonQuadraticConjugateGradientSolver solver) throws IOException {
+
+        float xIntervalHalf = (yfit.getX()[1] - yfit.getX()[0]) / 2.0f;
+        float xmin = yfit.getX()[0] - xIntervalHalf;
+        float xmax = yfit.getX()[ yfit.getX().length - 1];
+        float ymin = 0.0f;
+        float ymax = MiscMath.findMax(solver.y);
+
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+
+        try {
+            plotter.addPlot(solver.x, solver.y, solver.xe, solver.ye, yfit.getX(), yfit.getYFit(), label);
+            String filePath = plotter.writeFile3();
+            System.out.println("filePath=" + filePath);
         } catch (Exception e) {
             Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());
         }

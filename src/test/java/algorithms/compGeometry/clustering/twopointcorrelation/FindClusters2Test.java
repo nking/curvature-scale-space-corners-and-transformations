@@ -169,7 +169,7 @@ public class FindClusters2Test extends BaseTwoPointTest {
 
                 TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
 
-                twoPtC.setDebug(true);
+                //twoPtC.setDebug(true);
                 twoPtC.useFindMethodForDataWithBackgroundPoints();
                 
                 twoPtC.logPerformanceMetrics();

@@ -63,7 +63,7 @@ public class MainTest extends TestCase {
         assertTrue(diff >= 0);
         
         
-        args = new String[]{"--file", filePath, "--twosigma", "--debug"};
+        args = new String[]{"--file", filePath, "--twosigma"};
         file = new File(expectedOutputPath);
         lastModified = file.lastModified();
         file.delete();
@@ -74,7 +74,7 @@ public class MainTest extends TestCase {
         assertTrue(diff >= 0);
         
         
-        args = new String[]{"--file", filePath, "--threesigma", "--debug"};
+        args = new String[]{"--file", filePath, "--threesigma"};
         file = new File(expectedOutputPath);
         lastModified = file.lastModified();
         file.delete();
@@ -84,7 +84,7 @@ public class MainTest extends TestCase {
         System.out.println("diff=" + diff + " lm0=" + lastModified + " lm1=" + file.lastModified() + new Date(file.lastModified()));
         assertTrue(diff >= 0);
         
-        args = new String[]{"--file", filePath, "--background", "0.249", "--backgrounderror", "0.02", "--debug"};
+        args = new String[]{"--file", filePath, "--background", "0.249", "--backgrounderror", "0.02"};
         file = new File(expectedOutputPath);
         lastModified = file.lastModified();
         file.delete();

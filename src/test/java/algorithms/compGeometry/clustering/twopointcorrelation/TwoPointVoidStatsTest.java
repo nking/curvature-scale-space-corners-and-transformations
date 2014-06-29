@@ -83,7 +83,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
-        stats.setDebug(debug);
+        //stats.setDebug(debug);
         stats.setGEVRangeParameters(0.0001f, 1.0f, 0.00001f, 0.002f);
         //stats.setStandardDeviationFactor(2.5f);        
         stats.calc();
@@ -172,7 +172,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
-        stats.setDebug(debug);
+        //stats.setDebug(debug);
         //stats.setStandardDeviationFactor(2.5f);
         stats.calc();
 
@@ -229,7 +229,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
-        stats.setDebug(debug);
+        //stats.setDebug(debug);
         stats.setUseCompleteSampling();
         //stats.setStandardDeviationFactor(2.5f);
 
@@ -267,7 +267,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
-        stats.setDebug(debug);
+        //stats.setDebug(debug);
         //stats.setStandardDeviationFactor(2.5f);
         
         stats.calc();
@@ -303,7 +303,7 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
             generator.xErrors, generator.yErrors, generator.x.length);
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
-        stats.setDebug(debug);
+        //stats.setDebug(debug);
         //stats.setStandardDeviationFactor(2.5f);
         
         stats.calc();
@@ -315,14 +315,14 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
         
         String indexerFilePath = stats.persistIndexer();
         stats = new TwoPointVoidStats(indexerFilePath);
-        stats.setDebug(debug);
+        //stats.setDebug(debug);
         stats.calc();
         assertTrue(stats.voidFinder.getTwoPointDensities().length == 10);
         assertNotNull(stats.getBestFit());
         
         String backgroundPointsFilePath = stats.persistTwoPointBackground();
         stats = new TwoPointVoidStats(indexerFilePath);
-        stats.setDebug(debug);
+        //stats.setDebug(debug);
         stats.calc(backgroundPointsFilePath);
         assertTrue(stats.voidFinder.getTwoPointDensities().length == 10);
         assertNotNull(stats.getBestFit());

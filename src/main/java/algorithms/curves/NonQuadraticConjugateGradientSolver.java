@@ -6,6 +6,13 @@ import java.util.logging.Logger;
 import algorithms.curves.GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM;
 import algorithms.misc.MiscMath;
 import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * <pre>
@@ -196,6 +203,8 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
     protected static float eps = 1e-8f;
     
     protected static float convergedEps = 0.00001f;
+    
+    protected boolean calcStepParamsSeparately = true;
         
     public NonQuadraticConjugateGradientSolver(float[] xPoints, float[] yPoints,
         float[] xErrPoints, float[] yErrPoints) {
@@ -222,59 +231,103 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
     }
     
     /**
-     * get an array of kMin, kMax, sigmaMin, sigmaMax, muMin, muMax default ranges that
-     * are tuned for distributions in which the peak of the GEV is usually < 0.4 in a normalized
-     * range of x values.  If the fits are poor and the peak of the data is located near
-     * 0.5 or later, you'll probably need to widen the shape parameter sigma range and use
-     * the method fitCurveParametersSeparately directly.
-     * 
-     * @return
+     * fit the x and y data using default ranges for the parameters k, sigma, and mu.
+     * The generated curves use parameter step sizes determined from using
+     * the k, sigma, and mu derivatives separately and keeping the best result.
      */
-    public float[] getMinMaxRanges() {
+    public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) 
+        throws FailedToConvergeException, IOException {
         
-        int yMaxIndex = MiscMath.findYMaxIndex(y);
-        float xAtYMax = x[yMaxIndex];
+        calcStepParamsSeparately = true;
         
-        float kMin = 0.0001f;
-        float kMax = 2.0f;
-        float sigmaMin = 0.025f;
-        float sigmaMax = 3.0f;
-        float muMin = xAtYMax/2.5f;
-        float muMax = xAtYMax * 3.0f;
-        if (muMax > 1.0) {
-            muMax = xAtYMax * 1.5f;
-        }
-        
-        if (yScale > 100) {
-            //kMax = 1.0f;
-            /*if (yScale > 200) {
-                kMin = 0.2f;
-            }*/
-        }
-        
-        return new float[] {kMin, kMax, sigmaMin, sigmaMax, muMin, muMax};
+        return fitCurveKGreaterThanZero();
     }
     
     /**
-     * fit the x and y data using built in default ranges for the parameters k, sigma, and mu.
-     * 
+     * fit the x and y data using default ranges for the parameters k, sigma, and mu.
+     * The generated curves use parameter step sizes determined from using all
+     * of the k, sigma, and mu derivatives at once.
      */
-    public GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) throws FailedToConvergeException, IOException {
+    public GEVYFit fitCurveKGreaterThanZeroAllAtOnce(WEIGHTS_DURING_CHISQSUM weightMethod) 
+        throws FailedToConvergeException, IOException {
         
-        float[] minMaxes = getMinMaxRanges();
+        calcStepParamsSeparately = false;
         
-        return fitCurveParametersSeparately(minMaxes[0], minMaxes[1], minMaxes[2], minMaxes[3], minMaxes[4], minMaxes[5]);
+        return fitCurveKGreaterThanZero();
     }
     
-    /**
-     * fit the x and y data using built in default ranges for the parameters k, sigma, and mu.
-     * 
-     */
-    public GEVYFit fitCurveKGreaterThanZeroAllAtOnce(WEIGHTS_DURING_CHISQSUM weightMethod) throws FailedToConvergeException, IOException {
+    protected GEVYFit fitCurveKGreaterThanZero() throws FailedToConvergeException, IOException {
         
-        float[] minMaxes = getMinMaxRanges();
+        String filePath = ResourceFinder.findFileInTestResources("sim_curve_params_01.txt");
         
-        return fitCurveParametersAllAtOnce(minMaxes[0], minMaxes[1], minMaxes[2], minMaxes[3], minMaxes[4], minMaxes[5]);
+        File f = new File(filePath);
+        
+        BufferedReader reader = null;
+        FileReader fr = null;
+        
+        List<Float> kParams = new ArrayList<Float>();
+        List<Float> sParams = new ArrayList<Float>();
+        List<Float> mParams = new ArrayList<Float>();
+        
+        try {
+            fr = new FileReader(f);
+            reader = new BufferedReader(fr);
+            String line = reader.readLine();
+            line = reader.readLine();
+            while (line != null) {
+                
+                String[] params = line.split("\\s+");
+                
+                kParams.add(Float.valueOf(params[0]));
+                sParams.add(Float.valueOf(params[1]));
+                mParams.add(Float.valueOf(params[2]));
+                                
+                line = reader.readLine();
+            }
+            
+        } finally {
+            if (fr != null) {
+                fr.close();
+            }
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        
+        int n = kParams.size();
+        int bestFitIndex = -1;
+        GEVYFit bestFit = null;
+        
+        for (int i = 0; i < n - 1; i++) {
+            
+            float kMin = kParams.get(i).floatValue();
+            float kMax = kParams.get(i + 1).floatValue();
+            float sMin = sParams.get(i).floatValue();
+            float sMax = sParams.get(i + 1).floatValue();
+            float mMin = mParams.get(i).floatValue();
+            float mMax = mParams.get(i + 1).floatValue();
+            
+            if (sMax < sMin) {
+                sMax = sMin;
+            }
+            if (mMax < mMin) {
+                mMax = mMin;
+            }
+            
+            GEVYFit yFit = fitCurveParameters(kMin, kMax, sMin, sMax, mMin, mMax);
+            
+            if (yFit != null) {
+                if (bestFit == null) {
+                    bestFit = yFit;
+                    bestFitIndex = i;
+                } else if (yFit.chiSqStatistic < bestFit.chiSqStatistic) {
+                    bestFit = yFit;
+                    bestFitIndex = i;
+                }
+            }
+        }
+        
+        return bestFit;
     }
 
     /**
@@ -298,7 +351,60 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
      * @return
      * @throws FailedToConvergeException
      */
-    public GEVYFit fitCurveParametersSeparately(float kMin, float kMax, float sigmaMin, float sigmaMax,
+    public GEVYFit fitCurveParametersSeparately(float kMin, float kMax, 
+        float sigmaMin, float sigmaMax, float muMin, float muMax) throws 
+        FailedToConvergeException {
+        
+        calcStepParamsSeparately = true;
+       
+        return fitCurveParameters(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
+    }
+    
+    /**
+     * fit the x, y data with a GEV whose parameters are within the given ranges for k,
+     * sigma, and mu.  The method attempts to fit for changes in k, sigma, and mu all
+     * at once for each iteration.
+     * 
+     * @param kMin  minimum range of value of k, the shape parameter
+     * @param kMax  maximum range of value of k, the shape parameter
+     * @param sigmaMin  minimum range of value of sigma, the scale parameter
+     * @param sigmaMax  maximum range of value of sigma, the scale parameter
+     * @param muMin  minimum range of value of mu, the location parameter
+     * @param muMax  maximum range of value of mu, the location parameter
+     * @return
+     * @throws FailedToConvergeException
+     */
+    public GEVYFit fitCurveParametersAllAtOnce(float kMin, float kMax, 
+        float sigmaMin, float sigmaMax, float muMin, float muMax) throws 
+        FailedToConvergeException {
+
+        calcStepParamsSeparately = false;
+       
+        return fitCurveParameters(kMin, kMax, sigmaMin, sigmaMax, muMin, muMax);
+    }
+
+    /**
+     * find the best fitting GEV by solving for each parameter in set {k, sigma, mu} separately
+     * rather then minimizing the function for suggested changes by all derivatives at once.
+     * 
+     * So far, this is resulting in the best fits, but is sensitive to the starting point
+     * and has not been tested over a wide range of data distributions.
+     * 
+     * The range of values given to this method by TwoPointVoidStats are those found to be most useful
+     * for representing the range of normalized GEV curves that match the datasets given to it.
+     * k < 0 are not fit because the distributions are not physical for the expected datasets,
+     * though that can be changed if needed.
+     * 
+     * @param kMin  minimum range of value of k, the shape parameter
+     * @param kMax  maximum range of value of k, the shape parameter
+     * @param sigmaMin  minimum range of value of sigma, the scale parameter
+     * @param sigmaMax  maximum range of value of sigma, the scale parameter
+     * @param muMin  minimum range of value of mu, the location parameter
+     * @param muMax  maximum range of value of mu, the location parameter
+     * @return
+     * @throws FailedToConvergeException
+     */
+    public GEVYFit fitCurveParameters(float kMin, float kMax, float sigmaMin, float sigmaMax,
         float muMin, float muMax) throws FailedToConvergeException {
         
         if (kMin < 0) {
@@ -323,26 +429,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
             throw new IllegalArgumentException("sigmaMin must be less than sigmaMax");
         }
         
-        // for most solutions, choosing middle of range is a good starting point,
-        //   but for those that do not improved after several iterations,
-        //   they should be restarted with the min variables.
-        
-        boolean hasTriedMinStarts = false;
-        
-        /*
-        float kVar = kMin;
-        float sigmaVar = sigmaMin;
-        float muVar = muMin;
-        */
-        
-        boolean hasTriedMaxStarts = false;
-        boolean hasTriedAltSteps = false;
-        /*
-        float kVar = kMax;
-        float sigmaVar = sigmaMax;
-        float muVar = muMax;
-        */
-        
         float kVar = (kMax + kMin)/2.f;
         float sigmaVar = (sigmaMax + sigmaMin)/2.f;
         float muVar = (muMax + muMin)/2.f;
@@ -352,6 +438,8 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         float[] varsMin = new float[]{kMin, sigmaMin, muMin};
         float[] varsMax = new float[]{kMax, sigmaMax, muMax};
      
+        float[] prevVars = new float[]{kVar, sigmaVar, muVar};
+        
         int varStopIdx = vars.length - 1;
         
         // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
@@ -373,15 +461,45 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                 
         while ((nIter < maxIterations) /*&& (chiSqSumForLineSearch[0] > convergedEps)*/) {
             
-            /*if ((nIter > 1) && residualsAreSame(rPrev, r)) {
+            if (nSameSequentially > 0) {                            
                 break;
-            }*/
-            
-            float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
-            
-            float chiSqSum = DerivGEV.chiSqSum(yGEV, y, ye);
+            }
+         
+            if (nIter > 0) {
+                
+                if (calcStepParamsSeparately) {
+                    
+                    for (int k = 0; k <= varStopIdx; k++) {
+                        // populate r with the best fitting derivatives for vars[]
+                        DerivGEV.derivsThatMinimizeChiSqSum(vars, varsMin, varsMax, chiSqSumForLineSearch,
+                            x, y, ye, r, k, k);
+
+                        if (r[k] != 0) {
+                            vars[k] += r[k];
+                            chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                        }
+
+                        log.finest("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
+                    }
+                    
+                } else {
+                
+                    // populate r with the best fitting derivatives for vars[]
+                    DerivGEV.derivsThatMinimizeChiSqSum(vars, varsMin, varsMax, chiSqSumForLineSearch,
+                        x, y, ye, r, 0, varStopIdx); 
+
+                    for (int k = 0; k <= varStopIdx; k++) {
+                        if (r[k] != 0) {
+                            vars[k] += r[k];
+                            chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
+                        }
+                    }
+                }
+            }
             
             if (debug) {
+                float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
+                float chiSqSum = DerivGEV.chiSqSum(yGEV, y, ye);
                 try {
                     String label = String.format("k=%4.4f <*>  s=%4.4f <*>  m=%4.4f <*>  n=%d  chi=%4.8f yscl=%.0f",
                         vars[0], vars[1], vars[2], nIter, chiSqSum, this.yScale);
@@ -391,50 +509,22 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
                 }
             }
             
-            // if solution has stalled, start with the min start point, else the max start points
-            if ((nIter > 3) && (nSameSequentially > 2)) {
-                                    
-                  nIter = maxIterations;
-            }
-            
-            for (int k = 0; k <= varStopIdx; k++) {
-            
-                if (nIter > 0) {
-                    
-                    // populate r with the best fitting derivatives for vars[]
-                    DerivGEV.derivsThatMinimizeChiSqSum(vars, varsMin, varsMax, chiSqSumForLineSearch,
-                        x, y, ye, r, k, k);
-                    
-                    if (r[k] != 0) {
-                        vars[k] += r[k];
-                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
-                    }
-                    
-                    log.finest("   ->r[" + k + "]=" + r[k]  + "  vars[" + k + "]=" + vars[k] + " nIter=" + nIter);
-                }
-            }
-            
-            if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
+            if ((nIter > 0) && 
+                ((Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) 
+                || (Arrays.equals(prevVars, vars)))
+                ) {
                 nSameSequentially++;
             } else {
                 nSameSequentially = 0;
             }
             lastChiSqSum = chiSqSumForLineSearch[0];
             
+            System.arraycopy(vars, 0, prevVars, 0, vars.length);
+            
             nIter++;
         }
         
         bestYFit = compareFits(bestYFit, vars, chiSqSumForLineSearch);
-        
-        if (debug) {
-            try {
-                String label = String.format("k=%4.4f <*>  s=%4.4f <*>  m=%4.4f <*>  n=%d  chi=%4.8f  yscl=%.0f",
-                    vars[0], vars[1], vars[2], nIter, bestYFit.getChiSqSum(), this.yScale);
-                plotFit(bestYFit.getYFit(), label);
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
-            }
-        }
         
         return bestYFit;
     }
@@ -462,190 +552,6 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
         }
         
         return bestYFit;
-    }
-
-    /**
-     * fit the x, y data with a GEV whose parameters are within the given ranges for k,
-     * sigma, and mu.  The method attempts to fit for changes in k, sigma, and mu all
-     * at once for each iteration.
-     * 
-     * @param kMin  minimum range of value of k, the shape parameter
-     * @param kMax  maximum range of value of k, the shape parameter
-     * @param sigmaMin  minimum range of value of sigma, the scale parameter
-     * @param sigmaMax  maximum range of value of sigma, the scale parameter
-     * @param muMin  minimum range of value of mu, the location parameter
-     * @param muMax  maximum range of value of mu, the location parameter
-     * @return
-     * @throws FailedToConvergeException
-     */
-    public GEVYFit fitCurveParametersAllAtOnce(float kMin, float kMax, float sigmaMin, float sigmaMax,
-        float muMin, float muMax) throws FailedToConvergeException {
-
-        if (kMin < 0) {
-            throw new IllegalArgumentException("kMin must be larger than zero");
-        }
-        if (kMin > kMax) {
-            throw new IllegalArgumentException("kMin must be less than kMax");
-        }
-        if (muMin < 0) {
-            throw new IllegalArgumentException("muMin must be larger than zero. mu is usually near the peak of the normalized histogram's x value.");
-        }
-        if (muMin > muMax) {
-            throw new IllegalArgumentException("muMin must be less than muMax");
-        }
-        /*
-        if (muMax > xmax) {
-            throw new IllegalArgumentException("muMax must be less than the maximum value of x in the histogram (" + xmax + ")");
-        }*/
-        if (sigmaMin < 0) {
-            throw new IllegalArgumentException("sigmaMin must be larger than zero");
-        }
-        if (sigmaMin > sigmaMax) {
-            throw new IllegalArgumentException("sigmaMin must be less than sigmaMax");
-        }
-        
-        boolean hasTriedMinStarts = false;
-        /*
-        float kVar = kMin;
-        float sigmaVar = sigmaMin;
-        float muVar = muMin;
-        */
-        
-        boolean hasTriedMaxStarts = false;
-        /*
-        float kVar = kMax;
-        float sigmaVar = sigmaMax;
-        float muVar = muMax;
-        */
-        float kVar = (kMax + kMin)/2.f;
-        float sigmaVar = (sigmaMax + sigmaMin)/2.f;
-        float muVar = (muMax + muMin)/2.f;
-        
-        // the variables k, sigma, and mu
-        float[] vars = new float[]{kVar, sigmaVar, muVar};
-        float[] varsMin = new float[]{kMin, sigmaMin, muMin};
-        float[] varsMax = new float[]{kMax, sigmaMax, muMax};
-     
-        int varStopIdx = vars.length - 1;
-        
-        // r is current residual.  it holds deltaK, deltaSigma, and deltaMu
-        float[] r = new float[3];
-        
-        // chiSqSumForLineSearch[0] holds current best chiSqSum for the last change in vars
-        // chiSqSumForLineSearch[1] holds the return value from DerivGEV if step > 0 was admissable
-        float[] chiSqSumForLineSearch = new float[2];
-        
-        chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
-        
-        int nSameSequentially = 0;
-        float epsChiSame = 1e-5f;
-        float lastChiSqSum = Float.MAX_VALUE;
-        
-        int nIter = 0;
-        while ((nIter < maxIterations) && (chiSqSumForLineSearch[0] > convergedEps)) {
-            
-            /*if ((nIter > 1) && residualsAreSame(rPrev, r)) {
-                break;
-            }*/
-           
-            float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
-            float chiSqSum = DerivGEV.chiSqSum(yGEV, y, ye);
-                       
-            if (debug) {
-                try {
-                    String label = String.format(
-                       "k=%4.4f <1.8>  s=%4.4f <0.85>  m=%4.4f <0.441>  n=%d  chi=%4.8f  yscl=%.0f",
-                        vars[0], vars[1], vars[2], nIter, chiSqSum, this.yScale);
-                    plotFit(yGEV, label);
-                } catch (IOException e) {
-                    System.err.println(e.getMessage());
-                }
-            }
-            
-            // if solution has stalled, restart with min values, else max values, else exit loop
-            if ((nIter > 3) && (nSameSequentially > 2)) {
-                
-                if (!hasTriedMinStarts && (chiSqSum > 0.01f)) {
-                    kVar = kMin;
-                    sigmaVar = sigmaMin;
-                    muVar = muMin;
-                    hasTriedMinStarts = true;
-                    vars[0] = kVar;
-                    vars[1] = sigmaVar;
-                    vars[2] = muVar;
-                    nSameSequentially = 0;
-                    lastChiSqSum = Float.MAX_VALUE;
-                    
-                    chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
-                    
-                    nIter = 0;
-                
-                } else if (!hasTriedMaxStarts && (chiSqSum > 0.01f)) {
-                    kVar = kMax;
-                    sigmaVar = sigmaMax;
-                    muVar = muMax;
-                    hasTriedMaxStarts = true;
-                    vars[0] = kVar;
-                    vars[1] = sigmaVar;
-                    vars[2] = muVar;
-                    nSameSequentially = 0;
-                    lastChiSqSum = Float.MAX_VALUE;
-
-                    chiSqSumForLineSearch[0] = DerivGEV.chiSqSum(vars[0], vars[1], vars[2], x, y, ye);
-                    
-                    nIter = 0;
-                
-                } else {
-                    // let end or let continue
-                    nIter = maxIterations;
-                }
-            }         
-            
-            if (nIter > 0) {
-                
-                // populate r with the best fitting derivatives for vars[]
-                DerivGEV.derivsThatMinimizeChiSqSum(vars, varsMin, varsMax, chiSqSumForLineSearch,
-                    x, y, ye, r, 0, varStopIdx); 
-                
-                for (int k = 0; k <= varStopIdx; k++) {
-                    if (r[k] != 0) {
-                        vars[k] += r[k];
-                        chiSqSumForLineSearch[0] = chiSqSumForLineSearch[1];
-                    }
-                }
-            }         
-            
-            if (Math.abs(lastChiSqSum - chiSqSumForLineSearch[0]) < epsChiSame) {
-                nSameSequentially++;
-            } else {
-                nSameSequentially = 0;
-            }
-            lastChiSqSum = chiSqSumForLineSearch[0];
-            
-            nIter++;
-        }
-        
-        float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, vars[0], vars[1], vars[2]);
-
-        float chisqsum = calculateChiSquareSum(yGEV, WEIGHTS_DURING_CHISQSUM.ERRORS);
-
-        float degreesOfFreedom = yGEV.length - 3 - 1;
-
-        float chiSqStatistic = chiSqSumForLineSearch[0]/degreesOfFreedom;
-        
-        GEVYFit yfit = new GEVYFit();
-        yfit.setChiSqSum(chisqsum);
-        yfit.setChiSqStatistic(chiSqStatistic);
-        yfit.setK(vars[0]);
-        yfit.setSigma(vars[1]);
-        yfit.setMu(vars[2]);
-        yfit.setYFit(yGEV);
-        yfit.setX(x);
-        yfit.setXScale(xScale);
-        yfit.setYScale(yScale);
-        yfit.setYDataErrSq( calcYErrSquareSum() ); 
-        
-        return yfit;
     }
 
     protected void plotFit(float[] yGEV, String label) throws IOException {

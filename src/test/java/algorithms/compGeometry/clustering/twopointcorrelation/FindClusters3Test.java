@@ -48,7 +48,7 @@ public class FindClusters3Test extends TestCase {
 
         // generates fake errors when errors not present:
         TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
-        twoPtC.setDebug(true);
+        //twoPtC.setDebug(true);
 
         // 390 points
 

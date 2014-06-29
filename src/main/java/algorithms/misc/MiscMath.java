@@ -106,7 +106,7 @@ public class MiscMath {
             return -1;
         }
         float max = Float.MIN_VALUE;
-        int index = -1;
+        int index = 0;
         for (int i = 0; i < a.length; i++) {
             if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) && (a[i] < Float.MAX_VALUE)) {
                 max = a[i];
@@ -121,7 +121,7 @@ public class MiscMath {
             return -1;
         }
         int max = Integer.MIN_VALUE;
-        int index = -1;
+        int index = 0;
         for (int i = 0; i < a.length; i++) {
             if ((a[i] > max) && (a[i] < Integer.MAX_VALUE)) {
                 max = a[i];

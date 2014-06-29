@@ -111,7 +111,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     // uses conjugate gradient method for non quadratic functions if = true, else downhill simplex.
-    protected boolean useDefaultFitting = false;
+    protected boolean useDefaultFitting = true;
 
     /**
      * the factor to use when comparing a density to backgroundDensity*sigmaFactor

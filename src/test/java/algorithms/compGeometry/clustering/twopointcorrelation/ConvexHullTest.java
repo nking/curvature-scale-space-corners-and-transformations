@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
- * class to test the TwoPointCorrelation class on larger datasets with and without clusters.
  * 
  * @author nichole
  */

@@ -144,7 +144,7 @@ public class DistributionsTest extends BaseTwoPointTest {
                 
                 TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
 
-                twoPtC.setDebug(true);                
+                //twoPtC.setDebug(true);                
               
                 twoPtC.logPerformanceMetrics();
                 
