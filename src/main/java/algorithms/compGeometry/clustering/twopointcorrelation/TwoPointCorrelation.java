@@ -255,10 +255,9 @@ public class TwoPointCorrelation {
      * else the default method will be used which is a non-quadratic conjugate gradient
      * solver.
      */
-    /*
     public void setUseDownhillSimplexHistogramFitting() {
         this.setUseDownhillSimplexHistogramFitting = true;
-    }*/
+    }
 
     protected void logPerformanceMetrics() {
         this.doLogPerformanceMetrics = true;

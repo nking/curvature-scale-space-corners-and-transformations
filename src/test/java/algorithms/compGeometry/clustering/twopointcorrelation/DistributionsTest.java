@@ -52,7 +52,7 @@ public class DistributionsTest extends BaseTwoPointTest {
         
         long seed = System.currentTimeMillis();
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        //seed = 1386991714037l;
+        seed = 1404074772766l;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -143,8 +143,7 @@ public class DistributionsTest extends BaseTwoPointTest {
                 
                 
                 TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
-
-                //twoPtC.setDebug(true);                
+                //twoPtC.setUseDownhillSimplexHistogramFitting();
               
                 twoPtC.logPerformanceMetrics();
                 

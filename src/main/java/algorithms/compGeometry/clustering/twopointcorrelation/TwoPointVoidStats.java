@@ -279,8 +279,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         return sumBytes;
     }
 
-    public void setGEVRangeParameters(float kMin, float kMax, float sigmaMin, float sigmaMax) {
-        this.gevRangeFittingParameters = new float[]{kMin, kMax, sigmaMin, sigmaMax};
+    public void setGEVRangeParameters(float kMin, float kMax, 
+        float sigmaMin, float sigmaMax, float muMin, float muMax) {
+        this.gevRangeFittingParameters = new float[]{kMin, kMax, 
+            sigmaMin, sigmaMax, muMin, muMax};
     }
 
     /**
@@ -548,8 +550,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 if (useDefaultFitting) {
 
                     yfit = ((NonQuadraticConjugateGradientSolver)chiSqMin)
-                        .fitCurveParametersAllAtOnce(gevRangeFittingParameters[0], gevRangeFittingParameters[1],
-                            gevRangeFittingParameters[2], gevRangeFittingParameters[3], 0.001f, 0.3f);
+                        .fitCurveParametersAllAtOnce(
+                            gevRangeFittingParameters[0], gevRangeFittingParameters[1],
+                            gevRangeFittingParameters[2], gevRangeFittingParameters[3], 
+                            gevRangeFittingParameters[4], gevRangeFittingParameters[5]);
                     
                 } else {
 
@@ -557,7 +561,8 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                         ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZeroAndMu(
                             GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS,
                         gevRangeFittingParameters[0], gevRangeFittingParameters[1],
-                        gevRangeFittingParameters[2], gevRangeFittingParameters[3]
+                        gevRangeFittingParameters[2], gevRangeFittingParameters[3],
+                        gevRangeFittingParameters[4], gevRangeFittingParameters[5]
                     );
                 }
 
@@ -565,11 +570,12 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 if (useDefaultFitting) {
 
-                    yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+                    yfit = chiSqMin.fitCurveKGreaterThanZero(
+                        GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
                 } else {
 
-                    yfit = ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZeroAndMu(
+                    yfit = ((GEVChiSquareMinimization)chiSqMin).fitCurveKGreaterThanZero(
                         GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
                 }
             }

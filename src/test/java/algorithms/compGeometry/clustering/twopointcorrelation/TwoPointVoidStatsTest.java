@@ -84,7 +84,6 @@ public class TwoPointVoidStatsTest extends BaseTwoPointTest {
 
         TwoPointVoidStats stats = new TwoPointVoidStats(indexer);
         //stats.setDebug(debug);
-        stats.setGEVRangeParameters(0.0001f, 1.0f, 0.00001f, 0.002f);
         //stats.setStandardDeviationFactor(2.5f);        
         stats.calc();
 

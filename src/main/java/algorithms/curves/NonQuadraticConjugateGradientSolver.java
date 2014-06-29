@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import algorithms.curves.GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM;
-import algorithms.misc.MiscMath;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
@@ -45,13 +44,15 @@ import java.util.List;
      The function f is called the objective function or cost function.
      
       The vector x is an n-vector of independent variables: 
-         vars = [var<sub>1</sub>, var<sub>2</sub>, &hellip;, var<sub>n</sub>]<sup>T</sup> is a member of set Real numbers. 
-         The variables var<sub>1</sub>, &hellip;, var<sub>n</sub> are often referred to as decision variables. 
+         vars = [var<sub>1</sub>, var<sub>2</sub>, &hellip;, 
+         var<sub>n</sub>]<sup>T</sup> is a member of set Real numbers. 
+         The variables var<sub>1</sub>, &hellip;, var<sub>n</sub> are often 
+         referred to as decision variables. 
      
-      The optimization problem above can be viewed as a decision problem that involves 
-      finding the best vector var of the decision variables over all possible vectors in &#937;. 
-      By the best vector we mean the one that results in the-smallest value of 
-      the objective function. 
+      The optimization problem above can be viewed as a decision problem that 
+      involves finding the best vector var of the decision variables over all 
+      possible vectors in &#937;.   By the best vector we mean the one that 
+      results in the-smallest value of the objective function. 
       
       This vector is called the minimizer of f over &#937;. 
       It is possible that there may be many minimizers. In this case, finding 

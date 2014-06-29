@@ -6,7 +6,6 @@ import java.util.Arrays;
 
 import algorithms.curves.GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM;
 import algorithms.misc.MiscMath;
-import algorithms.util.PolygonAndPointPlotter;
 
 public abstract class AbstractCurveFitter implements ICurveFitter {
 

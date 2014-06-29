@@ -207,22 +207,23 @@ public class NonQuadraticConjugateGradientSolverTest extends TestCase {
                 if (fit != null) {
 
                     String label = String.format("chisq=%.8f k=%.4e s=%.4e m=%.4e",
-                        fit.getChiSqSum(), fit.getK(), fit.getSigma(), fit.getMu());
+                        fit.getChiSqStatistic(), fit.getK(), fit.getSigma(), fit.getMu());
 
                     plotFit2(fit, label, solver);
                 }
                 
             } else {
 
-                GEVChiSquareMinimization solver = new GEVChiSquareMinimization(x,
-                    y, xe, ye);
+                GEVChiSquareMinimization solver = new GEVChiSquareMinimization(
+                    x, y, xe, ye);
             
-                fit = solver.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+                fit = solver.fitCurveKGreaterThanZero(
+                    GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
                 
                 if (fit != null) {
 
                     String label = String.format("chisq=%.8f k=%.4e s=%.4e m=%.4e",
-                        fit.getChiSqSum(), fit.getK(), fit.getSigma(), fit.getMu());
+                        fit.getChiSqStatistic(), fit.getK(), fit.getSigma(), fit.getMu());
 
                     plotFit(fit, label, solver);
                 }

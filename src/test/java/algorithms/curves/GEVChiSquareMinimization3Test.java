@@ -34,74 +34,7 @@ public class GEVChiSquareMinimization3Test extends TestCase {
         super.tearDown();
     }
 
-    public void testUsingRandomClusters() throws Exception {
-
-        log.info("testUsingRandomClusters()");
-
-        if (!enable) {
-            return;
-        }
-
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-
-        String fileNamePostfix = "wikipedia_dbscan.dat";
-        String fileName = CreateClusterDataTest.histogramFileNamePrefix + fileNamePostfix;
-        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
-
-        if (!(new File(filePath)).exists()) {
-            return;
-        }
-
-            HistogramHolder histogram = CreateClusterDataTest.readHistogram(filePath);
-
-            chiSqMin = new GEVChiSquareMinimization(histogram.getXHist(), histogram.getYHistFloat(),
-                histogram.getXErrors(), histogram.getYErrors());
-
-
-            float k = 1.04f;// changes sharpness of left side slope
-            float s = 0.195f;
-            float kMin = k/2.f;
-            float kMax = k*2.f;
-            float sMin = s/2;
-            float sMax = s*2.0f;
-
-            float mu = 0.06f;
-            float yNorm = 1.0f;
-            float yErrSqSum = chiSqMin.calcYErrSquareSum();
-
-            chiSqMin.setDebug(true);
-
-            // k=0.67109966 sigma=0.16777492 mu=0.016949153 chiSqSum=96.46002 chiSqStatistic=3.7100008
-            //  trial and error:
-            //   k=1.0402603 sigma=0.19504745 mu=0.06 chiSqSum=86.89037 chiSqStatistic=3.3419375
-
-            GEVYFit yfit = chiSqMin.fitCurve(kMin, kMax, sMin, sMax, mu, yErrSqSum, GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, yNorm);
-
-            //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS, k, s, mu, yNorm);
-
-            //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
-
-            //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
-
-            float[] xf = yfit.getOriginalScaleX();
-            float[] yf = yfit.getOriginalScaleYFit();
-
-            plotter.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
-                histogram.getXErrors(), histogram.getYErrors(), xf, yf, "");
-            plotter.writeFile();
-
-            log.info(yfit.toString());
-
-/*
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-            } finally {
-                log.info("next");
-            }*/
-    }
-    
-    public void estAFit() throws Exception {
+    public void testAFit() throws Exception {
 
         log.info("testAFit()");
 
@@ -121,7 +54,8 @@ public class GEVChiSquareMinimization3Test extends TestCase {
 
         //GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
-        GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZeroAndMu(GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
+        GEVYFit yfit = chiSqMin.fitCurveKGreaterThanZero(
+            GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM.ERRORS);
 
         float[] xf = yfit.getOriginalScaleX();
         float[] yf = yfit.getOriginalScaleYFit();
