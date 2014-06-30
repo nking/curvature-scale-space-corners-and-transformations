@@ -24,8 +24,8 @@ void test0() {
     
     GEVSimilarityParameters *params = new GEVSimilarityParameters();
     
-    string inFileName = "test-data.txt";
-    string outFileName = "delete.txt";
+    string inFileName = "similar_curve_parameters.txt";
+    string outFileName = "sim_curve_params_01.txt";
     
     params->calculateMinSet(inFileName, outFileName);
     

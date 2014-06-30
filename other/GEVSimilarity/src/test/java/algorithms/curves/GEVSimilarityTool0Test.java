@@ -16,8 +16,7 @@ public class GEVSimilarityTool0Test extends TestCase {
     protected boolean debug = true;
 
     protected boolean enable = true;
-    
-    
+   
     @Override
     protected void setUp() throws Exception {
         super.setUp();

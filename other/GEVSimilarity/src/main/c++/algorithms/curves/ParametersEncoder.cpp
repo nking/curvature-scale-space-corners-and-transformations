@@ -19,7 +19,7 @@ namespace gev {
     void ParametersEncoder::readFile(
         vector< unordered_set<uint32_t> >& outputEncodedVariables) {
         
-        string fileName = "algorithms.curves.GEVSimilarityToolTest-output.txt";
+        string fileName = "similar_curve_parameters.txt";
         
         _readFile(fileName, outputEncodedVariables);
     }
@@ -134,7 +134,7 @@ namespace gev {
             revLookupMap.insert( make_pair(iter->second, iter->first));
         }
         
-        long len = encodedCoverVariables.size();
+        unsigned long len = encodedCoverVariables.size();
         
         float *k = (float*)malloc(len * sizeof(float));
         float *sigma = (float*)malloc(len * sizeof(float));
@@ -176,9 +176,9 @@ namespace gev {
                         fflush(fl);
                     }
                 }
-                printf("wrote to outfile: %s", filePath.c_str());
+                printf("wrote to outfile: %s\n", filePath.c_str());
             } else {
-                printf("ERROR: unable to open outfile: %s", filePath.c_str());
+                printf("ERROR: unable to open outfile: %s\n", filePath.c_str());
             }
         } catch (std::exception e) {
             cerr << "Error: " << e.what() << endl;
@@ -198,6 +198,8 @@ namespace gev {
         free(k);
         free(sigma);
         free(mu);
+        
+        _copyOutputFileToMainProjectResources(fileName);
     }
     
     string ParametersEncoder::_getProjectTmpDirectoryPath() {
@@ -222,6 +224,54 @@ namespace gev {
         string dir = bDir.append("/tmpdata2");
 
         return dir;
+    }
+    
+    string ParametersEncoder::_getMainProjectResourcesOutputDirectoryPath() {
+        
+        string cwd = _getCWD();
+        
+        string srch = "GEVSimilarity";
+        
+        std::size_t found = cwd.find(srch);
+        
+        if (found == std::string::npos) {
+            fprintf(stderr, "expecting current working directory is 'GEVSimilarity'\n");
+            fflush(stderr);
+            throw EINVAL;
+        }
+        
+        string bDir = cwd.substr(0, found + srch.length());
+        printf("base directory = %s\n", bDir.c_str());
+
+        // windows OS handles forward slashes?  
+        
+        string dir = bDir.append("/../../src/main/resources");
+
+        return dir;
+    }
+    
+    void ParametersEncoder::_copyOutputFileToMainProjectResources(
+    string fileName) {
+        
+        string copyFilePath = _getProjectTmpDirectoryPath();
+        copyFilePath = copyFilePath.append("/");
+        copyFilePath = copyFilePath.append(fileName);
+                
+        string filePath = _getMainProjectResourcesOutputDirectoryPath();
+        filePath = filePath.append("/");
+        filePath = filePath.append(fileName);
+                    
+        std::ifstream src(copyFilePath.c_str(), std::ios::binary);
+        std::ofstream dest(filePath.c_str(), std::ios::binary);
+        
+        dest << src.rdbuf();
+        
+        dest.flush();
+        
+        src.close();
+        dest.close();
+        
+        printf("\ncopied to outfile: %s\n", filePath.c_str());
     }
     
     string ParametersEncoder::_getCWD() {

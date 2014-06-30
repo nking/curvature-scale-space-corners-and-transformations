@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -302,104 +303,128 @@ public class GEVSimilarityTool {
         int nci = -1;
         int nci2 = -1;
         
-        PolygonAndPointPlotter plotter = null;
+        String paramsOutFilePath = getOutputParamsFilePath();
+        FileWriter writer = null;
         
-        float k1 = (float) (k0 * Math.pow(10, powersOfTenK));
-        float sigma1 = (float) (sigma0 * Math.pow(10, powersOfTenS));
-        float m0 = -10;
-        float m1 = 10;
-        GEVSimilarityParametersPlotter paramsPlotter = null;
-                
-        for (int i = 0; i < end; i++) {
-            String[] indexesStr = new String(diffIndexes[i]).split(",");
-            int[] indexes = new int[indexesStr.length];
-            for (int j = 0; j < indexesStr.length; j++) {
-                indexes[j] = Integer.valueOf(indexesStr[j]).intValue();
-            }
+        try {
             
-            float[] y = curves[indexes[0]];
+            writer = new FileWriter(paramsOutFilePath);
             
-            String lbl = String.format("%d)", i);
-            
-            if ((i == 0) || (i == 1000) || (i == 2000)){
-                nci++;
-                plotter = new PolygonAndPointPlotter();
-            }
-            plotter.addPlot(x, y, x, y, lbl);
-            switch (nci) {
-                case 0:
-                    plotter.writeFile();
-                    break;
-                case 1:
-                    plotter.writeFile2();
-                    break;
-                default:
-                    plotter.writeFile3();
-                    break;
-            } 
- //TODO: check indexes 0 and 1           
-            StringBuilder sb2 = new StringBuilder(100);
-            sb2.append(Integer.toString(i)).append(") [").append(new String(diffIndexes[i])).append("]")
-                .append("  diff=").append(Float.toString(diff[i]));
-            
-            for (int nv = 0; nv < 3; nv++) {
-                float[] a;
-                switch(nv) {
+            //PolygonAndPointPlotter plotter = null;
+
+            float k1 = (float) (k0 * Math.pow(10, powersOfTenK));
+            float sigma1 = (float) (sigma0 * Math.pow(10, powersOfTenS));
+            float m0 = -10;
+            float m1 = 10;
+            GEVSimilarityParametersPlotter paramsPlotter = null;
+
+            for (int i = 0; i < end; i++) {
+                String[] indexesStr = new String(diffIndexes[i]).split(",");
+                int[] indexes = new int[indexesStr.length];
+                for (int j = 0; j < indexesStr.length; j++) {
+                    indexes[j] = Integer.valueOf(indexesStr[j]).intValue();
+                }
+
+                float[] y = curves[indexes[0]];
+
+                String lbl = String.format("%d)", i);
+
+                if ((i == 0) || (i == 1000) || (i == 2000)){
+                    nci++;
+                    //plotter = new PolygonAndPointPlotter();
+                }
+                /*plotter.addPlot(x, y, x, y, lbl);
+                switch (nci) {
                     case 0:
-                        sb2.append("\n   k=");
-                        a = ks;
+                        plotter.writeFile();
                         break;
                     case 1:
-                        sb2.append("  sigma=");
-                        a = sigmas;
+                        plotter.writeFile2();
                         break;
                     default:
-                        sb2.append("  mu=");
-                        a = mus;
+                        plotter.writeFile3();
                         break;
-                }
-                for (int j = 0; j < indexes.length; j++) {
-                    float v = a[indexes[j]];
-                    sb2.append(v);
-                    if (j < (indexes.length - 1)) {
-                        sb2.append(",");
+                }*/
+     //TODO: check indexes 0 and 1           
+                StringBuilder sb3 = new StringBuilder(100);
+                StringBuilder sb2 = new StringBuilder(100);
+                sb2.append(Integer.toString(i)).append(") [").append(new String(diffIndexes[i])).append("]")
+                    .append("  diff=").append(Float.toString(diff[i]));
+
+                for (int nv = 0; nv < 3; nv++) {
+                    float[] a;
+                    switch(nv) {
+                        case 0:
+                            sb2.append("\n   k=");
+                            if (i > 0) {
+                                sb3.append("\n");
+                            }
+                            sb3.append("k=");
+                            a = ks;
+                            break;
+                        case 1:
+                            sb2.append("  sigma=");
+                            sb3.append("  sigma=");
+                            a = sigmas;
+                            break;
+                        default:
+                            sb2.append("  mu=");
+                            sb3.append("  mu=");
+                            a = mus;
+                            break;
+                    }
+                    for (int j = 0; j < indexes.length; j++) {
+                        float v = a[indexes[j]];
+                        sb2.append(v);
+                        sb3.append(v);
+                        if (j < (indexes.length - 1)) {
+                            sb2.append(",");
+                            sb3.append(",");
+                        }
                     }
                 }
-            }
 
-            log.info(sb2.toString());            
+                log.info(sb2.toString());
+                
+                writer.write(sb3.toString());
+                writer.flush();
 
-            // plot the parameters
-            if ((i == 0) || ((i % 100) == 0) ) {
-                                
-                if (paramsPlotter != null) {
-                    paramsPlotter.writeFile(nci2);
+                // plot the parameters
+                if ((i == 0) || ((i % 100) == 0) ) {
+
+                    if (paramsPlotter != null) {
+                        paramsPlotter.writeFile(nci2);
+                    }
+
+                    nci2++;
+
+                    int ymin = i;
+                    paramsPlotter = new GEVSimilarityParametersPlotter(
+                        ymin, ymin + 100, k0, k1, sigma0, sigma1, m0, m1);
+
                 }
-                
-                nci2++;
-                
-                int ymin = i;
-                paramsPlotter = new GEVSimilarityParametersPlotter(
-                    ymin, ymin + 100, k0, k1, sigma0, sigma1, m0, m1);
-                
+
+                float[] yy = new float[indexes.length];
+                Arrays.fill(yy, i);
+                float[] kPoints = new float[indexes.length];
+                float[] sPoints = new float[indexes.length];
+                float[] mPoints = new float[indexes.length];
+                for (int j = 0; j < indexes.length; j++) {
+                    kPoints[j] = ks[ indexes[j] ];
+                    sPoints[j] = sigmas[ indexes[j] ];
+                    mPoints[j] = mus[ indexes[j] ];
+                }
+
+                paramsPlotter.addToPlot(yy, kPoints, sPoints, mPoints);
             }
+
+            paramsPlotter.writeFile(nci2);
             
-            float[] yy = new float[indexes.length];
-            Arrays.fill(yy, i);
-            float[] kPoints = new float[indexes.length];
-            float[] sPoints = new float[indexes.length];
-            float[] mPoints = new float[indexes.length];
-            for (int j = 0; j < indexes.length; j++) {
-                kPoints[j] = ks[ indexes[j] ];
-                sPoints[j] = sigmas[ indexes[j] ];
-                mPoints[j] = mus[ indexes[j] ];
+        } finally {
+            if (writer != null) {
+                writer.close();
             }
-            
-            paramsPlotter.addToPlot(yy, kPoints, sPoints, mPoints);
-            
         }
-        
-        paramsPlotter.writeFile(nci2);
     }
 
     public void readPersisted() throws IOException {
@@ -413,6 +438,20 @@ public class GEVSimilarityTool {
         return filePath;
     }
     
+    private String getOutputParamsFilePath() throws IOException {
+        String fileName = "similar_curve_parameters.txt";
+        String filePath = ResourceFinder.findDirectory("tmpdata2");
+        filePath = filePath + System.getProperty("file.separator") + fileName;
+        return filePath;
+    }
+    
+    /**
+     * set the code to use data from a persisted previous run.
+     * The relative file path it's looking for will 
+     * be tmpdata2/similiarity_fileNumber.dat.
+     * @param fileNumber
+     * @throws IOException 
+     */
     public void readPersisted(int fileNumber) throws IOException {
         
         log.info("readPersisted");
@@ -502,6 +541,12 @@ public class GEVSimilarityTool {
         persist(0);
     }
     
+    /**
+     * persist the GEV parameters and curves a file for reuse later.
+     * The relative file path will be tmpdata2/similiarity_fileNumber.dat.
+     * @param fileNumber
+     * @throws IOException 
+     */
     public void persist(int fileNumber) throws IOException {
         
         log.info("persist");

@@ -23,7 +23,9 @@ namespace gev {
         
         _populateVariableFrequencyMap(inputVariables, frequencyMap);
         
-        printf("%lu unique parameter sets\n", frequencyMap.size());
+        printf("\nread %lu unique parameter sets\n", frequencyMap.size());
+        
+        printf("beginning set cover for parameters that generate all feasible curves\n");
         
         _initializeVariableCover(frequencyMap, outputCoverVariables);
         

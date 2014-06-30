@@ -179,6 +179,10 @@ void test7() {
     
     assert(path.find("tmpdata2") != string::npos);
     
+    string path2 = encoder->_getMainProjectResourcesOutputDirectoryPath();
+    
+    assert(path2.find("resources") != string::npos);
+    
     delete encoder;
 }
 
@@ -204,35 +208,10 @@ void test8() {
     delete encoder;
 }
 
-void test9() {
-
-    std::cout << "test9 " ;
-         
-    ParametersEncoder *encoder = new ParametersEncoder();
-    
-    vector< unordered_set<uint32_t> > encodedVariables;
-    
-    string inFileName = "test-data.txt";
-    
-    encoder->_readFile(inFileName, encodedVariables);
-    
-    
-    string outFileName = "delete.txt";
-    string filePath = encoder->_getProjectTmpDirectoryPath();
-    filePath = filePath.append("/");
-    filePath = filePath.append(outFileName);
-    
-    std::remove(filePath.c_str());
-    
-    vector<uint32_t> encodedCover;
-    encodedCover.push_back(1);
-    encodedCover.push_back(20);
-    encodedCover.push_back(30);
-    
-    encoder->_writeFile(outFileName, encodedCover);
-    
+void assertFileContents(string filePath) {
     
     FILE *fl = NULL;
+    
     try {
         fl = fopen(filePath.c_str(), "r");
         if (fl != NULL) {
@@ -264,6 +243,41 @@ void test9() {
         fclose(fl);
         fl = NULL;
     }
+}
+
+void test9() {
+
+    std::cout << "test9 " ;
+         
+    ParametersEncoder *encoder = new ParametersEncoder();
+    
+    vector< unordered_set<uint32_t> > encodedVariables;
+    
+    string inFileName = "test-data.txt";
+    
+    encoder->_readFile(inFileName, encodedVariables);
+    
+    string outFileName = "delete.txt";
+    string filePath = encoder->_getProjectTmpDirectoryPath();
+    filePath = filePath.append("/");
+    filePath = filePath.append(outFileName);
+    
+    std::remove(filePath.c_str());
+    
+    vector<uint32_t> encodedCover;
+    encodedCover.push_back(1);
+    encodedCover.push_back(20);
+    encodedCover.push_back(30);
+    
+    encoder->_writeFile(outFileName, encodedCover);
+    
+    assertFileContents(filePath);
+    
+    string filePath2 = encoder->_getMainProjectResourcesOutputDirectoryPath();
+    filePath2.append("/");
+    filePath2 = filePath.append(outFileName);
+    
+    assertFileContents(filePath2);
     
     delete encoder;
 }

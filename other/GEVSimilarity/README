@@ -32,17 +32,19 @@ Building
 
     (b) mvn test -Dtest=algorithms.curves.GEVSimilarityToolTest
 
-    This creates a large log file containing statements about
-    the similar and unique curves.  The log file is in
-    target/sure-fire-reports/algorithms.curves.GEVSimilarityToolTest-output.txt
+       *This creates an output file tmpdata2/similar_curve_parameters.txt
+        that is used as input for the C++ code.
 
-    It also creates transparent images in target/ as png files
-    that can be viewed as layers together with the file to see the
-    range of parameters.
+        It also creates a large log file containing statements about
+        the similar and unique curves.  The log file is in
+        target/sure-fire-reports/algorithms.curves.GEVSimilarityToolTest-output.txt
 
-    It also creates the curves for the similar spectra as an html file
-    for ease of seeing the similar curves and their parameter dependent
-    evolution.
+        It also creates transparent images in subdirectory target/ as png images
+        that can be viewed as layers together to see the range of parameters.
+
+        It also creates the curves for the similar spectra as an html file
+        for ease of seeing the similar curves and their parameter dependent
+        evolution.  target/test-classes/
 
 (2) The C++ portion:
 
@@ -66,12 +68,12 @@ Building
     Then to run the code, 
         make runtest
 
-
-    This reads the logfile target/sure-fire-reports/algorithms.curves.GEVSimilarityToolTest-output.txt
+       *This reads the file tmpdata2/similar_curve_parameters.txt
     
-    The code calculates the smallest set of parameters (k, sigma, and mu) which can represent
-    the entire range of curves.
+        The code calculates the smallest set of parameters (k, sigma, and mu) which can represent
+        the entire range of curves.
 
-    The results are printed to 
-        target/parameters/
-
+        The results are copied to a file called sim_curve_params_01.txt
+        which is in directory ../../src/main/resources/
+        That's the main project directory and that file will then be used in subsequent runs
+        of the main code.

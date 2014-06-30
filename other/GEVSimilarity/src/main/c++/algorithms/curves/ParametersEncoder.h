@@ -29,6 +29,7 @@ using std::tr1::unordered_map;
 using std::tr1::unordered_set;
 using std::make_pair;
 using std::ifstream;
+using std::ofstream;
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -103,6 +104,10 @@ public:
     
     string _getProjectTmpDirectoryPath();
     
+    string _getMainProjectResourcesOutputDirectoryPath();
+    
+    void _copyOutputFileToMainProjectResources(string fileName);
+    
     long _getNVarsOfAParameter(const char *line, const long digit0, 
         const long digitn);
     
@@ -139,7 +144,7 @@ private:
     /* map holding the read file content w/ values = unique variable numbers
      */
     unordered_map<ParametersKey, uint32_t> variableMap;
-    
+   
 };
 } // end namespace
 #endif

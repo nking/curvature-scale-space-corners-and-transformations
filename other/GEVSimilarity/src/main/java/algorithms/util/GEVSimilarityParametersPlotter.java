@@ -43,8 +43,9 @@ import org.jfree.data.xy.XYSeriesCollection;
  *     plotter.writeToFile(1);
  * 
  * This will have written files:
- *     
- * 
+ *     target/gev_similarity_k_0.png ... target/gev_similarity_k_<n>.png
+ *     target/gev_similarity_s_0.png ... target/gev_similarity_s_<n>.png
+ *     target/gev_similarity_m_0.png ... target/gev_similarity_m_<n>.png
  * </pre>
  * 
  * @author nichole
