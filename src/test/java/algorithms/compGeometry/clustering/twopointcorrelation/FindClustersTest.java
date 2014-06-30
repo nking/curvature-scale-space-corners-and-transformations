@@ -46,7 +46,7 @@ public class FindClustersTest extends BaseTwoPointTest {
         //  all with the same number of clusters and cluster points, though
         //  randomly distributed.
 
-        int nSwitches = 3;
+        int nSwitches = 5;
 
         int nIterPerBackground = 5;
 
@@ -56,10 +56,8 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         int nClusters = 3;
 
-        for (int i = 0; i < nSwitches; i++) {
-
-            for (int ii = 0; ii < nIterPerBackground; ii++) {
-
+        for (int ii = 0; ii < nIterPerBackground; ii++) {
+            for (int i = 0; i < nSwitches; i++) {
                 try {
                     switch(i) {
                         case 0:
@@ -74,10 +72,33 @@ public class FindClustersTest extends BaseTwoPointTest {
                             indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                                 nClusters, 30, 60, 10.0f);
                             break;
-                        case 3:
+                        /*case 3:
                             // 100*100
                             indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                                 nClusters, 30, 60, 100.0f);
+                            break;*/
+                        case 3: {
+                            // test solution without and with refine solution
+                            int nPoints = 9001;
+                            float[] xb = new float[nPoints];
+                            float[] yb = new float[nPoints];
+                            createRandomPointsInRectangle(sr, nPoints,
+                                xmin, xmax, ymin, ymax, xb, yb, 0);
+                            float[] xbe = new float[nPoints];
+                            float[] ybe = new float[nPoints];
+                            for (int j = 0; j < nPoints; j++) {
+                                // simulate x error as a percent error of 0.03 for each bin
+                                xbe[j] = xb[j] * 0.03f;
+                                ybe[j] = (float) (Math.sqrt(yb[j]));
+                            }
+                            indexer = new AxisIndexer();
+                            indexer.sortAndIndexX(xb, yb, xbe, ybe, xbe.length);
+                            break;
+                        }
+                        case 4:
+                            // compare to case 3
+                            // TODO:  add a comparison of group solutions in 
+                            // case 3 and 4 by area and membership
                             break;
                         default:
                             break;
@@ -102,6 +123,10 @@ public class FindClustersTest extends BaseTwoPointTest {
                     TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
 
                     //twoPtC.setDebug(true);
+                    
+                    if (i == 4) {
+                        twoPtC.setAllowRefinement();
+                    }
 
                     twoPtC.logPerformanceMetrics();
                     //twoPtC.useFindMethodForDataWithoutBackgroundPoints();
@@ -113,84 +138,41 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                     TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
                     
-                    if (twoPtC.backgroundStats != null && twoPtC.backgroundStats instanceof TwoPointVoidStats) {
+                    if (twoPtC.backgroundStats != null && 
+                        (twoPtC.backgroundStats instanceof TwoPointVoidStats)) {
                         
                         HistogramHolder histogram = stats.statsHistogram;
 
                         GEVYFit bestFit = stats.bestFit;
                         if (bestFit != null) {
-
                             // label needs:  x10, peak,  mean/peak, median/mean and x80/median
                             plotLabel = String.format(
                                 "(%d %d) k=%.4f s=%.4f m=%.4f chSq=%.6f chst=%.1f",
-                                i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), bestFit.getChiSqStatistic()
+                                i, ii, bestFit.getK(), bestFit.getSigma(), 
+                                bestFit.getMu(), bestFit.getChiSqSum(), 
+                                bestFit.getChiSqStatistic()
                             );
                             if (debug) {
-                                log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
-                            }
-                        }
-
-                        if (true) { // for print out to improve fit using NonQuadraticConjugateGradientSolverTest
-                            if (i == 2 && ii == 2) {
-                                StringBuilder xsb = new StringBuilder();
-                                StringBuilder ysb = new StringBuilder();
-                                StringBuilder xesb = new StringBuilder();
-                                StringBuilder yesb = new StringBuilder();
-
-                                for (int z = 0; z < histogram.getYHist().length; z++) {
-                                    if (z > 0) {
-                                        xsb.append("f, ");
-                                        ysb.append("f, ");
-                                        xesb.append("f, ");
-                                        yesb.append("f, ");
-                                    }
-                                    xsb.append(histogram.getXHist()[z]);
-                                    ysb.append(histogram.getYHist()[z]);
-                                    xesb.append(histogram.getXErrors()[z]);
-                                    yesb.append(histogram.getYErrors()[z]);
-                                }
-                                log.fine("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                                log.fine("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-                                log.fine("float[] xe = new float[]{" + xesb.append("f").toString() + "};");
-                                log.fine("float[] ye = new float[]{" + yesb.append("f").toString() + "};");
-                                int z = 1;
+                                log.info(plotLabel + " findVoid sampling=" 
+                                + stats.getSampling().name());
                             }
                         }
                     }
-                    
-                    /*
-                    if (i == 0 && ii == 1) {
-                        StringBuilder xsb = new StringBuilder();
-                        StringBuilder ysb = new StringBuilder();
-                        float[] xg = twoPtC.groupFinder.getX(1, indexer);
-                        float[] yg = twoPtC.groupFinder.getY(1, indexer);
-                        for (int j = 0; j < xg.length; j++) {
-                            if (j > 0) {
-                                xsb.append("f, ");
-                                ysb.append("f, ");
-                            }
-                            xsb.append(xg[j]);
-                            ysb.append(yg[j]);
-                        }
-                        log.fine("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                        log.fine("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-                    }
-                    */
 
                     plotter.addPlot(twoPtC, plotLabel);
                     plotter.writeFile();
 
-                 // assert that the low number histograms are all well formed and result in finding n clusters
+                    // assert that the low number histograms are all well formed and result in finding n clusters
                     if (i == 0) {
                         //assertTrue(twoPtC.getNumberOfGroups() >= nClusters);
                         if (twoPtC.getNumberOfGroups() < nClusters) {
-                            log.severe("Note:  for seed=" + seed + " and i=" + i + ", ii=" + ii
-                                + " solution did not find " + nClusters + " clusters");
+                            log.severe("Note:  for seed=" + seed + " and i=" 
+                                + i + ", ii=" + ii + " solution did not find " 
+                                + nClusters + " clusters");
                         }
                     }
 
                 } catch(Throwable e) {
-
                     log.severe(e.getMessage());
                 }
 

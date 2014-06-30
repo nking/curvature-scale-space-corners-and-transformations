@@ -2,30 +2,29 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.curves.GEVYFit;
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
-import algorithms.util.PolygonAndPointPlotter;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 /**
- unit test specifically for examining the distributions of 4 extreme examples of points:
+ unit test specifically for examining the distributions of 4 extreme examples of 
+ points:
     -- a single group with no background points and the clustering is not a
        function of distance from centers of clusters
-    -- a single group w/ no background points and the points are radially clustered toward center
-       of cluster
-    -- a few groups of varying size with no background points and no radial clustering
+    -- a single group w/ no background points and the points are radially 
+       clustered toward center of cluster
+    -- a few groups of varying size with no background points and no radial 
+       clustering
     -- background points only without groups
  
  The goals are:
     improve the histograms so that the histograms are always well formed and 
     if possible, distinguishable from one another.
  
-    provide regression tests for the goal to easily verify that future improvements in the project
-    form histograms correctly.
- 
- Dependencies on project components:
-    It uses findVoids() to create the array of densities for all points.
+    provide regression tests for the goal to easily verify that future 
+    improvements in the project form histograms correctly.
+     
+    compare the GEV fitting algorithm results (non-quadratic conjugate gradient
+    solver versus downhill simplex method).
     
  * @author nichole
  */
@@ -40,19 +39,24 @@ public class DistributionsTest extends BaseTwoPointTest {
     public void test_Find_Clusters_Stats() throws Exception {
 
         log.info("test_Find_Clusters_Stats()");
+        
+        // randomly generates point distributions to assert that exceptions
+        // aren't thrown and creates plot to compare visually the fits
+        // between the 2 fitting algorithms.
 
         float xmin = 0;
         float xmax = 300;
         float ymin = 0;
         float ymax = 300;
         
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-        PolygonAndPointPlotter plotter2 = new PolygonAndPointPlotter();
-        TwoPointCorrelationPlotter plotter3 = new TwoPointCorrelationPlotter(xmin, xmax, ymin, ymax);
+        TwoPointCorrelationPlotter tpcPlotter = new TwoPointCorrelationPlotter(
+            xmin, xmax, ymin, ymax);
+        TwoPointCorrelationPlotter tpcPlotter3 = new TwoPointCorrelationPlotter(
+            xmin, xmax, ymin, ymax);
         
         long seed = System.currentTimeMillis();
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        seed = 1404074772766l;
+        //seed = 1404074772766l;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -65,8 +69,6 @@ public class DistributionsTest extends BaseTwoPointTest {
         AxisIndexer indexer = null;
 
         int count = 0;
-        
-        int nClusters = 6;
 
         for (int i = 0; i < nSwitches; i++) {
             
@@ -77,10 +79,9 @@ public class DistributionsTest extends BaseTwoPointTest {
                 
                 switch(i) {
                     case 0: {
-                        // create a single group of uniformly distributed points that does not fill the boundaries
-                        // and does not have any background points outside of group.
-                        //createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
-                        //   int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
+                        // create a single group of uniformly distributed points 
+                        // that does not fill the boundaries and does not have 
+                        // any background points outside of group.
                         indexer = createIndexerWithRandomPoints(sr, 
                             (float)(xmin + 0.25*xdiff), (float)(xmax - 0.25*xdiff), 
                             (float)(ymin + 0.25*ydiff), (float)(ymax - 0.25*ydiff),
@@ -88,15 +89,16 @@ public class DistributionsTest extends BaseTwoPointTest {
                         break;
                     }
                     case 1: {
-                        // create a single group of radially distributed points that does not fill the boundaries
-                        // and does not have any background points outside of group.
+                        // create a single group of radially distributed points 
+                        // that does not fill the boundaries and does not have 
+                        // any background points outside of group.
                         float maximumRadius = 0.18f * xdiff;
                         indexer = createIndexerWithRandomPointsAroundCenterWithDSquared(
                             sr, 300, xmin, xmax, ymin, ymax, maximumRadius);
                         break;
                     }
                     case 2: {
-                        // 2 groups of uniformly filled random points
+                        // 2 uniformly filled groups of random points
                         indexer = createIndexerWithRandomPoints(sr,
                             xmin, xmax, ymin, ymax,
                             3, 200, 300, 0.01f);
@@ -113,16 +115,18 @@ public class DistributionsTest extends BaseTwoPointTest {
                         break;
                     }
                     case 4: {
-                        // background with 3 groups in it
-                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                            nClusters, 200, 300, 1f);
+                        // background with 6 groups in it
+                        int nClusters = 6;
+                        indexer = createIndexerWithRandomPoints(sr, xmin, xmax, 
+                            ymin, ymax, nClusters, 200, 300, 1f);
                         break;
                     }
                     case 5: {
-                        // 2 groups of uniformly filled random points
+                        // 7 groups of uniformly filled random points and a
+                        // relatively high density background
+                        int nClusters = 7;
                         indexer = createIndexerWithRandomPoints(sr,
-                            xmin, xmax, ymin, ymax,
-                            7, 200, 300, 3.f);
+                            xmin, xmax, ymin, ymax, nClusters, 200, 300, 3.f);
                         
                         break;
                     }
@@ -137,90 +141,47 @@ public class DistributionsTest extends BaseTwoPointTest {
                     writeIndexerToTmpData(indexer, count);
                 }
 
-                String plotLabel = "";
-                plotter.addPlot(xmin, xmax, ymin, ymax, indexer.getX(), indexer.getY(), null, null, " " + i);
-                plotter.writeFile();
-                
-                
-                TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
-                //twoPtC.setUseDownhillSimplexHistogramFitting();
-              
-                twoPtC.logPerformanceMetrics();
-                
-                //twoPtC.setThresholdFactorToThree();
-                
-                //twoPtC.setBackground(0.2f, 0.1f);
-                twoPtC.calculateBackground();
-                
-                TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
-                
-                if (stats != null) {
+                for (int iii = 0; iii <= 1; iii++) {
                     
-                    float[] densities = stats.voidFinder.getTwoPointDensities();
-                    float[] densityErrors = stats.voidFinder.getTwoPointDensityErrors();
+                    TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
                     
-                   
-                    HistogramHolder simpleHistogram = 
-                        Histogram.calculateSturgesHistogramRemoveZeroTail(densities, densityErrors);
-                    plotter2.addPlot(
-                        simpleHistogram.getXHist(), simpleHistogram.getYHistFloat(),
-                        simpleHistogram.getXErrors(), simpleHistogram.getYErrors(), null, null,
-                        " " + i );
-                    
-                    HistogramHolder histogram = stats.statsHistogram;
-        
-                    GEVYFit bestFit = stats.bestFit;
-                    if (bestFit != null) {
-                        // label needs:  x10, peak,  mean/peak, median/mean and x80/median
-                        plotLabel = String.format(
-                            "*(%d %d) best k=%.4f sigma=%.4f mu=%.4f chiSqSum=%.6f chst=%.1f",
-                            i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), bestFit.getChiSqSum(), bestFit.getChiSqStatistic()
-                        );
-                        if (debug) {
-                            log.info(plotLabel + " findVoid sampling=" + stats.getSampling().name());
+                    if (iii == 1) {
+                        twoPtC.setUseDownhillSimplexHistogramFitting();
+                    }
+
+                    twoPtC.logPerformanceMetrics();
+
+                    //twoPtC.setThresholdFactorToThree();
+
+                    //twoPtC.setBackground(0.2f, 0.1f);
+                    twoPtC.calculateBackground();
+
+                    twoPtC.findClusters();
+
+                    String plotLabel = "";
+
+                    TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
+                    if (stats != null) {          
+                        GEVYFit bestFit = stats.bestFit;
+                        if (bestFit != null) {
+                            plotLabel = String.format(
+                                "*(%d %d) best k=%.4f sigma=%.4f mu=%.4f chiSqSum=%.6f chst=%.1f",
+                                i, ii, bestFit.getK(), bestFit.getSigma(), bestFit.getMu(), 
+                                bestFit.getChiSqSum(), bestFit.getChiSqStatistic());
                         }
-                        plotter2.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
-                            histogram.getXErrors(), histogram.getYErrors(), 
-                            bestFit.getOriginalScaleX(), bestFit.getOriginalScaleYFit(),
-                            plotLabel);
+                    }
+
+                    if (iii == 0) {
+                        // plot for non-quadratic conjugate gradient solver
+                        tpcPlotter.addPlot(twoPtC, plotLabel);
+                        String filePath = tpcPlotter.writeFile();
+                        log.fine("filePath=" + filePath);
                     } else {
-                        plotter2.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
-                            histogram.getXErrors(), histogram.getYErrors(), null, null,
-                            "*" + i );
+                        // plot for the downhill simplex method
+                        tpcPlotter3.addPlot(twoPtC, plotLabel);
+                        String filePath = tpcPlotter3.writeFile3();
+                        log.fine("filePath3=" + filePath);
                     }
-                    
-                    String filePath = plotter2.writeFile2();
-                    log.fine("filePath=" + filePath);
-                   
-                    if (false) {
-                        if (i == 2 && ii == 0) {
-                            StringBuilder xsb = new StringBuilder();
-                            StringBuilder ysb = new StringBuilder();
-        
-                            for (int z = 0; z < indexer.getNumberOfPoints(); z++) {
-                                if (z > 0) {
-                                    xsb.append("f, ");
-                                    ysb.append("f, ");
-                                }
-                                xsb.append(indexer.getX()[z]);
-                                ysb.append(indexer.getY()[z]);
-                            }
-                            log.fine("float[] x = new float[]{"  + xsb.append("f").toString() + "};");
-                            log.fine("float[] y = new float[]{"  + ysb.append("f").toString() + "};");
-                            int z = 1;
-                        }
-                    }
-                }
-                
-                twoPtC.findClusters();
-                
-                plotter3.addPlot(twoPtC, plotLabel);
-                String filePath = plotter3.writeFile3();
-                log.fine("filePath=" + filePath);
-                
-                if (i == 2) {
-                    int n = twoPtC.getNumberOfGroups();
-                    //assertTrue(n == 3);
                 }
             }
         }

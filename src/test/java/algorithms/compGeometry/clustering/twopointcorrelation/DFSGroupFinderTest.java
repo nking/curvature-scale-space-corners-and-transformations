@@ -1,10 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
-import java.security.SecureRandom;
 import java.util.logging.Logger;
-
-import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
-import algorithms.misc.MiscMath;
 import algorithms.util.PolygonAndPointPlotter;
 import junit.framework.TestCase;
 

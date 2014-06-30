@@ -63,7 +63,8 @@ public class DivideAndConquerVoidFinderTest extends BaseTwoPointTest {
         DivideAndConquerVoidFinder voidFinder = new DivideAndConquerVoidFinder();
         voidFinder.setSampling(VoidSampling.LEAST_COMPLETE);
         
-        assertTrue(voidFinder.getSampling().ordinal() == VoidSampling.LEAST_COMPLETE.ordinal());
+        assertTrue(voidFinder.getSampling().ordinal() == 
+            VoidSampling.LEAST_COMPLETE.ordinal());
         
         voidFinder.setDebug(true);
        

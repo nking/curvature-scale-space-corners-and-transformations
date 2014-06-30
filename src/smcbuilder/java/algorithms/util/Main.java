@@ -61,7 +61,8 @@ public class Main {
         }
     }
 
-    public static void run(String[] args) throws IOException, FileNotFoundException, TwoPointVoidStatsException {
+    public static void run(String[] args) throws IOException, 
+        FileNotFoundException, TwoPointVoidStatsException {
 
         MainRunner runner = new MainRunner();
 

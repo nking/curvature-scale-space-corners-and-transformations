@@ -259,43 +259,7 @@ public class MiscMath {
 
         return k - 1;
     }
-
-    //public static double naturalLogOfNegative(double negativeNumber) {
-        /*
-         * Using 2 rules to get the natural log of a negative number:
-         * 
-         * (1) ln(a*b) = ln(a) + ln(b)
-         * 
-         * (2) and the Taylor series expansion:
-         *     ln(1+x)= x - (x^2)/2 + (x^3)/3 - ...
-         *     
-         *     For x = -1.005, ln(1.0 + -1.001) is approx -3.9120... curve is nearly vertical here, so not a good way to proceed
-         *
-         * Let z = a*b
-         * ln(a*b) = ln(a) + ln(1 - 1.001)
-         * ln(z) = ln(z/(-1*(1 - 1.001))) + ln(1 - 1.001)  
-         *    
-         *      ln(z) = ln(z/0.001) + ln(-0.001)  (with x = -1.001)
-         *            = ln(z/0.001) - 3.9120
-         */
-        /*if (negativeNumber == 0) {
-            return 0;
-        } if (negativeNumber > 0) {
-            return Math.log(negativeNumber);
-        }
-        
-        double onePlusX = 1 + -0.0001;
-                
-        double a = negativeNumber/onePlusX;
-        
-        double lnz = Math.log(a) - 3.9120;.
-        
-        return lnz;
-    }*/
-    
-    public static double taylor(double number) {
-        return taylor(number, 100);
-    }
+  
     /**
      * use the taylor series to approximate the natural log of a number.
      * Note that internally, the variable x which is number - 1.

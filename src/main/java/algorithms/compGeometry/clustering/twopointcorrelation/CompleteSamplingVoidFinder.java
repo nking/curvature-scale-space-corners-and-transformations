@@ -4,8 +4,8 @@ import java.util.logging.Logger;
 
 /**
  * <pre>
- * an implementation of VoidFinder that uses complete sampling to determine the background (void)
- * point density.
+ * an implementation of VoidFinder that uses complete sampling to determine 
+ * the background (void) point density.
  * 
  * RT complexity for findVoids()
  *

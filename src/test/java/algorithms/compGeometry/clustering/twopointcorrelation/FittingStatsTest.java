@@ -45,7 +45,7 @@ public class FittingStatsTest extends BaseTwoPointTest {
 
         int count = 0;
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
 
             for (int ii = 0; ii < nIterPerBackground; ii++) {
 
@@ -62,6 +62,15 @@ public class FittingStatsTest extends BaseTwoPointTest {
                         indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
                             3, 30, 60, 10.0f);
                         break;
+                    case 3: {
+                        createPoints((30+40+60), new int[]{30, 40, 60},
+                            RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION.LARGE,
+                            xmin, xmax, ymin, ymax, sr, false);
+                        indexer = new AxisIndexer();
+                        indexer.sortAndIndexX(generator.x, generator.y,
+                            generator.xErrors, generator.yErrors, generator.x.length);
+                        break;
+                    }
                     default:
                         break;
                 }

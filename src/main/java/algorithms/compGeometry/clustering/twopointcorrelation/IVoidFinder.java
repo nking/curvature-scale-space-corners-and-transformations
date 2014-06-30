@@ -1,7 +1,8 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 /**
- * interface for classes that find the voids in the dataset
+ * interface for classes that find the voids (that is, space between points) 
+ * in the dataset
  * 
  * @author nichole
  */
