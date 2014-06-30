@@ -1,16 +1,18 @@
 --------------------
 Project Description:
 --------------------
-The project, GEVSimilarity, is a small side project to examine whether or
-not a smaller range of parameters can be used to generate curves that
-represent the whole range of possible curves.   
+The project, GEVSimilarity, is a small side project to examine the
+similarity of GEV curves produced by different combinations of
+k, sigma, and mu (shape, scale, and location parameters, respectively).
+The goal is to produce a much smaller subset of parameters that produce
+all GEV curves in the feasible range of curves expected for the main project.
 
+The project is part java and part C++.
 
-NOTE:  the project is in progress and the build has not yet been
+NOTE:  the project is in progress and the C++ build has not yet been
     completely adjusted for other operating systems (specifically, 
     setting the path for the boost libraries might need to be improved).  
     A list for known OS builds will be here when tests on one system are complete.
-
 
 ------------
 Required

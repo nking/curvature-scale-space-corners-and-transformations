@@ -17,7 +17,6 @@ public class GEVSimilarityToolTest extends TestCase {
 
     protected boolean enable = true;
     
-    
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -47,6 +46,7 @@ public class GEVSimilarityToolTest extends TestCase {
         }
         
         GEVSimilarityTool tool = new GEVSimilarityTool();
+        tool.resetForNWithinTen(20.0f);
 
         if (usePersisted) {
             tool.readPersisted(persistFileNum);

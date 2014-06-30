@@ -102,6 +102,16 @@ public class GEVSimilarityTool {
         fctr = 10.f/nWithinTen;
     }
     
+    /**
+     * reset nWithinTen before running calculateCurveDiffs.  nWithinTen is
+     * the variable of how many equal divisions there will be for a parameter
+     * within a range of a power of 10.
+     * For example, mu within range 0.1 to 1 will have nWithinTen equal
+     * divisions, so if nWithin10=10, 
+     * mu will be the set {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}.
+     * 
+     * @param nwt
+     */
     protected void resetForNWithinTen(float nwt) {
         
         log.info("resetForNWithinTen");
