@@ -31,6 +31,7 @@ namespace gev {
         
         _findMinRepresentativeCover(inputVariables, outputCoverVariables);
         
+        //printf("\n calculateCover end\n");
     }
     
     void MinUnknownUniverseCover::_populateVariableFrequencyMap(
@@ -59,6 +60,8 @@ namespace gev {
         unordered_map<uint32_t, uint32_t>& inputVariableFrequencyMap, 
         vector<uint32_t>& outputCoverVariables) {
         
+        //printf("\n initialize\n");
+        
         outputCoverVariables.clear();
         vector<uint32_t> counts;
         
@@ -73,15 +76,21 @@ namespace gev {
             counts.push_back(count);
         }
         
+        //printf("\n sort by frequency %lu variables\n", counts.size());
+        
         // sort by frequency
         Sorter *sorter = new Sorter();
         sorter->sort(counts, outputCoverVariables);
         delete sorter;
+        
+        //printf("\n initialize end\n");
     }
     
     void MinUnknownUniverseCover::_findMinRepresentativeCover(
         vector< unordered_set<uint32_t> >& inputVariables, 
         vector<uint32_t>& outputCoverVariables) {
+        
+        //printf("\n_findMinRepresentativeCover\n");
         
         unsigned long len = outputCoverVariables.size();
         

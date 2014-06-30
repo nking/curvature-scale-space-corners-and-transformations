@@ -1,10 +1,9 @@
-/* 
+/** 
  * File:   ParametersEncoder.cpp
  * Author: nichole
  * 
  * Created on April 27, 2014
  */
-
 #include "ParametersEncoder.h"
 
 namespace gev {

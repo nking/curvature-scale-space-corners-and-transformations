@@ -1,4 +1,4 @@
-/*
+/**
  * ParametersEncoder_test.cpp
  *
  *  Created on: April 27, 2014

@@ -1,4 +1,4 @@
-/* 
+/** 
  * 
  * File:   ParametersEncoder.h
  * Author: nichole

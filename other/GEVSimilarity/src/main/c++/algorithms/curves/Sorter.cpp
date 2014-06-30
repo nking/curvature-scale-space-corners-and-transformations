@@ -58,15 +58,13 @@ namespace gev {
         }
 
         store++;
-        if (store != idxHi) {
-            long swap = a[store];
-            a[store] = a[idxHi];
-            a[idxHi] = swap;
+        long swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
 
-            swap = b[store];
-            b[store] = b[idxHi];
-            b[idxHi] = swap;
-        }
+        swap = b[store];
+        b[store] = b[idxHi];
+        b[idxHi] = swap;
         
         return store;
     }

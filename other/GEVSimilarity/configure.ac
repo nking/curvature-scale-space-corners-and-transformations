@@ -42,17 +42,14 @@ else
     exit 1 
 fi
 
-
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 
 
 # distribute additional compiler and linker flags
-## NOTE: to make files as input for coverage reports, add to AM_CXXFLAGS: -fprofile-arcs -ftest-coverage -lgcov
 AC_SUBST(CPPFLAGS, "-Wall -W -pipe -g -Wno-unused-parameter -Wno-unused-variable -Wno-reorder $CPPFLAGS $boostinc_include")
 AC_SUBST([AM_LDFLAGS])
 AC_SUBST([LIBS])
-
 
 AC_MSG_CHECKING([OS-specific settings for ${host}])
 case "${host}" in
@@ -81,10 +78,9 @@ case "${host}" in
 		;;
 esac
 
-#AC_MSG_RESULT(["$AM_CXXFLAGS"])
+AC_MSG_RESULT(["$AM_CXXFLAGS"])
 
 AC_SUBST(AM_CXXFLAGS, "$AM_CXXFLAGS")
-
 
 # Checks for header files.
 AC_HEADER_STDC

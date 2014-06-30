@@ -26,3 +26,8 @@ junit*properties
 /other/GEVSimilarity/depcomp
 Makefile.in
 *.Po
+*.gcda
+*.gcno
+*.o
+*_test
+*.info
