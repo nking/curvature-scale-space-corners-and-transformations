@@ -42,9 +42,11 @@ public class CompleteSamplingVoidFinder extends AbstractVoidFinder {
         //    *(i,j)
 
         // this is < O(N^2), but processIndexedRegion can be O(1) to O(N-1)
-        for (int uSortedXIndex = 0; uSortedXIndex < indexer.getNumberOfPoints(); uSortedXIndex++) {
+        for (int uSortedXIndex = 0; uSortedXIndex < indexer.getNumberOfPoints(); 
+            uSortedXIndex++) {
 
-            for (int vSortedXIndex = (uSortedXIndex + 1); vSortedXIndex < indexer.getNumberOfPoints(); vSortedXIndex++) {
+            for (int vSortedXIndex = (uSortedXIndex + 1); 
+                vSortedXIndex < indexer.getNumberOfPoints(); vSortedXIndex++) {
 
                 processIndexedRegion(uSortedXIndex, vSortedXIndex);
             }

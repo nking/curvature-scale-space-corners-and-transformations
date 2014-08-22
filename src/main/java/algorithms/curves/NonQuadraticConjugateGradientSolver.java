@@ -259,7 +259,7 @@ public class NonQuadraticConjugateGradientSolver extends AbstractCurveFitter {
     
     protected GEVYFit fitCurveKGreaterThanZero() throws FailedToConvergeException, IOException {
         
-        String filePath = ResourceFinder.findFileInTestResources("sim_curve_params_01.txt");
+        String filePath = ResourceFinder.findFileInResources("sim_curve_params_01.txt");
         
         File f = new File(filePath);
         

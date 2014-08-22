@@ -5,7 +5,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
-
 import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 
 /**
@@ -68,7 +67,7 @@ public class PerformanceMetricsRunner {
         
         long t1 = (System.currentTimeMillis() - t0)/1000;
         
-        log.info("  ====> total RT(sec) = " + t1);
+        log.info("  ====> total RT(sec) = " + t1 + " for nPoints=" + indexer.getNumberOfPoints());
     }
 
     public static void main(String[] args) throws Exception {

@@ -706,7 +706,8 @@ public class TwoPointCorrelation {
         return (groupFinder != null) ? groupFinder.getNumberOfGroups() : 0;
     }
 
-    public float[] calculateGroupCentroidUsingAllPointsEquallyWeighted(int groupNumber) {
+    public float[] calculateGroupCentroidUsingAllPointsEquallyWeighted(
+        int groupNumber) {
 
         if (groupFinder == null) {
             return null;
@@ -715,7 +716,8 @@ public class TwoPointCorrelation {
         int nGroups = groupFinder.getNumberOfGroups() ;
 
         if (groupNumber >= nGroups) {
-            throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
+            throw new IllegalArgumentException(
+                "groupNumber is larger than existing number of groups");
         }
 
         float[] xMember = getGroupFinder().getX(groupNumber, indexer);
@@ -745,7 +747,8 @@ public class TwoPointCorrelation {
         int nGroups = groupFinder.getNumberOfGroups() ;
 
         if (groupNumber >= nGroups) {
-            throw new IllegalArgumentException("groupNumber is larger than existing number of groups");
+            throw new IllegalArgumentException(
+                "groupNumber is larger than existing number of groups");
         }
 
         float[] xg = groupFinder.getX(groupNumber, indexer);
@@ -781,7 +784,8 @@ public class TwoPointCorrelation {
             
             ArrayPair hull = getGroupHull(i);
             
-            float[] ca = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(hull.getX(), hull.getY());
+            float[] ca = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(
+                hull.getX(), hull.getY());
             
             if (ca != null) {
                
@@ -842,7 +846,8 @@ public class TwoPointCorrelation {
     public ArrayPair getGroup(int groupNumber) {
         
         if (groupFinder == null) {
-            throw new IllegalStateException("groupFinder is null.  Please run findClusters() first.");
+            throw new IllegalStateException(
+                "groupFinder is null.  Please run findClusters() first.");
         }
                     
         float[] xg = groupFinder.getX(groupNumber, indexer);

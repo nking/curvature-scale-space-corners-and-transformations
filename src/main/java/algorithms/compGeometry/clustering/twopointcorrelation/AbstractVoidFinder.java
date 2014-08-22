@@ -95,10 +95,9 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
 
     /**
      * process the region bounded by the pair if the region is found to be a void
-     * bounded only by the 2 given points referenced by the indexes.
+     * bounded only by the 2 given points referenced by the indexes, that is,
+     * contains no other points within their bounds.
      *
-     * @param x
-     * @param y
      * @param xSortedIndex0 index within indexer.sortedXIndexes which is an index to reference a point in indexer's x and y
      * @param xSortedIndex1 index within indexer.sortedXIndexes which is an index to reference a point in indexer's x and y
      */
@@ -117,6 +116,8 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         int idx1 = sortedXIndexes[xSortedIndex0];
         int idx2 = sortedXIndexes[xSortedIndex1];
 
+        // x0, x1, y0, and y1 are vertical and horizontal boundaries of a rectangle
+        
         // x's are already ordered by increasing x
         float y0 = y[idx1];
         float y1 = y[idx2];
@@ -184,7 +185,9 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
 
                 t2Idx = xSortedIndex1 + 1;
 
-                while ((t2Idx < (indexer.getNumberOfPoints() - 1)) && ( indexer.getX()[sortedXIndexes[t2Idx]] == x1 )) {
+                while ((t2Idx < (indexer.getNumberOfPoints() - 1)) && (
+                    indexer.getX()[sortedXIndexes[t2Idx]] == x1 )) {
+                    
                     float y2t = y[t2Idx];
                     if ((y2t > y0) && (y2t < y1)) {
                         doProcess = false;
@@ -222,12 +225,14 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
 
         float linearDensity = (float) (2.f / Math.sqrt(d));
 
-        log.finest("(" + indexer.getX()[idx0] + "," + indexer.getY()[idx0] + ") ("
-            + indexer.getX()[idx1] + "," + indexer.getY()[idx1] + ")  ld=" + linearDensity);
+        log.finest("(" + indexer.getX()[idx0] + "," + indexer.getY()[idx0] 
+            + ") (" + indexer.getX()[idx1] + "," + indexer.getY()[idx1] 
+            + ")  ld=" + linearDensity);
 
         // expand arrays by 100 if needed
         if ((nTwoPointSurfaceDensities + 2) > allTwoPointSurfaceDensities.length) {
-            allTwoPointSurfaceDensities = Arrays.copyOf(allTwoPointSurfaceDensities, nTwoPointSurfaceDensities + 100);
+            allTwoPointSurfaceDensities = Arrays.copyOf(
+                allTwoPointSurfaceDensities, nTwoPointSurfaceDensities + 100);
             point1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities + 100);
             point2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities + 100);
         }
@@ -240,7 +245,6 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         }
     }
 
-
     protected void condenseArrays() throws TwoPointVoidStatsException {
 
         if (nTwoPointSurfaceDensities == 0) {
@@ -248,13 +252,15 @@ public abstract class AbstractVoidFinder implements IVoidFinder {
         }
 
         // condense arrays
-        allTwoPointSurfaceDensities = Arrays.copyOf(allTwoPointSurfaceDensities, nTwoPointSurfaceDensities);
+        allTwoPointSurfaceDensities = Arrays.copyOf(allTwoPointSurfaceDensities, 
+            nTwoPointSurfaceDensities);
         point1 = Arrays.copyOf(point1, nTwoPointSurfaceDensities);
         point2 = Arrays.copyOf(point2, nTwoPointSurfaceDensities);
 
         allTwoPointSurfaceDensitiesErrors =
-            calulateTwoPointDensityErrors(allTwoPointSurfaceDensities, point1, point2,
-            indexer.getX(), indexer.getY(), indexer.getXErrors(), indexer.getYErrors());
+            calulateTwoPointDensityErrors(allTwoPointSurfaceDensities, point1, 
+                point2, indexer.getX(), indexer.getY(), indexer.getXErrors(), 
+                indexer.getYErrors());
 
         // release twoPointIdentities to free up memory
         /*twoPointIdentities = null;

@@ -88,17 +88,20 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             //                  (2/thrsh) > u - v 
             //                  (2/thrsh) + v > u
             
-            float cr = 2.f/thrsh;
+            // association of 2 points for separation <= critSeparation
+            
+            float critSeparation = 2.f/thrsh;
 
             float uX = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];
-            float minXAssoc = uX - cr;
-            float maxXAssoc = uX + cr;
+            float minXAssoc = uX - critSeparation;
+            float maxXAssoc = uX + critSeparation;
             float uY = indexer.getY()[ sortedXIndexes[uSortedXIndex] ];
-            float minYAssoc = uY - cr;
-            float maxYAssoc = uY + cr;
+            float minYAssoc = uY - critSeparation;
+            float maxYAssoc = uY + critSeparation;
             
             // for each neighbor v of u
-            for (int vSortedXIndex = 0; vSortedXIndex < sortedXIndexes.length; vSortedXIndex++) {
+            for (int vSortedXIndex = 0; vSortedXIndex < sortedXIndexes.length; 
+                vSortedXIndex++) {
 
                 if (color[vSortedXIndex] != 0 || (uSortedXIndex == vSortedXIndex)) {
                     continue;
@@ -125,12 +128,13 @@ public class DFSGroupFinder extends AbstractGroupFinder {
                 
                 double sep = Math.sqrt(LinesAndAngles.distSquared(uX, uY, vX, vY));
                   
-                if (sep > cr) {
+                if (sep > critSeparation) {
                     continue;
                 }
                 
-                log.finest("  comparing: (" + uX + "," + uY + ")  (" + vX + "," + vY + ")  sep=" + sep + " cr=" + cr);
-                                    
+                log.fine("  comparing: (" + uX + "," + uY + ")  (" 
+                    + vX + "," + vY + ")  sep=" + sep + " cr=" + critSeparation);
+      
                 color[vSortedXIndex] = 2;
                 
                 processPair(indexer, uSortedXIndex, vSortedXIndex);
@@ -166,7 +170,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             
             groupMembership[groupId].insert(vIdx);
             
-        } else if ((pointToGroupIndex[vIdx] > -1) && (pointToGroupIndex[uIdx] == -1)){
+        } else if ((pointToGroupIndex[vIdx] > -1) && (pointToGroupIndex[uIdx] == -1)) {
             
             groupId = pointToGroupIndex[vIdx];
             
@@ -174,7 +178,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             
             groupMembership[groupId].insert(uIdx);
             
-        } else if ((pointToGroupIndex[uIdx] == -1) && (pointToGroupIndex[vIdx] == -1) ){
+        } else if ((pointToGroupIndex[uIdx] == -1) && (pointToGroupIndex[vIdx] == -1)) {
             
             checkAndExpandGroupMembershipArray();
             
@@ -187,7 +191,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             groupMembership[groupId].insert(uIdx);
             
             groupMembership[groupId].insert(vIdx);
-            
+     
             nGroups++;
             
         } else {
