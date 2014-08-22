@@ -90,7 +90,13 @@ public class ResourceFinder {
                 filePath = url.getPath() + dirName;
                 f = new File(filePath);
                 if (!f.exists()) {
-                    throw new IOException("could not find directory named " + dirName);
+                    // try test/resources
+                    filePath = url.getPath() + ".." + sep + ".." + sep + "src"
+                        + sep + "test" + sep + "resources" + sep + dirName;
+                    f = new File(filePath);
+                    if (!f.exists()) {
+                        throw new IOException("could not find directory named " + dirName);
+                    }
                 }
             }
         }
