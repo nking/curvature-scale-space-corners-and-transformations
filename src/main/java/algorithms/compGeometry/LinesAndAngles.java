@@ -568,15 +568,20 @@ public class LinesAndAngles {
      *
      * @param x
      * @param y
+     * @param xe errors for array x, can be null
+     * @param ye errors for array y, can be null
      * @param topFraction
      * @return
      */
     public static ArrayPair createPolygonOfTopFWFractionMax(float[] x, 
-        float[] y, float topFraction) {
+        float[] y, float[] xe, float[] ye, float topFraction) {
 
         float[] xTopPolygon = new float[x.length + 3];
         float[] yTopPolygon = new float[y.length + 3];
-
+        
+        float[] xTopPolygonError = (xe == null) ? null : new float[x.length + 3];
+        float[] yTopPolygonError = (ye == null) ? null : new float[x.length + 3];
+        
         int yPeakIndex = MiscMath.findYMaxIndex(y);
 
         float yFractionLimit = y[yPeakIndex]*topFraction;
@@ -599,12 +604,20 @@ public class LinesAndAngles {
 
                     xTopPolygon[polygonCount] = x[i];
                     yTopPolygon[polygonCount] = y[i];
+                    if (xTopPolygonError != null) {
+                        xTopPolygonError[polygonCount] = xe[i];
+                        yTopPolygonError[polygonCount] = ye[i];
+                    }
                     polygonCount++;
                 }
             } else if (y[i] >= yFractionLimit) {
 
                 xTopPolygon[polygonCount] = x[i];
                 yTopPolygon[polygonCount] = y[i];
+                if (xTopPolygonError != null) {
+                    xTopPolygonError[polygonCount] = xe[i];
+                    yTopPolygonError[polygonCount] = ye[i];
+                }
                 polygonCount++;
 
             } else {
@@ -620,9 +633,14 @@ public class LinesAndAngles {
         // compress the array.  we will add two items beyond polygonCount.
         //    one for the interpolated yFractionLimit, and the other for a
         //    copy of the first point to close the polygon
-        if ( (polygonCount + 1) < xTopPolygon.length) {
+        if ((polygonCount + 1) < xTopPolygon.length) {
             xTopPolygon = Arrays.copyOf(xTopPolygon, (polygonCount + 2));
             yTopPolygon = Arrays.copyOf(yTopPolygon, (polygonCount + 2));
+            
+            if (xTopPolygonError != null) {
+                xTopPolygonError = Arrays.copyOf(xTopPolygonError, (polygonCount + 2));
+                yTopPolygonError = Arrays.copyOf(yTopPolygonError, (polygonCount + 2));
+            }
         }
 
         /* <pre>
@@ -647,7 +665,11 @@ public class LinesAndAngles {
 
         // interpolate first point
         yTopPolygon[0] = yFractionLimit;
-
+        if (xTopPolygonError != null) {
+            // TODO: correct this
+            yTopPolygonError[0] = ye[0];
+        }
+        
         if (firstIndex > 0) {
             /* case (0), case (1), and case (2)
              *  y[pt_i] - y[pt_0]    y[pt_i] - y[limit]                               y[pt_i] - y[limit]
@@ -656,13 +678,22 @@ public class LinesAndAngles {
              */
             float tmp = (y[firstIndex] - yFractionLimit)/(y[firstIndex] - y[firstIndex - 1]);
             xTopPolygon[0] = x[firstIndex] - (tmp * (x[firstIndex] - x[firstIndex - 1]));
-
+            
+            if (xTopPolygonError != null) {
+                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[firstIndex], 2) + 
+                    Math.pow(xe[firstIndex - 1], 2));
+            }
+            
         } else if ((firstIndex == 0) && (yPeakIndex == 0)) {
             /* case (3)
              * there is no point before the peak, so we create a point right below as a straight line
              */
              xTopPolygon[0] = x[yPeakIndex];
 
+             if (xTopPolygonError != null) {
+                 xTopPolygonError[0] = xe[yPeakIndex];
+             }
+             
         } else if ((firstIndex == 0) && (yPeakIndex > 0)) {
             /* case (4)
              * There is a point before the peak, so we extend line.
@@ -681,6 +712,11 @@ public class LinesAndAngles {
             float tmp = (y[firstIndex] - yFractionLimit)/(y[firstIndex + 1] - y[firstIndex]);
             xTopPolygon[0] = x[firstIndex] - (tmp * (x[firstIndex + 1] - x[firstIndex]));
 
+            if (xTopPolygonError != null) {
+                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[firstIndex], 2) + 
+                    Math.pow(xe[firstIndex + 1], 2));
+            }
+            
         } else {
             throw new IllegalStateException("have not solved for this first point! ");
         }
@@ -688,7 +724,11 @@ public class LinesAndAngles {
         // interpolate the point after lastIndex
 
         yTopPolygon[polygonCount] = yFractionLimit;
-
+        if (xTopPolygonError != null) {
+            // TODO: correct this
+            yTopPolygonError[polygonCount] = ye[0];
+        }
+        
         if (lastIndex < (x.length - 1)) {
             /* case (0), case (1), and case (2)
              *  y[pt_j] - y[pt_k]    y[pt_j] - y[limit]                               y[pt_j] - y[limit]
@@ -698,12 +738,21 @@ public class LinesAndAngles {
             float slope = (y[lastIndex] - yFractionLimit)/(y[lastIndex] - y[lastIndex + 1]);
             xTopPolygon[polygonCount] = x[lastIndex] - (slope * (x[lastIndex] - x[lastIndex + 1]));
 
+            if (xTopPolygonError != null) {
+                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[lastIndex], 2) + 
+                    Math.pow(xe[lastIndex + 1], 2));
+            }
+            
         } else if ((lastIndex == (x.length - 1)) && (lastIndex == yPeakIndex)) {
             /* case (3)
              * there is no point after the peak, so we create a point right below as a straight line
              */
              xTopPolygon[polygonCount] = x[yPeakIndex];
 
+             if (xTopPolygonError != null) {
+                 xTopPolygonError[polygonCount] = xe[yPeakIndex];
+             }
+            
         } else if ((lastIndex == (x.length - 1)) && (yPeakIndex < lastIndex)) {
             /* case (4)
              * There is a point after the peak, so we extend line.
@@ -722,6 +771,11 @@ public class LinesAndAngles {
             float tmp = (y[lastIndex] - yFractionLimit)/(y[lastIndex - 1] - y[lastIndex]);
             xTopPolygon[polygonCount] = x[lastIndex] - (tmp * (x[lastIndex - 1] - x[lastIndex]));
 
+            if (xTopPolygonError != null) {
+                xTopPolygonError[polygonCount] = (float)Math.sqrt(Math.pow(xe[lastIndex], 2) + 
+                    Math.pow(xe[lastIndex - 1], 2));
+            }
+            
         } else {
             throw new IllegalStateException("have not solved for this later point! ");
         }
@@ -729,7 +783,17 @@ public class LinesAndAngles {
         xTopPolygon[xTopPolygon.length - 1] = xTopPolygon[0];
         yTopPolygon[xTopPolygon.length - 1] = yTopPolygon[0];
 
-        ArrayPair xy = new ArrayPair(xTopPolygon, yTopPolygon);
+        if (xTopPolygonError != null) {
+            xTopPolygonError[xTopPolygon.length - 1] = xTopPolygonError[0];
+            yTopPolygonError[xTopPolygon.length - 1] = yTopPolygonError[0];
+        }
+        
+        ArrayPair xy = null;
+        if (xTopPolygonError == null) {
+            xy = new ArrayPair(xTopPolygon, yTopPolygon);
+        } else {
+            xy = new ArrayPair(xTopPolygon, yTopPolygon, xTopPolygonError, yTopPolygonError);
+        }
 
         return xy;
     }

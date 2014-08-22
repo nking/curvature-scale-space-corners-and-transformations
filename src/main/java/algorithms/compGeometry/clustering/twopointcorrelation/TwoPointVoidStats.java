@@ -545,6 +545,14 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
     protected GEVYFit fitBackgroundHistogram(HistogramHolder histogram, 
         int yMaxBin) throws TwoPointVoidStatsException {
 
+        // if the histogram has enough points, prefer to fit only the
+        // smallest x values half of the histogram
+        // This could be improved with a mixture model for GEV distributions 
+        //   or fitting only the first peak
+        histogram = Histogram.reduceHistogramToFirstPeak(histogram,
+            voidFinder.getTwoPointDensities(), 
+            voidFinder.getTwoPointDensityErrors());
+        
         try {
 
             GEVYFit yfit = null;
@@ -650,7 +658,10 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
                 float[] xf = bestFit.getOriginalScaleX();
                 float[] yf = bestFit.getOriginalScaleYFit();
-                PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+                
+                PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(
+                    xmin, xmax, ymin, ymax);
+                
                 plotter.addPlot(histogram.getXHist(), histogram.getYHistFloat(),
                     histogram.getXErrors(), histogram.getYErrors(), xf, yf, "");
                 plotter.writeFile3();
@@ -772,7 +783,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
         float frac) {
 
         ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(xfit, 
-            yfit, frac);
+            yfit, null, null, frac);
 
         return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xy.getX(), 
             xy.getY());
@@ -860,7 +871,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 statsHistogram.getYErrors(), xf, yf, "");
             
             plotter.writeFile();
-
+int z = 1;
         } catch (IOException e) {
         }
 

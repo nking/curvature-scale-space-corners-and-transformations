@@ -37,12 +37,22 @@ public class TwoPointCorrelationPlotter {
     protected final StringBuffer plotContent;
 
     protected int plotNumber = 0;
+    
+    protected Float x0 = null;
+    protected Float x1 = null;
+    protected Float y0 = null;
+    protected Float y1 = null;
 
     public TwoPointCorrelationPlotter(float minX, float maxX, float minY, float maxY) throws FileNotFoundException, IOException {
 
         plotContent = getTemplateHtmlPlot();
 
         setDataMinMax(plotContent, minX, maxX, minY, maxY);
+    }
+    
+    public TwoPointCorrelationPlotter() throws FileNotFoundException, IOException {
+
+        plotContent = getTemplateHtmlPlot();
     }
 
     public TwoPointCorrelationPlotter(float minX, float maxX, float minY, float maxY, String relDirectory) throws FileNotFoundException, IOException {
@@ -52,10 +62,16 @@ public class TwoPointCorrelationPlotter {
         setDataMinMax(plotContent, minX, maxX, minY, maxY);
     }
 
-    protected void setDataMinMax(StringBuffer plotContent, float minX, float maxX, float minY, float maxY) {
+    protected void setDataMinMax(StringBuffer plotContent, float minX, 
+        float maxX, float minY, float maxY) {
 
         StringBuffer dataSB = new StringBuffer();
 
+        x0 = minX;
+        x1 = maxX;
+        y0 = minY;
+        y1 = maxY;
+        
         dataSB.append("\nvar xmin = ").append(minX).append(";\n");
         dataSB.append("var xmax = ").append(maxX).append(";\n");
         dataSB.append("var ymin = ").append(minY).append(";\n");
@@ -143,6 +159,7 @@ public class TwoPointCorrelationPlotter {
 
             float[] xh = stats.statsHistogram.getXHist();
             float[] yh = stats.statsHistogram.getYHistFloat();
+            float[] xg = stats.bestFit.getOriginalScaleX();
             float[] yg = stats.bestFit.getOriginalScaleYFit();
 
             float[] xhe = stats.statsHistogram.getXErrors();
@@ -184,8 +201,8 @@ public class TwoPointCorrelationPlotter {
               //  ===== add polygon =====
             dataSB.append("\n").append("var data_gev_polygon = [\n");
             dataSB.append("    [");
-            for (int ii = 0; ii < xh.length; ii++) {
-                String xStr = String.format("%.7f", xh[ii]);
+            for (int ii = 0; ii < xg.length; ii++) {
+                String xStr = String.format("%.7f", xg[ii]);
                 String yStr = String.format("%.7f", yg[ii]);
                 if (ii > 0) {
                     dataSB.append(", ");
@@ -232,14 +249,45 @@ public class TwoPointCorrelationPlotter {
     }
 
     public void addPlotWithoutHull(TwoPointCorrelation twoPtCorr, String plotLabel2) {
+        
+        if (x0 == null) {
+            throw new IllegalStateException("x0 cannot be null." 
+                + " use constructor with range arguments or "
+                + " addPlotWithoutHull with range arguments"
+            );
+        }
+        
+        addPlotWithoutHull(twoPtCorr, plotLabel2, x0, x1, y0, y1);
+    }
+    
+    public void addPlotWithoutHull(TwoPointCorrelation twoPtCorr, 
+        String plotLabel2, Float xMin, Float xMax, Float yMin, Float yMax) {
 
         StringBuffer dataSB = new StringBuffer();
 
+        if (xMin != null) {
+            String str = String.format("%.7f", xMin.floatValue());
+            dataSB.append("var x_min_").append(plotNumber).append(" = ")
+                .append(str).append(";\n");
+            str = String.format("%.7f", xMax.floatValue());
+            dataSB.append("var x_max_").append(plotNumber).append(" = ")
+                .append(str).append(";\n");
+            
+            str = String.format("%.7f", yMin.floatValue());
+            dataSB.append("var y_min_").append(plotNumber).append(" = ")
+                .append(str).append(";\n");
+            str = String.format("%.7f", yMax.floatValue());
+            dataSB.append("var y_max_").append(plotNumber).append(" = ")
+                .append(str).append(";\n");
+        }
+        
         float[] xPoints = twoPtCorr.getX();
         float[] yPoints = twoPtCorr.getY();
 
         //  ===== add points data =====
-        dataSB.append("\n\n").append("var data_points = [\n");
+        dataSB.append("\n\n").append("var data_points_").append(plotNumber)
+            .append(" = [\n");
+        
         for (int i = 0; i < xPoints.length; i++) {
             if (i > 0) {
                 dataSB.append(",\n");
@@ -254,19 +302,24 @@ public class TwoPointCorrelationPlotter {
 
 
           //  ===== add group centroids =====
-        dataSB.append("\n\n").append("var data_group_centroids = [\n");
+        dataSB.append("\n\n").append("var data_group_centroids_")
+            .append(plotNumber).append(" = [\n");
+        
         ArrayPair centroids = twoPtCorr.getHullCentroids();
         for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
             if (i > 0) {
                 dataSB.append(",\n");
             }
             dataSB.append("    {x:").append(centroids.getX()[i])
-                .append(", y:").append(centroids.getY()[i]).append(", name: ").append(i).append("}");
+                .append(", y:").append(centroids.getY()[i]).append(", name: ")
+                .append(i).append("}");
         }
         dataSB.append("\n];\n");
 
 
-        dataSB.append("\n").append("var data_groups = [\n");
+        dataSB.append("\n").append("var data_groups_")
+            .append(plotNumber).append(" = [\n");
+        
         for (int i = 0; i < twoPtCorr.getNumberOfGroups(); i++) {
             ArrayPair group = twoPtCorr.getGroup(i);
         
@@ -290,19 +343,30 @@ public class TwoPointCorrelationPlotter {
         dataSB.append("];\n");
 
         String sdStr = String.format("'%.6f'", twoPtCorr.getBackgroundDensity());
-        dataSB.append("\n").append("var plot_label_").append(plotNumber).append("=").append(sdStr).append(";\n");
+        dataSB.append("\n").append("var plot_label_").append(plotNumber)
+            .append("=").append(sdStr).append(";\n");
 
         // ======= add RENDER statement ==========
         dataSB.append("\nrenderPlotWithoutHull('plot").append(plotNumber)
-            .append("', data_group_centroids, data_points, data_groups, plot_label_").append(plotNumber)
+            .append("', data_group_centroids_").append(plotNumber)
+            .append(", data_points_").append(plotNumber)
+            .append(", data_groups_").append(plotNumber)
+            .append(", plot_label_").append(plotNumber)
+            .append(", x_min_").append(plotNumber)
+            .append(", x_max_").append(plotNumber)
+            .append(", y_min_").append(plotNumber)
+            .append(", y_max_").append(plotNumber)
             .append(");\n");
 
-        if ((twoPtCorr.backgroundStats != null) && (twoPtCorr.backgroundStats instanceof TwoPointVoidStats) ) {
+        if ((twoPtCorr.backgroundStats != null) && 
+            (twoPtCorr.backgroundStats instanceof TwoPointVoidStats) ) {
 
             TwoPointVoidStats stats = (TwoPointVoidStats)twoPtCorr.backgroundStats;
 
             float[] xh = stats.statsHistogram.getXHist();
             float[] yh = stats.statsHistogram.getYHistFloat();
+            
+            float[] xg = stats.bestFit.getOriginalScaleX();
             float[] yg = stats.bestFit.getOriginalScaleYFit();
 
             float[] xhe = stats.statsHistogram.getXErrors();
@@ -323,10 +387,14 @@ public class TwoPointCorrelationPlotter {
                 );
             }
 
-            dataSB.append("\n\n").append("var data_plot_gev_label = '").append(plotLabel2).append("';\n");
+            dataSB.append("\n\n").append("var data_plot_gev_label_")
+                .append(plotNumber)
+                .append(" = '").append(plotLabel2).append("';\n");
 
             //  ===== add points data =====
-            dataSB.append("\n\n").append("var data_gev_points = [\n");
+            dataSB.append("\n\n").append("var data_gev_points_")
+                .append(plotNumber).append(" = [\n");
+            
             for (int i = 0; i < xh.length; i++) {
                 if (i > 0) {
                     dataSB.append(",\n");
@@ -342,10 +410,12 @@ public class TwoPointCorrelationPlotter {
             dataSB.append("\n];\n");
 
               //  ===== add polygon =====
-            dataSB.append("\n").append("var data_gev_polygon = [\n");
+            dataSB.append("\n").append("var data_gev_polygon_")
+                .append(plotNumber).append(" = [\n");
+            
             dataSB.append("    [");
-            for (int ii = 0; ii < xh.length; ii++) {
-                String xStr = String.format("%.7f", xh[ii]);
+            for (int ii = 0; ii < xg.length; ii++) {
+                String xStr = String.format("%.7f", xg[ii]);
                 String yStr = String.format("%.7f", yg[ii]);
                 if (ii > 0) {
                     dataSB.append(", ");
@@ -358,9 +428,13 @@ public class TwoPointCorrelationPlotter {
 
             // ======= add RENDER statement ==========
             dataSB.append("renderGEVPlot('plot_gev").append(plotNumber)
-                .append("', data_gev_points, data_gev_polygon, data_plot_gev_label, ")
-                .append(minx).append(",").append(maxx).append(",").append(miny).append(",").append(maxy).append(");\n");
-
+                .append("', data_gev_points_").append(plotNumber)
+                .append(", data_gev_polygon_").append(plotNumber)
+                .append(", data_plot_gev_label_").append(plotNumber)
+                .append(", ")                
+                
+                .append(minx).append(",").append(maxx).append(",").append(miny)
+                .append(",").append(maxy).append(");\n");
         }
 
         String srchFor = "/* === DO NOT REMOVE THIS == END DATA */";
@@ -391,15 +465,18 @@ public class TwoPointCorrelationPlotter {
         plotNumber++;
     }
 
-    protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, IOException {
+    protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, 
+        IOException {
         return getTemplateHtmlPlot("plot_twoptcorrelation.html");
     }
 
-    protected StringBuffer getTemplateHtmlPlotWRTDir(String relDir) throws FileNotFoundException, IOException {
+    protected StringBuffer getTemplateHtmlPlotWRTDir(String relDir) throws 
+        FileNotFoundException, IOException {
         return getTemplateHtmlPlot(relDir, "plot_twoptcorrelation.html");
     }
 
-    protected StringBuffer getTemplateHtmlPlot(String subDir, String fileName) throws FileNotFoundException, IOException {
+    protected StringBuffer getTemplateHtmlPlot(String subDir, String fileName) 
+        throws FileNotFoundException, IOException {
 
         String path = ResourceFinder.findFileInResources(subDir, fileName);
 
@@ -431,7 +508,8 @@ public class TwoPointCorrelationPlotter {
         return sb;
     }
 
-    protected StringBuffer getTemplateHtmlPlot(String fileName) throws FileNotFoundException, IOException {
+    protected StringBuffer getTemplateHtmlPlot(String fileName) throws 
+        FileNotFoundException, IOException {
 
         StringBuffer sb = new StringBuffer();
 

@@ -3,10 +3,12 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -457,6 +459,99 @@ public class CreateClusterDataTest extends BaseTwoPointTest {
 
             return statsHistogram;
         }
+    }
+    
+    public static AxisIndexer getUEFClusteringDataset(String fileName) throws IOException {
+        
+        String dirPath = ResourceFinder.findDirectory("uEasternFinlandClustering");
+        
+        String filePath = dirPath + "/" + fileName;
+        
+        BufferedReader in = null;
+        FileReader reader = null;
+        
+        AxisIndexer indexer = new AxisIndexer();
+        
+        boolean hasTabs = false;
+        
+        try {
+            reader = new FileReader(new File(filePath));
+            in = new BufferedReader(reader);
+            
+            int nLines = 0;
+            
+            String line = in.readLine();
+            line = line.trim();
+            if (line.split("\\t") != null && line.split("\\t").length > 1) {
+                hasTabs = true;
+            }
+            while (line != null) {
+                nLines++;
+                line = in.readLine();
+            }
+            if (reader != null) {
+                reader.close();
+            }
+            if (in != null) {
+                in.close();
+            }
+            
+            float[] x = new float[nLines];
+            float[] y = new float[x.length];
+            float[] xe = new float[x.length];
+            float[] ye = new float[y.length];
+        
+            reader = new FileReader(new File(filePath));
+            in = new BufferedReader(reader);
+            
+            int i = 0;
+            
+            line = in.readLine().trim();
+            
+            //System.out.println("fileName=" + fileName);
+            
+            while (line != null) {
+                
+                line = line.trim();
+                
+                String[] items = null;
+                
+                if (hasTabs) {
+                    items = line.split("\\t");
+                } else {
+                    items = line.split("\\s+");
+                }
+                
+                if (items == null) {
+                    break;
+                }
+                                
+try {
+                x[i] = Float.valueOf(items[0]).floatValue();
+                y[i] = Float.valueOf(items[1]).floatValue();
+} catch(Throwable t) {
+    System.out.println("line=" + line + " items[0]=" + items[0] + "  items[1]=" + items[1]);
+}
+                xe[i] = 0.1f;
+                ye[i] = 0.1f;
+            
+                i++;
+                
+                line = in.readLine();
+            }
+            
+            indexer.sortAndIndexX(x, y, xe, ye, x.length);
+            
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+            if (in != null) {
+                in.close();
+            }
+        }
+        
+        return indexer;
     }
 
     public static AxisIndexer getWikipediaDBScanExampleData() {

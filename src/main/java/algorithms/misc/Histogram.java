@@ -182,7 +182,8 @@ public class Histogram {
      * @param yHistErrorsOutput
      */
     public static void calulateHistogramBinErrors(float[] xHist, int[] yHist,
-        float[] values, float[] valueErrors, float[] xHistErrorsOutput, float[] yHistErrorsOutput) {
+        float[] values, float[] valueErrors, float[] xHistErrorsOutput, 
+        float[] yHistErrorsOutput) {
 
         float xInterval = xHist[1] - xHist[0];
         float xmin = xHist[0] - (xInterval/2.0f);
@@ -329,7 +330,10 @@ public class Histogram {
             return createSimpleHistogram(values, valueErrors);
         }
         
-        return calculateSturgesHistogramRemoveZeroTail(values, valueErrors);
+        HistogramHolder hist = calculateSturgesHistogramRemoveZeroTail(values, 
+            valueErrors);
+                
+        return hist;
     }
     
     public static HistogramHolder calculateSturgesHistogramRemoveZeroTail(
@@ -382,10 +386,31 @@ public class Histogram {
             binWidth = calculateBinWidth(minx, maxx, nBins);
 
             Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
+            
+            if (countsBelowMinAtTail > (nBins/2)) {
+                // one more round of trimming
+                maxy = MiscMath.findMax(yHist);
+                minCountsLimit = (int)Math.max(5, 0.03f*maxy);
+                countsBelowMinAtTail = 0;
+                lastLowCountIdx = yHist.length - 1;
+                for (int i = (yHist.length - 1); i > -1; i--) {
+                    if (yHist[i] < minCountsLimit) {
+                        countsBelowMinAtTail++;
+                        lastLowCountIdx = i;
+                    } else {
+                        break;
+                    }
+                }
+                if (countsBelowMinAtTail > 0) {
+                    maxx = xHist[lastLowCountIdx];
+                    binWidth = calculateBinWidth(minx, maxx, nBins);
+                    Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
+                }
+            }
         }
         
-        // if there are a large number of points, we'd like to increase the resolution of the peak if needed
         if (values.length > 100) {
+            // if there are a large number of points, we'd like to increase the resolution of the peak if needed
             int nLeftOfPeak = MiscMath.findYMaxIndex(yHist);
             int nIter = 0;
             while (nIter < 30 && nLeftOfPeak < 3 && (yHist[nLeftOfPeak] > 100)) {
@@ -415,4 +440,87 @@ public class Histogram {
         
         return histogram;
     }
+    
+    /**
+     * if there is more than one peak in the histogram, reduce the histogram
+     * to only that peak, else leave unaltered.
+     * 
+     * @param hist
+     * @param values
+     * @param valueErrors
+     * @return 
+     */
+    public static HistogramHolder reduceHistogramToFirstPeak(HistogramHolder 
+        hist, float[] values, float[] valueErrors) {
+        
+        int yPeakIdx = findFirstPeakIndex(hist);
+        
+        if (yPeakIdx == -1) {
+            return hist;
+        }
+      
+        int yMinPeakIdx = findFirstMinimaFollowingPeak(hist, yPeakIdx);
+        
+        if (yMinPeakIdx == -1) {
+            return hist;
+        }
+        
+        int n = yMinPeakIdx + 1;
+        
+        HistogramHolder tmp = new HistogramHolder();
+        tmp.setXHist(Arrays.copyOfRange(hist.getXHist(), 0, n));
+        tmp.setYHistFloat(Arrays.copyOfRange(hist.getYHistFloat(), 0, n));
+        tmp.setXErrors(Arrays.copyOfRange(hist.getXErrors(), 0, n));
+        tmp.setYErrors(Arrays.copyOfRange(hist.getYErrors(), 0, n));
+        
+        return tmp;
+    }
+
+    public static int findFirstPeakIndex(HistogramHolder hist) {
+        
+        float yPeak = Float.MIN_VALUE;
+        int yPeakIdx = -1;
+        
+        // specific to use here, find max within first half of histogram
+        for (int i = 0; i < hist.getXHist().length/2; i++) {
+            
+            float y = hist.getYHistFloat()[i];
+            
+            if (y > yPeak) {
+                yPeak = y;
+                yPeakIdx = i;
+            }
+        }
+        
+        return yPeakIdx;
+    }
+
+    public static int findFirstMinimaFollowingPeak(HistogramHolder hist, 
+        int yPeakIdx) {
+    
+        //TODO:  could be improved to smooth over noise to find true minimum
+        
+        float yPeakMinimum = Float.MAX_VALUE;
+        int yPeakMinIdx = -1;
+        
+        // find min within first half of histogram, after peak
+        int n = (int)(0.5f * hist.getXHist().length);
+        
+        if ((n - yPeakIdx) < 3) {
+            n = hist.getXHist().length;
+        }
+        
+        for (int i = (yPeakIdx + 1); i < n; i++) {
+            
+            float y = hist.getYHistFloat()[i];
+            
+            if (y < yPeakMinimum) {
+                yPeakMinimum = y;
+                yPeakMinIdx = i;
+            }
+        }
+        
+        return yPeakMinIdx;
+    }
+
 }

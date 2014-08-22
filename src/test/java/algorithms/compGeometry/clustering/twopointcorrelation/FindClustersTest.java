@@ -1,5 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
+import algorithms.compGeometry.clustering.twopointcorrelation.RandomClusterAndBackgroundGenerator.CLUSTER_SEPARATION;
 import algorithms.curves.GEVYFit;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.ResourceFinder;
@@ -11,7 +12,7 @@ import java.util.logging.Logger;
  */
 public class FindClustersTest extends BaseTwoPointTest {
 
-    boolean debug = true;
+    boolean debug = false;
 
     boolean writeToTmpData = false;
 
@@ -38,7 +39,7 @@ public class FindClustersTest extends BaseTwoPointTest {
 
         //seed = 1387775326745l;
 
-        sr.setSeed(seed);
+        sr.setSeed(-2384802679227907254l);
         log.info("SEED=" + seed);
 
         // a long running test to calculate and print the stats of fits
@@ -46,64 +47,55 @@ public class FindClustersTest extends BaseTwoPointTest {
         //  all with the same number of clusters and cluster points, though
         //  randomly distributed.
 
-        int nSwitches = 5;
+        int nSwitches = 3;
 
-        int nIterPerBackground = 5;
+        int nIterPerBackground = 3;
 
         AxisIndexer indexer = null;
 
         int count = 0;
-
-        int nClusters = 3;
 
         for (int ii = 0; ii < nIterPerBackground; ii++) {
             for (int i = 0; i < nSwitches; i++) {
                 try {
                     switch(i) {
                         case 0:
+                            //~100
                             indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                                nClusters, 30, 60, /*100.0f*/ 0.1f);
+                                //10, 100, 110, 100.0f);
+                                3, 33, 33, 0.1f);
                             break;
                         case 1:
+                            //~1000
                             indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                                nClusters, 30, 60, 1f);
+                                3, 33, 33, 10f);
                             break;
                         case 2:
-                            indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                                nClusters, 30, 60, 10.0f);
-                            break;
-                        /*case 3:
                             // 100*100
                             indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
-                                nClusters, 30, 60, 100.0f);
-                            break;*/
+                                3, 30, 60, 100.0f);
+                            break;
                         case 3: {
-                            // test solution without and with refine solution
-                            int nPoints = 9001;
-                            float[] xb = new float[nPoints];
-                            float[] yb = new float[nPoints];
-                            createRandomPointsInRectangle(sr, nPoints,
-                                xmin, xmax, ymin, ymax, xb, yb, 0);
-                            float[] xbe = new float[nPoints];
-                            float[] ybe = new float[nPoints];
-                            for (int j = 0; j < nPoints; j++) {
-                                // simulate x error as a percent error of 0.03 for each bin
-                                xbe[j] = xb[j] * 0.03f;
-                                ybe[j] = (float) (Math.sqrt(yb[j]));
-                            }
-                            indexer = new AxisIndexer();
-                            indexer.sortAndIndexX(xb, yb, xbe, ybe, xbe.length);
+                            int[] clusterNumbers = new int[]{1000, 300, 100};
+                            int nBackgroundPoints = 10000;
+                            CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.LARGE;
+
+                            indexer = createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                                clusterNumbers, nBackgroundPoints, clusterSeparation);
                             break;
                         }
-                        case 4:
-                            // compare to case 3
-                            // TODO:  add a comparison of group solutions in 
-                            // case 3 and 4 by area and membership
-                            break;
-                        default:
-                            break;
-                    }
+                        default: {
+                            int[] clusterNumbers = new int[]{1000, 300, 100};
+                            int nBackgroundPoints = 100000;
+                            CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.LARGE;
 
+                            indexer = generator.createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax,
+                                clusterNumbers, nBackgroundPoints, clusterSeparation);
+                            break;
+                        }
+                    }
+                    //TODO: consider reverting this code... and adding the ability to plot to the 
+                    // performance metrics
                     log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
                     if (writeToTmpData) {
@@ -120,12 +112,14 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                     log.info(" " + count + " (" + indexer.nXY + " points) ... ");
 
+                    long t0 = System.currentTimeMillis();
+                
                     TwoPointCorrelation twoPtC = new TwoPointCorrelation(indexer);
 
                     //twoPtC.setDebug(true);
                     
                     if (i == 4) {
-                        twoPtC.setAllowRefinement();
+                        //twoPtC.setAllowRefinement();
                     }
 
                     twoPtC.logPerformanceMetrics();
@@ -134,6 +128,11 @@ public class FindClustersTest extends BaseTwoPointTest {
                     //twoPtC.setBackground(0.2f, 0.1f);
                     twoPtC.findClusters();
 
+                    long t1 = (System.currentTimeMillis() - t0)/1000;
+        
+                    log.info(i + ")  ====> total RT(sec) = " + t1 + " nPoints=" + indexer.getNumberOfPoints());
+        
+                    
                     String plotLabel = "";
 
                     TwoPointVoidStats stats = (TwoPointVoidStats)twoPtC.backgroundStats;
@@ -161,16 +160,6 @@ public class FindClustersTest extends BaseTwoPointTest {
 
                     plotter.addPlot(twoPtC, plotLabel);
                     plotter.writeFile();
-
-                    // assert that the low number histograms are all well formed and result in finding n clusters
-                    if (i == 0) {
-                        //assertTrue(twoPtC.getNumberOfGroups() >= nClusters);
-                        if (twoPtC.getNumberOfGroups() < nClusters) {
-                            log.severe("Note:  for seed=" + seed + " and i=" 
-                                + i + ", ii=" + ii + " solution did not find " 
-                                + nClusters + " clusters");
-                        }
-                    }
 
                 } catch(Throwable e) {
                     log.severe(e.getMessage());

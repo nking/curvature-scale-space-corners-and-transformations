@@ -72,13 +72,21 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
         /* === DO NOT REMOVE THIS == END DATA */
 
         function renderPlot(plotId, groupCenters, points, groupPolygons, plotLabel) {
+            
+            renderPlotInclMinMax(plotId, groupCenters, points, groupPolygons, 
+                plotLabel, xmin, xmax, ymin, ymax);
+            
+        }
+        
+        function renderPlotInclMinMax(plotId, groupCenters, points, 
+            groupPolygons, plotLabel, minx, maxx, miny, maxy) {
 
             /* Sizing and scales. */
             var w = 600,
                 h = 600,
                 padding = 55,
-                x = d3.scale.linear().domain([xmin, xmax]).range([padding, w - padding]),
-                y = d3.scale.linear().domain([ymin, ymax]).range([h - padding, padding]),
+                x = d3.scale.linear().domain([minx, maxx]).range([padding, w - padding]),
+                y = d3.scale.linear().domain([miny, maxy]).range([h - padding, padding]),
                 c1 = d3.scale.log(1, 100).range("orange", "brown"),
                 c2 = d3.scale.log(1, 100).range("white", "blue"),
                 c3 = d3.scale.log(1, 100).range("white", "black"),
@@ -90,7 +98,8 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickPadding(10);
             svg.append("g").attr("class", "y axis").attr("transform", "translate(" + (1*padding) + ",0)").call(yAxis);
 
-            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10).tickPadding(10);
+            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10)
+                .tickPadding(10).tickFormat(d3.format("e"));
             svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + (h - 1.0*padding) + ")").call(xAxis);
 
             /* grid for axes */
@@ -172,7 +181,9 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 }
             }
 
-            var line = d3.svg.line().x(function(d){ return x(d.x); }).y(function(d){ return y(d.y); }).interpolate("linear");
+            var line = d3.svg.line().x(function(d){ return x(d.x); }).y(
+                function(d){ return y(d.y); }).interpolate("linear");
+        
             for (i = 0; i < groupPolygons.length; i++) {
                 svg.append("svg:path")
                     .attr("d", line(groupPolygons[i]))
@@ -189,14 +200,22 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
                 .text(plotLabel);
         }
 
-        function renderPlotWithoutHull(plotId, groupCenters, points, groupPoints, plotLabel) {
+        function renderPlotWithoutHullInclMinMax(plotId, groupCenters, points, groupPoints, 
+            plotLabel) {
+        
+            renderPlotWithoutHull(plotId, groupCenters, points, groupPoints, 
+                plotLabel, xmin, xmax, ymin, ymax);
+        }
+    
+        function renderPlotWithoutHull(plotId, groupCenters, points, groupPoints, 
+            plotLabel, minx, maxx, miny, maxy) {
 
             /* Sizing and scales. */
             var w = 600,
                 h = 600,
-                padding = 55,
-                x = d3.scale.linear().domain([xmin, xmax]).range([padding, w - padding]),
-                y = d3.scale.linear().domain([ymin, ymax]).range([h - padding, padding]),
+                padding = 75,
+                x = d3.scale.linear().domain([minx, maxx]).range([padding, w - padding]),
+                y = d3.scale.linear().domain([miny, maxy]).range([h - padding, padding]),
                 c1 = d3.scale.log(1, 100).range("orange", "brown"),
                 c2 = d3.scale.log(1, 100).range("white", "blue"),
                 c3 = d3.scale.log(1, 100).range("white", "black"),
@@ -205,10 +224,11 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             var svg = d3.select("#" + plotId).append("svg").attr("width", w).attr("height", h);
 
             /* axes with ticks */
-            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickPadding(10);
+            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickFormat(d3.format("e"));
             svg.append("g").attr("class", "y axis").attr("transform", "translate(" + (1*padding) + ",0)").call(yAxis);
 
-            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10);
+            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(5)
+                .tickPadding(10).tickFormat(d3.format("e"));
             svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + (h - 1*padding) + ")").call(xAxis);
 
             /* grid for axes */
@@ -303,17 +323,17 @@ n){return arguments.length?(t=+n,e):t},e.translate=function(t){return arguments.
             /* Sizing and scales. */
             var w = 500,
                 h = 600,
-                padding = 55,
+                padding = 75,
                 x = d3.scale.linear().domain([minx, maxx]).range([padding, w - padding]),
                 y = d3.scale.linear().domain([miny, maxy]).range([h - padding, padding]);
 
             var svg = d3.select("#" + plotId).append("svg").attr("width", w).attr("height", h);
 
             /* axes with ticks */
-            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickPadding(10);
+            yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickFormat(d3.format("e"));
             svg.append("g").attr("class", "y axis").attr("transform", "translate(" + (1*padding) + ",0)").call(yAxis);
 
-            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10).tickPadding(10);
+            xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(5).tickPadding(10);
             svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + (h - 1*padding) + ")").call(xAxis);
 
             /* grid for axes */

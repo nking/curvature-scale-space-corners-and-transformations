@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.util.ArrayPair;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
