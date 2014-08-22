@@ -42,7 +42,8 @@ public class TwoPointVoidStats2Test extends BaseTwoPointTest {
         float[] x = new float[]{2.5f, 3.0f, 5.0f, 7.0f, 8.0f};
         float[] y = new float[]{2.0f, 5.0f, 8.0f, 5.1f, 2.0f};
         // assert results internal to calculateCentroidOfTop first
-        ArrayPair resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 0.5f);
+        ArrayPair resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 
+            null, null, 0.5f);
         assertNotNull(resultXY);
         assertTrue(resultXY.getX().length == 6);
         assertTrue(resultXY.getY().length == 6);
@@ -69,7 +70,8 @@ public class TwoPointVoidStats2Test extends BaseTwoPointTest {
         // case 1
         x = new float[]{2.2f,   3.0f, 4.0f,   5.0f,  6.8f, 8.0f,   8.5f};
         y = new float[]{2.0f,   5.0f, 6.0f,   8.0f,  6.0f, 5.1f,   2.0f};
-        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 0.5f);
+        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 
+            null, null, 0.5f);
         assertNotNull(resultXY);
         assertTrue(resultXY.getX().length == 8);
         assertTrue(resultXY.getY().length == 8);
@@ -93,7 +95,8 @@ public class TwoPointVoidStats2Test extends BaseTwoPointTest {
         // case 2
         x = new float[]{2.5f, 4.5f, 6.0f};
         y = new float[]{2.0f, 8.0f, 2.0f};
-        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 0.5f);
+        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, null,
+            null, 0.5f);
         assertNotNull(resultXY);
         assertTrue(resultXY.getX().length == 4);
         assertTrue(resultXY.getY().length == 4);
@@ -109,7 +112,8 @@ public class TwoPointVoidStats2Test extends BaseTwoPointTest {
         // case 4
         x = new float[]{4.0f, 5.5f, 7.5f};
         y = new float[]{6.0f, 8.0f, 6.0f};
-        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 0.5f);
+        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, null,
+            null, 0.5f);
         assertNotNull(resultXY);
         assertTrue(resultXY.getX().length == 6);
         assertTrue(resultXY.getY().length == 6);
@@ -129,7 +133,8 @@ public class TwoPointVoidStats2Test extends BaseTwoPointTest {
         // case 3 left
         x = new float[]{4.5f, 5.5f, 7.8f};
         y = new float[]{8.0f, 6.0f, 2.0f};
-        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 0.5f);
+        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, null,
+            null, 0.5f);
         assertNotNull(resultXY);
         assertTrue(resultXY.getX().length == 5);
         assertTrue(resultXY.getY().length == 5);
@@ -147,7 +152,8 @@ public class TwoPointVoidStats2Test extends BaseTwoPointTest {
         // case 3 right
         x = new float[]{3.5f, 4.5f};
         y = new float[]{6.5f, 8.0f};
-        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, 0.5f);
+        resultXY = LinesAndAngles.createPolygonOfTopFWFractionMax(x, y, null,
+            null, 0.5f);
         assertNotNull(resultXY);
         assertTrue(resultXY.getX().length == 5);
         assertTrue(resultXY.getY().length == 5);
