@@ -120,11 +120,12 @@ class TwoPointBinarySearchTree implements ITwoPointIdentity {
         z.parent = y;
         if (y == null) {
             root = z;
-        } else if (y.compare(z) > 1) {
+        } else if (y.compare(z) > 0) {
             y.setLeft(z);
         } else {
             y.setRight(z);
         }
+        n++;
     }
 
     protected class Node {
