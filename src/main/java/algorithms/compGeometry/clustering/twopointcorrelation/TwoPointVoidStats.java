@@ -414,9 +414,13 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
                 
                 sampling = VoidSampling.COMPLETE_ON_SUBSET;
                 
-                if (nXY > 50000) {
+                if (nXY >= 100000) {
                     
-                    nCellsPerDimension = 4;
+                    nCellsPerDimension = 20;
+                    
+                } else if (nXY > 50000) {
+                    
+                    nCellsPerDimension = 10;
                     
                 } else if (nXY > 20000) {
                     
