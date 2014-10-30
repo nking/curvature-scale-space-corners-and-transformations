@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AbstractCurvatureScaleSpaceMapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">AbstractCurvatureScaleSpaceMapper.java</span></div><h1>AbstractCurvatureScaleSpaceMapper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+public class AbstractCurvatureScaleSpaceMapper {
+
+<span class="fc" id="L13">    protected CurvatureScaleSpaceMapperState state = </span>
+        CurvatureScaleSpaceMapperState.UNINITIALIZED;
+    
+    protected GreyscaleImage img;
+    
+    protected final GreyscaleImage originalImg;
+    
+    /**
+     * edges extracted from image.  if an instance of PairIntArrayWithColor
+     * is present, that holds a color field in which a value of '1' means
+     * the curve is closed.
+     */
+<span class="fc" id="L25">    protected List&lt;PairIntArray&gt; edges = new ArrayList&lt;PairIntArray&gt;();</span>
+    
+    /**
+     * a map of maps to hold an edge's scale space curves as a function of sigma
+     */
+    
+<span class="fc" id="L31">    protected PairIntArray tCorners = new PairIntArray();</span>
+    
+<span class="fc" id="L33">    protected boolean doNotNormalizeByHistogram = false;</span>
+    
+<span class="fc" id="L35">    protected boolean useLineDrawingMode = false;</span>
+    
+<span class="fc" id="L37">    protected int trimmedXOffset = 0;</span>
+    
+<span class="fc" id="L39">    protected int trimmedYOffset = 0;</span>
+ 
+<span class="fc" id="L41">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    /**
+     * constructor w/ input image which is operated on.  the same instance
+     * input is modified by this class.
+     * 
+     * @param input 
+     */
+<span class="fc" id="L49">    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input) {</span>
+        
+<span class="fc" id="L51">        img = input;</span>
+        
+<span class="fc" id="L53">        ImageProcesser imageProcesser = new ImageProcesser();</span>
+        
+<span class="fc" id="L55">        originalImg = input.copyImage();</span>
+            
+<span class="fc" id="L57">        int[] offsetXY = imageProcesser.shrinkImageToFirstNonZeros(img);</span>
+        
+<span class="fc" id="L59">        trimmedXOffset = offsetXY[0];</span>
+        
+<span class="fc" id="L61">        trimmedYOffset = offsetXY[1];</span>
+<span class="fc" id="L62">    }</span>
+    
+    /**
+     * constructor with input image and the already extracted edges.
+     * The input image is needed only for debugging purposes and 
+     * may be removed as an argument after testing is complete.
+     * @param input
+     * @param theEdges 
+     */
+    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input, 
+<span class="fc" id="L72">        List&lt;PairIntArray&gt; theEdges) {</span>
+        
+<span class="fc" id="L74">        img = input;</span>
+        
+<span class="fc" id="L76">        ImageProcesser imageProcesser = new ImageProcesser();</span>
+        
+<span class="fc" id="L78">        originalImg = input.copyImage();</span>
+        
+<span class="fc" id="L80">        int[] offsetXY = imageProcesser.shrinkImageToFirstNonZeros(img);</span>
+        
+<span class="fc" id="L82">        trimmedXOffset = offsetXY[0];</span>
+        
+<span class="fc" id="L84">        trimmedYOffset = offsetXY[1];</span>
+        
+<span class="fc" id="L86">        this.edges = new ArrayList&lt;PairIntArray&gt;(theEdges);</span>
+        
+<span class="fc" id="L88">        state = CurvatureScaleSpaceMapperState.INITIALIZED;</span>
+<span class="fc" id="L89">    }</span>
+
+    /**
+     * apply histogram normalization before processing.  For some images, this
+     * will increase the contrast of fainter features.
+     */
+    public void doNotPerformHistogramEqualization() {
+<span class="nc" id="L96">        this.doNotNormalizeByHistogram = true;</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+    Line Drawing Mode uses the difference of Gaussians instead of 
+    1st derivative of Gaussian to try to keep the lines thinner from the start 
+    in the CannyEdgeFilter.
+    line drawings are now handled well without using this setting too.
+    */
+    public void useLineDrawingMode() {
+<span class="fc" id="L106">        this.useLineDrawingMode = true;</span>
+<span class="fc" id="L107">    }</span>
+    
+    protected void initialize() {
+        
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (state.ordinal() &lt; </span>
+            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {
+            
+            // (1) apply an edge filter
+<span class="fc" id="L115">            applyEdgeFilter();</span>
+            
+            // (2) extract edge contours
+<span class="fc" id="L118">            extractEdgeContours();</span>
+            
+            //TODO: note that there may be a need to search for closed
+            //      curves in the EdgeContourExtractor instead of here
+            //      in order to create shapes instead of creating
+            //      lines preferentially.
+            // (3) look for t-junctions and closed curves
+<span class="fc" id="L125">            markTheClosedCurvesAndTCorners();</span>
+            
+<span class="fc" id="L127">            state = CurvatureScaleSpaceMapperState.INITIALIZED;</span>
+        }
+<span class="fc" id="L129">    }</span>
+
+    protected void applyEdgeFilter() {
+        
+<span class="fc" id="L133">        CannyEdgeFilter filter = new CannyEdgeFilter();</span>
+        
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (doNotNormalizeByHistogram) {</span>
+<span class="nc" id="L136">            filter.doNotPerformHistogramEqualization();</span>
+        }
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (useLineDrawingMode) {</span>
+<span class="fc" id="L139">            filter.useLineDrawingMode();</span>
+        }
+        
+<span class="fc" id="L142">        filter.applyFilter(img);</span>
+                
+<span class="fc" id="L144">        state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;</span>
+<span class="fc" id="L145">    }</span>
+
+    protected void extractEdgeContours() {
+        
+<span class="fc" id="L149">        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(img);</span>
+        
+<span class="fc" id="L151">        contourExtractor.useLineDrawingMode();</span>
+        
+<span class="fc" id="L153">        List&lt;PairIntArray&gt; tmpEdges = contourExtractor.findEdges();</span>
+        
+<span class="fc" id="L155">        edges.clear();</span>
+<span class="fc" id="L156">        edges.addAll(tmpEdges);</span>
+        
+<span class="fc" id="L158">        GreyscaleImage output = new GreyscaleImage(img.getWidth(), img.getHeight());</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (PairIntArray edge : edges) {</span>
+<span class="fc" id="L160">            addCurveToImage(edge, output, 0, 255);</span>
+<span class="fc" id="L161">        }</span>
+        
+<span class="fc" id="L163">        img = output;</span>
+        
+<span class="fc" id="L165">        state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
+        
+<span class="fc" id="L167">        log.fine(&quot;edges extracted&quot;);</span>
+<span class="fc" id="L168">    }</span>
+
+    protected void markTheClosedCurvesAndTCorners() {
+        
+<span class="fc" id="L172">        ClosedCurveAndJunctionFinder ccjFinder = </span>
+            new ClosedCurveAndJunctionFinder();
+        
+<span class="fc" id="L175">        ccjFinder.findClosedCurves(edges);</span>
+        
+        /*
+              ---@---
+                 |
+                 |
+        */
+        // Fill small gaps in edge contours. When the gap forms a T-junction, 
+        // mark it as a T-corner.
+        // May have already filled these in in the contourextractor.
+        // TODO: revisit this and consider tracking t-junctions in the
+        // contourExtractor when filling a gap
+        // see http://www.diva-portal.org/smash/get/diva2:457189/FULLTEXT01.pdf
+        //  pg 26
+<span class="fc" id="L189">    }</span>
+  
+    public List&lt;PairIntArray&gt; getEdges() {
+<span class="fc" id="L192">        return edges;</span>
+    }
+
+    protected void addCurveToImage(PairIntArray edge, GreyscaleImage input, 
+        int nExtraForDot, int value) {
+        
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
+<span class="fc" id="L199">            int x = edge.getX(i);</span>
+<span class="fc" id="L200">            int y = edge.getY(i);</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">            for (int dx = -1 * nExtraForDot; dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="fc" id="L202">                float xx = x + dx;</span>
+<span class="pc bpc" id="L203" title="1 of 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">                    for (int dy = -1 * nExtraForDot; dy &lt; (nExtraForDot + 1); </span>
+<span class="fc" id="L205">                        dy++) {</span>
+                        
+<span class="fc" id="L207">                        float yy = y + dy;</span>
+<span class="pc bpc" id="L208" title="1 of 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="fc" id="L209">                            input.setValue((int) xx, (int) yy, value);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="fc" id="L215">    }</span>
+
+    public boolean getInitialized() {
+        
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">        return (state.ordinal() &gt;= </span>
+            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal());
+    }
+
+    public GreyscaleImage getImage() {
+<span class="fc" id="L224">        return img;</span>
+    }
+
+    public GreyscaleImage getOriginalImage() {
+<span class="nc" id="L228">        return originalImg;</span>
+    }
+    
+    public int getTrimmedXOffset() {
+<span class="fc" id="L232">        return trimmedXOffset;</span>
+    }
+    
+    public int getTrimmedYOffset() {
+<span class="fc" id="L236">        return trimmedYOffset;</span>
+    }
+   
+    /*
+    The making of a curvature scale space image is in
+    &quot;Scale-Based Description and Recognition of Planar Curves and Two-Dimensional
+    Shapes&quot; by FARZIN MOKHTARIAN AND ALAN MACKWORTH
+    IEEE 'TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+    VOL. PAMI-8, NO. 1. JANUARY 1986
+    https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;ved=0CCIQFjAA&amp;url=https%3A%2F%2Fwww.cs.ubc.ca%2F~mack%2FPublications%2FIEEE-PAMI86.pdf&amp;ei=jiIFVJGNLIa0igLv74DgDw&amp;usg=AFQjCNHj7v2JaUDqSFkQZSNOSpqBbfbOAQ&amp;sig2=L08nOsKD1Mw_XJX-EPmY-w&amp;bvm=bv.74115972,d.cGE
+    planar curve:
+    f_curve = {x(t), y(t)}
+    t = linear function of the path length bounded by values [0, 1], that is,
+    one can make this by scaling the range os indexes for x and y
+    for a curve to values between 0 and 1.
+    If f_curve is closed, x(t) and y(t) are periodic functions.
+    The curvature, k, is the the change of the angle of the tangent line at
+    point P on arc s with respect to the arc length s.
+    #  /
+    # /
+    #/      /|
+    P   ds / | dy
+    #/      /__|
+    # /        dx
+    #  /
+    /
+    / theta
+    ._________
+    ds^2 = dx^2 + dy^2
+    ds = sqrt(dx^2 + dy^2) = sqrt(1 + (dy/dx)^2)*dx = sqrt((dx/dy)^2 + 1)*dy
+    k = dTheta/ds = 1/rho
+    where rho is the radius of the circle of curvature at point P
+    dTheta   dTheta   dx
+    ------ = ------ * --
+    ds       dx      ds
+    theta = tan^-1 (dy / dx)
+    d                 d/dx (dy/dx)      d^2y/dx^2
+    dTheta/dx = -- arctan(dy/dx) = ------------- = -------------
+    dx                 1 + (dy/dx)^2   1 + (dy/dx)^2
+    dx    1             1
+    -- = ------ = -------------------
+    ds   ds/dx    sqrt(1 + (dy/dx)^2)
+    and use y' = (dy/dx)
+    and use y&quot; = (d^2y/dx^2)
+    dTheta          y&quot;                  1
+    k =  ------ = --------------- * -------------------
+    ds     (1 + (dy/dx)^2)   sqrt(1 + (dy/dx)^2)
+    d^2y/dx^2
+    = ---------------------  for planar curves
+    (1 + (dy/dx)^2)^(1.5)
+     * the sign of k is + if y&quot; is + and is - if y&quot; is -. the absolute value
+    might be used instead though.
+    NOTE that if dy/dx doesn’t exist at a point, such as where
+    the tangent line is parallel to the y-axis,
+    one can invert the y/x relationships in k to x/y
+    (d^2x/dy^2)
+    k = ---------------------
+    (1 + (dx/dy)^2)^(1.5)
+     * Need to express k in terms of a function of t, the parameteric form of k
+    dTheta   dTheta   dt     1     dTheta
+    k = ------ = ------ * -- = ----- * ------
+    ds       dt      ds   ds/dt     dt
+    where (ds/dt)^2 = (dx/dt)^2 + (dy/dt)^2
+    dy   dy/dt
+    tan(theta) = -- = -----
+    dx   dx/dt
+    d
+    --(tan(theta)) = sec^2(theta) * (dTheta/dt)
+    dt
+    (d^2y/dt^2)   (dy/dt)*(d^2x/dt^2)
+    = ----------- - -------------------
+    (dx/dt)           (dx/dt)^2
+    (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = -----------------------------------------
+    (dx/dt)^2
+    dTheta        1         (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    so ------ = ------------ * -----------------------------------------
+    dt      sec^2(theta)                   (dx/dt)^2
+    1           (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = ---------------- * -----------------------------------------
+    1 + tan^2(theta)                 (dx/dt)^2
+    1           (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = ---------------- * -----------------------------------------
+    1 + (dy/dt)^2                  (dx/dt)^2
+    ---------
+    (dx/dt)^2
+    (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = ------------------------------------------
+    (dx/dt)^2 + (dy/dt)^2
+     * now can return to
+    1      dTheta
+    k_geodesic = ----- *  ------
+    ds/dt     dt
+    (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = ---------------------------------------------------------
+    (((dx/dt)^2 + (dy/dt)^2)^(0.5)) * ((dx/dt)^2 + (dy/dt)^2)
+    (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = -----------------------------------------
+    ((dx/dt)^2 + (dy/dt)^2)^(1.5)
+    REWRITE in terms of code:
+    X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~)
+    k(t,o~) = ----------------------------------------------------------------
+    (X^2(t,o~) + Y^2(t,o~))^1.5
+    where o~ denotes the width of the Gaussian
+    convolve X and Y w/ one dimensional gaussian kernel each:
+    X(t, o~) = Integ(x(v) * exp(-(v)^2/2o~^2) * dv)
+    Y(t, o~) = Integ(y(v) * exp(-(v)^2/2o~^2) * dv)
+    Integ denotes the integral evaluated from -infinity to +infinity.
+    First Deriv:
+    X_dot(t,o~) = Integ(x(v) * (-2*(v)) * exp(-(v)^2/2o~^2) * dv)
+    Y_dot(t,o~) = Integ(y(v) * (-2*(v)) * exp(-(v)^2/2o~^2) * dv)
+    Second Deriv:
+    X_dot_dot(t,o~) = Integ(x(v) * (-2 + 4 * (v)^2)) * exp(-(v)^2/2o~^2) * dv)
+    Y_dot_dot(t,o~) = Integ(y(v) * (-2 + 4 * (v)^2)) * exp(-(v)^2/2o~^2) * dv)
+    The curvture of a straight line is zero.
+    Points where k = 0 are called the points of inflection.
+     */
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

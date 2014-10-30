@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TransformationParameters.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">TransformationParameters.java</span></div><h1>TransformationParameters.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L6">public class TransformationParameters {</span>
+        
+<span class="fc" id="L8">    private float rotationInRadians = 0;</span>
+    
+<span class="fc" id="L10">    private float translationX = 0;</span>
+    
+<span class="fc" id="L12">    private float translationY = 0;</span>
+    
+<span class="fc" id="L14">    private float scale = 1;</span>
+
+    /**
+     * @return the rotation in units of degrees
+     */
+    public float getRotationInDegrees() {
+<span class="fc" id="L20">        return (float)(rotationInRadians * 180./Math.PI);</span>
+    }
+
+    /**
+     * @param rotationInDegrees the rotation to set in units of degrees
+     */
+    public void setRotationInDegrees(float rotationInDegrees) {
+<span class="fc" id="L27">        this.rotationInRadians = (float) (rotationInDegrees * Math.PI/180.);</span>
+<span class="fc" id="L28">    }</span>
+    
+    /**
+     * @param theRotationInRadians the rotation to set in units of radians
+     */
+    public void setRotationInRadians(float theRotationInRadians) {
+<span class="fc" id="L34">        this.rotationInRadians = theRotationInRadians;</span>
+<span class="fc" id="L35">    }</span>
+
+    /**
+     * @return the rotation in units of radians
+     */
+    public float getRotationInRadians() {
+<span class="fc" id="L41">        return rotationInRadians;</span>
+    }
+    
+    /**
+     * @return the translationX
+     */
+    public float getTranslationX() {
+<span class="fc" id="L48">        return translationX;</span>
+    }
+
+    /**
+     * @param translationX the translationX to set
+     */
+    public void setTranslationX(float translationX) {
+<span class="fc" id="L55">        this.translationX = translationX;</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * @return the translationY
+     */
+    public float getTranslationY() {
+<span class="fc" id="L62">        return translationY;</span>
+    }
+
+    /**
+     * @param translationY the translationY to set
+     */
+    public void setTranslationY(float translationY) {
+<span class="fc" id="L69">        this.translationY = translationY;</span>
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * @return the scale
+     */
+    public float getScale() {
+<span class="fc" id="L76">        return scale;</span>
+    }
+
+    /**
+     * @param scale the scale to set
+     */
+    public void setScale(float scale) {
+<span class="fc" id="L83">        this.scale = scale;</span>
+<span class="fc" id="L84">    }</span>
+
+    @Override
+    public String toString() {
+        
+<span class="fc" id="L89">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="fc" id="L91">        sb.append(&quot;rotationInRadians=&quot;).append(rotationInRadians)</span>
+            .append(&quot;\nrotationInDegrees=&quot;).append(rotationInRadians*180./Math.PI)
+            .append(&quot;\nscale=&quot;).append(scale)
+            .append(&quot;\ntranslationX=&quot;).append(translationX)
+            .append(&quot;\ntranslationY=&quot;).append(translationY);
+        
+<span class="fc" id="L97">        return sb.toString();</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

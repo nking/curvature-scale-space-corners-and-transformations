@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SobelX.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">SobelX.java</span></div><h1>SobelX.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ * shows horizontal changes in an image
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L8">public class SobelX implements IKernel {</span>
+     
+    public float getNormalizationFactor() {
+<span class="fc" id="L11">        return 1.0f;</span>
+    }
+    
+    public Kernel getKernel() {
+        /*
+                        | -1  0  1 |
+           Soloblev_x = | -2  0  2 |
+                        | -1  0  1 |
+        
+           this is the n=2 binomial filter for a Gaussian first derivative,
+           that is sigma = sqrt(2)/2 = 0.707
+        */
+<span class="fc" id="L23">        Kernel kernel = new Kernel(3, 3);</span>
+<span class="fc" id="L24">        kernel.setValue(0, 0, -1);</span>
+<span class="fc" id="L25">        kernel.setValue(0, 1, -2);</span>
+<span class="fc" id="L26">        kernel.setValue(0, 2, -1);</span>
+<span class="fc" id="L27">        kernel.setValue(2, 0, 1);</span>
+<span class="fc" id="L28">        kernel.setValue(2, 1, 2);</span>
+<span class="fc" id="L29">        kernel.setValue(2, 2, 1);</span>
+        
+<span class="fc" id="L31">        return kernel;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

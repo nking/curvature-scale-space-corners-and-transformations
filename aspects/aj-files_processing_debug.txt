@@ -1,0 +1,1 @@
+/Volumes/portable/data/projects/google.code/curvature-scale-space-corners-and-transformations/aspects/algorithms/imageProcessing/CurvatureAspect.aj

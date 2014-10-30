@@ -1,0 +1,841 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>VeryLargeNumber.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">VeryLargeNumber.java</span></div><h1>VeryLargeNumber.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+//import java.util.logging.Level;
+//import java.util.logging.Logger;
+
+/**
+ * NOTE: still testing this class.  it needs more testing for operations that
+ * change the intance value from positive to negative and for cases when
+ * a divisor is still larger than 64 bits.
+ * 
+ * A class to hold numbers that can be larger than 64 bits after adds.
+ * 
+ * The class was created w/ Pascal's triangle as a use case in order to be able
+ * to print out numbers larger than ((1&lt;&lt;63) -1) for level &gt;= 64.
+ * 
+ * the core of the constructor and add methods were started with
+ *     http://www.cs.utexas.edu/users/djimenez/utsa/cs3343/lecture20.html
+   and then added to and adapted afterwards.
+ 
+ * the core of the Euclidean division started with:
+ *     https://en.wikipedia.org/wiki/Division_algorithm
+ *  
+ * @author nichole
+ */
+public class VeryLargeNumber implements Comparable&lt;VeryLargeNumber&gt;, Cloneable {
+    
+    // could consider using a larger base for compaction, 
+    // and making use of the space not used by positive values,
+    // but for now, the simplicity is more important for testing and first uses.
+    // adding faster alternative methods for the large integer division
+    // could improve the largest bottleneck.
+ 
+    //TODO: change BASE to (1&lt;&lt;30)-1, that is, 1073741823 
+    public final static int BASE = (1&lt;&lt;30)-1;//10;
+    
+    private int[] a;
+    
+<span class="fc" id="L41">    private int nLen = 0;</span>
+    
+<span class="fc" id="L43">    private boolean isPositive = true;</span>
+    
+    //private Logger log = Logger.getLogger(this.getClass().getName());
+    
+<span class="fc" id="L47">    public VeryLargeNumber(int number) {</span>
+        
+<span class="fc" id="L49">        a = new int[10];</span>
+        
+<span class="fc" id="L51">        createInternalNumber(number);</span>
+<span class="fc" id="L52">    }</span>
+    
+    /**
+     * add addThis to this instance.
+     * 
+     * @param addThis number to add to this
+     */
+    public void add(VeryLargeNumber addThis) {
+                
+        //log.log(Level.FINEST, &quot;add: {0} + {1}&quot;, new String[]{toString(), 
+        //    addThis.toString()});
+        
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        boolean thisIsLarger = (addThis.nLen &lt;= nLen);</span>
+        
+        int[] longer;
+        int[] shorter;
+        int n, idxOffsetShorter;
+        boolean longerIsPositive, shorterIsPositive;
+        
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (thisIsLarger) {</span>
+<span class="fc" id="L72">            longer = a;</span>
+<span class="fc" id="L73">            shorter = addThis.a;</span>
+<span class="fc" id="L74">            n = nLen;</span>
+<span class="fc" id="L75">            idxOffsetShorter = nLen - addThis.nLen;</span>
+<span class="fc" id="L76">            longerIsPositive = isPositive;</span>
+<span class="fc" id="L77">            shorterIsPositive = addThis.isPositive();</span>
+        } else {
+<span class="fc" id="L79">            longer = addThis.a;</span>
+<span class="fc" id="L80">            shorter = a;</span>
+<span class="fc" id="L81">            n = addThis.nLen;</span>
+<span class="fc" id="L82">            idxOffsetShorter = addThis.nLen - nLen;</span>
+<span class="fc" id="L83">            longerIsPositive = addThis.isPositive();</span>
+<span class="fc" id="L84">            shorterIsPositive = isPositive;</span>
+        }
+                
+<span class="fc" id="L87">        int	carry = 0;</span>
+<span class="fc" id="L88">        int sum = 0;</span>
+        int idxShorter;
+<span class="fc" id="L90">        boolean resetCarry = true;</span>
+        
+<span class="fc" id="L92">        int[] s = new int[n];</span>
+        
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (int i = (n - 1); i &gt; -1; i--) {</span>
+                   
+<span class="fc" id="L96">            resetCarry = true;</span>
+            
+<span class="fc" id="L98">            idxShorter = i - idxOffsetShorter;</span>
+           
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            int tl = longerIsPositive ? longer[i] : -1*longer[i];</span>
+            
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            if (idxShorter &lt; 0) {</span>
+                
+<span class="pc bpc" id="L104" title="1 of 4 branches missed.">                if ((carry == -1) &amp;&amp; (longer[i] == 0)) {</span>
+                    
+<span class="nc" id="L106">                    carry = -1;</span>
+                    
+<span class="nc" id="L108">                    resetCarry = false;</span>
+                    
+<span class="nc" id="L110">                    sum = BASE - 1;</span>
+                    
+                } else {
+                    
+<span class="fc" id="L114">                    sum = tl + carry;</span>
+                }
+                
+            } else {
+                    
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                int ts = shorterIsPositive ? shorter[idxShorter] : </span>
+                    -1*shorter[idxShorter];
+                    
+<span class="fc bfc" id="L122" title="All 8 branches covered.">                if (!shorterIsPositive &amp;&amp; longerIsPositive &amp;&amp; </span>
+                    (shorter[idxShorter] &gt; longer[i]) &amp;&amp; (i &gt; 0)) {
+                    
+<span class="fc" id="L125">                    sum = tl + BASE + ts + carry;</span>
+                    
+<span class="fc" id="L127">                    carry = -1;</span>
+                    
+<span class="fc" id="L129">                    resetCarry = false;</span>
+                    
+<span class="pc bpc" id="L131" title="1 of 4 branches missed.">                } else if ((longer[i] == 0) &amp;&amp; !longerIsPositive) {</span>
+                        
+                    //e.g. 4 - 10 
+<span class="nc" id="L134">                    sum = ts - BASE;</span>
+                        
+<span class="nc" id="L136">                    carry = 1;</span>
+                    
+<span class="nc" id="L138">                    resetCarry = false;</span>
+                    
+                } else {
+                        
+<span class="fc" id="L142">                    sum = tl + ts + carry;</span>
+                }
+            }
+
+<span class="pc bpc" id="L146" title="1 of 4 branches missed.">            if ((sum &lt; 0) &amp;&amp; (sum &lt; -1*BASE)) {</span>
+                
+<span class="nc" id="L148">                sum += BASE;</span>
+                
+<span class="nc" id="L150">                carry = -1;</span>
+                
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">            } else if (sum &gt;= BASE) {</span>
+
+<span class="nc" id="L154">                carry = 1;</span>
+
+<span class="nc" id="L156">                sum -= BASE;</span>
+                
+            } else {
+                
+<span class="fc bfc" id="L160" title="All 2 branches covered.">                if (resetCarry) {</span>
+<span class="fc" id="L161">                    carry = 0;</span>
+                }
+            }
+            
+<span class="fc bfc" id="L165" title="All 4 branches covered.">            if (longerIsPositive &amp;&amp; (sum &lt; 0)) {</span>
+<span class="fc" id="L166">                longerIsPositive = false;</span>
+<span class="fc bfc" id="L167" title="All 4 branches covered.">            } else if (!longerIsPositive &amp;&amp; (sum &gt; 0)) {</span>
+<span class="fc" id="L168">                longerIsPositive = true;</span>
+            }
+
+<span class="fc bfc" id="L171" title="All 2 branches covered.">            s[i] = longerIsPositive ? sum : -1*sum;</span>
+        }
+        
+<span class="fc" id="L174">        a = s;</span>
+        
+<span class="fc" id="L176">        nLen = n;</span>
+        
+<span class="fc" id="L178">        isPositive = longerIsPositive;</span>
+        
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (carry != 0) {</span>
+            // expand a by 1 and move elements down
+<span class="nc" id="L182">            insertSpaceAtTopOfArray();</span>
+            
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            if (carry &lt; 0) {</span>
+<span class="nc" id="L185">                isPositive = false;</span>
+<span class="nc" id="L186">                carry *= -1;</span>
+            }
+            
+<span class="nc" id="L189">            a[0] = carry;</span>
+            
+        } else {
+        
+<span class="fc" id="L193">            moveUpIfStartsWithZeros();</span>
+        }
+<span class="fc" id="L195">    }</span>
+    
+    /**
+     * if there are leading 0's in the array a, move items below
+     * them up to fill them and reduce the size of nLen. if there are
+     * no numbers left, the result is nLen=1 to result in a value of 0
+     * for this instance's number.
+     */
+    private void moveUpIfStartsWithZeros() {
+        
+        // move up if needed
+<span class="fc" id="L206">        int firstNonZeroIdx = -1;</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        for (int i = 0; i &lt; nLen; i++) {</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            if (a[i] == 0) {</span>
+<span class="fc" id="L209">                firstNonZeroIdx = i + 1;</span>
+            } else {
+                break;
+            }
+        }
+        
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        if (firstNonZeroIdx == nLen) {</span>
+<span class="fc" id="L216">            nLen = 1;</span>
+<span class="fc" id="L217">            isPositive = true;</span>
+<span class="fc" id="L218">            Arrays.fill(a, 0);</span>
+<span class="fc" id="L219">            return;</span>
+        }
+        
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        if (firstNonZeroIdx &gt; -1) {</span>
+            
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            for (int i = 0; i &lt; (nLen - firstNonZeroIdx); i++) {</span>
+<span class="nc" id="L225">                a[i] = a[i + firstNonZeroIdx];</span>
+            }
+            
+<span class="nc" id="L228">            Arrays.fill(a, (nLen - firstNonZeroIdx), nLen, 0);</span>
+            
+<span class="nc" id="L230">            nLen -= firstNonZeroIdx;</span>
+        }
+<span class="fc" id="L232">    }</span>
+    
+    /**
+     * subtract subtractThis from this instance.
+     * @param subtractThis 
+     */
+    public void subtract(VeryLargeNumber subtractThis) {
+        
+        //log.log(Level.FINEST, &quot;subtract: {0} - {1}&quot;, new String[]{toString(), 
+        //    subtractThis.toString()});
+        
+<span class="fc" id="L243">        subtractThis.reversePolarity();</span>
+        
+<span class="fc" id="L245">        add(subtractThis);</span>
+        
+<span class="fc" id="L247">        subtractThis.reversePolarity();</span>
+<span class="fc" id="L248">    }</span>
+ 
+    /**
+     * divide internal number by the divisor and return a string.  note that the
+     * method currently uses the simplest implementation, Euclidean division.
+     * a faster internal implementation can be made upon need.
+     * 
+     * @param divisor
+     * @return 
+     */
+    public String divideByAndPrint(VeryLargeNumber divisor) {
+        
+        //log.log(Level.FINEST, &quot;divide: {0} / {1}&quot;, new String[]{toString(), 
+        //    divisor.toString()});
+               
+<span class="fc" id="L263">        return divideByAndPrintEuclidean(divisor);</span>
+    }
+    
+    /**
+     * whether this number value is 0
+     * @return 
+     */
+    public boolean isZero() {
+<span class="fc" id="L271">        long sum = 0;</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        for (int i = 0; i &lt; nLen; i++) {</span>
+<span class="fc" id="L273">            sum += a[i];</span>
+        }
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        return (sum == 0);</span>
+    }
+    
+    /**
+     * whether this is a positive number
+     * @return 
+     */
+    public boolean isPositive() {
+<span class="fc" id="L283">        return isPositive;</span>
+    }
+    
+    /**
+     * reverse the sign of this number.
+     */
+    public void reversePolarity() {
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        isPositive = !isPositive;</span>
+<span class="fc" id="L291">    }</span>
+    
+    /**
+     * using Euclidean division, divide this by divisor and return the result
+     * as a string.  The string output is because the currently using code
+     * needs only that.
+     * 
+     * @param divisor
+     * @return 
+     */
+    private String divideByAndPrintEuclidean(VeryLargeNumber divisor) {
+        
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">        if (divisor.isZero()) {</span>
+<span class="nc" id="L304">            throw new IllegalArgumentException(&quot;Cannot divide by zero&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        boolean divisorIsNegative = !divisor.isPositive();</span>
+        
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        boolean thisIsNegative = !isPositive;</span>
+        
+<span class="fc bfc" id="L311" title="All 2 branches covered.">        if (divisorIsNegative) {</span>
+<span class="fc" id="L312">            divisor.reversePolarity();</span>
+        }
+        
+<span class="fc bfc" id="L315" title="All 2 branches covered.">        if (thisIsNegative) {</span>
+<span class="fc" id="L316">            reversePolarity();</span>
+        }
+        
+        // both this number and divisor are positive or zero
+<span class="fc" id="L320">        VeryLargeNumber q = new VeryLargeNumber(0);</span>
+        
+<span class="fc" id="L322">        VeryLargeNumber r = null;</span>
+        
+        try {
+<span class="fc" id="L325">            r = clone();</span>
+<span class="nc" id="L326">        } catch (CloneNotSupportedException e) {</span>
+            // this will never happen...
+<span class="nc" id="L328">            throw new IllegalStateException(&quot;problem w/ native support for &quot; +</span>
+                &quot; cloneable? &quot;, e);
+<span class="fc" id="L330">        }</span>
+
+        // while  R ≥ D
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        while (r.compareTo(divisor) &gt; -1) {</span>
+            
+<span class="fc" id="L335">            q.increment();</span>
+            
+<span class="fc" id="L337">            r.subtract(divisor);</span>
+        }
+        
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        if (!r.isPositive()) {</span>
+            // the while loop proceeds one step too far so reverse by 1 loop
+<span class="nc" id="L342">            q.reversePolarity();</span>
+<span class="nc" id="L343">            q.increment();</span>
+<span class="nc" id="L344">            q.reversePolarity();</span>
+<span class="nc" id="L345">            r.add(divisor);</span>
+        }
+        
+<span class="fc bfc" id="L348" title="All 2 branches covered.">        if (thisIsNegative) {</span>
+<span class="fc" id="L349">            reversePolarity();</span>
+        }
+        
+<span class="fc bfc" id="L352" title="All 2 branches covered.">        if (divisorIsNegative) {</span>
+<span class="fc" id="L353">            divisor.reversePolarity();            </span>
+        }
+        
+<span class="fc bfc" id="L356" title="All 4 branches covered.">        if (divisorIsNegative &amp;&amp; !thisIsNegative) {</span>
+<span class="fc" id="L357">            q.reversePolarity();            </span>
+<span class="fc bfc" id="L358" title="All 4 branches covered.">        } else if (thisIsNegative &amp;&amp; !divisorIsNegative) {</span>
+<span class="fc" id="L359">            q.reversePolarity();</span>
+        }
+      
+<span class="fc" id="L362">        return printQR(q, r, divisor);</span>
+    }
+    
+    /**
+     * convenience method to create an instance with the value of Long.MAX_VALUE,
+     * ((1&lt;&lt;63)-1)
+     * 
+     * @return 
+     */
+    public static VeryLargeNumber createMaxLong() {
+        
+<span class="fc" id="L373">        VeryLargeNumber maxLong = new VeryLargeNumber(0);</span>
+        
+        //max long = 9223372036854775807
+        if (BASE == 10) {
+            
+            maxLong.setInternalArray(new int[]{
+                9, 2, 2, 3, 3, 7, 2, 0, 3, 6, 8, 5, 4, 7, 7, 5, 8, 0, 7
+            }, 19, true);
+            
+        } else if (BASE == ((1&lt;&lt;30)-1)) {
+           
+<span class="fc" id="L384">            maxLong.setInternalArray(new int[]{8, 16, 7}, 3, true);</span>
+            
+        } else {
+            
+            throw new IllegalStateException(&quot;code needs to be adapted &quot;
+                + &quot; for BASE=&quot; + BASE);
+        }
+        
+<span class="fc" id="L392">        return maxLong;</span>
+    }
+    
+    /**
+     * prints the result of division's quotient, remainder and divisor as a 
+     * double number string.
+     * 
+     * @param q
+     * @param r
+     * @param divisor
+     * @return 
+     */
+    private String printQR(VeryLargeNumber q, VeryLargeNumber r, 
+        VeryLargeNumber divisor) {
+                        
+<span class="fc" id="L407">        StringBuilder sb = new StringBuilder(q.toString());</span>
+       
+<span class="fc" id="L409">        sb.append(&quot;.&quot;);</span>
+        
+<span class="fc" id="L411">        VeryLargeNumber maxLong = VeryLargeNumber.createMaxLong();</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">        if (divisor.compareTo(maxLong) &gt; 0) {</span>
+            // this is effectively zero
+<span class="nc" id="L414">            return sb.append(&quot;0&quot;).toString();</span>
+            //throw new IllegalStateException(&quot;divisor is larger than 2^63 - 1&quot;);
+        }
+       
+<span class="fc" id="L418">        long numerator = Long.valueOf(r.toString());</span>
+        
+<span class="fc" id="L420">        long denominator = Long.valueOf(divisor.toString());</span>
+        
+<span class="fc" id="L422">        double mantissa = (double)numerator/(double)denominator;</span>
+        
+        // trim off 0. or -0.
+<span class="fc" id="L425">        String mantissaStr = Double.toString(mantissa);</span>
+<span class="fc" id="L426">        int idx = mantissaStr.indexOf(&quot;.&quot;);</span>
+<span class="fc" id="L427">        mantissaStr = mantissaStr.substring(idx + 1);</span>
+        
+<span class="fc" id="L429">        sb.append(mantissaStr);</span>
+        
+<span class="fc" id="L431">        return sb.toString();</span>
+    }
+
+    /**
+     * compare the number within this instance to the number within other and
+     * return -1 if this is smaller, 0 if this is equal to other, and +1 if this
+     * is larger than other.
+     * 
+     * @param other
+     * @return 
+     */
+    @Override
+    public int compareTo(VeryLargeNumber other) {
+        
+<span class="fc" id="L445">        int nLenOther = other.getInternalArraySize();</span>
+       
+<span class="fc" id="L447">        int nLenThis = nLen;</span>
+       
+<span class="fc bfc" id="L449" title="All 2 branches covered.">        if (nLen &gt; nLenOther) {</span>
+                
+<span class="pc bpc" id="L451" title="1 of 2 branches missed.">            if (isPositive) {</span>
+<span class="fc" id="L452">               return 1;</span>
+            }
+            
+            // compare all under nLenO in both
+<span class="nc" id="L456">            nLenThis = nLenOther;</span>
+            
+<span class="fc bfc" id="L458" title="All 2 branches covered.">        } else if (nLen &lt; nLenOther) {</span>
+            
+<span class="fc bfc" id="L460" title="All 2 branches covered.">            if (other.isPositive()) {</span>
+<span class="fc" id="L461">               return -1;</span>
+            }
+            
+            // compare all under nLen in both
+<span class="fc" id="L465">            nLenThis = nLen;</span>
+        }
+        
+<span class="fc" id="L468">        int[] b = other.a;</span>
+        
+<span class="fc bfc" id="L470" title="All 2 branches covered.">        for (int i = 0; i &lt; nLenThis; i++) {</span>
+<span class="fc bfc" id="L471" title="All 2 branches covered.">            int ta = isPositive ? a[i] : -1*a[i];</span>
+<span class="fc bfc" id="L472" title="All 2 branches covered.">            int tb = other.isPositive() ? b[i] : -1*b[i];</span>
+<span class="fc bfc" id="L473" title="All 2 branches covered.">            if (ta &gt; tb) {</span>
+<span class="fc" id="L474">                return 1;</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">            } else if (ta &lt; tb) {</span>
+<span class="fc" id="L476">                return -1;</span>
+            }
+        }
+        
+<span class="fc" id="L480">        return 0;</span>
+    }
+    
+    /**
+     * populate this instance with the effective value of number.
+     * 
+     * @param number 
+     */
+    private void createInternalNumber(int number) {
+        
+<span class="fc bfc" id="L490" title="All 2 branches covered.">        if (number == 0) {</span>
+            
+<span class="fc" id="L492">            nLen = 1;</span>
+            
+<span class="fc" id="L494">            return;</span>
+        }
+                        
+<span class="fc bfc" id="L497" title="All 2 branches covered.">        if (number &lt; 0) {</span>
+            
+            // hold sign and adapt code to handle...
+<span class="fc" id="L500">            isPositive = false;</span>
+            
+<span class="fc bfc" id="L502" title="All 2 branches covered.">            if (number == Integer.MIN_VALUE) {</span>
+                // special handling because with sign change, it overflows 
+                // an int
+                //2147483648
+                
+                if (BASE == 10) {
+                    
+                    a = new int[] {2, 1, 4, 7, 4, 8, 3, 6, 4, 8};
+                
+                    nLen = 10;
+                    
+                } else if (BASE == ((1&lt;&lt;30)-1)) {
+                    //BASE=1073741823
+                    
+<span class="fc" id="L516">                    a = new int[] {2, 2};</span>
+                    
+<span class="fc" id="L518">                    nLen = 2;</span>
+                    
+                } else {
+                    throw new IllegalStateException(&quot;code needs to be adapted &quot;
+                        + &quot; for BASE=&quot; + BASE);
+                }
+              
+<span class="fc" id="L525">                return;</span>
+            }
+            
+<span class="fc" id="L528">            number *= -1;</span>
+        }
+                
+<span class="fc" id="L531">        int i = 0;</span>
+        
+<span class="fc bfc" id="L533" title="All 2 branches covered.">        while (number &gt; 0) {</span>
+
+<span class="fc" id="L535">            expandIfNeeded(i + 1);</span>
+
+            //TODO: caveats w/ java modulus operator.  might be able to impl this faster too.
+<span class="fc" id="L538">            int tmp = number % BASE;</span>
+
+            //2147483647
+            //1073741823
+<span class="fc" id="L542">            a[i] = tmp;</span>
+
+<span class="fc" id="L544">            number /= BASE;</span>
+
+<span class="fc" id="L546">            i++;</span>
+            
+<span class="fc" id="L548">            nLen = i;</span>
+<span class="fc" id="L549">        }</span>
+        
+        // reverse the array so that number=1234 results in a=[1, 2, 3, 4]
+<span class="fc" id="L552">        reverse();</span>
+<span class="fc" id="L553">    }</span>
+    
+    /**
+     * increment this number value
+     */
+    public void increment() {
+        
+<span class="fc bfc" id="L560" title="All 2 branches covered.">        if (isPositive) {</span>
+<span class="fc" id="L561">            incrementPositive();</span>
+        } else {
+<span class="fc" id="L563">            incrementNegative();</span>
+        }
+<span class="fc" id="L565">    }</span>
+    
+    /**
+     * an increment specifically for use when this number is a negative number
+     */
+    public void incrementNegative() {
+	
+<span class="fc" id="L572">        int i = (nLen - 1);</span>
+        
+<span class="fc" id="L574">        boolean checkReduce = false;</span>
+                         
+<span class="pc bpc" id="L576" title="1 of 2 branches missed.">        while (i &gt; -1) {</span>
+            
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">            if (a[i] == 0) {</span>
+                
+<span class="nc" id="L580">                a[i] = BASE - 1;</span>
+                
+<span class="nc" id="L582">                i--;</span>
+                
+<span class="nc bnc" id="L584" title="All 2 branches missed.">                if (i == 0) {</span>
+<span class="nc" id="L585">                    checkReduce = true;</span>
+                }
+               
+            } else {
+                
+<span class="fc" id="L590">                a[i]--;</span>
+                
+<span class="pc bpc" id="L592" title="1 of 2 branches missed.">                if (checkReduce) {</span>
+<span class="nc" id="L593">                    moveUpIfStartsWithZeros();</span>
+                }
+                
+                break;
+            }
+        }
+        
+<span class="fc bfc" id="L600" title="All 2 branches covered.">        if (isZero()) {</span>
+<span class="fc" id="L601">            isPositive = true;</span>
+        }
+<span class="fc" id="L603">	}</span>
+    
+    /**
+     * an increment specifically for use when this number is a positive number.
+     */
+    public void incrementPositive() {
+	
+<span class="fc" id="L610">        int i = (nLen - 1);</span>
+
+<span class="pc bpc" id="L612" title="1 of 2 branches missed.">        while (i &gt; -1) {</span>
+            
+<span class="fc" id="L614">            a[i]++;</span>
+
+<span class="pc bpc" id="L616" title="1 of 2 branches missed.">            if (a[i] == BASE) {</span>
+
+<span class="nc" id="L618">                a[i] = 0;  </span>
+
+<span class="nc bnc" id="L620" title="All 2 branches missed.">                if (i == 0) {</span>
+                    
+<span class="nc" id="L622">                    expandIfNeeded(nLen + 1);</span>
+                    
+                    //carry over to a new power
+<span class="nc" id="L625">                    nLen++;</span>
+                    
+                } else {
+                    
+<span class="nc" id="L629">                    i--;</span>
+                }
+                
+            } else {
+                
+                break;
+            }
+        }
+<span class="fc" id="L637">	}</span>
+    
+    /**
+     * reverse the order of items in a
+     */
+    private void reverse() {
+        
+<span class="fc bfc" id="L644" title="All 2 branches covered.">        if (nLen &lt; 2) {</span>
+<span class="fc" id="L645">            return;</span>
+        }
+                
+<span class="fc" id="L648">        int end = nLen &gt;&gt; 1;</span>
+        
+<span class="fc bfc" id="L650" title="All 2 branches covered.">        for (int i = 0; i &lt; end; i++) {</span>
+            
+<span class="fc" id="L652">            int idx2 = nLen - i - 1;</span>
+            
+<span class="fc" id="L654">            int swap = a[i];</span>
+<span class="fc" id="L655">            a[i] = a[idx2];</span>
+<span class="fc" id="L656">            a[idx2] = swap;</span>
+        }
+<span class="fc" id="L658">    }</span>
+    
+    /**
+     * expand the backing array a if needed so that it can hold nTotal items
+     * @param nTotal 
+     */
+    private void expandIfNeeded(int nTotal) {
+        
+<span class="pc bpc" id="L666" title="1 of 2 branches missed.">        if (nTotal &gt; a.length) {</span>
+            
+<span class="nc" id="L668">            int n2 = a.length + 10;</span>
+            
+<span class="nc bnc" id="L670" title="All 2 branches missed.">            if (nTotal &gt; n2) {</span>
+<span class="nc" id="L671">                n2 = nTotal;</span>
+            }
+            
+<span class="nc" id="L674">            a = Arrays.copyOf(a, n2);            </span>
+        }
+<span class="fc" id="L676">    }</span>
+    
+    /**
+     * insert an empty item at the top of the array.  the method internally
+     * moves down all items currently in a by 1 after expanding the a if needed.
+     */
+    private void insertSpaceAtTopOfArray() {
+        
+<span class="nc bnc" id="L684" title="All 2 branches missed.">        if (a.length &gt;= (nLen + 1)) {</span>
+            
+<span class="nc bnc" id="L686" title="All 2 branches missed.">            for (int i = (nLen - 1); i &gt; -1; i--) {</span>
+<span class="nc" id="L687">                a[i + 1] = a[i];</span>
+            }
+<span class="nc" id="L689">            a[0] = 0;</span>
+            
+        } else {
+<span class="nc" id="L692">            int[] xx = new int[nLen + 1];</span>
+<span class="nc" id="L693">            System.arraycopy(a, 0, xx, 1, nLen);</span>
+<span class="nc" id="L694">            a = xx;</span>
+        }
+        
+<span class="nc" id="L697">        nLen++;</span>
+<span class="nc" id="L698">    }</span>
+    
+    /**
+     * make a copy of this instance with a different identity but same
+     * values in the member variables.  it's expected that compareTo
+     * is used for comparison, but equals will also return true for comparison
+     * of the clone with the original instance.
+     * 
+     * @return
+     * @throws CloneNotSupportedException 
+     */
+    @Override
+    public VeryLargeNumber clone() throws CloneNotSupportedException {
+        
+<span class="fc" id="L712">        VeryLargeNumber clone = new VeryLargeNumber(0);</span>
+        
+<span class="fc" id="L714">        int[] b = Arrays.copyOf(a, a.length);</span>
+        
+<span class="fc" id="L716">        clone.setInternalArray(b, nLen, isPositive);</span>
+        
+<span class="fc" id="L718">        return clone;</span>
+    }
+
+    /**
+     * compare the number value of this instance to another and return true
+     * if they are the same.
+     * 
+     * @param other
+     * @return 
+     */
+    @Override
+    public boolean equals(Object other) {
+        
+<span class="nc bnc" id="L731" title="All 2 branches missed.">        if (other == null) {</span>
+<span class="nc" id="L732">            return false;</span>
+        }
+        
+<span class="nc bnc" id="L735" title="All 2 branches missed.">        if (!(other instanceof VeryLargeNumber)) {</span>
+<span class="nc" id="L736">            return false;</span>
+        }
+        
+<span class="nc" id="L739">        int comp = compareTo((VeryLargeNumber)other);</span>
+        
+<span class="nc bnc" id="L741" title="All 2 branches missed.">        return (comp == 0);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L746">        return super.hashCode();</span>
+    }
+    
+    /**
+     * reset the content of this instance to be the same as the copied content of
+     * copyThis.
+     * 
+     * @param copyThis 
+     */
+    public void resetTo(VeryLargeNumber copyThis) {
+        
+<span class="fc" id="L757">        a = Arrays.copyOf(copyThis.a, copyThis.nLen);</span>
+        
+<span class="fc" id="L759">        isPositive = copyThis.isPositive;        </span>
+<span class="fc" id="L760">    }</span>
+    
+    /**
+     * method purely for testing.  TODO: should be added to an aspect woven for tests
+     * only.
+     * 
+     * @param b array of numbers composing the large number.  note that no
+     * checks are done to assert that the numbers are positive as this is a
+     * method meant to be used in testing only.
+     * @param newNLen 
+     * @param sign the number array is positive or negative
+     */
+    protected void setInternalArray(int[] b, int newNLen, boolean sign) {
+<span class="fc" id="L773">        a = b;</span>
+<span class="fc" id="L774">        nLen = newNLen;</span>
+<span class="fc" id="L775">        isPositive = sign;</span>
+<span class="fc" id="L776">    }</span>
+    
+    /**
+     * return the size of the internal array a
+     * @return 
+     */
+    protected int getInternalArraySize() {
+<span class="fc" id="L783">        return nLen;</span>
+    }
+    
+    /**
+     * get a copy of the internal array a
+     * 
+     * @return 
+     */
+    protected int[] getInternalArray() {
+<span class="fc" id="L792">        return Arrays.copyOf(a, nLen);</span>
+    }
+    
+    /**
+     * return the number value of this instance as a string.  note that this
+     * will be a problem if the value is &gt; 9223372036854775807
+     * @return 
+     */
+    @Override
+    public String toString() {
+        
+<span class="fc bfc" id="L803" title="All 2 branches covered.">        if (isZero()) {</span>
+<span class="fc" id="L804">            return &quot;0&quot;;</span>
+        }
+                
+<span class="fc" id="L807">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L808" title="All 2 branches covered.">        if (!isPositive) {</span>
+<span class="fc" id="L809">            sb.append(&quot;-&quot;);</span>
+        }
+<span class="fc" id="L811">        List&lt;Long&gt; prevSums = new ArrayList&lt;Long&gt;();</span>
+<span class="fc" id="L812">        long prevSum = 0;</span>
+<span class="fc" id="L813">        long sum = 0;</span>
+        int m;
+<span class="fc bfc" id="L815" title="All 2 branches covered.">        for (int i = 0; i &lt; nLen; i++) {</span>
+<span class="fc" id="L816">            m = nLen - 1 - i;</span>
+<span class="fc" id="L817">            long factor = 1;</span>
+<span class="fc bfc" id="L818" title="All 2 branches covered.">            for (int ii = 0; ii &lt; m; ii++) {</span>
+<span class="fc" id="L819">                factor *= BASE;</span>
+            }
+<span class="fc" id="L821">            int ai = a[i];</span>
+<span class="fc" id="L822">            long v = ai * factor;</span>
+<span class="fc bfc" id="L823" title="All 2 branches covered.">            if (sum &lt; 0) {</span>
+<span class="fc" id="L824">                prevSums.add(prevSum);</span>
+<span class="fc" id="L825">                sum *= -1;</span>
+            }
+<span class="fc" id="L827">            prevSum = sum;</span>
+<span class="fc" id="L828">            sum += v;</span>
+        }
+<span class="fc bfc" id="L830" title="All 2 branches covered.">        if (!prevSums.isEmpty()) {</span>
+<span class="fc bfc" id="L831" title="All 2 branches covered.">            for (Long ps : prevSums) {</span>
+<span class="fc" id="L832">                sb.append(ps).append(&quot; + &quot;);</span>
+<span class="fc" id="L833">            }</span>
+<span class="fc" id="L834">            sb.append(sum);</span>
+        } else {
+<span class="fc" id="L836">            sb.append(sum);</span>
+        }
+<span class="fc" id="L838">        return sb.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

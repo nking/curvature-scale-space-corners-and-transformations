@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PairIntArrayWithColor.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">PairIntArrayWithColor.java</span></div><h1>PairIntArrayWithColor.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.Arrays;
+
+/**
+ *
+ * @author nichole
+ */
+public class PairIntArrayWithColor extends PairIntArray {
+    
+    /**
+     * a color for the array of points.  can be used to store a value that 
+     * is interpreted as a closed curve, for example.
+     */
+<span class="pc" id="L15">    protected int color = 0;</span>
+    
+<span class="fc" id="L17">    public PairIntArrayWithColor(PairIntArray obj) {</span>
+<span class="fc" id="L18">        this.x = Arrays.copyOf(obj.x, obj.x.length);</span>
+<span class="fc" id="L19">        this.y = Arrays.copyOf(obj.y, obj.y.length);</span>
+<span class="fc" id="L20">        this.n = obj.n;</span>
+<span class="fc" id="L21">    }</span>
+    
+    public PairIntArrayWithColor(int nPoints) {
+<span class="nc" id="L24">        super(nPoints);</span>
+<span class="nc" id="L25">    }</span>
+    
+    public int getColor() {
+<span class="fc" id="L28">        return color;</span>
+    }
+    
+    /**
+     * set the color for this set of points.  the field can be used to hold
+     * a value that's interpreted as the points being a closed curve, for
+     * example.
+     * 
+     * @param clr 
+     */
+    public void setColor(int clr) {
+<span class="fc" id="L39">        color = clr;</span>
+<span class="fc" id="L40">    }</span>
+     
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AbstractLineThinner.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">AbstractLineThinner.java</span></div><h1>AbstractLineThinner.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L7">public abstract class AbstractLineThinner implements ILineThinner {</span>
+
+    protected boolean isASmallerSearchRegionAndDoesDisconnect(
+        final GreyscaleImage input, int col, int row) {
+        
+<span class="fc bfc" id="L12" title="All 2 branches covered.">        if ((col - 1) &lt; 0) {</span>
+            /*
+            | @ @
+            | C @
+            | @ @
+            */
+<span class="pc bpc" id="L18" title="1 of 2 branches missed.">            if ((col + 1) &gt; (input.getWidth() - 1)) {</span>
+                /*
+                | @ |
+                | C |
+                | @ |
+                */
+                // region is 1 column thin, so don't delete the pix no matter
+                // what its position
+<span class="nc" id="L26">                return true;</span>
+            }
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            if ((row - 1) &lt; 0) {</span>
+                /*
+                | @ @
+                | C @
+                */
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">                if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
+                    /*
+                    | C @
+                    */
+<span class="nc" id="L37">                    return true;</span>
+                }
+<span class="pc bpc" id="L39" title="3 of 6 branches missed.">                if ((input.getValue(col, row + 1) &gt; 0) || </span>
+                    (input.getValue(col + 1, row + 1) &gt; 0) || 
+                    (input.getValue(col + 1, row) &gt; 0)) {
+<span class="fc" id="L42">                    return true;</span>
+                }
+<span class="nc" id="L44">                return false;</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">            } else if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
+                /*
+                | C @
+                | @ @
+                */
+<span class="nc bnc" id="L50" title="All 6 branches missed.">                if ((input.getValue(col, row - 1) &gt; 0) || (input.getValue(col + 1, row - 1) &gt; 0) || (input.getValue(col + 1, row) &gt; 0)) {</span>
+<span class="nc" id="L51">                    return true;</span>
+                }
+<span class="nc" id="L53">                return false;</span>
+            }
+            /*
+            | @ @
+            | C @
+            | @ @
+             */
+            /*
+            | # _
+            | C .     '#' is disconnected if All .'s are 0s
+            | ? ?     AND AtLeastOne (? is 1)
+            |
+            | _ #
+            | C .     '#' is disconnected if All .'s are 0s
+            | ? ?     AND AtLeastOne (? is 1)
+             */
+<span class="fc bfc" id="L69" title="All 6 branches covered.">            if (((input.getValue(col, row + 1) &gt; 0) || (input.getValue(col + 1, row + 1) &gt; 0)) &amp;&amp; (input.getValue(col + 1, row) == 0)) {</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">                if ((input.getValue(col, row - 1) &gt; 0) || (input.getValue(col + 1, row - 1) &gt; 0)) {</span>
+<span class="fc" id="L71">                    return true;</span>
+                }
+            }
+            /*
+            | . _
+            | C #   '#' is disconnected if All .'s are 0s
+            | . _
+             */
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (input.getValue(col + 1, row) &gt; 0) {</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">                if ((input.getValue(col, row + 1) == 0) || (input.getValue(col, row - 1) == 0)) {</span>
+<span class="fc" id="L81">                    return true;</span>
+                }
+            }
+            /*
+            | ? ?
+            | C .     '#' is disconnected if All .'s are 0s
+            | _ #     AND AtLeastOne (? is 1)
+            |
+            | ? ?
+            | C .     '#' is disconnected if All .'s are 0s
+            | # _     AND AtLeastOne (? is 1)
+             */
+<span class="pc bpc" id="L93" title="2 of 6 branches missed.">            if (((input.getValue(col, row - 1) &gt; 0) || (input.getValue(col + 1, row - 1) &gt; 0)) &amp;&amp; (input.getValue(col + 1, row) == 0)) {</span>
+<span class="pc bpc" id="L94" title="2 of 4 branches missed.">                if ((input.getValue(col, row + 1) &gt; 0) || (input.getValue(col + 1, row + 1) &gt; 0)) {</span>
+<span class="nc" id="L95">                    return true;</span>
+                }
+            }
+<span class="fc" id="L98">            return false;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        } else if ((col + 1) &gt; (input.getWidth() - 1)) {</span>
+            /*
+            @ @ |
+            @ C |
+            @ @ |
+             */
+            // already tested that col-1 exists
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if ((row - 1) &lt; 0) {</span>
+                /*
+                @ @ |
+                @ C |
+                 */
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
+                    /*
+                    @ C |
+                     */
+<span class="nc" id="L115">                    return true;</span>
+                }
+<span class="pc bpc" id="L117" title="2 of 6 branches missed.">                if ((input.getValue(col - 1, row) &gt; 0) || (input.getValue(col - 1, row + 1) &gt; 0) || (input.getValue(col, row + 1) &gt; 0)) {</span>
+<span class="fc" id="L118">                    return true;</span>
+                }
+<span class="nc" id="L120">                return false;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            } else if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
+                /*
+                @ C |
+                @ @ |
+                 */
+<span class="pc bpc" id="L126" title="2 of 6 branches missed.">                if ((input.getValue(col - 1, row) &gt; 0) || (input.getValue(col - 1, row - 1) &gt; 0) || (input.getValue(col, row - 1) &gt; 0)) {</span>
+<span class="fc" id="L127">                    return true;</span>
+                }
+<span class="fc" id="L129">                return false;</span>
+            }
+            /*
+            @ @ |
+            @ C |
+            @ @ |
+             */
+            /*
+            - # |
+            . C | '#' is disconnected if All .'s are 0s
+            ? ? |   AND AtLeastOne (? is 1)
+            # _ |
+            . C | '#' is disconnected if All .'s are 0s
+            ? ? |   AND AtLeastOne (? is 1)
+             */
+<span class="fc bfc" id="L144" title="All 6 branches covered.">            if (((input.getValue(col, row + 1) &gt; 0) || (input.getValue(col - 1, row + 1) &gt; 0)) &amp;&amp; (input.getValue(col - 1, row) == 0)) {</span>
+<span class="fc bfc" id="L145" title="All 4 branches covered.">                if ((input.getValue(col, row - 1) &gt; 0) || (input.getValue(col - 1, row - 1) &gt; 0)) {</span>
+<span class="fc" id="L146">                    return true;</span>
+                }
+            }
+            /*
+            _ . |
+            # C |  '#' is disconnected if All .'s are 0s
+            _ . |
+             */
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (input.getValue(col - 1, row) &gt; 0) {</span>
+<span class="fc bfc" id="L155" title="All 4 branches covered.">                if ((input.getValue(col, row + 1) == 0) || (input.getValue(col, row - 1) == 0)) {</span>
+<span class="fc" id="L156">                    return true;</span>
+                }
+            }
+            /*
+            ? ? |
+            . C | '#' is disconnected if All .'s are 0s
+            - # |   AND AtLeastOne (? is 1)
+            ? ? |
+            . C | '#' is disconnected if All .'s are 0s
+            # _ |   AND AtLeastOne (? is 1)
+             */
+<span class="fc bfc" id="L167" title="All 6 branches covered.">            if (((input.getValue(col, row - 1) &gt; 0) || (input.getValue(col - 1, row - 1) &gt; 0)) &amp;&amp; (input.getValue(col - 1, row) == 0)) {</span>
+<span class="pc bpc" id="L168" title="2 of 4 branches missed.">                if ((input.getValue(col, row + 1) &gt; 0) || (input.getValue(col - 1, row + 1) &gt; 0)) {</span>
+<span class="nc" id="L169">                    return true;</span>
+                }
+            }
+<span class="fc" id="L172">            return false;</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        } else if ((row - 1) &lt; 0) {</span>
+            /*
+            @ @ @
+            @ C @
+             */
+            // have already tested that column 0 and column 2 are present
+            /*
+            ?  .  #    '#' is disconnected if All .'s are 0s
+            ?  C  _        AND AtLeastOne (? is 1)
+            ?  .  _    '#' is disconnected if All .'s are 0s
+            ?  C  #        AND AtLeastOne (? is 1)
+             */
+<span class="fc bfc" id="L185" title="All 6 branches covered.">            if (((input.getValue(col + 1, row) &gt; 0) || (input.getValue(col + 1, row + 1) &gt; 0)) &amp;&amp; (input.getValue(col, row + 1) == 0)) {</span>
+<span class="fc bfc" id="L186" title="All 4 branches covered.">                if ((input.getValue(col - 1, row + 1) &gt; 0) || (input.getValue(col - 1, row) &gt; 0)) {</span>
+<span class="fc" id="L187">                    return true;</span>
+                }
+            }
+            /*
+            -  #  _
+            .  C  .    '#' is disconnected if All .'s are 0s
+             */
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (input.getValue(col, row + 1) &gt; 0) {</span>
+<span class="fc bfc" id="L195" title="All 4 branches covered.">                if ((input.getValue(col - 1, row) == 0) || (input.getValue(col + 1, row) == 0)) {</span>
+<span class="fc" id="L196">                    return true;</span>
+                }
+            }
+            /*
+            #  .  ?    '#' is disconnected if All .'s are 0s
+            _  C  ?       AND AtLeastOne (? is 1)
+            _  .  ?    '#' is disconnected if All .'s are 0s
+            #  C  ?        AND AtLeastOne (? is 1)
+             */
+<span class="pc bpc" id="L205" title="1 of 6 branches missed.">            if (((input.getValue(col - 1, row) &gt; 0) || (input.getValue(col - 1, row + 1) &gt; 0)) &amp;&amp; (input.getValue(col, row + 1) == 0)) {</span>
+<span class="pc bpc" id="L206" title="2 of 4 branches missed.">                if ((input.getValue(col + 1, row + 1) &gt; 0) || (input.getValue(col + 1, row) &gt; 0)) {</span>
+<span class="nc" id="L207">                    return true;</span>
+                }
+            }
+<span class="fc" id="L210">            return false;</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        } else if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
+            /*
+            @ C @
+            @ @ @
+             */
+            // have already tested that column 0 and column 2 are present
+            // and that the bottom row is present
+            /*
+            ?  C  _    '#' is disconnected if All .'s are 0s
+            ?  .  #       AND AtLeastOne (? is 1)
+            ?  C  #    '#' is disconnected if All .'s are 0s
+            ?  .  _       AND AtLeastOne (? is 1)
+             */
+<span class="fc bfc" id="L224" title="All 6 branches covered.">            if (((input.getValue(col + 1, row - 1) &gt; 0) || (input.getValue(col + 1, row) &gt; 0)) &amp;&amp; (input.getValue(col, row - 1) == 0)) {</span>
+<span class="pc bpc" id="L225" title="1 of 4 branches missed.">                if ((input.getValue(col - 1, row) &gt; 0) || (input.getValue(col - 1, row - 1) &gt; 0)) {</span>
+<span class="fc" id="L226">                    return true;</span>
+                }
+            }
+            /*
+            .  C  .
+            -  #  _  '#' is disconnected if All .'s are 0s
+             */
+<span class="fc bfc" id="L233" title="All 2 branches covered.">            if (input.getValue(col, row - 1) &gt; 0) {</span>
+<span class="fc bfc" id="L234" title="All 4 branches covered.">                if ((input.getValue(col - 1, row) == 0) || (input.getValue(col + 1, row) == 0)) {</span>
+<span class="fc" id="L235">                    return true;</span>
+                }
+            }
+            /*
+            -  C  ?    '#' is disconnected if All .'s are 0s
+            #  .  ?       AND AtLeastOne (? is 1)
+            #  C  ?    '#' is disconnected if All .'s are 0s
+            _  .  ?      AND AtLeastOne (? is 1)
+             */
+<span class="fc bfc" id="L244" title="All 6 branches covered.">            if (((input.getValue(col - 1, row - 1) &gt; 0) || (input.getValue(col - 1, row) &gt; 0)) &amp;&amp; (input.getValue(col, row - 1) == 0)) {</span>
+<span class="pc bpc" id="L245" title="2 of 4 branches missed.">                if ((input.getValue(col + 1, row) &gt; 0) || (input.getValue(col + 1, row - 1) &gt; 0)) {</span>
+<span class="nc" id="L246">                    return true;</span>
+                }
+            }
+<span class="fc" id="L249">            return false;</span>
+        }
+<span class="nc" id="L251">        return false;</span>
+    }
+
+    protected boolean isASmallerSearchRegion(final GreyscaleImage input, 
+        int col, int row) {
+        
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        if ((col - 1) &lt; 0) {</span>
+<span class="fc" id="L258">            return true;</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">        } else if ((col + 1) &gt; (input.getWidth() - 1)) {</span>
+<span class="fc" id="L260">            return true;</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        } else if ((row - 1) &lt; 0) {</span>
+<span class="fc" id="L262">            return true;</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        } else if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
+<span class="fc" id="L264">            return true;</span>
+        }
+<span class="fc" id="L266">        return false;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

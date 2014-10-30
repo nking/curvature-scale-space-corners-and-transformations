@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Heap.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Heap.java</span></div><h1>Heap.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.logging.Logger;
+
+/**
+ * Class contains a Fibonacci heap, that is, a loose collection of trees based 
+ * upon binomial heaps, hence satisfying the minimum heap property:
+ *     object.child.key &gt;= object.key.
+ * 
+ * Binomial heaps allow the merging of 2 heaps quickly.
+ * 
+ * With a Fibonacci heap, the minimum key of the entire heap is always at the
+ * top of one of the trees.
+ *
+ * Fibonacci heap potential = t + 2m
+ *     where t = number of trees
+ *           m = number of marked nodes.  (marked when node has been recently 
+ *               made a child of another node and &gt;= 1 of it's own children 
+ *               have been cut.  root nodes are never marked.)
+ * 
+ * &lt;pre&gt;
+ * Runtime complexity:
+ * 
+ *    Find-minimum is O(1) amortized time because there is always an instance
+ * reference to it.
+ *
+ *    Insert, decrease key work in constant amortized time.
+ *
+ *    Delete and delete minimum work in O(log n) amortized time.
+ *
+ *    Extract-min and delete should be used sparingly for this structure to be
+ * best utilized and are usually implemented as O(log_2 N).
+ *
+ * This was implemented following pseudo-code from Introduction to Algorithms, 
+ * by Cormen et al.
+ * &lt;/pre&gt;
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L40">public class Heap {</span>
+
+<span class="fc" id="L42">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+	/** circular doubly linked list of minimum nodes for their respective 
+    min-heap-ordered trees */
+<span class="fc" id="L46">	private DoubleLinkedCircularList rootList = new DoubleLinkedCircularList();</span>
+
+	/** root of tree containing a minimum key.  it's null for an empty tree */
+<span class="fc" id="L49">	protected HeapNode minimumNode = null;</span>
+	
+<span class="fc" id="L51">	protected int n = 0;</span>
+
+    /**
+     * insert node into heap.  runtime is O(1).  makes no attempt to consolidate
+     * tree.
+     *
+     * @param node
+     */
+    public void insert(HeapNode node) {
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">    	if (node.getKey() == DoubleLinkedCircularList.noValue) {</span>
+<span class="nc" id="L61">            throw new IllegalArgumentException(</span>
+                &quot;node.key must be set before insert into heap&quot;);
+        }
+<span class="fc" id="L64">    	node.setNumberOfChildren(0);</span>
+<span class="fc" id="L65">        node.setParent(null);</span>
+<span class="fc" id="L66">        node.removeChildren();</span>
+<span class="fc" id="L67">        node.setLeft(node);</span>
+<span class="fc" id="L68">        node.setRight(node);</span>
+<span class="fc" id="L69">        node.setMark(false);</span>
+
+        // concatenate root list containing node with this.rootList
+<span class="fc" id="L72">        rootList.insert(node);</span>
+            
+<span class="fc bfc" id="L74" title="All 4 branches covered.">        if ((minimumNode == null) || (node.getKey() &lt; minimumNode.getKey())) {</span>
+<span class="fc" id="L75">            minimumNode = node;</span>
+        }
+        
+<span class="fc" id="L78">        n++;</span>
+<span class="fc" id="L79">    }</span>
+
+    public boolean isEmpty() {
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        return (minimumNode == null);</span>
+    }
+    
+    /**
+     * extract minimum from the heap.
+     *
+     * minor differences from Cormen et al. pseudocode are present.
+     *
+     * @return
+     */
+    public HeapNode extractMin() {
+
+<span class="fc" id="L94">        int sentinel = DoubleLinkedCircularList.sentinelKey;</span>
+        
+<span class="fc" id="L96">    	HeapNode z = minimumNode;</span>
+
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (z != null) {</span>
+
+        	// detach each child and add it to heap
+<span class="fc" id="L101">        	HeapNode x = z.getChildren().getSentinel().getRight();</span>
+        	
+        	// for each child x of z
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            while (x.getKey() != sentinel) {</span>
+<span class="fc" id="L105">                HeapNode next = x.getRight();</span>
+<span class="fc" id="L106">                rootList.insert(x);</span>
+<span class="fc" id="L107">                x = next;</span>
+<span class="fc" id="L108">            }</span>
+
+<span class="fc" id="L110">            rootList.remove(z);</span>
+    
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">            if (z.getRight().getKey() == z.getKey()) {</span>
+<span class="nc" id="L113">                minimumNode = null;</span>
+            } else {
+<span class="fc" id="L115">                minimumNode = z.getRight();</span>
+<span class="fc" id="L116">                consolidate();</span>
+            }
+
+<span class="fc" id="L119">            n--;</span>
+        }
+
+<span class="fc" id="L122">        return z;</span>
+    }
+
+    void consolidate() {
+        
+    	// D[n] = max degree of any node = lg_2(n) = lg_2(Integer.MAX) = 31
+        //int maxDegree = (int) (Math.log(this.n)/Math.log(2));
+<span class="fc" id="L129">        int maxDegree = 31;</span>
+        
+<span class="fc" id="L131">        HeapNode[] a = new HeapNode[maxDegree];</span>
+
+<span class="fc" id="L133">        HeapNode w = rootList.getSentinel().getRight();</span>
+
+        // n*m*(constants)
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        while (w.getKey() != DoubleLinkedCircularList.sentinelKey) {</span>
+
+<span class="fc" id="L138">            HeapNode x = w;</span>
+            
+            // because the x.right gets changed in link(), nab the next 
+            // reference before link
+<span class="fc" id="L142">            HeapNode next = w.getRight();</span>
+                                  
+<span class="fc" id="L144">            int d = x.getNumberOfChildren();</span>
+
+            // is there another node of the same degree, that is, has the 
+            // same number of children?
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">            while ((d &lt; a.length) &amp;&amp; (a[d] != null)) {</span>
+                
+<span class="fc" id="L150">                HeapNode y = a[d];</span>
+
+<span class="fc bfc" id="L152" title="All 2 branches covered.">                if (x.getKey() &gt; y.getKey()) {</span>
+<span class="fc" id="L153">                    HeapNode tmp = x;</span>
+<span class="fc" id="L154">                    x = y;</span>
+<span class="fc" id="L155">                    y = tmp;                   </span>
+                }
+
+                // link removes y (which has a key larger than x now) from 
+                // rootList and adds it as a child of x
+<span class="fc" id="L160">                link(y, x);</span>
+                
+<span class="fc" id="L162">                a[d] = null;</span>
+<span class="fc" id="L163">                d++;</span>
+<span class="fc" id="L164">            }</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">            if (d &lt; a.length) {</span>
+<span class="fc" id="L166">                a[d] = x;</span>
+            } else {
+<span class="nc" id="L168">                throw new IllegalStateException(&quot;maxDegree=&quot; + maxDegree </span>
+                + &quot; but d is &quot; + d);
+            }
+
+<span class="fc" id="L172">            w = next;</span>
+<span class="fc" id="L173">        }</span>
+
+<span class="fc" id="L175">        minimumNode = null;</span>
+                
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (a[i] != null) {</span>
+                
+<span class="fc" id="L180">                rootList.remove(a[i]);</span>
+<span class="fc" id="L181">            	rootList.insert(a[i]);</span>
+                            	
+            	// not changing the minimumNode because the rootList content 
+                // has not changed, so the minimum in that has not changed
+<span class="fc bfc" id="L185" title="All 4 branches covered.">                if ( (minimumNode == null) || (a[i].getKey() &lt; minimumNode.getKey()) ) {</span>
+<span class="fc" id="L186">                    minimumNode = a[i];</span>
+                }
+            }
+        }
+
+<span class="fc" id="L191">    }</span>
+
+    void link(HeapNode y, HeapNode x) {
+    	 // moves y to a child position of x
+<span class="fc" id="L195">        rootList.remove(y);</span>
+<span class="fc" id="L196">        x.addChild(y);</span>
+<span class="fc" id="L197">        y.setParent(x);</span>
+<span class="fc" id="L198">        y.setMark(false);</span>
+<span class="fc" id="L199">    }</span>
+
+    /**
+     * decrease key for node x
+     *
+     * runtime is O(1)
+     *
+     * @param x
+     * @param decreaseToThisKey
+     */
+    public void decreaseKey(HeapNode x, long decreaseToThisKey) {
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">        if (decreaseToThisKey &gt; x.getKey()) {</span>
+<span class="nc" id="L211">            throw new IllegalArgumentException(</span>
+                &quot;key cannot be larger than x.key&quot;);
+        }
+<span class="fc" id="L214">        x.setKey(decreaseToThisKey);</span>
+<span class="fc" id="L215">        HeapNode y = x.getParent();</span>
+<span class="pc bpc" id="L216" title="1 of 4 branches missed.">        if ((y != null) &amp;&amp; (x.getKey() &lt; y.getKey())) {</span>
+<span class="fc" id="L217">            cut(x, y);</span>
+<span class="fc" id="L218">            cascadingCut(y);</span>
+        }
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (x.getKey() &lt; minimumNode.getKey()) {</span>
+<span class="fc" id="L221">            minimumNode = x;</span>
+        }
+<span class="fc" id="L223">    }</span>
+
+    /**
+     * removes child node from tree and starts a new one with it.
+     *
+     * @param x
+     * @param y 
+     */
+    protected void cut(HeapNode x, HeapNode y) {
+        // remove x from child list of y and decrement y.degree
+<span class="fc" id="L233">        y.removeChild(x);</span>
+
+        // add x to root list
+<span class="fc" id="L236">        rootList.insert(x);</span>
+<span class="fc" id="L237">        x.setParent(null);</span>
+<span class="fc" id="L238">        x.setMark(false);</span>
+<span class="fc" id="L239">    }</span>
+
+    /**
+     * c*O(1)
+     *
+     * @param y
+     */
+    protected void cascadingCut(HeapNode y) {
+<span class="fc" id="L247">        HeapNode z = y.getParent();</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        if (z != null) {</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">            if (!y.isMark()) {</span>
+<span class="fc" id="L250">                y.setMark(true);</span>
+            } else {
+<span class="fc" id="L252">                cut(y, z);</span>
+<span class="fc" id="L253">                cascadingCut(z);</span>
+            }
+        }
+<span class="fc" id="L256">    }</span>
+
+    protected void remove(HeapNode x) {
+        // runtime O(1)
+<span class="fc" id="L260">        decreaseKey(x, DoubleLinkedCircularList.minValue);</span>
+        
+<span class="fc" id="L262">        extractMin();</span>
+<span class="fc" id="L263">    }</span>
+
+    /**
+     * a depth first search of all nodes (that is, it descends all children 
+     * of a node before proceeding to the next in the current doubly linked 
+     * circular list).
+     * 
+     * @param key
+     * @return
+     */
+    HeapNode search(long key) {
+        
+<span class="fc" id="L275">        HeapNode node = rootList.getSentinel().getRight();</span>
+        
+<span class="fc" id="L277">        int sentinel = DoubleLinkedCircularList.sentinelKey;</span>
+                
+<span class="fc" id="L279">        Stack&lt;HeapNode&gt; stack = new Stack&lt;HeapNode&gt;();</span>
+        
+<span class="fc bfc" id="L281" title="All 4 branches covered.">        while (!stack.isEmpty() || (node.getKey() != sentinel)) {</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            if (node.getKey() != sentinel) {</span>
+
+<span class="fc" id="L284">                stack.push(node);</span>
+
+<span class="fc" id="L286">                node = node.getRight();</span>
+
+            } else {
+                
+<span class="fc" id="L290">                node = stack.pop();</span>
+
+                //System.out.println(node.key);
+<span class="fc bfc" id="L293" title="All 2 branches covered.">                if (node.getKey() == key) {</span>
+<span class="fc" id="L294">                    return node;</span>
+                }
+
+<span class="fc" id="L297">                node = node.getChildren().getSentinel().getRight();</span>
+            }
+        }
+        
+<span class="fc" id="L301">        return null;</span>
+    }
+
+    public DoubleLinkedCircularList getRootList() {
+<span class="fc" id="L305">        return rootList ;</span>
+    }
+    
+    protected void printRootList() {
+<span class="fc" id="L309">        StringBuffer sb = new StringBuffer();</span>
+<span class="fc" id="L310">        HeapNode t = this.rootList.getSentinel().getRight();</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">        while (t.getKey() != DoubleLinkedCircularList.sentinelKey) {</span>
+<span class="pc bpc" id="L312" title="2 of 4 branches missed.">            if ((minimumNode == null) || (t.getKey() &lt; minimumNode.getKey())) {</span>
+<span class="nc" id="L313">                minimumNode = t;</span>
+            }
+<span class="fc" id="L315">            String str = String.format(&quot;%d&quot;, t.getKey());</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">            if (sb.length() &gt; 0) {</span>
+<span class="nc" id="L317">                sb.append(&quot; &quot;);</span>
+            }
+<span class="fc" id="L319">            sb.append(str);</span>
+<span class="fc" id="L320">            t = t.getRight();</span>
+<span class="fc" id="L321">        }</span>
+<span class="fc" id="L322">        sb.insert(0, &quot;Looking for &quot; + minimumNode + &quot; :&quot;);</span>
+<span class="fc" id="L323">        log.info(sb.toString());</span>
+<span class="fc" id="L324">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

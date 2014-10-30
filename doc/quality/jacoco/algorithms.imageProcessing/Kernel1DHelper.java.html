@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Kernel1DHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Kernel1DHelper.java</span></div><h1>Kernel1DHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L7">public class Kernel1DHelper {</span>
+   
+    /**
+     * convolve point[xyIdx] with the kernel g.  if calcX is true, the 
+     * point xPoints[xyIdx] is used, else yPoints[xyIdx].
+     * minPointsValue is used for 'mu', the location parameter in the
+     * Gaussian during the convolution.  Note that for extremely large
+     * range of point values, minPointsValue should probably the median
+     * of the points.
+     * @param curve
+     * @param cIndex
+     * @param g
+     * @param calcX
+     * @return 
+     */
+    public double convolvePointWithKernel(PairIntArray curve, int cIndex,
+        float[] g, final boolean calcX) {
+
+<span class="fc" id="L25">        int h = g.length &gt;&gt; 1;</span>
+
+<span class="fc" id="L27">        double sum = 0;</span>
+
+<span class="fc" id="L29">        int curveLength = curve.getN();</span>
+        
+<span class="fc bfc" id="L31" title="All 4 branches covered.">        boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)</span>
+            &amp;&amp; (((PairIntArrayWithColor) curve).getColor() == 1);
+            
+        /*
+        correct for the edges.
+        Can try:
+            (1) wrap around - If this is a closed curve, use the points on the
+                 other end to continue matching the kernel point for point.
+                 ** this is what will use for closed curves **
+            (2) expand/pad - expand to fill the area large enough to match
+                the entire filter by:
+                    -- replicating the last point
+                    -- or reflecting the previous points around this boundary
+                       ** this is the one will use for open curves **
+                    -- or pad with zeroes.  (this one does NOT work well  it's
+                       the same as 'crop the area')
+            (3) crop the area.  this involves re-normalization of the percentage
+                 of the kernel which was used and can introduce large errors
+                 thru division by a very small number for example, so don't use
+                 it if possible.
+        will try &quot;reflect around boundary&quot;
+        */
+                
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+
+<span class="fc" id="L56">            float gg = g[gIdx];</span>
+
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (gg == 0) {</span>
+<span class="fc" id="L59">                continue;</span>
+            }
+            
+<span class="fc" id="L62">            int x = gIdx - h;</span>
+
+<span class="fc" id="L64">            int curveIdx = cIndex + x;</span>
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            if (curveIdx &lt; 0) {</span>
+                
+<span class="fc bfc" id="L68" title="All 2 branches covered.">                if (isClosedCurved) {</span>
+                    // wrap around
+                    /*
+                    n-4 n-3 n-2 n-1  0   1   2   3   .   .   .  n-1
+                     _   _   _   _   @   @   @   @   @   @   @   @
+                    */
+                    // for the rare case when the kernel is so much larger than
+                    //   the edge, will need to iterate
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                    while (curveIdx &lt; 0) {</span>
+<span class="fc" id="L77">                        curveIdx = curve.getN() + curveIdx;</span>
+                    }
+                } else {
+                    //TODO: revisit this for range of kernel sizes vs edge sizes
+                    // replicate
+<span class="fc" id="L82">                    curveIdx = -1*curveIdx - 1;</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">                    if (curveIdx &gt; (curveLength - 1)) {</span>
+<span class="nc" id="L84">                        curveIdx = curveLength - 1;</span>
+                    }
+                }
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            } else if (curveIdx &gt;= (curveLength)) {</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">                if (isClosedCurved) {</span>
+                    // wrap around
+                    /*
+                    0   1   2   3   .   .   .  n-1  0   1   2   3   4
+                    @   @   @   @   @   @   @   @   _   _   _   _   _
+                    */
+                    // for the rare case when the kernel is so much larger than
+                    //   the edge, will need to iterate
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                    while (curveIdx &gt;= (curveLength)) {</span>
+<span class="fc" id="L97">                        curveIdx = curveIdx - curve.getN();</span>
+                    }
+                } else {
+                    //TODO: revisit this for range of kernel sizes vs edge sizes
+<span class="fc" id="L101">                    int diff = curveIdx - curveLength;</span>
+<span class="fc" id="L102">                    curveIdx = curveLength - diff - 1;</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">                    if (curveIdx &lt; 0) {</span>
+<span class="nc" id="L104">                        curveIdx = 0;</span>
+                    }
+                }
+            }
+            
+            float point;
+            
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (calcX) {</span>
+<span class="fc" id="L112">                point = curve.getX(curveIdx);</span>
+            } else {
+<span class="fc" id="L114">                point = curve.getY(curveIdx);</span>
+            }
+
+<span class="fc" id="L117">            sum += (point * gg);</span>
+        }
+
+<span class="fc" id="L120">        return sum;</span>
+    }
+
+    /**
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true.
+     * @param img
+     * @param col
+     * @param row
+     * @param g
+     * @param calcX
+     * @return 
+     */
+    public double convolvePointWithKernel(final GreyscaleImage img, int col, 
+        int row, float[] g, final boolean calcX) {
+
+<span class="fc" id="L135">        int h = g.length &gt;&gt; 1;</span>
+
+<span class="fc" id="L137">        double sum = 0;</span>
+
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        int len = calcX ? img.getWidth() : img.getHeight();</span>
+                
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+
+<span class="fc" id="L143">            float gg = g[gIdx];</span>
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            if (gg == 0) {</span>
+<span class="fc" id="L146">                continue;</span>
+            }
+            
+<span class="fc" id="L149">            int idx = gIdx - h;</span>
+
+<span class="fc bfc" id="L151" title="All 2 branches covered.">            int cIdx = calcX ? (col + idx) : (row + idx);</span>
+
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            if (cIdx &lt; 0) {</span>
+                // replicate
+<span class="fc" id="L155">                cIdx = -1*cIdx - 1;</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                if (cIdx &gt; (len - 1)) {</span>
+<span class="nc" id="L157">                    cIdx = len - 1;</span>
+                }
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            } else if (cIdx &gt;= (len)) {</span>
+                //TODO: revisit this for range of kernel sizes vs edge sizes
+<span class="fc" id="L161">                int diff = cIdx - len;</span>
+<span class="fc" id="L162">                cIdx = len - diff - 1;</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">                if (cIdx &lt; 0) {</span>
+<span class="nc" id="L164">                    cIdx = 0;</span>
+                }
+            }
+            
+            float point;
+            
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            if (calcX) {</span>
+                // keep row constant
+<span class="fc" id="L172">                point = img.getValue(cIdx, row);</span>
+            } else {
+                // keep col constant
+<span class="fc" id="L175">                point = img.getValue(col, cIdx);</span>
+            }
+
+<span class="fc" id="L178">            sum += (point * gg);</span>
+        }
+
+<span class="fc" id="L181">        return sum;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

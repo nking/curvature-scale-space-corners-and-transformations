@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SearchableCurve.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">SearchableCurve.java</span></div><h1>SearchableCurve.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.Arrays;
+
+/**
+ * Stores the curve as (x, y) points and creates an index to make the ability to
+ * find the closest point in a runtime complexity near that of binary search, 
+ * O(lg_2(N)).
+ * 
+ * Note, the class has the infrastructure to track visits too
+ * so that any point returned by find is removed from future 
+ * search results, but that is not enabled at this time.
+ * 
+ * @author nichole
+ */
+public class SearchableCurve {
+    
+    private final int[] xOriginalSorted;
+    private final int[] yOriginalSorted;
+    private final int[] indexesToOriginalXY;
+    
+    /**
+     * x and y are modified upon a find.
+     */
+<span class="fc" id="L25">    private int[] x = null;</span>
+<span class="fc" id="L26">    private int[] y = null;</span>
+<span class="fc" id="L27">    private int[] indexes = null;</span>
+<span class="fc" id="L28">    private int xLength = 0;</span>
+    
+<span class="fc" id="L30">    private boolean isSorted = false;</span>
+    
+    public int getN() {
+<span class="fc" id="L33">        return xLength;</span>
+    }
+    int[] getX() {
+<span class="fc" id="L36">        return x;</span>
+    }
+    int[] getY() {
+<span class="fc" id="L39">        return y;</span>
+    }
+        
+<span class="fc" id="L42">    public SearchableCurve(PairIntArray xy) {</span>
+        
+<span class="fc" id="L44">        x = Arrays.copyOf(xy.getX(), xy.getN());</span>
+<span class="fc" id="L45">        y = Arrays.copyOf(xy.getY(), xy.getN());</span>
+<span class="fc" id="L46">        xLength = xy.getN();</span>
+        
+<span class="fc" id="L48">        indexes = new int[x.length];</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L50">            indexes[i] = i;</span>
+        }
+        
+<span class="fc" id="L53">        initialize();</span>
+        
+<span class="fc" id="L55">        xOriginalSorted = Arrays.copyOf(x, x.length);</span>
+<span class="fc" id="L56">        yOriginalSorted = Arrays.copyOf(y, y.length);</span>
+<span class="fc" id="L57">        indexesToOriginalXY = Arrays.copyOf(indexes, indexes.length);</span>
+<span class="fc" id="L58">    }</span>
+    
+    public void resetVisitsState() {
+<span class="nc" id="L61">        x = Arrays.copyOf(xOriginalSorted, xOriginalSorted.length);</span>
+<span class="nc" id="L62">        y = Arrays.copyOf(yOriginalSorted, yOriginalSorted.length);</span>
+<span class="nc" id="L63">        indexes = Arrays.copyOf(indexesToOriginalXY, indexesToOriginalXY.length);</span>
+<span class="nc" id="L64">        xLength = x.length;</span>
+<span class="nc" id="L65">    }</span>
+    
+    private void initialize() {       
+        
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (isSorted) {</span>
+<span class="nc" id="L70">            return;</span>
+        }
+       
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (xLength &gt; 0) {</span>
+            // sort by decreasing y, then increasing x
+            // (adopting same pattern as used in contours for t, sigma)
+<span class="fc" id="L76">            sortBy2ndThen1st(x, y, indexes);</span>
+        }
+        
+<span class="fc" id="L79">        isSorted = true;</span>
+<span class="fc" id="L80">    }</span>
+    
+    /**
+     * use a binary search pattern to find the index of closest (x,y) point
+     * w.r.t x and y.  to get the index w.r.t. the constructor's xy instance,
+     * use indexesToOriginalXY[this result].
+     * Note that the current implementation may not be the closest, but may
+     * be the &quot;close&quot; match.  it looks for matching y and the closest x from
+     * there.  this may change...
+     * 
+     * TODO: not implemented yet: Note that a side effect of this method is that the returned point is
+     * marked as &quot;visited&quot; and will not be returned upon future visits.  resetVisitsState()
+     * will reset the data so that none have been visited
+     * 
+     * runtime complexity is O(lg_2(N)).
+     * 
+     * @param xPoint
+     * @param yPoint
+     * @return 
+     */
+    protected PairInt findClosestMatch(int xPoint, int yPoint) {
+        
+<span class="fc" id="L102">        int idx = findClosestMatchBinarySearch(xPoint, yPoint);</span>
+        
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (idx == -1) {</span>
+<span class="nc" id="L105">            idx = findClosestMatchForYTooHigh(xPoint, yPoint);</span>
+        }
+        
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (idx != -1) {</span>
+            //TODO: make a moveUp to delete the point in x,y,and indexes
+            //   and add an xLen to not use entries past xLen
+            
+<span class="fc" id="L112">            PairInt pair = new PairInt(x[idx], y[idx]);</span>
+            
+<span class="fc" id="L114">            return pair;</span>
+        }
+        
+<span class="nc" id="L117">        return null;</span>
+    }
+    
+    /**
+     * use a binary search pattern to find the index of closest (x,y) point
+     * w.r.t x and y.  to get the index w.r.t. the constructor's xy instance,
+     * use indexesToOriginalXY[this result].
+     * 
+     * runtime complexity is O(lg_2(N)).
+     * @param xPoint
+     * @param yPoint
+     * @return 
+     */
+    protected int findClosestMatchBinarySearch(int xPoint, int yPoint) {
+        
+<span class="fc" id="L132">        int minDiffY = Integer.MAX_VALUE;</span>
+<span class="fc" id="L133">        int minDiffX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L134">        int idx = -1;</span>
+        
+<span class="fc" id="L136">        int lowIdx = 0;</span>
+<span class="fc" id="L137">        int highIdx = x.length - 1;</span>
+        
+        while (true) {
+            
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (lowIdx &gt; highIdx) {</span>
+                
+<span class="fc" id="L143">                break;</span>
+            
+            } else {
+                
+<span class="fc" id="L147">                int midIdx = (lowIdx + highIdx) &gt;&gt; 1;</span>
+                                
+<span class="fc" id="L149">                int diffY = Math.abs(y[midIdx] - yPoint);</span>
+<span class="fc" id="L150">                int diffX = Math.abs(x[midIdx] - xPoint);</span>
+                
+<span class="fc bfc" id="L152" title="All 4 branches covered.">                if ((diffY &lt;= minDiffY) &amp;&amp; (diffX &lt;= minDiffX)) {</span>
+<span class="fc" id="L153">                    minDiffY = diffY;</span>
+<span class="fc" id="L154">                    minDiffX = diffX;</span>
+<span class="fc" id="L155">                    idx = midIdx;</span>
+                }
+                
+<span class="fc bfc" id="L158" title="All 4 branches covered.">                if ((diffY == 0) &amp;&amp; (diffX == 0)) {</span>
+                    
+<span class="fc" id="L160">                    idx = midIdx;</span>
+<span class="fc" id="L161">                    break;</span>
+                
+<span class="fc bfc" id="L163" title="All 2 branches covered.">                } else if (diffY == 0) {</span>
+                    
+                    // smaller x is at a lower index
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                    if (x[midIdx] &lt; xPoint) {</span>
+<span class="fc" id="L167">                        lowIdx = midIdx + 1;</span>
+                    } else {
+<span class="fc" id="L169">                        highIdx = midIdx - 1;</span>
+                    }
+                    
+<span class="fc bfc" id="L172" title="All 2 branches covered.">                } else if (y[midIdx] &lt; yPoint) {</span>
+                    // they're at a lower index
+<span class="fc" id="L174">                    highIdx = midIdx - 1;</span>
+                    
+                } else {
+                    // theyr'e at a higher index
+<span class="fc" id="L178">                    lowIdx = midIdx + 1;</span>
+                }
+<span class="fc" id="L180">            }</span>
+        }
+        
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (idx &gt; -1) {</span>
+<span class="fc" id="L184">            return idx;</span>
+        }
+        
+<span class="nc" id="L187">        return -1;</span>
+    }
+
+    /**
+     * A method to be used only if findClosestMatchBinarySearch returns a -1
+     * and does so because the point has more than one y which it is near,
+     * but a closer x which for the lower value y.
+     * The method won't usually find the closest match unless that parameter
+     * space has been searched first.
+     * return the index for a match w.r.t. arrays x and y, else -1 if not found.  
+     * This method runtime complexity is O(N).
+     * 
+     * @param xPoint
+     * @param yPoint
+     * @return 
+     */
+    protected int findClosestMatchForYTooHigh(int xPoint, 
+        int yPoint) {
+        /*
+        1, 5
+        2, 4
+        3, 3
+        4, 3&lt;--
+        2, 2
+        1, 1
+        */
+<span class="fc" id="L213">        int minDiffY = Integer.MAX_VALUE;</span>
+<span class="fc" id="L214">        int minDiffX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L215">        int idx = -1;</span>
+        
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+                        
+<span class="fc" id="L219">            int diffY = yPoint - y[i];</span>
+            
+<span class="fc" id="L221">            int diffX = Math.abs(x[i] - xPoint);</span>
+            
+<span class="fc bfc" id="L223" title="All 4 branches covered.">            if ((diffX == 0) &amp;&amp; (diffY == 0)) {</span>
+<span class="fc" id="L224">                return i;</span>
+            }
+            
+            /*
+            we're looking for cases where y is too high, but the 
+            x is close.
+            */
+<span class="pc bpc" id="L231" title="1 of 6 branches missed.">            if ((diffY &gt; 0) &amp;&amp; (diffY &lt;= minDiffY) </span>
+                &amp;&amp; (diffX &lt;= minDiffX)) {
+                
+<span class="fc" id="L234">                minDiffY = diffY;</span>
+<span class="fc" id="L235">                minDiffX = diffX;</span>
+<span class="fc" id="L236">                idx = i;</span>
+            }
+        }
+      
+<span class="fc" id="L240">        return idx;</span>
+    }
+    
+    /**
+     * sort by decreasing a2 then increasing a1 when a2 is the same in comparison.
+     * runtime complexity is O(N*lg_2(N)) + O(N/2).
+     * @param a1
+     * @param a2
+     * @param a3
+     * @param idxLo
+     * @param idxHi 
+     */
+    private void sortBy2ndThen1st(int[] a1, int[] a2, int[] a3) {
+        
+<span class="fc" id="L254">        sortBy2ndThen1st(a1, a2, a3, 0, xLength - 1);</span>
+            
+        // reverse the arrays
+<span class="fc" id="L257">        reverse(a1, a2, a3, 0, xLength - 1);</span>
+<span class="fc" id="L258">    }</span>
+    
+    /**
+     * sort by decreasing a2 then increasing a1 when a2 is the same in comparison.
+     * runtime complexity is O(N*lg_2(N)) + O(N/2).
+     * @param a1
+     * @param a2
+     * @param a3
+     * @param idxLo
+     * @param idxHi 
+     */
+    private void sortBy2ndThen1st(int[] a1, int[] a2, int[] a3, int idxLo,
+        int idxHi) {
+        
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+            
+<span class="fc" id="L274">            int idxMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+            
+<span class="fc" id="L276">            sortBy2ndThen1st(a1, a2, a3, idxLo, idxMid);</span>
+<span class="fc" id="L277">            sortBy2ndThen1st(a1, a2, a3, idxMid + 1, idxHi);</span>
+            
+<span class="fc" id="L279">            mergeBy2ndThen1st(a1, a2, a3, idxLo, idxMid, idxHi);</span>
+            
+        } 
+<span class="fc" id="L282">    }</span>
+
+    /**
+     * sort by increasing a2 and when a2's are equal, sort by decreasing a1.
+     * @param a1
+     * @param a2
+     * @param a3
+     * @param idxLo
+     * @param idxMid
+     * @param idxHi 
+     */
+    private void mergeBy2ndThen1st(int[] a1, int[] a2, int[] a3, int idxLo, 
+        int idxMid, int idxHi) {
+        
+<span class="fc" id="L296">        int[] leftX = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+<span class="fc" id="L297">        int[] leftY = Arrays.copyOfRange(a2, idxLo, idxMid + 2);</span>
+<span class="fc" id="L298">        int[] leftI = Arrays.copyOfRange(a3, idxLo, idxMid + 2);</span>
+<span class="fc" id="L299">        leftX[leftX.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L300">        leftY[leftY.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L301">        leftI[leftI.length - 1] = Integer.MAX_VALUE;</span>
+        
+<span class="fc" id="L303">        int[] rightX = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L304">        int[] rightY = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L305">        int[] rightI = Arrays.copyOfRange(a3, idxMid + 1, idxHi + 2);        </span>
+<span class="fc" id="L306">        rightX[rightX.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L307">        rightY[rightY.length - 1] = Integer.MAX_VALUE;</span>
+<span class="fc" id="L308">        rightI[rightI.length - 1] = Integer.MAX_VALUE;</span>
+        
+<span class="fc" id="L310">        int leftPos = 0;                                               </span>
+<span class="fc" id="L311">        int rightPos = 0;</span>
+        
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L314">            int lY = leftY[leftPos];</span>
+<span class="fc" id="L315">            int rY = rightY[rightPos];</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">            if (lY == rY) { </span>
+<span class="fc" id="L317">                int lX = leftX[leftPos];</span>
+<span class="fc" id="L318">                int rX = rightX[rightPos];</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">                if (lX &gt; rX) {</span>
+<span class="fc" id="L320">                    a2[k] = lY;</span>
+<span class="fc" id="L321">                    a1[k] = lX;</span>
+<span class="fc" id="L322">                    a3[k] = leftI[leftPos];</span>
+<span class="fc" id="L323">                    leftPos++;</span>
+                } else {
+<span class="fc" id="L325">                    a2[k] = rY;</span>
+<span class="fc" id="L326">                    a1[k] = rX;</span>
+<span class="fc" id="L327">                    a3[k] = rightI[rightPos];</span>
+<span class="fc" id="L328">                    rightPos++;</span>
+                }
+<span class="fc bfc" id="L330" title="All 2 branches covered.">            } else if (lY &lt; rY) {</span>
+<span class="fc" id="L331">                a2[k] = lY;</span>
+<span class="fc" id="L332">                a1[k] = leftX[leftPos];</span>
+<span class="fc" id="L333">                a3[k] = leftI[leftPos];</span>
+<span class="fc" id="L334">                leftPos++;</span>
+                
+            } else {
+<span class="fc" id="L337">                a2[k] = rY;</span>
+<span class="fc" id="L338">                a1[k] = rightX[rightPos];</span>
+<span class="fc" id="L339">                a3[k] = rightI[rightPos];</span>
+<span class="fc" id="L340">                rightPos++;</span>
+            }
+        }
+<span class="fc" id="L343">    }</span>
+
+    /**
+     * reverse the order of points in the arrays
+     * @param a1
+     * @param a2
+     * @param a3 
+     */
+    private void reverse(int[] a1, int[] a2, int[] a3, int idxLo, int idxHi) {
+        
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">        if (a1 == null) {</span>
+<span class="nc" id="L354">                throw new IllegalArgumentException(&quot;a1 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">        if (a2 == null) {</span>
+<span class="nc" id="L357">                throw new IllegalArgumentException(&quot;a2 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">        if (a3 == null) {</span>
+<span class="nc" id="L360">                throw new IllegalArgumentException(&quot;a3 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L362" title="2 of 4 branches missed.">        if ((a1.length != a2.length) || (a1.length != a3.length)) {</span>
+<span class="nc" id="L363">                throw new IllegalArgumentException(&quot;arrays must be same length&quot;);</span>
+        }
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        if (a1.length &lt; 2) {</span>
+<span class="nc" id="L366">            return;</span>
+        }
+        
+<span class="fc" id="L369">        int n = idxHi - idxLo + 1;</span>
+        
+<span class="fc" id="L371">        int end = n &gt;&gt; 1;</span>
+        
+<span class="fc bfc" id="L373" title="All 2 branches covered.">        for (int i = idxLo; i &lt; (idxLo + end); i++) {</span>
+<span class="fc" id="L374">            int idx2 = n - i - 1;</span>
+<span class="fc" id="L375">            int swap = a1[i];</span>
+<span class="fc" id="L376">            a1[i] = a1[idx2];</span>
+<span class="fc" id="L377">            a1[idx2] = swap;</span>
+            
+<span class="fc" id="L379">            swap = a2[i];</span>
+<span class="fc" id="L380">            a2[i] = a2[idx2];</span>
+<span class="fc" id="L381">            a2[idx2] = swap;</span>
+            
+<span class="fc" id="L383">            swap = a3[i];</span>
+<span class="fc" id="L384">            a3[i] = a3[idx2];</span>
+<span class="fc" id="L385">            a3[idx2] = swap;</span>
+        }
+<span class="fc" id="L387">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

@@ -1,0 +1,901 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EdgeContourExtractor.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">EdgeContourExtractor.java</span></div><h1>EdgeContourExtractor.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ Edge contour extraction
+    Local Methods:
+        (1) At each edge pixel, a neighborhood (e.g., 3x3) is examined.
+
+        (2) The center edge pixel can be linked with its neighbors if the 
+            magnitude and direction differences are below certain thresholds 
+            and their magnitudes are relatively large:
+
+ * @author nichole
+ */
+public class EdgeContourExtractor {
+    
+    private final GreyscaleImage img;
+    
+<span class="fc" id="L25">    private long numberOfPixelsAboveThreshold = 0;</span>
+    
+<span class="fc" id="L27">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="fc" id="L29">    private boolean doNotStraigthenLines = false;</span>
+    
+<span class="fc" id="L31">    private boolean useLineDrawingMode = false;</span>
+    
+    /**
+     * if the image is smaller than 100 on a side, this will be lowered to 5
+     */
+<span class="fc" id="L36">    private int edgeSizeLowerLimit = 30;</span>
+    
+    /**
+     * NOTE:  input should have a black (empty) background and edges should
+     * have blue &gt; 125 counts.  Edges should also have width of 1 and no larger.
+     * 
+     * @param input 
+     */
+<span class="fc" id="L44">    public EdgeContourExtractor(GreyscaleImage input) {</span>
+<span class="fc" id="L45">        img = input;</span>
+        
+<span class="pc bpc" id="L47" title="1 of 4 branches missed.">        if (img.getWidth() &lt; 100 || img.getHeight() &lt; 100) {</span>
+<span class="fc" id="L48">            edgeSizeLowerLimit = 5;</span>
+        }
+<span class="fc" id="L50">    }</span>
+    
+    public void useLineDrawingMode() {
+<span class="fc" id="L53">        useLineDrawingMode = true;</span>
+<span class="fc" id="L54">    }</span>
+    
+    public GreyscaleImage getImage() {
+<span class="fc" id="L57">        return img;</span>
+    }
+    
+    /**
+     * find the edges and return as a list of points.  The method uses a
+     * DFS search through all points in the image with values &gt; 0 to link
+     * adjacent sequential points into edges.
+     * The method then uses method mergeAdjacentEndPoints.
+     * Note that the later 2 methods are not needed if the edges will be used
+     * in a corner detector only, but if the edges are to be used to
+     * find inflection points in scale space maps, those methods help to
+     * provide more complete shapes and better matches between the same object
+     * in another scale space map.
+     * 
+     * @return 
+     */
+    public List&lt;PairIntArray&gt; findEdges() {
+        
+        // DFS search for sequential neighbors.
+        
+<span class="fc" id="L77">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
+      
+<span class="fc" id="L79">        int thresh0 = 1;</span>
+        
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); i++) {</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); j++) {</span>
+                //for now, choosing to look only at the blue
+<span class="fc" id="L84">                int bPix = img.getValue(i, j);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">                if (bPix &gt;= thresh0) {</span>
+<span class="fc" id="L86">                    stack.add(new PairInt(i, j));</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L91">        numberOfPixelsAboveThreshold = stack.size();</span>
+        
+<span class="fc" id="L93">        log.log(Level.FINE, &quot;Number of pixels that exceed threshhold={0}&quot;, </span>
+            Long.toString(numberOfPixelsAboveThreshold));
+        
+<span class="fc" id="L96">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="fc" id="L97">        int[] uNodeEdgeIdx = new int[img.getWidth() * img.getHeight()];</span>
+<span class="fc" id="L98">        Arrays.fill(uNodeEdgeIdx, -1);</span>
+           
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+            
+<span class="fc" id="L102">            PairInt uNode = stack.pop();</span>
+            
+<span class="fc" id="L104">            int uX = uNode.getX();</span>
+<span class="fc" id="L105">            int uY = uNode.getY();</span>
+<span class="fc" id="L106">            int uIdx = (uY * img.getWidth()) + uX;</span>
+                        
+<span class="fc" id="L108">            boolean foundNeighbor = false;</span>
+            
+            // for each neighbor v of u
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            for (int vX = (uX - 1); vX &lt; (uX + 2); vX++) {</span>
+                
+<span class="fc bfc" id="L113" title="All 2 branches covered.">                if (foundNeighbor) {</span>
+<span class="fc" id="L114">                    break;</span>
+                }
+                
+<span class="fc bfc" id="L117" title="All 4 branches covered.">                if (vX &lt; 0 || vX &gt; (img.getWidth() - 1)) {</span>
+<span class="fc" id="L118">                    continue;</span>
+                }
+                
+<span class="fc bfc" id="L121" title="All 2 branches covered.">                for (int vY = (uY - 1); vY &lt; (uY + 2); vY++) {</span>
+
+<span class="fc bfc" id="L123" title="All 4 branches covered.">                    if (vY &lt; 0 || vY &gt; (img.getHeight() - 1)) {</span>
+<span class="fc" id="L124">                        continue;</span>
+                    }
+                    
+<span class="fc" id="L127">                    int vIdx = (vY * img.getWidth()) + vX;</span>
+                
+<span class="fc bfc" id="L129" title="All 4 branches covered.">                    if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx)) {</span>
+<span class="fc" id="L130">                        continue;</span>
+                    }
+                    
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                    if (img.getValue(vX, vY) &lt; thresh0) {</span>
+<span class="fc" id="L134">                        continue;</span>
+                    }
+
+                    // if u is not in an edge already, create a new one
+<span class="fc bfc" id="L138" title="All 2 branches covered.">                    if (uNodeEdgeIdx[uIdx] == -1) {</span>
+                        
+<span class="fc" id="L140">                        PairIntArray edge = new PairIntArray();</span>
+                        
+<span class="fc" id="L142">                        edge.add(uX, uY);</span>
+                        
+<span class="fc" id="L144">                        uNodeEdgeIdx[uIdx] = output.size();</span>
+
+<span class="fc" id="L146">                        output.add(edge);                        </span>
+                    }
+                    
+                    // keep the curve points ordered
+                                    
+                    // add v to the edge u if u is the last node in it's edge
+                                        
+<span class="fc" id="L153">                    PairIntArray appendToNode = output.get(uNodeEdgeIdx[uIdx]);</span>
+<span class="fc" id="L154">                    int aIdx = appendToNode.getN() - 1;</span>
+<span class="pc bpc" id="L155" title="1 of 4 branches missed.">                    if ((appendToNode.getX(aIdx) != uX) || </span>
+                        (appendToNode.getY(aIdx) != uY)) {
+<span class="nc" id="L157">                        continue;</span>
+                    }
+                        
+<span class="fc" id="L160">                    appendToNode.add(vX, vY);</span>
+                    
+<span class="fc" id="L162">                    uNodeEdgeIdx[vIdx] = uNodeEdgeIdx[uIdx];</span>
+                                        
+                    //TODO: do we only want 1 neighbor from the 9 as a continuation?
+                    // yes for now, but this requires edges be only 1 pixel wide
+                                
+                   // inserting back at the top of the stack assures that the 
+                   // search continues next from an associated point
+<span class="fc" id="L169">                   stack.add(new PairInt(vX, vY));</span>
+                   
+<span class="fc" id="L171">                   foundNeighbor = true;</span>
+                   
+<span class="fc" id="L173">                   break;</span>
+                }
+            }
+<span class="fc" id="L176">        }</span>
+        
+<span class="fc" id="L178">        log.fine(output.size() + &quot; edges after DFS&quot;);</span>
+        
+<span class="fc" id="L180">        int nIterMax = 100;</span>
+        int n, sz, lastSize;
+        
+        
+        // count the number of points in edges
+<span class="fc" id="L185">        long sum = countPixelsInEdges(output);</span>
+        
+<span class="fc" id="L187">        log.log(Level.FINE, </span>
+            &quot;==&gt; {0} pixels are in edges out of {1} pixels &gt; threshhold&quot;, 
+            new Object[]{Long.toString(sum), 
+                Long.toString(numberOfPixelsAboveThreshold)});
+        
+<span class="fc" id="L192">        log.log(Level.FINE, &quot;there are {0} edges&quot;, </span>
+            Integer.toString(output.size()));
+        
+<span class="fc" id="L195">        output = mergeAdjacentEndPoints(output);</span>
+        
+<span class="fc" id="L197">        log.log(Level.FINE, &quot;{0} edges after merge adjacent&quot;, </span>
+            Integer.toString(output.size()));
+        
+        /*
+        //not necessary now that lines from CannyEdgeFilter are 1 pix width.
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        
+        n = 0;
+        sz = output.size();
+        lastSize = Integer.MAX_VALUE;
+        while ((sz &lt; lastSize) &amp;&amp; (n &lt; nIterMax)) {
+            
+            lastSize = sz;
+        
+            output = ch.pruneAndIncludeAdjacentCurves(output, img.getWidth());
+           
+            sz = output.size();
+            
+            log.log(Level.FINE, &quot;{0}) {1} edges after prune overlapping&quot;, 
+                new Object[]{Integer.toString(n), Integer.toString(sz)});
+            
+            n++;
+        }
+        */
+     
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (useLineDrawingMode) {</span>
+            
+<span class="fc" id="L224">            output = connectClosestPointsIfCanTrim(output);</span>
+        
+<span class="fc" id="L226">            log.fine(output.size() + &quot; edges after connect closest&quot;);</span>
+        }
+        
+        /*
+        //TODO:
+        // This helps to merge edges (that is extracted curves) at adjacent 
+        // points that resemble an intersection of the lines, but it's not 
+        // necessarily useful because the curvature is determined correctly 
+        // whether the curves are merged or not.
+        // If connecting the edges becomes more important, considering
+        // using this, connectClosestPointsIfCanTrim():
+        
+        output = connectClosestPointsIfCanTrim(output);
+        
+        log.fine(output.size() + &quot; edges after connect closest&quot;);
+        */
+        
+        
+<span class="fc" id="L244">        output = fillInGaps(output);</span>
+        
+<span class="fc" id="L246">        log.log(Level.FINE, &quot;{0} edges after fill in gaps&quot;, </span>
+            new Object[]{Integer.toString(output.size())});
+         
+                
+        //TODO:  this may need to change
+<span class="fc" id="L251">        removeEdgesShorterThan(output, edgeSizeLowerLimit);</span>
+<span class="fc" id="L252">        sz = output.size();</span>
+        
+        
+<span class="fc" id="L255">        log.log(Level.FINE, &quot;{0} edges after removing those shorter&quot;, </span>
+            new Object[]{Integer.toString(sz)});
+
+        
+<span class="fc" id="L259">        long sum2 = countPixelsInEdges(output);</span>
+               
+<span class="fc" id="L261">        log.log(Level.FINE, </span>
+            &quot;==&gt; {0}) pixels are in edges out of {1} pixels &gt; threshhold&quot;, 
+            new Object[]{Long.toString(sum2), 
+                Long.toString(numberOfPixelsAboveThreshold)});
+        
+<span class="pc bpc" id="L266" title="1 of 4 branches missed.">        if (!doNotStraigthenLines &amp;&amp; !useLineDrawingMode) {</span>
+<span class="fc" id="L267">            output = straightenJaggedLines(output);</span>
+        }
+        
+<span class="fc" id="L270">        return output;</span>
+    }
+
+    public void doNotStraigthenLines() {
+<span class="nc" id="L274">        this.doNotStraigthenLines = true;</span>
+<span class="nc" id="L275">    }</span>
+    
+    private long countPixelsInEdges(List&lt;PairIntArray&gt; edges) {
+<span class="fc" id="L278">        long sum = 0;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        for (PairIntArray edge : edges) {</span>
+<span class="fc" id="L280">            sum += edge.getN();</span>
+<span class="fc" id="L281">        }</span>
+<span class="fc" id="L282">        return sum;</span>
+    }
+   
+    /**
+     * merge edges adjacent end points of curves
+     * 
+     * @param edges
+     * @return 
+     */
+    protected List&lt;PairIntArray&gt; mergeAdjacentEndPoints(List&lt;PairIntArray&gt; 
+        edges) {
+     
+        /*
+        compare end of uEdge to beginning of all others
+        reverse uEdge and repeat
+        revert reverse for next start
+        */
+      
+<span class="fc" id="L300">        boolean[] removed = new boolean[edges.size()];</span>
+        
+<span class="fc" id="L302">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+
+<span class="fc bfc" id="L304" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+            
+<span class="fc bfc" id="L306" title="All 2 branches covered.">            if (removed[i]) {</span>
+<span class="fc" id="L307">                continue;</span>
+            }
+            
+<span class="fc" id="L310">            PairIntArray uEdge = edges.get(i);</span>
+            
+            // an extra iteration for reversing uEdge
+<span class="fc bfc" id="L313" title="All 2 branches covered.">            for (int r = 0; r &lt; 2; r++) {</span>
+                 
+                // compare bottom of uEdge to top of vEdge
+
+<span class="fc bfc" id="L317" title="All 2 branches covered.">                for (int j = 0; j &lt; edges.size(); j++) {</span>
+
+<span class="fc bfc" id="L319" title="All 2 branches covered.">                    if (i == j) {</span>
+<span class="fc" id="L320">                        continue;</span>
+                    }
+<span class="fc bfc" id="L322" title="All 2 branches covered.">                    if (removed[j]) {</span>
+<span class="fc" id="L323">                        continue;</span>
+                    }
+
+<span class="fc" id="L326">                    PairIntArray vEdge = edges.get(j);</span>
+
+                    // recalculate in case u has grown
+<span class="fc" id="L329">                    int uX = uEdge.getX(uEdge.getN() - 1);</span>
+<span class="fc" id="L330">                    int uY = uEdge.getY(uEdge.getN() - 1);</span>
+
+<span class="fc" id="L332">                    int vX = vEdge.getX(0);</span>
+<span class="fc" id="L333">                    int vY = vEdge.getY(0);</span>
+
+<span class="fc" id="L335">                    int diffX = uX - vX;</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">                    if (diffX &lt; 0) {</span>
+<span class="fc" id="L337">                        diffX *= -1;</span>
+                    }
+
+<span class="fc bfc" id="L340" title="All 2 branches covered.">                    if (diffX &gt; 1) {</span>
+<span class="fc" id="L341">                        continue;</span>
+                    }
+
+<span class="fc" id="L344">                    int diffY = uY - vY;</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">                    if (diffY &lt; 0) {</span>
+<span class="fc" id="L346">                        diffY *= -1;</span>
+                    }
+
+<span class="fc bfc" id="L349" title="All 2 branches covered.">                    if (diffY &gt; 1) {</span>
+<span class="fc" id="L350">                        continue;</span>
+                    }
+
+<span class="fc bfc" id="L353" title="All 2 branches covered.">                    for (int k = 0; k &lt; vEdge.getN(); k++) {</span>
+<span class="fc" id="L354">                        uEdge.add(vEdge.getX(k), vEdge.getY(k));</span>
+                    }
+
+<span class="fc" id="L357">                    removed[j] = true;</span>
+
+                    // have to restart the j iteration to re-compare terms
+<span class="fc" id="L360">                    j = -1;</span>
+                }
+                
+<span class="fc bfc" id="L363" title="All 2 branches covered.">                if (r == 0) {</span>
+                    // just finished forward, start revers 
+<span class="fc" id="L365">                    uEdge.reverse();</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">                } else if (r == 1) {</span>
+                    // revert the array back to other direction
+<span class="fc" id="L368">                    uEdge.reverse();</span>
+                }
+            }
+        }
+        
+<span class="fc bfc" id="L373" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">            if (!removed[i]) {</span>
+<span class="fc" id="L375">                output.add(edges.get(i));</span>
+            }
+        }
+        
+<span class="fc" id="L379">        return output;</span>
+    }
+    
+    /**
+     * fill in gaps of '1' pixel
+     * 
+     * @param edges
+     * @return 
+     */
+    protected List&lt;PairIntArray&gt; fillInGaps(List&lt;PairIntArray&gt;
+        edges) {
+            
+        /*
+        similar to the mergeAdjacentEndPoints:  
+        compare end of uEdge to beginning of all others
+        reverse uEdge and repeat
+        revert reverse for next start
+        */
+      
+<span class="fc" id="L398">        boolean[] removed = new boolean[edges.size()];</span>
+        
+<span class="fc" id="L400">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+                
+<span class="fc bfc" id="L402" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+            
+<span class="fc bfc" id="L404" title="All 2 branches covered.">            if (removed[i]) {</span>
+<span class="fc" id="L405">                continue;</span>
+            }
+            
+<span class="fc" id="L408">            PairIntArray uEdge = edges.get(i);</span>
+            
+            // an extra iteration for reversing uEdge
+<span class="fc bfc" id="L411" title="All 2 branches covered.">            for (int r = 0; r &lt; 2; r++) {</span>
+                 
+                // compare bottom of uEdge to top of vEdge
+
+<span class="fc bfc" id="L415" title="All 2 branches covered.">                for (int j = 0; j &lt; edges.size(); j++) {</span>
+
+<span class="fc bfc" id="L417" title="All 2 branches covered.">                    if (i == j) {</span>
+<span class="fc" id="L418">                        continue;</span>
+                    }
+<span class="fc bfc" id="L420" title="All 2 branches covered.">                    if (removed[j]) {</span>
+<span class="fc" id="L421">                        continue;</span>
+                    }
+
+<span class="fc" id="L424">                    PairIntArray vEdge = edges.get(j);</span>
+
+                    // recalculate in case u has grown
+<span class="fc" id="L427">                    int uX = uEdge.getX(uEdge.getN() - 1);</span>
+<span class="fc" id="L428">                    int uY = uEdge.getY(uEdge.getN() - 1);</span>
+
+<span class="fc" id="L430">                    int vX = vEdge.getX(0);</span>
+<span class="fc" id="L431">                    int vY = vEdge.getY(0);</span>
+
+<span class="fc" id="L433">                    int diffX = uX - vX;</span>
+<span class="fc bfc" id="L434" title="All 2 branches covered.">                    if (diffX &lt; 0) {</span>
+<span class="fc" id="L435">                        diffX *= -1;</span>
+                    }
+
+<span class="fc bfc" id="L438" title="All 2 branches covered.">                    if (diffX &gt; 2) {</span>
+<span class="fc" id="L439">                        continue;</span>
+                    }
+
+<span class="fc" id="L442">                    int diffY = uY - vY;</span>
+<span class="fc bfc" id="L443" title="All 2 branches covered.">                    if (diffY &lt; 0) {</span>
+<span class="fc" id="L444">                        diffY *= -1;</span>
+                    }
+
+<span class="fc bfc" id="L447" title="All 2 branches covered.">                    if (diffY &gt; 2) {</span>
+<span class="fc" id="L448">                        continue;</span>
+                    }
+                    
+<span class="fc" id="L451">                    int gapX = (uX + vX)/2;</span>
+<span class="fc" id="L452">                    int gapY = (uY + vY)/2;</span>
+                                        
+<span class="fc" id="L454">                    img.setValue(gapX, gapY, 255);</span>
+                    
+<span class="fc" id="L456">                    uEdge.add(gapX, gapY);</span>
+                    
+<span class="fc bfc" id="L458" title="All 2 branches covered.">                    for (int k = 0; k &lt; vEdge.getN(); k++) {</span>
+<span class="fc" id="L459">                        uEdge.add(vEdge.getX(k), vEdge.getY(k));</span>
+                    }
+
+<span class="fc" id="L462">                    removed[j] = true;</span>
+
+                    // have to restart the j iteration to re-compare terms
+<span class="fc" id="L465">                    j = -1;</span>
+                }
+                
+<span class="fc bfc" id="L468" title="All 2 branches covered.">                if (r == 0) {</span>
+                    // just finished forward, start revers 
+<span class="fc" id="L470">                    uEdge.reverse();</span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">                } else if (r == 1) {</span>
+                    // revert the array back to other direction
+<span class="fc" id="L473">                    uEdge.reverse();</span>
+                }
+            }
+        }
+        
+<span class="fc bfc" id="L478" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">            if (!removed[i]) {</span>
+<span class="fc" id="L480">                output.add(edges.get(i));</span>
+            }
+        }
+        
+<span class="fc" id="L484">        return output;</span>
+    }
+    
+    /**
+     * find the closest point between the curve0 and curve1 and return the
+     * points in curve0XY and curve1XY along with the method return value
+     * which is the separation.
+     * 
+     * @param curve0 
+     * @param curve1
+     * @param curve0Idx output variable to hold index to the (x, y) of the point 
+     * in curve0 which is closest to curve0
+     * @param curve1Idx output variable to hold index to the (x, y) of the point 
+     * in curve0 which is closest to curve1
+     * @return the separation between the closest pair of points in curve0 and 
+     *   curve1
+     */
+    protected double findClosestPair(PairIntArray curve0, PairIntArray curve1, 
+        int[] curve0Idx, int[] curve1Idx) {
+        
+<span class="fc" id="L504">        int idx0 = -1;</span>
+<span class="fc" id="L505">        int idx1 = -1;</span>
+<span class="fc" id="L506">        double min = Double.MAX_VALUE;</span>
+        
+<span class="fc bfc" id="L508" title="All 2 branches covered.">        for (int i = 0; i &lt; curve0.getN(); i++) {</span>
+<span class="fc" id="L509">            int x0 = curve0.getX(i);</span>
+<span class="fc" id="L510">            int y0 = curve0.getY(i);</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">            for (int j = 0; j &lt; curve1.getN(); j++) {</span>
+<span class="fc" id="L512">                int x1 = curve1.getX(j);</span>
+<span class="fc" id="L513">                int y1 = curve1.getY(j);</span>
+<span class="fc" id="L514">                int dx = x1 - x0;</span>
+<span class="fc" id="L515">                int dy = y1 - y0;</span>
+<span class="fc" id="L516">                double d = dx*dx + dy*dy;</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">                if (d &lt; min) {</span>
+<span class="fc" id="L518">                    min = d;</span>
+<span class="fc" id="L519">                    idx0 = i;</span>
+<span class="fc" id="L520">                    idx1 = j;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L525">        curve0Idx[0] = idx0;</span>
+        
+<span class="fc" id="L527">        curve1Idx[0] = idx1;</span>
+        
+<span class="fc" id="L529">        return Math.sqrt(min);</span>
+    }
+    
+    protected List&lt;PairIntArray&gt; connectClosestPointsIfCanTrim(
+        List&lt;PairIntArray&gt; edges) {
+     
+<span class="fc" id="L535">        double sqrtTwo = Math.sqrt(2) + 0.01;</span>
+        //double gapOfOne = 2*Math.sqrt(2) + 0.01;
+        
+<span class="fc" id="L538">        int[] edge0Idx = new int[1];</span>
+<span class="fc" id="L539">        int[] edge1Idx = new int[1];</span>
+        
+<span class="fc" id="L541">        boolean[] removed = new boolean[edges.size()];</span>
+        
+<span class="fc" id="L543">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+        
+<span class="fc bfc" id="L545" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+            
+<span class="fc bfc" id="L547" title="All 2 branches covered.">            if (removed[i]) {</span>
+<span class="fc" id="L548">                continue;</span>
+            }
+                            
+<span class="fc" id="L551">            PairIntArray edge0 = edges.get(i);</span>
+                        
+<span class="fc bfc" id="L553" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; edges.size(); j++) {</span>
+                
+<span class="fc bfc" id="L555" title="All 2 branches covered.">                if (removed[j]) {</span>
+<span class="fc" id="L556">                    continue;</span>
+                }
+                
+<span class="fc" id="L559">                PairIntArray edge1 = edges.get(j);</span>
+                
+<span class="fc" id="L561">                double sep = findClosestPair(edge0, edge1, edge0Idx, edge1Idx);</span>
+
+<span class="fc bfc" id="L563" title="All 2 branches covered.">                if (sep &lt; sqrtTwo) {</span>
+                    // do not merge them if the points are not near the
+                    // ends of the points sets.
+<span class="fc" id="L566">                    float closestFrac0 = (float)edge0Idx[0]/(float)edge0.getN();</span>
+                    
+<span class="fc" id="L568">                    float closestFrac1 = (float)edge1Idx[0]/(float)edge1.getN();</span>
+                    
+<span class="fc bfc" id="L570" title="All 4 branches covered.">                    if (((closestFrac0 &gt; 0.07) &amp;&amp; (closestFrac0 &lt; 0.93))) {</span>
+<span class="fc" id="L571">                        continue;</span>
+                    }
+<span class="fc bfc" id="L573" title="All 4 branches covered.">                    if (((closestFrac1 &gt; 0.07) &amp;&amp; (closestFrac1 &lt; 0.93))) {</span>
+<span class="fc" id="L574">                        continue;</span>
+                    }
+                    
+<span class="fc bfc" id="L577" title="All 2 branches covered.">                    boolean closest0IsNearTop = ((float)(edge0Idx[0]/</span>
+                        (edge0.getN() - edge0Idx[0]))) &lt;= 0.5;
+                    
+<span class="fc bfc" id="L580" title="All 2 branches covered.">                    if (closest0IsNearTop) {</span>
+                        // if we trim the top, is remaining bottom connected?
+<span class="fc" id="L582">                        boolean isConnected = isRangeConnected(edge0, </span>
+                            edge0Idx[0], edge0.getN() - 1);
+<span class="pc bpc" id="L584" title="1 of 2 branches missed.">                        if (!isConnected) {</span>
+<span class="nc" id="L585">                            continue;</span>
+                        }
+<span class="fc" id="L587">                    } else {</span>
+                        // if we trim the bottom, is remaining top connected?
+<span class="fc" id="L589">                        boolean isConnected = isRangeConnected(edge0, 0, </span>
+                            edge0Idx[0]);                      
+<span class="pc bpc" id="L591" title="1 of 2 branches missed.">                        if (!isConnected) {</span>
+<span class="nc" id="L592">                            continue;</span>
+                        }
+                    }
+                                            
+<span class="fc bfc" id="L596" title="All 2 branches covered.">                    boolean closest1IsNearTop = ((float)(edge1Idx[0]/</span>
+                        (edge1.getN() - edge1Idx[0]))) &lt;= 0.5;
+                    
+<span class="fc bfc" id="L599" title="All 2 branches covered.">                    if (closest1IsNearTop) {</span>
+                        // if we trim the top, is remaining bottom connected?
+<span class="fc" id="L601">                        boolean isConnected = isRangeConnected(edge1, </span>
+                            edge1Idx[0], edge1.getN() - 1);
+<span class="pc bpc" id="L603" title="1 of 2 branches missed.">                        if (!isConnected) {</span>
+<span class="nc" id="L604">                            continue;</span>
+                        }
+<span class="fc" id="L606">                    } else {</span>
+                        // if we trim the bottom, is remaining top connected?
+<span class="fc" id="L608">                        boolean isConnected = isRangeConnected(edge1, 0, </span>
+                            edge1Idx[0]);                      
+<span class="pc bpc" id="L610" title="1 of 2 branches missed.">                        if (!isConnected) {</span>
+<span class="nc" id="L611">                            continue;</span>
+                        }
+                    }
+                    
+                    // if here, then can trim outside the closest points in the
+                    // edges and merge the edges into edge0, and remove edge1
+                    
+<span class="fc bfc" id="L618" title="All 2 branches covered.">                    if (closest0IsNearTop) {</span>
+<span class="pc bpc" id="L619" title="1 of 2 branches missed.">                        if (edge0Idx[0] &gt; 0) {</span>
+<span class="fc" id="L620">                            edge0.removeRange(0, edge0Idx[0] - 1);</span>
+                        }
+                    } else {
+<span class="fc bfc" id="L623" title="All 2 branches covered.">                        if (edge0Idx[0] &lt; (edge0.getN() - 1)) {</span>
+<span class="fc" id="L624">                            edge0.removeRange(edge0Idx[0] + 1, edge0.getN() - 1);</span>
+                        }
+                    }
+                    
+                    //TODO:  could remove this step and adjust the add, but 
+                    //       easier maintainence this way
+<span class="fc bfc" id="L630" title="All 2 branches covered.">                    if (closest1IsNearTop) {</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">                        if (edge1Idx[0] &gt; 0) {</span>
+<span class="fc" id="L632">                            edge1.removeRange(0, edge1Idx[0] - 1);</span>
+                        }
+                    } else {
+<span class="fc bfc" id="L635" title="All 2 branches covered.">                        if (edge1Idx[0] &lt; (edge1.getN() - 1)) {</span>
+<span class="fc" id="L636">                            edge1.removeRange(edge1Idx[0] + 1, edge1.getN() - 1);</span>
+                        }
+                    }
+                    
+<span class="fc bfc" id="L640" title="All 2 branches covered.">                    if (closest0IsNearTop) {</span>
+                        // insert edge1 at top of edge0
+<span class="fc" id="L642">                        edge0.insertSpaceAtTopOfArrays(edge1.getN());</span>
+                        
+                        // if edge1 closest is at bottom of it's edge, just add,
+                        // else reverse then add
+<span class="fc bfc" id="L646" title="All 2 branches covered.">                        if (closest1IsNearTop) {</span>
+<span class="fc" id="L647">                            edge1.reverse();</span>
+                        }
+<span class="fc bfc" id="L649" title="All 2 branches covered.">                        for (int k = 0; k &lt; edge1.getN(); k++) {</span>
+<span class="fc" id="L650">                            edge0.set(k, edge1.getX(k), edge1.getY(k));</span>
+                        }
+                    } else {
+                        // append edge1 to bottom of edge0
+                        
+<span class="fc bfc" id="L655" title="All 2 branches covered.">                        if (!closest1IsNearTop) {</span>
+<span class="fc" id="L656">                            edge1.reverse();</span>
+                        }
+<span class="fc bfc" id="L658" title="All 2 branches covered.">                        for (int k = 0; k &lt; edge1.getN(); k++) {</span>
+<span class="fc" id="L659">                            edge0.add(edge1.getX(k), edge1.getY(k));</span>
+                        }
+                    }
+                  
+<span class="fc" id="L663">                    removed[j] = true;</span>
+                    
+                    // have to restart the j iteration to re-compare terms
+<span class="fc" id="L666">                    j = i;</span>
+                }
+            }
+<span class="fc" id="L669">            output.add(edge0);</span>
+        }
+        
+<span class="fc" id="L672">        return output;</span>
+    }
+    
+    /**
+     * check that points within index idxLo and idxHi, inclusive, are 
+     * consecutively within 1 pixel of adjacent indexes.
+     * @param edge
+     * @param idxLo
+     * @param idxHi
+     * @return 
+     */
+    protected boolean isRangeConnected(PairIntArray edge, int idxLo, int idxHi) {
+        
+<span class="fc bfc" id="L685" title="All 2 branches covered.">        for (int i = (idxLo + 1); i &lt;= idxHi; i++) {</span>
+<span class="fc" id="L686">            int x0 = edge.getX(i - 1);            </span>
+<span class="fc" id="L687">            int x1 = edge.getX(i);</span>
+<span class="fc" id="L688">            int diffX = x0 - x1;</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">            if (diffX &lt; 0) {</span>
+<span class="fc" id="L690">                diffX *= -1;</span>
+            }
+<span class="pc bpc" id="L692" title="1 of 2 branches missed.">            if (diffX &gt; 1) {</span>
+<span class="nc" id="L693">                return false;</span>
+            }
+            
+<span class="fc" id="L696">            int y0 = edge.getY(i - 1);</span>
+<span class="fc" id="L697">            int y1 = edge.getY(i);</span>
+<span class="fc" id="L698">            int diffY = y0 - y1;</span>
+<span class="fc bfc" id="L699" title="All 2 branches covered.">            if (diffY &lt; 0) {</span>
+<span class="fc" id="L700">                diffY *= -1;</span>
+            }
+<span class="fc bfc" id="L702" title="All 2 branches covered.">            if (diffY &gt; 1) {</span>
+<span class="fc" id="L703">                return false;</span>
+            }
+        }
+        
+<span class="fc" id="L707">        return true;</span>
+    }
+
+    protected void removeEdgesShorterThan(List&lt;PairIntArray&gt; output, 
+        int minNumberOfPixelsInEdge) {
+        
+<span class="fc bfc" id="L713" title="All 2 branches covered.">        for (int i = (output.size() - 1); i &gt; -1; i--) {</span>
+<span class="fc bfc" id="L714" title="All 2 branches covered.">            if (output.get(i).getN() &lt; minNumberOfPixelsInEdge) {</span>
+<span class="fc" id="L715">                output.remove(i);</span>
+            }
+        }
+<span class="fc" id="L718">    }</span>
+
+    private List&lt;PairIntArray&gt; straightenJaggedLines(List&lt;PairIntArray&gt; input) {
+        
+<span class="fc bfc" id="L722" title="All 2 branches covered.">        for (int i = 0; i &lt; input.size(); i++) {</span>
+                        
+<span class="fc" id="L724">            PairIntArray edge = input.get(i);</span>
+            
+<span class="fc" id="L726">            straightenJaggedLines(edge);</span>
+        }
+        
+<span class="fc" id="L729">        return input;</span>
+    }
+
+    private void straightenJaggedLines(PairIntArray input) {
+        
+<span class="pc bpc" id="L734" title="1 of 2 branches missed.">        if (input.getN() &lt; 3) {</span>
+<span class="nc" id="L735">            return;</span>
+        }
+        
+        /*
+        -- for each point:
+           iterate from end of range to current point
+              -- estimate a straight line from point to current end
+                 -- do fastest determination to see if points in between fit line.
+                    -- if they do, take the region in between and rewrite
+                       the coordinates to follow the line.
+                       -- store each index as 'straightened' to skip over
+                          it upon subsequent iterations.
+        */
+                
+<span class="fc" id="L749">        boolean[] straightened = new boolean[input.getN()];</span>
+        
+<span class="fc bfc" id="L751" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getN(); i++) {</span>
+                        
+<span class="fc bfc" id="L753" title="All 2 branches covered.">            if (straightened[i]) {</span>
+<span class="fc" id="L754">                continue;</span>
+            }
+            
+            // min number of points  i _ _ j
+<span class="fc bfc" id="L758" title="All 2 branches covered.">            for (int j = (input.getN() - 1); j &gt; i; j--) {</span>
+                
+<span class="fc bfc" id="L760" title="All 2 branches covered.">                if ((j - i) &lt; 10) {</span>
+<span class="fc" id="L761">                    continue;</span>
+                }
+<span class="pc bpc" id="L763" title="1 of 2 branches missed.">                if (straightened[j]) {</span>
+<span class="nc" id="L764">                    continue;</span>
+                }
+                
+<span class="fc" id="L767">                boolean didFitALineSegment = fitAndAlterForLineSegments(input, </span>
+                    i, j);
+                
+<span class="fc bfc" id="L770" title="All 2 branches covered.">                if (didFitALineSegment) {</span>
+<span class="fc bfc" id="L771" title="All 2 branches covered.">                    for (int ii = i; ii &lt;= j; ii++) {</span>
+<span class="fc" id="L772">                        straightened[ii] = true;</span>
+                    }
+<span class="fc" id="L774">                    break;</span>
+                }
+            }
+        }        
+<span class="fc" id="L778">    }</span>
+
+    private boolean fitAndAlterForLineSegments(PairIntArray input, 
+        int start, int stop) {
+
+<span class="fc" id="L783">        float thresh = 3.0f;</span>
+        
+<span class="fc" id="L785">        int n = stop - start + 1;</span>
+        
+<span class="fc" id="L787">        float x0 = input.getX(start);</span>
+        
+<span class="fc" id="L789">        float y0 = input.getY(start);</span>
+                
+<span class="fc" id="L791">        float xDiff = input.getX(stop) - x0;</span>
+        
+<span class="fc" id="L793">        float yDiff = input.getY(stop) - y0;</span>
+        
+<span class="fc bfc" id="L795" title="All 2 branches covered.">        float slope = (xDiff == 0) ? 1 : (yDiff/xDiff);</span>
+        
+<span class="fc" id="L797">        float[] yDiffs = new float[n];</span>
+        
+        //(83,110) to (91,51)
+<span class="pc bpc" id="L800" title="5 of 8 branches missed.">        boolean debug = (input.getX(start) == 83) &amp;&amp; (input.getY(start) == 110)</span>
+            &amp;&amp; (input.getX(stop) == 91) &amp;&amp; (input.getY(stop) == 51);
+        
+        // determine diff from line
+<span class="fc" id="L804">        double avg = 0;</span>
+        
+        // y = y0 + (x - x0)*slope
+<span class="fc bfc" id="L807" title="All 2 branches covered.">        for (int i = start; i &lt; (start + n); i++) {</span>
+            
+<span class="fc" id="L809">            float y = y0 + ((input.getX(i) - x0) * slope);</span>
+            
+<span class="fc" id="L811">            float yd = input.getY(i) - y;</span>
+            
+<span class="fc" id="L813">            avg += yd;</span>
+            
+<span class="fc" id="L815">            yDiffs[i - start] = yd;</span>
+        }
+        
+<span class="fc" id="L818">        avg /= (double)n;</span>
+        
+<span class="fc" id="L820">        double stDev = 0;</span>
+        
+<span class="fc bfc" id="L822" title="All 2 branches covered.">        for (int i = start; i &lt; (start + n); i++) {</span>
+                        
+<span class="fc" id="L824">            float yd = yDiffs[i - start];</span>
+            
+<span class="fc" id="L826">            stDev += Math.pow((yd - avg), 2);</span>
+        }
+        
+        //N-1 because had to calculate mean from data
+<span class="fc" id="L830">        stDev = Math.sqrt(stDev/(n - 1.0f));</span>
+        
+       
+<span class="fc" id="L833">        boolean hasOutliers = false;</span>
+        
+<span class="fc bfc" id="L835" title="All 4 branches covered.">        if ((Math.abs(avg) &lt; 0.01) &amp;&amp; (stDev &lt; Math.abs(slope))) {</span>
+            
+<span class="fc bfc" id="L837" title="All 2 branches covered.">            for (int i = start; i &lt; (start + n); i++) {</span>
+
+<span class="fc" id="L839">                float yd = yDiffs[i - start];</span>
+<span class="fc bfc" id="L840" title="All 2 branches covered.">                if (yd &lt; 0) {</span>
+<span class="fc" id="L841">                    yd *= -1;</span>
+                }
+
+                /*
+                log.fine(String.format(&quot;debug: yd=%f thresh*stdev=%f&quot;, 
+                    yd, thresh*stDev));*/
+
+<span class="pc bpc" id="L848" title="1 of 2 branches missed.">                if (yd &gt; (thresh * stDev)) {</span>
+<span class="nc" id="L849">                    hasOutliers = true;</span>
+<span class="nc" id="L850">                    break;</span>
+                }
+            }
+            
+        } else {
+            
+<span class="fc" id="L856">            hasOutliers = true;</span>
+        }
+        
+        /*if (!hasOutliers)
+        log.fine(String.format(
+            &quot;debug: %d %d (%d,%d) to (%d,%d) slope=%f avg=%f stdev=%f  n=%d hasOutliers=%s&quot;,
+            start, stop, input.getX(start), input.getY(start), 
+            input.getX(stop), input.getY(stop), slope, avg, stDev, n, 
+            Boolean.toString(hasOutliers)));
+        
+        if (!hasOutliers) {
+            log.fine(&quot;debug: &quot; + input.toString());
+        }*/
+        
+<span class="fc bfc" id="L870" title="All 2 branches covered.">        boolean isALine = !hasOutliers;</span>
+        
+<span class="fc bfc" id="L872" title="All 2 branches covered.">        if (isALine) {</span>
+            
+<span class="fc bfc" id="L874" title="All 2 branches covered.">            if (Math.abs(slope) &lt; 1) {</span>
+<span class="fc bfc" id="L875" title="All 2 branches covered.">                for (int i = start + 1; i &lt; (start + n); i++) {</span>
+<span class="fc" id="L876">                    int x = input.getX(i);                </span>
+<span class="fc" id="L877">                    float y = y0 + ((x - x0) * slope);</span>
+                                    
+<span class="fc" id="L879">                    input.set(i, x, (int)y);</span>
+                }
+            } else {
+<span class="fc bfc" id="L882" title="All 2 branches covered.">                for (int i = start + 1; i &lt; (start + n); i++) {</span>
+<span class="fc" id="L883">                    int y = input.getY(i); </span>
+                    //x = x0 + ((y-y0)/slope)
+<span class="fc" id="L885">                    float x = x0 + ((y - y0) / slope);</span>
+                                    
+<span class="fc" id="L887">                    input.set(i, (int)x, y);</span>
+                }
+            }
+            
+            /*
+            if (!hasOutliers) {
+                log.fine(&quot;debug: &quot; + input.toString());
+            }*/
+        }
+        
+<span class="fc" id="L897">        return isALine;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

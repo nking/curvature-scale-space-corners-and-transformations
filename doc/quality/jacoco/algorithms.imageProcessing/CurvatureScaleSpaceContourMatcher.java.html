@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CurvatureScaleSpaceContourMatcher.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CurvatureScaleSpaceContourMatcher.java</span></div><h1>CurvatureScaleSpaceContourMatcher.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+
+/**
+ * class to match the contours extracted from two images and match them.
+ * 
+ * Based upon the algorithm contained in
+ * &lt;pre&gt;
+ * IEEE 'TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE, VOL. PAMI-8, 
+ * NO. 1. JANUARY 1986.  &quot;Scale-Based Description and Recognition of Planar 
+ * Curves and Two-Dimensional Shapes&quot; by FARZIN MOKHTARIAN AND ALAN MACKWORTH
+ * &lt;/pre&gt;
+ * 
+ * A small change was made to the calculation and use of shift.
+ * 
+ * In CurvatureScaleSpaceImageMaker:
+ * Edges are extracted from an image and for the closed curves in those edges,
+ * scale space maps are made.  inflection points are found in those maps.
+ * The range of sigma for each curve's scale space maps are from the lowest 
+ * sigma, increasing by a factor of sqrt(2) until a sigma where there are no 
+ * more inflection points.
+ * t vs sigma &quot;images&quot; are created and the contours are extracted from those.
+ * 
+ * This code accepts the contours from two different images and maps the first
+ * image to the other using the contours.  It returns an affine transformation
+ * matrix which can be used to find points in the first image in the second 
+ * image.
+ * 
+ * The mapping is implemented by estimating the
+ * 
+ * 
+ * NOTE: if one knew that the 2 lists of scale space images had the same members
+ * present, that is both had same sets of contours, one could solve the mapping
+ * faster with a bipartite min cost algorithm (runtime complexity: O(N^2)).
+ * 
+ * @author nichole
+ */
+public final class CurvatureScaleSpaceContourMatcher {
+    
+<span class="fc" id="L46">    protected final Heap heap = new Heap();</span>
+    
+    /**
+     * the costs calculated here are small fractions, so they need to be
+     * multiplied by a large constant for use with the Fibonacci heap
+     * which uses type long for its key (key is where cost is stored).
+     * using 1E12 here
+     */
+<span class="fc" id="L54">    protected final long heapKeyFactor= 1000000000000l;</span>
+    
+    protected final List&lt;CurvatureScaleSpaceContour&gt; c1;
+    
+    protected final List&lt;CurvatureScaleSpaceContour&gt; c2;
+    
+    protected final Map&lt;Integer, List&lt;Integer&gt; &gt; curveIndexToC1;
+    
+    protected final Map&lt;Integer, List&lt;Integer&gt; &gt; curveIndexToC2;
+        
+<span class="fc" id="L64">    private double solutionScale = Double.MAX_VALUE;</span>
+    
+<span class="fc" id="L66">    private double solutionShift = Double.MAX_VALUE;</span>
+    
+<span class="fc" id="L68">    private long solutionCost = Long.MAX_VALUE;</span>
+    
+<span class="fc" id="L70">    private List&lt;CurvatureScaleSpaceContour&gt; solutionMatchedContours1 = null;</span>
+    
+<span class="fc" id="L72">    private List&lt;CurvatureScaleSpaceContour&gt; solutionMatchedContours2 = null;</span>
+    
+<span class="fc" id="L74">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+        
+    /**
+     * List of contours used during initialization of heap nodes to create
+     * the first estimates of the cost of the solution.  They're retained
+     * for use during construction of NextContour instances.
+     */
+<span class="fc" id="L81">    private List&lt;CurvatureScaleSpaceContour&gt; initiallyVisited1 =</span>
+        new ArrayList&lt;CurvatureScaleSpaceContour&gt;();
+   
+    /**
+     * constructor.  the creation of internal data structures in this method
+     * has runtime complexity:
+     * &lt;pre&gt;
+     *   O(N) + O(N*lg_2(N)) + O(N_curves^2) + O(N_curves^3)
+     * 
+     *       where each curve has a number of contours.
+     * 
+     *       N = number of contours
+     *       N_curve = number of encapsulating curves.  this number is smaller
+     *                 than N.  
+     * &lt;/pre&gt;
+     * 
+     * @param contours1
+     * @param contours2 
+     */
+    public CurvatureScaleSpaceContourMatcher(
+        List&lt;CurvatureScaleSpaceContour&gt; contours1, 
+<span class="fc" id="L102">        List&lt;CurvatureScaleSpaceContour&gt; contours2) {</span>
+        
+        // then use collections synchronized and LongestEdgeComparator to
+        // sort the ordered list
+
+<span class="fc" id="L107">        c1 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours1);</span>
+        
+<span class="fc" id="L109">        c2 = new ArrayList&lt;CurvatureScaleSpaceContour&gt;(contours2);</span>
+        
+<span class="fc" id="L111">        Collections.sort(c1, new DescendingSigmaComparator());</span>
+        
+<span class="fc" id="L113">        Collections.sort(c2, new DescendingSigmaComparator());</span>
+        
+<span class="fc" id="L115">        curveIndexToC1 = new HashMap&lt;Integer, List&lt;Integer&gt; &gt;();</span>
+        
+<span class="fc" id="L117">        curveIndexToC2 = new HashMap&lt;Integer, List&lt;Integer&gt; &gt;();</span>
+        
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (int i = 0; i &lt; c1.size(); i++) {</span>
+<span class="fc" id="L120">            CurvatureScaleSpaceContour contour = c1.get(i);            </span>
+<span class="fc" id="L121">            Integer curveIdx = Integer.valueOf(contour.getEdgeNumber());</span>
+<span class="fc" id="L122">            List&lt;Integer&gt; indexes = curveIndexToC1.get(curveIdx);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (indexes == null) {</span>
+<span class="fc" id="L124">                indexes = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L125">                curveIndexToC1.put(curveIdx, indexes);</span>
+            }
+<span class="fc" id="L127">            indexes.add(Integer.valueOf(i));            </span>
+        }
+        
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (int i = 0; i &lt; c2.size(); i++) {</span>
+<span class="fc" id="L131">            CurvatureScaleSpaceContour contour = c2.get(i);            </span>
+<span class="fc" id="L132">            Integer curveIdx = Integer.valueOf(contour.getEdgeNumber());</span>
+<span class="fc" id="L133">            List&lt;Integer&gt; indexes = curveIndexToC2.get(curveIdx);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">            if (indexes == null) {</span>
+<span class="fc" id="L135">                indexes = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L136">                curveIndexToC2.put(curveIdx, indexes);</span>
+            }
+<span class="fc" id="L138">            indexes.add(Integer.valueOf(i));            </span>
+        }
+        
+<span class="fc" id="L141">        initialize();</span>
+<span class="fc" id="L142">    }</span>
+    
+    /**
+    &lt;pre&gt;
+       (1) create a node for every possible pair of the tallest contour of
+          each curve in c1 with the same in c2.
+          
+          Solve for kScale and dShift for each node:
+              t2 = kScale * t1 + dShift
+              sigma2 = kScale * sigma1
+              
+          The runtime complexity for (1) is O(N_curves^2).
+         
+       (2) initial costs:
+           apply the transformation parameters to the tallest contours from
+           each curve, using only one per curve.
+
+           Note that the transformation may wrap around the image, that is
+           the t values.
+           
+           The cost is the difference between the predicted location of the
+           2nd node, that is the model location, and the actual location of the
+           node.
+            
+           The cost is either the straight line distance between the peaks
+           as a function of t and sigma, or it only includes the sigma
+           differences.
+           (the paper isn't clear)
+           
+            The runtime complexity for this (2) is N_curves * O(N_curves^2).
+    &lt;/pre&gt;
+    */
+    private void initialize() {
+                
+        //(1)
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        for (int i = 0; i &lt; curveIndexToC1.size(); i++) {</span>
+            
+<span class="fc" id="L179">            int index1 = curveIndexToC1.get(i).get(0);</span>
+            
+<span class="fc" id="L181">            CurvatureScaleSpaceContour contour1 = c1.get(index1);</span>
+            
+<span class="fc bfc" id="L183" title="All 2 branches covered.">            for (int j = 0; j &lt; curveIndexToC2.size(); j++) {</span>
+                
+<span class="fc" id="L185">                int index2 = curveIndexToC2.get(j).get(0);</span>
+                
+<span class="fc" id="L187">                CurvatureScaleSpaceContour contour2 = c2.get(index2);</span>
+                
+<span class="fc" id="L189">                TransformationPair obj = new TransformationPair(index1, index2);</span>
+                
+                /*
+                t2 = kScale * t1 + dShift
+                sigma2 = kScale * sigma1
+                */
+                
+                //TODO:  note, see paper caveat about applying transformation 
+                //to a taller peak for contour2
+<span class="fc" id="L198">                double scale = contour2.getPeakSigma()/contour1.getPeakSigma();</span>
+                
+<span class="fc" id="L200">                double shift = contour2.getPeakScaleFreeLength() -</span>
+                    (contour1.getPeakScaleFreeLength() * scale);
+                
+                //double shift = contour2.getPeakScaleFreeLength() -
+                //    contour1.getPeakScaleFreeLength();
+                
+<span class="pc bpc" id="L206" title="3 of 4 branches missed.">                if ((contour1.getPeakScaleFreeLength() &lt; 0.2) &amp;&amp;</span>
+                    (contour2.getPeakScaleFreeLength() &gt; 0.8)) {
+<span class="nc" id="L208"> throw new IllegalStateException(&quot;algorithm needs improvement here&quot;);</span>
+                    //double con2 = contour2.getPeakScaleFreeLength() - 1;
+                    //shift = con2 - contour1.getPeakScaleFreeLength();
+                }
+                
+<span class="fc" id="L213">                obj.setScale(scale);</span>
+                
+<span class="fc" id="L215">                obj.setShift(shift);</span>
+                
+<span class="fc" id="L217">                double cost = 0;</span>
+                
+                //(2) calc cost: apply to tallest contours from each curve
+                
+<span class="fc bfc" id="L221" title="All 2 branches covered.">                for (int ii = 0; ii &lt; curveIndexToC1.size(); ii++) {</span>
+            
+<span class="fc" id="L223">                    int index1s = curveIndexToC1.get(ii).get(0);</span>
+            
+<span class="fc" id="L225">                    CurvatureScaleSpaceContour contour1s = c1.get(index1s);</span>
+                    
+<span class="pc bpc" id="L227" title="1 of 4 branches missed.">                    if ((i == 0) &amp;&amp; (j == 0)) {</span>
+                        // store in already visited list for use in initializing
+                        // NextContour instances lazily
+<span class="fc" id="L230">                        initiallyVisited1.add(contour1s);</span>
+                    }
+                    
+                    /*
+                    t2 = kScale * t1 + dShift
+                    sigma2 = kScale * sigma1
+                    */
+<span class="fc" id="L237">                    double sigma2 = scale * contour1s.getPeakSigma();</span>
+<span class="fc" id="L238">                    double t2 = (scale * contour1s.getPeakScaleFreeLength()) + shift;</span>
+                    //double t2 = contour1s.getPeakScaleFreeLength() + shift;
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">                    if (t2 &lt; 0) {</span>
+<span class="nc" id="L241">                        t2 = 1 + t2;</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">                    } else if (t2 &gt; 1) {</span>
+<span class="nc" id="L243">                        t2 = t2 - 1;</span>
+                    }
+                     
+<span class="fc" id="L246">                    int index2s = findClosestC2MatchBinarySearch(sigma2, t2);</span>
+                    
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">                    CurvatureScaleSpaceContour contour2s = (index2s == -1) ?</span>
+                        null : c2.get(index2s);
+                    
+<span class="fc" id="L251">                    double cost2 = calculateCost(contour2s, sigma2, t2);                    </span>
+
+                    /*if (contour2s != null) {
+                
+                        log.info(&quot;\nMATCHED: &quot; + contour1s.toString() + &quot;\n   WITH: &quot;
+                            + contour2s.toString());
+                    }*/
+                    
+<span class="fc" id="L259">                    cost += cost2;</span>
+                }
+                
+<span class="fc" id="L262">                long costL = (long)(cost * heapKeyFactor);</span>
+                
+<span class="fc" id="L264">                HeapNode node = new HeapNode(costL);</span>
+                
+<span class="fc" id="L266">                node.setData(obj);</span>
+                
+<span class="fc" id="L268">                heap.insert(node);</span>
+            }
+        }
+<span class="fc" id="L271">    }</span>
+    
+    /**
+     * get the curvature scale space images factor of scale between the
+     * first set of contours and the second set.
+     * @return 
+     */
+    public double getSolvedScale() {
+<span class="fc" id="L279">        return solutionScale;</span>
+    }
+    
+    /**
+     * get the curvature scale space images shift between the
+     * first set of contours and the second set.
+     * @return 
+     */
+    public double getSolvedShift() {
+<span class="fc" id="L288">        return solutionShift;</span>
+    }
+    
+    /**
+     * get the curvature scale space images shift between the
+     * first set of contours and the second set.
+     * @return 
+     */
+    public long getSolvedCost() {
+<span class="nc" id="L297">        return solutionCost;</span>
+    }
+  
+     /**
+     * match contours from the first list to the second.  the best scale and
+     * shifts between the contour lists can be retrieved with getSolvedScale()
+     * and getSolvedShift()
+     */
+    public void matchContours() {
+        
+        // use a specialization of A* algorithm to apply transformation to 
+        // contours for best cost solutions (does not compute all possible 
+        // solutions).
+<span class="fc" id="L310">        HeapNode minCost = refineSolution();</span>
+        
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">        if (minCost == null) {</span>
+<span class="nc" id="L313">            return;</span>
+        }
+        
+<span class="fc" id="L316">        TransformationPair obj = (TransformationPair)minCost.getData();</span>
+        
+<span class="fc" id="L318">        float shift = (float)obj.getShift();</span>
+<span class="fc" id="L319">        float scale = (float)obj.getScale();</span>
+        
+<span class="fc" id="L321">        solutionShift = shift;</span>
+<span class="fc" id="L322">        solutionScale = scale;</span>
+<span class="fc" id="L323">        solutionCost = minCost.getKey();</span>
+  
+<span class="fc" id="L325">        NextContour nc = obj.getNextContour();</span>
+                
+<span class="fc" id="L327">        solutionMatchedContours1 = nc.getMatchedContours1();</span>
+        
+<span class="fc" id="L329">        solutionMatchedContours2 = nc.getMatchedContours2();</span>
+        
+<span class="fc" id="L331">    }</span>
+    
+    public List&lt;CurvatureScaleSpaceContour&gt; getSolutionMatchedContours1() {
+<span class="fc" id="L334">        return solutionMatchedContours1;</span>
+    }
+    
+    public List&lt;CurvatureScaleSpaceContour&gt; getSolutionMatchedContours2() {
+<span class="fc" id="L338">        return solutionMatchedContours2;</span>
+    }
+    
+    /**
+       a specialization of the A* search pattern is used to refine the initial
+       solution of best parameters.
+       The current best solution is extracted from the min heap as the 
+       min cost node.
+
+       The &quot;neighbor&quot; to be visited is a candidate contour from list 1,
+       chosen from contours not yet searched for it.  There are rules for 
+       selecting the candidate contour.
+       The cost of the mid cost node is modified by the results of the 
+       application of the transformation parameters to the candidate contour.
+        
+       The process is repeated until there are no more admissable contours
+       for an extracted min cost node.
+      
+     * @return 
+     */
+    private HeapNode refineSolution() {
+        
+<span class="fc" id="L360">        HeapNode u = heap.extractMin();</span>
+        
+        //TODO:  assert that while loop will always terminate
+
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">        while (u != null) {</span>
+            
+<span class="fc" id="L366">            TransformationPair obj = (TransformationPair)u.getData();</span>
+        
+<span class="fc" id="L368">            NextContour nc = obj.getNextContour();</span>
+            
+<span class="fc bfc" id="L370" title="All 2 branches covered.">            if (nc == null) {</span>
+                
+<span class="fc" id="L372">                nc = new NextContour(c1, true, curveIndexToC1, </span>
+                    initiallyVisited1);
+                
+<span class="fc" id="L375">                nc.addMatchedContours(</span>
+                    c1.get(obj.getContourIndex1()),
+                    c2.get(obj.getContourIndex2()));
+                
+<span class="fc" id="L379">                obj.setNextContour(nc);                </span>
+            }
+            
+<span class="fc" id="L382">            CurvatureScaleSpaceContour c = c1.get(obj.getContourIndex1());</span>
+<span class="fc" id="L383">            int curveIndex = c.getEdgeNumber();</span>
+            
+<span class="fc" id="L385">            CurvatureScaleSpaceContour contour1s = </span>
+                nc.findTallestContourWithinAScaleSpace(curveIndex);
+            
+<span class="fc bfc" id="L388" title="All 2 branches covered.">            if (contour1s == null) {</span>
+                
+                //TODO: refactor to improve handling of these indexes to remove
+                // possibilities of using them incorrectly
+                
+<span class="fc" id="L393">                int contourIndex = nc.origContours.indexOf(c);</span>
+                
+<span class="fc" id="L395">                PairInt target = new PairInt(curveIndex, contourIndex);</span>
+                
+<span class="fc" id="L397">                contour1s = nc.findTheNextSmallestUnvisitedSibling(target);</span>
+            }
+            
+<span class="fc bfc" id="L400" title="All 2 branches covered.">            if (contour1s == null) {</span>
+<span class="fc" id="L401">                return u;</span>
+            }
+            
+<span class="fc" id="L404">            float shift = (float)obj.getShift();</span>
+<span class="fc" id="L405">            float scale = (float)obj.getScale();</span>
+            
+            /*
+            t2 = kScale * t1 + dShift
+            sigma2 = kScale * sigma1
+            */
+<span class="fc" id="L411">            double sigma2 = scale * contour1s.getPeakSigma();</span>
+<span class="fc" id="L412">            double t2 = (scale * contour1s.getPeakScaleFreeLength()) + shift;</span>
+            //double t2 = contour1s.getPeakScaleFreeLength() + shift;
+<span class="fc bfc" id="L414" title="All 2 branches covered.">            if (t2 &lt; 0) {</span>
+<span class="fc" id="L415">                t2 = 1 + t2;</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">            } else if (t2 &gt; 1) {</span>
+<span class="fc" id="L417">                t2 = t2 - 1;</span>
+            }
+            
+<span class="fc" id="L420">            int index2s = findClosestC2MatchBinarySearch(sigma2, t2);</span>
+            
+            // if already matched for this node OR it returned -1,
+            // do a slower search for min diff over all members of c2.
+<span class="pc bpc" id="L424" title="1 of 4 branches missed.">            if ((index2s == -1) || </span>
+                nc.getMatchedContours2().contains(c2.get(index2s))) {
+                
+<span class="fc" id="L427">                index2s = findClosestC2MatchForSigmaTooHigh(sigma2, t2);</span>
+            }
+            
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">            CurvatureScaleSpaceContour contour2s = (index2s == -1) ?</span>
+                null : c2.get(index2s);
+                        
+<span class="fc" id="L433">            double cost2 = calculateCost(contour2s, sigma2, t2);</span>
+            
+<span class="pc bpc" id="L435" title="1 of 2 branches missed.">            if (contour2s != null) {</span>
+                
+                //log.info(&quot;MATCHED: &quot; + contour1s.toString() + &quot; WITH: &quot; + 
+                //    contour2s.toString());
+                
+<span class="fc" id="L440">                nc.addMatchedContours(contour1s, contour2s);</span>
+            }
+            
+<span class="fc" id="L443">            u.setData(obj);</span>
+            
+<span class="fc" id="L445">            u.setKey(u.getKey() + (long)(cost2 * heapKeyFactor));</span>
+            
+<span class="fc" id="L447">            heap.insert(u);</span>
+<span class="fc" id="L448">        }</span>
+        
+<span class="nc" id="L450">        return u;</span>
+    }
+
+    /**
+     * find the closest match to a contour having (sigma, scaleFreeLength) 
+     * in list c2 and return that index w.r.t. list c2, else -1 if not found
+     * using a binary search.  This method runtime complexity is O(lg_2(N)).
+     * 
+     * @param sigma
+     * @param scaleFreeLength
+     * @return 
+     */
+    protected int findClosestC2MatchBinarySearch(double sigma, 
+        double scaleFreeLength) {
+        
+        // use iterative binary search to find closest match
+        
+        //TODO: use 0.1*sigma? current sigma factor peak center error
+<span class="fc" id="L468">        double tolSigma = 0.1*sigma;</span>
+<span class="pc bpc" id="L469" title="1 of 2 branches missed.">        if (tolSigma &lt; 1E-2) {</span>
+<span class="nc" id="L470">            tolSigma = 1E-2;</span>
+        }
+        
+<span class="fc" id="L473">        double minDiffS = Double.MAX_VALUE;</span>
+<span class="fc" id="L474">        double minDiffT = Double.MAX_VALUE;</span>
+<span class="fc" id="L475">        int idx = -1;</span>
+        
+<span class="fc" id="L477">        int lowIdx = 0;</span>
+<span class="fc" id="L478">        int highIdx = c1.size() - 1;</span>
+                
+        while (true) {
+            
+<span class="fc bfc" id="L482" title="All 2 branches covered.">            if (lowIdx &gt; highIdx) {</span>
+                
+<span class="fc" id="L484">                break;</span>
+            
+            } else {
+                
+<span class="fc" id="L488">                int midIdx = (lowIdx + highIdx) &gt;&gt; 1;</span>
+                
+<span class="fc" id="L490">                CurvatureScaleSpaceContour c = c2.get(midIdx);</span>
+                
+<span class="fc" id="L492">                double diffS = Math.abs(c.getPeakSigma() - sigma);</span>
+<span class="fc" id="L493">                double diffT = Math.abs(c.getPeakScaleFreeLength() - scaleFreeLength);</span>
+                
+<span class="fc bfc" id="L495" title="All 4 branches covered.">                if ((diffS &lt;= (minDiffS + tolSigma)) &amp;&amp; (diffT &lt;= minDiffT)) {</span>
+<span class="fc" id="L496">                    minDiffS = diffS;</span>
+<span class="fc" id="L497">                    minDiffT = diffT;</span>
+<span class="fc" id="L498">                    idx = midIdx;</span>
+                }
+
+<span class="fc bfc" id="L501" title="All 4 branches covered.">                if ((Math.abs(diffS) &lt; tolSigma) &amp;&amp; (Math.abs(diffT) &lt; 0.05)) {</span>
+                    
+<span class="fc" id="L503">                    idx = midIdx;</span>
+<span class="fc" id="L504">                    break;</span>
+                
+<span class="fc bfc" id="L506" title="All 2 branches covered.">                } else if (Math.abs(diffS) &lt; tolSigma) {</span>
+                    
+                    // smaller scaleFreeLength is at a lower index
+<span class="fc bfc" id="L509" title="All 2 branches covered.">                    if (c.getPeakScaleFreeLength() &lt; scaleFreeLength) {</span>
+<span class="fc" id="L510">                        lowIdx = midIdx + 1;</span>
+                    } else {
+<span class="fc" id="L512">                        highIdx = midIdx - 1;</span>
+                    }
+                    
+<span class="fc bfc" id="L515" title="All 2 branches covered.">                } else if (c.getPeakSigma() &lt; sigma) {</span>
+                    // higher sigma is at a lower index
+<span class="fc" id="L517">                    highIdx = midIdx - 1;</span>
+                    
+                } else {
+                    // (sigma, t) are at a higher index
+<span class="fc" id="L521">                    lowIdx = midIdx + 1;</span>
+                }
+<span class="fc" id="L523">            }</span>
+        }
+      
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">        if (idx &gt; -1) {</span>
+<span class="fc" id="L527">            return idx;</span>
+        }
+        
+<span class="nc" id="L530">        return -1;</span>
+    }
+    
+    /**
+     * find the closest match to a contour having (sigma, scaleFreeLength) 
+     * in list c2 and return that index w.r.t. list c2, else -1 if not found.  
+     * This method runtime complexity is O(N).
+     * 
+     * This method can find points where the predicted sigma is too high for
+     * the contour which should be found and there's a higher sigma match
+     * at too high of a scaleFreeLength.
+     * 
+     * @param sigma
+     * @param scaleFreeLength
+     * @return 
+     */
+    protected int findClosestC2MatchForSigmaTooHigh(double sigma, 
+        double scaleFreeLength) {
+        
+        //TODO: use 0.1*sigma? current sigma factor peak center error
+<span class="fc" id="L550">        double tolSigma = 0.1*sigma;</span>
+<span class="pc bpc" id="L551" title="1 of 2 branches missed.">        if (tolSigma &lt; 1E-2) {</span>
+<span class="nc" id="L552">            tolSigma = 1E-2;</span>
+        }
+        
+<span class="fc" id="L555">        double minDiffS = Double.MAX_VALUE;</span>
+<span class="fc" id="L556">        double minDiffT = Double.MAX_VALUE;</span>
+<span class="fc" id="L557">        int idx = -1;</span>
+        
+<span class="fc bfc" id="L559" title="All 2 branches covered.">        for (int i = 0; i &lt; c2.size(); i++) {</span>
+            
+<span class="fc" id="L561">            CurvatureScaleSpaceContour c = c2.get(i);</span>
+            
+<span class="fc" id="L563">            double diffS = sigma - c.getPeakSigma();</span>
+            
+<span class="fc" id="L565">            double diffT = Math.abs(c.getPeakScaleFreeLength() - scaleFreeLength);</span>
+            
+            /*
+            we're looking for cases where sigma is too high, but the 
+            scaleFreeLength is close.
+            */
+<span class="pc bpc" id="L571" title="1 of 6 branches missed.">            if ((diffS &gt; 0) &amp;&amp; (diffS &lt;= (minDiffS + tolSigma)) </span>
+                &amp;&amp; (diffT &lt;= minDiffT)) {
+                
+<span class="fc" id="L574">                minDiffS = diffS;</span>
+<span class="fc" id="L575">                minDiffT = diffT;</span>
+<span class="fc" id="L576">                idx = i;</span>
+            }
+        }
+      
+<span class="fc" id="L580">        return idx;</span>
+    }
+
+    /**
+     * calculate the cost as the as the straight line difference between
+     * the closest found contour and the model's sigma and peak.
+     * @param contour2s
+     * @param sigma2
+     * @param t2
+     * @return 
+     */
+    private double calculateCost(CurvatureScaleSpaceContour contour, 
+        double sigma, double scaleFreeLength) {
+        
+<span class="pc bpc" id="L594" title="1 of 2 branches missed.">        if (contour == null) {</span>
+<span class="nc" id="L595">            throw new IllegalStateException(&quot;contour is null&quot;);</span>
+            //return sigma;
+        }
+        
+<span class="fc" id="L599">        double ds = sigma - contour.getPeakSigma();</span>
+        /*double tolSigma = 0.1*sigma;
+        if (tolSigma &lt; 1E-2) {
+            tolSigma = 1E-2;
+        }
+        if (Math.abs(ds) &lt; tolSigma) {
+            ds = 0;
+        }*/
+<span class="fc" id="L607">        double dt = scaleFreeLength - contour.getPeakScaleFreeLength();</span>
+<span class="fc" id="L608">        double len = Math.sqrt(ds*ds + dt*dt);</span>
+        
+<span class="fc" id="L610">        return len;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

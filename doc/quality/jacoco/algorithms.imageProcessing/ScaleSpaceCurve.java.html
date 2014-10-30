@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScaleSpaceCurve.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ScaleSpaceCurve.java</span></div><h1>ScaleSpaceCurve.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.Arrays;
+
+/**
+ * Holds X(t, sigma), Y(t, sigma), k(t, sigma) and the array t where t is 
+ * the range of indexes for the curve in edges, normalized to values that 
+ * range from 0 to 1.   Also holds information on inflection points (where
+ * the curvature is zero).
+ * 
+ * @author nichole
+ */
+public class ScaleSpaceCurve {
+    
+    /**
+     * sigma is the scale parameter used in a Gaussian kernel to convolve with
+     * the curves (which is edges[edgesIdx]).
+     */
+    private final float sigma;
+
+    /*
+    x and y points of the curve.  the color field in xy can be used to indicate
+    a closed curve.
+    */
+    private final PairIntArrayWithColor xy;
+
+    /**
+     * the computed curvature for each point in the curve.
+     */
+    private final float[] k;
+
+    /**
+     * the values of the point indexes rescaled to have values between 0 and 1.
+     * For example, the point at x[10] has a t value from t[10]
+     */
+    private final float[] t;
+    
+    private final int size;
+
+    /**
+     * Holds the indexes for the points where the curvature is 0 for an edge.
+     * The enclosed indexes are used with x, y, k, or t.
+     */
+    private int[] kIsZeroIdx;
+    private int[] kIsZeroX;
+    private int[] kIsZeroY;
+
+    /**
+     * the number of usable points in kIsZeroIdx. the array may be longer that
+     * this number, but those values are not valid.
+     */
+    private int kIsZeroIdxSize;
+    
+    public ScaleSpaceCurve(float theSigma, PairIntArray curve, 
+<span class="fc" id="L55">        boolean curveIsClosed) {</span>
+
+<span class="fc" id="L57">        sigma = theSigma;</span>
+
+<span class="fc" id="L59">        k = new float[curve.getN()];</span>
+        
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        xy = (curve instanceof PairIntArrayWithColor) ? </span>
+            (PairIntArrayWithColor) curve : new PairIntArrayWithColor(curve);
+        
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (curveIsClosed) {</span>
+<span class="fc" id="L65">            xy.setColor(1);</span>
+        }
+        
+<span class="fc" id="L68">        size = curve.getN();</span>
+        
+<span class="fc" id="L70">        t = new float[curve.getN()];</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (int i = 0; i &lt; curve.getN(); i++) {</span>
+<span class="fc" id="L72">            t[i] = i / ((float) curve.getN());</span>
+        }
+
+        // this will be reduced in size later:
+<span class="fc" id="L76">        kIsZeroIdx = new int[curve.getN()];</span>
+<span class="fc" id="L77">        kIsZeroX = new int[kIsZeroIdx.length];</span>
+<span class="fc" id="L78">        kIsZeroY = new int[kIsZeroIdx.length];</span>
+
+<span class="fc" id="L80">        kIsZeroIdxSize = 0;</span>
+<span class="fc" id="L81">    }</span>
+    
+    /**
+     * @return the sigma
+     */
+    public float getSigma() {
+<span class="fc" id="L87">        return sigma;</span>
+    }
+
+    public float getX(int idx) {
+<span class="pc bpc" id="L91" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
+<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
+        }
+<span class="fc" id="L94">        return xy.getX(idx);</span>
+    }
+    
+    public float getY(int idx) {
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
+<span class="nc" id="L99">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
+        }
+<span class="fc" id="L101">        return xy.getY(idx);</span>
+    }
+    
+    public void setXY(int idx, int xValue, int yValue) {
+<span class="nc bnc" id="L105" title="All 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
+<span class="nc" id="L106">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
+        }
+<span class="nc" id="L108">        xy.set(idx, xValue, yValue);</span>
+<span class="nc" id="L109">    }</span>
+
+    public float getK(int idx) {
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (k.length - 1)) {</span>
+<span class="nc" id="L113">            throw new IllegalArgumentException(&quot;idx is out of bounds of array k&quot;);</span>
+        }
+<span class="fc" id="L115">        return k[idx];</span>
+    }
+    
+    public void setK(int idx, float value) {
+<span class="pc bpc" id="L119" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (k.length - 1)) {</span>
+<span class="nc" id="L120">            throw new IllegalArgumentException(&quot;idx is out of bounds of array k&quot;);</span>
+        }
+<span class="fc" id="L122">        k[idx] = value;</span>
+<span class="fc" id="L123">    }</span>
+    
+    /**
+     * @return the t
+     */
+    public float[] getT() {
+<span class="fc" id="L129">        return t;</span>
+    }
+
+    /**
+     * @return the kIsZeroIdx
+     */
+    public int[] getKIsZeroIdx() {
+<span class="fc" id="L136">        return kIsZeroIdx;</span>
+    }
+    
+    /**
+     * return the x coordinates where the curvature is zero.
+     * @return 
+     */
+    public int[] getKIsZeroX() {
+<span class="fc" id="L144">        return kIsZeroX;</span>
+    }
+    
+    /**
+     * return the y coordinates where the curvature is zero.
+     * @return 
+     */
+    public int[] getKIsZeroY() {
+<span class="fc" id="L152">        return kIsZeroY;</span>
+    }
+
+    /**
+     * @return the kIsZeroIdxSize
+     */
+    public int getKIsZeroIdxSize() {
+<span class="fc" id="L159">        return kIsZeroIdxSize;</span>
+    }
+    
+    public void addKIsZeroIdx(int idxForAZeroValue, int xCoord, int yCoord) {
+        
+<span class="fc" id="L164">        kIsZeroIdx[kIsZeroIdxSize] = idxForAZeroValue;</span>
+<span class="fc" id="L165">        kIsZeroX[kIsZeroIdxSize] = xCoord;</span>
+<span class="fc" id="L166">        kIsZeroY[kIsZeroIdxSize] = yCoord;</span>
+        
+<span class="fc" id="L168">        kIsZeroIdxSize++;</span>
+<span class="fc" id="L169">    }</span>
+    
+    public void compressKIsZeroIdx() {
+<span class="fc" id="L172">        kIsZeroIdx = Arrays.copyOf(kIsZeroIdx, kIsZeroIdxSize);</span>
+<span class="fc" id="L173">        kIsZeroX = Arrays.copyOf(kIsZeroX, kIsZeroIdxSize);</span>
+<span class="fc" id="L174">        kIsZeroY = Arrays.copyOf(kIsZeroY, kIsZeroIdxSize);</span>
+<span class="fc" id="L175">    }</span>
+    
+    public int getSize() {
+<span class="fc" id="L178">        return size;</span>
+    }
+    
+    public float[] getK() {
+<span class="fc" id="L182">        return k;</span>
+    }
+    
+    public int[] getX() {
+<span class="nc" id="L186">        return xy.getX();</span>
+    }
+    
+    public int[] getY() {
+<span class="nc" id="L190">        return xy.getY();</span>
+    }
+    
+    public boolean curveIsClosed() {
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        return (xy.getColor() == 1);</span>
+    }
+    
+    public PairIntArray getXYCurve() {
+<span class="fc" id="L198">        return xy;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

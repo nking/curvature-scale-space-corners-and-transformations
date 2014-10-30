@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TransformationRefiner.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">TransformationRefiner.java</span></div><h1>TransformationRefiner.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.logging.Logger;
+
+/**
+ A chi square minimization routine to refine the given transformation parameters
+ to better match a given edge with another.
+ 
+ Internally, it's using the Nelder-Mead Downhill Simplex method.
+ 
+ @author nichole
+ */
+public class TransformationRefiner {
+
+<span class="fc" id="L15">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+<span class="fc" id="L17">    public TransformationRefiner() {</span>
+        
+<span class="fc" id="L19">    }</span>
+    
+    private SearchableCurve[] createSearchableCurves(PairIntArray[] edges) {
+        
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        if (edges == null) {</span>
+<span class="nc" id="L24">            return null;</span>
+        }
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">        if (edges.length == 0) {</span>
+<span class="nc" id="L27">            return new SearchableCurve[0];</span>
+        }
+        
+<span class="fc" id="L30">        SearchableCurve[] curves = new SearchableCurve[edges.length];</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.length; i++) {</span>
+<span class="fc" id="L32">            curves[i] = new SearchableCurve(edges[i]);</span>
+        }
+        
+<span class="fc" id="L35">        return curves;</span>
+    }
+    
+    public TransformationParameters refineTransformation(PairIntArray[] edges1, 
+        PairIntArray[] edges2, TransformationParameters params) {
+        
+<span class="fc" id="L41">        SearchableCurve[] searchableEdges2 = createSearchableCurves(edges2);</span>
+            
+        //TODO: set this empirically from tests
+<span class="fc" id="L44">        double convergence = 0;</span>
+                
+<span class="fc" id="L46">        double r = params.getRotationInRadians();</span>
+<span class="fc" id="L47">        double s = params.getScale();</span>
+        
+<span class="fc" id="L49">        double dR = (1.0 * Math.PI/180.);</span>
+<span class="fc" id="L50">        double dS = 0.1;</span>
+        
+<span class="fc" id="L52">        double rMin = r - (10 * Math.PI/180);</span>
+<span class="fc" id="L53">        double rMax = r + (10 * Math.PI/180);</span>
+<span class="fc" id="L54">        double sMin = s - 0.5;</span>
+<span class="fc" id="L55">        double sMax = s + 0.5;</span>
+        
+        //TODO: these starting points could be improved.
+        
+        // start with simplex for at least 3 points (fitting 2 parameters)
+<span class="fc" id="L60">        TransformationFit[] fits = new TransformationFit[9];</span>
+<span class="fc" id="L61">        fits[0] = transformEdges(r, s, edges1, searchableEdges2);</span>
+<span class="fc" id="L62">        fits[1] = transformEdges(r + dR, s, edges1, searchableEdges2);</span>
+<span class="fc" id="L63">        fits[2] = transformEdges(r - dR, s, edges1, searchableEdges2);</span>
+        // adding additional points.  need small changes more than changes
+        // near the size of the value
+<span class="fc" id="L66">        fits[3] = transformEdges(r, s + dS, edges1, searchableEdges2);</span>
+<span class="fc" id="L67">        fits[4] = transformEdges(r, s - dS, edges1, searchableEdges2);</span>
+<span class="fc" id="L68">        fits[5] = transformEdges(r + dR, s + dS, edges1, searchableEdges2);</span>
+<span class="fc" id="L69">        fits[6] = transformEdges(r + dR, s - dS, edges1, searchableEdges2);</span>
+<span class="fc" id="L70">        fits[7] = transformEdges(r - dR, s + dS, edges1, searchableEdges2);</span>
+<span class="fc" id="L71">        fits[8] = transformEdges(r - dR, s - dS, edges1, searchableEdges2);</span>
+
+<span class="fc" id="L73">        float alpha = 1;   // &gt; 0</span>
+<span class="fc" id="L74">        float gamma = 2;   // &gt; 1</span>
+<span class="fc" id="L75">        float beta = -0.5f; </span>
+<span class="fc" id="L76">        float tau = 0.5f;</span>
+            
+<span class="fc" id="L78">        boolean go = true;</span>
+
+<span class="fc" id="L80">        int nMaxIter = 100;</span>
+<span class="fc" id="L81">        int nIter = 0;</span>
+        
+<span class="fc" id="L83">        int bestFitIdx = 0;</span>
+<span class="fc" id="L84">        int secondWorstFitIdx = fits.length - 2;</span>
+<span class="fc" id="L85">        int worstFitIdx = fits.length - 1;</span>
+
+<span class="pc bpc" id="L87" title="1 of 4 branches missed.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+
+<span class="fc" id="L89">            sortFromMinToMax(fits, 0, (fits.length - 1));</span>
+
+            // determine center for all points excepting the worse fit
+<span class="fc" id="L92">            double rSum = 0.0;</span>
+<span class="fc" id="L93">            double sSum = 0.0;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            for (int i = 0; i &lt; (fits.length - 1); i++) {</span>
+<span class="fc" id="L95">                rSum += fits[i].getRotationInRadians();</span>
+<span class="fc" id="L96">                sSum += fits[i].getScale();</span>
+            }
+<span class="fc" id="L98">            r = rSum / (double)(fits.length - 1);</span>
+<span class="fc" id="L99">            s = sSum / (double)(fits.length - 1);</span>
+
+            // &quot;Reflection&quot;
+<span class="fc" id="L102">            double rReflect = r + (alpha * </span>
+                (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="fc" id="L104">            double sReflect = s +</span>
+                (s - alpha * (fits[worstFitIdx].getScale()));
+<span class="fc" id="L106">            TransformationFit fitReflected = transformEdges(rReflect, sReflect, </span>
+                edges1, searchableEdges2);
+            
+<span class="pc bpc" id="L109" title="4 of 8 branches missed.">            boolean relectIsWithinBounds = </span>
+                (rReflect &gt;= rMin) &amp;&amp; (rReflect &lt;= rMax) 
+                &amp;&amp; (sReflect &gt;= sMin) &amp;&amp; (sReflect &lt;= sMax);
+
+<span class="pc bpc" id="L113" title="1 of 6 branches missed.">            if ((fitReflected.getChiSqSum() &lt; fits[secondWorstFitIdx].getChiSqSum())</span>
+                &amp;&amp; relectIsWithinBounds &amp;&amp;
+                (fitReflected.getChiSqSum() &gt; fits[bestFitIdx].getChiSqSum())
+                ) {
+                
+<span class="fc" id="L118">                fits[worstFitIdx] = fitReflected;</span>
+                
+            } else {
+                
+<span class="pc bpc" id="L122" title="1 of 4 branches missed.">                if ((fitReflected.getChiSqSum() &lt; fits[bestFitIdx].getChiSqSum())</span>
+                &amp;&amp; relectIsWithinBounds) {
+                    
+                    // &quot;Expansion&quot;
+<span class="fc" id="L126">                    double rExpansion = r + (gamma * </span>
+                        (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="fc" id="L128">                    double sExpansion = s + (gamma * </span>
+                        (s - fits[worstFitIdx].getScale()));
+<span class="fc" id="L130">                    TransformationFit fitExpansion = transformEdges(rExpansion, </span>
+                        sExpansion, edges1, searchableEdges2);
+                    
+<span class="pc bpc" id="L133" title="4 of 10 branches missed.">                    if ((fitExpansion.getChiSqSum() &lt; fitReflected.getChiSqSum())</span>
+                    &amp;&amp; ((rExpansion &gt;= rMin) &amp;&amp; (rExpansion &lt;= rMax) 
+                    &amp;&amp; (sExpansion &gt;= sMin) &amp;&amp; (sExpansion &lt;= sMax))
+                    ) {
+
+<span class="fc" id="L138">                        fits[worstFitIdx] = fitExpansion;</span>
+                        
+                    } else {
+                        
+<span class="fc" id="L142">                        fits[worstFitIdx] = fitReflected;</span>
+                    }
+                    
+<span class="fc" id="L145">                } else {</span>
+                
+                    // we know that the reflection fit is worse than the 2nd worse
+
+                    // &quot;Contraction&quot;
+<span class="fc" id="L150">                    double rContraction = r + (beta * </span>
+                        (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="fc" id="L152">                    double sContraction = s + (beta * </span>
+                        (s - fits[worstFitIdx].getScale()));
+<span class="fc" id="L154">                    TransformationFit fitContraction = transformEdges(</span>
+                        rContraction, sContraction, edges1, searchableEdges2);
+                
+<span class="pc bpc" id="L157" title="4 of 10 branches missed.">                    if (fitContraction.getChiSqSum() &gt; fits[worstFitIdx].getChiSqSum()</span>
+                        &amp;&amp; (
+                        (rContraction &gt;= rMin) &amp;&amp; (rContraction &lt;= rMax) 
+                        &amp;&amp; (sContraction &gt;= sMin) &amp;&amp; (sContraction &lt;= sMax)
+                        )
+                    ) {
+
+<span class="fc" id="L164">                        fits[worstFitIdx] = fitContraction;</span>
+                        
+                    } else {
+                        
+                        // &quot;Reduction&quot;
+<span class="fc bfc" id="L169" title="All 2 branches covered.">                        for (int i = 1; i &lt; fits.length; i++) {</span>
+                            
+<span class="fc" id="L171">                            double rReduction = </span>
+                                fits[bestFitIdx].getRotationInRadians()
+                                + (tau * 
+                                (fits[i].getRotationInRadians()
+                                - fits[bestFitIdx].getRotationInRadians()));
+<span class="fc" id="L176">                            double sReduction = </span>
+                                fits[bestFitIdx].getScale()
+                                + (tau * 
+                                (fits[i].getScale()
+                                - fits[bestFitIdx].getScale()));
+<span class="fc" id="L181">                            fits[i] = transformEdges(rReduction, sReduction, </span>
+                                edges1, searchableEdges2);
+                        }                        
+                    }
+                }
+            }
+
+<span class="fc" id="L188">            log.finest(&quot;best fit so far: &quot; + fits[bestFitIdx].getChiSqSum());</span>
+            
+<span class="fc" id="L190">            nIter++;</span>
+
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">            if (fits[bestFitIdx].getChiSqSum() &lt; convergence) {</span>
+<span class="nc" id="L193">                go = false;</span>
+<span class="pc bpc" id="L194" title="2 of 4 branches missed.">            } else if ((r &gt; rMax) || (r &lt; rMin)) {</span>
+<span class="nc" id="L195">                go = false;</span>
+<span class="pc bpc" id="L196" title="2 of 4 branches missed.">            } else if ((s &gt; sMax) || (s &lt; sMin)) {</span>
+<span class="nc" id="L197">                go = false;</span>
+            }
+<span class="fc" id="L199">        }</span>
+        
+<span class="fc" id="L201">        return fits[0].getParameters();</span>
+    }
+    
+    private TransformationFit transformEdges(double rotInRad, double scl, 
+        PairIntArray[] edges1, SearchableCurve[] edges2) {
+        
+<span class="fc" id="L207">        Transformer transformer = new Transformer();</span>
+        
+<span class="fc" id="L209">        edges1 = transformer.applyTransformation(rotInRad, scl, 0, 0, edges1);</span>
+        
+<span class="fc" id="L211">        TransformationParameters params = new TransformationParameters();</span>
+<span class="fc" id="L212">        params.setScale((float)scl);</span>
+<span class="fc" id="L213">        params.setRotationInRadians((float)rotInRad);</span>
+                
+<span class="fc" id="L215">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        
+<span class="fc" id="L217">        double offsetX = 0;</span>
+<span class="fc" id="L218">        double offsetY = 0;</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.length; i++) {</span>
+            
+<span class="fc" id="L221">            double[] centroidXY1 = curveHelper.calculateXYCentroids(edges1[i]);</span>
+<span class="fc" id="L222">            double centroidX1 = centroidXY1[0];</span>
+<span class="fc" id="L223">            double centroidY1 = centroidXY1[1];</span>
+            
+<span class="fc" id="L225">            double[] centroidXY2 = curveHelper.calculateXYCentroids(edges2[i]);</span>
+<span class="fc" id="L226">            double centroidX2 = centroidXY2[0];</span>
+<span class="fc" id="L227">            double centroidY2 = centroidXY2[1];</span>
+            
+<span class="fc" id="L229">            offsetX += (centroidX2 - centroidX1);</span>
+<span class="fc" id="L230">            offsetY += (centroidY2 - centroidY1);</span>
+        }
+<span class="fc" id="L232">        offsetX /= (double)edges1.length;</span>
+<span class="fc" id="L233">        offsetY /= (double)edges1.length;</span>
+        
+        // ==== apply translation to points in edges1 =====
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.length; i++) {            </span>
+<span class="fc" id="L237">            PairIntArray edge1 = edges1[i];</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">            for (int j = 0; j &lt; edge1.getN(); j++) {</span>
+<span class="fc" id="L239">                int x = edge1.getX(j) + (int)offsetX;</span>
+<span class="fc" id="L240">                int y = edge1.getY(j) + (int)offsetY;</span>
+<span class="fc" id="L241">                edge1.set(j, x, y);</span>
+            }
+        }
+        //Image img1 = new Image(300, 300);
+        //debugDisplay(edges1, edges2, img1, &quot;after translation&quot;);
+        
+        //==== write the curve and compare it to the model, edge2 ====
+        
+<span class="fc" id="L249">        TransformationFit fit = new TransformationFit(params, edges1);</span>
+        
+<span class="fc" id="L251">        double diffSum = differenceOfCurves(edges1, edges2);</span>
+        
+<span class="fc" id="L253">        fit.setChiSqSum(diffSum);</span>
+        
+<span class="fc" id="L255">        return fit;</span>
+    }
+    
+    /**
+     * calculate the differences of the points in edges1 to their closest 
+     * points in edges2.
+     * 
+     * @param edges1
+     * @param edges2
+     * @return 
+     */
+    protected double differenceOfCurves(PairIntArray[] edges1, 
+        SearchableCurve[] edges2) {
+        
+<span class="fc" id="L269">        double sumDiff = 0;</span>
+        
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.length; i++) {</span>
+            
+<span class="fc" id="L273">            double diff = differenceOfCurves(edges1[i], edges2[i]);</span>
+                
+<span class="fc" id="L275">            sumDiff += diff;</span>
+        }
+        
+<span class="fc" id="L278">        return sumDiff;</span>
+    }
+    
+    /**
+     * calculate the differences of the points in edge1 to their closest 
+     * points in edge2.
+     * 
+     * @param edge1
+     * @param edge2
+     * @return 
+     */
+    protected double differenceOfCurves(PairIntArray edge1, SearchableCurve 
+        edge2) {
+        
+<span class="fc" id="L292">        double sumDiff = 0;</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        for (int i = 0; i &lt; edge1.getN(); i++) {</span>
+            
+<span class="fc" id="L295">            int x1 = edge1.getX(i);</span>
+<span class="fc" id="L296">            int y1 = edge1.getY(i);</span>
+            
+<span class="fc" id="L298">            PairInt xy2 = edge2.findClosestMatch(x1, y1);</span>
+            
+            double diff;
+            
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">            if (xy2 != null) {</span>
+<span class="fc" id="L303">                int x2 = xy2.getX();</span>
+<span class="fc" id="L304">                int y2 = xy2.getY();</span>
+<span class="fc" id="L305">                diff = ((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2));</span>
+<span class="fc" id="L306">            } else {</span>
+                // penalty is full cost of point set
+<span class="nc" id="L308">                diff = (x1 * x1) + (y1 * y1);</span>
+            }
+            
+<span class="fc" id="L311">            sumDiff += diff;</span>
+        }
+        
+<span class="fc" id="L314">        return Math.sqrt(sumDiff);</span>
+    }
+    
+    /**
+     * sort the array fits by ascending chisquare sum using
+     * the quick sort algorithm.
+     *
+     * @param yfits
+     * @param p first index of the array fits to be sorted
+     * @param r the last index of the array fits to be sorted, inclusive
+     */
+    void sortFromMinToMax(TransformationFit[] fits, int p, int r) {
+
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        if (p &lt; r) {</span>
+
+<span class="fc" id="L329">            int q = partition(fits, p, r);</span>
+
+<span class="fc" id="L331">            sortFromMinToMax(fits, p, q - 1);</span>
+
+<span class="fc" id="L333">            sortFromMinToMax(fits, q + 1, r);</span>
+        }
+<span class="fc" id="L335">    }</span>
+    
+    /**
+     * the partition function of the TransformationFit quick sort method.
+     *
+     * @param yfits
+     * @param p
+     * @param r
+     * @return
+     */
+    int partition(TransformationFit[] fits, int p, int r) {
+
+<span class="fc" id="L347">        double xxp = fits[r].getChiSqSum();</span>
+
+<span class="fc" id="L349">        int i = p - 1;</span>
+
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        for (int j = p; j &lt; r ; j++ ) {</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">            if (fits[j].getChiSqSum() &lt;= xxp) {</span>
+
+<span class="fc" id="L354">                i++;</span>
+
+<span class="fc" id="L356">                TransformationFit swap = fits[i];</span>
+<span class="fc" id="L357">                fits[i] = fits[j];</span>
+<span class="fc" id="L358">                fits[j] = swap;</span>
+            }
+        }
+
+<span class="fc" id="L362">        i++;</span>
+<span class="fc" id="L363">        TransformationFit swap = fits[i];</span>
+<span class="fc" id="L364">        fits[i] = fits[r];</span>
+<span class="fc" id="L365">        fits[r] = swap;</span>
+
+<span class="fc" id="L367">        return i;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Gaussian1DFirstDeriv.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Gaussian1DFirstDeriv.java</span></div><h1>Gaussian1DFirstDeriv.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import static algorithms.imageProcessing.Gaussian1D.estimateHWZI;
+
+/**
+ * class to retrieve a kernel for the first derivative of a gaussian of
+ * a given sigma.
+ * 
+ * For the smaller sigma, curvature tests show that a binomial filter should
+ * be used instead of the detailed calculation of the formula due to errors
+ * in normalization due to the tails of the function.
+ * Therefore, the general methods are returning binomial filter curves
+ * when possible.
+ * Sometimes those have been edited from the binomial pattern
+ * due to centering.
+ * 
+ * @author nichole
+ */
+<span class="nc" id="L19">public class Gaussian1DFirstDeriv {</span>
+        
+    //               1             ( -(x - mu)^2 )
+    // f = ------------------ * exp( ----------- )
+    //     sigma * sqrt(2*pi)      (    2o~^2    )
+    //
+    //           -(x - mu)              ( -(x - mu)^2 )
+    // dfdx = -------------------- * exp( ----------- )
+    //        sigma^3 * sqrt(2*pi)      (    2o~^2    )
+    //
+        
+    /**
+     * get the kernel for the given sigma and mu.  nPoints is the number of
+     * points in the Gaussian kernel (determined by the approximate FWZI), so
+     * mu - half of nPoints determines the starting x in the kernel.
+     * 
+     * the function is:
+     * &lt;pre&gt;
+     *           -(x - mu)              ( -(x - mu)^2 )
+     * dfdx = -------------------- * exp( ----------- )
+     *        sigma^3 * sqrt(2*pi)      (    2o~^2    )
+     * 
+     * &lt;/pre&gt;
+     * 
+     * To create the x-axis for the kernel:
+       &lt;pre&gt;
+       int halfWidthInPixels = kernel.length &gt;&gt; 1; 
+       int[] x = new int[kernel.length];
+       for (int i = 0; i &lt; x.length; i++) {
+            x[i] = i + (int) (mu - halfWidthInPixels);
+       }
+       &lt;/pre&gt;
+     * 
+     * @param sigma
+     * @param mu
+     * @param nPoints
+     * @return 
+     */
+    public static float[] getKernel(SIGMA sigma, float mu, int nPoints) {
+        
+<span class="fc" id="L59">        float s = SIGMA.getValue(sigma);</span>
+        
+<span class="fc" id="L61">        return getKernel(s, mu, nPoints);</span>
+    }
+    
+    /**
+     * get the kernel for the given sigma and mu.  nPoints is the number of
+     * points in the Gaussian kernel (determined by the approximate FWZI), so
+     * mu - half of nPoints determines the starting x in the kernel.
+     * 
+     * the function is:
+     * &lt;pre&gt;
+     *           -(x - mu)              ( -(x - mu)^2 )
+     * dfdx = -------------------- * exp( ----------- )
+     *        sigma^3 * sqrt(2*pi)      (    2o~^2    )
+     * 
+     * &lt;/pre&gt;
+     * 
+     * To create the x-axis for the kernel:
+       &lt;pre&gt;
+       int halfWidthInPixels = kernel.length &gt;&gt; 1; 
+       int[] x = new int[kernel.length];
+       for (int i = 0; i &lt; x.length; i++) {
+            x[i] = i + (int) (mu - halfWidthInPixels);
+       }
+       &lt;/pre&gt;
+     * 
+     * @param sigma
+     * @param mu
+     * @param nPoints
+     * @return 
+     */
+    public static float[] getKernel(float sigma, float mu, int nPoints) {
+                
+<span class="fc" id="L93">        float normalization = (float)(Math.pow(sigma, 3) * </span>
+            Math.sqrt(2.f * Math.PI));
+        
+<span class="fc" id="L96">        int halfWidthInPixels = nPoints &gt;&gt; 1;</span>
+        
+<span class="fc" id="L98">        int start = (int)(mu - halfWidthInPixels);</span>
+<span class="fc" id="L99">        int stopExcl = (int)mu + halfWidthInPixels + 1;</span>
+            
+        float d;
+        float dsq;
+                        
+<span class="fc" id="L104">        int count = 0;</span>
+<span class="fc" id="L105">        float[] yPoints = new float[nPoints];</span>
+        int i;
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (i = start; i &lt; stopExcl; i++) {</span>
+             
+<span class="fc" id="L109">            float x = i;</span>
+            
+<span class="fc" id="L111">            d = (x - mu);</span>
+<span class="fc" id="L112">            dsq = d*d;</span>
+            
+<span class="fc" id="L114">            float y = (float)((-1.f * d) *</span>
+                Math.exp(-1.f * dsq/(2.f * sigma * sigma)));
+                        
+<span class="fc" id="L117">            yPoints[count] = y/normalization;</span>
+                        
+<span class="fc" id="L119">            count++;</span>
+        }
+      
+<span class="fc" id="L122">        return yPoints;</span>
+    }
+    
+    /**
+     * get the kernel for the given sigma and mu. 
+     * 
+     * the function is:
+     * &lt;pre&gt;
+     *           -(x - mu)              ( -(x - mu)^2 )
+     * dfdx = -------------------- * exp( ----------- )
+     *        sigma^3 * sqrt(2*pi)      (    2o~^2    )
+     * 
+     * &lt;/pre&gt;
+     * 
+     * To create the x-axis for the kernel:
+       &lt;pre&gt;
+       int halfWidthInPixels = kernel.length &gt;&gt; 1; 
+       int[] x = new int[kernel.length];
+       for (int i = 0; i &lt; x.length; i++) {
+            x[i] = i + (int) (mu - halfWidthInPixels);
+       }
+       &lt;/pre&gt;
+     * 
+     * @param sigma
+     * @param mu
+     * @return 
+     */
+    public static float[] getKernel(float sigma, float mu) {
+
+<span class="fc" id="L151">        float hwi = estimateHWZI(sigma, 0.001f);</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        if (hwi &lt; 0) {</span>
+<span class="nc" id="L153">            hwi *= -1.f;</span>
+        }
+<span class="fc" id="L155">        int halfWidthInPixels = (int)Math.ceil(hwi);</span>
+        
+<span class="fc" id="L157">        int nPoints = 2*halfWidthInPixels + 1;</span>
+        
+<span class="fc" id="L159">        return getKernel(sigma, mu, nPoints);</span>
+    }
+    
+    /**
+     * get the kernel for the given sigma. a mu of 0 is used. 
+     * 
+     * the function is:
+     * &lt;pre&gt;
+     *           -(x - mu)              ( -(x - mu)^2 )
+     * dfdx = -------------------- * exp( ----------- )
+     *        sigma^3 * sqrt(2*pi)      (    2o~^2    )
+     * 
+     * &lt;/pre&gt;
+     * 
+     * To create the x-axis for the kernel:
+       &lt;pre&gt;
+       int halfWidthInPixels = kernel.length &gt;&gt; 1; 
+       int[] x = new int[kernel.length];
+       for (int i = 0; i &lt; x.length; i++) {
+            x[i] = i + (int) (mu - halfWidthInPixels);
+       }
+       &lt;/pre&gt;
+     * 
+     * @param sigma
+     * @return 
+     */
+    public static float[] getKernel(float sigma) {
+        
+<span class="fc" id="L187">        return getKernel(sigma, 0);</span>
+    }
+ 
+    /**
+     * get the kernel for the given sigma and deltaX. NOTE: the factor -(x-mu)
+     * has not been applied yet to allow re-use of the kernel, so when using this
+     * kernel, be sure to multiply each element by -(x-mu);
+     * 
+     * the function is:
+       &lt;pre&gt;
+                 -(x - mu)              ( -(x - mu)^2 )
+       dfdx = -------------------- * exp( ----------- )
+              sigma^3 * sqrt(2*pi)      (    2o~^2    )
+       
+       &lt;/pre&gt;
+     * 
+     * To create the x-axis for the kernel:
+       &lt;pre&gt;
+       int halfWidthInPixels = kernel.length &gt;&gt; 1; 
+       int[] x = new int[kernel.length];
+       for (int i = 0; i &lt; x.length; i++) {
+            x[i] = i + (int) (mu - halfWidthInPixels);
+       }
+       &lt;/pre&gt;
+     * 
+     * @param sigma
+     * @return 
+     */
+    public static float[] getKernel(SIGMA sigma) {
+      
+        //using the binomial filter removes artifact sometimes introduced in
+        // convolution due to nearly zero elements in the kernel and subsequent
+        // renormalization by a very small number, so using binomial when
+        // possible
+        
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L223">            return getBinomialKernelSigmaZeroPointFive();</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
+<span class="fc" id="L225">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
+<span class="fc" id="L227">            return getBinomialKernelSigmaOne();</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
+<span class="fc" id="L229">            return getBinomialKernelSigmaOneSQRT2();</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L231">            return getBinomialKernelSigmaOnePointFive();</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
+<span class="fc" id="L233">            return getBinomialKernelSigmaTwo();</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVESQRT2.ordinal()) {</span>
+<span class="fc" id="L235">            return getBinomialKernelSigmaOnePointFiveSQRT2();</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
+<span class="fc" id="L237">            return getBinomialKernelSigmaTwoSQRT2();</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
+<span class="fc" id="L239">            return getBinomialKernelSigmaThree();</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
+<span class="fc" id="L241">            return getKernelSigmaFour();</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOURSQRT2.ordinal()) {</span>
+<span class="fc" id="L243">            return getKernel(SIGMA.getValue(sigma));</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHT.ordinal()) {</span>
+<span class="fc" id="L245">            return getKernel(SIGMA.getValue(sigma));</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.EIGHTSQRT2.ordinal()) {</span>
+<span class="fc" id="L247">            return getKernel(sigma, 0, 87);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTEEN.ordinal()) {</span>
+<span class="fc" id="L249">            return getKernel(sigma, 0, 121);</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTEENSQRT2.ordinal()) {</span>
+<span class="fc" id="L251">            return getKernel(sigma, 0, 171);</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWO.ordinal()) {</span>
+<span class="fc" id="L253">            return getKernel(sigma, 0, 239);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THIRTYTWOSQRT2.ordinal()) {</span>
+<span class="fc" id="L255">            return getKernel(sigma, 0, 339);</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOUR.ordinal()) {</span>
+<span class="fc" id="L257">            return getKernel(sigma, 0, 477);</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.SIXTYFOURSQRT2.ordinal()) {</span>
+<span class="fc" id="L259">            return getKernel(sigma, 0, 675);</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEHUNDREDANDTWENTYEIGHT.ordinal()) {</span>
+<span class="fc" id="L261">            return getKernel(sigma, 0, 953);</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEHUNDREDANDTWENTYEIGHTSQRT2.ordinal()) {</span>
+<span class="fc" id="L263">            return getKernel(sigma, 0, 1347);</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWOHUNDREDANDFIFTYSIX.ordinal()) {</span>
+<span class="fc" id="L265">            return getKernel(sigma, 0, 1905);</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        } else if (sigma.ordinal() == SIGMA.TWOHUNDREDANDFIFTYSIX.ordinal()) {</span>
+<span class="nc" id="L267">            return getKernel(SIGMA.getValue(sigma));</span>
+        }
+        
+<span class="nc" id="L270">        throw new IllegalArgumentException(&quot;haven't implemented a method for &quot; </span>
+        + &quot; sigma=&quot; + sigma);
+    }
+    
+    protected static float[] getBinomialKernel(SIGMA sigma) {
+      
+        //using the binomial filter removes artifact sometimes introduced in
+        // convolution due to nearly zero elements in the kernel and subsequent
+        // renormalization by a very small number, so using binomial when
+        // possible
+        
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (sigma.ordinal() == SIGMA.ZEROPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L282">            return getBinomialKernelSigmaZeroPointFive();</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ZEROPOINTSEVENONE.ordinal()) {</span>
+<span class="fc" id="L284">            return getBinomialKernelSigmaZeroPointSevenOne();</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONE.ordinal()) {</span>
+<span class="fc" id="L286">            return getBinomialKernelSigmaOne();</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONESQRT2.ordinal()) {</span>
+<span class="fc" id="L288">            return getBinomialKernelSigmaOneSQRT2();</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVE.ordinal()) {</span>
+<span class="fc" id="L290">            return getBinomialKernelSigmaOnePointFive();</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWO.ordinal()) {</span>
+<span class="fc" id="L292">            return getBinomialKernelSigmaTwo();</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.ONEPOINTFIVESQRT2.ordinal()) {</span>
+<span class="fc" id="L294">            return getBinomialKernelSigmaOnePointFiveSQRT2();</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.TWOSQRT2.ordinal()) {</span>
+<span class="fc" id="L296">            return getBinomialKernelSigmaTwoSQRT2();</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.THREE.ordinal()) {</span>
+<span class="fc" id="L298">            return getBinomialKernelSigmaThree();</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">        } else if (sigma.ordinal() == SIGMA.FOUR.ordinal()) {</span>
+<span class="fc" id="L300">            return getBinomialKernelSigmaFour();</span>
+        } else {
+<span class="fc" id="L302">            return null;</span>
+        }
+        
+    }
+    
+    /*&lt;pre&gt;
+    binomial filter
+   
+      n=                                                                  sigma=sqrt(1)/2 = 0.5
+      n=2                                   1      0   -1                 sigma=sqrt(2)/2 = 0.707
+      n=3                                 1    1     -1  -1               
+      n=4                               1    2     0   -2   -1            &lt;=== sigma = 1   sigma=sqrt(n)/2
+      n=5                             1    3    2    -2   -3   -1         
+      n=6                           1    4    5    0    -5   -4   -1 
+      n=7                         1    5    9   5    -5   -9    -5   -1   
+      n=8                       1   6    14   14   0    -14  -14    -6   -1     &lt;=== sigma=sqrt(2)
+      n=9                     1   7   20   28   14   -14   -28   -20   -7   -1  &lt;=== sigma=3/2
+      n=10                  1   8   27   48   42   0    -42   -48    -27   -8  -1  
+     ...
+    &lt;/pre&gt;
+    */
+  
+    protected static float[] getBinomialKernelSigmaZeroPointFive() {
+        //1 -1 norm=0.5
+<span class="fc" id="L326">        return new float[]{0.5f, -0.0f, -0.5f};</span>
+    }
+   
+    protected static float[] getBinomialKernelSigmaZeroPointSevenOne() {
+        // 1    1   -1  -1, n=2, sigma=sqrt(2)/2 = 0.707
+        // edit to:
+<span class="fc" id="L332">        float a = 1.f/200.f;</span>
+<span class="fc" id="L333">        return new float[]{0, 9*a, 83*a, 0, -83*a, -9*a, 0};</span>
+    }
+   
+    protected static float[] getBinomialKernelSigmaOne() {
+        // 1       3     2        -2    -3     -1  norm=1/12 = 0.08333333333333333
+        // editing to:
+<span class="fc" id="L339">        float a = 1.f/16.f;</span>
+<span class="fc" id="L340">        return new float[]{0, 2*a, 4*a, 0, -4*a, -2*a, 0};</span>
+    }
+ 
+    protected static float[] getKernelSigmaOneSQRT2() {
+<span class="nc" id="L344">        return new float[]{0, 0.0013614271f, 0.010333488f, </span>
+            0.04459885f, 0.103776865f, 0.10984783f, 
+            -0.0f, -0.10984783f, -0.103776865f, -0.04459885f, -0.010333488f, 
+            -0.0013614271f, 0};
+    }
+    
+    protected static float[] getBinomialKernelSigmaOneSQRT2() {
+        //norm=256, n=8
+        /*
+        n=7         1   6    14   14   0    -14  -14    -6   -1
+        n=8       1   7   20   28   14   -14   -28   -20   -7   -1    &lt;=== sigma=sqrt(2)
+        n=9     1   8   27   48   42   0    -42   -48    -27   -8  -1  &lt;=== sigma=3/2
+        edit to:
+        */
+<span class="fc" id="L358">        float a = 1.f/256.f;</span>
+<span class="fc" id="L359">        return new float[]{0, a*3, a*12, a*27, a*28,</span>
+            0, -28*a, -27*a, -12*a, -3*a, 0};
+    }
+    
+    protected static float[] getBinomialKernelSigmaOnePointFive() {
+<span class="fc" id="L364">        float a = 1.f/512.f;</span>
+<span class="fc" id="L365">        return new float[]{a*1, a*8, a*27, a*48, </span>
+            a*42, 
+            0, -1*a*42, -1*a*48, -1*a*27, 
+            -1*a*8, -1*a*1};
+    }
+
+    protected static float[] getKernelSigmaTwo() {
+<span class="nc" id="L372">        return new float[]{0, 0, </span>
+            0.0033238865f, 0.010955188f, 0.026995484f, 0.048569098f, 
+            0.060492683f, 0.044008166f, -0.0f, -0.044008166f, -0.060492683f, 
+            -0.048569098f, -0.026995484f, -0.010955188f, -0.0033238865f, 
+            0, 0};
+    }
+    
+    protected static float[] getBinomialKernelSigmaTwo() {
+        //sigma=2 n=16   appears to be too wide, so the real 'sigma' for this is &gt; 2
+<span class="fc" id="L381">        double a = 1.f/33300l;</span>
+<span class="fc" id="L382">        return new float[]{</span>
+            (float) (1l * a), (float) (14l * a), (float) (90l * a),
+            (float) (350l * a), (float) (910l * a), (float) (1638l * a),
+            (float) (2002l * a), (float) (1430l * a), (float) (0l * a),
+            (float) (-1430l * a), (float) (-2002l * a), (float) (-1638l * a),
+            (float) (-910l * a), (float) (-350l * a), (float) (-90l * a),
+            (float) (-14l * a), (float) (-1l * a)
+        };
+    }
+    
+    protected static float[] getBinomialKernelSigmaOnePointFiveSQRT2() {
+        //sigma=3*sqrt(2)/2   n=18
+<span class="fc" id="L394">        double a = 1./133000l;</span>
+<span class="fc" id="L395">        return new float[]{</span>
+            (float) (1l * a), (float) (16l * a), (float) (119l * a),
+            (float) (544l * a), (float) (1700l * a), (float) (3808l * a),
+            (float) (6188l * a), (float) (7072l * a), (float) (4862l * a),
+            (float) (0l * a), (float) (-4862l * a), (float) (-7072l * a),
+            (float) (-6188l * a), (float) (-3808l * a), (float) (-1700l * a),
+            (float) (-544l * a), (float) (-119l * a), (float) (-16l * a),
+            (float) (-1l * a)
+        };
+    }
+   
+    protected static float[] getKernelSigmaTwoSQRT2() {
+<span class="nc" id="L407">        return new float[]{0, 0, </span>
+            0.0010043882f, 0.002583372f, 0.005772264f, 0.011149713f, 
+            0.018478211f, 0.025944216f, 0.030137392f, 0.027461957f, 
+            0.01656272f, -0.0f, -0.01656272f, -0.027461957f, -0.030137392f, 
+            -0.025944216f, -0.018478211f, -0.011149713f, -0.005772264f, 
+            -0.002583372f, -0.0010043882f, 0, 0};
+    }
+    
+    protected static float[] getBinomialKernelSigmaTwoSQRT2() {
+        // sigma=2*sqrt(2)  n=32
+<span class="fc" id="L417">        double a = 1./2153976500l;</span>
+<span class="fc" id="L418">        return new float[]{</span>
+            (float) (1l * a), (float) (30l * a), (float) (434l * a),
+            (float) (4030l * a), (float) (26970l * a), (float) (138446l * a),
+            (float) (566370l * a), (float) (1893294l * a), (float) (5259150l * a),
+            (float) (12271350l * a), (float) (24192090l * a), (float) (40320150l * a),
+            (float) (56448210l * a), (float) (65132550l * a), (float) (58929450l * a),
+            (float) (35357670l * a), (float) (0l * a), (float) (-35357670l * a),
+            (float) (-58929450l * a), (float) (-65132550l * a), (float) (-56448210l * a),
+            (float) (-40320150l * a), (float) (-24192090l * a), (float) (-12271350l * a),
+            (float) (-5259150l * a), (float) (-1893294l * a), (float) (-566370l * a),
+            (float) (-138446l * a), (float) (-26970l * a), (float) (-4030l * a),
+            (float) (-434l * a), (float) (-30l * a), (float) (-1l * a)
+        };
+    }
+   
+    protected static float[] getKernelSigmaThree() {
+<span class="nc" id="L434">        return new float[]{0, 0, 0, 0.0014772827f, 0.0033765885f, 0.006798267f, </span>
+            0.011997993f, 0.018421693f, 0.024297789f, 0.026885636f, 
+            0.023662815f, 0.013977156f, -0.0f, -0.013977156f, -0.023662815f, 
+            -0.026885636f, -0.024297789f, -0.018421693f, -0.011997993f, 
+            -0.006798267f, -0.0033765885f, -0.0014772827f, 0, 0, 0};
+    }
+    
+    protected static float[] getBinomialKernelSigmaThree() {
+        //sigma=3, n=36
+<span class="fc" id="L443">        double a = 1./34500000000l;</span>
+<span class="fc" id="L444">        return new float[]{</span>
+            (float) (1l * a), (float) (34l * a), (float) (560l * a),
+            (float) (5950l * a), (float) (45815l * a), (float) (272272l * a),
+            (float) (1298528l * a), (float) (5101360l * a), (float) (16811300l * a),
+            (float) (47071640l * a), (float) (112971936l * a), (float) (233646504l * a),
+            (float) (417225900l * a), (float) (641886000l * a), (float) (843621600l * a),
+            (float) (927983760l * a), (float) (811985790l * a), (float) (477638700l * a),
+            (float) (0l * a), (float) (-477638700l * a), (float) (-811985790l * a),
+            (float) (-927983760l * a), (float) (-843621600l * a), (float) (-641886000l * a),
+            (float) (-417225900l * a), (float) (-233646504l * a), (float) (-112971936l * a),
+            (float) (-47071640l * a), (float) (-16811300l * a), (float) (-5101360l * a),
+            (float) (-1298528l * a), (float) (-272272l * a), (float) (-45815l * a),
+            (float) (-5950l * a), (float) (-560l * a), (float) (-34l * a),
+            (float) (-1l * a)
+        };
+    }
+    
+    protected static float[] getKernelSigmaFour() {
+<span class="fc" id="L462">        return new float[]{0, 0, 0, 0, 0.0015629561f, </span>
+            0.002738797f, 0.0044633886f, 0.006748871f, 0.009436582f, 
+            0.0121422745f, 0.014269461f, 0.015123171f, 0.014115817f, 
+            0.011002041f, 0.0060416893f, -0.0f, -0.0060416893f, -0.011002041f, 
+            -0.014115817f, -0.015123171f, -0.014269461f, -0.0121422745f, 
+            -0.009436582f, -0.006748871f, -0.0044633886f, -0.002738797f, 
+            -0.0015629561f, 0, 0, 0, 0};
+    }
+    
+    /**
+     * curvature tests for the non-binomial kernel show better results so
+     * prefer that for sigma=4.
+     * 
+     * @deprecated 
+     * @return 
+     */
+    protected static float[] getBinomialKernelSigmaFour() {
+        // sigma=4  n=64
+        // NOTE: the curvature tests for the non-binomial kernal sigma four 
+        // are better, so use those.
+<span class="fc" id="L482">        float a = 1.f/82.0f;</span>
+<span class="fc" id="L483">        return new float[]{</span>
+            (float) (1.4677788298671463E-5) * a, (float) (5.577559553495156E-5) * a,
+            (float) (1.924887094025772E-4) * a, (float) (6.059829740451504E-4) * a,
+            (float) (0.0017466568075419043) * a, (float) (0.004623503314081511) * a,
+            (float) (0.011267648817280127) * a, (float) (0.02533103004787036) * a,
+            (float) (0.05261060086865382) * a, (float) (0.10104575722392242) * a,
+            (float) (0.17954411407556464) * a, (float) (0.2950768483502758) * a,
+            (float) (0.4480796586059744) * a, (float) (0.627311522048364) * a,
+            (float) (0.8065433854907539) * a, (float) (0.9459459459459458) * a,
+            (float) (1.0) * a, (float) (0.9310344827586206) * a, (float) (0.7241379310344828) * a,
+            (float) (0.3971078976640712) * a, (float) (0.0) * a, (float) (-0.3971078976640712) * a,
+            (float) (-0.7241379310344828) * a, (float) (-0.9310344827586206) * a,
+            (float) (-1.0) * a, (float) (-0.9459459459459458) * a, (float) (-0.8065433854907539) * a,
+            (float) (-0.627311522048364) * a, (float) (-0.4480796586059744) * a,
+            (float) (-0.2950768483502758) * a, (float) (-0.17954411407556464) * a,
+            (float) (-0.10104575722392242) * a, (float) (-0.05261060086865382) * a,
+            (float) (-0.02533103004787036) * a, (float) (-0.011267648817280127) * a,
+            (float) (-0.004623503314081511) * a, (float) (-0.0017466568075419043) * a,
+            (float) (-6.059829740451504E-4) * a, (float) (-1.924887094025772E-4) * a,
+            (float) (-5.577559553495156E-5) * a, (float) (-1.4677788298671463E-5) * a
+        };
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

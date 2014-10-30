@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TransformationFit.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">TransformationFit.java</span></div><h1>TransformationFit.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ *
+ * @author nichole
+ */
+public class TransformationFit {
+    
+<span class="fc" id="L9">    private TransformationParameters parameters = null;</span>
+    
+<span class="fc" id="L11">    private PairIntArray[] transformedEdges1 = null;</span>
+    
+<span class="fc" id="L13">    private double chiSqSum = Double.MAX_VALUE;</span>
+        
+    public TransformationFit(TransformationParameters theParameters, 
+<span class="fc" id="L16">        PairIntArray[] theTransformedEdges1) {</span>
+        
+<span class="fc" id="L18">        parameters = theParameters;</span>
+        
+<span class="fc" id="L20">        transformedEdges1 = theTransformedEdges1;</span>
+<span class="fc" id="L21">    }</span>
+
+    /**
+     * @return the parameters
+     */
+    public TransformationParameters getParameters() {
+<span class="fc" id="L27">        return parameters;</span>
+    }
+
+    /**
+     * @return the transformedEdges1
+     */
+    public PairIntArray[] getTransformedEdges1() {
+<span class="nc" id="L34">        return transformedEdges1;</span>
+    }
+
+    /**
+     * @return the chiSqSum
+     */
+    public double getChiSqSum() {
+<span class="fc" id="L41">        return chiSqSum;</span>
+    }
+
+    /**
+     * @param theChiSqSum the chi squared sum to set
+     */
+    public void setChiSqSum(double theChiSqSum) {
+<span class="fc" id="L48">        this.chiSqSum = theChiSqSum;</span>
+<span class="fc" id="L49">    }</span>
+    
+    public double getRotationInRadians() {
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L53">            return 0;</span>
+        }
+        
+<span class="fc" id="L56">        return (parameters.getRotationInDegrees() * Math.PI/180.);</span>
+    }
+    
+    public double getScale() {
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L61">            return 0;</span>
+        }
+        
+<span class="fc" id="L64">        return parameters.getScale();</span>
+    }
+    
+    public double getTranslationX() {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L69">            return 0;</span>
+        }
+        
+<span class="nc" id="L72">        return parameters.getTranslationX();</span>
+    }
+    
+    public double getTranslationY() {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L77">            return 0;</span>
+        }
+        
+<span class="nc" id="L80">        return parameters.getTranslationY();</span>
+    }
+   
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

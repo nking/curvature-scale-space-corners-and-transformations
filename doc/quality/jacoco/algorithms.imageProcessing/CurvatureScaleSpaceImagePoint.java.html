@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CurvatureScaleSpaceImagePoint.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CurvatureScaleSpaceImagePoint.java</span></div><h1>CurvatureScaleSpaceImagePoint.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ *
+ * @author nichole
+ */
+public class CurvatureScaleSpaceImagePoint {
+    
+<span class="fc" id="L9">    private int xCoord = -1;</span>
+    
+<span class="fc" id="L11">    private int yCoord = -1;</span>
+    
+<span class="fc" id="L13">    private float sigma = Float.MAX_VALUE;</span>
+    
+<span class="fc" id="L15">    private float scaleFreeLength = Float.MAX_VALUE;</span>
+
+    public CurvatureScaleSpaceImagePoint(float theSigma, 
+<span class="fc" id="L18">        float theScaleFreeLength, int theXCoordinate, int theYCoordinate) {</span>
+        
+<span class="fc" id="L20">        xCoord = theXCoordinate;</span>
+        
+<span class="fc" id="L22">        yCoord = theYCoordinate;</span>
+        
+<span class="fc" id="L24">        sigma = theSigma;</span>
+        
+<span class="fc" id="L26">        scaleFreeLength = theScaleFreeLength;</span>
+<span class="fc" id="L27">    }</span>
+    
+    /**
+     * @return the xCoord
+     */
+    public int getXCoord() {
+<span class="fc" id="L33">        return xCoord;</span>
+    }
+    
+    /**
+     * @return the yCoord
+     */
+    public int getYCoord() {
+<span class="fc" id="L40">        return yCoord;</span>
+    }
+
+    /**
+     * @return the sigma
+     */
+    public float getSigma() {
+<span class="fc" id="L47">        return sigma;</span>
+    }
+
+    /**
+     * @return the scaleFreeLength
+     */
+    public float getScaleFreeLength() {
+<span class="fc" id="L54">        return scaleFreeLength;</span>
+    }
+
+    /**
+     * @param scaleFreeLength the scaleFreeLength to set
+     */
+    public void setScaleFreeLength(float scaleFreeLength) {
+<span class="fc" id="L61">        this.scaleFreeLength = scaleFreeLength;</span>
+<span class="fc" id="L62">    }</span>
+    
+    @Override
+    public String toString() {
+        
+<span class="fc" id="L67">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="fc" id="L69">        sb.append(&quot;sigma=&quot;).append(sigma)</span>
+            .append(&quot; scaleFreeLength=&quot;).append(scaleFreeLength)
+            .append(&quot; (&quot;).append(xCoord).append(&quot;,&quot;).append(yCoord).append(&quot;)&quot;);
+        
+<span class="fc" id="L73">        return sb.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

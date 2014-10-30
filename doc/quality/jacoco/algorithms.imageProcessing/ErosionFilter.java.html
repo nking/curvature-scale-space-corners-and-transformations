@@ -1,0 +1,995 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ErosionFilter.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ErosionFilter.java</span></div><h1>ErosionFilter.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L9">public class ErosionFilter extends AbstractLineThinner {</span>
+    
+<span class="fc" id="L11">    protected boolean useLineDrawingMode = false;</span>
+    
+<span class="fc" id="L13">    protected boolean debug = false;</span>
+    
+<span class="fc" id="L15">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    /**
+     * for images which are already line drawings, that is images such as
+     * maps with only lines, or for block images, use this to avoid a gap filling
+     * stage that fills single pixel gaps surrounded by non-zero pixels.  
+     * (Else, the filter applies such a gap filling algorithm to help avoid 
+     * creating bubbles in thick lines).
+     */
+    @Override
+    public void useLineDrawingMode() {
+<span class="nc" id="L26">        useLineDrawingMode = true;</span>
+<span class="nc" id="L27">    }</span>
+
+    @Override
+    public void setDebug(boolean setToDebug) {
+<span class="nc" id="L31">        debug = setToDebug;</span>
+<span class="nc" id="L32">    }</span>
+    
+    @Override
+    public void applyFilter(final GreyscaleImage input) {
+        
+<span class="fc" id="L37">        GreyscaleImage output = input.copyImage();</span>
+        
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (!useLineDrawingMode) {</span>
+<span class="fc" id="L40">            prefillGapsSurroundedByNeighbors(output);</span>
+        }
+        
+<span class="fc" id="L43">        int count = 1;</span>
+        
+<span class="fc" id="L45">        int maxIter = 100;</span>
+<span class="fc" id="L46">        int nIter = 0;</span>
+        
+        GreyscaleImage input2;
+        
+<span class="pc bpc" id="L50" title="1 of 4 branches missed.">        while ((count &gt; 0) &amp;&amp; (nIter &lt; maxIter)) {</span>
+            
+<span class="fc" id="L52">            count = 0;</span>
+            
+<span class="fc" id="L54">            input2 = output.copyImage();</span>
+            
+            // alternate the directions of approach to 'erode' from both 'sides'
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            if ((nIter &amp; 1) == 0) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                for (int i = 0; i &lt; input2.getWidth(); i++) {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                    for (int j = 0; j &lt; input2.getHeight(); j++) {</span>
+<span class="fc" id="L60">                        boolean nulled = process(input2, output, i, j);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">                        if (nulled) {</span>
+<span class="fc" id="L62">                            count++;</span>
+                        }
+                    }
+                }
+            } else {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                for (int i = (input2.getWidth() - 1); i &gt; -1; i--) {</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">                    for (int j = (input2.getHeight() - 1); j &gt; -1; j--) {</span>
+<span class="fc" id="L69">                        boolean nulled = process(input2, output, i, j);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                        if (nulled) {</span>
+<span class="fc" id="L71">                            count++;</span>
+                        }
+                    }
+                }
+            }                                    
+            
+<span class="fc" id="L77">            log.fine(&quot;nulled &quot; + count + &quot; pixels&quot;);</span>
+            
+<span class="fc" id="L79">            nIter++;</span>
+        }
+        
+<span class="fc" id="L82">        input.resetTo(output);</span>
+<span class="fc" id="L83">    }</span>
+
+    /**
+     * instead of dilation, just fill in any gaps that have 4 neighbors already
+     * filled in.  This should not act upon many pixels.
+     * 
+     * @param input
+     */
+    protected void prefillGapsSurroundedByNeighbors(final GreyscaleImage input) {
+        
+<span class="fc" id="L93">        int count = 1;</span>
+               
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getWidth(); i++) {</span>
+
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
+
+<span class="fc bfc" id="L99" title="All 2 branches covered.">                if (input.getValue(i, j) &gt; 0) {</span>
+<span class="fc" id="L100">                    continue;</span>
+                }
+                       
+<span class="fc bfc" id="L103" title="All 4 branches covered.">                if (!isASmallerSearchRegion(input, i, j) &amp;&amp;</span>
+                    hasImmediateFourNeighbors(input, i, j)) {
+                      
+<span class="fc" id="L106">                    float avg = input.getValue(i, j + 1) + input.getValue(i + 1, j)</span>
+                        + input.getValue(i, j - 1) + input.getValue(i - 1, j);
+                    
+<span class="fc" id="L109">                    avg /= 4.f;</span>
+                    
+<span class="fc" id="L111">                    input.setValue(i, j, (int)avg);</span>
+                    
+<span class="fc" id="L113">                    count++;</span>
+                }
+            }
+        }
+
+<span class="fc" id="L118">        log.fine(&quot;filled in  &quot; + count + &quot; pixels&quot;);</span>
+<span class="fc" id="L119">    }</span>
+
+    /**
+     * within the surrounding 8 pixels, return false if the point is the 
+     * endpoint of a line with width of 1 pixel, or
+     * return true if nulling the center point
+     * would not disconnect the othe points or return true if the point.
+     * 
+     * TODO: compute the runtime complexity of this.
+     * 
+     * TODO: consider a Boolean SAT solution for this one.  The boolean logic
+     * below would be placed in a CNF file and solved by my SAT solver or
+     * another.
+     * 
+     * @param input
+     * @param row
+     * @param col
+     * @return 
+     */
+    private boolean canBeNulled(final GreyscaleImage input, int col, int row) {
+        
+        /*
+        handle edge cases, that is searches constrained to regions smaller than
+        the full 3x3 neighborhood region, that is regions of sizes
+           2X2 or 2x3 or 3X2
+        */
+       
+<span class="fc" id="L146">        boolean isASmallerSearchRegion = isASmallerSearchRegion(</span>
+            input, col, row);
+        
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        if (isASmallerSearchRegion) {</span>
+            
+<span class="fc" id="L151">            boolean doesDisconnect = isASmallerSearchRegionAndDoesDisconnect(</span>
+                input, col, row);
+
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            return !doesDisconnect;</span>
+        }
+        
+        /*
+        check that this isn't the endpoint of a 1 pixel width line.
+        */
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (isTheEndOfAOnePixelLine(input, col, row)) {</span>
+<span class="fc" id="L161">            return false;</span>
+        }
+        
+        /*
+        else, try the 8 pixel neighborhood with C being the current (col, row)
+        and @ being the pixel tested for disconnection by setting C to 0. 
+       
+        . is a 0
+        ? is an AND between possible '1's.  (&quot;At Least One&quot;)
+        _ is a pixel that can be ignored
+
+             (1)       (2)     (3)     (4)     (5)     (6)     (7)     (8)
+             @ . ?    _ @ _   ? . @   ? . _   ? ? ?   ? ? ?   ? ? ?   _ . ?
+             . C ?    . C .   ? C .   ? C @   ? C .   . C .   . C ?   @ C ?
+             ? ? ?    ? ? ?   ? ? ?   ? . _   ? . @   _ @ _   @ . ?   _ . ?
+        */
+
+<span class="fc" id="L178">        boolean doesDisconnect = doesDisconnect(input, col, row);</span>
+        
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        return !doesDisconnect;</span>
+       
+    }
+    
+    /**
+     * this assumes that the invoker has checked that (col, row) has 1 pixel
+     * to each side and 1 above and below.
+     * @param input
+     * @param col
+     * @param row
+     * @return 
+     */
+    protected boolean hasImmediateFourNeighbors(final GreyscaleImage input, 
+        int col, int row) {
+        
+        /*   @
+           @ C @
+             @
+        */
+<span class="fc bfc" id="L199" title="All 8 branches covered.">        if ((input.getValue(col, row + 1) &gt; 0) &amp;&amp;</span>
+            (input.getValue(col + 1, row) &gt; 0) &amp;&amp;
+            (input.getValue(col, row - 1) &gt; 0) &amp;&amp;
+            (input.getValue(col - 1, row) &gt; 0)) {
+<span class="fc" id="L203">            return true;</span>
+        }
+        
+<span class="fc" id="L206">        return false;</span>
+    }
+  
+    /**
+     * for the full 8 neighbor region, determine whether nulling the pixel
+     * at (col, row) would disconnect the remaining line.  Note that the
+     * boolean logic is embedded in the comments.  One should be able to
+     * combine the rules for multiple pixel tests to reduce the redundant
+     * comparisons for the regions in common.
+     * 
+     * @param input
+     * @param col
+     * @param row
+     * @return 
+     */
+    protected boolean doesDisconnect(final GreyscaleImage input, int col, 
+        int row) {
+        
+        /*
+            6   7  8 
+           11 *C* 12
+           15  16 17
+        */
+                
+        //6  Ʌ  8  Ʌ  ¬((7)  V  (11  Ʌ  16  Ʌ  12))
+<span class="fc bfc" id="L231" title="All 12 branches covered.">        if (</span>
+            ((input.getValue(col - 1, row + 1) &gt; 0) 
+            &amp;&amp; (input.getValue(col + 1, row + 1) &gt; 0)) &amp;&amp; 
+            !((input.getValue(col, row + 1) &gt; 0) 
+            || 
+            ((input.getValue(col - 1, row) &gt; 0)
+            &amp;&amp; (input.getValue(col, row - 1) &gt; 0) 
+            &amp;&amp; (input.getValue(col + 1, row) &gt; 0)))) {
+<span class="fc" id="L239">            return true;</span>
+        } else 
+            //6  Ʌ  12  Ʌ  ¬((7)  V  (11  Ʌ  16))
+<span class="fc bfc" id="L242" title="All 10 branches covered.">            if (</span>
+            ((input.getValue(col - 1, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col + 1, row) &gt; 0)) &amp;&amp; 
+                !((input.getValue(col, row + 1) &gt; 0)
+                || 
+                ((input.getValue(col - 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)))) {
+<span class="fc" id="L249">            return true;</span>
+        } else 
+            //6  Ʌ  17  Ʌ  ¬((7  Ʌ  12) V (11  Ʌ  16))
+<span class="fc bfc" id="L252" title="All 12 branches covered.">            if (</span>
+            ((input.getValue(col - 1, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col + 1, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col, row + 1) &gt; 0)
+                &amp;&amp; (input.getValue(col + 1, row) &gt; 0)) 
+                || ((input.getValue(col - 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)))) {
+<span class="fc" id="L259">            return true;</span>
+        } else 
+            //6  Ʌ  16  Ʌ  ¬((7  Ʌ  12) V (11))
+<span class="fc bfc" id="L262" title="All 10 branches covered.">            if (</span>
+            ((input.getValue(col - 1, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col, row + 1) &gt; 0)
+                &amp;&amp; (input.getValue(col + 1, row) &gt; 0)) 
+                || (input.getValue(col - 1, row) &gt; 0))) {
+<span class="fc" id="L268">            return true;</span>
+        } else 
+            //6  Ʌ  15  Ʌ  ¬((7  Ʌ  12 Ʌ 16) V (11))
+<span class="fc bfc" id="L271" title="All 12 branches covered.">            if (</span>
+            ((input.getValue(col - 1, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col + 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) 
+                || (input.getValue(col - 1, row) &gt; 0))) {
+<span class="fc" id="L278">            return true;</span>
+        } else 
+            //7  Ʌ  17  Ʌ  ¬((12)  V  (11  Ʌ  16))
+<span class="fc bfc" id="L281" title="All 10 branches covered.">            if (</span>
+            ((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col + 1, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col - 1, row) &gt; 0)
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) 
+                || (input.getValue(col + 1, row) &gt; 0))) {
+<span class="fc" id="L287">            return true;</span>
+        } else 
+            //7  Ʌ  16  Ʌ  ¬(12  V  11)
+<span class="fc bfc" id="L290" title="All 8 branches covered.">            if (</span>
+            ((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) &amp;&amp; 
+                !((input.getValue(col + 1, row) &gt; 0)
+                || (input.getValue(col - 1, row) &gt; 0))) {
+<span class="fc" id="L295">            return true;</span>
+        } else 
+            //7  Ʌ  15  Ʌ  ¬((11)  V  (12 Ʌ 16))
+<span class="fc bfc" id="L298" title="All 10 branches covered.">            if (</span>
+            ((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col + 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) 
+                || (input.getValue(col - 1, row) &gt; 0))) {
+<span class="fc" id="L304">            return true;</span>
+        } else 
+            //8  Ʌ  17  Ʌ  ¬((12)  V  (7 Ʌ 11  Ʌ  16))
+<span class="fc bfc" id="L307" title="All 12 branches covered.">            if (</span>
+            ((input.getValue(col + 1, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col + 1, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) 
+                || (input.getValue(col + 1, row) &gt; 0))) {
+<span class="fc" id="L314">            return true;</span>
+        } else 
+            //8  Ʌ  16  Ʌ  ¬((12)  V  (7 Ʌ 11))
+<span class="fc bfc" id="L317" title="All 10 branches covered.">            if (</span>
+            ((input.getValue(col + 1, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row) &gt; 0)) 
+                || (input.getValue(col + 1, row) &gt; 0))) {
+<span class="fc" id="L323">            return true;</span>
+        } else 
+            //8  Ʌ  15  Ʌ  ¬((12 Ʌ  16)  V  (7 Ʌ 11))
+<span class="pc bpc" id="L326" title="1 of 12 branches missed.">            if (</span>
+            ((input.getValue(col + 1, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col + 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) || 
+                ((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row) &gt; 0)))) {
+<span class="fc" id="L333">            return true;</span>
+        } else 
+            //8  Ʌ  11  Ʌ  ¬((7)  V  (12 Ʌ 16))
+<span class="fc bfc" id="L336" title="All 10 branches covered.">            if (</span>
+            ((input.getValue(col + 1, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col + 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col, row - 1) &gt; 0)) 
+                || (input.getValue(col, row + 1) &gt; 0))) {
+<span class="fc" id="L342">            return true;</span>
+        } else 
+            //12  Ʌ  15  Ʌ  ¬((16)  V  (7 Ʌ 11))
+<span class="fc bfc" id="L345" title="All 10 branches covered.">            if (</span>
+            ((input.getValue(col + 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row) &gt; 0)) 
+                || (input.getValue(col, row - 1) &gt; 0))) {
+<span class="fc" id="L351">            return true;</span>
+        } else 
+            //12  Ʌ  11  Ʌ  ¬((16)  V  (7))
+<span class="fc bfc" id="L354" title="All 8 branches covered.">            if (</span>
+            ((input.getValue(col + 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row) &gt; 0)) &amp;&amp; 
+                !((input.getValue(col, row + 1) &gt; 0) 
+                || (input.getValue(col, row - 1) &gt; 0))) {
+<span class="fc" id="L359">            return true;</span>
+        } else 
+            //17  Ʌ  15  Ʌ  ¬((16)  V  (7 Ʌ 11 Ʌ 12))
+<span class="fc bfc" id="L362" title="All 12 branches covered.">            if (</span>
+            ((input.getValue(col + 1, row - 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row - 1) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row) &gt; 0) 
+                &amp;&amp; (input.getValue(col + 1, row) &gt; 0)) 
+                || (input.getValue(col, row - 1) &gt; 0))) {
+<span class="fc" id="L369">            return true;</span>
+        } else 
+            //17  Ʌ  11  Ʌ  ¬((16)  V  (7 Ʌ 12))
+<span class="fc bfc" id="L372" title="All 10 branches covered.">            if (</span>
+            ((input.getValue(col + 1, row - 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col - 1, row) &gt; 0)) &amp;&amp; 
+                !(((input.getValue(col, row + 1) &gt; 0) 
+                &amp;&amp; (input.getValue(col + 1, row) &gt; 0)) 
+                || (input.getValue(col, row - 1) &gt; 0))) {
+<span class="fc" id="L378">            return true;</span>
+        }
+        
+<span class="fc" id="L381">        return false;</span>
+    }
+    
+    private boolean hasAZeroInNeighbors(final GreyscaleImage input, int col, 
+        int row) {
+         
+<span class="fc" id="L387">        int ks = 3;</span>
+<span class="fc" id="L388">        int h = ks &gt;&gt; 1;</span>
+        
+        // search for a zero in the neighboring 8 pixels
+<span class="fc bfc" id="L391" title="All 2 branches covered.">        for (int kCol = 0; kCol &lt; ks; kCol++) {</span>
+
+<span class="fc" id="L393">            int x = kCol - h;</span>
+<span class="fc" id="L394">            int imgX = col + x;</span>
+
+<span class="fc bfc" id="L396" title="All 4 branches covered.">            if ((imgX &lt; 0) || (imgX &gt; (input.getWidth() - 1))) {</span>
+<span class="fc" id="L397">                continue;</span>
+            }
+
+<span class="fc bfc" id="L400" title="All 2 branches covered.">            for (int kRow = 0; kRow &lt; ks; kRow++) {</span>
+
+<span class="fc" id="L402">                int y = kRow - h;</span>
+<span class="fc" id="L403">                int imgY = row + y;</span>
+
+<span class="fc bfc" id="L405" title="All 4 branches covered.">                if ((imgY &lt; 0) || (imgY &gt; (input.getHeight() - 1))) {</span>
+<span class="fc" id="L406">                    continue;</span>
+                }
+
+<span class="fc bfc" id="L409" title="All 2 branches covered.">                if (input.getValue(imgX, imgY) == 0) {</span>
+<span class="fc" id="L410">                    return true;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L415">        return false;</span>
+    }
+
+    /**
+     * return true if this endpoint (col, row) is the end of a line that has 
+     * a width of 1 pixel.
+     * 
+     * @param input
+     * @param col
+     * @param row
+     * @return 
+     */
+    protected boolean isTheEndOfAOnePixelLine(final GreyscaleImage input, 
+        int col, int row) {
+        
+        //TODO: this method could be simplified
+        
+        /*
+          . @ .
+          . C .
+          . . .
+        */
+<span class="fc bfc" id="L437" title="All 16 branches covered.">        if ((input.getValue(col, row + 1) &gt; 0) &amp;&amp; </span>
+            (input.getValue(col + 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row + 1) == 0)
+        ) {
+            /* further check that line thickness is 1 outside of the 8 neighbors
+            
+            # # #
+            . @ .
+            . C .
+            . . .
+            */
+<span class="fc bfc" id="L453" title="All 2 branches covered.">            if ((row + 2) &gt; (input.getHeight() - 1)) {</span>
+<span class="fc" id="L454">                return true;</span>
+            }
+            // only 1 of the '#' can be non-zero
+<span class="fc" id="L457">            int count = 0;</span>
+<span class="fc bfc" id="L458" title="All 2 branches covered.">            if (input.getValue(col - 1, row + 2) &gt; 0) {</span>
+<span class="fc" id="L459">                count++;</span>
+            }
+<span class="fc bfc" id="L461" title="All 2 branches covered.">            if (input.getValue(col, row + 2) &gt; 0) {</span>
+<span class="fc" id="L462">                count++;</span>
+            }
+<span class="fc bfc" id="L464" title="All 2 branches covered.">            if (input.getValue(col + 1, row + 2) &gt; 0) {</span>
+<span class="fc" id="L465">                count++;</span>
+            }
+<span class="fc bfc" id="L467" title="All 2 branches covered.">            if (count &gt; 1) {</span>
+<span class="fc" id="L468">                return false;</span>
+            }
+            
+<span class="fc" id="L471">            return true;</span>
+        }
+        /*
+          . . @
+          . C .
+          . . .
+        */
+<span class="fc bfc" id="L478" title="All 16 branches covered.">        if ((input.getValue(col + 1, row + 1) &gt; 0) &amp;&amp; </span>
+            (input.getValue(col + 1, row) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row - 1) == 0) &amp;&amp;
+            (input.getValue(col, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col, row + 1) == 0)
+            
+        ) {
+            /* further check that line thickness is 1 outside of the 8 neighbors
+            
+              # # #
+            . . @ #
+            . C . #
+            . . .
+            */
+<span class="pc bpc" id="L495" title="1 of 2 branches missed.">            if ((row + 2) &gt; (input.getHeight() - 1)) {</span>
+                /*
+                  . . @ #
+                  . C . #
+                  . . 
+                */
+<span class="nc bnc" id="L501" title="All 2 branches missed.">                if ((col + 2) &gt; (input.getWidth() - 1)) {</span>
+<span class="nc" id="L502">                    return true;</span>
+                }
+<span class="nc" id="L504">                int count = 0;</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">                if (input.getValue(col + 2, row + 1) &gt; 0) {</span>
+<span class="nc" id="L506">                    count++;</span>
+                }
+<span class="nc bnc" id="L508" title="All 2 branches missed.">                if (input.getValue(col + 2, row) &gt; 0) {</span>
+<span class="nc" id="L509">                    count++;</span>
+                }
+<span class="nc bnc" id="L511" title="All 2 branches missed.">                if (count &gt; 1) {</span>
+<span class="nc" id="L512">                    return false;</span>
+                }
+<span class="nc" id="L514">                return true;</span>
+<span class="fc bfc" id="L515" title="All 2 branches covered.">            } else if ((col + 2) &gt; (input.getWidth() - 1)) {</span>
+                /*     # #
+                     . . @
+                     . C .
+                     . . .
+                */
+<span class="fc" id="L521">                int count = 0;</span>
+<span class="fc bfc" id="L522" title="All 2 branches covered.">                if (input.getValue(col, row + 2) &gt; 0) {</span>
+<span class="fc" id="L523">                    count++;</span>
+                }
+<span class="pc bpc" id="L525" title="1 of 2 branches missed.">                if (input.getValue(col + 1, row + 2) &gt; 0) {</span>
+<span class="fc" id="L526">                    count++;</span>
+                }
+<span class="fc bfc" id="L528" title="All 2 branches covered.">                if (count &gt; 1) {</span>
+<span class="fc" id="L529">                    return false;</span>
+                }
+<span class="fc" id="L531">                return true;</span>
+            }
+            
+            /*
+              # # #
+            . . @ #
+            . C . #
+            . . .
+            */
+            
+            // only 1 of the '#' can be non-zero
+<span class="fc" id="L542">            int count = 0;</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">            if (input.getValue(col, row + 2) &gt; 0) {</span>
+<span class="fc" id="L544">                count++;</span>
+            }
+<span class="fc bfc" id="L546" title="All 2 branches covered.">            if (input.getValue(col + 1, row + 2) &gt; 0) {</span>
+<span class="fc" id="L547">                count++;</span>
+            }
+<span class="fc bfc" id="L549" title="All 2 branches covered.">            if (input.getValue(col + 2, row + 2) &gt; 0) {</span>
+<span class="fc" id="L550">                count++;</span>
+            }
+<span class="fc bfc" id="L552" title="All 2 branches covered.">            if (input.getValue(col + 2, row + 1) &gt; 0) {</span>
+<span class="fc" id="L553">                count++;</span>
+            }
+<span class="fc bfc" id="L555" title="All 2 branches covered.">            if (input.getValue(col + 2, row) &gt; 0) {</span>
+<span class="fc" id="L556">                count++;</span>
+            }
+<span class="fc bfc" id="L558" title="All 2 branches covered.">            if (count &gt; 1) {</span>
+<span class="fc" id="L559">                return false;</span>
+            }
+            
+<span class="fc" id="L562">            return true;</span>
+        }
+        /*
+          . . .
+          . C @
+          . . .
+        */
+<span class="fc bfc" id="L569" title="All 16 branches covered.">        if ((input.getValue(col + 1, row) &gt; 0) &amp;&amp; </span>
+            (input.getValue(col + 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row - 1) == 0)
+        ) {
+            /*
+               . . . #
+               . C @ #
+               . . . #
+            */
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">            if ((col + 2) &gt; (input.getWidth() - 1)) {</span>
+<span class="nc" id="L584">                return true;</span>
+            }
+            
+            // only 1 of the '#' can be non-zero
+<span class="fc" id="L588">            int count = 0;</span>
+<span class="fc bfc" id="L589" title="All 2 branches covered.">            if (input.getValue(col + 2, row + 1) &gt; 0) {</span>
+<span class="fc" id="L590">                count++;</span>
+            }
+<span class="fc bfc" id="L592" title="All 2 branches covered.">            if (input.getValue(col + 2, row) &gt; 0) {</span>
+<span class="fc" id="L593">                count++;</span>
+            }
+<span class="fc bfc" id="L595" title="All 2 branches covered.">            if (input.getValue(col + 2, row - 1) &gt; 0) {</span>
+<span class="fc" id="L596">                count++;</span>
+            }
+            
+<span class="fc bfc" id="L599" title="All 2 branches covered.">            if (count &gt; 1) {</span>
+<span class="fc" id="L600">                return false;</span>
+            }
+<span class="fc" id="L602">            return true;</span>
+        }
+        
+        /*
+          . . .
+          . C .
+          . . @
+        */
+<span class="fc bfc" id="L610" title="All 16 branches covered.">        if ((input.getValue(col + 1, row - 1) &gt; 0) &amp;&amp; </span>
+            (input.getValue(col + 1, row) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col, row - 1) == 0)
+        ) {
+            /*
+               . . .
+               . C . #
+               . . @ #
+                 # # #
+            */
+            
+<span class="pc bpc" id="L626" title="1 of 2 branches missed.">            if ((row - 2) &lt; 0) {</span>
+<span class="nc bnc" id="L627" title="All 2 branches missed.">                if ((col + 2) &gt; (input.getWidth() - 1)) {</span>
+<span class="nc" id="L628">                    return true;</span>
+                }
+                /*
+                     . . .
+                     . C . #
+                     . . @ #
+                 */
+<span class="nc" id="L635">                int count = 0;</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">                if (input.getValue(col + 2, row) &gt; 0) {</span>
+<span class="nc" id="L637">                    count++;</span>
+                }
+<span class="nc bnc" id="L639" title="All 2 branches missed.">                if (input.getValue(col + 2, row - 1) &gt; 0) {</span>
+<span class="nc" id="L640">                    count++;</span>
+                }
+
+<span class="nc bnc" id="L643" title="All 2 branches missed.">                if (count &gt; 1) {</span>
+<span class="nc" id="L644">                    return false;</span>
+                }
+<span class="nc" id="L646">                return true;</span>
+<span class="pc bpc" id="L647" title="1 of 2 branches missed.">            } else if ((col + 2) &gt; (input.getWidth() - 1)) {</span>
+                /*
+                     . . .
+                     . C .
+                     . . @
+                       # #
+                 */
+<span class="nc" id="L654">                int count = 0;</span>
+<span class="nc bnc" id="L655" title="All 2 branches missed.">                if (input.getValue(col, row - 2) &gt; 0) {</span>
+<span class="nc" id="L656">                    count++;</span>
+                }
+<span class="nc bnc" id="L658" title="All 2 branches missed.">                if (input.getValue(col + 1, row - 2) &gt; 0) {</span>
+<span class="nc" id="L659">                    count++;</span>
+                }
+
+<span class="nc bnc" id="L662" title="All 2 branches missed.">                if (count &gt; 1) {</span>
+<span class="nc" id="L663">                    return false;</span>
+                }
+<span class="nc" id="L665">                return true;</span>
+            }
+            /*
+                  . . .
+                  . C . #
+                  . . @ #
+                    # # #
+             */
+<span class="fc" id="L673">            int count = 0;</span>
+<span class="fc bfc" id="L674" title="All 2 branches covered.">            if (input.getValue(col + 2, row) &gt; 0) {</span>
+<span class="fc" id="L675">                count++;</span>
+            }
+<span class="fc bfc" id="L677" title="All 2 branches covered.">            if (input.getValue(col + 2, row - 1) &gt; 0) {</span>
+<span class="fc" id="L678">                count++;</span>
+            }
+<span class="fc bfc" id="L680" title="All 2 branches covered.">            if (input.getValue(col + 2, row - 2) &gt; 0) {</span>
+<span class="fc" id="L681">                count++;</span>
+            }
+<span class="fc bfc" id="L683" title="All 2 branches covered.">            if (input.getValue(col + 1, row - 2) &gt; 0) {</span>
+<span class="fc" id="L684">                count++;</span>
+            }
+<span class="fc bfc" id="L686" title="All 2 branches covered.">            if (input.getValue(col, row - 2) &gt; 0) {</span>
+<span class="fc" id="L687">                count++;</span>
+            }
+<span class="fc bfc" id="L689" title="All 2 branches covered.">            if (count &gt; 1) {</span>
+<span class="fc" id="L690">                return false;</span>
+            }
+<span class="fc" id="L692">            return true;</span>
+        }
+        
+        /*
+          . . .
+          . C .
+          . @ .
+        */
+<span class="fc bfc" id="L700" title="All 16 branches covered.">        if ((input.getValue(col, row - 1) &gt; 0) &amp;&amp; </span>
+            (input.getValue(col + 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row - 1) == 0)
+        ) {
+            /*
+               . . . 
+               . C . 
+               . @ . 
+               # # #
+            */
+<span class="pc bpc" id="L715" title="1 of 2 branches missed.">            if ((row - 2) &lt; 0) {</span>
+<span class="nc" id="L716">                return true;</span>
+            }
+            
+            // only 1 of the '#' can be non-zero
+<span class="fc" id="L720">            int count = 0;</span>
+<span class="fc bfc" id="L721" title="All 2 branches covered.">            if (input.getValue(col - 1, row - 2) &gt; 0) {</span>
+<span class="fc" id="L722">                count++;</span>
+            }
+<span class="fc bfc" id="L724" title="All 2 branches covered.">            if (input.getValue(col, row - 2) &gt; 0) {</span>
+<span class="fc" id="L725">                count++;</span>
+            }
+<span class="fc bfc" id="L727" title="All 2 branches covered.">            if (input.getValue(col + 1, row - 2) &gt; 0) {</span>
+<span class="fc" id="L728">                count++;</span>
+            }
+            
+<span class="fc bfc" id="L731" title="All 2 branches covered.">            if (count &gt; 1) {</span>
+<span class="fc" id="L732">                return false;</span>
+            }
+<span class="fc" id="L734">            return true;</span>
+        }
+        
+        /*
+          . . .
+          . C .
+          @ . .
+        */
+<span class="fc bfc" id="L742" title="All 16 branches covered.">        if ((input.getValue(col - 1, row - 1) &gt; 0) &amp;&amp; </span>
+            (input.getValue(col, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row) == 0)
+        ) {
+            /*
+                 . . .
+               # . C .
+               # @ . .
+               # # # 
+            */
+<span class="pc bpc" id="L757" title="1 of 2 branches missed.">            if ((col - 2) &lt; 0) {</span>
+<span class="nc bnc" id="L758" title="All 2 branches missed.">                if ((row - 2) &lt; 0) {</span>
+<span class="nc" id="L759">                    return true;</span>
+                }
+                /*
+                      . . .
+                      . C .
+                      @ . .
+                      # # 
+                */
+                // only 1 of the '#' can be non-zero
+<span class="nc" id="L768">                int count = 0;</span>
+<span class="nc bnc" id="L769" title="All 2 branches missed.">                if (input.getValue(col - 1, row - 2) &gt; 0) {</span>
+<span class="nc" id="L770">                    count++;</span>
+                }
+<span class="nc bnc" id="L772" title="All 2 branches missed.">                if (input.getValue(col, row - 2) &gt; 0) {</span>
+<span class="nc" id="L773">                    count++;</span>
+                }
+<span class="nc bnc" id="L775" title="All 2 branches missed.">                if (count &gt; 1) {</span>
+<span class="nc" id="L776">                    return false;</span>
+                }
+<span class="nc" id="L778">                return true;</span>
+<span class="pc bpc" id="L779" title="1 of 2 branches missed.">            } else if ((row - 2) &lt; 0) {</span>
+                /*
+                       . . .
+                     # . C .
+                     # @ . .
+                 */
+<span class="nc" id="L785">                int count = 0;</span>
+<span class="nc bnc" id="L786" title="All 2 branches missed.">                if (input.getValue(col - 2, row) &gt; 0) {</span>
+<span class="nc" id="L787">                    count++;</span>
+                }
+<span class="nc bnc" id="L789" title="All 2 branches missed.">                if (input.getValue(col - 2, row - 1) &gt; 0) {</span>
+<span class="nc" id="L790">                    count++;</span>
+                }
+<span class="nc bnc" id="L792" title="All 2 branches missed.">                if (count &gt; 1) {</span>
+<span class="nc" id="L793">                    return false;</span>
+                }
+<span class="nc" id="L795">                return true;</span>
+            }
+            /*
+                 . . .
+               # . C .
+               # @ . .
+               # # # 
+            */
+<span class="fc" id="L803">            int count = 0;</span>
+<span class="fc bfc" id="L804" title="All 2 branches covered.">            if (input.getValue(col - 2, row) &gt; 0) {</span>
+<span class="fc" id="L805">                count++;</span>
+            }
+<span class="fc bfc" id="L807" title="All 2 branches covered.">            if (input.getValue(col - 2, row - 1) &gt; 0) {</span>
+<span class="fc" id="L808">                count++;</span>
+            }
+<span class="fc bfc" id="L810" title="All 2 branches covered.">            if (input.getValue(col - 2, row - 2) &gt; 0) {</span>
+<span class="fc" id="L811">                count++;</span>
+            }
+<span class="fc bfc" id="L813" title="All 2 branches covered.">            if (input.getValue(col - 1, row - 2) &gt; 0) {</span>
+<span class="fc" id="L814">                count++;</span>
+            }
+<span class="fc bfc" id="L816" title="All 2 branches covered.">            if (input.getValue(col, row - 2) &gt; 0) {</span>
+<span class="fc" id="L817">                count++;</span>
+            }
+
+<span class="fc bfc" id="L820" title="All 2 branches covered.">            if (count &gt; 1) {</span>
+<span class="fc" id="L821">                return false;</span>
+            }
+<span class="fc" id="L823">            return true;</span>
+        }
+        
+        /*
+          . . .
+          @ C .
+          . . .
+        */
+<span class="fc bfc" id="L831" title="All 16 branches covered.">        if ((input.getValue(col - 1, row) &gt; 0) &amp;&amp; </span>
+            (input.getValue(col - 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row - 1) == 0)
+        ) {
+            /*
+                # . . .
+                # @ C .
+                # . . .
+            */
+<span class="pc bpc" id="L845" title="1 of 2 branches missed.">            if ((col - 2) &lt; 0) {</span>
+<span class="nc" id="L846">                return true;</span>
+            }
+            
+            // only 1 of the '#' can be non-zero
+<span class="fc" id="L850">            int count = 0;</span>
+<span class="fc bfc" id="L851" title="All 2 branches covered.">            if (input.getValue(col - 2, row - 1) &gt; 0) {</span>
+<span class="fc" id="L852">                count++;</span>
+            }
+<span class="fc bfc" id="L854" title="All 2 branches covered.">            if (input.getValue(col - 2, row) &gt; 0) {</span>
+<span class="fc" id="L855">                count++;</span>
+            }
+<span class="fc bfc" id="L857" title="All 2 branches covered.">            if (input.getValue(col - 2, row + 1) &gt; 0) {</span>
+<span class="fc" id="L858">                count++;</span>
+            }
+            
+<span class="fc bfc" id="L861" title="All 2 branches covered.">            if (count &gt; 1) {</span>
+<span class="fc" id="L862">                return false;</span>
+            }
+<span class="fc" id="L864">            return true;</span>
+        }
+        
+        /*
+          @ . .
+          . C .
+          . . .
+        */
+<span class="fc bfc" id="L872" title="All 16 branches covered.">        if ((input.getValue(col - 1, row + 1) &gt; 0) &amp;&amp; </span>
+            (input.getValue(col, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row + 1) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row) == 0) &amp;&amp; 
+            (input.getValue(col + 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row - 1) == 0) &amp;&amp; 
+            (input.getValue(col - 1, row) == 0)
+        ) {
+<span class="pc bpc" id="L881" title="1 of 2 branches missed.">            if ((col - 2) &lt; 0) {</span>
+<span class="nc bnc" id="L882" title="All 2 branches missed.">                if ((row + 2) &gt; (input.getHeight() - 1)) {</span>
+<span class="nc" id="L883">                    return true;</span>
+                }
+                /*
+                     # #
+                     @ . .
+                     . C .
+                     . . .
+                */
+                // only 1 of the '#' can be non-zero
+<span class="nc" id="L892">                int count = 0;</span>
+<span class="nc bnc" id="L893" title="All 2 branches missed.">                if (input.getValue(col - 1, row + 2) &gt; 0) {</span>
+<span class="nc" id="L894">                    count++;</span>
+                }
+<span class="nc bnc" id="L896" title="All 2 branches missed.">                if (input.getValue(col, row + 2) &gt; 0) {</span>
+<span class="nc" id="L897">                    count++;</span>
+                }
+
+<span class="nc bnc" id="L900" title="All 2 branches missed.">                if (count &gt; 1) {</span>
+<span class="nc" id="L901">                    return false;</span>
+                }
+<span class="nc" id="L903">                return true;</span>
+<span class="pc bpc" id="L904" title="1 of 2 branches missed.">            } else if ((row + 2) &gt; (input.getHeight() - 1)) {</span>
+                /*
+                    # @ . .
+                    # . C .
+                    . . .
+                 */
+<span class="nc" id="L910">                int count = 0;</span>
+<span class="nc bnc" id="L911" title="All 2 branches missed.">                if (input.getValue(col - 2, row) &gt; 0) {</span>
+<span class="nc" id="L912">                    count++;</span>
+                }
+<span class="nc bnc" id="L914" title="All 2 branches missed.">                if (input.getValue(col - 2, row + 1) &gt; 0) {</span>
+<span class="nc" id="L915">                    count++;</span>
+                }
+
+<span class="nc bnc" id="L918" title="All 2 branches missed.">                if (count &gt; 1) {</span>
+<span class="nc" id="L919">                    return false;</span>
+                }
+<span class="nc" id="L921">                return true;</span>
+            }
+            /*
+               # # #
+               # @ . .
+               # . C .
+                 . . .
+            */
+<span class="fc" id="L929">            int count = 0;</span>
+<span class="fc bfc" id="L930" title="All 2 branches covered.">            if (input.getValue(col - 2, row) &gt; 0) {</span>
+<span class="fc" id="L931">                count++;</span>
+            }
+<span class="fc bfc" id="L933" title="All 2 branches covered.">            if (input.getValue(col - 2, row + 1) &gt; 0) {</span>
+<span class="fc" id="L934">                count++;</span>
+            }
+<span class="fc bfc" id="L936" title="All 2 branches covered.">            if (input.getValue(col - 2, row + 2) &gt; 0) {</span>
+<span class="fc" id="L937">                count++;</span>
+            }
+<span class="fc bfc" id="L939" title="All 2 branches covered.">            if (input.getValue(col - 1, row + 2) &gt; 0) {</span>
+<span class="fc" id="L940">                count++;</span>
+            }
+<span class="fc bfc" id="L942" title="All 2 branches covered.">            if (input.getValue(col, row + 2) &gt; 0) {</span>
+<span class="fc" id="L943">                count++;</span>
+            }
+
+<span class="fc bfc" id="L946" title="All 2 branches covered.">            if (count &gt; 1) {</span>
+<span class="fc" id="L947">                return false;</span>
+            }
+<span class="fc" id="L949">            return true;</span>
+        }
+        
+<span class="fc" id="L952">        return false;</span>
+    }
+
+    /**
+     * return true if pixel at (i, j) is nullable, that is does not disconnect
+     * other currently connected points
+     * @param input
+     * @param output
+     * @param i
+     * @param j
+     * @return 
+     */
+    private boolean process(final GreyscaleImage input, final GreyscaleImage 
+        output, int i, int j) {
+        
+<span class="fc bfc" id="L967" title="All 2 branches covered.">        if (output.getValue(i, j) == 0) {</span>
+<span class="fc" id="L968">            return false;</span>
+        }
+
+<span class="fc bfc" id="L971" title="All 4 branches covered.">        if (!isASmallerSearchRegion(output, i, j)</span>
+            &amp;&amp; hasImmediateFourNeighbors(output, i, j)) {
+
+<span class="fc" id="L974">            return false;</span>
+        }
+
+        // choosing input here helps to thin a line from one direction
+        // at a time rather than continue thinning from the same
+        // direction
+<span class="fc bfc" id="L980" title="All 2 branches covered.">        if (hasAZeroInNeighbors(input, i, j)) {</span>
+
+            //if (!doesDisconnectOrIsEndPoint(output, i, j)) {
+<span class="fc bfc" id="L983" title="All 2 branches covered.">            if (canBeNulled(output, i, j)) {</span>
+                
+<span class="fc" id="L985">                output.setValue(i, j, 0);</span>
+
+<span class="fc" id="L987">                return true;</span>
+            }
+        }
+        
+<span class="fc" id="L991">        return false;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

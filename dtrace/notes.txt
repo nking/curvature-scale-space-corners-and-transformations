@@ -1,0 +1,19 @@
+(1) algorithms.satisfiability.SATSolver_run_dtrace_Test is set up to run dtrace
+   using java's ProcessBuilder to execute the script j_flow_jni2.d on the test's processID
+
+(2) To enable jtrace probes to work with the executing binary:
+
+    export JAVA_DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"
+
+    export JAVA_OPTS="$JAVA_DEBUG -Xms512m -Xmx512m -Xss1024k -verbose:jni -Xprof -Xcheck:jni -XX:+UnlockExperimentalVMOptions -XX:+ExtendedDTraceProbes"
+
+    export JAVA_OPTS="-Xms512m -Xmx512m -Xss1024k -XX:+UnlockExperimentalVMOptions -XX:+ExtendedDTraceProbes -Djava.util.logging.config.file=./dtrace/logging.properties"
+
+    export classpath="./bin/test-classes:./bin/classes:./lib/junit.jar"
+
+    sudo java -cp $classpath $JAVA_OPTS  org.junit.runner.JUnitCore algorithms.satisfiability.SATSolver_run_dtrace_Test 
+    (may need to enable root user on macox >= 9)
+
+(3) can pipe the above to dtrace_out.txt
+
+

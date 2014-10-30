@@ -1,0 +1,479 @@
+<?xml version="1.0"?>
+<!-- ======================================================================
+  Builds algorithms
+
+  The default target is listTargets
+
+  The directory structure of the application is:
+
+    src                        Java source code (and associated resource files)
+                               and junit test files.
+
+    lib                        any 3rd party libraries needed by application
+
+    bin/classes                compiled code
+
+    tmpdata                    tmp data files
+
+    resources, testresources   resource files, including persisted for use in future runs
+
+    doc                        Javadocs for developers
+
+    tests                      unit tests 
+
+    bin                        compiled classes, code coverage results, and static analysis results
+
+ ====================================================================== -->
+<project name="curvature-scale-space-corners-and-transformations" default="listTargets" basedir=".">
+
+    <!-- ================= set env properties ================= -->
+    <property environment="env"/>
+
+    <!-- path to mysql driver is in this -->
+    <property file="env.properties"/>
+
+    <!-- assignment name to be used in archive -->
+    <property name="app.name"            value="${ant.project.name}"/>
+
+    <!-- =========== the application file directories ========-->
+    <property name="src.dir"             value="${basedir}/src"/>
+    <property name="resources.dir"       value="${basedir}/resources"/>
+    <property name="aspects.dir"         value="${basedir}/aspects"/>
+    <property name="lib.dir"             value="${basedir}/lib"/>
+    <property name="classes.dir"         value="${basedir}/bin"/>
+    <property name="src.out.dir"         value="${classes.dir}/classes"/>
+    <property name="doc.dir"             value="${basedir}/doc"/>
+    <property name="tests.dir"           value="${basedir}/tests"/>
+    <property name="tests.out.dir"       value="${classes.dir}/test-classes"/>
+    <property name="instr.out.dir"       value="${classes.dir}/instr-classes" />
+    <property name="coverage.dir"        value="${classes.dir}/coverage" />
+    <property name="log.dir"             value="${basedir}/log"/>
+    <property name="logfile"             value="${log.dir}/build.log"/>
+
+    <!-- set compiler options -->
+    <!--<property name="compile.debug"       value="true"/>-->
+    <property name="compile.deprecation" value="true"/>
+    <property name="compile.optimize"    value="false"/>
+    <property name="compile.target"      value="1.7"/>
+
+    <!-- build all targets -->
+    <!--<target name="all" depends="clean,prepare,compile,compileTests,runTests" />
+    -->
+
+    <!-- print usage: prints all targets -->
+    <target name="listTargets" description="prints all targets in this any file">
+        <echo message="listTargets:                prints all targets in this ant file"/>
+        <echo message="all:                        clean+compile+ear"/>
+        <echo message="prepare:                    prepare directories"/>
+        <echo message="clean:                      deletes old classes, logs, build, and javadocs"/>
+        <echo message="compile:                    compile source files"/>
+        <echo message="compileTests:               compile test files"/>
+        <echo message="runTests:                   run tests"/>
+        <echo message="runTest:                    run test with -Dtest=fqn of test"/>
+        <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
+    	<echo message="runCoverage:                run code coverage tools"/>
+        <echo message="javadoc:                    create javadocs"/>
+        <echo message="runTestsWithAspects:        run tests with aspects"/>
+        <echo message="runTestWithAspects:         run test with aspects, use -Dtest=fqn"/>
+        <echo message="debugTestWithAspects:       debug a test with aspects"/>
+        <echo message="runEmma                     run code coverage for non-third party classes"/>
+        <echo message="runFindbugs                 static analysis for non-third party classes"/>
+    </target>
+
+    <!-- set compile classpath  -->
+    <path id="compile.classpath">
+        <pathelement location="${src.out.dir}"/>
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- set test classpath  -->
+    <path id="test.classpath">
+        <pathelement location="${tests.dir}" />
+        <path refid="compile.classpath"/>
+    </path>
+    
+    <target name="debug" description="sets compile.debug to true" >
+        <property name="compile.debug" value="true" />
+    </target>
+
+    <!-- =========== clean  ========== -->
+    <target name="clean"
+        description="Delete dirs: build, doc/api, and src tree classes">
+        <delete dir="${doc.dir}/api"/>
+        <delete>
+            <fileset dir="${classes.dir}" />
+            <!--
+            <fileset dir="${classes.dir}"
+                includes="**/*.class"
+                excludes="*.jar" />
+            -->
+            <fileset dir="${aspects.dir}"
+                includes="**/*.class"
+                excludes="*.jar" />
+        </delete>
+        <delete>
+            <fileset dir="${log.dir}" includes="*" />
+        </delete>
+    </target>
+
+    <!-- prepare is called by compile -->
+    <target name="prepare" description="create directories">
+        <mkdir  dir="${classes.dir}"/>
+        <mkdir  dir="${src.out.dir}"/>
+        <mkdir  dir="${tests.out.dir}"/>
+        <mkdir  dir="${instr.out.dir}"/>
+        <mkdir  dir="${coverage.dir}"/>
+        <mkdir  dir="${log.dir}"/>
+        <mkdir  dir="tmpdata"/>
+    </target>
+
+    <!-- compile sources -->
+    <target name="compile" depends="prepare"
+        description="Compile Java classes">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
+        <javac srcdir="${src.dir}"
+            destdir="${src.out.dir}"
+            source="${compile.target}"
+            debug="${compile.debug}"
+            deprecation="${compile.deprecation}"
+            includeAntRuntime="false"
+            optimize="${compile.optimize}" >
+            <classpath refid="compile.classpath"/>
+            <include name="**/*.java"/>
+            <exclude name="**/*Test*.java"/>
+        </javac>
+
+        <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
+        
+    </target>
+
+    <!-- compile tests  -->
+    <target name="compileTests" depends="clean,debug,compile" description="Compile Java tests" >
+
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <property name="cclasspath" refid="test.classpath" />
+        <echo message="cclasspath=${cclasspath}" />
+
+        <echo message="COMPILE TESTS debug=true"/>
+
+    	<javac srcdir="${tests.dir}"
+    	    destdir="${tests.out.dir}"
+    	    source="${compile.target}"
+            debug="true"
+            includes="**/*Test.java"
+            excludes="**/*KDTree2Test*java"
+            includeAntRuntime="false"
+    	    deprecation="${compile.deprecation}"
+    	    optimize="${compile.optimize}" >
+    	    <classpath refid="test.classpath"/>
+            <src path="${tests.dir}"/>
+            <src path="${src.dir}"/>
+            <compilerarg value="-Xlint"/>
+    	</javac>
+    	
+    </target>
+
+    <target name="runTestsWithAspects" depends="clean,debug,compile,compileTests"
+        description="run image processing tests with debugging output" >
+        
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <echo message="COMPILE debug=${compile.debug}"/>
+        
+    	<taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
+    	    classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
+        
+        <!-- compile aspect .aj files -->
+        <fileset id="ajFileSet" dir="${aspects.dir}">
+            <include name="**/CurvatureAspect.aj"/>
+        </fileset>
+        
+        <pathconvert pathsep="${line.separator}" property="ajFiles" refid="ajFileSet"/>
+        <echo file="${aspects.dir}/aj-files_processing_debug.txt" >${ajFiles}</echo>
+
+        <iajc source="1.6" destDir="${src.out.dir}"  verbose="true" >
+            <argfiles>
+                <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
+            </argfiles>
+            <inpath>
+                <pathelement location="${src.out.dir}"/>
+            </inpath>
+            <classpath>
+                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+            </classpath>
+        </iajc>
+
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" 
+           haltonerror="true" haltonfailure="true">
+        	<jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            <classpath>
+                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
+                <pathelement location="${src.out.dir}"/>
+                <pathelement location="${basedir}/res/META-INF/"/>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+
+            <formatter type="plain" usefile="true"/>
+
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+
+            <jvmarg value="-XX:-UseSplitVerifier" />
+
+            <!-- avoiding classpath clashes with tests in the submodule by
+            limiting the tests run here -->
+            <batchtest fork="yes" todir="${tests.out.dir}">
+                <fileset dir="${tests.out.dir}">
+                    <include name="**/*CurvatureTest.class"/>
+                	<exclude name= "**/*$*.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+
+    </target>
+    
+    <target name="runTestWithAspects" depends="clean,debug,compile,compileTests" 
+        description="run an image processing test w/ the debug aspects" >
+        
+        <!-- note, may need to reweave with each run -->
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.spatial.indexing.zoomtable.URIPrefixSymbolTableTest
+        </fail>
+
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <echo message="COMPILE debug=${compile.debug}"/>
+        
+        <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
+            classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
+
+        <!-- compile aspect .aj files -->
+        <fileset id="ajFileSet" dir="${aspects.dir}">
+            <include name="**/CurvatureAspect.aj"/>
+        </fileset>
+        
+        <pathconvert pathsep="${line.separator}" property="ajFiles" refid="ajFileSet"/>
+        <echo file="${aspects.dir}/aj-files_processing_debug.txt">${ajFiles}</echo>
+
+    	<!--
+    	compile aspects alone to classes binary directory
+    	-->
+        <iajc source="1.6" destDir="${src.out.dir}"  
+            verbose="false" showWeaveInfo="false" debug="false">
+            <argfiles>
+                <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
+            </argfiles>
+        	<inpath>
+        		<pathelement location="${src.out.dir}"/>
+        	</inpath>
+            <classpath>
+                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+            </classpath>
+        </iajc>
+
+        <java classname="${test}" fork="true" failonerror="true">
+            <jvmarg value="-Xms512m"/>
+            <jvmarg value="-Xmx1024m"/>
+            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
+            <sysproperty key="java.util.logging.config.file" 
+                value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            	<pathelement location="${src.out.dir}"/>
+                <pathelement location="${basedir}/res/META-INF/"/>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+        </java>
+    </target>
+    
+    <target name="debugTestWithAspects" depends="clean,debug,compile,compileTests" 
+        description="compile and then use load-time weaving" >
+        
+        <!-- note, may need to reweave with each run -->
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.spatial.indexing.zoomtable.URIPrefixSymbolTableTest
+        </fail>
+
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <echo message="COMPILE debug=${compile.debug}"/>
+        
+        <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
+            classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
+
+        <!-- compile aspect .aj files -->
+        <fileset id="ajFileSet" dir="${aspects.dir}">
+            <include name="**/CurvatureAspect.aj"/>
+        </fileset>
+        
+        <pathconvert pathsep="${line.separator}" property="ajFiles" refid="ajFileSet"/>
+        <echo file="${aspects.dir}/aj-files_processing_debug.txt">${ajFiles}</echo>
+
+    	<!--
+    	compile aspects alone to classes binary directory
+    	-->
+        <iajc source="1.6" destDir="${src.out.dir}"  verbose="false" >
+            <argfiles>
+                <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
+            </argfiles>
+        	<inpath>
+        	    <pathelement location="${src.out.dir}"/>
+        	</inpath>
+            <classpath>
+                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+            </classpath>
+        </iajc>
+           
+        <java classname="${test}" fork="true" failonerror="true">
+            <jvmarg value="-Xms512m"/>
+            <jvmarg value="-Xmx1024m"/>
+            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            	<pathelement location="${src.out.dir}"/>
+                <pathelement location="${basedir}/res/META-INF/"/>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="dtraceImageProcessing" if="junit.present" 
+        depends="clean,prepare,debug,compile,JUnit,compileTests">
+
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+
+        <!-- needs superuser privileges unless ACL has been setup -->
+        
+        <java classname="algorithms.imageProcessing.Run_dtrace_Test" fork="true" failonerror="true">
+            <jvmarg value="-Xms512m"/>
+            <jvmarg value="-Xmx1024m"/>
+            <jvmarg value="-Xss1024k"/>
+            <jvmarg line="-Xdebug -Xprof -XX:+UnlockExperimentalVMOptions -XX:+ExtendedDTraceProbes"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${src.out.dir}"/>
+                <pathelement location="${basedir}/res/META-INF/"/>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+        </java>
+    </target>
+    
+    <!-- javadoc -->
+    <target name="javadoc" depends="compile"
+        description="Create Javadoc API documentation">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+        <delete dir="${doc.dir}/api"/>
+        <mkdir dir="${doc.dir}/api"/>
+        <javadoc
+            sourcepath="${src.dir}"
+            destdir="${doc.dir}/api"
+            package="true"
+            packagenames="algorithms.*" >
+            <classpath refid="compile.classpath"/>
+        </javadoc>
+    </target>
+
+    <target name="runTests" if="junit.present" depends="clean,compileTests,JUnit">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="running tests, output is in ${tests.out.dir}" />
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
+            <batchtest fork="yes" todir="${tests.out.dir}">
+                <fileset dir="${tests.out.dir}">
+                    <include name="**/*Test.class"/>
+               	    <exclude name= "**/*$*.class"/>
+               	    <exclude name= "**/*ForTests*.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+    
+    <target name="runEmma" >
+        <echo message="use ./run_jacoco_reports.sh"/>
+    </target>
+
+    <target name="runTest" if="junit.present" depends="clean,prepare,debug,compile,JUnit,compileTests">
+
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <echo message="${src.out.dir}/logging.properties"/>
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+            
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            
+            <jvmarg value="-XX:-UseSplitVerifier" />
+            
+            <formatter type="plain" usefile="true"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <test name="${test}" fork="yes" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+            
+        </junit>
+    </target>
+
+    <target name="debugTest" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <junit fork="yes" showoutput="true" filtertrace="off">
+            <!--<jvmarg value="-ea"/>-->
+
+            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+
+            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <!--
+                <pathelement location="${src.out.dir}"/>
+                <path refid="compile.classpath"/>
+                -->
+                <path refid="test.classpath"/>
+                <pathelement location="${src.out.dir}"/>
+            </classpath>
+            <test name="${test}" fork="yes" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+        </junit>
+    </target>
+
+    <!-- set junit.present property -->
+    <target name="JUnit">
+        <available property="junit.present"
+            classname="junit.framework.TestCase" >
+            <classpath refid="test.classpath"/>
+        </available>
+    </target>
+
+</project>

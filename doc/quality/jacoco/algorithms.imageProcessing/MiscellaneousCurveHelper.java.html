@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MiscellaneousCurveHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">MiscellaneousCurveHelper.java</span></div><h1>MiscellaneousCurveHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Stack;
+import java.util.logging.Logger;
+
+/**
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L13">public class MiscellaneousCurveHelper {</span>
+    
+<span class="fc" id="L15">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    /**
+     * determine whether the closed curve points are ordered in a clockwise
+     * manner.
+     * calculating the cross product between adjacent edges in sequence around
+     * the polygon to determine if there are fewer that are positive (CCW)
+     * than negative (CW).
+     * The given closedCurve cannot intersect itself or have holes in it.
+     * NOTE: the answer returns true if the points are ordered in CW manner, but
+     * if one needs the answer w.r.t. viewing an image which has y increasing
+     * downward, need the opposite of the return here.
+     * 
+     * @param closedCurve
+     * @return 
+     */
+    public boolean curveIsOrderedClockwise(PairIntArray closedCurve) {
+      
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (closedCurve.getN() &lt; 3) {</span>
+<span class="nc" id="L34">            return true;</span>
+        }
+        
+<span class="fc" id="L37">        int nNeg = 0;</span>
+<span class="fc" id="L38">        int n = closedCurve.getN();</span>
+        
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int i = 1; i &lt; (n - 1); i++) {</span>
+            
+            //(xi - xi-1) * (yi+1 - yi) - (yi - yi-1) * (xi+1 - xi)
+<span class="fc" id="L43">            long crossProduct = ((closedCurve.getX(i) - closedCurve.getX(i - 1))</span>
+                * (closedCurve.getY(i + 1) - closedCurve.getY(i)))
+                - ((closedCurve.getY(i) - closedCurve.getY(i - 1))*
+                (closedCurve.getX(i + 1) - closedCurve.getX(i)));
+            
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (crossProduct &lt; 0) {</span>
+<span class="fc" id="L49">                nNeg++;</span>
+            }
+        }
+        
+<span class="fc" id="L53">        Logger.getLogger(this.getClass().getName()).fine(</span>
+            &quot;nNeg=&quot; + nNeg + &quot; nTot=&quot; + n);
+        
+<span class="fc" id="L56">        Logger.getLogger(this.getClass().getName()).fine(</span>
+            String.format(&quot;(%d,%d)&quot;, closedCurve.getX(0), closedCurve.getY(0))
+            + String.format(&quot; (%d,%d)&quot;, closedCurve.getX(1), closedCurve.getY(1))
+            + String.format(&quot; (%d,%d)&quot;, closedCurve.getX(2), closedCurve.getY(2))
+            + &quot; ... &quot;
+            + String.format(&quot; (%d,%d)&quot;, closedCurve.getX(n - 2), closedCurve.getY(n-2))
+            + String.format(&quot; (%d,%d)&quot;, closedCurve.getX(n - 1), closedCurve.getY(n-1))
+        );
+        
+<span class="fc" id="L65">        int nPos = n - 2 - nNeg;</span>
+        
+        // note, may want to adjust this for image perspective where
+        // positive y is in downward direction.
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        return (nNeg &gt;= nPos);</span>
+     }
+     
+     /**
+     * this is a method to combine and prune adjacent lines, but
+     * it knows nothing about the overall shape. it chooses to keep the longer
+     * line and append any dangling members of the adjacent line to the longest.
+     * It's a time consuming method (add runtime complexity here).  It isn't
+     * used anymore because the results from the CannyEdgeFilter are now 
+     * 1 pixel thick edges already.
+     * @param edges
+     * @param imageWidth the image width in pixels
+     * @return 
+     */
+    public List&lt;PairIntArray&gt; pruneAndIncludeAdjacentCurves(
+        List&lt;PairIntArray&gt; edges, int imageWidth) {
+        
+        //sort to place edges with fewest points at top
+<span class="fc" id="L87">        Collections.sort(edges, new PairIntArrayComparator());</span>
+
+<span class="fc" id="L89">        Stack&lt;PairIntArrayWithColor&gt; stack = new Stack&lt;PairIntArrayWithColor&gt;();</span>
+<span class="fc" id="L90">        List&lt;PairIntArrayWithColor&gt; pruneThese = new ArrayList&lt;PairIntArrayWithColor&gt;();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+            // color: 0 = unvisited, 1 = processing, 2 = visited, 
+            //        3 = in an output edge, 4=pruned
+<span class="fc" id="L94">            PairIntArrayWithColor node = new PairIntArrayWithColor(edges.get(i));</span>
+<span class="fc" id="L95">            stack.add(node);</span>
+<span class="fc" id="L96">            pruneThese.add(node);</span>
+        }
+
+<span class="fc" id="L99">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+               
+<span class="fc" id="L101">        PairIntArrayWithColor tmp = stack.peek();</span>
+<span class="fc" id="L102">        tmp.setColor(2);</span>
+        
+<span class="fc" id="L104">        boolean foundOverlappingCurves = false;</span>
+<span class="fc" id="L105">        boolean reversedPoints = false;</span>
+            
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+            
+<span class="fc" id="L109">            PairIntArrayWithColor uNode = stack.pop();</span>
+            
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (uNode.getColor() == 4) {</span>
+<span class="fc" id="L112">                continue;</span>
+            }
+                        
+            // for each neighbor v of u
+<span class="fc bfc" id="L116" title="All 2 branches covered.">            for (int i = (pruneThese.size() - 1); i &gt; -1; i--) {</span>
+                
+<span class="fc" id="L118">                PairIntArrayWithColor vNode = pruneThese.get(i);</span>
+                
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                if (vNode.getColor() != 0) {</span>
+<span class="fc" id="L121">                    continue;</span>
+                }
+                
+                // because top item might be updated in processPair, 
+                //     place in v iter
+<span class="fc" id="L126">                int uX = uNode.getX(0);</span>
+<span class="fc" id="L127">                int uY = uNode.getY(0);</span>
+<span class="fc" id="L128">                int uIdx = (uY * imageWidth) + uX;</span>
+                                
+<span class="fc" id="L130">                int vX = vNode.getX(0);</span>
+<span class="fc" id="L131">                int vY = vNode.getY(0);</span>
+<span class="fc" id="L132">                int vIdx = (vY * imageWidth) + vX;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                if (uIdx == vIdx) {</span>
+<span class="fc" id="L134">                    continue;</span>
+                }
+                           
+<span class="fc" id="L137">                boolean areOverlapping = processOverlappingPair(uNode, vNode);</span>
+
+<span class="fc bfc" id="L139" title="All 2 branches covered.">                if (areOverlapping) {</span>
+                    
+<span class="fc" id="L141">                    foundOverlappingCurves = true;</span>
+                    
+                    // color: 0 = unvisited, 1 = processing, 2 = visited, 
+                    //        3 = in an output edge, 4=pruned
+<span class="fc" id="L145">                    vNode.setColor(4);</span>
+                                     
+<span class="fc" id="L147">                    pruneThese.remove(vNode);</span>
+                    
+                } // else insert into stack?                                                 
+            }
+            
+<span class="fc bfc" id="L152" title="All 4 branches covered.">            if (!foundOverlappingCurves &amp;&amp; !reversedPoints) {</span>
+<span class="fc" id="L153">                uNode.reverse();</span>
+<span class="fc" id="L154">                reversedPoints = true;</span>
+<span class="fc" id="L155">                log.fine(&quot;reversed edge to try again&quot;);</span>
+<span class="fc" id="L156">                stack.add(uNode);</span>
+<span class="fc" id="L157">                continue;</span>
+            }
+            
+            // color: 0 = unvisited, 1 = processing, 2 = visited, 
+            //        3 = in an output edge, 4=pruned
+<span class="fc" id="L162">            uNode.setColor(3);</span>
+            
+<span class="fc" id="L164">            output.add(uNode);</span>
+                        
+<span class="fc" id="L166">            foundOverlappingCurves = false;</span>
+<span class="fc" id="L167">            reversedPoints = false;</span>
+<span class="fc" id="L168">        }</span>
+        
+<span class="fc" id="L170">        return output;</span>
+    }
+    
+    /**
+     * given 2 edges, return true if they overlap. If they overlap
+     * curve0 is given the larger curve and any outlying points.
+     * @param curve0
+     * @param curve1
+     * @return 
+     */
+    protected boolean processOverlappingPair(PairIntArrayWithColor curve0, 
+        PairIntArrayWithColor curve1) {
+        
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        boolean longerIsNode0 = (curve0.getN() &gt;= curve1.getN());</span>
+        
+        PairIntArray longer, shorter;
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (longerIsNode0) {</span>
+<span class="fc" id="L187">            longer = curve0;</span>
+<span class="fc" id="L188">            shorter = curve1;</span>
+        } else {
+<span class="nc" id="L190">            longer = curve1;</span>
+<span class="nc" id="L191">            shorter = curve0;</span>
+        }
+        
+        // used to return the offset w.r.t. the longest edge.
+<span class="fc" id="L195">        int[] crossCorrelationOffset = new int[1];</span>
+          
+        /*
+         returns whether the curve 'check' is adjacent to the curve 'node0',
+         and if so, returns the offset in the frame of the larger curve.
+         the offset represents where the first point in the shorter curve
+         matches in the larger curve.                
+         */
+<span class="fc" id="L203">        boolean isAdjacent = crossCorrelation(longer, shorter,</span>
+            crossCorrelationOffset);
+
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (isAdjacent) {</span>
+
+            /*
+                -- find any points in check outside of the overlap
+                   and add those to the larger node.
+            */
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">            if (crossCorrelationOffset[0] &lt; 0) {</span>
+                // add from the beginning of shorter if any are unmatched
+<span class="nc" id="L214">                int nInsert = -1*crossCorrelationOffset[0];</span>
+<span class="nc" id="L215">                longer.insertSpaceAtTopOfArrays(nInsert);</span>
+
+<span class="nc bnc" id="L217" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nInsert; ii++) {</span>
+<span class="nc" id="L218">                    longer.set(ii, shorter.getX(ii), shorter.getY(ii));</span>
+                }
+<span class="nc" id="L220">            } else {</span>
+                //add from end of shorter if any are unmatched
+<span class="fc" id="L222">                int n0 = longer.getN() - crossCorrelationOffset[0];</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                if (n0 &lt; shorter.getN()) {</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">                    for (int ii = n0; ii &lt; shorter.getN(); ii++) {</span>
+<span class="fc" id="L225">                        longer.add(shorter.getX(ii), shorter.getY(ii));</span>
+                    }
+                }
+            }
+                        
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">            if (!longerIsNode0) {</span>
+<span class="nc" id="L231">                curve0.swapContents(curve1);</span>
+            }
+            
+<span class="fc" id="L234">            return true;</span>
+        }
+        
+<span class="fc" id="L237">        return false;                   </span>
+    }
+
+    /**
+     * return true if cross-correlation shows that the 2 curves are adjacent
+     * to one another.  Note that the method needs the points within the
+     * curves to be ordered in a similar manner and for the endpoints of the
+     * curves to be accurate.  If a point in the middle of the curve is 
+     * the first or last point, it may prevent comparison of it with another
+     * edge's endpoints.
+     * 
+     * @param curve0
+     * @param curve1
+     * @param crossCorrelationOffset offset of where the shorter curve starts
+     *  with respect to the longer.  For example, an offset of -2 means that
+     * the first 2 points in the shorter curve are outside of the longer curve,
+     * but the next point in the longer curve is adjacent to the shorter.
+     * Another example: if offset is +2, the first pixel in the shorter curve
+     * is adjacent to the third pixel in the longer curve.  NOTE: the offset
+     * is only useful if this method returns true;
+     * @return 
+     */
+    protected boolean crossCorrelation(PairIntArray curve0, PairIntArray curve1, 
+        int[] crossCorrelationOffset) {
+        
+<span class="fc" id="L262">        crossCorrelationOffset[0] = Integer.MAX_VALUE;</span>
+        
+        //TODO: look at string matching algorithms to explore improvements here
+                
+        PairIntArray shorter, longer;
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        if (curve0.getN() &lt;= curve1.getN()) {</span>
+<span class="fc" id="L268">            shorter = curve0;</span>
+<span class="fc" id="L269">            longer = curve1;</span>
+        } else {
+<span class="fc" id="L271">            shorter = curve1;</span>
+<span class="fc" id="L272">            longer = curve0;</span>
+        }
+
+        /*
+        len0 = 5; len1 = 11;
+         #####
+             +++++++++++
+          #####
+             +++++++++++
+           #####
+             +++++++++++
+            #####
+             +++++++++++
+             #####
+             +++++++++++
+        
+             #####
+             +++++++++++  
+                
+                       #####
+             +++++++++++
+        
+        ccs = sqrt(sumsqdiff)/nOverlapping if nOverlapping &gt; 0.
+        
+        if (css &lt;= 1 pix * nOverlapping) {
+            store as a possible adjacent curve
+        }
+        compare possible adjacent curves for the smallest css, and store that 
+        offset in crossCorrelationOffset and return true, else false        
+        */
+                
+<span class="fc" id="L303">        double cSSMin = Double.MAX_VALUE;</span>
+<span class="fc" id="L304">        int cSSMinOffset = Integer.MAX_VALUE;</span>
+<span class="fc" id="L305">        int cSSMinNOverlapping = 0;</span>
+        
+<span class="fc" id="L307">        double sqrtTwo = Math.sqrt(2);</span>
+        
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        for (int i = 0; i &lt; (longer.getN() + shorter.getN() - 1); i++) {</span>
+            //siIdx is first index in shorter for comparison
+            //sfIdx is last index in shorter for comparison
+            //liIdx is first index of longer for comparison
+            //lfIdx is last index of longer for comparison
+            int siIdx, sfIdx, liIdx, lfIdx, offset;
+<span class="fc bfc" id="L315" title="All 2 branches covered.">            if (i &lt; shorter.getN()) {</span>
+                /*
+                 #####
+                     +++++++++++ i=0
+                  #####
+                     +++++++++++
+                   #####
+                     +++++++++++
+                    #####
+                     +++++++++++
+                     #####
+                     +++++++++++ i=4
+                */
+                //sfIdx is inclusive endpoint
+<span class="fc" id="L329">                sfIdx = shorter.getN() - 1;</span>
+<span class="fc" id="L330">                siIdx = sfIdx - i;</span>
+<span class="fc" id="L331">                liIdx = 0;</span>
+                //lfIdx is inclusive endpoint
+<span class="fc" id="L333">                lfIdx = sfIdx - siIdx;</span>
+<span class="fc" id="L334">                offset = i - sfIdx;</span>
+                
+<span class="fc bfc" id="L336" title="All 2 branches covered.">            } else if (i &lt; longer.getN() ) {</span>
+                
+                /*
+                      #####
+                     +++++++++++  i=5
+                
+                       #####
+                     +++++++++++
+                
+                        #####
+                     +++++++++++
+                    
+                         #####   
+                     +++++++++++
+                
+                          #####
+                     +++++++++++
+                
+                           #####
+                     +++++++++++ i = 10
+                */
+                //sfIdx is inclusive endpoint
+<span class="fc" id="L358">                sfIdx = shorter.getN() - 1;</span>
+<span class="fc" id="L359">                siIdx = 0;</span>
+<span class="fc" id="L360">                liIdx = i - shorter.getN() + 1;</span>
+                //lfIdx is inclusive endpoint
+<span class="fc" id="L362">                lfIdx = liIdx + shorter.getN() - 1;</span>
+<span class="fc" id="L363">                offset = i - sfIdx;</span>
+                
+            } else {
+                /*
+                            #####
+                     +++++++++++ i = 12
+                     01234567890
+                             #####
+                     +++++++++++ 
+                     
+                              #####
+                     +++++++++++
+                
+                               #####
+                     +++++++++++ i=15
+                     01234567890
+                */
+<span class="fc" id="L380">                liIdx = i - shorter.getN() + 1;</span>
+                //sfIdx is inclusive endpoint
+<span class="fc" id="L382">                sfIdx = longer.getN() - liIdx - 1;</span>
+<span class="fc" id="L383">                siIdx = 0;</span>
+                //lfIdx is inclusive endpoint
+<span class="fc" id="L385">                lfIdx = liIdx + (sfIdx - siIdx);</span>
+<span class="fc" id="L386">                offset = liIdx;</span>
+                
+            }
+            
+<span class="fc" id="L390">            int nOverLapping = (sfIdx - siIdx) + 1;</span>
+            
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">            if ((sfIdx - siIdx) != (lfIdx - liIdx)) {</span>
+<span class="nc" id="L393">                throw new IllegalStateException(</span>
+                    &quot;sample ranges are not correct&quot;);
+            }
+            
+<span class="fc" id="L397">            double sumSq = 0;</span>
+           
+<span class="fc" id="L399">            int s = siIdx;</span>
+<span class="fc" id="L400">            int l = liIdx;</span>
+<span class="fc bfc" id="L401" title="All 2 branches covered.">            while (s &lt;= sfIdx) {</span>
+<span class="fc" id="L402">                int xs = shorter.getX(s);</span>
+<span class="fc" id="L403">                int xl = longer.getX(l);</span>
+<span class="fc" id="L404">                int dx = xs - xl;</span>
+<span class="fc" id="L405">                int ys = shorter.getY(s);</span>
+<span class="fc" id="L406">                int yl = longer.getY(l);</span>
+<span class="fc" id="L407">                int dy = ys - yl;</span>
+<span class="fc" id="L408">                sumSq += ((dx*dx) + (dy*dy));</span>
+<span class="fc" id="L409">                s++;</span>
+<span class="fc" id="L410">                l++;</span>
+<span class="fc" id="L411">            }</span>
+           
+<span class="fc" id="L413">            double tmp = Math.sqrt(sumSq/nOverLapping);</span>
+            
+            // assuming adjacent pixel has distance of sqrt(2) at the most
+<span class="fc bfc" id="L416" title="All 2 branches covered.">            if (tmp &lt;= sqrtTwo) {</span>
+                                
+<span class="pc bpc" id="L418" title="3 of 6 branches missed.">                if ((tmp &lt; cSSMin) ||</span>
+                (tmp == cSSMin &amp;&amp; (nOverLapping &gt; cSSMinNOverlapping))
+                ) {
+                    
+<span class="fc" id="L422">                    cSSMin = tmp;</span>
+                                        
+<span class="fc" id="L424">                    cSSMinOffset = offset;</span>
+                    
+<span class="fc" id="L426">                    cSSMinNOverlapping = nOverLapping;</span>
+                }
+            }          
+        }
+             
+<span class="fc bfc" id="L431" title="All 2 branches covered.">        if (cSSMin &lt; Double.MAX_VALUE) {</span>
+
+<span class="fc" id="L433">            crossCorrelationOffset[0] = cSSMinOffset;</span>
+
+<span class="fc" id="L435">            return true;</span>
+        }
+        
+<span class="fc" id="L438">        return false;</span>
+    }
+
+    /**
+     * find the index where x is minimum value of closedCurve.  Note that when
+     * there are more than one points with the same minimum x value, the point
+     * with a smaller y is chosen.
+     * 
+     * @param closedCurve
+     * @return 
+     */
+    public int findMinIdx(PairIntArray closedCurve) {
+        
+<span class="fc" id="L451">        int xMin = Integer.MAX_VALUE;</span>
+<span class="fc" id="L452">        int xMax = Integer.MIN_VALUE;</span>
+        
+<span class="fc" id="L454">        int xMinIdx = -1;</span>
+<span class="fc" id="L455">        int xMaxIdx = -1;</span>
+        
+        // find xMin.  when xMin==x, use yMin too.  similar pattern for maxes
+<span class="fc bfc" id="L458" title="All 2 branches covered.">        for (int i = 0; i &lt; closedCurve.getN(); i++) {</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">            if (closedCurve.getX(i) &lt; xMin) {</span>
+<span class="fc" id="L460">                xMin = closedCurve.getX(i);</span>
+<span class="fc" id="L461">                xMinIdx = i;</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">            } else if (closedCurve.getX(i) == xMin) {</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">                if (closedCurve.getY(i) &lt; closedCurve.getY(xMinIdx)) {</span>
+<span class="fc" id="L464">                    xMin = closedCurve.getX(i);</span>
+<span class="fc" id="L465">                    xMinIdx = i;</span>
+                }
+            }
+<span class="fc bfc" id="L468" title="All 2 branches covered.">            if (closedCurve.getX(i) &gt; xMax) {</span>
+<span class="fc" id="L469">                xMax = closedCurve.getX(i);</span>
+<span class="fc" id="L470">                xMaxIdx = i;</span>
+<span class="fc bfc" id="L471" title="All 2 branches covered.">            } else if (closedCurve.getX(i) == xMax) {</span>
+<span class="pc bpc" id="L472" title="1 of 2 branches missed.">                if (closedCurve.getY(i) &gt; closedCurve.getY(xMaxIdx)) {</span>
+<span class="nc" id="L473">                    xMax = closedCurve.getX(i);</span>
+<span class="nc" id="L474">                    xMaxIdx = i;</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L479">        return xMinIdx;</span>
+    }
+
+    public double[] calculateXYCentroids(PairIntArray xy, float[] weights) {
+        
+<span class="nc" id="L484">        double xc = 0;</span>
+<span class="nc" id="L485">        double yc = 0;</span>
+        
+<span class="nc bnc" id="L487" title="All 2 branches missed.">        for (int i = 0; i &lt; xy.getN(); i++) {</span>
+<span class="nc" id="L488">            double x1 = xy.getX(i);</span>
+<span class="nc" id="L489">            xc += (weights[i] * x1);</span>
+            
+<span class="nc" id="L491">            double y1 = xy.getY(i);</span>
+<span class="nc" id="L492">            yc += (weights[i] * y1);</span>
+        }
+        
+<span class="nc" id="L495">        return new double[]{xc, yc};</span>
+    }
+    
+    public double[] calculateXYCentroids(PairIntArray xy) {
+        
+<span class="fc" id="L500">        double xc = 0;</span>
+<span class="fc" id="L501">        double yc = 0;</span>
+        
+<span class="fc bfc" id="L503" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.getN(); i++) {</span>
+            
+<span class="fc" id="L505">            xc += xy.getX(i);</span>
+            
+<span class="fc" id="L507">            yc += xy.getY(i);</span>
+        }
+        
+<span class="fc" id="L510">        xc /= (double)xy.getN();</span>
+        
+<span class="fc" id="L512">        yc /= (double)xy.getN();</span>
+        
+<span class="fc" id="L514">        return new double[]{xc, yc};</span>
+    }
+    
+    public double[] calculateXYCentroids(SearchableCurve xy) {
+        
+<span class="fc" id="L519">        double xc = 0;</span>
+<span class="fc" id="L520">        double yc = 0;</span>
+        
+<span class="fc bfc" id="L522" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.getN(); i++) {</span>
+            
+<span class="fc" id="L524">            xc += xy.getX()[i];</span>
+            
+<span class="fc" id="L526">            yc += xy.getY()[i];</span>
+        }
+        
+<span class="fc" id="L529">        xc /= (double)xy.getN();</span>
+        
+<span class="fc" id="L531">        yc /= (double)xy.getN();</span>
+        
+<span class="fc" id="L533">        return new double[]{xc, yc};</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

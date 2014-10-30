@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TransformationCalculator.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">TransformationCalculator.java</span></div><h1>TransformationCalculator.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L9">public class TransformationCalculator {</span>
+    
+<span class="fc" id="L11">    protected transient Logger log = Logger.getLogger(</span>
+        TransformationCalculator.class.getName());
+    
+<span class="fc" id="L14">    private boolean debug = false;</span>
+    
+    public void useDebugMode() {
+<span class="nc" id="L17">        debug = true;</span>
+<span class="nc" id="L18">    }</span>
+    
+    /**
+     * coordinate transformations from image 1 to image 2 are calculated from
+     * matching lists of x, y coordinates.
+     *
+     * positive Y is down 
+       positive X is right
+       positive theta starts from Y=0, X&gt;=0 and proceeds CW
+                270
+                 |     
+                 |
+          180--------- 0   +X
+                 |   
+                 |   
+                 90
+                 +Y
+     * &lt;/pre&gt;
+     * @param matchedXY1
+     * @param matchedXY2
+     * @return 
+     */
+    public TransformationParameters calulateEuclidean(
+        PairIntArray matchedXY1, PairIntArray matchedXY2) {
+        
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (matchedXY1 == null) {</span>
+<span class="nc" id="L44">            throw new IllegalArgumentException(&quot;matchedXY1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (matchedXY2 == null) {</span>
+<span class="nc" id="L47">            throw new IllegalArgumentException(&quot;matchedXY2 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (matchedXY1.getN() != matchedXY2.getN()) {</span>
+<span class="nc" id="L50">            throw new IllegalArgumentException(</span>
+                &quot;matchedXY1 and matchedXY2 must have same number of points&quot;);
+        }
+        
+<span class="nc" id="L54">        int n = matchedXY1.getN();</span>
+        
+<span class="nc" id="L56">        float[] weights1 = new float[n];</span>
+<span class="nc" id="L57">        float[] weights2 = new float[n];</span>
+        
+<span class="nc" id="L59">        float invN = 1.f/(float)n;</span>
+        
+        // make even weights
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L63">            weights1[i] = invN;</span>
+<span class="nc" id="L64">            weights2[i] = invN;</span>
+        }
+        
+<span class="nc" id="L67">        return calulateEuclidean(matchedXY1, weights1, matchedXY2, weights2);</span>
+    }
+    
+    /**
+     * coordinate transformations from image 1 to image 2 are calculated from
+     * matching lists of x, y coordinates.
+     *
+     * positive Y is down 
+       positive X is right
+       positive theta starts from Y=0, X&gt;=0 and proceeds CW
+                270
+                 |     
+                 |
+          180--------- 0   +X
+                 |   
+                 |   
+                 90
+                 +Y
+     * &lt;/pre&gt;
+     * @param matchedXY1
+     * @param weights1
+     * @param matchedXY2
+     * @param weights2
+     * @return 
+     */
+    public TransformationParameters calulateEuclidean(
+        PairIntArray matchedXY1, float[] weights1,
+        PairIntArray matchedXY2, float[] weights2) {
+        
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (matchedXY1 == null) {</span>
+<span class="nc" id="L97">            throw new IllegalArgumentException(&quot;matchedXY1 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">        if (matchedXY2 == null) {</span>
+<span class="nc" id="L100">            throw new IllegalArgumentException(&quot;matchedXY2 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (matchedXY1.getN() != matchedXY2.getN()) {</span>
+<span class="nc" id="L103">            throw new IllegalArgumentException(</span>
+                &quot;matchedXY1 and matchedXY2 must have same number of points&quot;);
+        }
+        
+<span class="fc" id="L107">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        
+<span class="fc" id="L109">        double[] centroidsX1 = curveHelper.calculateXYCentroids(matchedXY1);</span>
+<span class="fc" id="L110">        double centroidX1 = centroidsX1[0];</span>
+<span class="fc" id="L111">        double centroidY1 = centroidsX1[1];</span>
+<span class="fc" id="L112">        double[] centroidsX2 = curveHelper.calculateXYCentroids(matchedXY2);</span>
+<span class="fc" id="L113">        double centroidX2 = centroidsX2[0];</span>
+<span class="fc" id="L114">        double centroidY2 = centroidsX2[1];</span>
+        
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L117">            log.info(&quot;centroidX1=&quot; + centroidX1 + &quot; centroidY1=&quot; + centroidY1</span>
+                + &quot;\ncentroidX2=&quot; + centroidX2 + &quot; centroidY2=&quot; + centroidY2
+            );
+        }
+        
+        /*
+        SCALE:
+                      (sum set 1:((x_1 - centroid_x)^2 + (x_2 - centroid_x)^2 )
+        scale_x = sqrt(-------------------------------------------------------)
+                      (sum set 2:((x_1 - centroid_x)^2 + (x_2 - centroid_x)^2 )
+        */     
+<span class="fc" id="L128">        double sumDiffX1 = 0;</span>
+<span class="fc" id="L129">        double sumDiffY1 = 0;</span>
+<span class="fc" id="L130">        double sumDiffX2 = 0;</span>
+<span class="fc" id="L131">        double sumDiffY2 = 0;</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
+            
+<span class="fc" id="L134">            float w1 = weights1[i];</span>
+<span class="fc" id="L135">            float w2 = weights2[i];</span>
+            
+<span class="fc" id="L137">            double x1 = matchedXY1.getX(i) - centroidX1;</span>
+<span class="fc" id="L138">            double y1 = matchedXY1.getY(i) - centroidY1;</span>
+            
+<span class="fc" id="L140">            double x2 = matchedXY2.getX(i) - centroidX2;</span>
+<span class="fc" id="L141">            double y2 = matchedXY2.getY(i) - centroidY2;</span>
+            
+<span class="fc" id="L143">            sumDiffX1 += Math.pow(x1*w1, 2);</span>
+<span class="fc" id="L144">            sumDiffY1 += Math.pow(y1*w1, 2);</span>
+            
+<span class="fc" id="L146">            sumDiffX2 += Math.pow(x2*w2, 2);</span>
+<span class="fc" id="L147">            sumDiffY2 += Math.pow(y2*w2, 2);</span>
+        }
+                
+<span class="fc" id="L150">        float scaleX = (float) Math.sqrt(sumDiffX2/sumDiffX1);</span>
+<span class="fc" id="L151">        float scaleY = (float) Math.sqrt(sumDiffY2/sumDiffY1);</span>
+<span class="fc" id="L152">        float scale = (scaleX + scaleY)/2.f;</span>
+      
+<span class="fc" id="L154">        double theta2Minus1WeightedSum = 0;</span>
+        
+        /*
+        positive Y is down 
+        positive X is right
+        positive theta starts from Y=0, X&gt;=0 and proceeds CW
+                270
+           Q4    |   Q1
+                 |
+          180--------- 0   +X
+                 |   
+           Q3    |   Q2
+                 90
+                 +Y
+        */
+        
+<span class="fc" id="L170">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L173">            sb.append(&quot;\n  x1    y1       x2    y2   len1  len2 theta1 theta2 (x,y) (x,y) \n&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedXY1.getN(); i++) {</span>
+            
+<span class="fc" id="L178">            float w1 = weights1[i];</span>
+<span class="fc" id="L179">            float w2 = weights2[i];</span>
+            
+<span class="fc" id="L181">            double x1 = scale*(matchedXY1.getX(i) - centroidX1);</span>
+<span class="fc" id="L182">            double y1 = scale*(matchedXY1.getY(i) - centroidY1);</span>
+<span class="fc" id="L183">            double len1 = Math.sqrt((x1*x1) + (y1*y1));</span>
+            
+<span class="fc" id="L185">            double x2 = matchedXY2.getX(i) - centroidX2;</span>
+<span class="fc" id="L186">            double y2 = matchedXY2.getY(i) - centroidY2;            </span>
+<span class="fc" id="L187">            double len2 = Math.sqrt((x2*x2) + (y2*y2));</span>
+            
+<span class="fc" id="L189">            double aDivH1 = x1/len1;</span>
+<span class="fc" id="L190">            double theta1 = Math.acos(aDivH1) * 180./Math.PI;</span>
+            
+<span class="fc" id="L192">            double aDivH2 = x2/len2;</span>
+<span class="fc" id="L193">            double theta2 = Math.acos(aDivH2) * 180./Math.PI;</span>
+          
+<span class="fc bfc" id="L195" title="All 4 branches covered.">            if ((y1 &lt; 0) &amp;&amp; (x1 &lt; 0)) {</span>
+<span class="fc" id="L196">                theta1 = 360 - theta1;</span>
+<span class="pc bpc" id="L197" title="1 of 4 branches missed.">            } else if ((y1 &lt; 0) &amp;&amp; (x1 &gt;= 0)) {</span>
+<span class="fc" id="L198">                theta1 = 360 - theta1;</span>
+            } 
+<span class="fc bfc" id="L200" title="All 4 branches covered.">            if ((y2 &lt; 0) &amp;&amp; (x2 &lt; 0)) {</span>
+<span class="fc" id="L201">                theta2 = 360 - theta2;</span>
+<span class="pc bpc" id="L202" title="1 of 4 branches missed.">            } else if ((y2 &lt; 0) &amp;&amp; (x2 &gt;= 0)) {</span>
+<span class="fc" id="L203">                theta2 = 360 - theta2;</span>
+            }
+            
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">            if (debug) {</span>
+                
+<span class="nc" id="L208">                sb.append(String.format(</span>
+                    &quot;%5.1f %5.1f    %5.1f %5.1f %5.1f %5.1f %5.0f %5.0f (%5d,%5d) (%5d,%5d)\n&quot;, 
+                    x1, y1, x2, y2, len1, len2, theta1, theta2, 
+                    matchedXY1.getX(i), matchedXY1.getY(i), 
+                    matchedXY2.getX(i), matchedXY2.getY(i)));
+            }
+
+            double thetaDiff;
+<span class="fc bfc" id="L216" title="All 2 branches covered.">            if (theta2 &gt;= theta1) {</span>
+<span class="fc" id="L217">                thetaDiff = theta2 - theta1;</span>
+            } else {
+<span class="fc bfc" id="L219" title="All 4 branches covered.">                if ((theta2 &lt; 90) &amp;&amp; (theta1 &gt; 270)) {</span>
+<span class="fc" id="L220">                    thetaDiff = (360 - theta1) + theta2;</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">                } else if ((theta1 - theta2) &lt; 10) {</span>
+<span class="nc" id="L222">                    thetaDiff = theta1 - theta2;</span>
+                } else {
+<span class="fc" id="L224">                    thetaDiff = (360 - theta1) + theta2;</span>
+                }
+            }
+            
+<span class="fc" id="L228">            theta2Minus1WeightedSum += Math.abs((w1+w2)*thetaDiff);</span>
+        }
+        
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L232">            log.info(sb.toString());</span>
+        }
+        
+<span class="fc" id="L235">        theta2Minus1WeightedSum /= 2;</span>
+        
+<span class="fc" id="L237">        double rotationInDegrees = -1*theta2Minus1WeightedSum;</span>
+        
+         /*
+        solve for an x translation and y translation which can be applied
+        to a data set from image 1 after scaled and rotated.
+        
+        xt = centroidX2 + 
+             (x-centroidX1)*scale*cos(theta) + (y-centroidY1)*scale*sin(theta)
+           = centroidX2 
+             + x*scale*cos(theta) + y*scale*sin(theta)
+             - centroidX1*scale*cos(theta) - centroidY1*scale*sin(theta)
+        
+        So, one can define the portion w/o x and y as constant for the image:
+           translationX = centroidX2 - centroidX1*scale*cos(theta) 
+               - centroidY1*scale*sin(theta)
+        
+        yt = centroidY2 + 
+             -1*(x-centroidX1)*scale*sin(theta) + (y-centroidY1)*scale*cos(theta)
+           = centroidY2 + 
+             - x*scale*sin(theta) + y*scale*cos(theta)
+             + centroidX1*scale*sin(theta) - centroidY1*scale*cos(theta)
+        
+        So, one can define
+           translationY = centroidY2 - centroidX1*scale*sin(theta) 
+               - centroidY1*scale*cos(theta)
+        */
+<span class="fc" id="L263">        float mc =  (float) Math.cos(rotationInDegrees*Math.PI/180.);</span>
+<span class="fc" id="L264">        float ms =  (float) Math.sin(rotationInDegrees*Math.PI/180.);</span>
+        
+<span class="fc" id="L266">        log.fine(&quot;mc=&quot; + mc + &quot; ms=&quot; + ms);</span>
+        
+<span class="fc" id="L268">        float translationX = (float)(centroidX2 </span>
+             - (centroidX1*scale*mc) - (centroidY1*scale*ms));
+<span class="fc" id="L270">        float translationY = (float)(centroidY2 </span>
+            + (centroidX1*scale*ms) - (centroidY1*scale*mc));
+   
+<span class="fc" id="L273">        log.fine(&quot;(scale*mc + scale*ms)=&quot; + (scale*mc + scale*ms)</span>
+            + &quot; (centroidX1*(scale*mc + scale*ms))=&quot; 
+            + (centroidX1*(scale*mc + scale*ms)));
+<span class="fc" id="L276">        log.fine(&quot;(scale*ms - scale*mc)=&quot; + (scale*ms - scale*mc)</span>
+            + &quot; (centroidX1*(scale*ms - scale*mc))=&quot; 
+            + (centroidX1*(scale*ms - scale*mc)));
+        
+<span class="fc" id="L280">        log.fine(&quot;\nscaleX=&quot; + scaleX + &quot; scaleY=&quot; + scaleY + &quot; (&quot; + scale + &quot;)&quot;</span>
+            + &quot;\nrotation=&quot; + rotationInDegrees
+            + &quot;\ntranslationX=&quot; + translationX + &quot; translationY=&quot; + translationY 
+            );
+    
+<span class="fc" id="L285">        TransformationParameters params = new TransformationParameters();</span>
+<span class="fc" id="L286">        params.setScale(scale);</span>
+<span class="fc" id="L287">        params.setTranslationX(translationX);</span>
+<span class="fc" id="L288">        params.setTranslationY(translationY);</span>
+<span class="fc" id="L289">        params.setRotationInDegrees((float)rotationInDegrees);</span>
+        
+<span class="fc" id="L291">        return params;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

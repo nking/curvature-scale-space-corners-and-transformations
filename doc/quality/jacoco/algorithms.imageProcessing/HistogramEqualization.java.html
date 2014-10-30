@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HistogramEqualization.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">HistogramEqualization.java</span></div><h1>HistogramEqualization.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.logging.Logger;
+
+/**
+  calculate the transformation function for an image to perform histogram
+  equalization on it, that is change the range of intensities to fill the
+  possible range.
+  
+ * @author nichole
+ */
+public class HistogramEqualization {
+    
+<span class="fc" id="L14">    protected GreyscaleImage img = null;</span>
+    
+<span class="fc" id="L16">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="fc" id="L18">    private final long[] aHist = new long[256];</span>
+    
+<span class="fc" id="L20">    private final long[] aHistC = new long[256];</span>
+    
+<span class="fc" id="L22">    protected long aHistCMin = Long.MAX_VALUE;</span>
+    
+    /**
+     * operate on the image to perform histogram normalization of it.
+     * 
+     * @param input 
+     */
+<span class="fc" id="L29">    public HistogramEqualization(GreyscaleImage input) {</span>
+        
+<span class="fc" id="L31">        this.img = input;</span>
+<span class="fc" id="L32">    }</span>
+    
+    /**
+     * apply the transformation function to the image to stretch the intensities
+     * to use the full range for the color band 0 to 255.  Note that a slight 
+     * difference
+     * has been applied with standard equation.  The standard scales all
+     * values &gt; 0 to between 0 and 255.  This scales all values &gt; 0 to
+     * between 1 and 255 so a count remains significant and a 0 remains a zero.
+     */
+    public void applyFilter() {
+        
+<span class="fc" id="L44">        calculateHistogram();</span>
+        
+<span class="fc" id="L46">        calculateCumulativeHistogram();</span>
+        
+<span class="fc" id="L48">        applyTransformationFunction();</span>
+<span class="fc" id="L49">    }</span>
+   
+    protected void calculateHistogram() {
+        
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); i++) {</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); j++) {</span>
+<span class="fc" id="L55">                int a = img.getValue(i, j);</span>
+<span class="fc" id="L56">                aHist[a]++;</span>
+            }
+        }
+<span class="fc" id="L59">    }</span>
+    
+    protected void calculateCumulativeHistogram() {
+        
+<span class="fc" id="L63">        aHistC[0] = aHist[0];</span>
+        
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        for (int i = 1; i &lt; aHist.length; i++) {</span>
+<span class="fc" id="L66">            aHistC[i] = aHistC[i - 1] + aHist[i];</span>
+            
+<span class="fc bfc" id="L68" title="All 4 branches covered.">            if ((aHistC[i] &gt; 0) &amp;&amp; (aHistC[i] &lt; aHistCMin)) {</span>
+<span class="fc" id="L69">                aHistCMin = aHistC[i];</span>
+            }
+        }
+        
+<span class="fc" id="L73">    }</span>
+    
+    /**
+     * apply the transformation function.  Note that a slight difference
+     * has been applied with standard equation.  The standard scales all
+     * values &gt; 0 to between 0 and 255.  This scales all values &gt; 0 to
+     * between 1 and 255 so a count remains significant and a 0 remains a zero.
+     */
+    protected void applyTransformationFunction() {
+        /*
+                      ( cdf(v) - cdf_min            )
+          h(v) = round( ----------------- * (L - 1) )
+                      ( (M * N) - cdf_min           )
+        */      
+        
+        // normalize values to be between 0 and 255... seems like it should
+        // be 1 to 255 so a pixel w/ signal retains a signal.
+<span class="fc" id="L90">        long sz = img.getWidth() * img.getHeight();</span>
+        
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); i++) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); j++) {</span>
+                
+<span class="fc" id="L95">                int a = img.getValue(i, j);</span>
+                
+<span class="fc" id="L97">                long aC = aHistC[a];</span>
+                
+                /*
+                the implied max should be explicit...sz pixels has something 
+                to do with that
+                
+                sz - min = (x - min)*255
+                
+                sz - min = (x - min)*(255 - 1)
+                
+                */
+                
+<span class="fc bfc" id="L109" title="All 2 branches covered.">                int aT = (a == 0) ? 0 : </span>
+                    Math.round((aC - aHistCMin)*254.f/(sz - aHistCMin)) + 1;
+               
+<span class="fc" id="L112">                img.setValue(i, j, aT);</span>
+            }
+        }        
+<span class="fc" id="L115">    }</span>
+    
+    /**
+     * return the values for the histogram
+     * @return the rHist
+     */
+    public long[] getHist() {
+<span class="fc" id="L122">        return aHist;</span>
+    }
+
+    /**
+     * return the values for the cumulative histogram
+     * @return the rHistC
+     */
+    public long[] getHistC() {
+<span class="fc" id="L130">        return aHistC;</span>
+    }
+
+    public long getHistCMin() {
+<span class="fc" id="L134">        return aHistCMin;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PairIntArray.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">PairIntArray.java</span></div><h1>PairIntArray.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import java.util.Arrays;
+
+/**
+ * class to hold x and y arrays of points
+ * 
+ * @author nichole
+ */
+public class PairIntArray {
+    
+<span class="fc" id="L12">    protected int[] x = null;</span>
+    
+<span class="fc" id="L14">    protected int[] y = null;</span>
+    
+<span class="fc" id="L16">    protected int n = 0;</span>
+    
+<span class="fc" id="L18">    public PairIntArray(int capacity) {</span>
+        
+<span class="fc" id="L20">        x = new int[capacity];</span>
+        
+<span class="fc" id="L22">        y = new int[capacity];</span>
+<span class="fc" id="L23">    }</span>
+    
+<span class="fc" id="L25">    public PairIntArray() {</span>
+        
+<span class="fc" id="L27">        x = new int[10];</span>
+        
+<span class="fc" id="L29">        y = new int[10];</span>
+<span class="fc" id="L30">    }</span>
+    
+    public int getN() {
+<span class="fc" id="L33">        return n;</span>
+    }
+    
+    public void add(int xPoint, int yPoint) {
+        
+<span class="fc" id="L38">        expandIfNeeded(n + 1);</span>
+        
+<span class="fc" id="L40">        x[n] = xPoint;</span>
+<span class="fc" id="L41">        y[n] = yPoint;</span>
+        
+<span class="fc" id="L43">        n++;</span>
+<span class="fc" id="L44">    }</span>
+    
+    /**
+     * remove indexes from idxLo to idxHi, inclusive
+     * @param idxLo
+     * @param idxHi 
+     */
+    public void removeRange(int idxLo, int idxHi) {
+        
+<span class="pc bpc" id="L53" title="2 of 4 branches missed.">        if ((idxLo &lt; 0) || (idxLo &gt; (n - 1))) {</span>
+<span class="nc" id="L54">            throw new IllegalArgumentException(&quot;idxLo is out of range&quot;);</span>
+        }
+<span class="pc bpc" id="L56" title="2 of 4 branches missed.">        if ((idxHi &lt; 0) || (idxHi &gt; (n - 1))) {</span>
+<span class="nc" id="L57">            throw new IllegalArgumentException(&quot;idxHi is out of range&quot;);</span>
+        }
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (idxHi &lt; idxLo) {</span>
+<span class="nc" id="L60">            throw new IllegalArgumentException(&quot;idxHi has to be &gt;= idxLo&quot;);</span>
+        }
+        
+<span class="fc" id="L63">        int nRemove = idxHi - idxLo + 1;</span>
+
+<span class="fc" id="L65">        int moveIdx = idxHi + 1;</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (moveIdx &lt; (n - 1)) {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            for (int moveToIdx = idxLo; moveToIdx &lt; (n - nRemove); moveToIdx++) {</span>
+<span class="fc" id="L68">                x[moveToIdx] = x[moveIdx]; // 1&lt;--3,2&lt;--4,3&lt;--5,4&lt;--6</span>
+<span class="fc" id="L69">                y[moveToIdx] = y[moveIdx]; // </span>
+<span class="fc" id="L70">                moveIdx++;</span>
+            }
+        }
+        
+        // not necessary, but easier debugging to reset the last nRemove to 0
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = (n - nRemove); i &lt; n; i++) {</span>
+<span class="fc" id="L76">            x[i] = 0;</span>
+<span class="fc" id="L77">            y[i] = 0;</span>
+        }
+        
+<span class="fc" id="L80">        n -= nRemove;</span>
+<span class="fc" id="L81">    }</span>
+    
+    public void insertSpaceAtTopOfArrays(int numberOfInserts) {
+        
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (x.length &gt;= (n + numberOfInserts)) {</span>
+            
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            for (int i = (n - 1); i &gt; -1; i--) {</span>
+<span class="fc" id="L88">                x[i + numberOfInserts] = x[i];</span>
+<span class="fc" id="L89">                y[i + numberOfInserts] = y[i];</span>
+            }
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            for (int i = 0; i &lt; numberOfInserts; i++) {</span>
+<span class="fc" id="L92">                x[i] = 0;</span>
+<span class="fc" id="L93">                y[i] = 0;</span>
+            }
+            
+        } else {
+<span class="fc" id="L97">            int[] xx = new int[n + numberOfInserts];</span>
+<span class="fc" id="L98">            int[] yy = new int[n + numberOfInserts];</span>
+<span class="fc" id="L99">            System.arraycopy(x, 0, xx, numberOfInserts, n);</span>
+<span class="fc" id="L100">            System.arraycopy(y, 0, yy, numberOfInserts, n);</span>
+<span class="fc" id="L101">            x = xx;</span>
+<span class="fc" id="L102">            y = yy;</span>
+        }
+        
+<span class="fc" id="L105">        n += numberOfInserts;</span>
+<span class="fc" id="L106">    }</span>
+    
+    public void set(int index, int xPoint, int yPoint) {
+        
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (index &lt; 0) {</span>
+<span class="nc" id="L111">            throw new IllegalArgumentException(&quot;index is out of bounds of arrays&quot;);</span>
+        }
+        
+<span class="fc" id="L114">        expandIfNeeded(index + 1);</span>
+        
+<span class="fc" id="L116">        x[index] = xPoint;</span>
+<span class="fc" id="L117">        y[index] = yPoint;</span>
+<span class="fc" id="L118">    }</span>
+    
+    public void swapContents(PairIntArray other) {
+        
+<span class="fc" id="L122">        int[] swap = x;</span>
+<span class="fc" id="L123">        x = other.x;</span>
+<span class="fc" id="L124">        other.x = swap;</span>
+        
+<span class="fc" id="L126">        swap = y;</span>
+<span class="fc" id="L127">        y = other.y;</span>
+<span class="fc" id="L128">        other.y = swap;</span>
+        
+<span class="fc" id="L130">        int swap2 = n;</span>
+<span class="fc" id="L131">        n = other.n;</span>
+<span class="fc" id="L132">        other.n = swap2;</span>
+<span class="fc" id="L133">    }</span>
+    
+    public int getX(int index) {
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L137">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+        }
+<span class="fc" id="L139">        return x[index];</span>
+    }
+    
+    public int getY(int index) {
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (index &gt; (n - 1)) {</span>
+<span class="nc" id="L144">            throw new IllegalArgumentException(&quot;index is out of range&quot;);</span>
+        }
+<span class="fc" id="L146">        return y[index];</span>
+    }
+    
+    public int[] getX() {
+<span class="fc" id="L150">        return x;</span>
+    }
+    
+    public int[] getY() {
+<span class="fc" id="L154">        return y;</span>
+    }
+    
+    protected void expandIfNeeded(int nTotal) {
+        
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (nTotal &gt; x.length) {</span>
+            
+<span class="fc" id="L161">            int n2 = x.length + 10;</span>
+            
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">            if (nTotal &gt; n2) {</span>
+<span class="nc" id="L164">                n2 = nTotal;</span>
+            }
+            
+<span class="fc" id="L167">            x = Arrays.copyOf(x, n2);</span>
+            
+<span class="fc" id="L169">            y = Arrays.copyOf(y, n2);</span>
+        }
+<span class="fc" id="L171">    }</span>
+    
+    public void reverse() {
+        
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (n &lt; 2) {</span>
+<span class="nc" id="L176">            return;</span>
+        }
+                
+<span class="fc" id="L179">        int end = n &gt;&gt; 1;</span>
+        // 0 1 2 3 4
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (int i = 0; i &lt; end; i++) {</span>
+<span class="fc" id="L182">            int idx2 = n - i - 1;</span>
+<span class="fc" id="L183">            int swap = x[i];</span>
+<span class="fc" id="L184">            x[i] = x[idx2];</span>
+<span class="fc" id="L185">            x[idx2] = swap;</span>
+            
+<span class="fc" id="L187">            swap = y[i];</span>
+<span class="fc" id="L188">            y[i] = y[idx2];</span>
+<span class="fc" id="L189">            y[idx2] = swap;</span>
+        }
+<span class="fc" id="L191">    }</span>
+    
+    public PairIntArray clone() {
+        
+<span class="fc" id="L195">        PairIntArray clone = new PairIntArray(n);</span>
+        
+<span class="fc" id="L197">        clone.insertSpaceAtTopOfArrays(n);</span>
+<span class="fc" id="L198">        System.arraycopy(x, 0, clone.x, 0, n);</span>
+<span class="fc" id="L199">        System.arraycopy(y, 0, clone.y, 0, n);</span>
+<span class="fc" id="L200">        clone.n = n;</span>
+        
+<span class="fc" id="L202">        return clone;</span>
+    }
+    
+    public String toString() {
+<span class="nc" id="L206">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L208">            sb.append(&quot;(&quot;).append(x[i]).append(&quot;, &quot;).append(y[i]).append(&quot;) &quot;);</span>
+        }
+<span class="nc" id="L210">        return sb.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
