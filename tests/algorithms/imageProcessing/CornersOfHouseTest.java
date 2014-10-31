@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.ResourceFinder;
+import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -73,6 +74,15 @@ public class CornersOfHouseTest extends TestCase {
                 }
             }
         }
+        
+        Image image = ImageIOHelper.readImageAsGrayScale(filePath);
+        List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
+        corners = detector.getCornersInOriginalReferenceFrame();
+        ImageIOHelper.addAlternatingColorCurvesToImage(edges, image);
+        ImageIOHelper.addCurveToImage(corners, image, 2, 2550, 0, 0);
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String sep = System.getProperty("file.separator");
+        ImageIOHelper.writeOutputImage(dirPath + sep + "corners_house.png", image);
         
         log.info(foundExpectedCount + " out of " + expectedCorners.getN() 
             + " expected");

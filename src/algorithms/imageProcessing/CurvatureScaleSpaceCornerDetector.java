@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.logging.Level;
 
 /**
- * The code is interpreted from several papers by the authors 
+ * The code is implemented from interpreting several papers by the authors 
  * Farzin Mokhtarian and Alan Mackworth.
  * 
  * They prescribe a method for detecting features and corners that is scale
@@ -603,8 +603,8 @@ public class CurvatureScaleSpaceCornerDetector extends
             PairIntArray edge = edges.get(i);
             
             for (int j = 0; j < edge.getN(); j++) {
-                int x = corners.getX(i);
-                int y = corners.getY(i);
+                int x = edge.getX(j);
+                int y = edge.getY(j);
                 x += this.trimmedXOffset;
                 y += this.trimmedYOffset;
                 ce.add(x, y);
