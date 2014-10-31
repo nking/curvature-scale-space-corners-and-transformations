@@ -462,9 +462,9 @@ public aspect CurvatureAspect {
 
         Image img3 = instance.getOriginalImage().copyImageToGreen();
 
-        List<PairIntArray> edges = instance.getEdges();
+        List<PairIntArray> edges = instance.getEdgesInOriginalReferenceFrame();
 
-        PairIntArray corners = instance.getCorners();
+        PairIntArray corners = instance.getCornersInOriginalReferenceFrame();
 
         try {
             // multi-colored edges alone:
