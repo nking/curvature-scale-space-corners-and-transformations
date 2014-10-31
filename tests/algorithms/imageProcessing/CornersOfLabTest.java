@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.ResourceFinder;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -82,6 +83,15 @@ public class CornersOfLabTest extends TestCase {
         log.info((corners.getN() - foundExpectedCount) 
             + " beyond expected found");
        
+        Image image = ImageIOHelper.readImageAsGrayScale(filePath);
+        List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
+        corners = detector.getCornersInOriginalReferenceFrame();
+        ImageIOHelper.addAlternatingColorCurvesToImage(edges, image);
+        ImageIOHelper.addCurveToImage(corners, image, 2, 2550, 0, 0);
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String sep = System.getProperty("file.separator");
+        ImageIOHelper.writeOutputImage(dirPath + sep + "corners_lab.png", image);
+     
         Image img2 = detector.getImage().copyImageToGreen();
         
         try {
@@ -89,7 +99,6 @@ public class CornersOfLabTest extends TestCase {
                 debugAddCurveToImage(edge, img2, 0, 255, 255, 0);
             }
             debugAddCurveToImage(expectedCorners, img2, 2, 255, 0, 255);
-            String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
                 dirPath + "/image_with_expected_corners.png", img2);
  
