@@ -32,7 +32,8 @@ import java.util.logging.Level;
  * 
  * @author nichole
  */
-public class CurvatureScaleSpaceCornerDetector extends AbstractCurvatureScaleSpaceMapper {
+public class CurvatureScaleSpaceCornerDetector extends 
+    AbstractCurvatureScaleSpaceMapper {
     
     protected PairIntArray corners = new PairIntArray();
     
@@ -575,6 +576,44 @@ public class CurvatureScaleSpaceCornerDetector extends AbstractCurvatureScaleSpa
 
     public PairIntArray getCorners() {
         return corners;
+    }
+    
+    public PairIntArray getCornersInOriginalReferenceFrame() {
+        
+        PairIntArray co = new PairIntArray();
+        for (int i = 0; i < corners.getN(); i++) {
+            int x = corners.getX(i);
+            int y = corners.getY(i);
+            x += this.trimmedXOffset;
+            y += this.trimmedYOffset;
+            co.add(x, y);
+        }
+        
+        return co;
+    }
+    
+    public List<PairIntArray> getEdgesInOriginalReferenceFrame() {
+        
+        List<PairIntArray> output = new ArrayList<PairIntArray>();
+        
+        for (int i = 0; i < edges.size(); i++) {
+            
+            PairIntArray ce = new PairIntArray();
+            
+            PairIntArray edge = edges.get(i);
+            
+            for (int j = 0; j < edge.getN(); j++) {
+                int x = corners.getX(i);
+                int y = corners.getY(i);
+                x += this.trimmedXOffset;
+                y += this.trimmedYOffset;
+                ce.add(x, y);
+            }
+            
+            output.add(ce);
+        }
+        
+        return output;
     }
 
     private PairIntArray removeFalseCorners(PairIntArray edgeCorners) {

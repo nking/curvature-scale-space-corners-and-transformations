@@ -1,0 +1,5 @@
+Implementation-Title: Curvature-Scale-Space-Corner-Detector-And-Image-Transformer
+Implementation-Version: 1.0
+Implementation-Vendor: com.climbwithyourfeet
+Implementation-URL: http://code.google.com/p/curvature-scale-space-corners-and-transformations/
+Main-Class: algorithms.imageProcessing.CMDLineMain

@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * NOTE: still testing this class.  it needs more testing for operations that
- * change the intance value from positive to negative and for cases when
+ * change the instance value from positive to negative and for cases when
  * a divisor is still larger than 64 bits.
  * 
  * A class to hold numbers that can be larger than 64 bits after adds.
@@ -33,8 +33,7 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
     // adding faster alternative methods for the large integer division
     // could improve the largest bottleneck.
  
-    //TODO: change BASE to (1<<30)-1, that is, 1073741823 
-    public final static int BASE = (1<<30)-1;//10;
+    public final static int BASE = (1<<30)-1;
     
     private int[] a;
     

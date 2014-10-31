@@ -137,6 +137,61 @@ public class ImageIOHelper {
     }
     
     /**
+     * read image at filePath into a greyscale image.
+     * 
+     * @param filePath
+     * @return
+     * @throws Exception 
+     */
+    public static Image readImageAsGrayScale(String filePath) 
+        throws Exception {
+     
+        if (filePath == null) {
+            throw new IllegalStateException("filePath cannot be null");
+        }
+                
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                throw new IllegalStateException(filePath + " does not exist");
+            }
+            
+            BufferedImage img = ImageIO.read(file);
+                        
+            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
+            ColorConvertOp op = new ColorConvertOp(cs, null);
+            try {
+                BufferedImage image2 = op.filter(img, null);
+                img = image2;
+            } catch (NullPointerException e) {
+                // if type is custom, the source color space destination is not defined.
+            }       
+            int h = img.getHeight();
+            int w = img.getWidth();
+            
+            Image image = new Image(w, h);
+            for (int i = 0; i < w; i++) {
+                for (int j = 0; j < h; j++) {
+                    
+                    int rgb = img.getRGB(i, j);
+                                        
+                    int r = (rgb >> 16) & 0xFF;
+                    int g = (rgb >> 8) & 0xFF;
+                    int b = rgb & 0xFF;         
+                    
+                    image.setRGB(i, j, r, g, b);
+                }
+            }
+            
+            return image;
+            
+        } catch (IOException e) {
+        }
+        
+        return null;
+    }
+    
+    /**
      * 
      * @param filePath
      * @return
@@ -407,20 +462,28 @@ public class ImageIOHelper {
     }
     
     public static void addAlternatingColorCurvesToImage(
-        List<PairIntArray> curves, String fileName, boolean writeImage, 
-        Image input) throws IOException {
+        List<PairIntArray> curves, Image input) throws IOException {
         
         if (curves == null || input == null) {
             return;
         }
-        if (fileName == null) {
-            throw new IllegalArgumentException("fileName cannot be null");
+        
+        addAlternatingColorCurvesToImage(
+            curves.toArray(new PairIntArray[curves.size()]),
+            input);
+    }
+    
+    public static void addAlternatingColorCurvesToImage(
+        PairIntArray[] curves, Image input) throws IOException {
+        
+        if (curves == null || input == null) {
+            return;
         }
         
         int clr = 0;
         
-        for (int i = 0; i < curves.size(); i++) {
-            PairIntArray edge = curves.get(i);
+        for (int i = 0; i < curves.length; i++) {
+            PairIntArray edge = curves[i];
             if (clr > 5) {
                 clr = 0;
             }
@@ -447,6 +510,20 @@ public class ImageIOHelper {
             }
             clr++;
         }
+    }
+
+    public static void addAlternatingColorCurvesToImage(
+        List<PairIntArray> curves, String fileName, boolean writeImage, 
+        Image input) throws IOException {
+        
+        if (curves == null || input == null) {
+            return;
+        }
+        if (fileName == null) {
+            throw new IllegalArgumentException("fileName cannot be null");
+        }
+        
+        addAlternatingColorCurvesToImage(curves, input);
        
         if (!writeImage) {
             return;
