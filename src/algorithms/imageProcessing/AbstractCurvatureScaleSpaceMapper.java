@@ -24,10 +24,6 @@ public class AbstractCurvatureScaleSpaceMapper {
      */
     protected List<PairIntArray> edges = new ArrayList<PairIntArray>();
     
-    /**
-     * a map of maps to hold an edge's scale space curves as a function of sigma
-     */
-    
     protected PairIntArray tCorners = new PairIntArray();
     
     protected boolean doNotNormalizeByHistogram = false;

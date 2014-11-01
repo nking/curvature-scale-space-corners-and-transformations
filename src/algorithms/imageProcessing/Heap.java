@@ -7,8 +7,6 @@ import java.util.logging.Logger;
  * upon binomial heaps, hence satisfying the minimum heap property:
  *     object.child.key >= object.key.
  * 
- * Binomial heaps allow the merging of 2 heaps quickly.
- * 
  * With a Fibonacci heap, the minimum key of the entire heap is always at the
  * top of one of the trees.
  *

@@ -132,7 +132,7 @@ public final class CurvatureScaleSpaceImageMaker extends
      * (It uses sigma=1.189207115002721 instead of sqrt(2), so spans
      * sigma=1 to 4 in 7 steps rather than the 3 here.)
      * 
-     * NOTE: one could imaging using these results with the mapper tailored
+     * NOTE: one could imagine using these results with the mapper tailored
      * to tolerate an error of up to sqrt(2) in the peak (scale transformations)
      * with the understanding that lower peaks in the transformation 
      * solution should help reduce the error.  The cost function might need

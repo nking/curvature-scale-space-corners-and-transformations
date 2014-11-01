@@ -3,10 +3,12 @@ package algorithms.imageProcessing;
 import java.util.logging.Logger;
 
 /**
- A chi square minimization routine to refine the given transformation parameters
- to better match a given edge with another.
+ A minimization routine to refine the given transformation parameters.
  
- Internally, it's using the Nelder-Mead Downhill Simplex method.
+ Internally, it's using the Nelder-Mead Downhill Simplex method,
+but that could be improved with a non-linear conjugate gradient solver
+(unless skew is included... then the first derivative used in the 
+conjugate gradient solver would not proceed in one direction locally).
  
  @author nichole
  */

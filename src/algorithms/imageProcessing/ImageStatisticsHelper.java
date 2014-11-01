@@ -13,8 +13,7 @@ import java.util.Arrays;
 public class ImageStatisticsHelper {
     
     /**
-     * calculates the mean of r, g, and b and returns them separately
-     * in that order in an array.
+     * calculates the mean of values and returns it.
      * @param img
      * @return [meanR, meanG, meanB]
      */
@@ -23,8 +22,7 @@ public class ImageStatisticsHelper {
     }
     
     /**
-     * calculates the median of r, g, and b and returns them separately
-     * in that order in an array.
+     * calculates the median of values.
      * @param img
      * @return [meanR, meanG, meanB]
      */

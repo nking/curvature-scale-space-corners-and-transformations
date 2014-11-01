@@ -20,7 +20,7 @@ public class SearchableCurve {
     private final int[] indexesToOriginalXY;
     
     /**
-     * x and y are modified upon a find.
+     * TODO: if edit to store visits: x and y will modified upon a find.
      */
     private int[] x = null;
     private int[] y = null;

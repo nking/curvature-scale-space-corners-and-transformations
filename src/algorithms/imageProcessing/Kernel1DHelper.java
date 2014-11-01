@@ -48,7 +48,6 @@ public class Kernel1DHelper {
                  of the kernel which was used and can introduce large errors
                  thru division by a very small number for example, so don't use
                  it if possible.
-        will try "reflect around boundary"
         */
                 
         for (int gIdx = 0; gIdx < g.length; gIdx++) {
