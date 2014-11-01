@@ -3,7 +3,19 @@ package algorithms.imageProcessing;
 import java.util.logging.Logger;
 
 /**
- *
+ * The erosion filter iterates over all pixels in the image, checking whether
+ * the current non-null pixel can be nulled without disconnecting any adjacent
+ * pixels. 
+ * 
+ * TODO: the erosion filter doesn't know the overall shape so corners and lines
+ * could be improved in the final result by adding templates to the filter
+ * to find and handle potential lines and corners in a non-resolution dependent 
+ * way.
+ * 
+ * TODO: It's all boolean rules, so it looks like a clever way of using boolean 
+ * logic on more than 1 pixel as the current being tested for nullability,
+ * at the same time should reduce common comparisons and make a faster filter.
+ * 
  * @author nichole
  */
 public class ErosionFilter extends AbstractLineThinner {
@@ -125,10 +137,6 @@ public class ErosionFilter extends AbstractLineThinner {
      * would not disconnect the othe points or return true if the point.
      * 
      * TODO: compute the runtime complexity of this.
-     * 
-     * TODO: consider a Boolean SAT solution for this one.  The boolean logic
-     * below would be placed in a CNF file and solved by my SAT solver or
-     * another.
      * 
      * @param input
      * @param row
