@@ -85,7 +85,7 @@ import java.util.logging.Logger;
        origin is sqrt(2)
     c) the transformation is applied to each of the 2 images separately.
      
- (2) build matrix A with the normalized coefficients
+ (2) build matrix A with the normalized x,y points
  
  (3) compute linear least square solution to the least eigenvector of f.
      solve A = U * D * V^T   for A*f = [..x...]*f = 0
