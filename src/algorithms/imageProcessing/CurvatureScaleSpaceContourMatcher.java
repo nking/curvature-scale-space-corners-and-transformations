@@ -72,15 +72,7 @@ public final class CurvatureScaleSpaceContourMatcher {
     private List<CurvatureScaleSpaceContour> solutionMatchedContours2 = null;
     
     private final Logger log = Logger.getLogger(this.getClass().getName());
-        
-    /**
-     * List of contours used during initialization of heap nodes to create
-     * the first estimates of the cost of the solution.  They're retained
-     * for use during construction of NextContour instances.
-     */
-    private List<CurvatureScaleSpaceContour> initiallyVisited1 =
-        new ArrayList<CurvatureScaleSpaceContour>();
-   
+    
     /**
      * constructor.  the creation of internal data structures in this method
      * has runtime complexity:
@@ -173,7 +165,7 @@ public final class CurvatureScaleSpaceContourMatcher {
     */
     private void initialize() {
                 
-        //(1)
+        //(1)  create initial scale and translate from only tallest contours
         for (int i = 0; i < curveIndexToC1.size(); i++) {
             
             int index1 = curveIndexToC1.get(i).get(0);
@@ -214,6 +206,17 @@ public final class CurvatureScaleSpaceContourMatcher {
                 
                 obj.setShift(shift);
                 
+                List<CurvatureScaleSpaceContour> visited = new 
+                    ArrayList<CurvatureScaleSpaceContour>();
+                visited.add(contour1);
+                visited.add(contour2);
+                
+                NextContour nc = new NextContour(c1, true, curveIndexToC1,
+                    visited);
+                nc.addMatchedContours(contour1, contour2);
+                
+                obj.setNextContour(nc);
+                
                 double cost = 0;
                 
                 //(2) calc cost: apply to tallest contours from each curve
@@ -221,14 +224,15 @@ public final class CurvatureScaleSpaceContourMatcher {
                 for (int ii = 0; ii < curveIndexToC1.size(); ii++) {
             
                     int index1s = curveIndexToC1.get(ii).get(0);
-            
-                    CurvatureScaleSpaceContour contour1s = c1.get(index1s);
                     
-                    if ((i == 0) && (j == 0)) {
-                        // store in already visited list for use in initializing
-                        // NextContour instances lazily
-                        initiallyVisited1.add(contour1s);
+                    if (index1s == index1) {
+                        // choose the next in the list
+                        if ((index1s + 1) < c1.size()) {
+                            index1s++;
+                        }
                     }
+                                        
+                    CurvatureScaleSpaceContour contour1s = c1.get(index1s);
                     
                     /*
                     t2 = kScale * t1 + dShift
@@ -243,10 +247,21 @@ public final class CurvatureScaleSpaceContourMatcher {
                         t2 = t2 - 1;
                     }
                      
+                    // this marks as visited if found
                     int index2s = findClosestC2MatchBinarySearch(sigma2, t2);
                     
-                    CurvatureScaleSpaceContour contour2s = (index2s == -1) ?
-                        null : c2.get(index2s);
+                    CurvatureScaleSpaceContour contour2s;
+                    
+                    if (index2s == -1) {
+                        
+                        contour2s = null;
+                        
+                    } else {
+                        
+                        contour2s = c2.get(index2s);
+                        
+                        nc.addMatchedContours(contour1s, contour2s);                        
+                    }
                     
                     double cost2 = calculateCost(contour2s, sigma2, t2);                    
 
@@ -367,25 +382,14 @@ public final class CurvatureScaleSpaceContourMatcher {
         
             NextContour nc = obj.getNextContour();
             
-            if (nc == null) {
-                
-                nc = new NextContour(c1, true, curveIndexToC1, 
-                    initiallyVisited1);
-                
-                nc.addMatchedContours(
-                    c1.get(obj.getContourIndex1()),
-                    c2.get(obj.getContourIndex2()));
-                
-                obj.setNextContour(nc);                
-            }
-            
             CurvatureScaleSpaceContour c = c1.get(obj.getContourIndex1());
             int curveIndex = c.getEdgeNumber();
             
             CurvatureScaleSpaceContour contour1s = 
                 nc.findTallestContourWithinAScaleSpace(curveIndex);
             
-            if (contour1s == null) {
+            if ((contour1s == null) || 
+                nc.getMatchedContours1().contains(contour1s)) {
                 
                 //TODO: refactor to improve handling of these indexes to remove
                 // possibilities of using them incorrectly
@@ -417,6 +421,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                 t2 = t2 - 1;
             }
             
+            // this marks as visited if found
             int index2s = findClosestC2MatchBinarySearch(sigma2, t2);
             
             // if already matched for this node OR it returned -1,
@@ -424,6 +429,7 @@ public final class CurvatureScaleSpaceContourMatcher {
             if ((index2s == -1) || 
                 nc.getMatchedContours2().contains(c2.get(index2s))) {
                 
+                // this marks as visited if found
                 index2s = findClosestC2MatchForSigmaTooHigh(sigma2, t2);
             }
             
@@ -465,7 +471,7 @@ public final class CurvatureScaleSpaceContourMatcher {
         // use iterative binary search to find closest match
         
         //TODO: use 0.1*sigma? current sigma factor peak center error
-        double tolSigma = 0.1*sigma;
+        double tolSigma = 0.01*sigma;
         if (tolSigma < 1E-2) {
             tolSigma = 1E-2;
         }
@@ -508,6 +514,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                     // smaller scaleFreeLength is at a lower index
                     if (c.getPeakScaleFreeLength() < scaleFreeLength) {
                         lowIdx = midIdx + 1;
+                        
                     } else {
                         highIdx = midIdx - 1;
                     }
@@ -595,7 +602,7 @@ public final class CurvatureScaleSpaceContourMatcher {
             throw new IllegalStateException("contour is null");
             //return sigma;
         }
-        
+
         double ds = sigma - contour.getPeakSigma();
         /*double tolSigma = 0.1*sigma;
         if (tolSigma < 1E-2) {

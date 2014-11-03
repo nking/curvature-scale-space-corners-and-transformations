@@ -166,6 +166,38 @@ public class NextContour implements Comparator<PairInt> {
         return null;
     }
     
+    public void markAsVisited(CurvatureScaleSpaceContour contour) {
+        
+        int curveIndex = contour.getEdgeNumber();
+        
+        if (curveIndex == -1) {
+            return;
+        }
+        
+        PairInt ci = null;
+        PairInt[] indexes = curveList[curveIndex];
+        if ((indexes == null) || (indexes.length == 0)) {
+            return;
+        }
+        for (int i = 0; i < indexes.length; i++) {
+            PairInt pi = indexes[i];
+            int cntrIdx = pi.getY();
+            if (origContours.get(cntrIdx).equals(contour)) {
+                indexes[i] = null;
+                ci = pi;
+                break;
+            }
+        }
+        
+        if (ci != null) {
+                    
+            nullifyIfEmpty(curveIndex);
+            
+            contourIndex.remove(ci);
+        }
+        
+    }
+    
     public void addMatchedContours(CurvatureScaleSpaceContour contour1,
         CurvatureScaleSpaceContour contour2) {
         
@@ -184,10 +216,10 @@ public class NextContour implements Comparator<PairInt> {
     public CurvatureScaleSpaceContour findTheNextSmallestUnvisitedSibling(
         PairInt target) { 
 
-        if ((target == null) || (target.getX() == 0)) {
+        if (target == null) {
             return null;
         }
-                
+
         PairInt nextLower = findNextLower(target);
         
         if (nextLower != null) {
@@ -212,7 +244,6 @@ public class NextContour implements Comparator<PairInt> {
         
         return null;
     }
-    
     
     private int findCurveList2ndIndex(PairInt target) {
         
@@ -240,7 +271,6 @@ public class NextContour implements Comparator<PairInt> {
         return -1;
     }
     
-    
     /**
      * a comparator to use to make a descending peak sigma sort for contours
      * in origContours referenced by o1 and o2.
@@ -264,13 +294,32 @@ public class NextContour implements Comparator<PairInt> {
         int idx = contourIndex.indexOf(target);
         
         if (idx == - 1) {
+            
             if (contourIndex.isEmpty()) {
+                
+                return null;
+            
+            } else {
+                
+                // this can happen at the         
+                int contourIdx = target.getY();
+                CurvatureScaleSpaceContour targetContour = 
+                    origContours.get(contourIdx);
+                
+                float sigma = targetContour.getPeakSigma();
+                
+                // look for any with same curveIndex number and then the
+                //    next after contourIndex
+                for (int i = 0; i < contourIndex.size(); i++) {
+                    PairInt ci = contourIndex.get(i);
+                    float sigma2 = origContours.get(ci.getY()).getPeakSigma();
+                    if (sigma2 < sigma) {
+                        return ci;
+                    }
+                }
+                
                 return null;
             }
-
-            throw new IllegalStateException(
-                "Error in algorithm! see findNextLower. contourIndex.size()=" 
-                + contourIndex.size());
         }
         
         if (idx == (contourIndex.size() - 1)) {

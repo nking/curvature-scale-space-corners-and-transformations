@@ -389,8 +389,6 @@ public class ContourFinder {
     private void removeContourFromImage(ScaleSpaceCurveImage scaleSpaceImage, 
         int sigmaIndex, int tLeftIndex, int tRightIndex) {
    
-System.out.println("sigmaIndex=" + sigmaIndex 
-+ " tLeftIndex=" + " tRightIndex=" + tRightIndex);
         if ((scaleSpaceImage.getScaleSpaceImage() == null) ||
             (sigmaIndex > (scaleSpaceImage.getScaleSpaceImage().length - 1)) ||
             (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex] == null) ||
