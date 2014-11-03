@@ -315,6 +315,12 @@ public class ContourFinder {
             (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length == 0)) {
             return;
         }
+
+        if ((tIndex > 
+            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))
+            ) {
+            return;
+        }
         
         float tLeft = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
         float tRight = tLeft;
@@ -383,9 +389,18 @@ public class ContourFinder {
     private void removeContourFromImage(ScaleSpaceCurveImage scaleSpaceImage, 
         int sigmaIndex, int tLeftIndex, int tRightIndex) {
    
-        if ((sigmaIndex > (scaleSpaceImage.getScaleSpaceImage().length - 1)) ||
+        if ((scaleSpaceImage.getScaleSpaceImage() == null) ||
+            (sigmaIndex > (scaleSpaceImage.getScaleSpaceImage().length - 1)) ||
             (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex] == null) ||
             (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length == 0)) {
+            return;
+        }
+        
+        if ((tLeftIndex > 
+            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1)) ||
+            (tRightIndex > 
+            (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))
+            ) {
             return;
         }
         
@@ -459,9 +474,9 @@ public class ContourFinder {
      * maintain.
      * @param contours 
      */
-    private void correctForWrappedContours(List<CurvatureScaleSpaceContour> 
+    private void correctForWrappedContours(final List<CurvatureScaleSpaceContour> 
         contours) {
-        
+
         // roughly, look for features with peaks > 0.9 and < 0.1.
         
         // TODO: what shape would produce the widest possible contour in
