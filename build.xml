@@ -490,13 +490,21 @@
         <tstamp>
             <format property="TS" pattern="yyyy-MM-dd" locale="en,US"/>
         </tstamp>
+        
+        <mkdir dir="${classes.dir}/tmp" />
+        <unjar src="${lib.dir}/Jama-1.0.3.jar" dest="${classes.dir}/tmp"/>
+        
         <jar destfile="${classes.dir}/scalespace_${TS}.jar" manifest="${jar.mf}">
             <fileset dir="${src.out.dir}" includes="**"/>
             <fileset dir="${resources.dir}" includes="*.html"/>
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
+            <fileset dir="${lib.dir}" includes="Jama_LICENSE.txt"/>
+            <fileset dir="${classes.dir}/tmp" includes="**"/>
         </jar>
+        
         <mkdir dir="dist" />
+        
         <copy file="${classes.dir}/scalespace_${TS}.jar" 
             tofile="dist/scalespace.jar" />
     </target>

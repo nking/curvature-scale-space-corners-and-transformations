@@ -30,7 +30,7 @@ public class NextContour implements Comparator<PairInt> {
     protected final Map<Integer, List<Integer> > curveIndexToOrigContours;
     
     /**
-     * A modifiable tree set ordered by descending contour peak sigma.  Items
+     * A modifiable list ordered by descending contour peak sigma.  Items
      * are removed as they are visited.  
      * The PairInt holds the edge index and then the origContours index  
      * to locate the contour as x and y, respectively.   
@@ -183,6 +183,10 @@ public class NextContour implements Comparator<PairInt> {
      */
     public CurvatureScaleSpaceContour findTheNextSmallestUnvisitedSibling(
         PairInt target) { 
+
+        if ((target == null) || (target.getX() == 0)) {
+            return null;
+        }
                 
         PairInt nextLower = findNextLower(target);
         
@@ -263,7 +267,10 @@ public class NextContour implements Comparator<PairInt> {
             if (contourIndex.isEmpty()) {
                 return null;
             }
-            throw new IllegalStateException("Error in algorithm! see findNextLower");
+
+            throw new IllegalStateException(
+                "Error in algorithm! see findNextLower. contourIndex.size()=" 
+                + contourIndex.size());
         }
         
         if (idx == (contourIndex.size() - 1)) {

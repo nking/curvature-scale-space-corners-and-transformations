@@ -475,7 +475,7 @@ public final class CurvatureScaleSpaceContourMatcher {
         int idx = -1;
         
         int lowIdx = 0;
-        int highIdx = c1.size() - 1;
+        int highIdx = c2.size() - 1;
                 
         while (true) {
             

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import Jama.Matrix;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -496,6 +497,52 @@ public class MiscellaneousCurveHelper {
     }
     
     public double[] calculateXYCentroids(PairIntArray xy) {
+        
+        double xc = 0;
+        double yc = 0;
+        
+        for (int i = 0; i < xy.getN(); i++) {
+            
+            xc += xy.getX(i);
+            
+            yc += xy.getY(i);
+        }
+        
+        xc /= (double)xy.getN();
+        
+        yc /= (double)xy.getN();
+        
+        return new double[]{xc, yc};
+    }
+    
+    /**
+     * calculate the x and y centroids and return as 
+     * double[]{xCentroid, yCentroid}
+     * @param xy a 3 x N matrix with column 0 being x and column 1 being y.
+     * @return 
+     */
+    public double[] calculateXYCentroids(Matrix xy) {
+        
+        double xc = 0;
+        double yc = 0;
+        
+        int n = xy.getArray()[0].length;
+        
+        for (int i = 0; i < n; i++) {
+            
+            xc += xy.get(0, i);
+            
+            yc += xy.get(1, i);
+        }
+        
+        xc /= (double)n;
+        
+        yc /= (double)n;
+        
+        return new double[]{xc, yc};
+    }
+    
+    public double[] calculateXYCentroids(PairFloatArray xy) {
         
         double xc = 0;
         double yc = 0;

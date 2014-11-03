@@ -477,7 +477,7 @@ public aspect CurvatureAspect {
             debugDisplay(img3, "original image w/ edges and corners overplotted");
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
-                dirPath + "/../lab_with_edges_corners.png", img3);
+                dirPath + "/lab_with_edges_corners.png", img3);
  
         } catch (IOException ex) {
             throw new RuntimeException("ERROR: l298" + ex.getMessage());

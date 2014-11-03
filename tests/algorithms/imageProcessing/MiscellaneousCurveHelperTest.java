@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import Jama.Matrix;
 import java.util.ArrayList;
 import java.util.List;
 import junit.framework.TestCase;
@@ -322,7 +323,6 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertTrue(output.size() == 2);
     }
 
-    @Test
     public void testFindMinIdx() {
         
         PairIntArray closedCurve = getSquare();
@@ -334,6 +334,58 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertTrue(18 == result);
     }
   
+    public void testCalculateCentroid() throws Exception {
+        
+        MiscellaneousCurveHelper helper = new MiscellaneousCurveHelper();
+        
+        PairIntArray xy = new PairIntArray();
+        xy.add(1, 1);
+        xy.add(9, 1);
+        xy.add(9, 5);
+        xy.add(1, 5);
+        float[] equalWeights = new float[]{1.f/xy.getN(), 1.f/xy.getN(),
+            1.f/xy.getN(), 1.f/xy.getN()}; 
+        
+        double[] cenXY = helper.calculateXYCentroids(xy, equalWeights);
+        assertTrue(cenXY[0] == 5);
+        assertTrue(cenXY[1] == 3);
+        
+        cenXY = helper.calculateXYCentroids(xy);
+        assertTrue(cenXY[0] == 5);
+        assertTrue(cenXY[1] == 3);
+        
+        float[] unequalWeights = new float[]{0.5f/xy.getN(), 1.5f/xy.getN(),
+            0.5f/xy.getN(), 1.5f/xy.getN()};
+        cenXY = helper.calculateXYCentroids(xy, unequalWeights);
+        assertTrue(cenXY[0] == 5);
+        assertTrue(cenXY[1] == 3);
+        
+        double[][] xyM = new double[2][4];
+        xyM[0] = new double[]{1, 9, 9, 1};
+        xyM[1] = new double[]{1, 1, 5, 5};
+        Matrix xyMatrix = new Matrix(xyM);
+        
+        cenXY = helper.calculateXYCentroids(xyMatrix);
+        assertTrue(cenXY[0] == 5.0);
+        assertTrue(cenXY[1] == 3.0);
+        
+        PairFloatArray xyf = new PairFloatArray();
+        xyf.add(1, 1);
+        xyf.add(9, 1);
+        xyf.add(9, 5);
+        xyf.add(1, 5);
+        
+        cenXY = helper.calculateXYCentroids(xyf);
+        assertTrue(cenXY[0] == 5.0);
+        assertTrue(cenXY[1] == 3.0);
+
+        SearchableCurve searchableXY = new SearchableCurve(xy);
+        
+        cenXY = helper.calculateXYCentroids(searchableXY);
+        assertTrue(cenXY[0] == 5.0);
+        assertTrue(cenXY[1] == 3.0);
+    }
+    
     /**
       7    
       6

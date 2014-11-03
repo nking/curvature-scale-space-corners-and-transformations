@@ -82,7 +82,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             
             debugDisplay(transformedEdges, img2.copyImageToGreen(), rotDegrees);
             
-            log.info("PARAMS: " + transformationParams.toString());
+            log.info("PARAMS: " + transformationParams.toString() + "\nEXPECTED=" + rotDegrees);
             
             assertTrue(Math.abs(rotDeg - Float.valueOf(rotDegrees).floatValue()) 
                 < 10.f);

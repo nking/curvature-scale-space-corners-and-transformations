@@ -140,9 +140,6 @@ public class CurvatureTest extends TestCase {
                 }
             }
         }
-    //}
-    
-    //public void testComputeCurvature_line() throws Exception {
         
         log.info("ComputeCurvature_line");
        
