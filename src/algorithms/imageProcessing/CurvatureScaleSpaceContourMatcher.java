@@ -599,8 +599,8 @@ public final class CurvatureScaleSpaceContourMatcher {
         double sigma, double scaleFreeLength) {
         
         if (contour == null) {
-            throw new IllegalStateException("contour is null");
-            //return sigma;
+            //throw new IllegalStateException("contour is null");
+            return sigma;
         }
 
         double ds = sigma - contour.getPeakSigma();
