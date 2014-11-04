@@ -1041,10 +1041,20 @@ public class CurvatureScaleSpaceCornerDetector extends
         boolean passes = true;
         int nDX = 0;
         int nDY = 0;
-        for (int j = 0; j < 2; j++) {
-            if (j == 1) {
-                dx = -1;
-                dy = -1;
+        for (int j = 0; j < 4; j++) {
+            switch (j) {
+                case 1:
+                    dx = -1;
+                    dy = -1;
+                    break;
+                case 2:
+                    dx = 1;
+                    dy = -1;
+                    break;
+                case 3:
+                    dx = -1;
+                    dy = 1;
+                    break;
             }
             nDX = 0;
             nDY = 0;
