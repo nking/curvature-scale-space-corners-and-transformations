@@ -27,11 +27,11 @@ public class StereoProjectionTransformerTest {
     @Test
     public void testC() throws Exception {
         
-        String fileName1 = "books_illum3_v0_695x555.png";
+        String fileName1 = "books_illum3_v6_695x555.png";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);
 
-        String fileName2 = "books_illum3_v6_695x555.png";
+/*        String fileName2 = "books_illum3_v6_695x555.png";
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
 
@@ -42,6 +42,12 @@ public class StereoProjectionTransformerTest {
 
         TransformationParameters transformationParams
             = mapper.createEuclideanTransformation();
+  */
+        
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(img1);
+               
+        detector.findCorners();
 
         int z = 1;
     }

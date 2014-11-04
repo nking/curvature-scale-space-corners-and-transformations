@@ -146,10 +146,12 @@ public class CurvatureScaleSpaceCornerDetector extends
      * @param scaleSpace scale space map for an edge
      * @param edgeNumber the edgeNumber of the scaleSpace.  it's passed for
      * debugging purposes.
+     * @param correctForJaggedLines
      * @return 
      */
     protected PairFloatArray findCornersInScaleSpaceMap(
-        final ScaleSpaceCurve scaleSpace, int edgeNumber) {
+        final ScaleSpaceCurve scaleSpace, int edgeNumber, 
+        boolean correctForJaggedLines) {
         
         float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
         
@@ -163,13 +165,57 @@ public class CurvatureScaleSpaceCornerDetector extends
     
         PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
         
-        for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
-            
-            int idx = maxCandidateCornerIndexes.get(ii);
-            
-            xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+        int nRemoved = 0;
+        
+        if (correctForJaggedLines) {
+            List<Integer> remove = new ArrayList<Integer>();
+            for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
+                int idx = maxCandidateCornerIndexes.get(ii);
+                if ((idx > 1) && (idx < (scaleSpace.getSize() - 2))) {
+                    
+                    if ((edgeNumber == 2) && (ii > 1) && (ii < 8)) {
+                        int prev2X = (int) scaleSpace.getX(idx - 2);
+                        int prev2Y = (int) scaleSpace.getY(idx - 2);
+                        int prev1X = (int) scaleSpace.getX(idx - 1);
+                        int prev1Y = (int) scaleSpace.getY(idx - 1);
+                        int x = (int) scaleSpace.getX(idx);
+                        int y = (int) scaleSpace.getY(idx);
+                        int next1X = (int) scaleSpace.getX(idx + 1);
+                        int next1Y = (int) scaleSpace.getY(idx + 1);
+                        int next2X = (int) scaleSpace.getX(idx + 2);
+                        int next2Y = (int) scaleSpace.getY(idx + 2);
+                        String p2Str = String.format("(%d,%d)", prev2X, prev2Y);
+                        String p1Str = String.format("(%d,%d)", prev1X, prev1Y);
+                        String str = String.format("(%d,%d)", x, y);
+                        String n1Str = String.format("(%d,%d)", next1X, next1Y);
+                        String n2Str = String.format("(%d,%d)", next2X, next2Y);
+                        log.info("i=" + ii + " " + p2Str + p1Str + " *" + str + "* " + n1Str + n2Str);
+                    }
+                    
+                    boolean isDueToJaggedLine = isDueToJaggedLine(idx, scaleSpace);
+                    if (!isDueToJaggedLine) {
+                        xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+                    } else {
+                        remove.add(Integer.valueOf(ii));
+                    }
+                } else {
+                    xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+                }
+            }
+            nRemoved += remove.size();
+            for (int ii = (remove.size() - 1); ii > -1; ii--) {
+                int idx = remove.get(ii).intValue();
+                maxCandidateCornerIndexes.remove(idx);
+            }
+        } else {
+            for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
+                int idx = maxCandidateCornerIndexes.get(ii);
+                xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+            }
         }
 
+        log.info("NREMOVED=" + nRemoved);
+        
         return xy;
     }
     
@@ -197,10 +243,22 @@ public class CurvatureScaleSpaceCornerDetector extends
         if (maxScaleSpace.getK() == null) {
             return new PairIntArray(0);
         }
-       
+        /*
+        for (int i = 0; i < edges.size(); i++) {
+            PairIntArray e = edges.get(i);
+            for (int j = 0; j < e.getN(); j++) {
+                int x = e.getX(j);
+                int y = e.getY(j);
+                //edges.get( 2 ) pt idx 1-7 out of 88
+                if ((x >= 221) && (x <= 230) && (y >= 87) && (y <= 97)) {
+                    log.info("EDGE: " + i + " index=" + j + " out of " + e.getN());
+                }
+            }
+        }*/
+ 
         PairFloatArray candidateCornersXY = 
-            findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber);
-
+            findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, true);
+        
         SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);  
 
         SIGMA prevSigma = maxSIGMA;
@@ -456,7 +514,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima 
         
-        float factorAboveMin = 3.0f;//5.0f;//2.35f;
+        float factorAboveMin = 3.0f; // 10 misses some corners
 
         List<Integer> cornerCandidates = new ArrayList<Integer>();
 
@@ -534,7 +592,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         }
         
         PairFloatArray xy2 = 
-            findCornersInScaleSpaceMap(scaleSpace, edgeNumber);
+            findCornersInScaleSpaceMap(scaleSpace, edgeNumber, false);
        
         // roughly estimating maxSep as the ~FWZI of the gaussian
         //TODO: this may need to be altered to a smaller value
@@ -696,6 +754,189 @@ public class CurvatureScaleSpaceCornerDetector extends
             edgeCorners.getY(edgeCorners.getN() - 1));
         
         return output;
+    }
+
+    private boolean isDueToJaggedLine(int idx, ScaleSpaceCurve scaleSpace) {
+        
+        float prev2X = scaleSpace.getX(idx - 2);
+        float prev2Y = scaleSpace.getY(idx - 2);
+        float prev1X = scaleSpace.getX(idx - 1);
+        float prev1Y = scaleSpace.getY(idx - 1);
+        float x = scaleSpace.getX(idx);
+        float y = scaleSpace.getY(idx);
+        float next1X = scaleSpace.getX(idx + 1);
+        float next1Y = scaleSpace.getY(idx + 1);
+        float next2X = scaleSpace.getX(idx + 2);
+        float next2Y = scaleSpace.getY(idx + 2);
+        
+        // check for vertical lines,
+        if (prev2X == prev1X) {
+            if (prev2Y == (prev1Y + 1)) {
+                /* check for vertical lines, increasing in Y with idx
+                0
+                1   {1}
+                2   {2}
+                  @  @  @
+                 {4}    {4}
+                 {5}    {5}
+                */
+                if (next2X == next1X) {
+                    if ((next2X == (prev1X + 1)) ||(next2X == prev1X) ||
+                        (next2X == (prev1X - 1))) {
+                        if ((x == prev1X) || (x == (prev1X - 1))
+                            || (x == (prev1X + 1))) {
+
+                            if ((y == (prev1Y - 1)) && (next1Y == (y - 1)) &&
+                                (next2Y == (next1Y - 1))) {
+
+                                // skip this corner
+                                return true;
+                            }
+                        }
+                    }
+                }
+            } else if (prev2Y == (prev1Y - 1)) {
+                /* check for vertical lines, decreasing in Y with idx
+                0
+                1 {5}  {5}
+                2 {4}  {4}
+                  @  @  @
+                    {2}
+                    {1}
+                */
+                if (next2X == next1X) {
+                    if ((next2X == (prev1X + 1)) || (next2X == prev1X) ||
+                        (next2X == (prev1X - 1))) {
+                        if ((x == prev1X) || (x == (prev1X - 1))
+                            || (x == (prev1X + 1))) {
+
+                            if ((y == (prev1Y + 1)) && (next1Y == (y + 1)) &&
+                                (next2Y == (next1Y + 1))) {
+
+                                // skip this corner
+                                return true;
+                            }
+                        }
+                    }
+                }
+            } 
+        } else if (prev2Y == prev1Y) {
+            if (prev2X == (prev1X + 1)) {
+                /* check for horizontal lines, increasing in X with idx
+                0
+                1         @ {4} {5}
+                2 {1} {2} @
+                3         @ {4} {5}
+                */
+                if (next2Y == next1Y) {
+                    if ((next2Y == (prev1Y + 1)) || (next2Y == prev1Y) ||
+                        (next2Y == (prev1Y - 1)) ) {
+                        if ((y == prev1Y) || (y == (prev1Y - 1))
+                            || (y == (prev1Y + 1))) {
+
+                            if ((x == (prev1X - 1)) && (next1X == (x - 1)) 
+                                && (next2X == (next1X - 1))) {
+
+                                // skip this corner
+                                return true;
+                            }
+                        }
+                    }
+                }
+            } else if (prev2X == (prev1X + 1)) {
+                /* check for horizontal lines, decreasing in X with idx
+                0
+                1 {5} {4} @
+                2         @ {2} {1}
+                3 {5} {4} @
+                */
+                if (next2Y == next1Y) {
+                    if ((next2Y == (prev1Y + 1)) || (next2Y == prev1Y) ||
+                        (next2Y == (prev1Y - 1)) ) {
+                        if ((y == prev1Y) || (y == (prev1Y - 1))
+                            || (y == (prev1Y + 1))) {
+
+                            if ((x == (prev1X + 1)) && (next1X == (x + 1)) 
+                                && (next2X == (next1X + 1))) {
+
+                                // skip this corner
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // look for the prev and next pairs to be a line
+        float dPrevX = prev2X - prev1X;
+        float dPrevY = prev2Y - prev1Y;
+        float dNextX = next2X - next1X;
+        float dNextY = next2Y - next1Y;
+        float prevSlope = (dPrevX == 0) ? 1 : dPrevY/dPrevX;
+        float nextSlope = (dNextX == 0) ? 1 : dNextY/dNextX;
+        
+        float dPrevNextX = prev1X - next1X;  
+        float dPrevNextY = prev1Y - next1Y;
+        
+        if (prevSlope == nextSlope) {
+            if (prevSlope == -1) {
+                if ((dPrevNextX == -2) && (dPrevNextY == 1)) {
+                    return true;
+                } else if ((dPrevNextX == -1) && (dPrevNextY == 2)) {
+                    return true;
+                } else if ((dPrevNextX == 1) && (dPrevNextY == -2)) {
+                    return true;
+                } else if ((dPrevNextX == 2) && (dPrevNextY == -1)) {
+                    return true;
+                } else if ((dPrevNextX == 2) && (dPrevNextY == 0)) {
+                    return true;
+                }
+            } else if (prevSlope == 1) {
+                if ((dPrevNextX == 2) && (dPrevNextY == 0)) {
+                    return true;
+                } else if ((dPrevNextX == 2) && (dPrevNextY == -1)) {
+                    return true;
+                }
+            } else if (((prevSlope == 0) || (prevSlope == -0)) 
+                && ((dPrevNextX == 2) || (dPrevNextX == -2)) && (dPrevNextY == -2)
+            ) {
+                return true;
+            } 
+        }
+        
+        return false;
+    }
+
+    private boolean isAGoodMatchingCandidate(int idx, ScaleSpaceCurve scaleSpace) {
+       
+        float prev2X = scaleSpace.getX(idx - 2);
+        float prev2Y = scaleSpace.getY(idx - 2);
+        float prev1X = scaleSpace.getX(idx - 1);
+        float prev1Y = scaleSpace.getY(idx - 1);
+        float x = scaleSpace.getX(idx);
+        float y = scaleSpace.getY(idx);
+        float next1X = scaleSpace.getX(idx + 1);
+        float next1Y = scaleSpace.getY(idx + 1);
+        float next2X = scaleSpace.getX(idx + 2);
+        float next2Y = scaleSpace.getY(idx + 2);
+        float dPrevX = prev2X - prev1X;
+        float dPrevY = prev2Y - prev1Y;
+        float dNextX = next2X - next1X;
+        float dNextY = next2Y - next1Y;
+        float prevSlope = (dPrevX == 0) ? 1 : dPrevY / dPrevX;
+        float nextSlope = (dNextX == 0) ? 1 : dNextY / dNextX;
+
+        float dPrevNextX = prev1X - next1X;
+        float dPrevNextY = prev1Y - next1Y;
+
+        if (Math.abs(Math.abs(prevSlope) - Math.abs(nextSlope)) == 1) {
+            if ((prevSlope == 0) || (nextSlope == 0)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
 }

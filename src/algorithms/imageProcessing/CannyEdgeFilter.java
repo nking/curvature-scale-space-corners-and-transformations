@@ -325,6 +325,16 @@ public class CannyEdgeFilter {
         
         return g;
     }
+    
+    private void applyGaussian(final GreyscaleImage img, float sigma) {
+       
+        float[] kernel = Gaussian1D.getKernel(sigma);
+                
+        apply1DKernelToImage(img, kernel, true);
+                
+        apply1DKernelToImage(img, kernel, false);
+       
+    }
      
     /**
      * convolve the image with a Sobel X 1D kernel which is the same as a 

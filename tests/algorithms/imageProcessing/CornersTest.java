@@ -40,6 +40,9 @@ public class CornersTest extends TestCase {
         */
         
         String fileName = "lena.jpg";
+        String outFileName = "lena.png";
+        //fileName = "valve_gaussian.png";
+        //outFileName = fileName;
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
@@ -57,7 +60,7 @@ public class CornersTest extends TestCase {
         ImageIOHelper.addCurveToImage(corners, image, 2, 2550, 0, 0);
         String dirPath = ResourceFinder.findDirectory("bin");
         String sep = System.getProperty("file.separator");
-        ImageIOHelper.writeOutputImage(dirPath + sep + "corners_" + fileName, 
+        ImageIOHelper.writeOutputImage(dirPath + sep + "corners_" + outFileName, 
             image);
      
     }

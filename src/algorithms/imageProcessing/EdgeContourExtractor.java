@@ -262,11 +262,7 @@ public class EdgeContourExtractor {
             "==> {0}) pixels are in edges out of {1} pixels > threshhold", 
             new Object[]{Long.toString(sum2), 
                 Long.toString(numberOfPixelsAboveThreshold)});
-        
-        if (!doNotStraigthenLines && !useLineDrawingMode) {
-            output = straightenJaggedLines(output);
-        }
-        
+       
         return output;
     }
 
@@ -716,7 +712,7 @@ public class EdgeContourExtractor {
             }
         }
     }
-
+    
     private List<PairIntArray> straightenJaggedLines(List<PairIntArray> input) {
         
         for (int i = 0; i < input.size(); i++) {
@@ -745,36 +741,51 @@ public class EdgeContourExtractor {
                        -- store each index as 'straightened' to skip over
                           it upon subsequent iterations.
         */
-                
-        boolean[] straightened = new boolean[input.getN()];
         
-        for (int i = 0; i < input.getN(); i++) {
-                        
-            if (straightened[i]) {
-                continue;
-            }
+        int nIter = 0;
+        int nMaxIter = 1;
+        
+        boolean go = true;
+        
+        while ((nIter < nMaxIter) && go) {
+               
+            go = false;
+            nIter++;
             
-            // min number of points  i _ _ j
-            for (int j = (input.getN() - 1); j > i; j--) {
-                
-                if ((j - i) < 10) {
+            boolean[] straightened = new boolean[input.getN()];
+
+            for (int i = 0; i < input.getN(); i++) {
+
+                if (straightened[i]) {
                     continue;
                 }
-                if (straightened[j]) {
-                    continue;
-                }
-                
-                boolean didFitALineSegment = fitAndAlterForLineSegments(input, 
-                    i, j);
-                
-                if (didFitALineSegment) {
-                    for (int ii = i; ii <= j; ii++) {
-                        straightened[ii] = true;
+
+                // min number of points  i _ _ j
+                for (int j = (input.getN() - 1); j > i; j--) {
+
+                    if ((j - i) < 10) {
+                        continue;
                     }
-                    break;
+                    if (straightened[j]) {
+                        continue;
+                    }
+
+                    boolean didFitALineSegment = fitAndAlterForLineSegments(input, 
+                        i, j);
+
+                    if (didFitALineSegment) {
+                        for (int ii = i; ii <= j; ii++) {
+                            
+                            straightened[ii] = true;
+                            
+                            go = true;
+                        }
+                        break;
+                    }
                 }
             }
-        }        
+            log.info("nIter=" + nIter + " did straigthen=" + go);
+        }
     }
 
     private boolean fitAndAlterForLineSegments(PairIntArray input, 
@@ -829,11 +840,20 @@ public class EdgeContourExtractor {
         //N-1 because had to calculate mean from data
         stDev = Math.sqrt(stDev/(n - 1.0f));
         
-       
+        int g = (int)((n/14.f)*0.1);
+        
+        if ((Math.abs(avg) < g) && (stDev < 1.0*g) && (n > 100) 
+            && (Math.abs(avg) > 0.01)) {
+            //for length 14, delta=0.4  //n=160, avg=0.6, stdev=0.64
+            int z = 1;                  //n=213      2.9        9.5
+        }                               //240        5.8        6.6
+        boolean isLargeLine = ((Math.abs(avg) < g) && (stDev < 1.0*g) 
+            && (n > 100) && (Math.abs(avg) > 0.01));
+        
         boolean hasOutliers = false;
         
-        if ((Math.abs(avg) < 0.01) && (stDev < Math.abs(slope))) {
-            
+        if (isLargeLine || ((Math.abs(avg) < 0.01) && (stDev < Math.abs(slope)))) {
+          
             for (int i = start; i < (start + n); i++) {
 
                 float yd = yDiffs[i - start];
@@ -875,19 +895,23 @@ public class EdgeContourExtractor {
                 for (int i = start + 1; i < (start + n); i++) {
                     int x = input.getX(i);                
                     float y = y0 + ((x - x0) * slope);
-                                    
+                    
                     input.set(i, x, (int)y);
                 }
             } else {
                 for (int i = start + 1; i < (start + n); i++) {
                     int y = input.getY(i); 
-                    //x = x0 + ((y-y0)/slope)
+                    // y = y0 + ((x - x0) * slope);
                     float x = x0 + ((y - y0) / slope);
-                                    
+                    
                     input.set(i, (int)x, y);
                 }
             }
             
+            log.info("redrew line from (" + x0 + "," + y0 + ") to " + 
+                " (" + (x0 + xDiff) + "," + (y0 + yDiff));
+            
+           
             /*
             if (!hasOutliers) {
                 log.fine("debug: " + input.toString());

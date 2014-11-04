@@ -92,7 +92,8 @@ public class CornersOfBloxTest extends TestCase {
        
         Image image = ImageIOHelper.readImageAsGrayScale(filePath);
         List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
-        corners = detector.getCornersInOriginalReferenceFrame();
+        
+        corners = detector.getCornersInOriginalReferenceFrame(); 
         ImageIOHelper.addAlternatingColorCurvesToImage(edges, image);
         ImageIOHelper.addCurveToImage(corners, image, 2, 2550, 0, 0);
         String dirPath = ResourceFinder.findDirectory("bin");

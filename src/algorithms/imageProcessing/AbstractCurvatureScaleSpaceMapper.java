@@ -144,7 +144,9 @@ public class AbstractCurvatureScaleSpaceMapper {
         
         EdgeContourExtractor contourExtractor = new EdgeContourExtractor(img);
         
-        contourExtractor.useLineDrawingMode();
+        if (useLineDrawingMode) {
+            contourExtractor.useLineDrawingMode();
+        } 
         
         List<PairIntArray> tmpEdges = contourExtractor.findEdges();
         
