@@ -43,13 +43,9 @@ public final class CurvatureScaleSpaceImageMaker extends
     }
     
     public CurvatureScaleSpaceImageMaker(GreyscaleImage input, 
-        boolean useLineDrawingMode) {
+        boolean doUseLineDrawingMode) {
                 
-        super(input);
-        
-        if (useLineDrawingMode) {
-            useLineDrawingMode();
-        }
+        super(input, doUseLineDrawingMode);
         
         initialize();
     }

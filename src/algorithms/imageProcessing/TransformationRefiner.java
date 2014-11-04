@@ -86,9 +86,24 @@ public class TransformationRefiner {
         int secondWorstFitIdx = fits.length - 2;
         int worstFitIdx = fits.length - 1;
 
+        double lastChiSqSum = Double.MAX_VALUE;
+        int nIterSameMin = 0;
+        
         while (go && (nIter < nMaxIter)) {
 
             sortFromMinToMax(fits, 0, (fits.length - 1));
+            
+            // if singled value for all combinations, can break:
+            if (lastChiSqSum == fits[0].getChiSqSum()) {
+                nIterSameMin++;
+                if (nIterSameMin >= 5) {
+                    break;
+                }
+            } else {
+                nIterSameMin = 0;
+            }
+            lastChiSqSum = fits[0].getChiSqSum();
+            
 
             // determine center for all points excepting the worse fit
             double rSum = 0.0;

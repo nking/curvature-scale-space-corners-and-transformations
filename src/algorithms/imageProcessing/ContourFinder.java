@@ -12,7 +12,7 @@ import java.util.logging.Logger;
  */
 public class ContourFinder {
     
-    private double threshold = 0.15;
+    private double thresholdFactor = 0.15;
     
     private boolean useLowestSigma = false;
     
@@ -46,6 +46,12 @@ public class ContourFinder {
         
         List<CurvatureScaleSpaceContour> contours = new
             ArrayList<CurvatureScaleSpaceContour>();
+        
+        double lowLimit = space.getImageSigmas()[0]*thresholdFactor;
+        //TODO: consider a low limit of sigma=3
+        if (lowLimit < 2) {
+            lowLimit = 2;
+        }
                 
         // find the first contour at this height and extract it from the
         // dataset, nulling
@@ -53,7 +59,7 @@ public class ContourFinder {
             
             float sigma = space.getImageSigmas()[i];
             
-            if (sigma < (space.getImageSigmas()[0]*threshold)) {
+            if (sigma < lowLimit) {
                 break;
             }
             

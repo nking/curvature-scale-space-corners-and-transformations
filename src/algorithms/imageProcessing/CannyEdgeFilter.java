@@ -49,6 +49,8 @@ public class CannyEdgeFilter {
     
     private boolean useLineDrawingMode = false;
     
+    private GreyscaleImage gXY = null;
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     private Class<? extends ILineThinner> lineThinnerClass = ErosionFilter.class;
@@ -101,18 +103,20 @@ public class CannyEdgeFilter {
         ImageProcesser imageProcesser = new ImageProcesser();
         
         imageProcesser.shrinkImageToFirstNonZeros(input);
-        
+                
         applyHistogramEqualization(input);
         
         //[gX, gY, gXY, theta
         GreyscaleImage[] gradientProducts = createGradientProducts(input);
+        
+        gXY = gradientProducts[2].copyImage();
         
         input.resetTo(gradientProducts[2]);
                 
         if (!useLineDrawingMode) {
             apply2LayerFilter(input);
         }
-                        
+
         applyLineThinnerFilter(input);
         
         additionalThinning45DegreeEdges(gradientProducts[3], input);
@@ -586,4 +590,7 @@ public class CannyEdgeFilter {
         return false;
     }
 
+    public GreyscaleImage getGradientXY() {
+        return gXY;
+    }
 }

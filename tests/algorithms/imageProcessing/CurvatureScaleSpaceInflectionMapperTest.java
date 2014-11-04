@@ -37,7 +37,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         
         for (String rotDegrees : rotDegreesList) {
             
-            /*if (!rotDegrees.equals("135")) {
+            /*if (!rotDegrees.equals("335")) {
                 continue;
             }*/
             
@@ -57,6 +57,8 @@ public class CurvatureScaleSpaceInflectionMapperTest {
                 CurvatureScaleSpaceInflectionMapper(img1, img2);
 
             mapper.useLineDrawingLineMode();
+            
+            mapper.useDebugMode();
             
             //mapper.doNotRefineTransformations();
 
@@ -114,6 +116,8 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             CurvatureScaleSpaceInflectionMapper(img1, img2);
 
         mapper.useLineDrawingLineMode();
+        
+        mapper.useDebugMode();
 
         TransformationParameters transformationParams = 
             mapper.createEuclideanTransformation();

@@ -1,7 +1,11 @@
 package algorithms.imageProcessing;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -24,17 +28,52 @@ public class AbstractCurvatureScaleSpaceMapper {
      */
     protected List<PairIntArray> edges = new ArrayList<PairIntArray>();
     
+    /**
+     * when making the corner list for the purpose of using them as stable
+     * features to identify in other images, may want to exclude 
+     * corners that are in this list, highChanges.
+     */
+    protected List<Integer> highChangeEdges = new ArrayList<Integer>();
+ 
     protected PairIntArray tCorners = new PairIntArray();
     
     protected boolean doNotNormalizeByHistogram = false;
     
     protected boolean useLineDrawingMode = false;
     
+    protected boolean doNotStraightenEdges = false;
+    
     protected int trimmedXOffset = 0;
     
     protected int trimmedYOffset = 0;
+    
+    protected GreyscaleImage gradientXY = null;
  
     protected Logger log = Logger.getLogger(this.getClass().getName());
+    
+    /**
+     * constructor w/ input image which is operated on.  the same instance
+     * input is modified by this class.
+     * 
+     * @param input 
+     */
+    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input, boolean
+        doUseLineMode) {
+     
+        useLineDrawingMode = true;
+        
+        img = input;
+        
+        ImageProcesser imageProcesser = new ImageProcesser();
+        
+        originalImg = input.copyImage();
+            
+        int[] offsetXY = imageProcesser.shrinkImageToFirstNonZeros(img);
+        
+        trimmedXOffset = offsetXY[0];
+        
+        trimmedYOffset = offsetXY[1];
+    }
     
     /**
      * constructor w/ input image which is operated on.  the same instance
@@ -91,16 +130,6 @@ public class AbstractCurvatureScaleSpaceMapper {
     public void doNotPerformHistogramEqualization() {
         this.doNotNormalizeByHistogram = true;
     }
-
-    /**
-    Line Drawing Mode uses the difference of Gaussians instead of 
-    1st derivative of Gaussian to try to keep the lines thinner from the start 
-    in the CannyEdgeFilter.
-    line drawings are now handled well without using this setting too.
-    */
-    public void useLineDrawingMode() {
-        this.useLineDrawingMode = true;
-    }
     
     protected void initialize() {
         
@@ -136,6 +165,8 @@ public class AbstractCurvatureScaleSpaceMapper {
         }
         
         filter.applyFilter(img);
+        
+        gradientXY = filter.getGradientXY();
                 
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
@@ -149,6 +180,10 @@ public class AbstractCurvatureScaleSpaceMapper {
         } 
         
         List<PairIntArray> tmpEdges = contourExtractor.findEdges();
+        
+        if (!doNotStraightenEdges && !useLineDrawingMode) {
+            straightenEdges(tmpEdges);
+        }
         
         edges.clear();
         edges.addAll(tmpEdges);
@@ -211,13 +246,121 @@ public class AbstractCurvatureScaleSpaceMapper {
             }
         }
     }
+    
+    /**
+     * Uses the intensity of the original edges to move pixels in an edge
+     * towards the brighter regions.
+     * This is a correction for a binary erosion filter which sometimes
+     * produces non jagged lines.
+     * 
+     * @param tmpEdges 
+     */
+    private void straightenEdges(List<PairIntArray> tmpEdges) {
 
+        if (gradientXY == null) {
+            // if the class was initialized with edges, the CannyEdgeFilter
+            // was not run, so this image will be missing
+            // (and the edges should have already been straightened).
+            return;
+        }
+        
+        int nReplaced = 1;
+        
+        int nMaxIter = 100;
+        int nIter = 0;
+      
+        while ((nIter < nMaxIter) && (nReplaced > 0)) {
+           
+           nReplaced = 0;
+        
+           for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
+            
+                PairIntArray edge = tmpEdges.get(lIdx);
+
+                if (edge.getN() < 3) {
+                    continue;
+                }
+
+                int nEdgeReplaced = 0;
+                
+                /*
+                looking at the 8 neighbor region of each pixel for which the
+                pixel's preceding and next edge pixels remain connected for
+                   and among those, looking for a higher intensity pixel than
+                   the center and if found, change coords to that.
+                */
+                for (int i = 1; i < (edge.getN() - 1); i++) {
+                    int x = edge.getX(i);                
+                    int y = edge.getY(i);
+                    int prevX = edge.getX(i - 1);                
+                    int prevY = edge.getY(i - 1);
+                    int nextX = edge.getX(i + 1);                
+                    int nextY = edge.getY(i + 1);
+
+                    int maxValue = gradientXY.getValue(x, y);
+                    int maxValueX = x;
+                    int maxValueY = y;
+                    boolean changed = false;
+
+                    for (int col = (prevX - 1); col <= (prevX + 1); col++) {
+
+                        if ((col < 0) || (col > (gradientXY.getWidth() - 1))) {
+                            continue;
+                        }
+
+                        for (int row = (prevY - 1); row <= (prevY + 1); row++) {
+
+                            if ((row < 0) || (row > (gradientXY.getHeight() - 1))) {
+                                continue;
+                            }
+                            if ((col == prevX) && (row == prevY)) {
+                                continue;
+                            }
+                            if ((col == nextX) && (row == nextY)) {
+                                continue;
+                            }
+
+                            // skip if pixel is not next to (nextX, nextY)
+                            int diffX = Math.abs(nextX - col);
+                            int diffY = Math.abs(nextY - row);
+                            if ((diffX > 1) || (diffY > 1)) {
+                                continue;
+                            }
+
+                            if (gradientXY.getValue(col, row) > maxValue) {
+                                maxValue = gradientXY.getValue(col, row);
+                                maxValueX = col;
+                                maxValueY = row;
+                                changed = true;
+                            }
+                        }
+                    }
+                    if (changed) {
+                        nEdgeReplaced++;
+                        edge.set(i, maxValueX, maxValueY);
+                    }                    
+                }
+                
+                nReplaced += nEdgeReplaced;
+            }
+
+            log.info("REPLACED: " + nReplaced + " nIter=" + nIter);
+
+            nIter++;
+        }
+        
+    }
+    
     public boolean getInitialized() {
         
         return (state.ordinal() >= 
             CurvatureScaleSpaceMapperState.INITIALIZED.ordinal());
     }
 
+    public List<Integer> getNoisyEdgeIndexes() {
+        return highChangeEdges;
+    }
+    
     public GreyscaleImage getImage() {
         return img;
     }
@@ -348,5 +491,5 @@ public class AbstractCurvatureScaleSpaceMapper {
     The curvture of a straight line is zero.
     Points where k = 0 are called the points of inflection.
      */
-    
+
 }

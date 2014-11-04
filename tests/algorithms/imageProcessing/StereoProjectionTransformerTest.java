@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import Jama.Matrix;
 import algorithms.ResourceFinder;
+import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,8 +48,31 @@ public class StereoProjectionTransformerTest {
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);
                
+        detector.doNotUseNoisyEdgeCorners();
+        
         detector.findCorners();
 
+        
+        List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
+        
+        Image image = ImageIOHelper.readImageAsGrayScale(filePath1);
+        
+        
+        Image image2 = new Image(image.getWidth(), image.getHeight());
+                                  
+        ImageIOHelper.addAlternatingColorCurvesToImage(edges, image2);
+        
+        String cwd = System.getProperty("user.dir") + "/";
+        
+        String outFilePath = cwd + "tmp_edges.png";
+                 
+        ImageIOHelper.writeOutputImage(outFilePath, image2);
+                 
+                                                          
+        outFilePath = cwd + "tmp.png";
+                 
+        ImageIOHelper.writeOutputImage(outFilePath, image);
+        
         int z = 1;
     }
     

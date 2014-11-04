@@ -64,10 +64,8 @@ public class CurvatureScaleSpaceImageMakerTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img);
-        
-        instance.useLineDrawingMode();
-        
+            new CurvatureScaleSpaceImageMaker(img, true);
+                
         assertTrue(instance.getInitialized());
         
         PolygonAndPointPlotter plotterC = new PolygonAndPointPlotter();
@@ -175,12 +173,10 @@ public class CurvatureScaleSpaceImageMakerTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img);
+            new CurvatureScaleSpaceImageMaker(img, true);
         
         assertTrue(instance.getInitialized());
-        
-        instance.useLineDrawingMode();
-        
+                
         PolygonAndPointPlotter plotterC = new PolygonAndPointPlotter();
         
         List<PairIntArray> curves = instance.getClosedCurves();
@@ -304,12 +300,10 @@ public class CurvatureScaleSpaceImageMakerTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img);
+            new CurvatureScaleSpaceImageMaker(img, true);
         
         assertTrue(instance.getInitialized());
-        
-        instance.useLineDrawingMode();
-                
+                        
         List<PairIntArray> curves = instance.getClosedCurves();
         
         
@@ -317,9 +311,7 @@ public class CurvatureScaleSpaceImageMakerTest {
             new CurvatureScaleSpaceImageMaker(img, curves);
         
         assertTrue(instance2.getInitialized());
-        
-        instance2.useLineDrawingMode();
-        
+                
         List<PairIntArray> curves2 = instance2.getClosedCurves();
         
         assertTrue(curves.size() == curves2.size());

@@ -37,9 +37,23 @@ public class CurvatureScaleSpaceCornerDetector extends
     
     protected PairIntArray corners = new PairIntArray();
     
+    protected boolean doNotUseNoisyEdgeCorners = false;    
+    
     public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input) {
                 
         super(input);
+    }
+    
+    /**
+     * constructor with option needed for images that are line drawings or
+     * are solid blocks of color.
+     * @param input
+     * @param doUseLineMode 
+     */
+    public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input,
+        boolean doUseLineMode) {
+                        
+        super(input, true);
     }
     
     public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input, 
@@ -47,7 +61,16 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         super(input, theEdges);
     }
-   
+     
+    /**
+     * when constructing the corner list, exclude corners from the edges which
+     * are very noisy.  NOTE: This feature is not yet implemented, so has no effect
+     * on the results.
+     */
+    public void doNotUseNoisyEdgeCorners() {
+        doNotUseNoisyEdgeCorners = true;
+    }
+    
     public void findCorners() {
          
         initialize();
@@ -107,6 +130,12 @@ public class CurvatureScaleSpaceCornerDetector extends
         // perform the analysis on the edgesScaleSpaceMaps
         for (int i = 0; i < edges.size(); i++) {
   
+            if (doNotUseNoisyEdgeCorners) {
+                if (highChangeEdges.contains(Integer.valueOf(i))) {
+                    continue;
+                }
+            }
+            
             final PairIntArray edge = edges.get(i);
             
             final Map<SIGMA, ScaleSpaceCurve> map = 
@@ -122,7 +151,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                     Integer.valueOf(edgeCorners.getN()), 
                     Integer.valueOf(i)}); 
                    
-            edgeCorners = removeFalseCorners(edgeCorners);
+//edgeCorners = removeFalseCorners(edgeCorners);
             
             //store xc and yc for the edge
             for (int ii = 0; ii < edgeCorners.getN(); ii++) {
@@ -172,25 +201,6 @@ public class CurvatureScaleSpaceCornerDetector extends
             for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
                 int idx = maxCandidateCornerIndexes.get(ii);
                 if ((idx > 1) && (idx < (scaleSpace.getSize() - 2))) {
-                    
-                    if ((edgeNumber == 2) && (ii > 1) && (ii < 8)) {
-                        int prev2X = (int) scaleSpace.getX(idx - 2);
-                        int prev2Y = (int) scaleSpace.getY(idx - 2);
-                        int prev1X = (int) scaleSpace.getX(idx - 1);
-                        int prev1Y = (int) scaleSpace.getY(idx - 1);
-                        int x = (int) scaleSpace.getX(idx);
-                        int y = (int) scaleSpace.getY(idx);
-                        int next1X = (int) scaleSpace.getX(idx + 1);
-                        int next1Y = (int) scaleSpace.getY(idx + 1);
-                        int next2X = (int) scaleSpace.getX(idx + 2);
-                        int next2Y = (int) scaleSpace.getY(idx + 2);
-                        String p2Str = String.format("(%d,%d)", prev2X, prev2Y);
-                        String p1Str = String.format("(%d,%d)", prev1X, prev1Y);
-                        String str = String.format("(%d,%d)", x, y);
-                        String n1Str = String.format("(%d,%d)", next1X, next1Y);
-                        String n2Str = String.format("(%d,%d)", next2X, next2Y);
-                        log.info("i=" + ii + " " + p2Str + p1Str + " *" + str + "* " + n1Str + n2Str);
-                    }
                     
                     boolean isDueToJaggedLine = isDueToJaggedLine(idx, scaleSpace);
                     if (!isDueToJaggedLine) {
@@ -243,18 +253,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         if (maxScaleSpace.getK() == null) {
             return new PairIntArray(0);
         }
-        /*
-        for (int i = 0; i < edges.size(); i++) {
-            PairIntArray e = edges.get(i);
-            for (int j = 0; j < e.getN(); j++) {
-                int x = e.getX(j);
-                int y = e.getY(j);
-                //edges.get( 2 ) pt idx 1-7 out of 88
-                if ((x >= 221) && (x <= 230) && (y >= 87) && (y <= 97)) {
-                    log.info("EDGE: " + i + " index=" + j + " out of " + e.getN());
-                }
-            }
-        }*/
  
         PairFloatArray candidateCornersXY = 
             findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, true);
@@ -758,6 +756,9 @@ public class CurvatureScaleSpaceCornerDetector extends
 
     private boolean isDueToJaggedLine(int idx, ScaleSpaceCurve scaleSpace) {
         
+        // range check for idx larger and smaller than image boundaries
+        // by 2 pixels has been performed by invoker
+        
         float prev2X = scaleSpace.getX(idx - 2);
         float prev2Y = scaleSpace.getY(idx - 2);
         float prev1X = scaleSpace.getX(idx - 1);
@@ -768,6 +769,11 @@ public class CurvatureScaleSpaceCornerDetector extends
         float next1Y = scaleSpace.getY(idx + 1);
         float next2X = scaleSpace.getX(idx + 2);
         float next2Y = scaleSpace.getY(idx + 2);
+        float k = scaleSpace.getK(idx);
+        
+        if ((x > 80) && (x < 90) && (y > 140) && (y < 150)) {
+            int z = 1;
+        }
         
         // check for vertical lines,
         if (prev2X == prev1X) {
@@ -822,11 +828,11 @@ public class CurvatureScaleSpaceCornerDetector extends
             } 
         } else if (prev2Y == prev1Y) {
             if (prev2X == (prev1X + 1)) {
-                /* check for horizontal lines, increasing in X with idx
+                /* check for horizontal lines, decreasing in X with idx
                 0
-                1         @ {4} {5}
-                2 {1} {2} @
-                3         @ {4} {5}
+                1 {5} {4} @
+                2         @ {2} {1}
+                3 {5} {4} @
                 */
                 if (next2Y == next1Y) {
                     if ((next2Y == (prev1Y + 1)) || (next2Y == prev1Y) ||
@@ -836,19 +842,56 @@ public class CurvatureScaleSpaceCornerDetector extends
 
                             if ((x == (prev1X - 1)) && (next1X == (x - 1)) 
                                 && (next2X == (next1X - 1))) {
-
-                                // skip this corner
-                                return true;
+                                
+                                /*
+                                check one more pixel on the "next" end
+                                */
+                                if ((idx + 3) < scaleSpace.getSize()) {
+                                    float next3X = scaleSpace.getX(idx + 3);
+                                    float next3Y = scaleSpace.getY(idx + 3);
+                                    if ((next3Y == next2Y) && (next3X == (next2X - 1))) {
+                                        /*
+                                        check one more pixel on the "prev" end
+                                        */
+                                        if (idx > 2) {
+                                            float prev3X = scaleSpace.getX(idx - 3);
+                                            float prev3Y = scaleSpace.getY(idx - 3);
+                                            if ((prev3Y == prev2Y) && 
+                                                (prev3X == (prev2X + 1))) {
+                                                // skip this corner
+                                                return true;
+                                            }
+                                        } else {
+                                            return true;
+                                        }
+                                    }
+                                } else {
+                                    /*
+                                    check one more pixel on the "prev" end
+                                    */
+                                    if (idx > 2) {
+                                        float prev3X = scaleSpace.getX(idx - 3);
+                                        float prev3Y = scaleSpace.getY(idx - 3);
+                                        if ((prev3Y == prev2Y)
+                                            && (prev3X == (prev2X + 1))) {
+                                            // skip this corner
+                                            return true;
+                                        }
+                                    } else {
+                                        return true;
+                                    }
+                                    //TODO: make same checks for 3rd pixel in other blocks
+                                }
                             }
                         }
                     }
                 }
             } else if (prev2X == (prev1X + 1)) {
-                /* check for horizontal lines, decreasing in X with idx
+                /* check for horizontal lines, increasing in X with idx
                 0
-                1 {5} {4} @
-                2         @ {2} {1}
-                3 {5} {4} @
+                1         @ {4} {5}
+                2 {1} {2} @
+                3         @ {4} {5}
                 */
                 if (next2Y == next1Y) {
                     if ((next2Y == (prev1Y + 1)) || (next2Y == prev1Y) ||

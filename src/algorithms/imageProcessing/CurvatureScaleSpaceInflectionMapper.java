@@ -92,11 +92,12 @@ public final class CurvatureScaleSpaceInflectionMapper {
         // (left and right) for clockwise order gives the right answer 
         // and is less work computationally
         
-        CurvatureScaleSpaceImageMaker imgMaker
-            = new CurvatureScaleSpaceImageMaker(image1);
-        
+        CurvatureScaleSpaceImageMaker imgMaker;
+            
         if (useLineDrawingMode) {
-            imgMaker.useLineDrawingMode();
+            imgMaker = new CurvatureScaleSpaceImageMaker(image1, true);
+        } else {
+            imgMaker = new CurvatureScaleSpaceImageMaker(image1);
         }
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -166,8 +167,23 @@ public final class CurvatureScaleSpaceInflectionMapper {
             contours1.addAll(result);
         }
         
+        if (contours1.isEmpty()) {
+            log.info("no contours found in image 1");
+            return;
+        }
+        
         if ((edges1.size() > 1) || didReverse) {
             Collections.sort(contours1, new DescendingSigmaComparator());
+        }
+        
+        float highestPeak1 = contours1.get(0).getPeakSigma();
+        
+        float lowThresh1 = 0.15f * highestPeak1;
+        
+        for (int i = (contours1.size() - 1); i > -1; i--) {
+            if (contours1.get(i).getPeakSigma() < lowThresh1) {
+                contours1.remove(i);
+            }
         }
         
         /*
@@ -180,12 +196,11 @@ public final class CurvatureScaleSpaceInflectionMapper {
         offsetImageX1 = imgMaker.getTrimmedXOffset();
         
         offsetImageY1 = imgMaker.getTrimmedYOffset();
-        
-        imgMaker
-            = new CurvatureScaleSpaceImageMaker(image2);
-        
+                    
         if (useLineDrawingMode) {
-            imgMaker.useLineDrawingMode();
+            imgMaker = new CurvatureScaleSpaceImageMaker(image2, true);
+        } else {
+            imgMaker = new CurvatureScaleSpaceImageMaker(image2);
         }
         
         edges2 = imgMaker.getClosedCurves();
@@ -252,15 +267,30 @@ public final class CurvatureScaleSpaceInflectionMapper {
             
             contours2.addAll(result);
         }
+          
+        offsetImageX2 = imgMaker.getTrimmedXOffset();
+        
+        offsetImageY2 = imgMaker.getTrimmedYOffset();
+        
+        if (contours2.isEmpty()) {
+            log.info("did not find contours in image 2");
+            return;
+        }
         
         if ((edges2.size() > 1) || didReverse) {
             Collections.sort(contours2, new DescendingSigmaComparator());            
         }
         
-        offsetImageX2 = imgMaker.getTrimmedXOffset();
+        float highestPeak2 = contours2.get(0).getPeakSigma();
         
-        offsetImageY2 = imgMaker.getTrimmedYOffset();
+        float lowThresh2 = 0.15f * highestPeak2;
         
+        for (int i = (contours2.size() - 1); i > -1; i--) {
+            if (contours2.get(i).getPeakSigma() < lowThresh2) {
+                contours2.remove(i);
+            }
+        }
+      
         initialized = true;
     }
     
@@ -311,6 +341,10 @@ public final class CurvatureScaleSpaceInflectionMapper {
         
         List<CurvatureScaleSpaceContour> transAppliedTo2 = 
             matcher.getSolutionMatchedContours2();
+        
+        if (transAppliedTo1 == null || transAppliedTo2 == null) {
+            return null;
+        }
         
         assert(transAppliedTo1.size() == transAppliedTo2.size());
         
@@ -574,6 +608,9 @@ public final class CurvatureScaleSpaceInflectionMapper {
         
         TransformationParameters out = chSqMin.refineTransformation(matchedEdges1, 
             matchedEdges2, params);
+        
+        //missing translation fields are set in invoker which has necessary
+        //information
         
         return out;
     }

@@ -37,9 +37,7 @@ public class CurvatureScaleSpaceContourMatcherTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
 
         CurvatureScaleSpaceImageMaker instance
-            = new CurvatureScaleSpaceImageMaker(img);
-
-        instance.useLineDrawingMode();
+            = new CurvatureScaleSpaceImageMaker(img, true);
 
         List<PairIntArray> curves = instance.getClosedCurves();
 
