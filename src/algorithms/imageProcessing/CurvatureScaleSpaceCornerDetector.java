@@ -771,21 +771,23 @@ public class CurvatureScaleSpaceCornerDetector extends
         float next2Y = scaleSpace.getY(idx + 2);
         float k = scaleSpace.getK(idx);
         
-        if ((x > 80) && (x < 90) && (y > 140) && (y < 150)) {
+        if ((x > 225) && (x < 235) && (y > 125) && (y < 143)) {
             int z = 1;
         }
         
         // check for vertical lines,
         if (prev2X == prev1X) {
             if (prev2Y == (prev1Y + 1)) {
-                /* check for vertical lines, increasing in Y with idx
+                
+                /* check for vertical lines, decreasing in Y with idx
                 0
-                1   {1}
-                2   {2}
+                1 {5}  {5}
+                2 {4}  {4}
                   @  @  @
-                 {4}    {4}
-                 {5}    {5}
+                    {2}
+                    {1}
                 */
+                
                 if (next2X == next1X) {
                     if ((next2X == (prev1X + 1)) ||(next2X == prev1X) ||
                         (next2X == (prev1X - 1))) {
@@ -795,32 +797,103 @@ public class CurvatureScaleSpaceCornerDetector extends
                             if ((y == (prev1Y - 1)) && (next1Y == (y - 1)) &&
                                 (next2Y == (next1Y - 1))) {
 
-                                // skip this corner
-                                return true;
+                                /*
+                                 check one more pixel on the "next" end
+                                 */
+                                if ((idx + 3) < scaleSpace.getSize()) {
+                                    float next3X = scaleSpace.getX(idx + 3);
+                                    float next3Y = scaleSpace.getY(idx + 3);
+                                    if ((next3X == next2X) && (next3Y == (next2Y - 1))) {
+                                        /*
+                                         check one more pixel on the "prev" end
+                                         */
+                                        if (idx > 2) {
+                                            float prev3X = scaleSpace.getX(idx - 3);
+                                            float prev3Y = scaleSpace.getY(idx - 3);
+                                            if ((prev3X == prev2X)
+                                                && (prev3Y == (prev2Y + 1))) {
+                                                // skip this corner
+                                                return true;
+                                            }
+                                        } else {
+                                            return true;
+                                        }
+                                    }
+                                } else {
+                                    /*
+                                     check one more pixel on the "prev" end
+                                     */
+                                    if (idx > 2) {
+                                        float prev3X = scaleSpace.getX(idx - 3);
+                                        float prev3Y = scaleSpace.getY(idx - 3);
+                                        if ((prev3X == prev2X)
+                                            && (prev3Y == (prev2Y + 1))) {
+                                            // skip this corner
+                                            return true;
+                                        }
+                                    } else {
+                                        return true;
+                                    }
+                                }
                             }
                         }
                     }
                 }
             } else if (prev2Y == (prev1Y - 1)) {
-                /* check for vertical lines, decreasing in Y with idx
+                
+                /* check for vertical lines, increasing in Y with idx
                 0
-                1 {5}  {5}
-                2 {4}  {4}
+                1   {1}
+                2   {2}
                   @  @  @
-                    {2}
-                    {1}
+                 {4}    {4}
+                 {5}    {5}
                 */
                 if (next2X == next1X) {
                     if ((next2X == (prev1X + 1)) || (next2X == prev1X) ||
                         (next2X == (prev1X - 1))) {
                         if ((x == prev1X) || (x == (prev1X - 1))
                             || (x == (prev1X + 1))) {
-
                             if ((y == (prev1Y + 1)) && (next1Y == (y + 1)) &&
                                 (next2Y == (next1Y + 1))) {
-
-                                // skip this corner
-                                return true;
+                                /*
+                                 check one more pixel on the "next" end
+                                 */
+                                if ((idx + 3) < scaleSpace.getSize()) {
+                                    float next3X = scaleSpace.getX(idx + 3);
+                                    float next3Y = scaleSpace.getY(idx + 3);
+                                    if ((next3X == next2X) && (next3Y == (next2Y + 1))) {
+                                        /*
+                                         check one more pixel on the "prev" end
+                                         */
+                                        if (idx > 2) {
+                                            float prev3X = scaleSpace.getX(idx - 3);
+                                            float prev3Y = scaleSpace.getY(idx - 3);
+                                            if ((prev3X == prev2X)
+                                                && (prev3Y == (prev2Y - 1))) {
+                                                // skip this corner
+                                                return true;
+                                            }
+                                        } else {
+                                            return true;
+                                        }
+                                    }
+                                } else {
+                                    /*
+                                     check one more pixel on the "prev" end
+                                     */
+                                    if (idx > 2) {
+                                        float prev3X = scaleSpace.getX(idx - 3);
+                                        float prev3Y = scaleSpace.getY(idx - 3);
+                                        if ((prev3X == prev2X)
+                                            && (prev3Y == (prev2Y - 1))) {
+                                            // skip this corner
+                                            return true;
+                                        }
+                                    } else {
+                                        return true;
+                                    }
+                                }
                             }
                         }
                     }
@@ -880,13 +953,12 @@ public class CurvatureScaleSpaceCornerDetector extends
                                     } else {
                                         return true;
                                     }
-                                    //TODO: make same checks for 3rd pixel in other blocks
                                 }
                             }
                         }
                     }
                 }
-            } else if (prev2X == (prev1X + 1)) {
+            } else if (prev2X == (prev1X - 1)) {
                 /* check for horizontal lines, increasing in X with idx
                 0
                 1         @ {4} {5}
@@ -902,8 +974,44 @@ public class CurvatureScaleSpaceCornerDetector extends
                             if ((x == (prev1X + 1)) && (next1X == (x + 1)) 
                                 && (next2X == (next1X + 1))) {
 
-                                // skip this corner
-                                return true;
+                                /*
+                                 check one more pixel on the "next" end
+                                 */
+                                if ((idx + 3) < scaleSpace.getSize()) {
+                                    float next3X = scaleSpace.getX(idx + 3);
+                                    float next3Y = scaleSpace.getY(idx + 3);
+                                    if ((next3Y == next2Y) && (next3X == (next2X + 1))) {
+                                        /*
+                                         check one more pixel on the "prev" end
+                                         */
+                                        if (idx > 2) {
+                                            float prev3X = scaleSpace.getX(idx - 3);
+                                            float prev3Y = scaleSpace.getY(idx - 3);
+                                            if ((prev3Y == prev2Y)
+                                                && (prev3X == (prev2X - 1))) {
+                                                // skip this corner
+                                                return true;
+                                            }
+                                        } else {
+                                            return true;
+                                        }
+                                    }
+                                } else {
+                                    /*
+                                     check one more pixel on the "prev" end
+                                     */
+                                    if (idx > 2) {
+                                        float prev3X = scaleSpace.getX(idx - 3);
+                                        float prev3Y = scaleSpace.getY(idx - 3);
+                                        if ((prev3Y == prev2Y)
+                                            && (prev3X == (prev2X - 1))) {
+                                            // skip this corner
+                                            return true;
+                                        }
+                                    } else {
+                                        return true;
+                                    }
+                                }
                             }
                         }
                     }

@@ -437,6 +437,114 @@ public class CannyEdgeFilter {
         }        
     }
 
+    private void removeOnePixelSpanningBorders(final GreyscaleImage img) {
+        
+        // remove 1 pixel edges on borders that extend entire length
+        boolean foundBoundaryLine = true;
+        
+        for (int col = 0; col < img.getWidth(); col++) {
+            if (img.getValue(col, 0) == 0) {
+                foundBoundaryLine = false;
+                break;
+            }
+        }
+        if (foundBoundaryLine) {
+            for (int col = 0; col < img.getWidth(); col++) {
+                img.setValue(col, 0, 0);
+            }
+        }
+        
+        for (int col = 0; col < img.getWidth(); col++) {
+            if (img.getValue(col, 1) == 0) {
+                foundBoundaryLine = false;
+                break;
+            }
+        }
+        if (foundBoundaryLine) {
+            for (int col = 0; col < img.getWidth(); col++) {
+                img.setValue(col, 1, 0);
+            }
+        }
+        
+        foundBoundaryLine = true;
+        for (int col = 0; col < img.getWidth(); col++) {
+            if (img.getValue(col, img.getHeight() - 1) == 0) {
+                foundBoundaryLine = false;
+                break;
+            }
+        }
+        if (foundBoundaryLine) {
+            for (int col = 0; col < img.getWidth(); col++) {
+                img.setValue(col, img.getHeight() - 1, 0);
+            }
+        }
+        
+        foundBoundaryLine = true;
+        for (int col = 0; col < img.getWidth(); col++) {
+            if (img.getValue(col, img.getHeight() - 2) == 0) {
+                foundBoundaryLine = false;
+                break;
+            }
+        }
+        if (foundBoundaryLine) {
+            for (int col = 0; col < img.getWidth(); col++) {
+                img.setValue(col, img.getHeight() - 2, 0);
+            }
+        }
+        
+        foundBoundaryLine = true;
+        for (int row = 1; row < (img.getHeight() - 1); row++) {
+            if (img.getValue(0, row) == 0) {
+                foundBoundaryLine = false;
+                break;
+            }
+        }
+        if (foundBoundaryLine) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                img.setValue(0, row, 0);
+            }
+        }
+        foundBoundaryLine = true;
+        for (int row = 1; row < (img.getHeight() - 1); row++) {
+            if (img.getValue(1, row) == 0) {
+                foundBoundaryLine = false;
+                break;
+            }
+        }
+        if (foundBoundaryLine) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                img.setValue(1, row, 0);
+            }
+        }
+        
+        foundBoundaryLine = true;
+        for (int row = 1; row < (img.getHeight() - 1); row++) {
+            if (img.getValue(img.getWidth() - 1, row) == 0) {
+                foundBoundaryLine = false;
+                break;
+            }
+        }
+        if (foundBoundaryLine) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                img.setValue(img.getWidth() - 1, row, 0);
+            }
+        }
+        
+        foundBoundaryLine = true;
+        for (int row = 1; row < (img.getHeight() - 1); row++) {
+            if (img.getValue(img.getWidth() - 2, row) == 0) {
+                foundBoundaryLine = false;
+                break;
+            }
+        }
+        if (foundBoundaryLine) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                img.setValue(img.getWidth() - 2, row, 0);
+            }
+        }
+        
+    }
+    
     /**
      * construct the gradient in X, gradient in Y and the theta image from the 
      * given img and return the results as new GreyscalImage[]{gX, gY, gXY, theta}.
@@ -456,6 +564,10 @@ public class CannyEdgeFilter {
 
             gY = createGradientYFromDiffOfGauss(img);
 
+            removeOnePixelSpanningBorders(gX);
+            
+            removeOnePixelSpanningBorders(gY);
+            
             theta = imageProcesser.computeTheta(gX, gY);
 
             g = imageProcesser.combineConvolvedImages(gX, gY);
@@ -463,8 +575,15 @@ public class CannyEdgeFilter {
         } else {
         
             gX = getGradientXID(img);
+            
             gY = getGradientYID(img);
+            
+            removeOnePixelSpanningBorders(gX);
+            
+            removeOnePixelSpanningBorders(gY);
+            
             theta = imageProcesser.computeTheta(gX, gY);
+            
             g = imageProcesser.combineConvolvedImages(gX, gY);
        
         }
