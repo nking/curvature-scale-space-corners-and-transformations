@@ -771,7 +771,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         float next2Y = scaleSpace.getY(idx + 2);
         float k = scaleSpace.getK(idx);
         
-        if ((x > 225) && (x < 235) && (y > 125) && (y < 143)) {
+        if ((x > 130) && (x < 160) && (y > 60) && (y < 95)) {
             int z = 1;
         }
         
@@ -1019,17 +1019,63 @@ public class CurvatureScaleSpaceCornerDetector extends
             }
         }
         
-        // look for the prev and next pairs to be a line
-        float dPrevX = prev2X - prev1X;
-        float dPrevY = prev2Y - prev1Y;
-        float dNextX = next2X - next1X;
-        float dNextY = next2Y - next1Y;
-        float prevSlope = (dPrevX == 0) ? 1 : dPrevY/dPrevX;
-        float nextSlope = (dNextX == 0) ? 1 : dNextY/dNextX;
+        // look for the prev and next pairs to be steps or a line
+        float dPrev21X = prev2X - prev1X;
+        float dPrev21Y = prev2Y - prev1Y;
+        float dPrev1X = prev1X - x;
+        float dPrev1Y = prev1Y - y;        
+        float dNext12X = next1X - next2X;
+        float dNext12Y = next1Y - next2Y;
+        float prevSlope = (dPrev21X == 0) ? 1 : dPrev21Y/dPrev21X;
+        float nextSlope = (dNext12X == 0) ? 1 : dNext12Y/dNext12X;
         
         float dPrevNextX = prev1X - next1X;  
         float dPrevNextY = prev1Y - next1Y;
         
+        /*
+        horizontal steps:
+        */
+        int dx = 1;
+        int dy = 1;
+        int h = 4;
+        boolean passes = true;
+        int nDX = 0;
+        int nDY = 0;
+        for (int j = 0; j < 2; j++) {
+            if (j == 1) {
+                dx = -1;
+                dy = -1;
+            }
+            nDX = 0;
+            nDY = 0;
+            for (int i = (idx - h); i <= (idx + 4); i++) {
+                if ((i < 0) || (i > (scaleSpace.getSize() - 1))) {
+                    continue;
+                }
+                if ((i + 1) > (scaleSpace.getSize() - 1)) {
+                    continue;
+                }
+                float diffX = scaleSpace.getX(i) - scaleSpace.getX(i + 1);
+                float diffY = scaleSpace.getY(i) - scaleSpace.getY(i + 1);
+                if (!(((diffX == 0) || (diffX == dx)) && ((diffY == 0) || (diffY == dy)))) {
+                    passes = false;
+                    break;
+                }
+                if (diffX == dx) {
+                    nDX++;
+                }
+                if (diffY == dy) {
+                    nDY++;
+                }
+            }
+            if ((nDX == (2*h + 1)) && (nDY > h)) {
+                return true;
+            } else if ((nDY == (2*h + 1)) && (nDX > h)) {
+                return true;
+            }
+        }
+       
+        /*
         if (prevSlope == nextSlope) {
             if (prevSlope == -1) {
                 if ((dPrevNextX == -2) && (dPrevNextY == 1)) {
@@ -1055,6 +1101,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                 return true;
             } 
         }
+        */
         
         return false;
     }
