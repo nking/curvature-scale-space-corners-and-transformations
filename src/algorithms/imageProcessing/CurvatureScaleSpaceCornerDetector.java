@@ -200,8 +200,10 @@ public class CurvatureScaleSpaceCornerDetector extends
                         
             List<Integer> remove = new ArrayList<Integer>();
             for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
+                
                 int idx = maxCandidateCornerIndexes.get(ii);
-                if ((idx > 1) && (idx < (scaleSpace.getSize() - 2))) {
+                
+                if ((idx > 3) && (idx < (scaleSpace.getSize() - 4))) {
                     
                     boolean isDueToJaggedLine = isDueToJaggedLine(idx, scaleSpace);
                     if (!isDueToJaggedLine) {
@@ -210,7 +212,9 @@ public class CurvatureScaleSpaceCornerDetector extends
                         remove.add(Integer.valueOf(ii));
                     }
                 } else {
-                    xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+                    // corner at the end points of edge are usually artifacts
+                    //TODO:  for closed curves, don't delete
+                    remove.add(Integer.valueOf(ii));
                 }
             }
             nRemoved += remove.size();
@@ -258,7 +262,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         PairFloatArray candidateCornersXY = 
             findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, true);
         
-        SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);  
+        SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);
 
         SIGMA prevSigma = maxSIGMA;
                 
@@ -513,7 +517,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima 
         
-        float factorAboveMin = 6.0f;//3.0f; // 10 misses some corners
+        float factorAboveMin = 3.0f;// 10 misses some corners
 
         List<Integer> cornerCandidates = new ArrayList<Integer>();
 
@@ -684,10 +688,11 @@ public class CurvatureScaleSpaceCornerDetector extends
     }
 
     private boolean isDueToJaggedLine(int idx, ScaleSpaceCurve scaleSpace) {
-        
+            
         /*
         horizontal steps:
         */
+        
         int dx = 1;
         int dy = 1;
         int h = 4;
@@ -737,6 +742,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         }
         
         // look for 2 steps in a very long interval
+        int nSteps = 2;
         for (h = 20; h > 4; h--) {
             
             if (((idx - h) < 0) || ((idx + h) > (scaleSpace.getSize() - 1))) {
@@ -776,7 +782,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                 }
                 
                 // looking for 2 steps in long range    
-                if ((diffX == n*dx) && (Math.abs(diffY) <= Math.abs(2*dy))) {
+                if ((diffX == n*dx) && (Math.abs(diffY) <= Math.abs(nSteps*dy))) {
                     //further inspect every step
                     boolean passed = true;
                     for (int i = (idx - h); i < (idx + h); i++) {
@@ -790,7 +796,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                     if (passed) {
                         return true;
                     }
-                } else if ((diffY == n*dy) && (Math.abs(diffX) <= Math.abs(2*dx))) {
+                } else if ((diffY == n*dy) && (Math.abs(diffX) <= Math.abs(nSteps*dx))) {
                     //further inspect every step
                     boolean passed = true;
                     for (int i = (idx - h); i < (idx + h); i++) {
@@ -807,6 +813,68 @@ public class CurvatureScaleSpaceCornerDetector extends
                 }
             }
         }
+        
+        //TODO: improve this and add switch for all dx,dy combinations
+        // trying one pattern first 
+        dx = -1;
+        dy = 1;
+        int count = 0;
+        int stepSize = 3;
+            for (h = 10; h > 4; h--) {
+                float lastY = -1;
+                for (int i = (idx - h); i < (idx + h); i++) {
+                    if ((i < 0) || (i > (scaleSpace.getSize() - 1))) {
+                        continue;
+                    }
+                    float x = scaleSpace.getX(i);
+                    float y = scaleSpace.getY(i);
+                    if (lastY == -1) {
+                        lastY = y;
+                    } else {
+                        if (y != (lastY + dy)) {
+                            count = 0;
+                            break;
+                        } 
+                        lastY = y;
+                    }
+                    // look ahead for same y and dx + 1
+                    int j;
+                    boolean doBlockBreak = false;
+                    for (j = (i + 1); j < (idx + h); j++) {
+                        if ((j < 0) || (j > (scaleSpace.getSize() - 1))) {
+                            continue;
+                        }
+                        float diffX = scaleSpace.getX(j) - scaleSpace.getX(j - 1);
+                        if (diffX != dx) {
+                            doBlockBreak = true;
+                            break;
+                        }
+                        float cY = scaleSpace.getY(j);
+                        if (y != cY) {
+                            break;
+                        }
+                    }
+                    if (doBlockBreak) {
+                        count = 0;
+                        break;
+                    }
+                    int n = j - i;
+                    if ((n == stepSize) || (n == (stepSize - 1))) {
+                        // keep trying to step forward, starting with i=j at next loop
+                        i = j - 1;
+                        count++;
+                    } else {
+                        // existing count is high?
+                        count = 0;
+                        break;
+                    }
+                }
+                if (count > 0) {
+                    // this was a set of steps
+                    log.info("H=" + h);
+                    return true;
+                }
+            }
         
         return false;
     }

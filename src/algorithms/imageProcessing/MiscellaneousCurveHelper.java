@@ -1022,4 +1022,171 @@ public class MiscellaneousCurveHelper {
         return dist;
     }
 
+    public void correctCheckeredSegments(List<PairIntArray> tmpEdges) {
+        
+        /*
+        there are sometimes sections in the line where one pixel is displaced
+               @      @ @ @@@@@@@@@
+        @@@@@@@ @@@@@@ @ @ 
+        
+        So far, only seen in horizontal or vertical segments.
+        */
+        
+        int[] xs = new int[2];
+        int[] ys = new int[2];
+        
+        for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
+            
+            PairIntArray edge = tmpEdges.get(lIdx);
+            
+            for (int i = 0; i < edge.getN(); i++) {
+                
+                correctCheckeredSegments(edge, i, xs, ys);
+            }
+        }
+    }
+    
+    private boolean debugIsSection1(PairIntArray edge, int idx) {
+        int x = edge.getX(idx);
+        int y = edge.getY(idx);
+        if ((x > 92) && (x < 99) && (y > 58) && (y < 63)) {
+            return true;
+        }
+        return false;
+    }
+    
+    private boolean debugIsSection2(PairIntArray edge, int idx) {
+        int x = edge.getX(idx);
+        int y = edge.getY(idx);
+        if ((x > 134) && (x < 147) && (y > 58) && (y < 63)) {
+            return true;
+        }
+        return false;
+    }
+
+    private void correctCheckeredSegments(PairIntArray edge, int idx,
+        int[] xs, int[] ys) {
+        
+        int h = 4;
+        
+        /*
+        there are sometimes sections in the line where one pixel is displaced
+               @      @ @ @@@@@@@@@
+        @@@@@@@ @@@@@@ @ @ 
+        
+        So far, only seen in horizontal or vertical segments.
+        */
+        
+        int nx = 0;
+        int ny = 0;
+        
+        for (int i = (idx - h); i <= (idx + h); i++) {
+            
+            if ((i < 0) || (i > (edge.getN() - 1))) {
+                continue;
+            }
+            
+            int x = edge.getX(i);
+            int y = edge.getY(i);
+            
+            if (nx == 0) {
+                xs[nx] = x;
+                nx++;
+            } else if (nx == 1) {
+                if (xs[0] != x) {
+                    xs[nx] = x;
+                    nx++;
+                }
+            } else if ((xs[0] != x) && (xs[1] != x)) {
+                // increment to higher than "1" so we know it's not a vertical
+                // checkered/fence pattern
+                nx++;
+            }
+            
+            if (ny == 0) {
+                ys[ny] = y;
+                ny++;
+            } else if (ny == 1) {
+                if (ys[0] != y) {
+                    ys[ny] = y;
+                    ny++;
+                }
+            } else if ((ys[0] != y) && (ys[1] != y)) {
+                // increment to higher than "2" so we know it's not a horizontal
+                // checkered/fence pattern
+                ny++;
+            }
+        }
+        
+        if ((ny == 2) || (nx == 2)) {
+            
+            for (int i = (idx - h + 2); i <= (idx + h - 1); i++) {
+                
+                //TODO: condense these:
+                if ((i < 0) || (i > (edge.getN() - 1))) {
+                    continue;
+                }
+                if (((i - 1) < 0) || ((i - 1) > (edge.getN() - 1))) {
+                    continue;
+                }
+                if (((i - 2) < 0) || ((i - 2) > (edge.getN() - 1))) {
+                    continue;
+                }
+                if (((i + 1) < 0) || ((i + 1) > (edge.getN() - 1))) {
+                    continue;
+                }
+                
+                if (ny == 2) {
+                    int prev2Y = edge.getY(i - 2);                
+                    int prev1Y = edge.getY(i - 1);
+
+                    if (prev2Y != prev1Y) {
+                        continue;
+                    }
+
+                    int prev2X = edge.getX(i - 2);
+                    int prev1X = edge.getX(i - 1);
+                    int x = edge.getX(i);
+                    int next1X = edge.getX(i + 1);
+
+                    int dx = prev1X - prev2X;
+
+                    if (!(((prev1X + dx) == x) && ((x + dx) == next1X))) {
+                        continue;
+                    }
+
+                    int y = edge.getY(i);
+                    int next1Y = edge.getY(i + 1);
+                    if ((next1Y == prev1Y) && (next1Y != y)) {
+                        edge.set(i, x, next1Y);
+                    }
+                } else {
+                    int prev2X = edge.getX(i - 2);                
+                    int prev1X = edge.getX(i - 1);
+
+                    if (prev2X != prev1X) {
+                        continue;
+                    }
+                    
+                    int prev2Y = edge.getY(i - 2);
+                    int prev1Y = edge.getY(i - 1);
+                    int y = edge.getY(i);
+                    int next1Y = edge.getY(i + 1);
+
+                    int dy = prev1Y - prev2Y;
+
+                    if (!(((prev1Y + dy) == y) && ((y + dy) == next1Y))) {
+                        continue;
+                    }
+                    
+                    int x = edge.getX(i);
+                    int next1X = edge.getX(i + 1);
+                    if ((next1X == prev1X) && (next1X != x)) {
+                        edge.set(i, next1X, y);
+                    }
+                }
+            }                
+        }
+    }
+
 }

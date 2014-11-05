@@ -357,6 +357,8 @@ public class AbstractCurvatureScaleSpaceMapper {
         
         curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);
         
+        curveHelper.correctCheckeredSegments(tmpEdges);
+        
     }
     
     public boolean getInitialized() {
