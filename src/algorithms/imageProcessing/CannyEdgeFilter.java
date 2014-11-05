@@ -51,6 +51,8 @@ public class CannyEdgeFilter {
     
     private GreyscaleImage gXY = null;
     
+    private GreyscaleImage thetaXY = null;
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     private Class<? extends ILineThinner> lineThinnerClass = ErosionFilter.class;
@@ -111,6 +113,8 @@ public class CannyEdgeFilter {
         
         gXY = gradientProducts[2].copyImage();
         
+        thetaXY = gradientProducts[3].copyImage();
+        
         input.resetTo(gradientProducts[2]);
                 
         if (!useLineDrawingMode) {
@@ -119,7 +123,9 @@ public class CannyEdgeFilter {
 
         applyLineThinnerFilter(input);
         
-        additionalThinning45DegreeEdges(gradientProducts[3], input);
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        curveHelper.additionalThinning45DegreeEdges(gradientProducts[3], input);
     }
    
     /*
@@ -234,54 +240,6 @@ public class CannyEdgeFilter {
         }
 
         input.resetTo(img3);
-    }
-   
-    private void additionalThinning45DegreeEdges(
-        GreyscaleImage theta, GreyscaleImage input) {
-        
-        // thin the edges for angles 45 and -45 as suggested by 
-        // 1998 Mokhtarian and Suomela
-        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE, 
-        //     VOL. 20, NO. 12
-        // 
-        //compare each edge pixel which has an edge orientation of 
-        // 45o or -45o to one of its horizontal or vertical neighbors. 
-        // If the neighbor has the same orientation, the other point can be 
-        // removed.
-                
-        for (int i = 1; i < (input.getWidth() - 1); i++) {
-            for (int j = 1; j < (input.getHeight() - 1); j++) {
-                
-                int tG = theta.getValue(i, j);
-                
-                if (((tG == 45) || (tG == -45)) && (input.getValue(i,j) > 0)) {
-                    
-                    int tH0 = theta.getValue(i - 1, j);
-                    int tH1 = theta.getValue(i + 1, j);
-                    int tV0 = theta.getValue(i, j - 1);
-                    int tV1 = theta.getValue(i, j + 1);
-                    
-                    int gH0 = input.getValue(i - 1, j);
-                    int gH1 = input.getValue(i + 1, j);
-                    int gV0 = input.getValue(i, j - 1);
-                    int gV1 = input.getValue(i, j + 1);
-                    
-                    if ((tH0 == tG) && (gH0 > 0)) {
-                        if ((tV0 == tG) && (gV0 > 0)) {
-                            input.setValue(i, j, 0);
-                        } else if ((tV1 == tG) && (gV1 > 0)) {
-                            input.setValue(i, j, 0);
-                        }
-                    } else if ((tH1 == tG) && (gH1 > 0)) {
-                        if ((tV0 == tG) && (gV0 > 0)) {
-                            input.setValue(i, j, 0);
-                        } else if ((tV1 == tG) && (gV1 > 0)) {
-                            input.setValue(i, j, 0);
-                        }
-                    }
-                }
-            }
-        }        
     }
 
     private GreyscaleImage createGradientXFromDiffOfGauss(
@@ -711,5 +669,9 @@ public class CannyEdgeFilter {
 
     public GreyscaleImage getGradientXY() {
         return gXY;
+    }
+    
+    public GreyscaleImage getThetaXY() {
+        return thetaXY;
     }
 }

@@ -416,4 +416,246 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         return xy;
     }
     
+    public void testDistanceBetweenPointAnd2Lines() {
+        
+        /*
+         5
+         4
+         3    #     @
+         2       @
+         1    @
+         0
+           0  1  2  3  4  5  6
+        */
+        float x0 = 1;
+        float y0 = 1;
+        float x1 = 3;
+        float y1 = 3;
+        
+        float xP = 1;
+        float yP = 3;
+        double expectedDist = Math.sqrt(2);
+                
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, 
+            xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+        
+        /*
+         5
+         4 #
+         3   #      @
+         2       @
+         1    @
+         0
+           0  1  2  3  4  5  6
+        */
+        x0 = 1;
+        y0 = 1;
+        x1 = 3;
+        y1 = 3;
+        
+        xP = 0;
+        yP = 4;
+        
+        // side 1
+        double side1 = Math.sqrt(2*2 + 2*2);
+        expectedDist = Math.sqrt(4*4 - side1*side1);
+                
+        dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, 
+            xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+        
+        /*
+         5       .  #
+         4       .
+         3       . 
+         2    @  .
+         1             @
+         0
+           0  1  2  3  4  5  6
+        */
+        x0 = 1;
+        y0 = 2;
+        x1 = 4;
+        y1 = 1;
+        
+        xP = 3;
+        yP = 5;
+        expectedDist = 3.4785;
+                
+        dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+            
+        
+        /*
+         5         #
+         4       
+         3        
+         2    @        @
+         1            
+         0
+           0  1  2  3  4  5  6
+        */
+        x0 = 1;
+        y0 = 2;
+        x1 = 4;
+        y1 = 2;
+        
+        xP = 3;
+        yP = 5;
+        expectedDist = 3;
+                
+        dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+                
+        /*
+         5    @    
+         4         #  
+         3        
+         2    @  
+         1            
+         0
+           0  1  2  3  4  5  6
+        */
+        x0 = 1;
+        y0 = 2;
+        x1 = 1;
+        y1 = 5;
+        
+        xP = 3;
+        yP = 4;
+        expectedDist = 2;
+                
+        dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+    }
+   
+    public void testDistanceBetweenPointAnd2Lines_2() {
+        
+        /*
+         5
+         4
+         3    #     @
+         2       @
+         1    @
+         0
+           0  1  2  3  4  5  6
+        */
+        int x0 = 1;
+        int y0 = 1;
+        int x1 = 3;
+        int y1 = 3;
+        
+        float xP = 1;
+        float yP = 3;
+        double expectedDist = Math.sqrt(2);
+                
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, 
+            xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+        
+        /*
+         5
+         4 #
+         3   #      @
+         2       @
+         1    @
+         0
+           0  1  2  3  4  5  6
+        */
+        x0 = 1;
+        y0 = 1;
+        x1 = 3;
+        y1 = 3;
+        
+        xP = 0;
+        yP = 4;
+        
+        // side 1
+        double side1 = Math.sqrt(2*2 + 2*2);
+        expectedDist = Math.sqrt(4*4 - side1*side1);
+                
+        dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, 
+            xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+        
+        /*
+         5       .  #
+         4       .
+         3       . 
+         2    @  .
+         1             @
+         0
+           0  1  2  3  4  5  6
+        */
+        x0 = 1;
+        y0 = 2;
+        x1 = 4;
+        y1 = 1;
+        
+        xP = 3;
+        yP = 5;
+        expectedDist = 3.4785;
+                
+        dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+            
+        
+        /*
+         5         #
+         4       
+         3        
+         2    @        @
+         1            
+         0
+           0  1  2  3  4  5  6
+        */
+        x0 = 1;
+        y0 = 2;
+        x1 = 4;
+        y1 = 2;
+        
+        xP = 3;
+        yP = 5;
+        expectedDist = 3;
+                
+        dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+                
+        /*
+         5    @    
+         4         #  
+         3        
+         2    @  
+         1            
+         0
+           0  1  2  3  4  5  6
+        */
+        x0 = 1;
+        y0 = 2;
+        x1 = 1;
+        y1 = 5;
+        
+        xP = 3;
+        yP = 4;
+        expectedDist = 2;
+                
+        dist = curveHelper.distanceFromPointToALine(x0, y0, x1, y1, xP, yP);
+        
+        assertTrue(Math.abs(expectedDist - dist) < 0.01);
+    }
+   
 }

@@ -102,7 +102,7 @@ public aspect CurvatureAspect {
 
     after() 
         returning(TransformationParameters params) :
-        execution(public TransformationParameters algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper.mapScaleSpaceImageContours())
+        execution(public TransformationParameters algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper.createEuclideanTransformation())
 	    && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper) {
 
         Object obj = thisJoinPoint.getThis();

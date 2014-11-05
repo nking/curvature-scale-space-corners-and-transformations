@@ -197,6 +197,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         int nRemoved = 0;
         
         if (correctForJaggedLines) {
+                        
             List<Integer> remove = new ArrayList<Integer>();
             for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
                 int idx = maxCandidateCornerIndexes.get(ii);
@@ -512,7 +513,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima 
         
-        float factorAboveMin = 3.0f; // 10 misses some corners
+        float factorAboveMin = 6.0f;//3.0f; // 10 misses some corners
 
         List<Integer> cornerCandidates = new ArrayList<Integer>();
 
@@ -671,366 +672,18 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         return output;
     }
-
-    private PairIntArray removeFalseCorners(PairIntArray edgeCorners) {
-        
-        if (edgeCorners.getN() < 3) {
-            return edgeCorners;
-        } 
-        
-        float tolerance = 0.5f;//0.2f;
-        
-        PairIntArray output = new PairIntArray();
-        
-        /*
-        -- for each point in edge,
-           -- calculate the slope to the next corner.
-           -- for the points where the slope is the same within some tolerance,
-              remove all points in between.
-        */
-        float[] slopes = new float[edgeCorners.getN() - 1];
-        
-        for (int i = 0; i < (edgeCorners.getN() - 1); i++) {
-            
-            float diffX = edgeCorners.getX(i + 1) - edgeCorners.getX(i);
-            float diffY = edgeCorners.getY(i + 1) - edgeCorners.getY(i);
-            
-            slopes[i] = (diffX == 0) ? 1 : (diffY/diffX);
-            
-            log.fine("(" + edgeCorners.getX(i) + ", " + edgeCorners.getY(i) +
-                ")  slope=" + slopes[i]); 
+    
+    void printCurvature(ScaleSpaceCurve scaleSpace) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < scaleSpace.getSize(); i++) {
+            String str = String.format("(%.0f, %.0f) k=%f", scaleSpace.getX(i),
+                scaleSpace.getY(i), scaleSpace.getK(i));
+            sb.append(str).append("\n");
         }
-        
-        boolean[] remove = new boolean[slopes.length];
-        
-        int startSameIdx = -1;
-        float lastSlope = Integer.MAX_VALUE;
-        for (int i = 0; i < slopes.length; i++) {
-            
-            float slope = slopes[i];
-            
-            boolean withinTol = false;
-            
-            if (Math.abs(slope - lastSlope) < tolerance) {
-                if (startSameIdx == -1) {
-                    startSameIdx = i;
-                }
-                withinTol = true;
-            } 
-            
-            if (!withinTol || (i == (slopes.length - 1))) {
-                
-                if (startSameIdx > -1) {
-                    
-                    //TODO: may need to estimate mean slope of removable section
-                    // and stdev and only remove if stdev is small
-                    
-                    // mark the points in between for removal
-                    // startSameIdx __  i
-                    //   0           1  2
-                    int nRemovable = i - startSameIdx - 1;
-                    if (nRemovable > 0) {
-                        for (int j = (startSameIdx + 1); j < i; j++) {
-                            remove[j] = true;
-                        }
-                    }
-                    
-                    startSameIdx = -1;
-                }
-            }
-            
-            lastSlope = slope;
-        }
-        
-        for (int i = 0; i < remove.length; i++) {
-            if (!remove[i]) {
-                output.add(edgeCorners.getX(i), edgeCorners.getY(i));
-            }
-        }
-        
-        output.add(edgeCorners.getX(edgeCorners.getN() - 1), 
-            edgeCorners.getY(edgeCorners.getN() - 1));
-        
-        return output;
+        log.info(sb.toString());
     }
 
     private boolean isDueToJaggedLine(int idx, ScaleSpaceCurve scaleSpace) {
-        
-        // range check for idx larger and smaller than image boundaries
-        // by 2 pixels has been performed by invoker
-        
-        float prev2X = scaleSpace.getX(idx - 2);
-        float prev2Y = scaleSpace.getY(idx - 2);
-        float prev1X = scaleSpace.getX(idx - 1);
-        float prev1Y = scaleSpace.getY(idx - 1);
-        float x = scaleSpace.getX(idx);
-        float y = scaleSpace.getY(idx);
-        float next1X = scaleSpace.getX(idx + 1);
-        float next1Y = scaleSpace.getY(idx + 1);
-        float next2X = scaleSpace.getX(idx + 2);
-        float next2Y = scaleSpace.getY(idx + 2);
-        float k = scaleSpace.getK(idx);
-        
-        if ((x > 130) && (x < 160) && (y > 60) && (y < 95)) {
-            int z = 1;
-        }
-        
-        // check for vertical lines,
-        if (prev2X == prev1X) {
-            if (prev2Y == (prev1Y + 1)) {
-                
-                /* check for vertical lines, decreasing in Y with idx
-                0
-                1 {5}  {5}
-                2 {4}  {4}
-                  @  @  @
-                    {2}
-                    {1}
-                */
-                
-                if (next2X == next1X) {
-                    if ((next2X == (prev1X + 1)) ||(next2X == prev1X) ||
-                        (next2X == (prev1X - 1))) {
-                        if ((x == prev1X) || (x == (prev1X - 1))
-                            || (x == (prev1X + 1))) {
-
-                            if ((y == (prev1Y - 1)) && (next1Y == (y - 1)) &&
-                                (next2Y == (next1Y - 1))) {
-
-                                /*
-                                 check one more pixel on the "next" end
-                                 */
-                                if ((idx + 3) < scaleSpace.getSize()) {
-                                    float next3X = scaleSpace.getX(idx + 3);
-                                    float next3Y = scaleSpace.getY(idx + 3);
-                                    if ((next3X == next2X) && (next3Y == (next2Y - 1))) {
-                                        /*
-                                         check one more pixel on the "prev" end
-                                         */
-                                        if (idx > 2) {
-                                            float prev3X = scaleSpace.getX(idx - 3);
-                                            float prev3Y = scaleSpace.getY(idx - 3);
-                                            if ((prev3X == prev2X)
-                                                && (prev3Y == (prev2Y + 1))) {
-                                                // skip this corner
-                                                return true;
-                                            }
-                                        } else {
-                                            return true;
-                                        }
-                                    }
-                                } else {
-                                    /*
-                                     check one more pixel on the "prev" end
-                                     */
-                                    if (idx > 2) {
-                                        float prev3X = scaleSpace.getX(idx - 3);
-                                        float prev3Y = scaleSpace.getY(idx - 3);
-                                        if ((prev3X == prev2X)
-                                            && (prev3Y == (prev2Y + 1))) {
-                                            // skip this corner
-                                            return true;
-                                        }
-                                    } else {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if (prev2Y == (prev1Y - 1)) {
-                
-                /* check for vertical lines, increasing in Y with idx
-                0
-                1   {1}
-                2   {2}
-                  @  @  @
-                 {4}    {4}
-                 {5}    {5}
-                */
-                if (next2X == next1X) {
-                    if ((next2X == (prev1X + 1)) || (next2X == prev1X) ||
-                        (next2X == (prev1X - 1))) {
-                        if ((x == prev1X) || (x == (prev1X - 1))
-                            || (x == (prev1X + 1))) {
-                            if ((y == (prev1Y + 1)) && (next1Y == (y + 1)) &&
-                                (next2Y == (next1Y + 1))) {
-                                /*
-                                 check one more pixel on the "next" end
-                                 */
-                                if ((idx + 3) < scaleSpace.getSize()) {
-                                    float next3X = scaleSpace.getX(idx + 3);
-                                    float next3Y = scaleSpace.getY(idx + 3);
-                                    if ((next3X == next2X) && (next3Y == (next2Y + 1))) {
-                                        /*
-                                         check one more pixel on the "prev" end
-                                         */
-                                        if (idx > 2) {
-                                            float prev3X = scaleSpace.getX(idx - 3);
-                                            float prev3Y = scaleSpace.getY(idx - 3);
-                                            if ((prev3X == prev2X)
-                                                && (prev3Y == (prev2Y - 1))) {
-                                                // skip this corner
-                                                return true;
-                                            }
-                                        } else {
-                                            return true;
-                                        }
-                                    }
-                                } else {
-                                    /*
-                                     check one more pixel on the "prev" end
-                                     */
-                                    if (idx > 2) {
-                                        float prev3X = scaleSpace.getX(idx - 3);
-                                        float prev3Y = scaleSpace.getY(idx - 3);
-                                        if ((prev3X == prev2X)
-                                            && (prev3Y == (prev2Y - 1))) {
-                                            // skip this corner
-                                            return true;
-                                        }
-                                    } else {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } 
-        } else if (prev2Y == prev1Y) {
-            if (prev2X == (prev1X + 1)) {
-                /* check for horizontal lines, decreasing in X with idx
-                0
-                1 {5} {4} @
-                2         @ {2} {1}
-                3 {5} {4} @
-                */
-                if (next2Y == next1Y) {
-                    if ((next2Y == (prev1Y + 1)) || (next2Y == prev1Y) ||
-                        (next2Y == (prev1Y - 1)) ) {
-                        if ((y == prev1Y) || (y == (prev1Y - 1))
-                            || (y == (prev1Y + 1))) {
-
-                            if ((x == (prev1X - 1)) && (next1X == (x - 1)) 
-                                && (next2X == (next1X - 1))) {
-                                
-                                /*
-                                check one more pixel on the "next" end
-                                */
-                                if ((idx + 3) < scaleSpace.getSize()) {
-                                    float next3X = scaleSpace.getX(idx + 3);
-                                    float next3Y = scaleSpace.getY(idx + 3);
-                                    if ((next3Y == next2Y) && (next3X == (next2X - 1))) {
-                                        /*
-                                        check one more pixel on the "prev" end
-                                        */
-                                        if (idx > 2) {
-                                            float prev3X = scaleSpace.getX(idx - 3);
-                                            float prev3Y = scaleSpace.getY(idx - 3);
-                                            if ((prev3Y == prev2Y) && 
-                                                (prev3X == (prev2X + 1))) {
-                                                // skip this corner
-                                                return true;
-                                            }
-                                        } else {
-                                            return true;
-                                        }
-                                    }
-                                } else {
-                                    /*
-                                    check one more pixel on the "prev" end
-                                    */
-                                    if (idx > 2) {
-                                        float prev3X = scaleSpace.getX(idx - 3);
-                                        float prev3Y = scaleSpace.getY(idx - 3);
-                                        if ((prev3Y == prev2Y)
-                                            && (prev3X == (prev2X + 1))) {
-                                            // skip this corner
-                                            return true;
-                                        }
-                                    } else {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if (prev2X == (prev1X - 1)) {
-                /* check for horizontal lines, increasing in X with idx
-                0
-                1         @ {4} {5}
-                2 {1} {2} @
-                3         @ {4} {5}
-                */
-                if (next2Y == next1Y) {
-                    if ((next2Y == (prev1Y + 1)) || (next2Y == prev1Y) ||
-                        (next2Y == (prev1Y - 1)) ) {
-                        if ((y == prev1Y) || (y == (prev1Y - 1))
-                            || (y == (prev1Y + 1))) {
-
-                            if ((x == (prev1X + 1)) && (next1X == (x + 1)) 
-                                && (next2X == (next1X + 1))) {
-
-                                /*
-                                 check one more pixel on the "next" end
-                                 */
-                                if ((idx + 3) < scaleSpace.getSize()) {
-                                    float next3X = scaleSpace.getX(idx + 3);
-                                    float next3Y = scaleSpace.getY(idx + 3);
-                                    if ((next3Y == next2Y) && (next3X == (next2X + 1))) {
-                                        /*
-                                         check one more pixel on the "prev" end
-                                         */
-                                        if (idx > 2) {
-                                            float prev3X = scaleSpace.getX(idx - 3);
-                                            float prev3Y = scaleSpace.getY(idx - 3);
-                                            if ((prev3Y == prev2Y)
-                                                && (prev3X == (prev2X - 1))) {
-                                                // skip this corner
-                                                return true;
-                                            }
-                                        } else {
-                                            return true;
-                                        }
-                                    }
-                                } else {
-                                    /*
-                                     check one more pixel on the "prev" end
-                                     */
-                                    if (idx > 2) {
-                                        float prev3X = scaleSpace.getX(idx - 3);
-                                        float prev3Y = scaleSpace.getY(idx - 3);
-                                        if ((prev3Y == prev2Y)
-                                            && (prev3X == (prev2X - 1))) {
-                                            // skip this corner
-                                            return true;
-                                        }
-                                    } else {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // look for the prev and next pairs to be steps or a line
-        float dPrev21X = prev2X - prev1X;
-        float dPrev21Y = prev2Y - prev1Y;
-        float dPrev1X = prev1X - x;
-        float dPrev1Y = prev1Y - y;        
-        float dNext12X = next1X - next2X;
-        float dNext12Y = next1Y - next2Y;
-        float prevSlope = (dPrev21X == 0) ? 1 : dPrev21Y/dPrev21X;
-        float nextSlope = (dNext12X == 0) ? 1 : dNext12Y/dNext12X;
-        
-        float dPrevNextX = prev1X - next1X;  
-        float dPrevNextY = prev1Y - next1Y;
         
         /*
         horizontal steps:
@@ -1038,7 +691,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         int dx = 1;
         int dy = 1;
         int h = 4;
-        boolean passes = true;
         int nDX = 0;
         int nDY = 0;
         for (int j = 0; j < 4; j++) {
@@ -1058,7 +710,7 @@ public class CurvatureScaleSpaceCornerDetector extends
             }
             nDX = 0;
             nDY = 0;
-            for (int i = (idx - h); i <= (idx + 4); i++) {
+            for (int i = (idx - h); i <= (idx + h); i++) {
                 if ((i < 0) || (i > (scaleSpace.getSize() - 1))) {
                     continue;
                 }
@@ -1068,7 +720,6 @@ public class CurvatureScaleSpaceCornerDetector extends
                 float diffX = scaleSpace.getX(i) - scaleSpace.getX(i + 1);
                 float diffY = scaleSpace.getY(i) - scaleSpace.getY(i + 1);
                 if (!(((diffX == 0) || (diffX == dx)) && ((diffY == 0) || (diffY == dy)))) {
-                    passes = false;
                     break;
                 }
                 if (diffX == dx) {
@@ -1084,67 +735,79 @@ public class CurvatureScaleSpaceCornerDetector extends
                 return true;
             }
         }
-       
-        /*
-        if (prevSlope == nextSlope) {
-            if (prevSlope == -1) {
-                if ((dPrevNextX == -2) && (dPrevNextY == 1)) {
-                    return true;
-                } else if ((dPrevNextX == -1) && (dPrevNextY == 2)) {
-                    return true;
-                } else if ((dPrevNextX == 1) && (dPrevNextY == -2)) {
-                    return true;
-                } else if ((dPrevNextX == 2) && (dPrevNextY == -1)) {
-                    return true;
-                } else if ((dPrevNextX == 2) && (dPrevNextY == 0)) {
-                    return true;
-                }
-            } else if (prevSlope == 1) {
-                if ((dPrevNextX == 2) && (dPrevNextY == 0)) {
-                    return true;
-                } else if ((dPrevNextX == 2) && (dPrevNextY == -1)) {
-                    return true;
-                }
-            } else if (((prevSlope == 0) || (prevSlope == -0)) 
-                && ((dPrevNextX == 2) || (dPrevNextX == -2)) && (dPrevNextY == -2)
-            ) {
-                return true;
-            } 
-        }
-        */
         
-        return false;
-    }
+        // look for 2 steps in a very long interval
+        for (h = 20; h > 4; h--) {
+            
+            if (((idx - h) < 0) || ((idx + h) > (scaleSpace.getSize() - 1))) {
+                continue;
+            }
+            if (((idx - h) + 1) > (scaleSpace.getSize() - 1)) {
+                continue;
+            }
 
-    private boolean isAGoodMatchingCandidate(int idx, ScaleSpaceCurve scaleSpace) {
-       
-        float prev2X = scaleSpace.getX(idx - 2);
-        float prev2Y = scaleSpace.getY(idx - 2);
-        float prev1X = scaleSpace.getX(idx - 1);
-        float prev1Y = scaleSpace.getY(idx - 1);
-        float x = scaleSpace.getX(idx);
-        float y = scaleSpace.getY(idx);
-        float next1X = scaleSpace.getX(idx + 1);
-        float next1Y = scaleSpace.getY(idx + 1);
-        float next2X = scaleSpace.getX(idx + 2);
-        float next2Y = scaleSpace.getY(idx + 2);
-        float dPrevX = prev2X - prev1X;
-        float dPrevY = prev2Y - prev1Y;
-        float dNextX = next2X - next1X;
-        float dNextY = next2Y - next1Y;
-        float prevSlope = (dPrevX == 0) ? 1 : dPrevY / dPrevX;
-        float nextSlope = (dNextX == 0) ? 1 : dNextY / dNextX;
+            float xFirst = scaleSpace.getX(idx - h);
+            float yFirst = scaleSpace.getY(idx - h);
+            float xLast = scaleSpace.getX(idx + h);
+            float yLast = scaleSpace.getY(idx + h);
+            float diffX = xLast - xFirst;
+            float diffY = yLast - yFirst;
 
-        float dPrevNextX = prev1X - next1X;
-        float dPrevNextY = prev1Y - next1Y;
+            int n = 2 * h;
 
-        if (Math.abs(Math.abs(prevSlope) - Math.abs(nextSlope)) == 1) {
-            if ((prevSlope == 0) || (nextSlope == 0)) {
-                return true;
+            for (int j = 0; j < 4; j++) {
+                switch (j) {
+                    case 0:
+                        dx = 1;
+                        dy = 1;
+                        break;
+                    case 1:
+                        dx = -1;
+                        dy = -1;
+                        break;
+                    case 2:
+                        dx = 1;
+                        dy = -1;
+                        break;
+                    case 3:
+                        dx = -1;
+                        dy = 1;
+                        break;
+                }
+                
+                // looking for 2 steps in long range    
+                if ((diffX == n*dx) && (Math.abs(diffY) <= Math.abs(2*dy))) {
+                    //further inspect every step
+                    boolean passed = true;
+                    for (int i = (idx - h); i < (idx + h); i++) {
+                        float diffX2 = scaleSpace.getX(i + 1) - scaleSpace.getX(i);
+                        float diffY2 = scaleSpace.getY(i + 1) - scaleSpace.getY(i);
+                        if (!((diffX2 == dx) && ((diffY2 == 0) || (diffY2 == dy)))) {
+                            passed = false;
+                            break;
+                        }
+                    }
+                    if (passed) {
+                        return true;
+                    }
+                } else if ((diffY == n*dy) && (Math.abs(diffX) <= Math.abs(2*dx))) {
+                    //further inspect every step
+                    boolean passed = true;
+                    for (int i = (idx - h); i < (idx + h); i++) {
+                        float diffX2 = scaleSpace.getX(i + 1) - scaleSpace.getX(i);
+                        float diffY2 = scaleSpace.getY(i + 1) - scaleSpace.getY(i);
+                        if (!((diffY2 == dy) && ((diffX2 == 0) || (diffX2 == dx)))) {
+                            passed = false;
+                            break;
+                        }
+                    }
+                    if (passed) {
+                        return true;
+                    }                    
+                }
             }
         }
         
         return false;
     }
-
 }

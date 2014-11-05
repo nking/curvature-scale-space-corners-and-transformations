@@ -70,6 +70,53 @@ public class MiscellaneousCurveHelper {
         return (nNeg >= nPos);
      }
      
+    public void additionalThinning45DegreeEdges(
+        GreyscaleImage theta, GreyscaleImage input) {
+
+        // thin the edges for angles 45 and -45 as suggested by 
+        // 1998 Mokhtarian and Suomela
+        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE, 
+        //     VOL. 20, NO. 12
+        // 
+        //compare each edge pixel which has an edge orientation of 
+        // 45o or -45o to one of its horizontal or vertical neighbors. 
+        // If the neighbor has the same orientation, the other point can be 
+        // removed.
+        for (int i = 1; i < (input.getWidth() - 1); i++) {
+            for (int j = 1; j < (input.getHeight() - 1); j++) {
+
+                int tG = theta.getValue(i, j);
+
+                if (((tG == 45) || (tG == -45)) && (input.getValue(i, j) > 0)) {
+
+                    int tH0 = theta.getValue(i - 1, j);
+                    int tH1 = theta.getValue(i + 1, j);
+                    int tV0 = theta.getValue(i, j - 1);
+                    int tV1 = theta.getValue(i, j + 1);
+
+                    int gH0 = input.getValue(i - 1, j);
+                    int gH1 = input.getValue(i + 1, j);
+                    int gV0 = input.getValue(i, j - 1);
+                    int gV1 = input.getValue(i, j + 1);
+
+                    if ((tH0 == tG) && (gH0 > 0)) {
+                        if ((tV0 == tG) && (gV0 > 0)) {
+                            input.setValue(i, j, 0);
+                        } else if ((tV1 == tG) && (gV1 > 0)) {
+                            input.setValue(i, j, 0);
+                        }
+                    } else if ((tH1 == tG) && (gH1 > 0)) {
+                        if ((tV0 == tG) && (gV0 > 0)) {
+                            input.setValue(i, j, 0);
+                        } else if ((tV1 == tG) && (gV1 > 0)) {
+                            input.setValue(i, j, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
      /**
      * this is a method to combine and prune adjacent lines, but
      * it knows nothing about the overall shape. it chooses to keep the longer
@@ -578,6 +625,401 @@ public class MiscellaneousCurveHelper {
         yc /= (double)xy.getN();
         
         return new double[]{xc, yc};
+    }
+
+    /**
+     * search for point in edge with value (x, y) within indexes lowIdx to 
+     * highIdx, inclusive and return true if found, else false.
+     * Bounds checking is done internally, so it's safe to pass lowIdx
+     * or highIdx out of range of edge.
+     * @param x
+     * @param i
+     * @param edge
+     * @param lowIdx
+     * @param highIdx
+     * @return 
+     */
+    private boolean pointExists(int x, int y, PairIntArray edge, int lowIdx, 
+        int highIdx) {
+        
+        for (int i = lowIdx; i <= highIdx; i++) {
+            if ((i < 0) || (i > (edge.getN() - 1))) {
+                continue;
+            }
+            if ((edge.getX(i) == x) && (edge.getY(i) == y)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    public void removeRedundantPoints(List<PairIntArray> tmpEdges) {
+        
+        log.info("removeRedundantPoints");
+        
+        // if there are redundant points, remove the points in between
+        
+        //TODO: replace w/ faster algorithm...
+        
+        for (int i = 0; i < tmpEdges.size(); i++) {
+            
+            List<String> points = new ArrayList<String>();
+            
+            PairIntArray edge = tmpEdges.get(i);
+            
+            for (int j = (edge.getN() - 1); j > -1; j--) {
+                
+                String str = String.format("%d:%d", edge.getX(j), 
+                    edge.getY(j));
+                
+                int idx = points.indexOf(str);
+                
+                if (idx > -1) {
+                    
+                    //TODO: consider a limit for (pIdx - j)
+                    
+                    int pIdx = edge.getN() - idx - 1;
+                    
+                    edge.removeRange(j, pIdx - 1);
+                    
+                    // restart comparison? if we remove same region from points, we don't have to restart
+                    points.clear();
+                    
+                    j = edge.getN();
+                    
+                } else {
+                    
+                    points.add(str);
+                }
+            }
+        }      
+    }
+
+    public void pruneAdjacentNeighborsTo2(List<PairIntArray> tmpEdges) {
+       
+        log.info("pruneAdjacentNeighborsTo2");
+        
+        // this will usually only have 2 in it, and most expected is 3
+        int[] outputAdjacentNeighbors = new int[8];
+        
+        for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
+            
+            // quick check for whether an edged has 3 neighbors, then
+            // compare with patterns
+            
+            PairIntArray edge = tmpEdges.get(lIdx);
+            
+            for (int eIdx = 0; eIdx < edge.getN(); eIdx++) {
+                
+                int nNeighbors = getAdjacentNeighbors(edge, eIdx,
+                    outputAdjacentNeighbors);
+                
+                if ((nNeighbors > 2)) {
+                    
+                    boolean pruned = pruneAdjacentNeighborsTo2(edge, eIdx, 
+                        outputAdjacentNeighbors, nNeighbors);
+   
+                    if (pruned) {
+                        // restart iteration for easier maintenance
+                        eIdx = -1;
+                        //237,201  edge0
+                        log.info("removed a point from edge=" + lIdx);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * does removing the point at idx create a gap between it's neighboring
+     * pixels?  this uses the simplest test of only the points at idx-1
+     * and idx+1.
+     * 
+     * @param edge
+     * @param idx
+     * @return 
+     */
+    public boolean doesDisconnect(PairIntArray edge, int idx) {
+                
+        // test for endpoints first
+        if (idx == 0) {
+            
+            if (edge.getN() < 3) {
+                return true;
+            }
+            
+            // does this point currently connect to the last point?
+            float diffX = edge.getX(idx) - edge.getX(edge.getN() - 1);
+            if (diffX < 0) {
+                diffX *= -1;
+            }
+            float diffY = edge.getY(idx) - edge.getY(edge.getN() - 1);
+            if (diffY < 0) {
+                diffY *= -1;
+            }
+            if (((diffX < 2) && (diffY < 2))) {
+                // this is connected to the last point in the edge
+                // check to see if lastPoint and idx + 1 are adjacent
+                diffX = edge.getX(idx + 1) - edge.getX(edge.getN() - 1);
+                if (diffX < 0) {
+                    diffX *= -1;
+                }
+                if (diffX > 1) {
+                    return true;
+                }
+
+                diffY = edge.getY(idx + 1) - edge.getY(edge.getN() - 1);
+                if (diffY < 0) {
+                    diffY *= -1;
+                }
+                if (diffY > 1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        if (idx == (edge.getN() - 1)) {
+            
+            if (edge.getN() < 3) {
+                return true;
+            }
+            
+            // does this point currently connect to the first point?
+            float diffX = edge.getX(idx) - edge.getX(0);
+            if (diffX < 0) {
+                diffX *= -1;
+            }
+            float diffY = edge.getY(idx) - edge.getY(0);
+            if (diffY < 0) {
+                diffY *= -1;
+            }
+            if (((diffX < 2) && (diffY < 2))) {
+                // this is connected to the first point in the edge
+                // check to see if lastPoint - 1 and first point are adjacent
+                diffX = edge.getX(idx - 1) - edge.getX(0);
+                if (diffX < 0) {
+                    diffX *= -1;
+                }
+                if (diffX > 1) {
+                    return true;
+                }
+
+                diffY = edge.getY(idx - 1) - edge.getY(0);
+                if (diffY < 0) {
+                    diffY *= -1;
+                }
+                if (diffY > 1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+            
+        if ((idx + 1) < edge.getN()) {
+            float diffX = edge.getX(idx - 1) - edge.getX(idx + 1);
+            if (diffX < 0) {
+                diffX *= -1;
+            }
+            if (diffX > 1) {
+                return true;
+            }
+
+            float diffY = edge.getY(idx - 1) - edge.getY(idx + 1);
+            if (diffY < 0) {
+                diffY *= -1;
+            }
+            if (diffY > 1) {
+                return true;
+            }
+
+            return false;
+        }
+        
+        return false;
+    }
+
+    public boolean pruneAdjacentNeighborsTo2(PairIntArray edge, final int eIdx,
+        int[] outputAdjacentNeighbors, int nOutputAdjacentNeighbors) {
+                    
+        int h = 5;
+        if (((eIdx - h) < 0) || ((eIdx + h) > (edge.getN() - 1))) {
+            return false;
+        }
+
+        final int x = edge.getX(eIdx);
+        final int y = edge.getY(eIdx);
+        
+        // find which point among outputAdjacentNeighbors and eIdx is furthest
+        // tangentially from a line formed by the neighboring 5 points on each 
+        // side of (x, y) and remove that point from the edge
+        
+        int x0 = edge.getX(eIdx - h);
+        int y0 = edge.getY(eIdx - h);
+        int x1 = edge.getX(eIdx + h);
+        int y1 = edge.getY(eIdx + h);
+
+        // which of the 3 or more in outputAdjacentNeighbors do not disconnect
+        //   the adjacent lines?
+        double maxDistance = Double.MIN_VALUE;
+        int maxDistanceIdx = -1;
+        
+        // if removing this point at eIdx would not disconnect the surrounding
+        // points, initialize maxDistance and maxDistanceIdx with it
+        if (!doesDisconnect(edge, eIdx)) {
+            maxDistance = distanceFromPointToALine(x0, y0, x1, y1, x, y);
+            maxDistanceIdx = eIdx;
+        }
+        
+        for (int i = 0; i < nOutputAdjacentNeighbors; i++) {
+            
+            int idx = outputAdjacentNeighbors[i];
+            
+            if (!doesDisconnect(edge, idx)) {
+                int xCompare = edge.getX(idx);
+                int yCompare = edge.getY(idx);
+                
+                double dist = distanceFromPointToALine(x0, y0, x1, y1, xCompare, 
+                    yCompare);
+                
+                if (dist > maxDistance) {
+                    maxDistance = dist;
+                    maxDistanceIdx = idx;
+                }
+            }
+        }
+       
+        if (maxDistanceIdx == -1) {
+            return false;
+        }        
+        
+        log.info("removing point (" + edge.getX(maxDistanceIdx) 
+            + "," + edge.getY(maxDistanceIdx) + ") " + 
+            "idx=" + maxDistanceIdx + " out of " + edge.getN());
+        
+        edge.removeRange(maxDistanceIdx, maxDistanceIdx);
+        
+        return true;
+    }
+    
+    /**
+     * looks for the immediate adjacent neighbors and return their indexes
+     * in outputAdjacentNeighborIndexes and return for the method the number
+     * of items to read in outputAdjacentNeighborIndexes.
+     * 
+     * @param edge
+     * @param idx
+     * @param outputAdjacentNeighborIndexes
+     * @return 
+     */
+    public int getAdjacentNeighbors(PairIntArray edge, int idx, 
+        int[] outputAdjacentNeighborIndexes) {
+        
+        float x = edge.getX(idx);
+        float y = edge.getY(idx);
+        
+        int nAdjacent = 0;
+        for (int i = (idx - 2); i <= (idx + 2); i++) {
+            if (i == idx) {
+                continue;
+            }
+            if ((i < 0) || (i > (edge.getN() - 1))) {
+                continue;
+            }
+            
+            float diffX = edge.getX(i) - x;
+            float diffY = edge.getY(i) - y;
+            
+            if ((Math.abs(diffX) < 2) && (Math.abs(diffY) < 2)) {
+                
+                outputAdjacentNeighborIndexes[nAdjacent] = i;
+                
+                nAdjacent++;
+            }
+        }
+        
+        return nAdjacent;
+    }
+
+    public double distanceFromPointToALine(float lineX0, float lineY0,
+        float lineX1, float lineY1, float xP, float yP) {
+        
+        /*
+        en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+        
+        for the edge, we have the 2 points (lineX0, lineY0) and (lineX1, lineY1)
+        
+        distance between that edge and a point (xP, yP) is
+        
+        defining diffX = lineX1 - lineX0
+                 diffY = lineY1 - lineY0;
+        
+        d =
+           ( diffY*xP - diffX*yP - lineX0*lineY1 + lineX1*lineY0 )
+           ( --------------------------------------------------- ) 
+           (         (diffX*diffX + diffY*diffY)^0.5             )
+        )        
+        */
+        
+        float diffX = lineX1 - lineX0;
+        float diffY = lineY1 - lineY0;
+        
+        if (diffY == 0) {
+            // horizontal line
+            return Math.abs(yP - lineY0);
+        } else if (diffX == 0) {
+            // vertical line
+            return Math.abs(xP - lineX0);
+        }
+        
+        double pt1 = Math.abs(diffY*xP - diffX*yP - lineX0*lineY1 + lineX1*lineY0);
+        
+        double pt2 = Math.sqrt(diffX*diffX + diffY*diffY);
+        
+        double dist = pt1/pt2;
+        
+        return dist;
+    }
+
+    public double distanceFromPointToALine(int lineX0, int lineY0,
+        int lineX1, int lineY1, int xP, int yP) {
+        
+        /*
+        en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+        
+        for the edge, we have the 2 points (lineX0, lineY0) and (lineX1, lineY1)
+        
+        distance between that edge and a point (xP, yP) is
+        
+        defining diffX = lineX1 - lineX0
+                 diffY = lineY1 - lineY0;
+        
+        d =
+           ( diffY*xP - diffX*yP - lineX0*lineY1 + lineX1*lineY0 )
+           ( --------------------------------------------------- ) 
+           (         (diffX*diffX + diffY*diffY)^0.5             )
+        )        
+        */
+        
+        int diffX = lineX1 - lineX0;
+        int diffY = lineY1 - lineY0;
+        
+        if (diffY == 0) {
+            // horizontal line
+            return Math.abs(yP - lineY0);
+        } else if (diffX == 0) {
+            // vertical line
+            return Math.abs(xP - lineX0);
+        }
+        
+        int pt1 = Math.abs(diffY*xP - diffX*yP - lineX0*lineY1 + lineX1*lineY0);
+        
+        double pt2 = Math.sqrt(diffX*diffX + diffY*diffY);
+        
+        double dist = pt1/pt2;
+        
+        return dist;
     }
 
 }

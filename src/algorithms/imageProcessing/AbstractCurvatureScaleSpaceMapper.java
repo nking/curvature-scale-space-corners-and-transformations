@@ -44,6 +44,8 @@ public class AbstractCurvatureScaleSpaceMapper {
     protected int trimmedYOffset = 0;
     
     protected GreyscaleImage gradientXY = null;
+    
+    protected GreyscaleImage thetaXY = null;
  
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -163,6 +165,8 @@ public class AbstractCurvatureScaleSpaceMapper {
         filter.applyFilter(img);
         
         gradientXY = filter.getGradientXY();
+        
+        thetaXY = filter.getThetaXY();
                 
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
@@ -178,7 +182,9 @@ public class AbstractCurvatureScaleSpaceMapper {
         List<PairIntArray> tmpEdges = contourExtractor.findEdges();
         
         if (!doNotStraightenEdges && !useLineDrawingMode) {
+            
             straightenEdges(tmpEdges);
+            
         }
         
         edges.clear();
@@ -344,6 +350,12 @@ public class AbstractCurvatureScaleSpaceMapper {
 
             nIter++;
         }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        curveHelper.removeRedundantPoints(tmpEdges);
+        
+        curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);
         
     }
     
