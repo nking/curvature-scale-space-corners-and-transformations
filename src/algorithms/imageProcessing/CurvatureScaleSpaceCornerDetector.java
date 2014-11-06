@@ -694,16 +694,16 @@ public class CurvatureScaleSpaceCornerDetector extends
         First a look in the blind spot of the blocks below - 
         searching for the false corners due to a 1 pixel step 
         near the end of the curve (within 10 pix).  The 2nd large block 
-        below doesn't extend to within 10 pixel of the curve endpoints.
+        below doesn't extend to within 10 pixels of the curve endpoints.
         */
-        if (idx < 11) {
+        if (idx < 10) {
             // skip first point
             //NOTE: in image space, these are integers.
             int x = (int)scaleSpace.getX(idx);
             int y = (int)scaleSpace.getY(idx);
             int dx = (int)(scaleSpace.getX(2) - scaleSpace.getX(1));
             int dy = (int)(scaleSpace.getY(2) - scaleSpace.getY(1));
-            // find dx and dy up to point
+            // find dx and dy up to the step
             int i;
             for (i = 3; i < (idx + 10); i++) {
                 int diffX = (int)(scaleSpace.getX(i) - scaleSpace.getX(i - 1));
@@ -770,21 +770,98 @@ public class CurvatureScaleSpaceCornerDetector extends
                     }
                 }
             }
-        } else if (idx > (scaleSpace.getSize() - 12)) {
+        } else if (idx > (scaleSpace.getSize() - 11)) {
+            int n = scaleSpace.getSize();
             int x = (int)scaleSpace.getX(idx);
             int y = (int)scaleSpace.getY(idx);
-            int z = 1;//34,171 is idx=75
+            int z = 1;//34,171 is idx=75  dx=0 dy=1
+            int dx = (int)(scaleSpace.getX(n - 3) - scaleSpace.getX(n - 2));
+            int dy = (int)(scaleSpace.getY(n - 3) - scaleSpace.getY(n - 2));
+            // find dx and dy up to the step
+            int i;
+            for (i = (n - 4); i > ((n - 4) - 10); i--) {
+                int diffX = (int)(scaleSpace.getX(i) - scaleSpace.getX(i + 1));
+                if (diffX != dx) {
+                    break;
+                }
+                int diffY = (int)(scaleSpace.getY(i) - scaleSpace.getY(i + 1));
+                if (diffY != dy) {
+                    break;
+                }
+            }
+            // last i should be <= idx within an error due to refined coordinates
+            if (i <= (idx + 4)) {
+                if ((dy == 0) && (Math.abs(dx) == 1)) {
+                    // skip over the step and assert step of 1 continuing to 
+                    // nearly same step size
+                    int diffY = (int) (scaleSpace.getY(i - 1)
+                        - scaleSpace.getY(i + 1));
+                    if (Math.abs(diffY) == 1) {
+                        // make sure rest of line has expected x and y
+                        int yExpected = (int) scaleSpace.getY(i);
+                        boolean passes = true;
+                        int start = i;
+                        int len = n - start - 1;
+                        for (i = start; i > (start - (2 * (len - 1))); i--) {
+                            if (i > (n - 1)) {
+                                break;
+                            }
+                            if (((int) scaleSpace.getY(i)) != yExpected) {
+                                passes = false;
+                                break;
+                            }
+                            int xi = (int) scaleSpace.getX(i);
+                            if (xi != (x + (idx - i) * dx)) {
+                                passes = false;
+                                break;
+                            }
+                        }
+                        if (passes) {
+                            return true;
+                        }
+                    }
+                } else if ((dx == 0) && (Math.abs(dy) == 1)) {
+                    // skip over the step and assert step of 1 continuing to 
+                    // nearly same step size
+                    int diffX = (int) (scaleSpace.getX(i - 1)
+                        - scaleSpace.getX(i + 1));
+                    if (Math.abs(diffX) == 1) {
+                        // make sure rest of line has expected x and y
+                        int xExpected = (int) scaleSpace.getX(i);
+                        boolean passes = true;
+                        int start = i;
+                        int len = n - start - 1;
+                        for (i = start; i > (start - (2 * (len - 1))); i--) {
+                            if (i < 0) {
+                                break;
+                            }
+                            if (((int) scaleSpace.getX(i)) != xExpected) {
+                                passes = false;
+                                break;
+                            }
+                            int yi = (int) scaleSpace.getY(i);
+                            if (yi != (y + (idx - i) * dy)) {
+                                passes = false;
+                                break;
+                            }
+                        }
+                        if (passes) {
+                            return true;
+                        }
+                    }
+                }
+            }  
         }
         
         /*
         horizontal steps:
         */
         
-        int dx = 1;
-        int dy = 1;
         int h = 4;
         int nDX = 0;
         int nDY = 0;
+        int dx = 1;
+        int dy = 1;
         for (int j = 0; j < 4; j++) {
             switch (j) {
                 case 1:
@@ -926,15 +1003,15 @@ public class CurvatureScaleSpaceCornerDetector extends
                 }
                 count = 0;
                 for (h = 10; h > 6; h--) {
-                    float lastY = -1;
+                    int lastY = -1;
                     int i;
                     for (i = (idx - h); i < (idx + h); i++) {
                         // removing endpoints in bounds check:
                         if ((i < 2) || (i > (scaleSpace.getSize() - 3))) {
                             continue;
                         }
-                        float x = scaleSpace.getX(i);
-                        float y = scaleSpace.getY(i);
+                        int x = (int)scaleSpace.getX(i);
+                        int y = (int)scaleSpace.getY(i);
                         if (lastY == -1) {
                             lastY = y;
                         } else {
@@ -951,12 +1028,12 @@ public class CurvatureScaleSpaceCornerDetector extends
                             if ((j < 2) || (j > (scaleSpace.getSize() - 3))) {
                                 continue;
                             }
-                            float diffX = scaleSpace.getX(j) - scaleSpace.getX(j - 1);
+                            int diffX = (int)(scaleSpace.getX(j) - scaleSpace.getX(j - 1));
                             if (diffX != dx) {
                                 doBlockBreak = true;
                                 break;
                             }
-                            float cY = scaleSpace.getY(j);
+                            int cY = (int)scaleSpace.getY(j);
                             if (y != cY) {
                                 break;
                             }
