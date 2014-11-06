@@ -204,7 +204,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                 int idx = maxCandidateCornerIndexes.get(ii);
                 
                 if ((idx > 3) && (idx < (scaleSpace.getSize() - 4))) {
-                    // edge 2 idx=30
+                    
                     boolean isDueToJaggedLine = isDueToJaggedLine(idx, scaleSpace);
                     if (!isDueToJaggedLine) {
                         xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
@@ -814,91 +814,91 @@ public class CurvatureScaleSpaceCornerDetector extends
             }
         }
         
-        //TODO: improve this and add switch for all dx,dy combinations
-        // trying one pattern first 
-        if (idx == 37) {
-            float x = scaleSpace.getX(idx);
-            float y = scaleSpace.getY(idx);
-            int z = 1;
-        }
+        
         int count = 0;
-        int stepSize = 3;
-        for (int ii = 0; ii < 4; ii++) {
-            switch (ii) {
-                case 0:
-                    dx = 1;
-                    dy = 1;
-                    break;
-                case 1:
-                    dx = -1;
-                    dy = -1;
-                    break;
-                case 2:
-                    dx = 1;
-                    dy = -1;
-                    break;
-                case 3:
-                    dx = -1;
-                    dy = 1;
-                    break;
-            }
-            count = 0;
-            for (h = 10; h > 6; h--) {
-                float lastY = -1;
-                int i;
-                for (i = (idx - h); i < (idx + h); i++) {
-                    // removing endpoints in bounds check:
-                    if ((i < 2) || (i > (scaleSpace.getSize() - 3))) {
-                        continue;
-                    }
-                    float x = scaleSpace.getX(i);
-                    float y = scaleSpace.getY(i);
-                    if (lastY == -1) {
-                        lastY = y;
-                    } else {
-                        if (y != (lastY + dy)) {
-                            count = 0;
-                            break;
-                        } 
-                        lastY = y;
-                    }
-                    // look ahead for same y and dx + 1
-                    int j;
-                    boolean doBlockBreak = false;
-                    for (j = (i + 1); j < (idx + h); j++) {
-                        if ((j < 2) || (j > (scaleSpace.getSize() - 3))) {
+        int[] steps = new int[]{3, 4};
+        for (int stepSize : steps) {
+            for (int ii = 0; ii < 4; ii++) {
+                switch (ii) {
+                    case 0:
+                        dx = 1;
+                        dy = 1;
+                        break;
+                    case 1:
+                        dx = -1;
+                        dy = -1;
+                        break;
+                    case 2:
+                        dx = 1;
+                        dy = -1;
+                        break;
+                    case 3:
+                        dx = -1;
+                        dy = 1;
+                        break;
+                }
+                count = 0;
+                for (h = 10; h > 6; h--) {
+                    float lastY = -1;
+                    int i;
+                    for (i = (idx - h); i < (idx + h); i++) {
+                        // removing endpoints in bounds check:
+                        if ((i < 2) || (i > (scaleSpace.getSize() - 3))) {
                             continue;
                         }
-                        float diffX = scaleSpace.getX(j) - scaleSpace.getX(j - 1);
-                        if (diffX != dx) {
-                            doBlockBreak = true;
+                        float x = scaleSpace.getX(i);
+                        float y = scaleSpace.getY(i);
+                        if (lastY == -1) {
+                            lastY = y;
+                        } else {
+                            if (y != (lastY + dy)) {
+                                count = 0;
+                                break;
+                            } 
+                            lastY = y;
+                        }
+                        // look ahead for same y and dx + 1
+                        int j;
+                        boolean doBlockBreak = false;
+                        for (j = (i + 1); j < (idx + h); j++) {
+                            if ((j < 2) || (j > (scaleSpace.getSize() - 3))) {
+                                continue;
+                            }
+                            float diffX = scaleSpace.getX(j) - scaleSpace.getX(j - 1);
+                            if (diffX != dx) {
+                                doBlockBreak = true;
+                                break;
+                            }
+                            float cY = scaleSpace.getY(j);
+                            if (y != cY) {
+                                break;
+                            }
+                        }
+                        if (doBlockBreak) {
+                            count = 0;
                             break;
                         }
-                        float cY = scaleSpace.getY(j);
-                        if (y != cY) {
+                        int n = j - i;
+                        if ((n == stepSize) || (n == (stepSize - 1))) {
+                            // keep trying to step forward, starting with i=j at next loop
+                            i = j - 1;
+                            count++;
+                        } else {
+                            // if made it to the midpoint and count is high
+                            // and step size is close, return true
+                            if ((count > 0) && (n == (stepSize + 1)) && (i >= idx)) {
+                                return true;
+                            }
+                            count = 0;
                             break;
                         }
                     }
-                    if (doBlockBreak) {
-                        count = 0;
-                        break;
+                    if (count > 0) {
+                        // this was a set of steps
+                        log.info("H=" + h + " corner idx=" + idx + " i=" + i 
+                            + "[" + (idx - h) + ":" + (idx + h) + "] ii=" + ii);
+                        return true;
                     }
-                    int n = j - i;
-                    if ((n == stepSize) || (n == (stepSize - 1))) {
-                        // keep trying to step forward, starting with i=j at next loop
-                        i = j - 1;
-                        count++;
-                    } else {
-                        // existing count is high?
-                        count = 0;
-                        break;
-                    }
-                }
-                if (count > 0) {
-                    // this was a set of steps
-                    log.info("H=" + h + " corner idx=" + idx + " i=" + i 
-                        + "[" + (idx - h) + ":" + (idx + h) + "] ii=" + ii);
-                    return true;
                 }
             }
         }
