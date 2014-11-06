@@ -204,7 +204,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                 int idx = maxCandidateCornerIndexes.get(ii);
                 
                 if ((idx > 3) && (idx < (scaleSpace.getSize() - 4))) {
-                    
+                    // edge 2 idx=30
                     boolean isDueToJaggedLine = isDueToJaggedLine(idx, scaleSpace);
                     if (!isDueToJaggedLine) {
                         xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
@@ -599,7 +599,7 @@ public class CurvatureScaleSpaceCornerDetector extends
        
         // roughly estimating maxSep as the ~FWZI of the gaussian
         //TODO: this may need to be altered to a smaller value
-        float maxSepSq = 2*Gaussian1D.estimateHWZI(previousSigma, 0.01f);
+        float maxSepSq = Gaussian1D.estimateHWZI(previousSigma, 0.01f);
         maxSepSq *= maxSepSq;
             
         // revise the points in {xc, yc} to the closest in {xc2, yc2}
@@ -740,7 +740,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                 return true;
             }
         }
-        
+
         // look for 2 steps in a very long interval
         int nSteps = 2;
         for (h = 20; h > 4; h--) {
@@ -761,8 +761,8 @@ public class CurvatureScaleSpaceCornerDetector extends
 
             int n = 2 * h;
 
-            for (int j = 0; j < 4; j++) {
-                switch (j) {
+            for (int ii = 0; ii < 4; ii++) {
+                switch (ii) {
                     case 0:
                         dx = 1;
                         dy = 1;
@@ -816,14 +816,39 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         //TODO: improve this and add switch for all dx,dy combinations
         // trying one pattern first 
-        dx = -1;
-        dy = 1;
+        if (idx == 37) {
+            float x = scaleSpace.getX(idx);
+            float y = scaleSpace.getY(idx);
+            int z = 1;
+        }
         int count = 0;
         int stepSize = 3;
-            for (h = 10; h > 4; h--) {
+        for (int ii = 0; ii < 4; ii++) {
+            switch (ii) {
+                case 0:
+                    dx = 1;
+                    dy = 1;
+                    break;
+                case 1:
+                    dx = -1;
+                    dy = -1;
+                    break;
+                case 2:
+                    dx = 1;
+                    dy = -1;
+                    break;
+                case 3:
+                    dx = -1;
+                    dy = 1;
+                    break;
+            }
+            count = 0;
+            for (h = 10; h > 6; h--) {
                 float lastY = -1;
-                for (int i = (idx - h); i < (idx + h); i++) {
-                    if ((i < 0) || (i > (scaleSpace.getSize() - 1))) {
+                int i;
+                for (i = (idx - h); i < (idx + h); i++) {
+                    // removing endpoints in bounds check:
+                    if ((i < 2) || (i > (scaleSpace.getSize() - 3))) {
                         continue;
                     }
                     float x = scaleSpace.getX(i);
@@ -841,7 +866,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                     int j;
                     boolean doBlockBreak = false;
                     for (j = (i + 1); j < (idx + h); j++) {
-                        if ((j < 0) || (j > (scaleSpace.getSize() - 1))) {
+                        if ((j < 2) || (j > (scaleSpace.getSize() - 3))) {
                             continue;
                         }
                         float diffX = scaleSpace.getX(j) - scaleSpace.getX(j - 1);
@@ -871,11 +896,12 @@ public class CurvatureScaleSpaceCornerDetector extends
                 }
                 if (count > 0) {
                     // this was a set of steps
-                    log.info("H=" + h);
+                    log.info("H=" + h + " corner idx=" + idx + " i=" + i 
+                        + "[" + (idx - h) + ":" + (idx + h) + "] ii=" + ii);
                     return true;
                 }
             }
-        
+        }
         return false;
     }
 }

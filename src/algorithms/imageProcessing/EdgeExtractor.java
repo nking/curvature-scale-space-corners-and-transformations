@@ -8,7 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- Edge contour extraction
+ Edge extraction
     Local Methods:
         (1) At each edge pixel, a neighborhood (e.g., 3x3) is examined.
 
@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 
  * @author nichole
  */
-public class EdgeContourExtractor {
+public class EdgeExtractor {
     
     private final GreyscaleImage img;
     
@@ -39,7 +39,7 @@ public class EdgeContourExtractor {
      * 
      * @param input 
      */
-    public EdgeContourExtractor(GreyscaleImage input) {
+    public EdgeExtractor(GreyscaleImage input) {
         img = input;
         
         if (img.getWidth() < 100 || img.getHeight() < 100) {

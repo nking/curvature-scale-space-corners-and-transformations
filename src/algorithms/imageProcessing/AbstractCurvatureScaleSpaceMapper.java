@@ -173,7 +173,7 @@ public class AbstractCurvatureScaleSpaceMapper {
 
     protected void extractEdgeContours() {
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(img);
+        EdgeExtractor contourExtractor = new EdgeExtractor(img);
         
         if (useLineDrawingMode) {
             contourExtractor.useLineDrawingMode();

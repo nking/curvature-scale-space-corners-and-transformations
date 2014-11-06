@@ -11,9 +11,9 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class EdgeContourExtractorTest extends TestCase {
+public class EdgeExtractorTest extends TestCase {
     
-    public EdgeContourExtractorTest(String testName) {
+    public EdgeExtractorTest(String testName) {
         super(testName);
     }
 
@@ -31,7 +31,7 @@ public class EdgeContourExtractorTest extends TestCase {
         
         System.out.println("testMergeAdjacentEndPoints");
            
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(
+        EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(100, 100));
         
         PairIntArray edge0 = new PairIntArray();
@@ -208,7 +208,7 @@ public class EdgeContourExtractorTest extends TestCase {
         [junit] 14) (45,119) --- (45,123)
         */
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(
+        EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(446, 434));
         
         PairIntArray edge0 = new PairIntArray();
@@ -505,7 +505,7 @@ public class EdgeContourExtractorTest extends TestCase {
         curve1.add(45, 118);
         curve1.add(45, 119);
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(
+        EdgeExtractor contourExtractor = new EdgeExtractor(
         new GreyscaleImage(10, 10));
         
         int[] curve0Idx = new int[1];
@@ -553,7 +553,7 @@ public class EdgeContourExtractorTest extends TestCase {
         edge1.add(45, 122);
         edge1.add(45, 123); //10 closest point
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(
+        EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(10, 10));
         
         assertTrue(contourExtractor.isRangeConnected(edge0, 0, 11));
@@ -630,7 +630,7 @@ public class EdgeContourExtractorTest extends TestCase {
         edges.add(edge0.clone());
         edges.add(edge1.clone());
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(
+        EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(200, 200));
         
         List<PairIntArray> output = 
@@ -748,7 +748,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         edges.add(edge0.clone());
         edges.add(edge1.clone());
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(
+        EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(200, 200));
         
         List<PairIntArray> output = 
@@ -863,7 +863,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         edges.add(edge0.clone());
         edges.add(edge1.clone());
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(
+        EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(200, 200));
         
         List<PairIntArray> output = 
@@ -979,7 +979,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         edges.add(edge0.clone());
         edges.add(edge1.clone());
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(
+        EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(200, 200));
         
         List<PairIntArray> output = 
@@ -1042,7 +1042,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         CannyEdgeFilter edgeFilter = new CannyEdgeFilter();
         edgeFilter.applyFilter(img);
         
-        EdgeContourExtractor contourExtractor = new EdgeContourExtractor(img);
+        EdgeExtractor contourExtractor = new EdgeExtractor(img);
         List<PairIntArray> edges = contourExtractor.findEdges();
         
         int clr = 0;

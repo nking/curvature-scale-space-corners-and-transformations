@@ -517,19 +517,19 @@ public aspect CurvatureAspect {
     }
 
     before() 
-        : call(List<PairIntArray> EdgeContourExtractor*.findEdges() ) 
+        : call(List<PairIntArray> EdgeExtractor*.findEdges() ) 
         && args() 
-        && target(algorithms.imageProcessing.EdgeContourExtractor) {
+        && target(algorithms.imageProcessing.EdgeExtractor) {
 
-        log2.info("before EdgeContourExtractor*.findEdges()");
+        log2.info("before EdgeExtractor*.findEdges()");
 
         Object obj = thisJoinPoint.getThis();
 
-        if (!(obj instanceof EdgeContourExtractor)) {
+        if (!(obj instanceof EdgeExtractor)) {
             return;
         }
 
-        EdgeContourExtractor instance = (EdgeContourExtractor)obj;
+        EdgeExtractor instance = (EdgeExtractor)obj;
 
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
