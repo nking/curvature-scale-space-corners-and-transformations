@@ -224,19 +224,15 @@ public class EdgeExtractor {
             log.fine(output.size() + " edges after connect closest");
         }
         
-        /*
-        //TODO:
         // This helps to merge edges (that is extracted curves) at adjacent 
         // points that resemble an intersection of the lines, but it's not 
-        // necessarily useful because the curvature is determined correctly 
+        // necessarily useful if only interested in corners and not inflection
+        // points because the curvature is determined correctly 
         // whether the curves are merged or not.
-        // If connecting the edges becomes more important, considering
-        // using this, connectClosestPointsIfCanTrim():
         
         output = connectClosestPointsIfCanTrim(output);
         
         log.fine(output.size() + " edges after connect closest");
-        */
         
         
         output = fillInGaps(output);
