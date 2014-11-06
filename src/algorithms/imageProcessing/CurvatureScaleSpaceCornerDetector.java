@@ -687,8 +687,95 @@ public class CurvatureScaleSpaceCornerDetector extends
         log.info(sb.toString());
     }
 
-    private boolean isDueToJaggedLine(int idx, ScaleSpaceCurve scaleSpace) {
+    private boolean isDueToJaggedLine(final int idx, 
+        final ScaleSpaceCurve scaleSpace) {
             
+        /*
+        First a look in the blind spot of the blocks below - 
+        searching for the false corners due to a 1 pixel step 
+        near the end of the curve (within 10 pix).  The 2nd large block 
+        below doesn't extend to within 10 pixel of the curve endpoints.
+        */
+        if (idx < 11) {
+            // skip first point
+            //NOTE: in image space, these are integers.
+            int x = (int)scaleSpace.getX(idx);
+            int y = (int)scaleSpace.getY(idx);
+            int dx = (int)(scaleSpace.getX(2) - scaleSpace.getX(1));
+            int dy = (int)(scaleSpace.getY(2) - scaleSpace.getY(1));
+            // find dx and dy up to point
+            int i;
+            for (i = 3; i < (idx + 10); i++) {
+                int diffX = (int)(scaleSpace.getX(i) - scaleSpace.getX(i - 1));
+                if (diffX != dx) {
+                    break;
+                }
+                int diffY = (int)(scaleSpace.getY(i) - scaleSpace.getY(i - 1));
+                if (diffY != dy) {
+                    break;
+                }
+            }
+            // last i should be >= idx
+            if (i >= idx) {
+                // it's a line so far
+                if ((dy == 0) && (Math.abs(dx) == 1)) {
+                    // skip over the step and assert step of 1 continuing to 
+                    // nearly same step size
+                    int diffY = (int)(scaleSpace.getY(i + 1) 
+                        - scaleSpace.getY(i - 1));
+                    if (Math.abs(diffY) == 1) {
+                        // make sure rest of line has expected x and y
+                        int yExpected = (int)scaleSpace.getY(i);
+                        boolean passes = true;
+                        int start = i;
+                        for (i = start; i < (2*(start - 1)); i++) {
+                            if (((int)scaleSpace.getY(i)) != yExpected) {
+                                passes = false;
+                                break;
+                            }
+                            int xi = (int)scaleSpace.getX(i);
+                            if (xi != (x + (i - idx)*dx)) {
+                                passes = false;
+                                break;
+                            }
+                        }
+                        if (passes) {
+                            return true;
+                        }
+                    }
+                } else if ((dx == 0) && (Math.abs(dy) == 1)) {
+                    // skip over idx and assert step of 1 continuing to 
+                    // nearly same step size
+                    int diffX = (int)(scaleSpace.getX(i + 1) 
+                        - scaleSpace.getX(i - 1));
+                    if (Math.abs(diffX) == 1) {
+                        // make sure rest of line has expected x and y
+                        int xExpected = (int)scaleSpace.getX(i);
+                        boolean passes = true;
+                        int start = i;
+                        for (i = start; i < (2*(start - 1)); i++) {
+                            if (((int)scaleSpace.getX(i)) != xExpected) {
+                                passes = false;
+                                break;
+                            }
+                            int yi = (int)scaleSpace.getY(i);
+                            if (yi != (y + (i - idx)*dy)) {
+                                passes = false;
+                                break;
+                            }
+                        }
+                        if (passes) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } else if (idx > (scaleSpace.getSize() - 12)) {
+            int x = (int)scaleSpace.getX(idx);
+            int y = (int)scaleSpace.getY(idx);
+            int z = 1;//34,171 is idx=75
+        }
+        
         /*
         horizontal steps:
         */
