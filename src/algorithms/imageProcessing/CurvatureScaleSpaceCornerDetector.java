@@ -176,11 +176,12 @@ public class CurvatureScaleSpaceCornerDetector extends
      * @param edgeNumber the edgeNumber of the scaleSpace.  it's passed for
      * debugging purposes.
      * @param correctForJaggedLines
+     * @param isAClosedCurve
      * @return 
      */
     protected PairFloatArray findCornersInScaleSpaceMap(
         final ScaleSpaceCurve scaleSpace, int edgeNumber, 
-        boolean correctForJaggedLines) {
+        boolean correctForJaggedLines, boolean isAClosedCurve) {
         
         float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
         
@@ -213,8 +214,14 @@ public class CurvatureScaleSpaceCornerDetector extends
                     }
                 } else {
                     // corner at the end points of edge are usually artifacts
-                    //TODO:  for closed curves, don't delete
-                    remove.add(Integer.valueOf(ii));
+                    // except when they are closed curves (the convolution for
+                    // closed curves wraps around so doesn't have the end of
+                    // edge artifact.
+                    if (isAClosedCurve) {
+                        xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+                    } else {
+                        remove.add(Integer.valueOf(ii));
+                    }
                 }
             }
             nRemoved += remove.size();
@@ -246,6 +253,9 @@ public class CurvatureScaleSpaceCornerDetector extends
     private PairIntArray findCornersInScaleSpaceMap(final PairIntArray edge, 
         final Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves, int edgeNumber) {
        
+        boolean isAClosedCurve = (edge instanceof PairIntArrayWithColor) &&
+            (((PairIntArrayWithColor)edge).getColor() == 1);
+        
         SIGMA maxSIGMA = getMaxSIGMAForECSS(edge.getN());         
            
         ScaleSpaceCurve maxScaleSpace = scaleSpaceCurves.get(maxSIGMA);
@@ -260,7 +270,8 @@ public class CurvatureScaleSpaceCornerDetector extends
         }
  
         PairFloatArray candidateCornersXY = 
-            findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, true);
+            findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, true,
+            isAClosedCurve);
         
         SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);
 
@@ -273,7 +284,7 @@ public class CurvatureScaleSpaceCornerDetector extends
 
             refinePrimaryCoordinates(candidateCornersXY.getX(), 
                 candidateCornersXY.getY(), scaleSpace, prevSigma, 
-                edgeNumber);
+                edgeNumber, isAClosedCurve);
             
             prevSigma = sigma;
 
@@ -587,7 +598,7 @@ public class CurvatureScaleSpaceCornerDetector extends
      */
     private void refinePrimaryCoordinates(float[] xc, float[] yc, 
         ScaleSpaceCurve scaleSpace, SIGMA previousSigma,
-        int edgeNumber) {
+        int edgeNumber, boolean isAClosedCurve) {
         
         if (scaleSpace == null || scaleSpace.getK() == null) {
             //TODO: follow up on NPE here
@@ -595,7 +606,8 @@ public class CurvatureScaleSpaceCornerDetector extends
         }
         
         PairFloatArray xy2 = 
-            findCornersInScaleSpaceMap(scaleSpace, edgeNumber, false);
+            findCornersInScaleSpaceMap(scaleSpace, edgeNumber, false,
+            isAClosedCurve);
        
         // roughly estimating maxSep as the ~FWZI of the gaussian
         //TODO: this may need to be altered to a smaller value
