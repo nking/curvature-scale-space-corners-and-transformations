@@ -197,7 +197,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         int nRemoved = 0;
 /*
-if (edgeNumber > 2) {
+if (edgeNumber != 3) {
     return xy;
 }
 */

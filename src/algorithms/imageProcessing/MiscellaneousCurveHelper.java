@@ -1267,7 +1267,7 @@ public class MiscellaneousCurveHelper {
                 if (sign10 != sign32) {
                     continue;
                 }
-                // 6 degrees.  could alter this...
+                // 6 degrees of slope.  could alter this...
                 if (Math.abs(slope10 - slope32) > 0.1) {
                     continue;
                 } 
@@ -1841,38 +1841,11 @@ public class MiscellaneousCurveHelper {
                         && (i == (curve.getN() - 1)))) {
                         
                         // need to avoid removing a partial corner
-                        
-                        // the ledge pattern seems to be roughly min runs
-                        // that are half the size of max run:
-                        //     27pix, 47pix, 27pix
-                        //     6pix, 13pix
-                        // exception
-                        //     10pix, 30pix
-                        
-                        int maxRangeSize = Integer.MIN_VALUE;
-                        for (int j = 0; j < tmp.getN(); j++) {
-                            rs = tmp.getY(j) - tmp.getX(j);
-                            if (rs > maxRangeSize) {
-                                maxRangeSize = rs;
-                            }
-                        }
-                        
-                        // if the remaining segments are roughly 1/2 or 1/3
-                        // of maxRangeSize, keep these as an entire
-                        // ledge segment, else consider scavenging within it
-                        // next to the longest segment.
-                        
+                      
                         boolean keep = true;
-                        for (int j = 0; j < tmp.getN(); j++) {
-                            rs = tmp.getY(j) - tmp.getX(j);
-                            if ((maxRangeSize/rs) > 3) {
-                                keep = false;
-                            }
-                        }
                         
-                        // one more check that the lines are not wrapping around
-                        // a curve
-                        if (keep && (tmp.getN() > 1)) {
+                        // check that the lines are not wrapping around a curve
+                        if (tmp.getN() > 1) {
                             int idx0f = tmp.getX(0);
                             int idx0l = tmp.getY(0);
                             int diffY0 = curve.getY(idx0l) - curve.getY(idx0f);
