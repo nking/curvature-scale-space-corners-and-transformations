@@ -197,7 +197,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         int nRemoved = 0;
 /*
-if (edgeNumber != 3) {
+if (edgeNumber != 4) {
     return xy;
 }
 */
@@ -541,7 +541,7 @@ if (edgeNumber != 3) {
 
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima 
 
-        float factorAboveMin = 3.0f;// 10 misses some corners
+        float factorAboveMin = 3.5f;// 10 misses some corners
 
         List<Integer> cornerCandidates = new ArrayList<Integer>();
 

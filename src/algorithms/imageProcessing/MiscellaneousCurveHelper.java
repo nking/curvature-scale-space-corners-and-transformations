@@ -1699,8 +1699,8 @@ public class MiscellaneousCurveHelper {
     private void findLedgesWithinRange(PairIntArray curve, int start, int stop, 
         PairIntArray allLedges) {
         
-        // choosing a minimum size of 6 from looking at edges in tests
-        int minLedgeWidth = 5;
+        // choosing a minimum size empirically from looking at edges in tests
+        int minLedgeWidth = 4;
         
         if ((stop - start + 1) < (2*minLedgeWidth)) {
             return;
