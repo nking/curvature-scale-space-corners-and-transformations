@@ -1046,6 +1046,16 @@ public class MiscellaneousCurveHelper {
         }
     }
     
+    public void debugPrint(PairIntArray edge) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < edge.getN(); i++) {
+             int x = edge.getX(i);
+             int y = edge.getY(i);
+             sb.append(String.format("%d)  (%d, %d)\n", i, x, y));
+        }
+        log.info(sb.toString());
+    }
+    
     private boolean debugIsSection1(PairIntArray edge, int idx) {
         int x = edge.getX(idx);
         int y = edge.getY(idx);
@@ -1187,6 +1197,740 @@ public class MiscellaneousCurveHelper {
                 }
             }                
         }
+    }
+    
+    /**
+     * find the jagged line segments in the curve and return the ranges
+     * of the point indexes.
+     * @param curve
+     * @return 
+     */
+    public PairIntArray findJaggedLineSegments(final PairIntArray curve) {
+        //TODO: use minimum curve size
+        
+        if (curve == null || curve.getN() < 5) {
+            return null;
+        }
+        
+        /*
+        PairIntArray staircaseSegments = findJaggedLineStaircaseSegments(curve);
+        
+        PairIntArray allJaggedLineRanges = findLedgesInRemainingCurve(curve, 
+            staircaseSegments);
+        
+        return allJaggedLineRanges;
+        */
+        
+        PairIntArray ledges = findLedgesInRemainingCurve(curve, 
+            new PairIntArray());
+        
+        PairIntArray remainingRanges = 
+            writeRangesNotAlreadyIncluded(curve, ledges);
+        
+        for (int i = 0; i < remainingRanges.getN(); i++) {
+            
+            int r0 = remainingRanges.getX(i);
+            int r1 = remainingRanges.getY(i);
+            
+            PairIntArray staircaseRanges = 
+                findJaggedLineStaircaseSegments(curve, r0, r1);
+            
+            if (staircaseRanges != null) {
+                for (int j = 0; j < staircaseRanges.getN(); j++) {
+                    int s0 = staircaseRanges.getX(j);
+                    int s1 = staircaseRanges.getY(j);
+                    ledges.add(s0, s1);
+                }
+            }
+        }
+        
+        sortByX(ledges);
+        
+        return ledges;
+    }
+
+    /**
+     * find the lines composed of nearly uniform stairs and return them as
+     * index ranges.  For example, a jagged line that extends from point
+     * 10 to point 30 inclusive is present in the returned object as a pair
+     * with (x, y) = (10, 30).
+     * @param curve
+     * @return 
+     */
+    private PairIntArray findJaggedLineStaircaseSegments(final PairIntArray 
+        curve) {
+        
+        return findJaggedLineStaircaseSegments(curve, 0, curve.getN() - 1);
+    }
+    
+    /**
+     * find the lines composed of nearly uniform stairs and return them as
+     * index ranges.  For example, a jagged line that extends from point
+     * 10 to point 30 inclusive is present in the returned object as a pair
+     * with (x, y) = (10, 30).
+     * @param curve
+     * @return 
+     */
+    private PairIntArray findJaggedLineStaircaseSegments(final PairIntArray 
+        curve, int startIndex, int stopIndex) {
+        
+        //TODO: use minimum curve size
+        if (curve == null || (stopIndex - startIndex) < 5) {
+            return null;
+        }
+        
+        /*
+        iterate over the curve to find the nearly straight line segments.
+        This is useful for quickly removing false corners due to jagged
+        lines.
+        -- move forward and learn dx and dy.  either dx or dy must be constant
+        and have value -1 or +1.  the other dimension can only change by 0
+        or by the same +1 or -1 always.  the step width between the change
+        must be on average a certain value and any other steps included
+        can be +1 or -1 in width (for example, if step width is 2, can have
+        steps with width 1 and 3 included also).
+        keep a moving average and when the just stated conditions cease,
+        note the endpoints.
+        --> to be sure the section is a line, make an easy to remove section:
+            fit the points to a line, noting the mean and stdev of the distance
+            of them from the line.
+            are the results consistent with a line?  mean error is?
+        -- if the segment is longer than (tbd) pixels, store it
+        -- repeat the above until end of curve is reached.
+        */
+        
+        PairIntArray lineSegmentRanges = new PairIntArray();
+                    
+        int dx = 0;
+        int dy = 0;
+        int i = startIndex;
+        Boolean widthIsAlongX = null;
+        while ((dx == 0) || (dy == 0)) {
+            i++;
+            if (i >= stopIndex) {
+                return lineSegmentRanges;
+            }
+            dx = (int) (curve.getX(i) - curve.getX(i - 1));
+            dy = (int) (curve.getY(i) - curve.getY(i - 1));
+            if (dx == 0) {
+                widthIsAlongX = Boolean.FALSE;
+            } else if (dy == 0) {
+                widthIsAlongX = Boolean.TRUE;
+            }
+        }
+        int start = i;
+        
+        int keepDX = dx;
+        int keepDY = dy;
+        
+        if (widthIsAlongX == null) {
+            while ((dx != 0) && (dy != 0)) {
+                i++;
+                if (i >= stopIndex) {
+                    return lineSegmentRanges;
+                }
+                dx = (int) (curve.getX(i) - curve.getX(i - 1));
+                dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                if (dx == 0) {
+                    widthIsAlongX = Boolean.FALSE;
+                } else if (dy == 0) {
+                    widthIsAlongX = Boolean.TRUE;
+                }
+            }
+        }
+        dx = keepDX;
+        dy = keepDY;
+        int stepStart = startIndex;
+        int lineStart = startIndex;
+        int nSteps = 0;
+        int sumStepWidth = 0;
+        float avgStepWidth = 0;
+        
+        for (i = start; i <= stopIndex; i++) {
+                    
+            int x = (int)curve.getX(i);
+            int y = (int)curve.getY(i);
+            
+            int diffX = (int)(x - curve.getX(i - 1));
+            
+            int diffY = (int)(y - curve.getY(i - 1));
+            
+            // if not a continuation of current step, increment step
+            if (!(
+                (widthIsAlongX.booleanValue() && (diffX == dx) && (diffY == 0))
+                || 
+                (!widthIsAlongX.booleanValue() && (diffY == dy) && (diffX == 0))
+                )
+                ){
+                
+                int currentStepWidth = i - stepStart;
+                
+                if (currentStepWidth > 0) {
+                    nSteps++;
+                    sumStepWidth += currentStepWidth;
+                    avgStepWidth = sumStepWidth/(float)nSteps;
+                    stepStart = i;
+                }                
+            }
+            
+            // if an invalid dx or dy, write the lineSegment and reset the range
+            if ((i == stopIndex) ||
+                (widthIsAlongX.booleanValue() && (diffX != dx))
+                || (!widthIsAlongX.booleanValue() && (diffY != dy))
+                ||
+                (widthIsAlongX.booleanValue() && (diffY != dy) && (diffY != 0))
+                ||
+                (!widthIsAlongX.booleanValue() && (diffX != dx) && (diffX != 0))
+                ) {
+                
+                if (nSteps > 2) {
+                    
+                    int avg = Math.round(avgStepWidth);
+                    
+                    int[] endSegment = validateJaggedLineSegment(curve,
+                        lineStart, (i - 1), avg, dx, dy,
+                        widthIsAlongX);
+                    
+                    // only store if has at least 3 steps (but if avg==1, 10)
+                    if (
+                    ((avg == 1) && 
+                        ((endSegment[0] - lineStart + 1) >= 10)
+                    )
+                    || 
+                    ((avg > 1) && 
+                        ((endSegment[0] - lineStart + 1) >= 3 * avg)
+                    )) {
+                        lineSegmentRanges.add(lineStart, endSegment[0]);
+                        
+                    } else {
+                        i = lineStart + endSegment[1];
+                    }
+                }
+                
+                if (i >= stopIndex) {
+                    return lineSegmentRanges;
+                }
+                
+                //TODO: check the stepStart index
+                stepStart = i;
+                lineStart = i;
+                
+                dx = 0;
+                dy = 0;
+                widthIsAlongX = null;
+                int tmpI = i;
+                
+                while ((dx == 0) || (dy == 0)) {
+                    i++;
+                    if (i >= stopIndex) {
+                        return lineSegmentRanges;
+                    }
+                    dx = (int) (curve.getX(i) - curve.getX(i - 1));
+                    dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                    if (dx == 0) {
+                        widthIsAlongX = Boolean.FALSE;
+                    } else if (dy == 0) {
+                        widthIsAlongX = Boolean.TRUE;
+                    }
+                }
+                                
+                keepDX = dx;
+                keepDY = dy;
+                
+                if (widthIsAlongX == null) {
+                    while ((dx != 0) && (dy != 0)) {
+                        i++;
+                        if (i >= stopIndex) {
+                            return lineSegmentRanges;
+                        }
+                        dx = (int) (curve.getX(i) - curve.getX(i - 1));
+                        dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                        if (dx == 0) {
+                            widthIsAlongX = Boolean.FALSE;
+                        } else if (dy == 0) {
+                            widthIsAlongX = Boolean.TRUE;
+                        }
+                    }
+                } else {
+                    // back track to find where the current linestart
+                    // should be between tmpI and i
+                    boolean iChanged = false;
+                    for (int j = (i - 1); j > tmpI; j--) {
+                        diffX = (int)(curve.getX(j) - curve.getX(j - 1));
+                        diffY = (int)(curve.getY(j) - curve.getY(j - 1));
+                        if (widthIsAlongX && (diffY == 0) && (diffX == dx)) {
+                            i = j;
+                            iChanged = true;
+                        } else if (!widthIsAlongX && (diffX == 0) 
+                            && (diffY == dy)) {
+                            i = j;
+                            iChanged = true;
+                        }
+                    }
+                    if (iChanged) {
+                        i--;
+                    }
+                }
+                
+                dx = keepDX;
+                dy = keepDY;
+                sumStepWidth = 0;
+                avgStepWidth = 0;
+                nSteps = 0;
+                
+                lineStart = i;
+            }
+        }
+                
+        return lineSegmentRanges;
+        
+    }
+
+    /**
+     * validate that a line segment has steps only within +- 1 of
+     * step stepWidth.  returns endIndex if entire region fits those
+     * characteristics, else returns the last index where it does.
+     * 
+     * @param curve
+     * @param startIndex
+     * @param stopIndex last index of line segment, inclusive
+     * @param stepWidth
+     * @param dy
+     * @param dy
+     * @param widthIsAlongX
+     * @return 
+     */
+     int[] validateJaggedLineSegment(final PairIntArray curve,
+        int startIndex, int stopIndex, int stepWidth, int dx, int dy,
+        Boolean widthIsAlongX) {
+        
+        //TODO: use minimum curve size
+        if (curve == null || curve.getN() < 5) {
+            return new int[]{-1, -1};
+        }
+        
+        int plusMinusWidth = 2;
+              
+        int n = curve.getN();
+          
+        int start = startIndex + 1;
+        
+        int stepStart = startIndex;
+        
+        int i;
+        for (i = start; i <= stopIndex; i++) {
+       
+            int diffX = (int)(curve.getX(i) - curve.getX(i - 1));
+            
+            int diffY = (int)(curve.getY(i) - curve.getY(i - 1));
+
+            if ((widthIsAlongX.booleanValue() && (diffX != dx)) ||
+                (widthIsAlongX.booleanValue() && (diffY != dy)
+                && (diffY != 0)) ||
+                (!widthIsAlongX.booleanValue() && (diffY != dy)) ||
+                (!widthIsAlongX.booleanValue() && (diffX != dx)
+                && (diffX != 0)) ) {
+
+                int currentStepWidth = i - stepStart;
+                if (currentStepWidth > 0) {
+                    if (Math.abs(currentStepWidth - stepWidth) > plusMinusWidth) {
+                        return new int[]{(stepStart - 1), currentStepWidth};
+                    }
+                } else {
+                    return new int[]{(stepStart - 1), currentStepWidth};
+                }
+                
+                /*
+                (widthIsAlongX.booleanValue() && (diffY != dy)
+                && (diffY != 0))
+                      --> (stepStart - 1)
+                */
+                return new int[]{(i - 1), 0};
+            } 
+            
+            // else, if just stepped up or is last index, check step size
+            
+            if ((widthIsAlongX.booleanValue() && (diffY == dy)) ||
+                (!widthIsAlongX.booleanValue() && (diffX == dx)) ||
+                (i == stopIndex)
+            ) {
+                
+                int currentStepWidth = i - stepStart;
+                
+                if ((stepStart == 0) && (stepWidth == 1) && 
+                    (currentStepWidth/stepWidth > 1)) {
+                    
+                    return new int[]{0, currentStepWidth};
+                    
+                } else if (currentStepWidth > 0) {
+                    
+                    if (Math.abs(currentStepWidth - stepWidth) > plusMinusWidth) {
+                        return new int[]{(stepStart - 1), currentStepWidth};
+                    } else if (i == stopIndex) {
+                        return new int[]{i, currentStepWidth};
+                    }
+                    
+                    stepStart = i;
+                    
+                } else if (currentStepWidth == 0) {
+                    
+                    return new int[]{(stepStart - 1), 0};
+                }
+            }
+        }
+        
+        return new int[]{(i - 1), 0};
+    }
+
+     /**
+      * write the set difference of the given set of ranges, indexRanges,
+      * to create the set of ranges not included in indexRanges.  Note the
+      * large universe that both are subsets of is curve.
+      */
+     private PairIntArray writeRangesNotAlreadyIncluded(PairIntArray curve,
+        PairIntArray indexRanges) {
+
+        PairIntArray output = new PairIntArray();
+
+        int n = curve.getN();
+
+        if (indexRanges.getN() == 0) {
+            output.add(0, n - 1);
+        } else {
+            int idx0 = indexRanges.getX(0);
+            if (idx0 > 0) {
+                output.add(0, idx0 - 1);
+            }
+            for (int si = 1; si < indexRanges.getN(); si++) {
+                output.add(indexRanges.getY(si - 1), indexRanges.getX(si));
+            }
+            output.add(indexRanges.getY(indexRanges.getN() - 1), 
+                curve.getN() - 1);
+        }
+        
+        return output;
+     }
+     
+     /**
+      * in the curve points that are not within the staircaseSegmentRanges,
+      * look for the single pixel ledge in a long stretch of a line and store 
+      * the entire range.  There may be more than one single pixel range 
+      * within a range.  a range is stored in the return array as a
+      * point (x,y) = (start or range, stop of range inclusive).
+      * @param curve
+      * @param staircaseSegmentRanges
+      * @return 
+      */
+    PairIntArray findLedgesInRemainingCurve(PairIntArray curve, 
+        PairIntArray staircaseSegmentRanges) {
+        
+        /*
+        looking for long stretch of line that changes by 1 pixel and then
+        continues in a long line
+        */
+                
+        PairIntArray remainingRanges = writeRangesNotAlreadyIncluded(curve, 
+            staircaseSegmentRanges);
+        
+        PairIntArray allLedges = new PairIntArray();
+        
+        for (int ri = 0; ri < remainingRanges.getN(); ri++) {
+            int start = remainingRanges.getX(ri);
+            int stop = remainingRanges.getY(ri);
+            
+            findLedgesWithinRange(curve, start, stop, allLedges);
+        }
+    
+        for (int i = 0; i < staircaseSegmentRanges.getN(); i++) {
+            allLedges.add(staircaseSegmentRanges.getX(i),
+                staircaseSegmentRanges.getY(i));
+        }
+        
+        sortByX(allLedges);
+        
+        return allLedges;
+    }
+    
+    /**
+     * find any ledges within the range start to stop, inclusive and return
+     * them as indexes of the curve.  For example, a ledge extending from
+     * point 10 to point 30 inclusive is in a pair in allLedges 
+     * as (x,y) = (10, 30);
+     * @param curve set of x,y points which comprise a curve
+     * @param start first index of curve to search, inclusive
+     * @param stop last index of curve to search, inclusive
+     * @param allLedges the set of ranges to add the results of this too.
+     * It's the output for the method.
+     */
+    private void findLedgesWithinRange(PairIntArray curve, int start, int stop, 
+        PairIntArray allLedges) {
+        
+        // choosing a minimum size of 6 from looking at edges in tests
+        int minLedgeWidth = 5;
+        
+        if ((stop - start + 1) < (2*minLedgeWidth)) {
+            return;
+        }
+        
+        // similar o findJaggedLineStaircaseSegments, but with a step size of
+        // "1"
+        
+        int dx = 0;
+        int dy = 0;
+        int i = start;
+        Boolean runIsAlongX = null;
+        // looking for straight lines of x or y
+        while (!((dx == 0) && (dy != 0)) && !((dy == 0) && (dx != 0))) {
+            i++;
+            if (i > (stop - 1)) {
+                return;
+            }
+            dx = (int) (curve.getX(i) - curve.getX(i - 1));
+            dy = (int) (curve.getY(i) - curve.getY(i - 1));
+        }
+
+        if (dx == 0) {
+            runIsAlongX = Boolean.FALSE;
+        } else if (dy == 0) {
+            runIsAlongX = Boolean.TRUE;
+        }
+
+        int lineStart = i - 1;
+                
+        PairIntArray tmp = new PairIntArray();
+        Boolean tmpRunIsAlongX = null;
+        int tmpDX = -1;
+        int tmpDY = -1;
+        
+        for (i = (lineStart + 1); i <= stop; i++) {
+           
+            int x = curve.getX(i);
+            int y = curve.getY(i);
+            
+            int diffX = (int) (x - curve.getX(i - 1));
+
+            int diffY = (int) (y - curve.getY(i - 1));
+
+            /* if there's a break in the line:
+                  temporarily store the section so far.
+            
+                  if the next segment is consecutive and has same runIsAlongX
+                  and same diffX and diffY,
+                      continue with same tmp storage, 
+                  else {
+                     inspect storage and add to allLedges if looks like a ledge, 
+                     then clear the tmp storage and the last vars"
+                  }
+            */
+            
+            boolean runStopped = (runIsAlongX && (diffY != 0)) ||
+                (!runIsAlongX && (diffX != 0));
+            
+            if ((i == stop) ||
+                runStopped ||
+                (runIsAlongX && (diffX != dx)) ||
+                (!runIsAlongX && (diffY != dy)) ) {
+
+                int rs = i - lineStart;
+                // choosing a minimum size of 6 from looking at edges in tests
+                if (rs > minLedgeWidth) {
+                    if (i == stop) {
+                        tmp.add(lineStart, i);
+                    } else {
+                        tmp.add(lineStart, i - 1);
+                    }
+                    tmpRunIsAlongX = runIsAlongX;
+                    tmpDX = dx;
+                    tmpDY = dy;
+                } else if (tmp.getN() == 1) {
+                    allLedges.add(tmp.getX(0), tmp.getY(0));
+                    tmp = new PairIntArray();
+                }
+
+                if (i != stop) {
+                    // find the next line segment
+                    dx = 0;
+                    dy = 0;
+                    runIsAlongX = null;
+                    // looking for straight lines of x or y
+                    int tmpI = i;
+                    while (!((dx == 0) && (dy != 0)) &&
+                        !((dy == 0) && (dx != 0))) {
+                        i++;
+                        if (i >= stop) {
+                            break;
+                        }
+                        dx = (int) (curve.getX(i) - curve.getX(i - 1));
+                        dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                    }
+
+                    if (i < stop) {
+                        if (dx == 0) {
+                            runIsAlongX = Boolean.FALSE;
+                        } else if (dy == 0) {
+                            runIsAlongX = Boolean.TRUE;
+                        }
+
+                        // back track to find where the current linestart
+                        // should be between tmpI and i
+                        boolean iChanged = false;
+                        for (int j = (i - 1); j > tmpI; j--) {
+                            diffX = (int) (curve.getX(j) - curve.getX(j - 1));
+                            diffY = (int) (curve.getY(j) - curve.getY(j - 1));
+                            
+                            if ((diffY != dy) || (diffX != dx)) {
+                                i = j;
+                                iChanged = true;
+                            }
+                        }
+                        if (iChanged) {
+                            i--;
+                        }
+                        
+                        /*
+                        if ((i - tmpI) == 1) {
+                            // we want to continue loop at tmpI+1 if an incr of 1 was 
+                            // all that was necessary
+                            i = tmpI;
+                        } else {
+                            i--;
+                        }*/
+                        lineStart = i;
+                    }
+                }
+                
+                int tmpN = tmp.getN();
+                     
+                // if this is not consecutive segment, 
+                // decide whether to store, then reset tmp
+                if ((i >= stop) || (
+                    (tmp.getN() > 0) &&
+                    !(
+                        (runIsAlongX.booleanValue() == tmpRunIsAlongX.booleanValue())
+                        && (dx == tmpDX) && (tmpDY == dy)
+                        && ((lineStart - (tmp.getY(tmpN - 1)) < 3))
+                    )
+                    )
+                    ) {
+                    
+                    if (tmp.getN() > 1) {
+                        
+                        // need to avoid removing a partial corner
+                        
+                        // the ledge pattern seems to be roughly min runs
+                        // that are half the size of max run:
+                        //     27pix, 47pix, 27pix
+                        //     6pix, 13pix
+                        // exception
+                        //     10pix, 30pix
+                        
+                        int maxRangeSize = Integer.MIN_VALUE;
+                        for (int j = 0; j < tmp.getN(); j++) {
+                            rs = tmp.getY(j) - tmp.getX(j);
+                            if (rs > maxRangeSize) {
+                                maxRangeSize = rs;
+                            }
+                        }
+                        
+                        // if the remaining segments are roughly 1/2 or 1/3
+                        // of maxRangeSize, keep these as an entire
+                        // ledge segment, else consider scavenging within it
+                        // next to the longest segment.
+                        
+                        boolean keep = true;
+                        for (int j = 0; j < tmp.getN(); j++) {
+                            rs = tmp.getY(j) - tmp.getX(j);
+                            if ((maxRangeSize/rs) > 3) {
+                                keep = false;
+                            }
+                        }
+                        
+                        if (keep) {
+                            allLedges.add(tmp.getX(0), tmp.getY(tmp.getN() - 1));
+                        }
+                        
+                        tmp = new PairIntArray();
+                    }                                        
+                }                
+            }   
+        }
+    }
+    
+    public boolean isWithinARange(PairIntArray lineRangeSegments, int idx) {
+        
+        if (lineRangeSegments == null || lineRangeSegments.getN() == 0) {
+            return false;
+        }
+        
+        return isWithinARange(lineRangeSegments, idx, 0);
+    }
+
+    public boolean isWithinARange(PairIntArray lineRangeSegments, int idx,
+        int minDistFromEnds) {
+        
+        if (lineRangeSegments == null || lineRangeSegments.getN() == 0) {
+            return false;
+        }
+        
+        // search outside of bounds first:
+        if (idx < lineRangeSegments.getX(0)) {
+            return false;
+        } else if (idx > lineRangeSegments.getY(lineRangeSegments.getN() - 1)) {
+            return false;
+        }
+        
+        for (int i = 0; i < lineRangeSegments.getN(); i++) {
+            
+            int idx0 = lineRangeSegments.getX(i);
+            int idx1 = lineRangeSegments.getY(i);
+            
+            if ((idx >= (idx0 + minDistFromEnds)) 
+                && (idx <= (idx1 - minDistFromEnds))) {
+                
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    public void sortByX(PairIntArray curve) {
+        if (curve.getN() < 2) {
+            return;
+        }
+        sortByX(curve, 0, curve.getN() - 1);
+    }
+    
+    private void sortByX(PairIntArray curve, int idxLo, int idxHi) {
+        if (idxLo < idxHi) {
+            int idxMid = partitionByX(curve, idxLo, idxHi);
+            sortByX(curve, idxLo, idxMid - 1);
+            sortByX(curve, idxMid + 1, idxHi);
+        }
+    }
+
+    private int partitionByX(PairIntArray curve, int idxLo, int idxHi) {
+        
+        int x = curve.getX(idxHi);  //for comparison
+        int store = idxLo - 1;      //store to swap after pivot
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            if (curve.getX(i) <= x) {
+                store++;
+                int swapX = curve.getX(store);
+                int swapY = curve.getY(store);
+                curve.set(store, curve.getX(i), curve.getY(i));
+                curve.set(i, swapX, swapY);
+            }
+        }
+        store++;
+        
+        int swapX = curve.getX(store);
+        int swapY = curve.getY(store);
+        curve.set(store, curve.getX(idxHi), curve.getY(idxHi));
+        curve.set(idxHi, swapX, swapY);
+        
+        return store;
     }
 
 }

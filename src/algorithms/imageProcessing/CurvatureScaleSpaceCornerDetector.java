@@ -126,7 +126,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > scaleSpaceMaps 
             = new HashMap<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >();
-      
+              
         // perform the analysis on the edgesScaleSpaceMaps
         for (int i = 0; i < edges.size(); i++) {
   
@@ -149,8 +149,8 @@ public class CurvatureScaleSpaceCornerDetector extends
                 "{0}) number of corners adding ={1} for edge={2}", 
                 new Object[]{Integer.valueOf(i), 
                     Integer.valueOf(edgeCorners.getN()), 
-                    Integer.valueOf(i)}); 
-                   
+                    Integer.valueOf(i)});
+            
 //edgeCorners = removeFalseCorners(edgeCorners);
             
             //store xc and yc for the edge
@@ -198,12 +198,42 @@ public class CurvatureScaleSpaceCornerDetector extends
         int nRemoved = 0;
         
         if (correctForJaggedLines) {
+
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+//log.info("EDGE: " + edgeNumber);
+//curveHelper.debugPrint(scaleSpace.getXYCurve());     
+            
+            PairIntArray jaggedLineSegments = 
+                curveHelper.findJaggedLineSegments(scaleSpace.getXYCurve());
                         
             List<Integer> remove = new ArrayList<Integer>();
+            
             for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
                 
                 int idx = maxCandidateCornerIndexes.get(ii);
                 
+                if (isAClosedCurve && ((idx < 3) 
+                    || (idx > (scaleSpace.getSize() - 4)))) {
+                    
+                    xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+                   
+                } else if ((idx < 4) || (idx > (scaleSpace.getSize() - 5))) {
+                    
+                    remove.add(Integer.valueOf(ii));
+                    
+                } else {
+                    
+                    boolean isInARange = curveHelper.isWithinARange(
+                        jaggedLineSegments, idx, 5);
+
+                    if (isInARange) {
+                        remove.add(Integer.valueOf(ii));
+                    } else {
+                        xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+                    }
+                }
+                
+                /*
                 if ((idx > 3) && (idx < (scaleSpace.getSize() - 4))) {
                     
                     boolean isDueToJaggedLine = isDueToJaggedLine(idx, scaleSpace);
@@ -222,7 +252,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                     } else {
                         remove.add(Integer.valueOf(ii));
                     }
-                }
+                }*/
             }
             nRemoved += remove.size();
             for (int ii = (remove.size() - 1); ii > -1; ii--) {
@@ -525,9 +555,9 @@ public class CurvatureScaleSpaceCornerDetector extends
      */
     protected List<Integer> findCandidateCornerIndexes(float[] k, 
         List<Integer> minMaxIndexes, float lowThreshold) {
-        
+
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima 
-        
+
         float factorAboveMin = 3.0f;// 10 misses some corners
 
         List<Integer> cornerCandidates = new ArrayList<Integer>();
