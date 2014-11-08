@@ -916,7 +916,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertFalse(isWithinARange);
     }
     
-    public void testJaggedLines6() throws Exception {
+    public void estJaggedLines6() throws Exception {
         PairIntArray xy = getEdge1();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -945,33 +945,29 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         for (int i = 0; i < segments.getN(); i++) {
             log.info("SEGMENT: " + segments.getX(i) + " : " + segments.getY(i));
         }
+    }
+    
+    public void testJaggedLines7() throws Exception {
+
+        PairIntArray xy = getEdge0();
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
         /*
-        for jagged line then ledges search:
-        [junit] INFO: SEGMENT: 0 : 26 *
-        [junit] INFO: SEGMENT: 37 : 69
-        [junit] INFO: SEGMENT: 70 : 99 *
-        [junit] INFO: SEGMENT: 109 : 144
-        [junit] INFO: SEGMENT: 144 : 208 *
-        [junit] INFO: SEGMENT: 215 : 256 *
-        [junit] INFO: SEGMENT: 260 : 315
-        [junit] INFO: SEGMENT: 317 : 348 *
-        [junit] INFO: SEGMENT: 353 : 408
-        [junit] INFO: SEGMENT: 409 : 459 *
-463-478 is missing
-        [junit] INFO: SEGMENT: 483 : 498
-        [junit] INFO: SEGMENT: 515 : 526 *
-        [junit] INFO: SEGMENT: 539 : 547 *
-        [junit] INFO: SEGMENT: 566 : 583
-        [junit] INFO: SEGMENT: 596 : 614
+         [junit] INFO: SEGMENT: 5 : 15
+         [junit] INFO: SEGMENT: 23 : 53
+         [junit] INFO: SEGMENT: 54 : 69
+         [junit] INFO: SEGMENT: 70 : 81
+         [junit] INFO: SEGMENT: 93 : 102
+         [junit] INFO: SEGMENT: 111 : 138
+         [junit] INFO: SEGMENT: 142 : 158
+         [junit] INFO: SEGMENT: 159 : 180
         */
+        PairIntArray segments = curveHelper.findJaggedLineSegments(xy);
         
-        /*
-        PairIntArray ledges = curveHelper.findLedgesInRemainingCurve(xy, 
-            new PairIntArray());
-        
-        for (int i = 0; i < ledges.getN(); i++) {
-            log.info("LEDGES: " + ledges.getX(i) + " : " + ledges.getY(i));
-        }*/
+        for (int i = 0; i < segments.getN(); i++) {
+            log.info("SEGMENT: " + segments.getX(i) + " : " + segments.getY(i));
+        }
     }
     
     public void estSortByX() throws Exception {
@@ -1004,17 +1000,199 @@ public class MiscellaneousCurveHelperTest extends TestCase {
             lastX = x;
         }
     }
+    
+    public PairIntArray getEdge0() {
+        
+        PairIntArray xy = new PairIntArray();
+        
+        xy.add(238, 203);
+        xy.add(239, 204);
+        xy.add(239, 205);
+        xy.add(239, 206);
+        xy.add(238, 207);
+        xy.add(238, 208);
+        xy.add(238, 209);
+        xy.add(238, 210);
+        xy.add(238, 211);
+        xy.add(238, 212);
+        xy.add(238, 213);
+        xy.add(238, 214);
+        xy.add(238, 215);
+        xy.add(238, 216);
+        xy.add(238, 217);
+        xy.add(238, 218);
+        xy.add(237, 219);
+        xy.add(237, 220);
+        xy.add(236, 221);
+        xy.add(236, 222);
+        xy.add(235, 223);
+        xy.add(234, 224);
+        xy.add(233, 225);
+        xy.add(232, 225);
+        xy.add(231, 226);
+        xy.add(230, 226);
+        xy.add(229, 227);
+        xy.add(228, 227);
+        xy.add(227, 228);
+        xy.add(226, 228);
+        xy.add(225, 229);
+        xy.add(224, 230);
+        xy.add(223, 230);
+        xy.add(222, 231);
+        xy.add(221, 232);
+        xy.add(220, 232);
+        xy.add(219, 233);
+        xy.add(218, 233);
+        xy.add(217, 234);
+        xy.add(216, 235);
+        xy.add(215, 235);
+        xy.add(214, 236);
+        xy.add(213, 236);
+        xy.add(212, 237);
+        xy.add(211, 238);
+        xy.add(210, 238);
+        xy.add(209, 239);
+        xy.add(208, 239);
+        xy.add(207, 240);
+        xy.add(206, 241);
+        xy.add(205, 241);
+        xy.add(204, 241);
+        xy.add(203, 241);
+        xy.add(202, 241);
+        xy.add(201, 240);
+        xy.add(200, 240);
+        xy.add(199, 239);
+        xy.add(198, 238);
+        xy.add(197, 238);
+        xy.add(196, 237);
+        xy.add(195, 237);
+        xy.add(194, 236);
+        xy.add(193, 235);
+        xy.add(192, 235);
+        xy.add(191, 234);
+        xy.add(190, 234);
+        xy.add(189, 233);
+        xy.add(188, 232);
+        xy.add(187, 231);
+        xy.add(186, 230);
+        xy.add(186, 229);
+        xy.add(186, 228);
+        xy.add(186, 227);
+        xy.add(186, 226);
+        xy.add(186, 225);
+        xy.add(186, 224);
+        xy.add(186, 223);
+        xy.add(186, 222);
+        xy.add(186, 221);
+        xy.add(186, 220);
+        xy.add(186, 219);
+        xy.add(186, 218);
+        xy.add(187, 217);
+        xy.add(187, 216);
+        xy.add(187, 215);
+        xy.add(187, 214);
+        xy.add(187, 213);
+        xy.add(187, 212);
+        xy.add(188, 211);
+        xy.add(189, 211);
+        xy.add(190, 212);
+        xy.add(191, 213);
+        xy.add(192, 214);
+        xy.add(193, 214);
+        xy.add(194, 215);
+        xy.add(195, 216);
+        xy.add(196, 217);
+        xy.add(197, 217);
+        xy.add(198, 218);
+        xy.add(199, 218);
+        xy.add(200, 219);
+        xy.add(201, 220);
+        xy.add(202, 220);
+        xy.add(203, 221);
+        xy.add(204, 221);
+        xy.add(205, 221);
+        xy.add(206, 221);
+        xy.add(207, 221);
+        xy.add(208, 221);
+        xy.add(209, 220);
+        xy.add(210, 219);
+        xy.add(211, 219);
+        xy.add(212, 218);
+        xy.add(213, 218);
+        xy.add(214, 217);
+        xy.add(215, 216);
+        xy.add(216, 216);
+        xy.add(217, 215);
+        xy.add(218, 215);
+        xy.add(219, 214);
+        xy.add(220, 213);
+        xy.add(221, 213);
+        xy.add(222, 212);
+        xy.add(223, 212);
+        xy.add(224, 211);
+        xy.add(225, 210);
+        xy.add(226, 210);
+        xy.add(227, 209);
+        xy.add(228, 209);
+        xy.add(229, 208);
+        xy.add(230, 208);
+        xy.add(231, 207);
+        xy.add(232, 206);
+        xy.add(233, 206);
+        xy.add(234, 205);
+        xy.add(235, 204);
+        xy.add(236, 204);
+        xy.add(237, 203);
+        xy.add(238, 202);
+        xy.add(237, 201);
+        xy.add(236, 200);
+        xy.add(235, 199);
+        xy.add(234, 199);
+        xy.add(233, 198);
+        xy.add(232, 198);
+        xy.add(231, 197);
+        xy.add(230, 197);
+        xy.add(229, 196);
+        xy.add(228, 196);
+        xy.add(227, 195);
+        xy.add(226, 195);
+        xy.add(225, 194);
+        xy.add(224, 194);
+        xy.add(223, 193);
+        xy.add(222, 193);
+        xy.add(221, 193);
+        xy.add(220, 193);
+        xy.add(219, 193);
+        xy.add(218, 193);
+        xy.add(217, 194);
+        xy.add(216, 194);
+        xy.add(215, 195);
+        xy.add(214, 196);
+        xy.add(213, 196);
+        xy.add(212, 196);
+        xy.add(211, 197);
+        xy.add(210, 198);
+        xy.add(209, 198);
+        xy.add(208, 199);
+        xy.add(207, 199);
+        xy.add(206, 200);
+        xy.add(205, 201);
+        xy.add(204, 201);
+        xy.add(203, 201);
+        xy.add(202, 202);
+        xy.add(201, 203);
+        xy.add(200, 203);
+        xy.add(199, 204);
+        xy.add(198, 204);
+        xy.add(197, 205);
+        xy.add(196, 206);
+        xy.add(196, 207);
+
+        return xy;
+    }
 
     public PairIntArray getEdge1() {
-        /*
-            INFO: SEGMENT: 37 : 69
-    [junit] INFO: SEGMENT: 109 : 144
-    [junit] INFO: SEGMENT: 260 : 315
-    [junit] INFO: SEGMENT: 353 : 408
-    [junit] INFO: SEGMENT: 483 : 498
-    [junit] INFO: SEGMENT: 566 : 583
-    [junit] INFO: SEGMENT: 596 : 614
-        */
+        
         PairIntArray xy = new PairIntArray();
         xy.add(198, 145);
         xy.add(198, 146);

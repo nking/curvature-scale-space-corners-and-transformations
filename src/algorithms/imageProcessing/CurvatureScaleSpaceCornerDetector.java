@@ -196,7 +196,11 @@ public class CurvatureScaleSpaceCornerDetector extends
         PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
         
         int nRemoved = 0;
-        
+/*
+if (edgeNumber > 2) {
+    return xy;
+}
+*/
         if (correctForJaggedLines) {
 
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -224,7 +228,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                 } else {
                     
                     boolean isInARange = curveHelper.isWithinARange(
-                        jaggedLineSegments, idx, 5);
+                        jaggedLineSegments, idx, 3);
 
                     if (isInARange) {
                         remove.add(Integer.valueOf(ii));
@@ -232,27 +236,6 @@ public class CurvatureScaleSpaceCornerDetector extends
                         xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
                     }
                 }
-                
-                /*
-                if ((idx > 3) && (idx < (scaleSpace.getSize() - 4))) {
-                    
-                    boolean isDueToJaggedLine = isDueToJaggedLine(idx, scaleSpace);
-                    if (!isDueToJaggedLine) {
-                        xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
-                    } else {
-                        remove.add(Integer.valueOf(ii));
-                    }
-                } else {
-                    // corner at the end points of edge are usually artifacts
-                    // except when they are closed curves (the convolution for
-                    // closed curves wraps around so doesn't have the end of
-                    // edge artifact.
-                    if (isAClosedCurve) {
-                        xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
-                    } else {
-                        remove.add(Integer.valueOf(ii));
-                    }
-                }*/
             }
             nRemoved += remove.size();
             for (int ii = (remove.size() - 1); ii > -1; ii--) {

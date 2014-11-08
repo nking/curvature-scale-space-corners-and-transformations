@@ -1206,23 +1206,13 @@ public class MiscellaneousCurveHelper {
      * @return 
      */
     public PairIntArray findJaggedLineSegments(final PairIntArray curve) {
-        //TODO: use minimum curve size
         
+        //TODO: use minimum curve size
         if (curve == null || curve.getN() < 5) {
             return null;
         }
-        
-        /*
-        PairIntArray staircaseSegments = findJaggedLineStaircaseSegments(curve);
-        
-        PairIntArray allJaggedLineRanges = findLedgesInRemainingCurve(curve, 
-            staircaseSegments);
-        
-        return allJaggedLineRanges;
-        */
-        
-        PairIntArray ledges = findLedgesInRemainingCurve(curve, 
-            new PairIntArray());
+
+        PairIntArray ledges = findLedgesInCurve(curve);
         
         PairIntArray remainingRanges = 
             writeRangesNotAlreadyIncluded(curve, ledges);
@@ -1245,6 +1235,48 @@ public class MiscellaneousCurveHelper {
         }
         
         sortByX(ledges);
+        
+        // merge adjacent ranges
+        int n = ledges.getN();
+        for (int i = (n - 1); i > 0; i--) {
+            
+            int r0 = ledges.getX(i);
+            int r1 = ledges.getY(i);
+            
+            if ((r0 - ledges.getY(i - 1)) < 2) {
+                
+                // check slopes before merging.
+                
+                int x10 = curve.getX(r1) - curve.getX(r0);
+                int y10 = curve.getY(r1) - curve.getY(r0);
+                float slope10 = (x10 == 0) ? Float.POSITIVE_INFINITY :
+                    (float)y10/(float)x10;
+                
+                int r2 = ledges.getX(i - 1);
+                int r3 = ledges.getY(i - 1);                
+                int x32 = curve.getX(r3) - curve.getX(r2);
+                int y32 = curve.getY(r3) - curve.getY(r2);
+                float slope32 = (x32 == 0) ? Float.POSITIVE_INFINITY :
+                    (float)y32/(float)x32;
+                
+                // dont merge:  0.139 0.518 ; -0.17, 0.25
+                
+                boolean sign10 = !(slope10 < 0);
+                boolean sign32 = !(slope32 < 0);
+                
+                if (sign10 != sign32) {
+                    continue;
+                }
+                // 6 degrees.  could alter this...
+                if (Math.abs(slope10 - slope32) > 0.1) {
+                    continue;
+                } 
+                
+                ledges.set(i - 1, ledges.getX(i - 1), r1);
+                
+                ledges.removeRange(i, i);
+            }
+        }        
         
         return ledges;
     }
@@ -1345,6 +1377,8 @@ public class MiscellaneousCurveHelper {
         int nSteps = 0;
         int sumStepWidth = 0;
         float avgStepWidth = 0;
+        float firstStepWidth = -1;
+        float lastStepWidth = -1;
         
         for (i = start; i <= stopIndex; i++) {
                     
@@ -1366,10 +1400,14 @@ public class MiscellaneousCurveHelper {
                 int currentStepWidth = i - stepStart;
                 
                 if (currentStepWidth > 0) {
+                    if (nSteps == 0) {
+                        firstStepWidth = currentStepWidth;
+                    }
                     nSteps++;
                     sumStepWidth += currentStepWidth;
                     avgStepWidth = sumStepWidth/(float)nSteps;
                     stepStart = i;
+                    lastStepWidth = currentStepWidth;
                 }                
             }
             
@@ -1400,8 +1438,18 @@ public class MiscellaneousCurveHelper {
                     ((avg > 1) && 
                         ((endSegment[0] - lineStart + 1) >= 3 * avg)
                     )) {
-                        lineSegmentRanges.add(lineStart, endSegment[0]);
-                        
+                        if ((lastStepWidth >= 3) && ((lastStepWidth/avg) >= 2)) {
+                            
+                            int endMinus = (int)(endSegment[0] - lastStepWidth);
+                            
+                            if ((endMinus - lineStart + 1) > 4) {
+                                lineSegmentRanges.add(lineStart, endMinus);
+                            } else {
+                                lineSegmentRanges.add(lineStart, endSegment[0]);
+                            }
+                        } else {
+                            lineSegmentRanges.add(lineStart, endSegment[0]);
+                        }
                     } else {
                         i = lineStart + endSegment[1];
                     }
@@ -1477,6 +1525,8 @@ public class MiscellaneousCurveHelper {
                 sumStepWidth = 0;
                 avgStepWidth = 0;
                 nSteps = 0;
+                lastStepWidth = -1;
+                firstStepWidth = -1;
                 
                 lineStart = i;
             }
@@ -1621,33 +1671,17 @@ public class MiscellaneousCurveHelper {
       * @param staircaseSegmentRanges
       * @return 
       */
-    PairIntArray findLedgesInRemainingCurve(PairIntArray curve, 
-        PairIntArray staircaseSegmentRanges) {
+    PairIntArray findLedgesInCurve(PairIntArray curve) {
         
         /*
         looking for long stretch of line that changes by 1 pixel and then
         continues in a long line
         */
-                
-        PairIntArray remainingRanges = writeRangesNotAlreadyIncluded(curve, 
-            staircaseSegmentRanges);
-        
+         
         PairIntArray allLedges = new PairIntArray();
         
-        for (int ri = 0; ri < remainingRanges.getN(); ri++) {
-            int start = remainingRanges.getX(ri);
-            int stop = remainingRanges.getY(ri);
-            
-            findLedgesWithinRange(curve, start, stop, allLedges);
-        }
-    
-        for (int i = 0; i < staircaseSegmentRanges.getN(); i++) {
-            allLedges.add(staircaseSegmentRanges.getX(i),
-                staircaseSegmentRanges.getY(i));
-        }
-        
-        sortByX(allLedges);
-        
+        findLedgesWithinRange(curve, 0, curve.getN() - 1, allLedges);
+       
         return allLedges;
     }
     
@@ -1733,7 +1767,7 @@ public class MiscellaneousCurveHelper {
 
                 int rs = i - lineStart;
                 // choosing a minimum size of 6 from looking at edges in tests
-                if (rs > minLedgeWidth) {
+                if (rs >= minLedgeWidth) {
                     if (i == stop) {
                         tmp.add(lineStart, i);
                     } else {
@@ -1742,6 +1776,9 @@ public class MiscellaneousCurveHelper {
                     tmpRunIsAlongX = runIsAlongX;
                     tmpDX = dx;
                     tmpDY = dy;
+                } else if ((i == (curve.getN() - 1)) /*&& (tmp.getN() > 0) &&
+                    (Math.abs(lineStart - tmp.getY(tmp.getN() - 1)) < 2)*/) {
+                    tmp.add(lineStart, i);
                 } else if (tmp.getN() == 1) {
                     allLedges.add(tmp.getX(0), tmp.getY(0));
                     tmp = new PairIntArray();
@@ -1773,28 +1810,15 @@ public class MiscellaneousCurveHelper {
 
                         // back track to find where the current linestart
                         // should be between tmpI and i
-                        boolean iChanged = false;
-                        for (int j = (i - 1); j > tmpI; j--) {
+                        for (int j = (i - 1); j >= tmpI; j--) {
                             diffX = (int) (curve.getX(j) - curve.getX(j - 1));
                             diffY = (int) (curve.getY(j) - curve.getY(j - 1));
                             
                             if ((diffY != dy) || (diffX != dx)) {
                                 i = j;
-                                iChanged = true;
                             }
                         }
-                        if (iChanged) {
-                            i--;
-                        }
                         
-                        /*
-                        if ((i - tmpI) == 1) {
-                            // we want to continue loop at tmpI+1 if an incr of 1 was 
-                            // all that was necessary
-                            i = tmpI;
-                        } else {
-                            i--;
-                        }*/
                         lineStart = i;
                     }
                 }
@@ -1813,7 +1837,8 @@ public class MiscellaneousCurveHelper {
                     )
                     ) {
                     
-                    if (tmp.getN() > 1) {
+                    if (tmp.getN() > 1 || ((tmp.getN() > 0) 
+                        && (i == (curve.getN() - 1)))) {
                         
                         // need to avoid removing a partial corner
                         
@@ -1842,6 +1867,40 @@ public class MiscellaneousCurveHelper {
                             rs = tmp.getY(j) - tmp.getX(j);
                             if ((maxRangeSize/rs) > 3) {
                                 keep = false;
+                            }
+                        }
+                        
+                        // one more check that the lines are not wrapping around
+                        // a curve
+                        if (keep && (tmp.getN() > 1)) {
+                            int idx0f = tmp.getX(0);
+                            int idx0l = tmp.getY(0);
+                            int diffY0 = curve.getY(idx0l) - curve.getY(idx0f);
+                            int diffX0 = curve.getX(idx0l) - curve.getX(idx0f);
+                            float slope0;
+                            if (diffX0 == 0) {
+                                slope0 = Float.POSITIVE_INFINITY;
+                            } else {
+                                slope0 = (float)diffY0/(float)diffX0;
+                            }
+                            for (int j = 1; j < tmp.getN(); j++) {
+                                idx0f = tmp.getX(j);
+                                idx0l = tmp.getY(j);
+                                diffY0 = curve.getY(idx0l) - curve.getY(idx0f);
+                                diffX0 = curve.getX(idx0l) - curve.getX(idx0f);
+                                float slope1;
+                                if (diffX0 == 0) {
+                                    slope1 = Float.POSITIVE_INFINITY;
+                                } else {
+                                    slope1 = (float)diffY0/(float)diffX0;
+                                }
+                                // don't add corners
+                                float diffSlope = (Math.abs(slope0 - slope1));
+                                if (diffSlope > Math.PI/4.) {
+                                    keep = false;
+                                    break;
+                                }
+                                slope0 = slope1;
                             }
                         }
                         
