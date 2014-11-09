@@ -63,10 +63,10 @@ public class PairIntArray {
         int nRemove = idxHi - idxLo + 1;
 
         int moveIdx = idxHi + 1;
-        if (moveIdx < (n - 1)) {
+        if (moveIdx <= (n - 1)) {
             for (int moveToIdx = idxLo; moveToIdx < (n - nRemove); moveToIdx++) {
-                x[moveToIdx] = x[moveIdx]; // 1<--3,2<--4,3<--5,4<--6
-                y[moveToIdx] = y[moveIdx]; // 
+                x[moveToIdx] = x[moveIdx];
+                y[moveToIdx] = y[moveIdx];
                 moveIdx++;
             }
         }

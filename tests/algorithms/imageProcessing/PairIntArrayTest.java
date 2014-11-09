@@ -232,5 +232,20 @@ public class PairIntArrayTest extends TestCase {
         assertTrue(xy.getY(2) == 2);
         assertTrue(xy.getX(3) == 3);
         assertTrue(xy.getY(3) == 3);
+        
+        xy = new PairIntArray();
+        xy.add(0, 10);
+        xy.add(12, 23);
+        xy.add(23, 31);
+        xy.add(34, 84);
+        int i = 2;
+        int r1 = 31;
+        xy.set(i - 1, xy.getX(i - 1), r1);
+        xy.removeRange(i, i);
+        assertTrue(xy.getN() == 3);
+        assertTrue((xy.getX(0) == 0) && (xy.getY(0) == 10));
+        assertTrue((xy.getX(1) == 12) && (xy.getY(1) == 31));
+        assertTrue((xy.getX(2) == 34) && (xy.getY(2) == 84));
+
     }
 }
