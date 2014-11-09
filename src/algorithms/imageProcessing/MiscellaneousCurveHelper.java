@@ -1243,7 +1243,9 @@ public class MiscellaneousCurveHelper {
             int r0 = ledges.getX(i);
             int r1 = ledges.getY(i);
             
-            if ((r0 - ledges.getY(i - 1)) < 2) {
+            // gap between end of one range and start of the next that might
+            // be part of both ranges
+            if ((r0 - ledges.getY(i - 1)) < 3) {
                 
                 // check slopes before merging.
                 
@@ -1258,18 +1260,69 @@ public class MiscellaneousCurveHelper {
                 int y32 = curve.getY(r3) - curve.getY(r2);
                 float slope32 = (x32 == 0) ? Float.POSITIVE_INFINITY :
                     (float)y32/(float)x32;
-                
-                // dont merge:  0.139 0.518 ; -0.17, 0.25
-                
+                                
                 boolean sign10 = !(slope10 < 0);
                 boolean sign32 = !(slope32 < 0);
                 
                 if (sign10 != sign32) {
                     continue;
                 }
-                // 6 degrees of slope.  could alter this...
-                if (Math.abs(slope10 - slope32) > 0.1) {
+               
+                if (Math.abs(slope10 - slope32) > (Math.PI/4.)) { 
                     continue;
+                }
+                if (Math.abs(slope10 - slope32) > 0.1) {
+                    // this may be 2 regions due to 2 different methods,
+                    // the ledges method and then staircase method,
+                    // so retry the staircase alone for the full range to
+                    // see if the entire region is found as a single region.
+                    // r2 to r1
+                    PairIntArray staircaseRanges = 
+                        findJaggedLineStaircaseSegments(curve, r2, r1);
+                    
+                    if (staircaseRanges != null) {
+                        
+                        for (int j = 0; j < staircaseRanges.getN(); j++) {
+                            int s0 = staircaseRanges.getX(j);
+                            int s1 = staircaseRanges.getY(j);
+                            log.info("       " + s0 + " : " + s1);
+                        }
+                        
+                        if (staircaseRanges.getN() == 0) {
+                            // do not merge
+                            continue;
+                        } else if (staircaseRanges.getN() == 1) {
+                            // does it match the whole range r2 to r1
+                            // or only one of r2:r3 and r0:r1?
+                            // if only matches one range, do not merge them
+                            
+                            int diff10 = Math.abs((r0 - staircaseRanges.getX(0)) +
+                                (r1 - staircaseRanges.getY(0)));
+                            
+                            int diff32 = Math.abs((r2 - staircaseRanges.getX(0)) +
+                                (r3 - staircaseRanges.getY(0)));
+                            
+                            int diff21 = Math.abs((r2 - staircaseRanges.getX(0)) +
+                                (r1 - staircaseRanges.getY(0)));
+                            
+                            // which one is close to zero?
+                            if ((diff21 < diff10) && (diff21 < diff32)) {
+                                // let these merge
+                            } else if ((diff32 < diff10) && (diff32 < diff21)) {
+                                // matches the range r2 to r3, don't merge
+                                continue;
+                            } else if ((diff10 < diff32) && (diff10 < diff21)) {
+                                // matches the range r0 to r1, don't merge
+                                continue;
+                            }
+                            
+                        } else if (staircaseRanges.getN() > 1) {
+                            // keep the ranges separate
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }                  
                 } 
                 
                 ledges.set(i - 1, ledges.getX(i - 1), r1);
@@ -1438,7 +1491,10 @@ public class MiscellaneousCurveHelper {
                     ((avg > 1) && 
                         ((endSegment[0] - lineStart + 1) >= 3 * avg)
                     )) {
-                        if ((lastStepWidth >= 3) && ((lastStepWidth/avg) >= 2)) {
+                        if (
+                            ((lastStepWidth >= 3) && ((lastStepWidth/avg) >= 2))
+                            || ((lastStepWidth == 1) && (avg > 1))
+                            ){
                             
                             int endMinus = (int)(endSegment[0] - lastStepWidth);
                             
@@ -1830,7 +1886,7 @@ public class MiscellaneousCurveHelper {
                 if ((i >= stop) || (
                     (tmp.getN() > 0) &&
                     !(
-                        (runIsAlongX.booleanValue() == tmpRunIsAlongX.booleanValue())
+                        (runIsAlongX.compareTo(tmpRunIsAlongX) == 0)
                         && (dx == tmpDX) && (tmpDY == dy)
                         && ((lineStart - (tmp.getY(tmpN - 1)) < 3))
                     )
@@ -1882,9 +1938,9 @@ public class MiscellaneousCurveHelper {
                         }
                         
                         tmp = new PairIntArray();
-                    }                                        
-                }                
-            }   
+                    } 
+                }            
+            }
         }
     }
     

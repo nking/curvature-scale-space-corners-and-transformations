@@ -196,16 +196,10 @@ public class CurvatureScaleSpaceCornerDetector extends
         PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
         
         int nRemoved = 0;
-/*
-if (edgeNumber != 4) {
-    return xy;
-}
-*/
+        
         if (correctForJaggedLines) {
 
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-//log.info("EDGE: " + edgeNumber);
-//curveHelper.debugPrint(scaleSpace.getXYCurve());     
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();   
             
             PairIntArray jaggedLineSegments = 
                 curveHelper.findJaggedLineSegments(scaleSpace.getXYCurve());
