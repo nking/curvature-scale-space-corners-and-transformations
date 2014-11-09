@@ -484,11 +484,11 @@ public aspect CurvatureAspect {
         }
     }
 
-    before(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs) :
+    before(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs, boolean isAClosedCurve) :
         target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector)
         && call(protected PairFloatArray CurvatureScaleSpaceCornerDetector.findCornersInScaleSpaceMap(
-        ScaleSpaceCurve, int, boolean))
-        && args(scaleSpace, edgeNumber, rmFlseCrnrs) {
+        ScaleSpaceCurve, int, boolean, boolean))
+        && args(scaleSpace, edgeNumber, rmFlseCrnrs, isAClosedCurve) {
 
         log2.info("before findCornersInScaleSpaceMap for edge " 
             + Integer.toString(edgeNumber) + ":");
@@ -500,12 +500,13 @@ public aspect CurvatureAspect {
 
     }
 
-    after(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs) 
+    after(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs,
+        boolean isAClosedCurve) 
         returning(PairFloatArray xy) :
         target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector)
         && call(protected PairFloatArray CurvatureScaleSpaceCornerDetector.findCornersInScaleSpaceMap(
-        ScaleSpaceCurve, int, boolean))
-        && args(scaleSpace, edgeNumber, rmFlseCrnrs) {
+        ScaleSpaceCurve, int, boolean, boolean))
+        && args(scaleSpace, edgeNumber, rmFlseCrnrs, isAClosedCurve) {
 
         log2.info("after findCornersInScaleSpaceMap for edge " 
             + Integer.toString(edgeNumber) + ":");
