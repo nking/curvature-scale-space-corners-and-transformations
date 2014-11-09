@@ -1056,6 +1056,25 @@ public class MiscellaneousCurveHelper {
         log.info(sb.toString());
     }
     
+    public int indexOfPointsInRange(List<PairIntArray> edges, 
+        int xLo, int xHi, int yLo, int yHi) {
+        
+        for (int i = 0; i < edges.size(); i++) {
+            
+            PairIntArray edge = edges.get(i);
+            
+            for (int j = 0; j < edge.getN(); j++) {
+                int x = edge.getX(j);
+                int y = edge.getY(j);
+                if ((x >= xLo) && (x <= xHi) && (y >= yLo) && (y <= yHi)) {
+                    return i;
+                }
+            }
+        }
+        
+        return -1;
+    }
+    
     private boolean debugIsSection1(PairIntArray edge, int idx) {
         int x = edge.getX(idx);
         int y = edge.getY(idx);
@@ -1711,7 +1730,7 @@ public class MiscellaneousCurveHelper {
       * look for the single pixel ledge in a long stretch of a line and store 
       * the entire range.  There may be more than one single pixel range 
       * within a range.  a range is stored in the return array as a
-      * point (x,y) = (start or range, stop of range inclusive).
+      * point (x,y) = (start of range, stop of range inclusive).
       * @param curve
       * @param staircaseSegmentRanges
       * @return 
@@ -1814,7 +1833,11 @@ public class MiscellaneousCurveHelper {
                 // choosing a minimum size of 6 from looking at edges in tests
                 if (rs >= minLedgeWidth) {
                     if (i == stop) {
-                        tmp.add(lineStart, i);
+                        if (runStopped) {
+                            tmp.add(lineStart, i - 1);
+                        } else {
+                            tmp.add(lineStart, i);
+                        }
                     } else {
                         tmp.add(lineStart, i - 1);
                     }

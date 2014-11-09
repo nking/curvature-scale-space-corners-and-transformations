@@ -194,11 +194,25 @@ public class CurvatureScaleSpaceCornerDetector extends
         PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
         
         int nRemoved = 0;
-        
+/*
+if (edgeNumber != 75) {
+    return xy;
+}
+*/
         if (correctForJaggedLines) {
 
+            // ==== determine if corner is a false corner by looking for
+            //      jagged lines and whether it is in them.
+            //      also assumes an endpoint corner in a curve that is not 
+            //      closed is a false endpoint.
+
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();   
-            
+         
+//int en = curveHelper.indexOfPointsInRange(this.edges, 60, 78, 409, 453);
+//log.info("EDGE: " + edgeNumber);
+//curveHelper.debugPrint(scaleSpace.getXYCurve());
+
+
             PairIntArray jaggedLineSegments = 
                 curveHelper.findJaggedLineSegments(scaleSpace.getXYCurve());
                         
