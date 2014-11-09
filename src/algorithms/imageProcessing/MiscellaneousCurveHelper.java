@@ -1249,29 +1249,18 @@ public class MiscellaneousCurveHelper {
                 
                 // check slopes before merging.
                 
-                int x10 = curve.getX(r1) - curve.getX(r0);
-                int y10 = curve.getY(r1) - curve.getY(r0);
-                float slope10 = (x10 == 0) ? Float.POSITIVE_INFINITY :
-                    (float)y10/(float)x10;
+                double theta10 = calcTheta(curve, r0, r1);
                 
                 int r2 = ledges.getX(i - 1);
                 int r3 = ledges.getY(i - 1);                
-                int x32 = curve.getX(r3) - curve.getX(r2);
-                int y32 = curve.getY(r3) - curve.getY(r2);
-                float slope32 = (x32 == 0) ? Float.POSITIVE_INFINITY :
-                    (float)y32/(float)x32;
-                                
-                boolean sign10 = !(slope10 < 0);
-                boolean sign32 = !(slope32 < 0);
-                
-                if (sign10 != sign32) {
-                    continue;
-                }
+                double theta32 = calcTheta(curve, r2, r3);
                
-                if (Math.abs(slope10 - slope32) > (Math.PI/4.)) { 
+                double diffTheta = Math.abs(theta10 - theta32);
+                
+                if (diffTheta > (Math.PI/4.)) { 
                     continue;
                 }
-                if (Math.abs(slope10 - slope32) > 0.1) {
+                if (diffTheta > 0.1) {
                     // this may be 2 regions due to 2 different methods,
                     // the ledges method and then staircase method,
                     // so retry the staircase alone for the full range to
@@ -1904,32 +1893,20 @@ public class MiscellaneousCurveHelper {
                         if (tmp.getN() > 1) {
                             int idx0f = tmp.getX(0);
                             int idx0l = tmp.getY(0);
-                            int diffY0 = curve.getY(idx0l) - curve.getY(idx0f);
-                            int diffX0 = curve.getX(idx0l) - curve.getX(idx0f);
-                            float slope0;
-                            if (diffX0 == 0) {
-                                slope0 = Float.POSITIVE_INFINITY;
-                            } else {
-                                slope0 = (float)diffY0/(float)diffX0;
-                            }
+                            double theta0 = calcTheta(curve, idx0f, idx0l);
+                            
                             for (int j = 1; j < tmp.getN(); j++) {
                                 idx0f = tmp.getX(j);
                                 idx0l = tmp.getY(j);
-                                diffY0 = curve.getY(idx0l) - curve.getY(idx0f);
-                                diffX0 = curve.getX(idx0l) - curve.getX(idx0f);
-                                float slope1;
-                                if (diffX0 == 0) {
-                                    slope1 = Float.POSITIVE_INFINITY;
-                                } else {
-                                    slope1 = (float)diffY0/(float)diffX0;
-                                }
+                                double theta1 = calcTheta(curve, idx0f, idx0l);
+                                
                                 // don't add corners
-                                float diffSlope = (Math.abs(slope0 - slope1));
-                                if (diffSlope > Math.PI/4.) {
+                                double diff = Math.abs(theta0 - theta1);
+                                if (diff > Math.PI/4.) {
                                     keep = false;
                                     break;
                                 }
-                                slope0 = slope1;
+                                theta0 = theta1;
                             }
                         }
                         
