@@ -423,7 +423,7 @@ public class CurvatureScaleSpaceCornerDetector extends
      * values.
      * @param k
      * @param outputLowThreshold
-     * @return 
+     * @return
      */
     protected List<Integer> findMinimaAndMaximaInCurvature(float[] k,
         float[] outputLowThreshold) {

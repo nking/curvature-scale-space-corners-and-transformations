@@ -1369,20 +1369,6 @@ public class MiscellaneousCurveHelper {
         }        
        
     }
-
-    /**
-     * find the lines composed of nearly uniform stairs and return them as
-     * index ranges.  For example, a jagged line that extends from point
-     * 10 to point 30 inclusive is present in the returned object as a pair
-     * with (x, y) = (10, 30).
-     * @param curve
-     * @return 
-     */
-    private PairIntArray findJaggedLineStaircaseSegments(final PairIntArray 
-        curve) {
-        
-        return findJaggedLineStaircaseSegments(curve, 0, curve.getN() - 1);
-    }
     
     /**
      * find the lines composed of nearly uniform stairs and return them as
@@ -1758,7 +1744,7 @@ public class MiscellaneousCurveHelper {
             return new int[]{-1, -1};
         }
         
-        int plusMinusWidth = 2;
+        int plusMinusWidth = 3;
               
         int n = curve.getN();
           
