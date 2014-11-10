@@ -1258,7 +1258,7 @@ public class MiscellaneousCurveHelper {
         // merge adjacent ranges
         mergeRanges(curve, ledges);
         
-        log.info("lines found: ");
+        log.info("lines found before 45 degree search: ");
         for (int i = 0; i < ledges.getN(); i++) {
             int idx0 = ledges.getX(i);
             int idx1 = ledges.getY(i);
@@ -1286,6 +1286,17 @@ public class MiscellaneousCurveHelper {
         
         // merge ranges again
         mergeRanges(curve, ledges);
+        
+        sortByX(ledges);
+        
+        log.info("lines found after 45 degree search: ");
+        for (int i = 0; i < ledges.getN(); i++) {
+            int idx0 = ledges.getX(i);
+            int idx1 = ledges.getY(i);
+            log.info(" idx = " + idx0 + " : " + idx1 
+                + " xy = (" + curve.getX(idx0) + "," + curve.getY(idx0) + ") : "
+                + " (" + curve.getX(idx1) + "," + curve.getY(idx1) + ")");
+        }
         
         return ledges;
     }
@@ -1635,6 +1646,113 @@ public class MiscellaneousCurveHelper {
         
     }
 
+    /**
+     * find the lines composed of nearly uniform stairs and return them as
+     * index ranges.  For example, a jagged line that extends from point
+     * 10 to point 30 inclusive is present in the returned object as a pair
+     * with (x, y) = (10, 30).
+     * @param curve
+     * @return 
+     */
+    private PairIntArray find45DegreeSegments(final PairIntArray 
+        curve, int startIndex, int stopIndex) {
+        
+        //TODO: use minimum curve size
+        if (curve == null || (stopIndex - startIndex) < 5) {
+            return null;
+        }
+   
+        int minNSteps = 4;
+         
+        PairIntArray lineSegmentRanges = new PairIntArray();
+                    
+        int dx = 0;
+        int dy = 0;
+        int i = startIndex;
+        while ((dx == 0) || (dy == 0)) {
+            i++;
+            if (i >= stopIndex) {
+                return lineSegmentRanges;
+            }
+            dx = (int) (curve.getX(i) - curve.getX(i - 1));
+            dy = (int) (curve.getY(i) - curve.getY(i - 1));
+        }
+        int start = i;
+        
+        int stepStart = startIndex;
+        int lineStart = startIndex;
+        int nSteps = 0;
+        int sumStepWidth = 0;
+        float avgStepWidth = 0;
+        float firstStepWidth = -1;
+        float lastStepWidth = -1;
+        
+        for (i = start; i <= stopIndex; i++) {
+                    
+            int x = (int)curve.getX(i);
+            int y = (int)curve.getY(i);
+            
+            int diffX = (int)(x - curve.getX(i - 1));
+            
+            int diffY = (int)(y - curve.getY(i - 1));
+          
+            int currentStepWidth = i - stepStart;
+
+            if (currentStepWidth > 0) {
+                if (nSteps == 0) {
+                    firstStepWidth = currentStepWidth;
+                }
+                nSteps++;
+                sumStepWidth += currentStepWidth;
+                avgStepWidth = sumStepWidth/(float)nSteps;
+                stepStart = i;
+                lastStepWidth = currentStepWidth;
+            }                
+            
+            // if an invalid dx or dy, write the lineSegment and reset the range
+            if ((i == stopIndex) || (diffX != dx) || (diffY != dy)
+                ) {
+                
+                if (nSteps > minNSteps) {
+                                        
+                    lineSegmentRanges.add(lineStart, i - 1);
+                    
+                }
+                
+                if (i >= stopIndex) {
+                    return lineSegmentRanges;
+                }
+                
+                //TODO: check the stepStart index
+                stepStart = i;
+                lineStart = i;
+                
+                dx = 0;
+                dy = 0;
+                
+                while ((dx == 0) || (dy == 0)) {
+                    i++;
+                    if (i >= stopIndex) {
+                        return lineSegmentRanges;
+                    }
+                    dx = (int) (curve.getX(i) - curve.getX(i - 1));
+                    dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                }
+                
+                sumStepWidth = 0;
+                avgStepWidth = 0;
+                nSteps = 0;
+                lastStepWidth = -1;
+                firstStepWidth = -1;
+                
+                lineStart = i;
+            }
+        }
+                
+        return lineSegmentRanges;
+        
+    }
+    
     /**
      * validate that a line segment has steps only within +- 1 of
      * step stepWidth.  returns endIndex if entire region fits those
@@ -1988,6 +2106,15 @@ public class MiscellaneousCurveHelper {
         return isWithinARange(lineRangeSegments, idx, 0);
     }
 
+    /**
+     * search for idx within ranges in lineRangeSegments and return the index of
+     * lineRangeSegments in which it is found, else -1.  Note that lineRangeSegments
+     * have to be ordered by x and unique.
+     * @param lineRangeSegments
+     * @param idx
+     * @param minDistFromEnds
+     * @return 
+     */
     public boolean isWithinARange(PairIntArray lineRangeSegments, int idx,
         int minDistFromEnds) {
         
