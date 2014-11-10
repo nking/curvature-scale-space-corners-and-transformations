@@ -1257,16 +1257,7 @@ public class MiscellaneousCurveHelper {
         
         // merge adjacent ranges
         mergeRanges(curve, ledges);
-        
-        log.info("lines found before 45 degree search: ");
-        for (int i = 0; i < ledges.getN(); i++) {
-            int idx0 = ledges.getX(i);
-            int idx1 = ledges.getY(i);
-            log.info(" idx = " + idx0 + " : " + idx1 
-                + " xy = (" + curve.getX(idx0) + "," + curve.getY(idx0) + ") : "
-                + " (" + curve.getX(idx1) + "," + curve.getY(idx1) + ")");
-        }
-        
+       
         // search for 45 degree lines 
         remainingRanges = 
             writeRangesNotAlreadyIncluded(curve, ledges);
@@ -1288,15 +1279,6 @@ public class MiscellaneousCurveHelper {
         
         // merge ranges again
         mergeRanges(curve, ledges);
-        
-        log.info("lines found after 45 degree search: ");
-        for (int i = 0; i < ledges.getN(); i++) {
-            int idx0 = ledges.getX(i);
-            int idx1 = ledges.getY(i);
-            log.info(" idx = " + idx0 + " : " + idx1 
-                + " xy = (" + curve.getX(idx0) + "," + curve.getY(idx0) + ") : "
-                + " (" + curve.getX(idx1) + "," + curve.getY(idx1) + ")");
-        }
         
         return ledges;
     }

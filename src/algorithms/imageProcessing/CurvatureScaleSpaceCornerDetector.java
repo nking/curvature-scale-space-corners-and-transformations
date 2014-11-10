@@ -204,10 +204,6 @@ public class CurvatureScaleSpaceCornerDetector extends
 
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();   
 
-//int en = curveHelper.indexOfPointsInRange(this.edges, 42, 45, 375, 380);
-//log.info("EDGE: " + edgeNumber + " ==> " + en);
-//curveHelper.debugPrint(scaleSpace.getXYCurve());
-
             PairIntArray jaggedLineSegments = 
                 curveHelper.findJaggedLineSegments(scaleSpace.getXYCurve());
                         

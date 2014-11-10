@@ -33,7 +33,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         super.tearDown();
     }
     
-    public void estCurveIsOrderedClockwise() throws Exception {
+    public void testCurveIsOrderedClockwise() throws Exception {
         
         PairIntArray cwCurve = new PairIntArray();
         
@@ -62,7 +62,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertFalse(isCW);
     }
    
-    public void estCrossCorrelation() {
+    public void testCrossCorrelation() {
                 
         PairIntArray curve0, curve1;
         int[] crossCorrelationOffset = new int[1];
@@ -179,7 +179,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
 
     }
    
-    public void estProcessPair() throws Exception {
+    public void testProcessPair() throws Exception {
         
         /*
         given 2 edges, return true if they overlap. If they overlap
@@ -270,7 +270,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertFalse(overlapped);
     }
     
-    public void estPruneIncludedAdjacentCurves() throws Exception {
+    public void testPruneIncludedAdjacentCurves() throws Exception {
         
         /*
         3                         3
@@ -329,7 +329,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertTrue(output.size() == 2);
     }
 
-    public void estFindMinIdx() {
+    public void testFindMinIdx() {
         
         PairIntArray closedCurve = getSquare();
         
@@ -340,7 +340,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertTrue(18 == result);
     }
   
-    public void estCalculateCentroid() throws Exception {
+    public void testCalculateCentroid() throws Exception {
         
         MiscellaneousCurveHelper helper = new MiscellaneousCurveHelper();
         
@@ -422,7 +422,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         return xy;
     }
     
-    public void estDistanceBetweenPointAnd2Lines() {
+    public void testDistanceBetweenPointAnd2Lines() {
         
         /*
          5
@@ -543,7 +543,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertTrue(Math.abs(expectedDist - dist) < 0.01);
     }
    
-    public void estDistanceBetweenPointAnd2Lines_2() {
+    public void testDistanceBetweenPointAnd2Lines_2() {
         
         /*
          5
@@ -664,7 +664,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertTrue(Math.abs(expectedDist - dist) < 0.01);
     }
     
-    public void estCatalogNearlyStraightLineSegments() throws Exception {
+    public void testCatalogNearlyStraightLineSegments() throws Exception {
         
         PairIntArray xy = new PairIntArray();
         xy.add(0, 0);
@@ -719,7 +719,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
     
     }
     
-    public void estCatalogNearlyStraightLineSegments2() throws Exception {
+    public void testCatalogNearlyStraightLineSegments2() throws Exception {
         
         PairIntArray xy = new PairIntArray();
         
@@ -793,32 +793,17 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
         PairIntArray lineSegment = 
             curveHelper.findJaggedLineSegments(xy);
+        
+        
         assertTrue(lineSegment.getX(0) == 0);
-        assertTrue(lineSegment.getY(0) == 44);
+        assertTrue(lineSegment.getY(0) == 43);
         
         assertTrue(lineSegment.getX(1) == 45);
-        assertTrue(lineSegment.getY(1) == 58);
+        assertTrue(lineSegment.getY(1) == 57);
         
-        boolean isWithinARange = curveHelper.isWithinARange(lineSegment, 2);
-        assertTrue(isWithinARange);
-        
-        int[] endIndex = curveHelper.validateJaggedLineSegment(xy,
-        /*startIndex*/ 0, /*endIndex*/ 44, /*stepWidth*/ 2, /*dx*/ -1, /*dy*/ 1,
-        /*widthIsAlongX*/ Boolean.TRUE);
-        assertTrue(endIndex[0] == 44);
-        
-        endIndex = curveHelper.validateJaggedLineSegment(xy,
-        /*startIndex*/ 45, /*endIndex*/ 58, /*stepWidth*/ 2, /*dx*/ -1, /*dy*/ -1,
-        /*widthIsAlongX*/ Boolean.TRUE);
-        assertTrue(endIndex[0] == 58);
-        
-        endIndex = curveHelper.validateJaggedLineSegment(xy,
-        /*startIndex*/ 45, /*endIndex*/ 59, /*stepWidth*/ 2, /*dx*/ -1, /*dy*/ -1,
-        /*widthIsAlongX*/ Boolean.TRUE);
-        assertTrue(endIndex[0] == 58);
     }
     
-    public void estCatalogNearlyStraightLineSegments3() throws Exception {
+    public void testCatalogNearlyStraightLineSegments3() throws Exception {
         
         PairIntArray xy = new PairIntArray();
         
@@ -846,7 +831,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
     }
     
-    public void estCatalogNearlyStraightLineSegments4() throws Exception {
+    public void testCatalogNearlyStraightLineSegments4() throws Exception {
         
         PairIntArray xy = new PairIntArray();
         
@@ -867,56 +852,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
     }
     
-    public void estCatalogNearlyStraightLineSegments5() throws Exception {
-        
-        PairIntArray xy = new PairIntArray();
-        
-        xy.add(110, 211);
-        xy.add(110, 210);
-        xy.add(110, 209);
-        xy.add(111, 208); //3
-        xy.add(112, 207);
-        xy.add(113, 206);
-        xy.add(114, 205);
-        xy.add(115, 204); //7
-        xy.add(116, 204); //8
-        xy.add(117, 205); //9 <--
-        for (int j = 206; j <= 211; j++) {
-            xy.add(117, j);
-        }
-        //(116, 212) is 16
-        for (int j = 212; j <= 224; j++) {
-            xy.add(116, j);
-        }
-        xy.add(115, 225);// 29
-        xy.add(115, 226);
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        PairIntArray lineSegment = 
-            curveHelper.findJaggedLineSegments(xy);
-        
-        assertTrue(lineSegment.getN() == 1);
-        assertTrue(lineSegment.getX(0) == 9);
-        assertTrue(lineSegment.getY(0) == 28);
-        
-        boolean isWithinARange = curveHelper.isWithinARange(lineSegment, 0);
-        assertFalse(isWithinARange);
-        
-        isWithinARange = curveHelper.isWithinARange(lineSegment, 9);
-        assertTrue(isWithinARange);
-        
-        isWithinARange = curveHelper.isWithinARange(lineSegment, 27);
-        assertTrue(isWithinARange);
-        
-        isWithinARange = curveHelper.isWithinARange(lineSegment, 28);
-        assertTrue(isWithinARange);
-        
-        isWithinARange = curveHelper.isWithinARange(lineSegment, 29);
-        assertFalse(isWithinARange);
-    }
-    
-    public void estJaggedLines6() throws Exception {
+    public void testJaggedLines6() throws Exception {
         PairIntArray xy = getEdge1();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -947,30 +883,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         }
     }
     
-    public void testJaggedLines7() throws Exception {
-
-        PairIntArray xy = getEdge0();
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        /*
-         [junit] INFO: SEGMENT: 5 : 15
-         [junit] INFO: SEGMENT: 23 : 53
-         [junit] INFO: SEGMENT: 54 : 69
-         [junit] INFO: SEGMENT: 70 : 81
-         [junit] INFO: SEGMENT: 93 : 102
-         [junit] INFO: SEGMENT: 111 : 138
-         [junit] INFO: SEGMENT: 142 : 158
-         [junit] INFO: SEGMENT: 159 : 180
-        */
-        PairIntArray segments = curveHelper.findJaggedLineSegments(xy);
-        
-        for (int i = 0; i < segments.getN(); i++) {
-            log.info("SEGMENT: " + segments.getX(i) + " : " + segments.getY(i));
-        }
-    }
-    
-    public void estSortByX() throws Exception {
+    public void testSortByX() throws Exception {
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
    
