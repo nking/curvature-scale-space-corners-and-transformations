@@ -1256,22 +1256,58 @@ public class MiscellaneousCurveHelper {
         sortByX(ledges);
         
         // merge adjacent ranges
-        int n = ledges.getN();
+        mergeRanges(curve, ledges);
+        
+        log.info("lines found: ");
+        for (int i = 0; i < ledges.getN(); i++) {
+            int idx0 = ledges.getX(i);
+            int idx1 = ledges.getY(i);
+            log.info(" idx = " + idx0 + " : " + idx1 
+                + " xy = (" + curve.getX(idx0) + "," + curve.getY(idx0) + ") : "
+                + " (" + curve.getX(idx1) + "," + curve.getY(idx1) + ")");
+        }
+        
+        // search for 45 degree lines 
+        remainingRanges = 
+            writeRangesNotAlreadyIncluded(curve, ledges);
+        for (int i = 0; i < remainingRanges.getN(); i++) {            
+            int r0 = remainingRanges.getX(i);
+            int r1 = remainingRanges.getY(i);
+            PairIntArray lineRanges = 
+                find45DegreeSegments(curve, r0, r1);
+            if (lineRanges != null) {
+                for (int j = 0; j < lineRanges.getN(); j++) {
+                    int s0 = lineRanges.getX(j);
+                    int s1 = lineRanges.getY(j);
+                    ledges.add(s0, s1);
+                }
+            }
+        }
+        
+        // merge ranges again
+        mergeRanges(curve, ledges);
+        
+        return ledges;
+    }
+    
+    private void mergeRanges(PairIntArray curve, PairIntArray ranges) {
+        
+        int n = ranges.getN();
         for (int i = (n - 1); i > 0; i--) {
             
-            int r0 = ledges.getX(i);
-            int r1 = ledges.getY(i);
+            int r0 = ranges.getX(i);
+            int r1 = ranges.getY(i);
             
             // gap between end of one range and start of the next that might
             // be part of both ranges
-            if ((r0 - ledges.getY(i - 1)) < 3) {
+            if ((r0 - ranges.getY(i - 1)) < 3) {
                 
                 // check slopes before merging.
                 
                 double theta10 = calcTheta(curve, r0, r1);
                 
-                int r2 = ledges.getX(i - 1);
-                int r3 = ledges.getY(i - 1);                
+                int r2 = ranges.getX(i - 1);
+                int r3 = ranges.getY(i - 1);                
                 double theta32 = calcTheta(curve, r2, r3);
                
                 double diffTheta = Math.abs(theta10 - theta32);
@@ -1333,13 +1369,12 @@ public class MiscellaneousCurveHelper {
                     }                  
                 } 
                 
-                ledges.set(i - 1, ledges.getX(i - 1), r1);
+                ranges.set(i - 1, ranges.getX(i - 1), r1);
                 
-                ledges.removeRange(i, i);
+                ranges.removeRange(i, i);
             }
         }        
-        
-        return ledges;
+       
     }
 
     /**
