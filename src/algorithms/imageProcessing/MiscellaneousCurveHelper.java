@@ -1284,10 +1284,10 @@ public class MiscellaneousCurveHelper {
             }
         }
         
+        sortByX(ledges);
+        
         // merge ranges again
         mergeRanges(curve, ledges);
-        
-        sortByX(ledges);
         
         log.info("lines found after 45 degree search: ");
         for (int i = 0; i < ledges.getN(); i++) {

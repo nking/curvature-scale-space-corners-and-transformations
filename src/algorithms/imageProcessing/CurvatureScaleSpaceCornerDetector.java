@@ -203,11 +203,10 @@ public class CurvatureScaleSpaceCornerDetector extends
             //      closed is a false endpoint.
 
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();   
-         
-//int en = curveHelper.indexOfPointsInRange(this.edges, 257, 262, 194, 199);
-//log.info("EDGE: " + edgeNumber);
-//curveHelper.debugPrint(scaleSpace.getXYCurve());
 
+//int en = curveHelper.indexOfPointsInRange(this.edges, 42, 45, 375, 380);
+//log.info("EDGE: " + edgeNumber + " ==> " + en);
+//curveHelper.debugPrint(scaleSpace.getXYCurve());
 
             PairIntArray jaggedLineSegments = 
                 curveHelper.findJaggedLineSegments(scaleSpace.getXYCurve());
