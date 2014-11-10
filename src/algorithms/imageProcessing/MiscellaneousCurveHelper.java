@@ -15,6 +15,9 @@ public class MiscellaneousCurveHelper {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
+    // choosing a minimum size empirically from looking at edges in tests
+    private static int minLedgeWidth = 4;
+    
     /**
      * determine whether the closed curve points are ordered in a clockwise
      * manner.
@@ -1221,6 +1224,8 @@ public class MiscellaneousCurveHelper {
     /**
      * find the jagged line segments in the curve and return the ranges
      * of the point indexes.
+     * This method searches for ledges first and then within the remaining
+     * space, searches for stair cases and then 45 degree lines.
      * @param curve
      * @return 
      */
@@ -1230,37 +1235,49 @@ public class MiscellaneousCurveHelper {
         if (curve == null || curve.getN() < 5) {
             return null;
         }
+        
+        /*
+        search for ledges first, then in the space where ledges were not 
+        found, search for jagged lines (these have steps of height 1 but 
+        varying width).
+        And as a comparison, for the spaces where ledges were not found,
+        merge them if they are small and close and then research the
+        merged ranges for jagged lines and then the remaining space
+        for ledges.
+        Combine the 2 results to make the best results.
+        NOTE: need to simplify and combine the logic of the 2 searches...
+         */
 
-        PairIntArray ledges = findLedgesInCurve(curve);
+        PairIntArray jaggedLines1 = findLedgesInCurve(curve);
         
         PairIntArray remainingRanges = 
-            writeRangesNotAlreadyIncluded(curve, ledges);
-        
+            writeRangesNotAlreadyIncluded(curve, jaggedLines1);
+                
         for (int i = 0; i < remainingRanges.getN(); i++) {
             
             int r0 = remainingRanges.getX(i);
             int r1 = remainingRanges.getY(i);
-            
-            PairIntArray staircaseRanges = 
+           
+            PairIntArray tmpStaircaseRanges = 
                 findJaggedLineStaircaseSegments(curve, r0, r1);
             
-            if (staircaseRanges != null) {
-                for (int j = 0; j < staircaseRanges.getN(); j++) {
-                    int s0 = staircaseRanges.getX(j);
-                    int s1 = staircaseRanges.getY(j);
-                    ledges.add(s0, s1);
+            if (tmpStaircaseRanges != null) {
+                for (int j = 0; j < tmpStaircaseRanges.getN(); j++) {
+                    int s0 = tmpStaircaseRanges.getX(j);
+                    int s1 = tmpStaircaseRanges.getY(j);
+                    jaggedLines1.add(s0, s1);
                 }
             }
         }
         
-        sortByX(ledges);
+        sortByX(jaggedLines1);
         
         // merge adjacent ranges
-        mergeRanges(curve, ledges);
+        mergeRanges(curve, jaggedLines1);
        
         // search for 45 degree lines 
         remainingRanges = 
-            writeRangesNotAlreadyIncluded(curve, ledges);
+            writeRangesNotAlreadyIncluded(curve, jaggedLines1);
         for (int i = 0; i < remainingRanges.getN(); i++) {            
             int r0 = remainingRanges.getX(i);
             int r1 = remainingRanges.getY(i);
@@ -1270,17 +1287,76 @@ public class MiscellaneousCurveHelper {
                 for (int j = 0; j < lineRanges.getN(); j++) {
                     int s0 = lineRanges.getX(j);
                     int s1 = lineRanges.getY(j);
-                    ledges.add(s0, s1);
+                    jaggedLines1.add(s0, s1);
                 }
             }
         }
         
-        sortByX(ledges);
+        sortByX(jaggedLines1);
         
         // merge ranges again
-        mergeRanges(curve, ledges);
+        mergeRanges(curve, jaggedLines1);
         
-        return ledges;
+        return jaggedLines1;
+    }
+    
+    /**
+     * find the jagged line segments in the curve and return the ranges
+     * of the point indexes.
+     * This method searches for staircases first and then within the remaining
+     * space, searches for ledges and then 45 degree lines.
+     * @param curve
+     * @return 
+     */
+    public PairIntArray findJaggedLineSegments2(final PairIntArray curve) {
+        
+        //TODO: use minimum curve size
+        if (curve == null || curve.getN() < 5) {
+            return null;
+        }
+        
+        // if have a merged larger range, this suggests that starting a
+        // search with staircases and following that with search for 
+        // ledges might result in more total accurately found jagged lines.
+        PairIntArray jaggedLines2 = findJaggedLineStaircaseSegments(
+            curve, 0, curve.getN() - 1);
+
+        PairIntArray remainingRanges = writeRangesNotAlreadyIncluded(curve, 
+            jaggedLines2);
+        for (int i = 0; i < remainingRanges.getN(); i++) {
+            int r0 = remainingRanges.getX(i);
+            int r1 = remainingRanges.getY(i);
+            findLedgesWithinRange(curve, r0, r1, jaggedLines2);
+        }
+                       
+        sortByX(jaggedLines2);
+        
+        // merge adjacent ranges
+        mergeRanges(curve, jaggedLines2);
+       
+        // search for 45 degree lines 
+        remainingRanges = 
+            writeRangesNotAlreadyIncluded(curve, jaggedLines2);
+        for (int i = 0; i < remainingRanges.getN(); i++) {            
+            int r0 = remainingRanges.getX(i);
+            int r1 = remainingRanges.getY(i);
+            PairIntArray lineRanges = 
+                find45DegreeSegments(curve, r0, r1);
+            if (lineRanges != null) {
+                for (int j = 0; j < lineRanges.getN(); j++) {
+                    int s0 = lineRanges.getX(j);
+                    int s1 = lineRanges.getY(j);
+                    jaggedLines2.add(s0, s1);
+                }
+            }
+        }
+        
+        sortByX(jaggedLines2);
+        
+        // merge ranges again
+        mergeRanges(curve, jaggedLines2);
+        
+        return jaggedLines2;
     }
     
     private void mergeRanges(PairIntArray curve, PairIntArray ranges) {
@@ -1577,6 +1653,7 @@ public class MiscellaneousCurveHelper {
                             widthIsAlongX = Boolean.TRUE;
                         }
                     }
+                    
                 } else {
                     // back track to find where the current linestart
                     // should be between tmpI and i
@@ -1883,10 +1960,7 @@ public class MiscellaneousCurveHelper {
      */
     private void findLedgesWithinRange(PairIntArray curve, int start, int stop, 
         PairIntArray allLedges) {
-        
-        // choosing a minimum size empirically from looking at edges in tests
-        int minLedgeWidth = 4;
-        
+                
         if ((stop - start + 1) < (2*minLedgeWidth)) {
             return;
         }
@@ -1913,9 +1987,21 @@ public class MiscellaneousCurveHelper {
         } else if (dy == 0) {
             runIsAlongX = Boolean.TRUE;
         }
+        
+        int tmpI = i;
+        
+        // back track to find where the current linestart
+        // should be between start and i
+        for (int j = (i - 1); j >= (start + 1); j--) {
+            int diffX = (int) (curve.getX(j) - curve.getX(j - 1));
+            int diffY = (int) (curve.getY(j) - curve.getY(j - 1));
+            if ((diffY != dy) || (diffX != dx)) {
+                i = j;
+            }
+        }
 
-        int lineStart = i - 1;
-                
+        int lineStart = i;
+                            
         PairIntArray tmp = new PairIntArray();
         Boolean tmpRunIsAlongX = null;
         int tmpDX = -1;
@@ -1951,7 +2037,7 @@ public class MiscellaneousCurveHelper {
                 (!runIsAlongX && (diffY != dy)) ) {
 
                 int rs = i - lineStart;
-                // choosing a minimum size of 6 from looking at edges in tests
+                
                 if (rs >= minLedgeWidth) {
                     if (i == stop) {
                         if (runStopped) {
@@ -1979,7 +2065,7 @@ public class MiscellaneousCurveHelper {
                     dy = 0;
                     runIsAlongX = null;
                     // looking for straight lines of x or y
-                    int tmpI = i;
+                    tmpI = i;
                     while (!((dx == 0) && (dy != 0)) &&
                         !((dy == 0) && (dx != 0))) {
                         i++;
@@ -2002,7 +2088,6 @@ public class MiscellaneousCurveHelper {
                         for (int j = (i - 1); j >= tmpI; j--) {
                             diffX = (int) (curve.getX(j) - curve.getX(j - 1));
                             diffY = (int) (curve.getY(j) - curve.getY(j - 1));
-                            
                             if ((diffY != dy) || (diffX != dx)) {
                                 i = j;
                             }
@@ -2163,6 +2248,59 @@ public class MiscellaneousCurveHelper {
         }
         
         return theta;
+    }
+
+    public void removeFalseCorners(PairIntArray xyCurve, 
+        List<Integer> maxCandidateCornerIndexes, boolean isAClosedCurve) {
+        
+        // until the methods used by findJaggedLineSegments and 
+        // findJaggedLineSegments2 are simplified, use both separately
+        // and keep the solution which results in fewer corners.
+        
+        PairIntArray jaggedLineSegments1 = 
+            findJaggedLineSegments(xyCurve);
+        
+        PairIntArray jaggedLineSegments2 = 
+            findJaggedLineSegments2(xyCurve);
+                        
+        List<Integer> remove1 = new ArrayList<Integer>();
+        
+        List<Integer> remove2 = new ArrayList<Integer>();
+            
+        for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
+            int idx = maxCandidateCornerIndexes.get(ii);
+            if (isAClosedCurve && ((idx < 3) || (idx > (xyCurve.getN() - 4)))) {
+                // keep 
+            } else if ((idx < 4) || (idx > (xyCurve.getN() - 5))) {
+                remove1.add(Integer.valueOf(ii));
+                remove2.add(Integer.valueOf(ii));
+            } else {
+                //TODO: make this result less sensitive to minDistFromBoundary
+                boolean isInARange1 = isWithinARange(jaggedLineSegments1, idx, 
+                    3);
+                if (isInARange1) {
+                    remove1.add(Integer.valueOf(ii));
+                }
+                boolean isInARange2 = isWithinARange(jaggedLineSegments2, idx, 
+                    3);
+                if (isInARange2) {
+                    remove2.add(Integer.valueOf(ii));
+                }
+            }
+        }
+        if (remove2.size() >= remove1.size()) {
+            for (int ii = (remove2.size() - 1); ii > -1; ii--) {
+                int idx = remove2.get(ii).intValue();
+                maxCandidateCornerIndexes.remove(idx);
+            }
+            log.info("NREMOVED=" + remove2.size());
+        } else {
+            for (int ii = (remove1.size() - 1); ii > -1; ii--) {
+                int idx = remove1.get(ii).intValue();
+                maxCandidateCornerIndexes.remove(idx);
+            }
+            log.info("NREMOVED=" + remove1.size());
+        }
     }
 
 }

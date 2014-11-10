@@ -191,63 +191,21 @@ public class CurvatureScaleSpaceCornerDetector extends
         List<Integer> maxCandidateCornerIndexes = findCandidateCornerIndexes(
             k, minimaAndMaximaIndexes, outputLowThreshold[0]);
     
-        PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
-        
-        int nRemoved = 0;
+        PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());        
 
         if (correctForJaggedLines) {
 
-            // ==== determine if corner is a false corner by looking for
-            //      jagged lines and whether it is in them.
-            //      also assumes an endpoint corner in a curve that is not 
-            //      closed is a false endpoint.
-
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();   
-
-            PairIntArray jaggedLineSegments = 
-                curveHelper.findJaggedLineSegments(scaleSpace.getXYCurve());
-                        
-            List<Integer> remove = new ArrayList<Integer>();
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();  
             
-            for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
-                
-                int idx = maxCandidateCornerIndexes.get(ii);
-                
-                if (isAClosedCurve && ((idx < 3) 
-                    || (idx > (scaleSpace.getSize() - 4)))) {
-                    
-                    xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
-                   
-                } else if ((idx < 4) || (idx > (scaleSpace.getSize() - 5))) {
-                    
-                    remove.add(Integer.valueOf(ii));
-                    
-                } else {
-                    
-                    //TODO: make this result less sensitive to minDistFromBoundary
-                    boolean isInARange = curveHelper.isWithinARange(
-                        jaggedLineSegments, idx, 3);
-
-                    if (isInARange) {
-                        remove.add(Integer.valueOf(ii));
-                    } else {
-                        xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
-                    }
-                }
-            }
-            nRemoved += remove.size();
-            for (int ii = (remove.size() - 1); ii > -1; ii--) {
-                int idx = remove.get(ii).intValue();
-                maxCandidateCornerIndexes.remove(idx);
-            }
-        } else {
-            for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
-                int idx = maxCandidateCornerIndexes.get(ii);
-                xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
-            }
+            curveHelper.removeFalseCorners(scaleSpace.getXYCurve(), 
+                maxCandidateCornerIndexes, isAClosedCurve);
+        
         }
-
-        log.info("NREMOVED=" + nRemoved);
+            
+        for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
+            int idx = maxCandidateCornerIndexes.get(ii);                
+            xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
+        }        
         
         return xy;
     }
