@@ -803,7 +803,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
     }
     
-    public void testCatalogNearlyStraightLineSegments3() throws Exception {
+    public void estCatalogNearlyStraightLineSegments3() throws Exception {
         
         PairIntArray xy = new PairIntArray();
         
@@ -831,7 +831,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
     }
     
-    public void testCatalogNearlyStraightLineSegments4() throws Exception {
+    public void estCatalogNearlyStraightLineSegments4() throws Exception {
         
         PairIntArray xy = new PairIntArray();
         
