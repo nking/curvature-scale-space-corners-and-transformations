@@ -7,9 +7,10 @@ import algorithms.misc.MiscMath;
 import java.util.logging.Logger;
 
 /**
- * The CannyEdge filter is an edge detector algorithm.
+ * The CannyEdge filter is an algorithm to operate on an image to
+ * replace objects with their edges.
  * 
- * Implementation here:
+ * The implementation here is slightly different/
  * 
  * The images are first normalized by histogram equalization.
  * 
@@ -336,7 +337,7 @@ public class CannyEdgeFilter {
         log.fine("getGradientID calculateForX=" + calculateForX);
                 
         // 0.5f, -0.0f, -0.5f
-        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(
+        float[] kernel = Gaussian1DFirstDeriv.getKernel(
             SIGMA.ZEROPOINTFIVE);
                 
         GreyscaleImage output = input.copyImage();

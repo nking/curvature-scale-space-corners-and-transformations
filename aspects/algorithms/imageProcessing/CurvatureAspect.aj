@@ -30,15 +30,13 @@ public aspect CurvatureAspect {
 
     private Logger log2 = Logger.getAnonymousLogger();
 
-    private int debugEdgeNumber = -1;
-
     private String currentEdgeStr = "";
 
     after() :
         target(algorithms.imageProcessing.ContourFinder) 
         && execution(public ContourFinder.new(..)) {
 
-        log2.info("===> in aspect for ContourFinder");
+        log2.fine("===> in aspect for ContourFinder");
 
         if (plotter9 == null) {
             try {
@@ -69,7 +67,7 @@ public aspect CurvatureAspect {
 
         String filePath = printImage(scaleSpaceImageIn, plotter9, 9);
 
-        log2.info("===> in aspect for ContourFinder, filePath=" + filePath);
+        log2.fine("===> in aspect for ContourFinder, filePath=" + filePath);
     }
 
     after(ScaleSpaceCurveImage scaleSpaceImage, int edgeNumber) 
@@ -96,7 +94,7 @@ public aspect CurvatureAspect {
             String str = String.format("edge=%d contour=%d (%f, %f)", 
                 contour.getEdgeNumber(), i, sigma, t);
 
-            log2.info(str);
+            log2.fine(str);
         }
     }
 
@@ -179,28 +177,9 @@ public aspect CurvatureAspect {
                 dirPath + "/contour_peaks2.png", img2);
 
         } catch (IOException e) {
-            log2.info("ERROR: " + e.getMessage());
+            log2.severe("ERROR: " + e.getMessage());
         }
 
-    }
-
-    after() returning : 
-	    target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) 
-        && execution(protected void extractEdgeContours()) {
-        
-        Object obj = thisJoinPoint.getThis();
-
-        if (!(obj instanceof CurvatureScaleSpaceCornerDetector)) {
-            return;
-        }
-
-        CurvatureScaleSpaceCornerDetector instance = (CurvatureScaleSpaceCornerDetector)obj;
-
-        List<PairIntArray> edges = instance.getEdges();
-
-        debugEdgeNumber = debugfindEdgeWithRange(edges, 164, 168, 58, 63);
-
-        log2.info("debugEdgeNumber=" + debugEdgeNumber);
     }
 
     before(final PairIntArray edge, 
@@ -275,7 +254,7 @@ public aspect CurvatureAspect {
 
         Object obj = thisJoinPoint.getThis();
 
-        log2.info("after CannyEdgeFilter.applyFilter instance=" 
+        log2.fine("after CannyEdgeFilter.applyFilter instance=" 
             + obj.getClass().getName());
 
         if (!(obj instanceof CannyEdgeFilter)) {
@@ -304,7 +283,7 @@ public aspect CurvatureAspect {
         && args(input)
 	    && target(algorithms.imageProcessing.CannyEdgeFilter) {
 
-        log2.info("after CannyEdgeFilter*.apply2LayerFilter");
+        log2.fine("after CannyEdgeFilter*.apply2LayerFilter");
 
         Object[] args = (Object[])thisJoinPoint.getArgs();
         GreyscaleImage output = (GreyscaleImage)args[0];
@@ -324,7 +303,7 @@ public aspect CurvatureAspect {
         && args(convolvedX, convolvedY)
 	    && target(algorithms.imageProcessing.ImageProcesser) {
 
-        log2.info("after ImageProcesser.computeTheta");
+        log2.fine("after ImageProcesser.computeTheta");
 
         debugDisplay(output, "theta");
 
@@ -341,7 +320,7 @@ public aspect CurvatureAspect {
         && args(convolvedX, convolvedY)
 	    && target(algorithms.imageProcessing.ImageProcesser) {
 
-        log2.info("after ImageProcesser*.combineConvolvedImages");
+        log2.fine("after ImageProcesser*.combineConvolvedImages");
 
         Object[] args = (Object[])thisJoinPoint.getArgs();
         GreyscaleImage cX = (GreyscaleImage)args[0];
@@ -407,43 +386,16 @@ public aspect CurvatureAspect {
                 String filePath = plotter.writeFile(Integer.valueOf(10));
             }
 
-            log2.info(currentEdgeStr + ") x=" + Arrays.toString(hist.getXHist()));
+            log2.fine(currentEdgeStr + ") x=" + Arrays.toString(hist.getXHist()));
 
-            log2.info(currentEdgeStr + ") y=" + Arrays.toString(hist.getYHist()));
+            log2.fine(currentEdgeStr + ") y=" + Arrays.toString(hist.getYHist()));
 
         } catch(IOException e) {
            log2.severe(e.getMessage());
         }
 	}
 
-    after() returning : 
-        execution(protected void algorithms.imageProcessing.AbstractCurvatureScaleSpaceMapper+.extractEdgeContours()) {
-
-        Object obj = thisJoinPoint.getThis();
-
-        if (!(obj instanceof AbstractCurvatureScaleSpaceMapper)) {
-            return;
-        }
-
-        log2.info("==>in aspect of AbstractCurvatureScaleSpaceMapper");
-
-        AbstractCurvatureScaleSpaceMapper instance = 
-            (AbstractCurvatureScaleSpaceMapper)obj;
-
-        try {
-            List<PairIntArray> edges = instance.getEdges();
-
-            Image img3 = instance.getOriginalImage().copyImageToGreen();
-
-            debugDisplay(edges, "edges extracted", true, img3.getWidth(), 
-                img3.getHeight());
-
-        } catch (IOException e) {
-            log2.severe(e.getMessage());
-        }
-    }
-
-    // for some reason, execution works here, but call does not
+    // execution works here, but call does not
     after() returning : 
 	    target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) 
         && execution(public void findCorners())
@@ -470,18 +422,26 @@ public aspect CurvatureAspect {
             // multi-colored edges alone:
             debugDisplay(edges, "edges extracted", true, img3.getWidth(), img3.getHeight());
 
+            
             for (PairIntArray edge : edges) {
                 ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 255, 0);
             }
-            ImageIOHelper.addCurveToImage(corners, img3, 1, 255, 0, 0);
+            ImageIOHelper.addCurveToImage(corners, img3, 1, 255, 250, 100);
+            
+            ImageIOHelper.addCurveToImage(
+                instance.getCornersForMatchingInOriginalReferenceFrame(),
+                img3, 2, 255, 0, 0);
+
             debugDisplay(img3, "original image w/ edges and corners overplotted");
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
-                dirPath + "/lab_with_edges_corners.png", img3);
+                dirPath + "/image_with_edges_corners.png", img3);
  
         } catch (IOException ex) {
             throw new RuntimeException("ERROR: l298" + ex.getMessage());
         }
+
+        log2.info("done");
     }
 
     before(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs, boolean isAClosedCurve) :
@@ -490,7 +450,7 @@ public aspect CurvatureAspect {
         ScaleSpaceCurve, int, boolean, boolean))
         && args(scaleSpace, edgeNumber, rmFlseCrnrs, isAClosedCurve) {
 
-        log2.info("before findCornersInScaleSpaceMap for edge " 
+        log2.fine("before findCornersInScaleSpaceMap for edge " 
             + Integer.toString(edgeNumber) + ":");
 
         Object[] args = (Object[])thisJoinPoint.getArgs();
@@ -498,6 +458,96 @@ public aspect CurvatureAspect {
 
         currentEdgeStr = eNumber.toString();
 
+    }
+
+    after(PairIntArray xyCurve, List<Integer> maxCandidateCornerIndexes, 
+        boolean isAClosedCurve) returning(PairIntArray jaggedLines) :
+        call(protected PairIntArray CurvatureScaleSpaceCornerDetector.removeFalseCorners(
+        PairIntArray, List<Integer>, boolean))
+        && args(xyCurve, maxCandidateCornerIndexes, isAClosedCurve) 
+        && target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) {
+
+        //disable for most uses
+        if (true) {
+            return;
+        }
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof CurvatureScaleSpaceCornerDetector)) {
+            return;
+        }
+
+        CurvatureScaleSpaceCornerDetector instance = (CurvatureScaleSpaceCornerDetector)obj;
+
+        Object[] args = (Object[])thisJoinPoint.getArgs();
+        PairIntArray xy = (PairIntArray)args[0];
+        List<Integer> cI = (List<Integer>)args[1];
+
+        Image image2 = instance.getImage().copyImageToGreen();
+        
+        // draw a blue line between jagged line end points
+        int nExtraForDot = 2;
+        int rClr = 0; int bClr = 250; int gClr = 0;
+        for (int i = 0; i < jaggedLines.getN(); i++) {
+
+            int idx0 = jaggedLines.getX(i);
+            int idx1 = jaggedLines.getY(i);
+
+            int x0 = xy.getX(idx0);
+            int y0 = xy.getY(idx0);
+
+            int x1 = xy.getX(idx1);
+            int y1 = xy.getY(idx1);
+
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                float xx = x0 + dx;
+                if ((xx > -1) && (xx < (image2.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
+                        float yy = y0 + dy;
+                        if ((yy > -1) && (yy < (image2.getHeight() - 1))) {
+                            image2.setRGB((int)xx, (int)yy, 0, 250, 250);
+                        }
+                    }
+                }
+            }
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                float xx = x1 + dx;
+                if ((xx > -1) && (xx < (image2.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
+                        float yy = y1 + dy;
+                        if ((yy > -1) && (yy < (image2.getHeight() - 1))) {
+                            image2.setRGB((int)xx, (int)yy, 0, 0, 250);
+                        }
+                    }
+                }
+            }
+        }
+        nExtraForDot = 1;
+        rClr = 250; bClr = 0; gClr = 0;
+        for (Integer idx : cI) {
+
+            int x = xy.getX(idx.intValue());
+            int y = xy.getY(idx.intValue());
+
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                float xx = x + dx;
+                if ((xx > -1) && (xx < (image2.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
+                        float yy = y + dy;
+                        if ((yy > -1) && (yy < (image2.getHeight() - 1))) {
+                            image2.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+
+        try {
+            ImageDisplayer.displayImage("corners and jagged lines", image2);
+        } catch (IOException e) {
+            log2.severe(e.getMessage());
+        }
+      
     }
 
     after(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs,
@@ -508,13 +558,12 @@ public aspect CurvatureAspect {
         ScaleSpaceCurve, int, boolean, boolean))
         && args(scaleSpace, edgeNumber, rmFlseCrnrs, isAClosedCurve) {
 
-        log2.info("after findCornersInScaleSpaceMap for edge " 
+        log2.fine("after findCornersInScaleSpaceMap for edge " 
             + Integer.toString(edgeNumber) + ":");
 
         for (int i = 0; i < xy.getN(); i++) {
-            log2.info(String.format("(%f, %f)", xy.getX(i), xy.getY(i)));
+            log2.fine(String.format("(%f, %f)", xy.getX(i), xy.getY(i)));
         }
-
     }
 
     before() 
@@ -522,7 +571,7 @@ public aspect CurvatureAspect {
         && args() 
         && target(algorithms.imageProcessing.EdgeExtractor) {
 
-        log2.info("before EdgeExtractor*.findEdges()");
+        log2.fine("before EdgeExtractor*.findEdges()");
 
         Object obj = thisJoinPoint.getThis();
 
@@ -552,7 +601,7 @@ public aspect CurvatureAspect {
         && args(stats, originalImageHistogram) 
         && target(algorithms.imageProcessing.LowIntensityRemovalFilter) {
 
-        log2.info("before LowIntensityRemovalFilter*.determineLowThreshold");
+        log2.fine("before LowIntensityRemovalFilter*.determineLowThreshold");
 
         plotHistogram0(stats.getHistogram(),  "border histogram");
     }
@@ -588,7 +637,7 @@ public aspect CurvatureAspect {
     private void debugDisplay(List<PairIntArray> curves, String label,
         boolean writeImage, int width, int height) throws IOException {
         
-        log2.info("create multicolor curve debug image");
+        log2.fine("create multicolor curve debug image");
 
         Image img2 = new Image(width, height);
 
@@ -789,7 +838,7 @@ public aspect CurvatureAspect {
         float xMin = MiscMath.findMin(xh);
         float xMax = MiscMath.findMax(xh);        
         
-        log2.info("MODE=" + xh[yMaxIdx]);
+        log2.fine("MODE=" + xh[yMaxIdx]);
         
         try {
 
@@ -801,7 +850,7 @@ public aspect CurvatureAspect {
 
             String filePath = plotter.writeFile3();
             
-            log2.info("created histogram at " + filePath);
+            log2.fine("created histogram at " + filePath);
             
         } catch (IOException e) {
             e.printStackTrace(); 
@@ -872,7 +921,7 @@ public aspect CurvatureAspect {
             }
             sb.append("\n");
         }
-        log2.info(sb.toString());
+        log2.fine(sb.toString());
     }
    
     public String printImage(ScaleSpaceCurveImage spaceImage, 

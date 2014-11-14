@@ -137,6 +137,115 @@ public class ImageIOHelper {
     }
     
     /**
+     * read the Red channel of the image at filePath into a single channel
+     * GreyscaleImage image.
+     * 
+     * @param filePath
+     * @return
+     * @throws Exception 
+     */
+    public static GreyscaleImage readImageAsGrayScaleR(String filePath) 
+        throws Exception {
+     
+        if (filePath == null) {
+            throw new IllegalStateException("filePath cannot be null");
+        }
+                
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                throw new IllegalStateException(filePath + " does not exist");
+            }
+            
+            BufferedImage img = ImageIO.read(file);
+                       
+            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
+            ColorConvertOp op = new ColorConvertOp(cs, null);
+            try {
+                BufferedImage image2 = op.filter(img, null);
+                img = image2;
+            } catch (NullPointerException e) {
+                // if type is custom, the source color space destination is not defined.
+            }       
+            int h = img.getHeight();
+            int w = img.getWidth();
+            
+            GreyscaleImage image = new GreyscaleImage(w, h);
+            for (int i = 0; i < w; i++) {
+                for (int j = 0; j < h; j++) {
+                    
+                    int rgb = img.getRGB(i, j);
+                                        
+                    int r = (rgb >> 16) & 0xFF;
+                    
+                    image.setValue(i, j, r);
+                }
+            }
+            
+            return image;
+            
+        } catch (IOException e) {
+        }
+        
+        return null;
+    }
+    
+    /**
+     * read the Blue channel of the image at filePath into a single channel
+     * GreyscaleImage image.
+     * 
+     * @param filePath
+     * @return
+     * @throws Exception 
+     */
+    public static GreyscaleImage readImageAsGrayScaleB(String filePath) 
+        throws Exception {
+     
+        if (filePath == null) {
+            throw new IllegalStateException("filePath cannot be null");
+        }
+                
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                throw new IllegalStateException(filePath + " does not exist");
+            }
+            
+            BufferedImage img = ImageIO.read(file);
+                       
+            ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
+            ColorConvertOp op = new ColorConvertOp(cs, null);
+            try {
+                BufferedImage image2 = op.filter(img, null);
+                img = image2;
+            } catch (NullPointerException e) {
+                // if type is custom, the source color space destination is not defined.
+            }       
+            int h = img.getHeight();
+            int w = img.getWidth();
+            
+            GreyscaleImage image = new GreyscaleImage(w, h);
+            for (int i = 0; i < w; i++) {
+                for (int j = 0; j < h; j++) {
+                    
+                    int rgb = img.getRGB(i, j);
+                                        
+                    int b = rgb & 0xFF;
+                    
+                    image.setValue(i, j, b);
+                }
+            }
+            
+            return image;
+            
+        } catch (IOException e) {
+            Logger.getLogger(ImageIOHelper.class.getName()).severe(e.getMessage());
+        }
+        
+        return null;
+    }
+    
+    /**
      * read image at filePath into a greyscale image.
      * 
      * @param filePath

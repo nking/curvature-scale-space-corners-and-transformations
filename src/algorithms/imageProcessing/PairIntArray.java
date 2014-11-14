@@ -134,14 +134,14 @@ public class PairIntArray {
     
     public int getX(int index) {
         if (index > (n - 1)) {
-            throw new IllegalArgumentException("index is out of range");
+            throw new IllegalArgumentException("index is out of range in getX");
         }
         return x[index];
     }
     
     public int getY(int index) {
         if (index > (n - 1)) {
-            throw new IllegalArgumentException("index is out of range");
+            throw new IllegalArgumentException("index is out of range in getY");
         }
         return y[index];
     }

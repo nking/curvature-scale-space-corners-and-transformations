@@ -79,6 +79,21 @@ public class GreyscaleImage {
         return a[idx];
     }
     
+    /**
+     * get pixel using the internal index of 0 through width x height pixels.
+     * 
+     * @param internalIndex
+     * @return 
+     */
+    public int getValue(int internalIndex) {
+        
+        if (internalIndex > a.length) {
+            throw new IllegalArgumentException("internalIndex is out of bounds");
+        }
+        
+        return a[internalIndex];
+    }
+    
     public int[] getValues() {
         return a;
     }
