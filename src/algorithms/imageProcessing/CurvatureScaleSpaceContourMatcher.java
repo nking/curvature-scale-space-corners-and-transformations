@@ -249,15 +249,18 @@ public final class CurvatureScaleSpaceContourMatcher {
             
                     int index1s = curveIndexToC1.get(ii).get(0);
                     
-                    if (index1s == index1) {
-                        // choose the next in the list
-                        if ((index1s + 1) < c1.size()) {
-                            index1s++;
-                        }
-                    }
-                                        
                     CurvatureScaleSpaceContour contour1s = c1.get(index1s);
                     
+                    while (nc.getMatchedContours1().contains(contour1s)) {
+                        if ((index1s + 1) < c1.size()) { 
+                            index1s++;
+                            contour1s = c1.get(index1s);
+                        } else {
+                            // no next curve to attempt to match
+                            continue;
+                        }
+                    }
+                                                            
                     /*
                     t2 = kScale * t1 + dShift
                     sigma2 = kScale * sigma1
@@ -284,7 +287,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                         
                         contour2s = c2.get(index2s);
                         
-                        nc.addMatchedContours(contour1s, contour2s);                        
+                        nc.addMatchedContours(contour1s, contour2s);                    
                     }
                     
                     double cost2 = calculateCost(contour2s, sigma2, t2);                    
@@ -484,7 +487,8 @@ public final class CurvatureScaleSpaceContourMatcher {
     /**
      * find the closest match to a contour having (sigma, scaleFreeLength) 
      * in list c2 and return that index w.r.t. list c2, else -1 if not found
-     * using a binary search.  This method runtime complexity is O(lg_2(N)).
+     * using a binary search.  This method runtime complexity is O(lg_2(N))
+     * at best.
      * 
      * @param sigma
      * @param scaleFreeLength
@@ -495,7 +499,7 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         // use iterative binary search to find closest match
         
-        //TODO: revisit this as ordered 2 key search and add more tests for it
+        //TODO: revisit this as ordered 2 key search and add ALOT more tests for it
         
         //TODO: use 0.1*sigma? current sigma factor peak center error
         double tolSigma = 0.01*sigma;
@@ -555,7 +559,12 @@ public final class CurvatureScaleSpaceContourMatcher {
                         lowIdx = midIdx + 1;
                         
                     } else {
-                        highIdx = midIdx - 1;
+                        // breaking from binary pattern to search all between
+                        // lowIdx and highIdx and return the best
+                        idx = findClosestC2MatchOrderedSearch(
+                            sigma, scaleFreeLength, lowIdx, highIdx);
+                        
+                        return idx;
                     }
                     
                 } else if (c.getPeakSigma() < sigma) {

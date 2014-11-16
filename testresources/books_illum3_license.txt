@@ -1,0 +1,12 @@
+The books images are from the 2005 datasets of http://vision.middlebury.edu/stereo/data/
+
+From the website:
+"We grant permission to use and publish all images and disparity maps on this website. However, if you use our datasets, we request that you cite the appropriate paper(s): [1] for the 2001 datasets, [2] for the 2003 datasets, [3] or [4] for the 2005 and 2006 datasets, and [5] for the 2014 datasets."
+
+Authors request that users cite the following papers for the Books images which are in 
+the 2005 dataset:
+
+[3]	D. Scharstein and C. Pal. Learning conditional random fields for stereo.
+In IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR 2007), Minneapolis, MN, June 2007.
+[4]	H. Hirschmüller and D. Scharstein. Evaluation of cost functions for stereo matching.
+In IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR 2007), Minneapolis, MN, June 2007.

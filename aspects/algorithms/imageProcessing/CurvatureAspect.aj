@@ -298,6 +298,25 @@ public aspect CurvatureAspect {
         }
     }
 
+    after(GreyscaleImage input, int k) returning() :
+        call(public void ImageProcesser.applyImageSegmentation(GreyscaleImage, int))
+        && args(input, k)
+	    && target(algorithms.imageProcessing.ImageProcesser) {
+
+        Object[] args = (Object[])thisJoinPoint.getArgs();
+        GreyscaleImage image = (GreyscaleImage)args[0];
+        String kStr = ((Integer)args[1]).toString();
+
+        debugDisplay(image, "segmented by k=" + kStr);
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/segmented.png", image);
+        } catch (IOException e) {
+            log2.severe(e.getMessage());
+        }
+    }
+
     after(GreyscaleImage convolvedX, GreyscaleImage convolvedY) returning(GreyscaleImage output) :
         call(public GreyscaleImage ImageProcesser.computeTheta(GreyscaleImage, GreyscaleImage))
         && args(convolvedX, convolvedY)
@@ -426,11 +445,11 @@ public aspect CurvatureAspect {
             for (PairIntArray edge : edges) {
                 ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 255, 0);
             }
-            ImageIOHelper.addCurveToImage(corners, img3, 1, 255, 250, 100);
+            ImageIOHelper.addCurveToImage(corners, img3, 1, 255, 0, 0);
             
             ImageIOHelper.addCurveToImage(
                 instance.getCornersForMatchingInOriginalReferenceFrame(),
-                img3, 2, 255, 0, 0);
+                img3, 2, 255, 0, 255);
 
             debugDisplay(img3, "original image w/ edges and corners overplotted");
             String dirPath = ResourceFinder.findDirectory("bin");

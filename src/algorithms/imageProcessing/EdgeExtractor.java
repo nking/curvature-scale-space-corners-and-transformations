@@ -8,13 +8,37 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * Edge extractor operates on an image that has already been reduced to holding
+ * single pixel width lines where the original image was.  
+ * The EdgeExtractor additionally accepts an argument that is an image
+ * that is used as guidance to correct the extracted edges.  The guidance
+ * image, for example, is expected to be the combined gradient X and Y image
+ * that was used in forming the main input image.  The guidance image is used
+ * to make minor corrections to the coordinates of edge pixels if the changes
+ * do not disconnect the edge.  The guidance image helps corrects errors in
+ * the input image due to a line thinner that doesn't make thinning decisions
+ * on a slightly larger scale, for example.
+ * 
  Edge extraction
     Local Methods:
-        (1) At each edge pixel, a neighborhood (e.g., 3x3) is examined.
+        (1) DFS walk through connected pixel to form a sequence of pixels called
+            an edge.
+          
+        (2) merge adjacent edges at the endpoints.
 
-        (2) The center edge pixel can be linked with its neighbors if the 
-            magnitude and direction differences are below certain thresholds 
-            and their magnitudes are relatively large:
+        (3) merge curves by closest points if the outlying points can be safely
+            trimmed.
+            
+        (4) find edge endpoints which are separated from one another by a gap of
+            one and fill in the gap while merging the edges.
+         
+        (5) remove edges shorter than a minimum length
+        
+        (6) if an edge guide image was provided, make adjustments to edge 
+            towards highest intensity pixels in the edge guide image as long
+            as the adjustment doesn't create a gap in the edge.
+            This stage also reduces any redundant pixels that may be present
+            in the line.
 
  * @author nichole
  */
@@ -22,24 +46,25 @@ public class EdgeExtractor {
     
     private final GreyscaleImage img;
     
+    private GreyscaleImage edgeGuideImage = null;
+    
     private long numberOfPixelsAboveThreshold = 0;
     
     private Logger log = Logger.getLogger(this.getClass().getName());
-        
-    private boolean useLineDrawingMode = false;
-    
+            
     /**
      * if the image is smaller than 100 on a side, this will be lowered to 5
      */
-    private int edgeSizeLowerLimit = 30;
+    private int edgeSizeLowerLimit = 15;
     
     /**
      * NOTE:  input should have a black (empty) background and edges should
-     * have blue > 125 counts.  Edges should also have width of 1 and no larger.
+     * have values > 125 counts.  Edges should also have width of 1 and no larger.
      * 
      * @param input 
      */
     public EdgeExtractor(GreyscaleImage input) {
+        
         img = input;
         
         if (img.getWidth() < 100 || img.getHeight() < 100) {
@@ -47,8 +72,27 @@ public class EdgeExtractor {
         }
     }
     
-    public void useLineDrawingMode() {
-        useLineDrawingMode = true;
+    /**
+     * NOTE:  input should have a black (empty) background and edges should
+     * have values > 125 counts.  Edges should also have width of 1 and no larger.
+     * The guide image is used to alter the extracted edges back towards the
+     * highest intensity pixels of the guide image.  The guide image is expected
+     * to be the combined X and Y gradient image from earlier processing
+     * stages.
+     * 
+     * @param input
+     * @param anEdgeGuideImage
+     */
+    public EdgeExtractor(GreyscaleImage input, 
+        final GreyscaleImage anEdgeGuideImage) {
+        
+        img = input;
+        
+        edgeGuideImage = anEdgeGuideImage;
+        
+        if (img.getWidth() < 100 || img.getHeight() < 100) {
+            edgeSizeLowerLimit = 5;
+        }
     }
     
     public GreyscaleImage getImage() {
@@ -216,13 +260,6 @@ public class EdgeExtractor {
             n++;
         }
         */
-     
-        if (useLineDrawingMode) {
-            
-            output = connectClosestPointsIfCanTrim(output);
-        
-            log.fine(output.size() + " edges after connect closest");
-        }
         
         // This helps to merge edges (that is extracted curves) at adjacent 
         // points that resemble an intersection of the lines, but it's not 
@@ -257,6 +294,8 @@ public class EdgeExtractor {
             new Object[]{Long.toString(sum2), 
                 Long.toString(numberOfPixelsAboveThreshold)});
        
+        adjustEdgesTowardsBrightPixels(output);
+        
         return output;
     }
     
@@ -270,6 +309,9 @@ public class EdgeExtractor {
    
     /**
      * merge edges adjacent end points of curves
+     * 
+     * runtime complexity:
+     *   2 * O(N_edges^2)
      * 
      * @param edges
      * @return 
@@ -367,6 +409,9 @@ public class EdgeExtractor {
     
     /**
      * fill in gaps of '1' pixel
+     * 
+     * runtime complexity:
+     *   2 * O(N_edges^2)
      * 
      * @param edges
      * @return 
@@ -475,6 +520,9 @@ public class EdgeExtractor {
      * points in curve0XY and curve1XY along with the method return value
      * which is the separation.
      * 
+     * runtime complexity:
+     *    O(N_edge1 x N_edge2)
+     * 
      * @param curve0 
      * @param curve1
      * @param curve0Idx output variable to hold index to the (x, y) of the point 
@@ -515,6 +563,16 @@ public class EdgeExtractor {
         return Math.sqrt(min);
     }
     
+    /**
+     * connect the closest points in edges if trimming the outliers does not
+     * remove too many points nor add a discontinuity in either edge.
+     * 
+     * Runtime complexity:
+     *      O(N_edge x ~N_edge x (N_edge to N_edge^2))
+     * 
+     * @param edges
+     * @return 
+     */
     protected List<PairIntArray> connectClosestPointsIfCanTrim(
         List<PairIntArray> edges) {
      
@@ -533,9 +591,9 @@ public class EdgeExtractor {
             if (removed[i]) {
                 continue;
             }
-                            
+            
             PairIntArray edge0 = edges.get(i);
-                        
+            
             for (int j = (i + 1); j < edges.size(); j++) {
                 
                 if (removed[j]) {
@@ -544,9 +602,14 @@ public class EdgeExtractor {
                 
                 PairIntArray edge1 = edges.get(j);
                 
+                // RT: O(N_edge0 x N_edge1)
+                
                 double sep = findClosestPair(edge0, edge1, edge0Idx, edge1Idx);
 
                 if (sep < sqrtTwo) {
+                    
+                    // RT: O(N_edge0) or O(N_edge1)
+                    
                     // do not merge them if the points are not near the
                     // ends of the points sets.
                     float closestFrac0 = (float)edge0Idx[0]/(float)edge0.getN();
@@ -703,4 +766,103 @@ public class EdgeExtractor {
         }
     }
     
+    private void adjustEdgesTowardsBrightPixels(List<PairIntArray> tmpEdges) {
+        
+        if (edgeGuideImage == null) {
+            return;
+        }
+        
+        int nReplaced = 1;
+        
+        int nMaxIter = 100;
+        int nIter = 0;
+      
+        while ((nIter < nMaxIter) && (nReplaced > 0)) {
+           
+           nReplaced = 0;
+        
+           for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
+            
+                PairIntArray edge = tmpEdges.get(lIdx);
+
+                if (edge.getN() < 3) {
+                    continue;
+                }
+
+                int nEdgeReplaced = 0;
+                
+                /*
+                looking at the 8 neighbor region of each pixel for which the
+                pixel's preceding and next edge pixels remain connected for
+                   and among those, looking for a higher intensity pixel than
+                   the center and if found, change coords to that.
+                */
+                for (int i = 1; i < (edge.getN() - 1); i++) {
+                    int x = edge.getX(i);                
+                    int y = edge.getY(i);
+                    int prevX = edge.getX(i - 1);                
+                    int prevY = edge.getY(i - 1);
+                    int nextX = edge.getX(i + 1);                
+                    int nextY = edge.getY(i + 1);
+
+                    int maxValue = edgeGuideImage.getValue(x, y);
+                    int maxValueX = x;
+                    int maxValueY = y;
+                    boolean changed = false;
+
+                    for (int col = (prevX - 1); col <= (prevX + 1); col++) {
+
+                        if ((col < 0) || (col > (edgeGuideImage.getWidth() - 1))) {
+                            continue;
+                        }
+
+                        for (int row = (prevY - 1); row <= (prevY + 1); row++) {
+
+                            if ((row < 0) || (row > (edgeGuideImage.getHeight() - 1))) {
+                                continue;
+                            }
+                            if ((col == prevX) && (row == prevY)) {
+                                continue;
+                            }
+                            if ((col == nextX) && (row == nextY)) {
+                                continue;
+                            }
+
+                            // skip if pixel is not next to (nextX, nextY)
+                            int diffX = Math.abs(nextX - col);
+                            int diffY = Math.abs(nextY - row);
+                            if ((diffX > 1) || (diffY > 1)) {
+                                continue;
+                            }
+
+                            if (edgeGuideImage.getValue(col, row) > maxValue) {
+                                maxValue = edgeGuideImage.getValue(col, row);
+                                maxValueX = col;
+                                maxValueY = row;
+                                changed = true;
+                            }
+                        }
+                    }
+                    if (changed) {
+                        nEdgeReplaced++;
+                        edge.set(i, maxValueX, maxValueY);
+                    }                    
+                }
+                
+                nReplaced += nEdgeReplaced;
+            }
+
+            log.fine("REPLACED: " + nReplaced + " nIter=" + nIter);
+
+            nIter++;
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        curveHelper.removeRedundantPoints(tmpEdges);
+        
+        curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);
+        
+        curveHelper.correctCheckeredSegments(tmpEdges);
+    }
 }

@@ -1,0 +1,20 @@
+brown_lowe_2003_image1.jpg and  brown_lowe_2003_image2.jpg are from the
+Brown & Lowe 2003 paper.  They were found on a website using the images
+as data. I didn't find a license or authors preference for use or citation,
+but presumably the paper reference is what they'd prefer.
+
+Brown, M. and Lowe, D. 2007. 
+"Automatic Panoramic Image Stitching using Invariant Features"
+Department of Computer Science, University of British Columbia, Vancouver, Canada 
+    mbrown@cs.ubc.ca
+    lowe@cs.ubc.ca
+International Journal of Computer Vision 74(1), 59–73, 2007
+c2007 Springer Science + Business Media, LLC. 
+Manufactured in the United States. DOI: 10.1007/s11263-006-0002-3
+
+
+Brown, M. and Lowe, D. 2003. 
+"Recognising panoramas." 
+In Proceedings of the 9th International Conference on Computer Vision (ICCV03). 
+Nice, vol. 2, pp. 1218–1225.
+

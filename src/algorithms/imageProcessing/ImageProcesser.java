@@ -1,5 +1,10 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.clustering.KMeansPlusPlus;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -474,4 +479,104 @@ public class ImageProcesser {
         return new int[]{0, 0};
     }
 
+    public void applyImageSegmentation(GreyscaleImage input, int kBands) throws IOException,
+        NoSuchAlgorithmException {
+                
+        KMeansPlusPlus instance = new KMeansPlusPlus();
+        instance.computeMeans(kBands, input);
+        
+        int[] binCenters = instance.getCenters();
+        
+        for (int col = 0; col < input.getWidth(); col++) {
+            
+            for (int row = 0; row < input.getHeight(); row++) {
+                
+                int v = input.getValue(col, row);
+                                
+                for (int i = 0; i < binCenters.length; i++) {
+                    
+                    int vc = binCenters[i];
+                  
+                    int bisectorBelow = ((i - 1) > -1) ? 
+                        ((binCenters[i - 1] + vc) / 2) : 0;
+
+                    int bisectorAbove = ((i + 1) > (binCenters.length - 1)) ? 
+                        255 : ((binCenters[i + 1] + vc) / 2);
+                    
+                    if ((v >= bisectorBelow) && (v <= bisectorAbove)) {
+                        
+                        input.setValue(col, row, vc);
+                        
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    public void multiply(GreyscaleImage input, float m) throws IOException,
+        NoSuchAlgorithmException {
+        
+        for (int col = 0; col < input.getWidth(); col++) {
+            
+            for (int row = 0; row < input.getHeight(); row++) {
+                
+                int v = input.getValue(col, row);
+                
+                int f = (int)(m * v);
+                
+                input.setValue(col, row, f);
+            }
+        }
+    }
+    
+    public void divideByBlurredSelf(GreyscaleImage input) throws IOException,
+        NoSuchAlgorithmException {
+                
+        GreyscaleImage input2 = input.copyImage();
+        
+        float[] kernel = Gaussian1D.getKernel(3);
+        
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+        
+        GreyscaleImage output = new GreyscaleImage(input.getWidth(), 
+            input.getHeight());
+        
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, true);                
+                int g = (int) conv;
+                output.setValue(i, j, g);
+            }
+        }
+        input.resetTo(output);
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, false);                
+                int g = (int) conv;
+                output.setValue(i, j, g);
+            }
+        }
+        
+        input.resetTo(output);
+        
+        Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+        
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                int v = input.getValue(i, j);
+                int vorig = input2.getValue(i, j);
+                if (v != 0) {
+                    float r = (float)vorig/(float)v;
+                    if ((i==250) && (j >= 50) && (j <= 150)) {
+                        log.info(Float.toString(r));
+                    }
+                    input.setValue(i, j, (int)(100*r));
+                }
+            }
+        }
+        int z = 1;
+    }
 }

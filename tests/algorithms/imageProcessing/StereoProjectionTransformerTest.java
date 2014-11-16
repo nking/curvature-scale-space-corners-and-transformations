@@ -28,7 +28,53 @@ public class StereoProjectionTransformerTest {
     @Test
     public void testC() throws Exception {
         
-        String fileName1 = "books_illum3_v6_695x555.png";
+        String cwd = System.getProperty("user.dir") + "/";
+        
+        //String fileName1 = "venturi_mountain_j6_0010.png";
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(img1);
+        
+        detector.useSegmentationForSky();
+                       
+        detector.findCorners();
+
+        List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
+        
+        Image image = ImageIOHelper.readImageAsGrayScale(filePath1);
+        
+        
+        Image image2 = new Image(image.getWidth(), image.getHeight());
+                                  
+        ImageIOHelper.addAlternatingColorCurvesToImage(edges, image2);        
+        
+        String outFilePath = cwd + "tmp_edges.png";
+                 
+        ImageIOHelper.writeOutputImage(outFilePath, image2);
+                 
+                                                          
+        outFilePath = cwd + "tmp.png";
+                 
+        ImageIOHelper.writeOutputImage(outFilePath, image);
+        
+        StringBuilder sb = new StringBuilder();
+        PairIntArray corners = detector.getCornersInOriginalReferenceFrame();
+        for (int i = 0; i < corners.getN(); i++) {
+            int x = corners.getX(i);
+            int y = corners.getY(i);
+            int xe = (int)Math.sqrt(x);
+            int ye = (int)Math.sqrt(y);
+            sb.append(String.format("%d\t%d\t%d\t%d\n", x, y, xe, ye));
+        }
+        ResourceFinder.writeToCWD(sb.toString(), "tmp2.tsv");
+    }
+    
+    public void estC() throws Exception {
+        
+        String fileName1 = "books_illum3_v0_695x555.png";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);
 
@@ -38,7 +84,7 @@ public class StereoProjectionTransformerTest {
 
         CurvatureScaleSpaceInflectionMapper mapper = new 
             CurvatureScaleSpaceInflectionMapper(img1, img2);
-        
+       
         mapper.useLineDrawingLineMode();
 
         TransformationParameters transformationParams
@@ -47,9 +93,7 @@ public class StereoProjectionTransformerTest {
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);
-               
-        detector.doNotUseNoisyEdgeCorners();
-        
+                       
         detector.findCorners();
 
         
@@ -121,6 +165,7 @@ public class StereoProjectionTransformerTest {
             test.testC();
             
         } catch(Exception e) {
+            e.printStackTrace();
             System.out.println(e.getMessage());
         }
     }

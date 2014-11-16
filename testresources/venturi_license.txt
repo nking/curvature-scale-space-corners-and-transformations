@@ -1,0 +1,7 @@
+the Venturi mountain images are snapshots from the mp4 video at:
+https://venturi.fbk.eu/results/public-datasets/mountain-dataset/
+for the dataset J6 Care Alto
+
+Authors request: 
+"This dataset was created inside the European funded project VENTURI. You are free to use it, but we would appreciate it if you would include a reference to its source in any derived work and publication you write. Thank you."
+

@@ -4,14 +4,18 @@ import algorithms.ResourceFinder;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
+import org.junit.Test;
 
 /**
  *
  * @author nichole
  */
 public class EdgeExtractorTest extends TestCase {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
     public EdgeExtractorTest(String testName) {
         super(testName);
@@ -1027,13 +1031,10 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         
         assertTrue(foundJP);
    
-                
     }
     
     public void testFindEdges() throws Exception {
-        
-        System.out.println("testFindEdges");
-        
+                
         String filePath = ResourceFinder.findFileInTestResources("africa.png");
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
@@ -1078,6 +1079,198 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         
         ImageDisplayer.displayImage("edge detected image", img2);
         
+        assertTrue(!edges.isEmpty());
     }
 
+    @Test
+    public void testExtractEdges() {
+        
+        GreyscaleImage img = new GreyscaleImage(10, 10);
+                        
+        PairIntArray t = getSquare();
+        for (int j = 0; j < t.getN(); j++) {                
+            t.set(j, t.getX(j), t.getY(j));
+            img.setValue(t.getX(j), t.getY(j), 250);                
+        }        
+        
+        GreyscaleImage guide = img.copyImage();
+        EdgeExtractor extractor = null;
+        
+        for (int k = 0; k < 2; k++) {
+            
+            if (k == 0) {
+                extractor = new EdgeExtractor(img);
+            } else {
+                extractor = new EdgeExtractor(img, guide);
+            }
+
+            List<PairIntArray> result = extractor.findEdges();
+
+            assertNotNull(result);
+            assertTrue(result.size() == 1);
+
+            // assert that they are all connected
+            double sep = Math.sqrt(2);
+            PairIntArray edge = result.get(0);
+            for (int i = 1; i < (edge.getN() - 1); i++) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+
+                double distPrev = Math.pow(edge.getX(i - 1) - x, 2) + 
+                    Math.pow(edge.getY(i - 1) - y, 2);
+                distPrev = Math.sqrt(distPrev);
+
+                double distNext = Math.pow(edge.getX(i + 1) - x, 2) + 
+                    Math.pow(edge.getY(i + 1) - y, 2);
+                distNext = Math.sqrt(distNext);
+
+                assertTrue(distPrev <= (sep + 0.01));
+                assertTrue(distNext <= (sep + 0.01));
+            }
+        
+            // assert that main lines are present though the corners may have
+            //  been eroded
+            /*
+              6
+              5   @ @ @ @ @ @ @ @ 
+              4   @             @
+              3   @             @  
+              2   @             @  
+              1   @ @ @ @ @ @ @ @
+              0
+                0 1 2 3 4 5 6 7 8 9
+            */
+
+            assertTrue(edge.getN() >= 18);
+
+            // print result
+            GreyscaleImage extracted = new GreyscaleImage(10, 10);
+            for (int i = 0; i < edge.getN(); i++) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+                extracted.setValue(x, y, 1);
+            }
+
+            /*
+            for (int row = (extracted.getHeight() - 1); row > -1; row--) {
+                StringBuilder sb = new StringBuilder();
+                for (int col = 0; col < extracted.getWidth(); col++) {
+                    int v = extracted.getValue(col, row);
+                    if (v == 0) {
+                        sb.append(" ");
+                    } else {
+                        sb.append(v);
+                    }
+                    sb.append(" ");
+                }
+                System.out.println(sb.toString());
+            }
+            System.out.println("\n");
+            */
+
+            // make a pair int array out of expected and remove the corners as found
+            PairIntArray expected = getSquare();
+            // remove the corners which may have been eroded
+            for (int i = (expected.getN() - 1); i > -1; i--) {
+                if ((expected.getX(i) == 1) && (expected.getY(i) == 1)) {
+                    expected.removeRange(i, i);
+                } else if ((expected.getX(i) == 1) && (expected.getY(i) == 5)) {
+                    expected.removeRange(i, i);
+                } else if ((expected.getX(i) == 8) && (expected.getY(i) == 1)) {
+                    expected.removeRange(i, i);
+                } else if ((expected.getX(i) == 8) && (expected.getY(i) == 5)) {
+                    expected.removeRange(i, i);
+                }
+            }
+
+            for (int i = 0; i < edge.getN(); i++) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+                for (int j = 0; j < expected.getN(); j++) {
+                    if ((expected.getX(j) == x) && (expected.getY(j) == y)) {
+                        expected.removeRange(j, j);
+                        break;
+                    }
+                }
+            }
+
+            assertTrue(expected.getN() == 0);
+        }
+    }
+    
+    @Test
+    public void testRemoveEdgesShorterThan() {
+        
+        GreyscaleImage img = new GreyscaleImage(100, 100);
+        
+        List<PairIntArray> allEdges = new ArrayList<PairIntArray>();
+        
+        int minNumberOfPixelsInEdge = 10;
+        PairIntArray t = getSquare();
+        for (int j = 0; j < t.getN(); j++) {                
+            t.set(j, t.getX(j) + 50, t.getY(j));
+            img.setValue(t.getX(j), t.getY(j), 250);                
+        }
+        allEdges.add(t);
+        
+        t = new PairIntArray();
+        for (int i = 0; i < (minNumberOfPixelsInEdge - 1); i++) {
+            t.add(10, 10 + i);
+            img.setValue(t.getX(i), t.getY(i), 250);
+        }
+        allEdges.add(t);
+        
+        t = getSquare();
+        for (int j = 0; j < t.getN(); j++) {
+            t.set(j, t.getX(j), t.getY(j) + 50);
+            img.setValue(t.getX(j), t.getY(j), 250); 
+        }
+        allEdges.add(t);
+        
+        EdgeExtractor extractor = new EdgeExtractor(img);
+        
+        List<PairIntArray> result = extractor.findEdges();
+        
+        assertNotNull(result);
+        assertTrue(result.size() == 2);
+        
+        // assert that they are all connected
+        
+        assertTrue(allEdges.size() == 3);
+        extractor.removeEdgesShorterThan(allEdges, minNumberOfPixelsInEdge);
+        
+        assertNotNull(allEdges);
+        assertTrue(allEdges.size() == 2);        
+    }
+
+    /**
+      7    
+      6
+      5   @ @ @ @ @ @ @ @ 
+      4   @             @
+      3   @             @  
+      2   @             @  
+      1   @ @ @ @ @ @ @ @
+      0
+        0 1 2 3 4 5 6 7 8 9
+    */
+    private PairIntArray getSquare() {
+        
+        PairIntArray xy = new PairIntArray();
+        for (int x = 1; x < 9; x++) {
+            xy.add(x, 5);
+        }
+        for (int y = 4; y > 0; y--) {
+            xy.add(8, y);
+        }
+        for (int x = 7; x > 0; x--) {
+            xy.add(x, 1);
+        }
+        for (int y = 2; y < 5; y++) {
+            xy.add(1, y);
+        }
+        
+        return xy;
+    }
+    
 }

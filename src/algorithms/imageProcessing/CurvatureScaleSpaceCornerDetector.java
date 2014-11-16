@@ -35,10 +35,18 @@ import java.util.logging.Level;
 public class CurvatureScaleSpaceCornerDetector extends 
     AbstractCurvatureScaleSpaceMapper {
     
+    /**
+     * corners detected in the image.  the false corners have been removed
+     */
     protected PairIntArray corners = new PairIntArray();
-    
-    protected boolean doNotUseNoisyEdgeCorners = false;    
-    
+        
+    /**
+     * this is not ready for use yet.  when implemented it should hold
+     * a sublist of corners that are better to use for matching the same
+     * in other images.
+     */
+    protected PairIntArray cornersForMatching = new PairIntArray();
+            
     public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input) {
                 
         super(input);
@@ -62,15 +70,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         super(input, theEdges);
     }
      
-    /**
-     * when constructing the corner list, exclude corners from the edges which
-     * are very noisy.  NOTE: This feature is not yet implemented, so has no effect
-     * on the results.
-     */
-    public void doNotUseNoisyEdgeCorners() {
-        doNotUseNoisyEdgeCorners = true;
-    }
-    
     public void findCorners() {
          
         initialize();
@@ -90,7 +89,7 @@ public class CurvatureScaleSpaceCornerDetector extends
      * @param nPoints
      * @return 
      */
-    private SIGMA getMaxSIGMAForECSS(int nPoints) {
+    protected SIGMA getMaxSIGMAForECSS(int nPoints) {
         
         //ECSS:
         //    < 200, sigma = 2
@@ -130,12 +129,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         // perform the analysis on the edgesScaleSpaceMaps
         for (int i = 0; i < edges.size(); i++) {
   
-            if (doNotUseNoisyEdgeCorners) {
-                if (highChangeEdges.contains(Integer.valueOf(i))) {
-                    continue;
-                }
-            }
-            
             final PairIntArray edge = edges.get(i);
             
             final Map<SIGMA, ScaleSpaceCurve> map = 
@@ -191,21 +184,41 @@ public class CurvatureScaleSpaceCornerDetector extends
         List<Integer> maxCandidateCornerIndexes = findCandidateCornerIndexes(
             k, minimaAndMaximaIndexes, outputLowThreshold[0]);
     
-        PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());        
+        PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
 
+/*if (edgeNumber != 118) {
+    return xy;
+}*/
         if (correctForJaggedLines) {
-
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();  
-            
-            curveHelper.removeFalseCorners(scaleSpace.getXYCurve(), 
-                maxCandidateCornerIndexes, isAClosedCurve);
+           
+            PairIntArray jaggedLines = removeFalseCorners(
+                scaleSpace.getXYCurve(), maxCandidateCornerIndexes, 
+                isAClosedCurve);
         
-        }
+            // while have the needed data structures, make a sublist of the 
+            // corners that should be better to use for matching the same 
+            // objects when in other images.
+            // this is in progress, and not completely correct yet
+         
+            List<Integer> subList = makeSublistForCornerMatching(
+                jaggedLines, maxCandidateCornerIndexes, 
+                scaleSpace.getSize(), isAClosedCurve);
             
+            for (int j = 0; j < subList.size(); j++) {                
+                int idx = subList.get(j).intValue();
+                // exclude if k < 0.1?
+                //if (Math.abs(scaleSpace.getK(idx)) > 0.1) {
+                    cornersForMatching.add((int)scaleSpace.getX(idx), 
+                        (int)scaleSpace.getY(idx));
+                //}
+            }
+            
+        }
+        
         for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
             int idx = maxCandidateCornerIndexes.get(ii);                
             xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
-        }        
+        }
         
         return xy;
     }
@@ -620,6 +633,30 @@ public class CurvatureScaleSpaceCornerDetector extends
         return corners;
     }
     
+    public PairIntArray getCornersForMatching() {
+        return cornersForMatching;
+    }
+    
+    /**
+     * note, this is not ready for use yet.  it's meant to be a sublist of
+     * the variable "corners" selected to be better for matching the same
+     * corners in other images.
+     * @return 
+     */
+    public PairIntArray getCornersForMatchingInOriginalReferenceFrame() {
+        
+        PairIntArray co = new PairIntArray();
+        for (int i = 0; i < cornersForMatching.getN(); i++) {
+            int x = cornersForMatching.getX(i);
+            int y = cornersForMatching.getY(i);
+            x += this.trimmedXOffset;
+            y += this.trimmedYOffset;
+            co.add(x, y);
+        }
+        
+        return co;
+    }
+    
     public PairIntArray getCornersInOriginalReferenceFrame() {
         
         PairIntArray co = new PairIntArray();
@@ -633,7 +670,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         return co;
     }
-    
+ 
     public List<PairIntArray> getEdgesInOriginalReferenceFrame() {
         
         List<PairIntArray> output = new ArrayList<PairIntArray>();
@@ -658,6 +695,140 @@ public class CurvatureScaleSpaceCornerDetector extends
         return output;
     }
     
+    /**
+     * remove false corners from maxCandidateCornerIndexes by determining if
+     * the corner is due to a jagged line.  The flag "isAClosedCurve" is 
+     * used to preserve corners that are on the edges of the curve because
+     * the calculation of curvature has used that property to do a more 
+     * accurate "wrap around" calculation, so the corners there should be real.
+     * 
+     * @param xyCurve
+     * @param maxCandidateCornerIndexes indexes which are reduced by this method
+     * to a smaller number due to removing false corners
+     * @param isAClosedCurve
+     * @return returns the found jagged lines in the edge
+     */
+     protected PairIntArray removeFalseCorners(PairIntArray xyCurve, 
+        List<Integer> maxCandidateCornerIndexes, boolean isAClosedCurve) {
+        
+        // until the methods used by findJaggedLineSegments and 
+        // findJaggedLineSegments2 are simplified, use both separately
+        // and keep the solution which results in fewer corners.
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        PairIntArray jaggedLineSegments1 = curveHelper.findJaggedLineSegments(
+            xyCurve);
+        
+        PairIntArray jaggedLineSegments2 = curveHelper.findJaggedLineSegments2(
+            xyCurve);
+                        
+        List<Integer> remove1 = new ArrayList<Integer>();
+        
+        List<Integer> remove2 = new ArrayList<Integer>();
+            
+        for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
+            int idx = maxCandidateCornerIndexes.get(ii);
+            if (isAClosedCurve && ((idx < 3) || (idx > (xyCurve.getN() - 4)))) {
+                // keep 
+            } else if ((idx < 4) || (idx > (xyCurve.getN() - 5))) {
+                remove1.add(Integer.valueOf(ii));
+                remove2.add(Integer.valueOf(ii));
+            } else {
+                //TODO: make this result less sensitive to minDistFromBoundary
+                boolean isInARange1 = isWithinARange(jaggedLineSegments1, idx, 
+                    3);
+                if (isInARange1) {
+                    remove1.add(Integer.valueOf(ii));
+                }
+                boolean isInARange2 = isWithinARange(jaggedLineSegments2, idx, 
+                    3);
+                if (isInARange2) {
+                    remove2.add(Integer.valueOf(ii));
+                }
+            }
+        }
+        int choose1 = 0;
+        if (remove1.size() == remove2.size()) {
+            // choose the lines which cover more of the curve
+            int sum1 = 0;
+            if (jaggedLineSegments1 != null) {
+                for (int ii = 0; ii < jaggedLineSegments1.getN(); ii++) {
+                    sum1 += (jaggedLineSegments1.getY(ii) 
+                        - jaggedLineSegments1.getX(ii));
+                }
+            }
+            int sum2 = 0;
+            if (jaggedLineSegments2 != null) {
+                for (int ii = 0; ii < jaggedLineSegments2.getN(); ii++) {
+                    sum2 += (jaggedLineSegments2.getY(ii) 
+                        - jaggedLineSegments2.getX(ii));
+                }
+            }
+            if (sum1 > sum2) {
+                choose1 = 1;
+            }
+        } else if (remove1.size() > remove2.size()) {
+            choose1 = 1;
+        }
+        if (choose1 == 0) {
+            for (int ii = (remove2.size() - 1); ii > -1; ii--) {
+                int idx = remove2.get(ii).intValue();
+                maxCandidateCornerIndexes.remove(idx);
+            }
+            log.fine("NREMOVED=" + remove2.size());
+            
+            return jaggedLineSegments2;
+            
+        } else {
+            for (int ii = (remove1.size() - 1); ii > -1; ii--) {
+                int idx = remove1.get(ii).intValue();
+                maxCandidateCornerIndexes.remove(idx);
+            }
+            log.fine("NREMOVED=" + remove1.size());
+            
+            return jaggedLineSegments1;
+        }        
+    }
+    
+    /**
+     * search for idx within ranges in lineRangeSegments and return the index of
+     * lineRangeSegments in which it is found, else -1.  Note that 
+     * lineRangeSegments have to be ordered by x and unique.
+     * @param lineRangeSegments
+     * @param idx
+     * @param minDistFromEnds
+     * @return 
+     */
+    private boolean isWithinARange(PairIntArray lineRangeSegments, int idx,
+        int minDistFromEnds) {
+        
+        if ((lineRangeSegments == null) || (lineRangeSegments.getN() == 0)) {
+            return false;
+        }
+        
+        // search outside of bounds first:
+        if (idx < lineRangeSegments.getX(0)) {
+            return false;
+        } else if (idx > lineRangeSegments.getY(lineRangeSegments.getN() - 1)) {
+            return false;
+        }
+        
+        for (int i = 0; i < lineRangeSegments.getN(); i++) {
+            
+            int idx0 = lineRangeSegments.getX(i);
+            int idx1 = lineRangeSegments.getY(i);
+            
+            if ((idx >= (idx0 + minDistFromEnds)) 
+                && (idx <= (idx1 - minDistFromEnds))) {
+                
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     void printCurvature(ScaleSpaceCurve scaleSpace) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < scaleSpace.getSize(); i++) {
@@ -666,6 +837,109 @@ public class CurvatureScaleSpaceCornerDetector extends
             sb.append(str).append("\n");
         }
         log.info(sb.toString());
+    }
+
+    private List<Integer> makeSublistForCornerMatching(PairIntArray jaggedLines, 
+        List<Integer> maxCandidateCornerIndexes, int lastCurveIndex,
+        boolean isAClosedCurve) {
+         
+        if (jaggedLines == null) {
+            return maxCandidateCornerIndexes;
+        }
+        
+        int minEdgeLen = 8;//10;
+        int minAssocDist = 4;
+        
+        List<Integer> subList = new ArrayList<Integer>();
+       
+        for (int i = 0; i < maxCandidateCornerIndexes.size(); i++) {
+            
+            int idx = maxCandidateCornerIndexes.get(i);
+        
+            boolean store = false;
+            
+            for (int j = 0; j < jaggedLines.getN(); j++) {
+                
+                int idx0 = jaggedLines.getX(j);
+                int idx1 = jaggedLines.getY(j);
+                
+                if ((idx >= (idx0 - 2)) && (idx <= (idx1 + 2))) {
+                    double len = idx1 - idx0 + 1;
+                    double frac = (idx - idx0 + 1)/len;
+                    if (frac < 0.5) {
+                        int nRight = (idx1 - idx) + 1;
+                        if (nRight < minEdgeLen) {
+                            // line to the right is small
+                            continue;
+                        }
+                        // look at line to the left if any
+                        int prevJIdx = j - 1;
+                        if ((prevJIdx == -1) && !isAClosedCurve) {
+                            continue;
+                        }
+                        if ((prevJIdx == -1) && isAClosedCurve) {
+                            prevJIdx = jaggedLines.getN() - 1;
+                            int diffPrev = (lastCurveIndex - 
+                                jaggedLines.getY(prevJIdx)) + idx;
+                            if (diffPrev > minAssocDist) {
+                                continue;
+                            }
+                        } else {
+                            int diffPrev = (idx0 - jaggedLines.getY(prevJIdx));
+                            if (diffPrev > minAssocDist) {
+                                continue;
+                            }
+                        }
+                        int nLeft = jaggedLines.getY(prevJIdx) -
+                            jaggedLines.getX(prevJIdx) + 1;
+                        if (nLeft < minEdgeLen) {
+                            // line to the left is small
+                            continue;
+                        }
+                    } else {
+                        int nLeft = (idx - idx0) + 1;
+                        if (nLeft < minEdgeLen) {
+                            // line to the left is small
+                            continue;
+                        }
+                        // look at line to the right if any
+                        int nextJIdx = j + 1;
+                        if ((nextJIdx == jaggedLines.getN()) && !isAClosedCurve) {
+                            continue;
+                        }
+                        if ((nextJIdx == jaggedLines.getN()) && isAClosedCurve) {
+                            nextJIdx = 0;
+                            int diffNext = (lastCurveIndex - idx + 
+                                jaggedLines.getX(nextJIdx));
+                            if (diffNext > minAssocDist) {
+                                continue;
+                            }
+                        }  else {
+                            int diffNext = jaggedLines.getX(nextJIdx) - idx1;
+                            if (diffNext > minAssocDist) {
+                                continue;
+                            }
+                        }
+                        int nRight = jaggedLines.getY(nextJIdx) -
+                            jaggedLines.getX(nextJIdx) + 1;
+                        if (nRight < minEdgeLen) {
+                            // line to the right is small
+                            continue;
+                        }
+                    }
+                    // if arrived here, the associated lines to the left and
+                    // right are >= minEdgeLen
+                    store = true;
+                    break;
+                }                
+            }
+            
+            if (store) {
+                subList.add(Integer.valueOf(idx));
+            }
+        }
+        
+        return subList;
     }
 
 }

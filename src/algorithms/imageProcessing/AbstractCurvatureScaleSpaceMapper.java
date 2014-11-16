@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -38,6 +40,12 @@ public class AbstractCurvatureScaleSpaceMapper {
     protected boolean useLineDrawingMode = false;
     
     protected boolean doNotStraightenEdges = false;
+    
+    protected boolean useLowestHighIntensityCutoff = false;
+    
+    protected boolean useLowHighIntensityCutoff = false;
+    
+    protected boolean useSegmentationForSky = false;
     
     protected int trimmedXOffset = 0;
     
@@ -129,6 +137,29 @@ public class AbstractCurvatureScaleSpaceMapper {
         this.doNotNormalizeByHistogram = true;
     }
     
+    public void useLowestHighIntensityCutoff() {
+        useLowestHighIntensityCutoff = true;
+    }
+    
+    public void useLowHighIntensityCutoff() {
+        useLowHighIntensityCutoff = true;
+    }
+    
+    /**
+     * use segmentation to try to reduce the sky to one color which makes the
+     * horizon features such as peaks more visible.
+     * This method has the side effects of disabling histogram equalization
+     * and setting the intensity for the higher threshold in the 2-layer
+     * filter of the Canny Edge filter to a lower value than normal.
+     * Note that "line drawing" mode should probably not be used with this,
+     * but hasn't been tested yet.
+     */
+    public void useSegmentationForSky() {
+        useSegmentationForSky = true;
+        doNotNormalizeByHistogram = true;
+        useLowHighIntensityCutoff = true;
+    }
+    
     protected void initialize() {
         
         if (state.ordinal() < 
@@ -137,8 +168,8 @@ public class AbstractCurvatureScaleSpaceMapper {
             // (1) apply an edge filter
             applyEdgeFilter();
             
-            // (2) extract edge contours
-            extractEdgeContours();
+            // (2) extract edges
+            extractEdges();
             
             //TODO: note that there may be a need to search for closed
             //      curves in the EdgeContourExtractor instead of here
@@ -155,11 +186,30 @@ public class AbstractCurvatureScaleSpaceMapper {
         
         CannyEdgeFilter filter = new CannyEdgeFilter();
         
+        if (useSegmentationForSky) {
+            try {
+                ImageProcesser imageProcessor = new ImageProcesser();
+                imageProcessor.applyImageSegmentation(img, 2);
+            } catch (IOException e) {
+                log.severe("segmentation could not be performed: " + 
+                    e.getMessage());
+            } catch (NoSuchAlgorithmException e) {
+                log.severe("segmentation could not be performed: " + 
+                    e.getMessage());
+            }
+        }
+        
         if (doNotNormalizeByHistogram) {
             filter.doNotPerformHistogramEqualization();
         }
         if (useLineDrawingMode) {
             filter.useLineDrawingMode();
+        }
+        
+        if (useLowestHighIntensityCutoff) {
+            filter.overrideHighThreshold(1.0f);
+        } else if (useLowHighIntensityCutoff) {
+            filter.overrideHighThreshold(2.0f);
         }
         
         filter.applyFilter(img);
@@ -171,22 +221,18 @@ public class AbstractCurvatureScaleSpaceMapper {
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
 
-    protected void extractEdgeContours() {
+    protected void extractEdges() {
         
-        EdgeExtractor contourExtractor = new EdgeExtractor(img);
+        EdgeExtractor contourExtractor;
         
-        if (useLineDrawingMode) {
-            contourExtractor.useLineDrawingMode();
-        } 
-        
-        List<PairIntArray> tmpEdges = contourExtractor.findEdges();
-        
-        if (!doNotStraightenEdges && !useLineDrawingMode) {
-            
-            straightenEdges(tmpEdges);
-            
+        if (doNotStraightenEdges) { 
+            contourExtractor = new EdgeExtractor(img);
+        } else {
+            contourExtractor = new EdgeExtractor(img, gradientXY);
         }
         
+        List<PairIntArray> tmpEdges = contourExtractor.findEdges();
+       
         edges.clear();
         edges.addAll(tmpEdges);
         
@@ -247,118 +293,6 @@ public class AbstractCurvatureScaleSpaceMapper {
                 }
             }
         }
-    }
-    
-    /**
-     * Uses the intensity of the original edges to move pixels in an edge
-     * towards the brighter regions.
-     * This is a correction for a binary erosion filter which sometimes
-     * produces non jagged lines.
-     * 
-     * @param tmpEdges 
-     */
-    private void straightenEdges(List<PairIntArray> tmpEdges) {
-
-        if (gradientXY == null) {
-            // if the class was initialized with edges, the CannyEdgeFilter
-            // was not run, so this image will be missing
-            // (and the edges should have already been straightened).
-            return;
-        }
-        
-        int nReplaced = 1;
-        
-        int nMaxIter = 100;
-        int nIter = 0;
-      
-        while ((nIter < nMaxIter) && (nReplaced > 0)) {
-           
-           nReplaced = 0;
-        
-           for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
-            
-                PairIntArray edge = tmpEdges.get(lIdx);
-
-                if (edge.getN() < 3) {
-                    continue;
-                }
-
-                int nEdgeReplaced = 0;
-                
-                /*
-                looking at the 8 neighbor region of each pixel for which the
-                pixel's preceding and next edge pixels remain connected for
-                   and among those, looking for a higher intensity pixel than
-                   the center and if found, change coords to that.
-                */
-                for (int i = 1; i < (edge.getN() - 1); i++) {
-                    int x = edge.getX(i);                
-                    int y = edge.getY(i);
-                    int prevX = edge.getX(i - 1);                
-                    int prevY = edge.getY(i - 1);
-                    int nextX = edge.getX(i + 1);                
-                    int nextY = edge.getY(i + 1);
-
-                    int maxValue = gradientXY.getValue(x, y);
-                    int maxValueX = x;
-                    int maxValueY = y;
-                    boolean changed = false;
-
-                    for (int col = (prevX - 1); col <= (prevX + 1); col++) {
-
-                        if ((col < 0) || (col > (gradientXY.getWidth() - 1))) {
-                            continue;
-                        }
-
-                        for (int row = (prevY - 1); row <= (prevY + 1); row++) {
-
-                            if ((row < 0) || (row > (gradientXY.getHeight() - 1))) {
-                                continue;
-                            }
-                            if ((col == prevX) && (row == prevY)) {
-                                continue;
-                            }
-                            if ((col == nextX) && (row == nextY)) {
-                                continue;
-                            }
-
-                            // skip if pixel is not next to (nextX, nextY)
-                            int diffX = Math.abs(nextX - col);
-                            int diffY = Math.abs(nextY - row);
-                            if ((diffX > 1) || (diffY > 1)) {
-                                continue;
-                            }
-
-                            if (gradientXY.getValue(col, row) > maxValue) {
-                                maxValue = gradientXY.getValue(col, row);
-                                maxValueX = col;
-                                maxValueY = row;
-                                changed = true;
-                            }
-                        }
-                    }
-                    if (changed) {
-                        nEdgeReplaced++;
-                        edge.set(i, maxValueX, maxValueY);
-                    }                    
-                }
-                
-                nReplaced += nEdgeReplaced;
-            }
-
-            log.info("REPLACED: " + nReplaced + " nIter=" + nIter);
-
-            nIter++;
-        }
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        curveHelper.removeRedundantPoints(tmpEdges);
-        
-        curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);
-        
-        curveHelper.correctCheckeredSegments(tmpEdges);
-        
     }
     
     public boolean getInitialized() {
