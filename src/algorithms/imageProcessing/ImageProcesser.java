@@ -479,8 +479,8 @@ public class ImageProcesser {
         return new int[]{0, 0};
     }
 
-    public void applyImageSegmentation(GreyscaleImage input, int kBands) throws IOException,
-        NoSuchAlgorithmException {
+    public void applyImageSegmentation(GreyscaleImage input, int kBands) 
+        throws IOException, NoSuchAlgorithmException {
                 
         KMeansPlusPlus instance = new KMeansPlusPlus();
         instance.computeMeans(kBands, input);
@@ -530,12 +530,9 @@ public class ImageProcesser {
         }
     }
     
-    public void divideByBlurredSelf(GreyscaleImage input) throws IOException,
-        NoSuchAlgorithmException {
-                
-        GreyscaleImage input2 = input.copyImage();
-        
-        float[] kernel = Gaussian1D.getKernel(3);
+    public void blur(GreyscaleImage input, float sigma) {
+                        
+        float[] kernel = Gaussian1D.getKernel(sigma);
         
         Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
         
@@ -550,7 +547,9 @@ public class ImageProcesser {
                 output.setValue(i, j, g);
             }
         }
+        
         input.resetTo(output);
+        
         for (int i = 0; i < input.getWidth(); i++) {
             for (int j = 0; j < input.getHeight(); j++) {
                 double conv = kernel1DHelper.convolvePointWithKernel(
@@ -561,6 +560,13 @@ public class ImageProcesser {
         }
         
         input.resetTo(output);
+    }
+    
+    public void divideByBlurredSelf(GreyscaleImage input, float sigma) {
+         
+        GreyscaleImage input2 = input.copyImage();
+        
+        blur(input, sigma);
         
         Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
         
@@ -577,6 +583,5 @@ public class ImageProcesser {
                 }
             }
         }
-        int z = 1;
     }
 }

@@ -64,8 +64,12 @@ public class CurvatureScaleSpaceImageMakerTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img, true);
+            new CurvatureScaleSpaceImageMaker(img);
+        
+        instance.useLineDrawingMode();
                 
+        instance.initialize();
+        
         assertTrue(instance.getInitialized());
         
         PolygonAndPointPlotter plotterC = new PolygonAndPointPlotter();
@@ -173,7 +177,11 @@ public class CurvatureScaleSpaceImageMakerTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img, true);
+            new CurvatureScaleSpaceImageMaker(img);
+        
+        instance.useLineDrawingMode();
+        
+        instance.initialize();
         
         assertTrue(instance.getInitialized());
                 
@@ -183,7 +191,7 @@ public class CurvatureScaleSpaceImageMakerTest {
         
         //Collections.sort(curves, new PairIntArrayComparator());
         
-        //assertTrue(curves.size() == 1);
+        assertTrue(curves.size() == 1);
         
         boolean plotAs2 = false;
         
@@ -274,17 +282,18 @@ public class CurvatureScaleSpaceImageMakerTest {
                     x[count] = (float)zIdx/(float)nPoints;
                     y[count] = sigma.floatValue();
                     
-                    System.out.println("SIGMA=" + sigma 
+                    /*System.out.println("SIGMA=" + sigma 
                         + "(" + scaleSpaceCurve.getX(zIdx) + "," 
                         + scaleSpaceCurve.getY(zIdx) + ") t=" + x[count] 
                         + " ii=" + ii);
-                    
+                    */
                     count++;
                 }
             }
 
             addToPlot(plotterC, x, y);
         }
+        int z = 1;
     }
     
     @Test
@@ -300,7 +309,11 @@ public class CurvatureScaleSpaceImageMakerTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img, true);
+            new CurvatureScaleSpaceImageMaker(img);
+        
+        instance.useLineDrawingMode();
+        
+        instance.initialize();
         
         assertTrue(instance.getInitialized());
                         
@@ -309,6 +322,10 @@ public class CurvatureScaleSpaceImageMakerTest {
         
         CurvatureScaleSpaceImageMaker instance2 = 
             new CurvatureScaleSpaceImageMaker(img, curves);
+        
+        instance2.useLineDrawingMode();
+        
+        instance2.initialize();
         
         assertTrue(instance2.getInitialized());
                 
@@ -358,6 +375,7 @@ public class CurvatureScaleSpaceImageMakerTest {
             
             CurvatureScaleSpaceImageMakerTest test = 
                 new CurvatureScaleSpaceImageMakerTest();
+            
             
             test.testCreateScaleSpaceMetricsForForEdge2();
             

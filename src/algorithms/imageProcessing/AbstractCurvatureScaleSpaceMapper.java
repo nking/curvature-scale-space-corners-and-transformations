@@ -51,35 +51,13 @@ public class AbstractCurvatureScaleSpaceMapper {
     
     protected int trimmedYOffset = 0;
     
+    protected boolean useOutdoorMode = false;
+    
     protected GreyscaleImage gradientXY = null;
     
     protected GreyscaleImage thetaXY = null;
  
     protected Logger log = Logger.getLogger(this.getClass().getName());
-    
-    /**
-     * constructor w/ input image which is operated on.  the same instance
-     * input is modified by this class.
-     * 
-     * @param input 
-     */
-    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input, boolean
-        doUseLineMode) {
-     
-        useLineDrawingMode = true;
-        
-        img = input;
-        
-        ImageProcesser imageProcesser = new ImageProcesser();
-        
-        originalImg = input.copyImage();
-            
-        int[] offsetXY = imageProcesser.shrinkImageToFirstNonZeros(img);
-        
-        trimmedXOffset = offsetXY[0];
-        
-        trimmedYOffset = offsetXY[1];
-    }
     
     /**
      * constructor w/ input image which is operated on.  the same instance
@@ -145,6 +123,17 @@ public class AbstractCurvatureScaleSpaceMapper {
         useLowHighIntensityCutoff = true;
     }
     
+    public void useLineDrawingMode() {
+        useLineDrawingMode = true;
+    }
+    
+    public void useOutdoorMode() {
+        
+        useLowestHighIntensityCutoff();
+        
+        useOutdoorMode = true;
+    }
+    
     /**
      * use segmentation to try to reduce the sky to one color which makes the
      * horizon features such as peaks more visible.
@@ -156,7 +145,7 @@ public class AbstractCurvatureScaleSpaceMapper {
      */
     public void useSegmentationForSky() {
         useSegmentationForSky = true;
-        doNotNormalizeByHistogram = true;
+        //doNotNormalizeByHistogram = true;
         useLowHighIntensityCutoff = true;
     }
     
@@ -185,6 +174,10 @@ public class AbstractCurvatureScaleSpaceMapper {
     protected void applyEdgeFilter() {
         
         CannyEdgeFilter filter = new CannyEdgeFilter();
+        
+        if (useOutdoorMode) {
+            filter.useOutdoorMode();
+        }
         
         if (useSegmentationForSky) {
             try {

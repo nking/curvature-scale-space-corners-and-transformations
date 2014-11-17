@@ -152,12 +152,10 @@ public class CMDLineCornerDetector {
         try {
              img = ImageIOHelper.readImageAsGrayScaleG(filePath);
              
-             CurvatureScaleSpaceCornerDetector detector;
+             CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(img);
                
              if (useLineDrawingMode) {
-                 detector = new CurvatureScaleSpaceCornerDetector(img, true);
-             } else {
-                 detector = new CurvatureScaleSpaceCornerDetector(img);
+                 detector.useLineDrawingMode();
              }
              
              detector.findCorners();

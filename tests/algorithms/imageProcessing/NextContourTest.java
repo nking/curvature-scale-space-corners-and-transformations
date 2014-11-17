@@ -295,8 +295,12 @@ public class NextContourTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
 
         CurvatureScaleSpaceImageMaker instance
-            = new CurvatureScaleSpaceImageMaker(img, true);
+            = new CurvatureScaleSpaceImageMaker(img);
 
+        instance.initialize();
+        
+        instance.useLineDrawingMode();
+        
         List<PairIntArray> curves = instance.getClosedCurves();
 
         for (int i = 0; i < curves.size(); i++) {

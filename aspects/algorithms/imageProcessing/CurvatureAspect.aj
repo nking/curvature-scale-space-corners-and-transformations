@@ -278,6 +278,24 @@ public aspect CurvatureAspect {
         }
     }
 
+    after(GreyscaleImage input, float sigma) returning() :
+        call(public void ImageProcesser.blur(GreyscaleImage, float))
+        && args(input, sigma)
+	    && target(algorithms.imageProcessing.ImageProcesser) {
+
+        Object[] args = (Object[])thisJoinPoint.getArgs();
+        GreyscaleImage output = (GreyscaleImage)args[0];
+
+        debugDisplay(output, "blurred by " + sigma);
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/blurred.png", output);
+        } catch (IOException e) {
+            log2.severe(e.getMessage());
+        }
+    }
+
     after(GreyscaleImage input) returning() :
         call(void CannyEdgeFilter*.apply2LayerFilter(GreyscaleImage))
         && args(input)
@@ -607,6 +625,33 @@ public aspect CurvatureAspect {
                 instance.getImage());
 
             plotHistogram(instance.getImage(), "edges before dfs");
+
+        } catch (IOException ex) {
+
+            log2.severe("ERROR: l359" + ex.getMessage());
+        }
+    }
+
+    after() returning(List<PairIntArray> edges) : 
+	    target(algorithms.imageProcessing.EdgeExtractor) 
+        && execution(List<PairIntArray> EdgeExtractor*.findEdges()) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof EdgeExtractor)) {
+            return;
+        }
+
+        EdgeExtractor instance = (EdgeExtractor)obj;
+
+        GreyscaleImage img3 = instance.getImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            // multi-colored edges alone:
+            debugDisplay(edges, "edges extracted (not in original frame)", 
+                true, img3.getWidth(), img3.getHeight());
 
         } catch (IOException ex) {
 

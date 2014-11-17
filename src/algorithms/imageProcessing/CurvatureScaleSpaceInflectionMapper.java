@@ -58,7 +58,13 @@ public final class CurvatureScaleSpaceInflectionMapper {
     private int offsetImageX2 = 0;
     
     private int offsetImageY2 = 0;
+    
+    private boolean useOutdoorMode = false;
         
+    public void useOutdoorMode() {
+        useOutdoorMode = true;
+    }
+    
     public void useLineDrawingLineMode() {
         this.useLineDrawingMode = true;
     }
@@ -92,13 +98,18 @@ public final class CurvatureScaleSpaceInflectionMapper {
         // (left and right) for clockwise order gives the right answer 
         // and is less work computationally
         
-        CurvatureScaleSpaceImageMaker imgMaker;
+        CurvatureScaleSpaceImageMaker imgMaker = new 
+            CurvatureScaleSpaceImageMaker(image1);
             
         if (useLineDrawingMode) {
-            imgMaker = new CurvatureScaleSpaceImageMaker(image1, true);
-        } else {
-            imgMaker = new CurvatureScaleSpaceImageMaker(image1);
+            imgMaker.useLineDrawingMode();
         }
+        
+        if (useOutdoorMode) {
+            imgMaker.useOutdoorMode();
+        }
+        
+        imgMaker.initialize();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
@@ -197,11 +208,17 @@ public final class CurvatureScaleSpaceInflectionMapper {
         
         offsetImageY1 = imgMaker.getTrimmedYOffset();
                     
+        imgMaker = new CurvatureScaleSpaceImageMaker(image2);
+        
         if (useLineDrawingMode) {
-            imgMaker = new CurvatureScaleSpaceImageMaker(image2, true);
-        } else {
-            imgMaker = new CurvatureScaleSpaceImageMaker(image2);
+            imgMaker.useLineDrawingMode();
         }
+        
+        if (useOutdoorMode) {
+            imgMaker.useOutdoorMode();
+        }
+        
+        imgMaker.initialize();
         
         edges2 = imgMaker.getClosedCurves();
         

@@ -29,33 +29,21 @@ public final class CurvatureScaleSpaceImageMaker extends
     
     /**
      * array of closed curve edges which are a subset of the list, 'edges'.
-     * NOTE, the closedCurves coordinates here are referenced by the return value
-     * of createInflectionContours();
+     * NOTE, the closedCurves coordinates here are referenced by the return 
+     * value of createInflectionContours();
      */
     protected List<PairIntArray> closedCurves = 
         new ArrayList<PairIntArray>();
     
     public CurvatureScaleSpaceImageMaker(GreyscaleImage input) {
-                
-        super(input);
         
-        initialize();
-    }
-    
-    public CurvatureScaleSpaceImageMaker(GreyscaleImage input, 
-        boolean doUseLineDrawingMode) {
-                
-        super(input, doUseLineDrawingMode);
-        
-        initialize();
+        super(input);        
     }
     
     public CurvatureScaleSpaceImageMaker(GreyscaleImage input, 
         List<PairIntArray> theEdges) {
         
-        super(input, theEdges);
-          
-        initialize();      
+        super(input, theEdges);          
     }
     
     @Override
@@ -197,6 +185,8 @@ public final class CurvatureScaleSpaceImageMaker extends
     public ScaleSpaceCurveImage convertScaleSpaceMapToSparseImage(
         Map<Float, ScaleSpaceCurve> scaleSpaceMap, int edgeNumber) {
         
+        initialize();
+        
         /*       |    *
           sigma  |   * *     **
                  |   * *     **
@@ -210,10 +200,14 @@ public final class CurvatureScaleSpaceImageMaker extends
         
         sortedMap.putAll(scaleSpaceMap);
         
-        Float maxSigma = sortedMap.firstKey();
-        if (sortedMap.get(maxSigma).getKIsZeroIdxSize() == 0) {
+        Float maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();
+        
+        if ((maxSigma != null) && 
+            sortedMap.get(maxSigma).getKIsZeroIdxSize() == 0) {
+            
             sortedMap.remove(maxSigma);
-            maxSigma = sortedMap.firstKey();
+            
+            maxSigma = sortedMap.isEmpty() ? null : sortedMap.firstKey();
         }
         
         Iterator<Entry<Float, ScaleSpaceCurve> > iter = 

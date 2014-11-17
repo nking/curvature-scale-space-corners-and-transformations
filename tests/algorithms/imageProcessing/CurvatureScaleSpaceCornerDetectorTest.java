@@ -43,7 +43,9 @@ public class CurvatureScaleSpaceCornerDetectorTest extends TestCase {
         Kernel1DHelper kernelDHelper = new Kernel1DHelper();
         
         CurvatureScaleSpaceCornerDetector detector = new
-            CurvatureScaleSpaceCornerDetector(img, true);
+            CurvatureScaleSpaceCornerDetector(img);
+        
+        detector.useLineDrawingMode();
                 
         detector.initialize();
         
@@ -112,8 +114,10 @@ public class CurvatureScaleSpaceCornerDetectorTest extends TestCase {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceCornerDetector detector = new
-            CurvatureScaleSpaceCornerDetector(img, true);
+            CurvatureScaleSpaceCornerDetector(img);
                 
+        detector.useLineDrawingMode();
+        
         detector.initialize();
         
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > map = 
@@ -244,7 +248,13 @@ public class CurvatureScaleSpaceCornerDetectorTest extends TestCase {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceImageMaker imgMaker
-            = new CurvatureScaleSpaceImageMaker(img, true);
+            = new CurvatureScaleSpaceImageMaker(img);
+                
+        imgMaker.useLineDrawingMode();
+        
+        imgMaker.initialize();
+        
+        assertFalse(imgMaker.getClosedCurves().isEmpty());
         
         PairIntArray edge = imgMaker.getClosedCurves().get(0);
                 

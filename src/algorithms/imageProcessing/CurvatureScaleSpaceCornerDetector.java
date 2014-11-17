@@ -52,18 +52,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         super(input);
     }
     
-    /**
-     * constructor with option needed for images that are line drawings or
-     * are solid blocks of color.
-     * @param input
-     * @param doUseLineMode 
-     */
-    public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input,
-        boolean doUseLineMode) {
-                        
-        super(input, true);
-    }
-    
     public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input, 
         List<PairIntArray> theEdges) {
         

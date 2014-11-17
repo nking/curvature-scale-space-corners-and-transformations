@@ -41,11 +41,16 @@ public class ContourFinder {
      */
     public List<CurvatureScaleSpaceContour> findContours(
         ScaleSpaceCurveImage scaleSpaceImage, int edgeNumber) {
-
-        ScaleSpaceCurveImage space = scaleSpaceImage.copy();
         
         List<CurvatureScaleSpaceContour> contours = new
             ArrayList<CurvatureScaleSpaceContour>();
+        
+        if ((scaleSpaceImage == null) || 
+            (scaleSpaceImage.getImageSigmas().length == 0)) {
+            return contours;
+        }
+        
+        ScaleSpaceCurveImage space = scaleSpaceImage.copy();
         
         double lowLimit = space.getImageSigmas()[0]*thresholdFactor;
         //TODO: consider a low limit of sigma=3
@@ -88,6 +93,11 @@ public class ContourFinder {
     private CurvatureScaleSpaceContour extractNextContour(
         ScaleSpaceCurveImage scaleSpaceImage, int sigmaIndex) {
         
+        if ((scaleSpaceImage == null) || 
+            (scaleSpaceImage.getScaleSpaceImage().length == 0)) {
+            return null;
+        }
+        
         float[] t = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex];
         
         if (t == null || t.length == 0) {
@@ -115,6 +125,11 @@ public class ContourFinder {
     private CurvatureScaleSpaceContour extractContour(ScaleSpaceCurveImage 
         scaleSpaceImage, int sigmaIndex, int tIndex) {
   
+        if ((scaleSpaceImage == null) || 
+            (scaleSpaceImage.getScaleSpaceImage().length == 0)) {
+            return null;
+        }
+        
         float tPoint = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
         if (tPoint < 0) {
             return null;
@@ -483,6 +498,10 @@ public class ContourFinder {
     private void correctForWrappedContours(final List<CurvatureScaleSpaceContour> 
         contours) {
 
+        if ((contours == null) || contours.isEmpty()) {
+            return;
+        }
+        
         // roughly, look for features with peaks > 0.9 and < 0.1.
         
         // TODO: what shape would produce the widest possible contour in

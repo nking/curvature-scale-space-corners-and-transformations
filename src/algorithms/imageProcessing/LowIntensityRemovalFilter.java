@@ -13,6 +13,10 @@ public class LowIntensityRemovalFilter {
 
     protected float lowThreshFactor = 1.0f;
 
+    public void overrideLowThresholdFactor(float theFactor) {
+        lowThreshFactor = theFactor;
+    }
+    
     /**
      * determine a lower threshold for removing pixels below that
      * as background and noise and return the threshold used.

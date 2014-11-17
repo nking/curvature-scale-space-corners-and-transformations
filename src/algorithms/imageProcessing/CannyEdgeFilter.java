@@ -58,6 +58,8 @@ public class CannyEdgeFilter {
     
     private Class<? extends ILineThinner> lineThinnerClass = ErosionFilter.class;
     
+    protected boolean useOutdoorMode = false;
+    
     public CannyEdgeFilter() {        
     }
  
@@ -97,6 +99,13 @@ public class CannyEdgeFilter {
         lineThinnerClass = cls;
     }
     
+    public void useOutdoorMode() {
+        
+        useOutdoorMode = true;
+        
+        highThreshold = 50.0f;
+    }
+    
     public void applyFilter(final GreyscaleImage input) {
         
         if (input.getWidth() < 3 || input.getHeight() < 3) {
@@ -106,7 +115,11 @@ public class CannyEdgeFilter {
         ImageProcesser imageProcesser = new ImageProcesser();
         
         imageProcesser.shrinkImageToFirstNonZeros(input);
-                
+             
+        if (useOutdoorMode) {
+            imageProcesser.blur(input, 2.0f); //3.0
+        }
+
         applyHistogramEqualization(input);
         
         //[gX, gY, gXY, theta
@@ -117,11 +130,11 @@ public class CannyEdgeFilter {
         thetaXY = gradientProducts[3].copyImage();
         
         input.resetTo(gradientProducts[2]);
-                
+           
         if (!useLineDrawingMode) {
             apply2LayerFilter(input);
         }
-
+        
         applyLineThinnerFilter(input);
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -160,6 +173,10 @@ public class CannyEdgeFilter {
         }
                   
         LowIntensityRemovalFilter filter2 = new LowIntensityRemovalFilter();
+        
+        if (useOutdoorMode) {
+            filter2.overrideLowThresholdFactor(3.5f);
+        }
                 
         ImageStatistics stats = filter2.removeLowIntensityPixels(input,
             imgHistogram);

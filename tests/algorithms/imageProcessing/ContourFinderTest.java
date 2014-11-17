@@ -35,8 +35,12 @@ public class ContourFinderTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
-            new CurvatureScaleSpaceImageMaker(img, true);
+            new CurvatureScaleSpaceImageMaker(img);
+        
+        instance.useLineDrawingMode();
                 
+        instance.initialize();
+        
         assertTrue(instance.getInitialized());
                 
         List<PairIntArray> curves = instance.getClosedCurves();
@@ -89,6 +93,8 @@ public class ContourFinderTest {
         CurvatureScaleSpaceImageMaker instance = 
             new CurvatureScaleSpaceImageMaker(img);
                 
+        instance.initialize();
+        
         assertTrue(instance.getInitialized());
                 
         List<PairIntArray> curves = instance.getClosedCurves();
