@@ -236,7 +236,7 @@ public class TransformationCalculator {
         
         double rotationInDegrees = -1*theta2Minus1WeightedSum;
         
-         /*
+        /*
         solve for an x translation and y translation which can be applied
         to a data set from image 1 after scaled and rotated.
         
@@ -260,8 +260,8 @@ public class TransformationCalculator {
            translationY = centroidY2 - centroidX1*scale*sin(theta) 
                - centroidY1*scale*cos(theta)
         */
-        float mc =  (float) Math.cos(rotationInDegrees*Math.PI/180.);
-        float ms =  (float) Math.sin(rotationInDegrees*Math.PI/180.);
+        float mc = (float)Math.cos(rotationInDegrees*Math.PI/180.);
+        float ms = (float)Math.sin(rotationInDegrees*Math.PI/180.);
         
         log.fine("mc=" + mc + " ms=" + ms);
         

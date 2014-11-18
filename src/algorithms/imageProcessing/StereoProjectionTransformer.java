@@ -143,20 +143,21 @@ public class StereoProjectionTransformer {
         PairFloatArray refactorRightXY) {
         
         if (refactorLeftXY == null) {
-            throw new IllegalArgumentException("xy1 cannot be null");
+            throw new IllegalArgumentException("refactorLeftXY cannot be null");
         }
         if (refactorRightXY == null) {
-            throw new IllegalArgumentException("xy2 cannot be null");
+            throw new IllegalArgumentException("refactorRightXY cannot be null");
         }
         if (refactorLeftXY.getN() != refactorRightXY.getN()) {
-            throw new IllegalArgumentException("xy1 and xy2 must be same size");
+            throw new IllegalArgumentException(
+                "refactorLeftXY and refactorRightXY must be same size");
         }
         
         if (refactorLeftXY.getN() < 8) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
-                "the 8-point problem requires 8 or more points. xy1.n=" 
-                + refactorLeftXY.getN());
+                "the 8-point problem requires 8 or more points." 
+                + " refactorLeftXY.n=" + refactorLeftXY.getN());
         }
         
         leftXY = rewriteInto3ColumnMatrix(refactorLeftXY);
@@ -193,7 +194,8 @@ public class StereoProjectionTransformer {
         
         plot the differences, calc stats, determine inliers.
         use iterative method of choosing 8 or 8-best and error inspection to
-        create a better solution (terminate when set of inliers does not change).
+        create a better solution (terminate when set of inliers does not 
+        change).
         
         */
     }
@@ -215,7 +217,7 @@ public class StereoProjectionTransformer {
             solve A = U * D * V^T   for A*f = [..x...]*f = 0
             A has rank 8.  f has rank 2.
             calculate [U,D,V] from svd(A)
-        */        
+        */       
         SingularValueDecomposition svd = aMatrix.svd();
         
         // creates U as 9 x nXY1 matrix

@@ -42,7 +42,7 @@ public class StereoProjectionTransformerTest {
         PairIntArray matched1 = new PairIntArray();
         PairIntArray matched2 = new PairIntArray();
         
-        String fileName1 = "coords.txt";
+        String fileName1 = "brown_lowe_2003_matching.tsv";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         
         BufferedReader br = null;
@@ -77,11 +77,13 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
         PairIntArray xy1 = new PairIntArray();
         PairIntArray xy2 = new PairIntArray();
         
-        String[] fileNames = new String[]{"tmp1.tsv", "tmp2.tsv"};
+        String[] fileNames = new String[]{"brown_lowe_2003_image1.tsv", 
+            "brown_lowe_2003_image2.tsv"};
+        
         for (String fileName : fileNames) {
             
             filePath1 = ResourceFinder.findFileInTestResources(fileName);
-            PairIntArray xy = fileName.equals("tmp1.tsv") ? xy1 : xy2;
+            PairIntArray xy = fileName.equals("brown_lowe_2003_image1.tsv") ? xy1 : xy2;
             
             try {
                 reader = new FileReader(new File(filePath1));
@@ -89,7 +91,7 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
                 String line = br.readLine();
                 while (line != null) {
                     String[] items = line.split("\\s+");
-                    if ((items != null) && (items.length == 4)) {
+                    if ((items != null) && (items.length == 2)) {
                         Integer x1 = Integer.valueOf(items[0]);
                         Integer y1 = Integer.valueOf(items[1]);
                         xy.add(x1.intValue(), y1.intValue());
@@ -138,6 +140,7 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
             if (dyMax < diffY) {
                 dyMax = diffY;
             }
+            log.info("dx=" + dx[i] + "  dy=" + dy[i]);
         }
         double transX = (double)sumX/(double)matched1.getN();
         double transY = (double)sumY/(double)matched1.getN();
@@ -156,8 +159,8 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
         log.info("transY=" + transY + " (stdDev=" + stdDevY + ")");
         
         /*
-        transX=286.9 (stdDev=9.722464388298796)
-        transY=10.45 (stdDev=8.47907643813006)
+        transX = 293.0882352941176 (stdDev=10.263203002789375)
+        transY = 14.323529411764707 (stdDev=5.898125121074294)
       
         for 1000 points, for each possible pair w/ image 2 points,
         the real solution would be looking for a match within 
@@ -167,8 +170,8 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
             double diffX = Math.abs((dx[i] - transX));
             double diffY = Math.abs((dy[i] - transY));
             log.info("diffX=" + diffX + "  diffY=" + diffY);
-            assertTrue(diffX <= 2.5*stdDevX);
-            assertTrue(diffY <= 2.5*stdDevY);
+            assertTrue(diffX <= 3.0*stdDevX);
+            assertTrue(diffY <= 3.0*stdDevY);
         }
         
         /* linear regression w/ theil sen estimator:
@@ -185,7 +188,6 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
             }
             s[count] = (float)(dy[i])/(float)(dx[i]);
             count++;
-            
         }
         
         KSelect kSelect = new KSelect();
@@ -220,17 +222,168 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
                     "diff x (img1 - img2) vs diff y");
         
         int xMax = MiscMath.findMax(x1T);
-        plotter.addPlot(0, xMax, 
-            MiscMath.findMin(y1T), MiscMath.findMax(y1T),
+        int yMax1 = MiscMath.findMax(y1T);
+        int yMax2 = MiscMath.findMax(y2);
+        float yMin1 = MiscMath.findMin(y1T);
+        float yMin2 = MiscMath.findMin(y2);
+        int yMax = (yMax1 > yMax2) ? yMax1 : yMax2;
+        float yMin = (yMin1 < yMin2) ? yMin1 : yMin2;
+        plotter.addPlot(0, xMax, yMin, yMax,
             x1T, y1T, 
             new int[0], new int[0], "img1 sorners Transformed");
         
-        plotter.addPlot(0, xMax, 
-            MiscMath.findMin(y2), MiscMath.findMax(y2),
+        plotter.addPlot(0, xMax, yMin, yMax,
             x2, y2, 
             new int[0], new int[0], "img2 corners");
         
         plotter.writeFile();
+        
+        // === now, given transX and transY, find points in image2 within
+        // projected +- 3*stdDev
+        int[] xt = new int[xy1.getN()];
+        int[] yt = new int[xy1.getN()];
+        int n2 = 0;
+        int[] xmatched1 = new int[xy1.getN()];
+        int[] ymatched1 = new int[xy1.getN()];
+        int[] xfound2 = new int[xy1.getN()];
+        int[] yfound2 = new int[xy1.getN()];
+        int xPlot1Min = Integer.MAX_VALUE;
+        int xPlot1Max = Integer.MIN_VALUE;
+        int yPlot1Min = Integer.MAX_VALUE;
+        int yPlot1Max = Integer.MIN_VALUE;
+        
+        int xPlot2Min = Integer.MAX_VALUE;
+        int xPlot2Max = Integer.MIN_VALUE;
+        int yPlot2Min = Integer.MAX_VALUE;
+        int yPlot2Max = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < xy1.getN(); i++) {
+            xt[i] = (int)(xy1.getX(i) - transX);
+            yt[i] = (int)(xy1.getY(i) - transY);
+            
+            double minDiff = Double.MAX_VALUE;
+            int minIdx2 = -1;
+            for (int j = 0; j < xy2.getN(); j++) {
+                double diffX = Math.abs(xy2.getX(j) - xt[i]);
+                if (diffX > 1.0*stdDevX) {
+                    continue;
+                }
+                double diffY = Math.abs(xy2.getY(j) - yt[i]);
+                if (diffY > 1.0*stdDevY) {
+                    continue;
+                }
+                double diff = Math.sqrt(diffX*diffX + diffY*diffY);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    minIdx2 = j;
+                }
+            }
+            if (minIdx2 > -1) {
+                xfound2[n2] = xy2.getX(minIdx2);
+                yfound2[n2] = xy2.getY(minIdx2);
+                xmatched1[n2] = xy1.getX(i);
+                ymatched1[n2] = xy1.getY(i);
+                
+                if (xPlot1Min > xmatched1[n2]) {
+                    xPlot1Min = xmatched1[n2];
+                }
+                if (xPlot1Max < xmatched1[n2]) {
+                    xPlot1Max = xmatched1[n2];
+                }
+                if (yPlot1Min > ymatched1[n2]) {
+                    yPlot1Min = ymatched1[n2];
+                }
+                if (yPlot1Max < ymatched1[n2]) {
+                    yPlot1Max = ymatched1[n2];
+                }
+                
+                if (xPlot2Min > xfound2[n2]) {
+                    xPlot2Min = xfound2[n2];
+                }
+                if (xPlot2Max < xfound2[n2]) {
+                    xPlot2Max = xfound2[n2];
+                }
+                if (yPlot2Min > yfound2[n2]) {
+                    yPlot2Min = yfound2[n2];
+                }
+                if (yPlot2Max < yfound2[n2]) {
+                    yPlot2Max = yfound2[n2];
+                }
+                
+                n2++;
+            }
+        }
+        
+        plotter.addPlot(xPlot1Min, xPlot1Max, yPlot1Min, yPlot1Max,
+            xmatched1, ymatched1, 
+            new int[0], new int[0], "the matched image1 points");
+    
+        plotter.addPlot(xPlot2Min, xPlot2Max, yPlot2Min, yPlot2Max,
+            xfound2, yfound2, 
+            new int[0], new int[0], "the matched image2 points");
+    
+        plotter.writeFile();
+        
+        log.info("original list matches=" + matched1.getN() 
+            + " final matches=" + n2);
+
+        /*
+        steps towards a pca solution, knowing the answer for the above already
+        */
+        long nWaysToMakePairs1 = factorial(xy1.getN())/(2*factorial(xy1.getN() - 2));
+        
+        long nWaysToMakePairs2 = factorial(xy2.getN())/(2*factorial(xy2.getN() - 2));
+        
+        int nPairCombs = (int)(nWaysToMakePairs1 * nWaysToMakePairs2);
+        
+        float[] scales = new float[nPairCombs];
+        float[] rotations = new float[nPairCombs];
+        float[] translationsX = new float[nPairCombs];
+        float[] translationsY = new float[nPairCombs];
+        
+        n = nPairCombs;
+        int index0 = 0;
+        int k = 2;
+        long c1 = (1L << k) - 1;
+        while ((c1 & (1L << n)) == 0) {
+            // interpret the bit string:  1 is 'selected' and 0 is not
+            long xp = c1;
+            count = 0;
+            int index1 = 0;
+            while (xp > 0) {
+                if ((xp & 1) == 1) {
+                    //s[index0][index1] = count;
+System.out.println(" " + index0 + " " + index1 + " => " + count);
+                    index1++;
+                }
+                xp >>= 1;
+                count++;
+            }
+            index0++;
+            c1 = nextSubsetMax31(c1);
+        }
+
+    }
+    
+    protected long nextSubsetMax31(long x) {
+        long y = x & -x;  // = the least significant one bit of x
+        long c = x + y;
+        x = c + (((c ^ x) / y) >> 2);
+        return x;
+    }
+    
+    public class Transformation {
+        float scale;
+        float rotation;
+        float translationX;
+        float translationY;
+    }
+    public long factorial(int n) {
+        long result = 1;
+        for (int i = n; i > 1; i--) {
+            result *= i;
+        }
+        return result;
     }
     
     public void testC() throws Exception {
@@ -238,8 +391,8 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
         String cwd = System.getProperty("user.dir") + "/";
         
         //String fileName1 = "venturi_mountain_j6_0001.png";
-        String fileName1 = "lab.gif";
-        //String fileName1 = "brown_lowe_2003_image1.jpg";
+        //String fileName1 = "lab.gif";
+        String fileName1 = "brown_lowe_2003_image1.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
         String fileName2 = "brown_lowe_2003_image2.jpg";
@@ -397,7 +550,7 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
             StereoProjectionTransformerTest test = 
                 new StereoProjectionTransformerTest();
             
-            test.testC();
+            test.testB();
             
         } catch(Exception e) {
             e.printStackTrace();
