@@ -163,7 +163,9 @@ import java.util.logging.Logger;
              Could make a generous allowance for skew by assuming a maximum
              present such as that in the Brown & Lowe images, that is image
              size times an error due to skew spread over those pixels for
-             a maximum skew such as 20 degrees or something.  
+             a maximum skew such as 20 degrees or something.  For Brown & Lowe
+             images, the tolerance would be number of pixels for dimension
+             times 0.02.
              
              If there is no reasonable solution using only scale, rotation, and 
              translation, then a more computationally expensive point matcher 
@@ -172,8 +174,7 @@ import java.util.logging.Logger;
              understanding of occlusion (the later possibly requires shape
              identification) can be made with the contour matcher here.
              The contour matcher approach is currently not commonly possible
-             with this project currently, because most edges are not closed 
-             curves.
+             with this project, because most edges are not closed curves.
              
        OR
        

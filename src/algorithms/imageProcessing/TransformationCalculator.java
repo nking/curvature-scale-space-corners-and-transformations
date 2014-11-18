@@ -68,6 +68,10 @@ public class TransformationCalculator {
     }
     
     /**
+     * NOTE: there's an error here in the centroid that has to be
+     * included in tests and fixed.  It's not using the image centroid
+     * as it should.
+     * 
      * coordinate transformations from image 1 to image 2 are calculated from
      * matching lists of x, y coordinates.
      *
