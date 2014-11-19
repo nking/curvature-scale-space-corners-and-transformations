@@ -83,7 +83,8 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
         for (String fileName : fileNames) {
             
             filePath1 = ResourceFinder.findFileInTestResources(fileName);
-            PairIntArray xy = fileName.equals("brown_lowe_2003_image1.tsv") ? xy1 : xy2;
+            PairIntArray xy = fileName.equals("brown_lowe_2003_image1.tsv") 
+                ? xy1 : xy2;
             
             try {
                 reader = new FileReader(new File(filePath1));
