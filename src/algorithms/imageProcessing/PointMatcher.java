@@ -1,12 +1,7 @@
 package algorithms.imageProcessing;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 /**
@@ -121,8 +116,10 @@ import java.util.logging.Logger;
  In the search through all possible parameter combinations, it looks like
  one should try combinations of scale and rotation,
  then find the best fit of translation of X and Y.
+ 
      If rotation and scale are fixed, and transX and transY are to be found,
      one can use either:
+
          (1) compare the offsets implied by each combination of points in set 1
              and set 2.
              for brown_lowe_2003 image1 and image2, the number of corners is
@@ -147,8 +144,8 @@ import java.util.logging.Logger;
                -- due to errors in the location of the corner.  this can be due
                   to the edge detector.  these are small errors.
                -- due to image warping such as distortions from the shape of the
-                  lens.  one would need a point matcher tailored for the specific
-                  geometric projection.
+                  lens.  one would need a point matcher tailored for the 
+                  specific geometric projection.
                -- due to a camera not completely perpendicularly aligned with
                   the optical axis. presumably, this is an extreme case and
                   you'd want better data...
@@ -176,13 +173,14 @@ import java.util.logging.Logger;
              If there is no reasonable solution using only scale, rotation, and 
              translation, then a more computationally expensive point matcher 
              that solves for skew too is needed (and hasn't been implemented 
-             here yet).  OR, even better, an approach using contours and an
+             here yet).  <em>OR, even better, an approach using contours and an
              understanding of occlusion (the later possibly requires shape
-             identification) can be made with the contour matcher here.
+             identification) can be made with the contour matcher in this 
+             project.</em>
              The contour matcher approach is currently not commonly possible
              with this project, because most edges are not closed curves.
              
-       OR
+    OR
        
          (2) try every possible combination of translation for X and Y which
              would be width of image 2 in pixels times the height of image 2
@@ -199,14 +197,148 @@ import java.util.logging.Logger;
  */
 public final class PointMatcher {
         
-    private double solutionRotation = Double.MAX_VALUE;
+    private double solutionRotation = 0;
     
-    private double solutionScale = Double.MAX_VALUE;
+    private double solutionScale = 1;
     
-    private double solutionTransX = Double.MAX_VALUE;
+    private int solutionTransX = 0;
     
-    private double solutionTransY = Double.MAX_VALUE;
+    private int solutionTransY = 0;
         
     private final Logger log = Logger.getLogger(this.getClass().getName());
-  
+ 
+    /**
+     * calculate the translation between set1 and set2 assuming that not all
+     * points will match and given the scale, rotation and other image
+     * characteristics.
+     * 
+     * @param set1 set of points from image 1 to match to image2.
+     * @param set2 set of points from image 2 to be matched with image 1
+     * @param transXTol tolerance in x for finding a match for translation.
+     * For example, transXTol = image1.getWidth() * 0.02; 
+     * @param transYTol tolerance in y for finding a match for translation.
+     * For example, transYTol = image1.getHeight() * 0.02;
+     * @param rotation given in radians with value between 0 and 2*pi, exclusive
+     * @param scale
+     * @param centroidX1 the x coordinate of the center of image 1 from which
+     * set 1 point are from.
+     * @param centroidY1 the y coordinate of the center of image 1 from which
+     * set 1 point are from.
+     * @return 
+     */
+    int[] calculateTranslation(PairIntArray set1, PairIntArray set2, 
+        double transXTol, double transYTol, double rotation, double scale, 
+        int centroidX1, int centroidY1) {
+        
+        int nMax = set1.getN() * set2.getN();
+        
+        Map<Integer, Integer> combinationsTried = new 
+            HashMap<Integer, Integer>();
+        
+        int maxFound = Integer.MIN_VALUE;
+        int bestTransX = 0;
+        int bestTransY = 0;
+        
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+        
+        for (int i = 0; i < set1.getN(); i++) {
+            
+            int x = set1.getX(i);
+            int y = set1.getY(i);
+            
+            double termsX = centroidX1*scale + ( 
+                ((x - centroidX1) * scaleTimesCosine) +
+                ((y - centroidY1) * scaleTimesSine));
+            
+            double termsY = centroidY1*scale + ( 
+                (-(x - centroidX1) * scaleTimesSine) +
+                ((y - centroidY1) * scaleTimesCosine));
+                            
+            for (int j = 0; j < set2.getN(); j++) {
+                
+                int x2 = set2.getX(i);
+                
+                int y2 = set2.getY(i);
+                
+                int transX = (int)(x2 - termsX);
+                
+                int transY = (int)(y2 - termsY);
+                
+                // if (transX, transY) hasn't been tried:
+                if (!combinationsTried.containsKey(Integer.valueOf(transX))) {
+                
+                    int nMatches = numberOfMatches(set1, set2, transX, transY, 
+                        transXTol, transYTol, rotation, scale, centroidX1, 
+                        centroidY1);
+
+                    if (nMatches > maxFound) {
+                        maxFound = nMatches;
+                        bestTransX = transX;
+                        bestTransY = transY;
+                    }
+                    
+                    combinationsTried.put(Integer.valueOf(transX), 
+                        Integer.valueOf(transY));
+                }
+            }
+        }
+        
+        log.info("number of combinations tried=" + combinationsTried.size() +
+            " n1*n2=" + nMax);
+        
+        return new int[]{bestTransX, bestTransY};
+    }
+    
+    int numberOfMatches(PairIntArray set1, PairIntArray set2, 
+        int transX, int transY, double transXTol, double transYTol, 
+        double rotation, double scale, int centroidX1, int centroidY1) {
+        
+        int nMatched = 0;
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+        
+        for (int i = 0; i < set1.getN(); i++) {
+        
+            int x = set1.getX(i);
+            int y = set1.getY(i);
+            
+            double termsX = centroidX1*scale + ( 
+                ((x - centroidX1) * scaleTimesCosine) +
+                ((y - centroidY1) * scaleTimesSine));
+            
+            double termsY = centroidY1*scale + ( 
+                (-(x - centroidX1) * scaleTimesSine) +
+                ((y - centroidY1) * scaleTimesCosine));
+            
+            int xt = (int)termsX + transX;
+            int yt = (int)termsY + transY;
+            
+            int lowerX = xt - (int)transXTol;
+            int higherX = xt + (int)transXTol;
+            int lowerY = yt - (int)transYTol;
+            int higherY = yt + (int)transYTol;
+            
+            //TODO:  consider other data structures which can lead
+            // to a "closest match" faster than O(N).
+                            
+            for (int j = 0; j < set2.getN(); j++) {
+                
+                int x2 = set2.getX(j);
+                int y2 = set2.getY(j);
+                
+                if ((x2 < lowerX) || (x2 > higherX) || (y2 < lowerY) 
+                    || (y2 > higherY)) {
+                    
+                    continue;
+                }
+                
+                nMatched++;
+                
+                break;
+            }
+        }
+        
+        return nMatched;
+    }
 }
