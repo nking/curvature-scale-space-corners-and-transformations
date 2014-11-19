@@ -146,6 +146,12 @@ import java.util.logging.Logger;
                   classes).
                -- due to errors in the location of the corner.  this can be due
                   to the edge detector.  these are small errors.
+               -- due to image warping such as distortions from the shape of the
+                  lens.  one would need a point matcher tailored for the specific
+                  geometric projection.
+               -- due to a camera not completely perpendicularly aligned with
+                  the optical axis. presumably, this is an extreme case and
+                  you'd want better data...
              
              For the Brown & Lowe 2003 points, 
                  transX=293.1 (stdDev=10.3)
