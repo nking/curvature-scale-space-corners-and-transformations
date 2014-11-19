@@ -129,6 +129,9 @@ public class SearchableCurve {
      */
     protected int findClosestMatchBinarySearch(int xPoint, int yPoint) {
         
+        //TODO:  this needs alot more testing!  should have same bugs that 
+        // contour finding had
+        
         int minDiffY = Integer.MAX_VALUE;
         int minDiffX = Integer.MAX_VALUE;
         int idx = -1;
