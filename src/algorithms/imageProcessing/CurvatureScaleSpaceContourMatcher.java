@@ -187,7 +187,7 @@ public final class CurvatureScaleSpaceContourMatcher {
             CurvatureScaleSpaceContour contour1 = c1.get(index1);
             
             Iterator<Entry<Integer, List<Integer> > > iter2 = 
-                curveIndexToC1.entrySet().iterator();
+                curveIndexToC2.entrySet().iterator();
             
             while (iter2.hasNext()) {
             
