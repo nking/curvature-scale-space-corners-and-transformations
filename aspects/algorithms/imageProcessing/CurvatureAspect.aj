@@ -113,7 +113,7 @@ public aspect CurvatureAspect {
 
         List<CurvatureScaleSpaceContour> contours2 = instance.getContours2();
 
-        log2.info("number of matched contours1=" + contours1.size() +
+        log2.fine("number of matched contours1=" + contours1.size() +
             " number of matched contours2=" + contours2.size());
 
         PairIntArray xyc1 = new PairIntArray();
@@ -179,7 +179,7 @@ public aspect CurvatureAspect {
 
         List<CurvatureScaleSpaceContour> contours2 = instance.getMatchedContours2();
 
-        log2.info("number of matched contours1=" + contours1.size() +
+        log2.fine("number of matched contours1=" + contours1.size() +
             " number of matched contours2=" + contours2.size());
 
         for (int i = 0; i < contours1.size(); i++) {
