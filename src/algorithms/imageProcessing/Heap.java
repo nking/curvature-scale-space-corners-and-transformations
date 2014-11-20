@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.Stack;
 import java.util.logging.Logger;
 
 /**

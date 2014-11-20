@@ -2,9 +2,11 @@ package algorithms.imageProcessing;
 
 import Jama.Matrix;
 import algorithms.KSelect;
-import algorithms.PolygonAndPointPlotter;
-import algorithms.ResourceFinder;
+import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairFloatArray;
+import algorithms.util.PairIntArray;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -327,66 +329,8 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
         
         log.info("original list matches=" + matched1.getN() 
             + " final matches=" + n2);
-
-        /*
-        steps towards a pca solution, knowing the answer for the above already
-        */
-        long nWaysToMakePairs1 = factorial(xy1.getN())/(2*factorial(xy1.getN() - 2));
-        
-        long nWaysToMakePairs2 = factorial(xy2.getN())/(2*factorial(xy2.getN() - 2));
-        
-        int nPairCombs = (int)(nWaysToMakePairs1 * nWaysToMakePairs2);
-        
-        float[] scales = new float[nPairCombs];
-        float[] rotations = new float[nPairCombs];
-        float[] translationsX = new float[nPairCombs];
-        float[] translationsY = new float[nPairCombs];
-        
-        n = nPairCombs;
-        int index0 = 0;
-        int k = 2;
-        long c1 = (1L << k) - 1;
-        while ((c1 & (1L << n)) == 0) {
-            // interpret the bit string:  1 is 'selected' and 0 is not
-            long xp = c1;
-            count = 0;
-            int index1 = 0;
-            while (xp > 0) {
-                if ((xp & 1) == 1) {
-                    //s[index0][index1] = count;
-System.out.println(" " + index0 + " " + index1 + " => " + count);
-                    index1++;
-                }
-                xp >>= 1;
-                count++;
-            }
-            index0++;
-            c1 = nextSubsetMax31(c1);
-        }
-
     }
-    
-    protected long nextSubsetMax31(long x) {
-        long y = x & -x;  // = the least significant one bit of x
-        long c = x + y;
-        x = c + (((c ^ x) / y) >> 2);
-        return x;
-    }
-    
-    public class Transformation {
-        float scale;
-        float rotation;
-        float translationX;
-        float translationY;
-    }
-    public long factorial(int n) {
-        long result = 1;
-        for (int i = n; i > 1; i--) {
-            result *= i;
-        }
-        return result;
-    }
-    
+   
     public void testC() throws Exception {
         
         String cwd = System.getProperty("user.dir") + "/";
@@ -455,7 +399,7 @@ System.out.println(" " + index0 + " " + index1 + " => " + count);
             int y = corners.getY(i);
             int xe = (int)Math.sqrt(x);
             int ye = (int)Math.sqrt(y);
-            sb.append(String.format("%d\t%d\t%d\t%d\n", x, y, xe, ye));
+            sb.append(String.format("%d\t%d\t%d\t%d%n", x, y, xe, ye));
         }
         ResourceFinder.writeToCWD(sb.toString(), "tmp2.tsv");
         

@@ -41,9 +41,7 @@ public class CannyEdgeFilter {
     protected HistogramHolder imgHistogram = null;
         
     protected boolean histogramEqualizationCheckFinished = false;
-    
-    protected boolean histogramEqualizationWasPerformed = false;
-    
+        
     protected boolean doNotNormalizeByHistogram = false;
     
     protected float highThreshold = 5.0f;
@@ -583,9 +581,7 @@ public class CannyEdgeFilter {
             
             HistogramEqualization hEq = new HistogramEqualization(input);
             hEq.applyFilter();
-            
-            histogramEqualizationWasPerformed = true;
-                        
+                                    
             // redo the histogram for future use
             HistogramHolder hist = createImageHistogram(input);
             

@@ -707,8 +707,8 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
      */
     @Override
     public VeryLargeNumber clone() throws CloneNotSupportedException {
-        
-        VeryLargeNumber clone = new VeryLargeNumber(0);
+                
+        VeryLargeNumber clone = (VeryLargeNumber) super.clone();
         
         int[] b = Arrays.copyOf(a, a.length);
         

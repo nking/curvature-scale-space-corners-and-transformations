@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
+
 /**
  *
  * @author nichole

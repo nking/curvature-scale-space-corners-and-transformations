@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.ResourceFinder;
+import algorithms.util.ResourceFinder;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.logging.Logger;

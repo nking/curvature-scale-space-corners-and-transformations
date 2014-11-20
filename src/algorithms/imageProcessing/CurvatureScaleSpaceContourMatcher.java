@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,7 +54,7 @@ public final class CurvatureScaleSpaceContourMatcher {
      * which uses type long for its key (key is where cost is stored).
      * using 1E12 here
      */
-    protected final long heapKeyFactor= 1000000000000l;
+    protected final static long heapKeyFactor= 1000000000000l;
     
     protected final List<CurvatureScaleSpaceContour> c1;
     

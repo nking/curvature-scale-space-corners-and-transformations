@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.util;
 
 import java.util.Arrays;
 
@@ -190,7 +190,7 @@ public class PairIntArray {
         }
     }
     
-    public PairIntArray clone() {
+    public PairIntArray copy() {
         
         PairIntArray clone = new PairIntArray(n);
         

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 /**
@@ -7,7 +8,7 @@ import java.util.Comparator;
  * @author nichole
  */
 public class DescendingSigmaComparator implements 
-    Comparator<CurvatureScaleSpaceContour> {
+    Comparator<CurvatureScaleSpaceContour>, Serializable {
 
     @Override
     public int compare(CurvatureScaleSpaceContour o1, CurvatureScaleSpaceContour o2) {

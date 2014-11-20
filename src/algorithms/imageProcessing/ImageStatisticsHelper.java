@@ -98,9 +98,7 @@ public class ImageStatisticsHelper {
      */
     public static ImageStatistics examineImageBorders(final GreyscaleImage input, 
         int borderWidth, boolean useSturges) {
-        
-        ImageStatistics stats = new ImageStatistics();
-               
+                       
         float[] values = new float[input.getNPixels()];
         
         int count = 0;

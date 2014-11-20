@@ -1,5 +1,9 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayComparator;
+import algorithms.util.PairFloatArray;
+import algorithms.util.PairIntArrayWithColor;
 import Jama.Matrix;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1054,7 +1058,7 @@ public class MiscellaneousCurveHelper {
         for (int i = 0; i < edge.getN(); i++) {
              int x = edge.getX(i);
              int y = edge.getY(i);
-             sb.append(String.format("%d)  (%d, %d)\n", i, x, y));
+             sb.append(String.format("%d)  (%d, %d)%n", i, x, y));
         }
         log.info(sb.toString());
     }

@@ -1,4 +1,4 @@
-package algorithms;
+package algorithms.util;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -151,7 +151,9 @@ public class ResourceFinder {
         BufferedWriter writer = null;
         try {
             File file = new File(filePath);
-            file.delete();
+            if (file.exists()) {
+                file.delete();
+            }
             file.createNewFile();
 
             fw = new FileWriter(file);

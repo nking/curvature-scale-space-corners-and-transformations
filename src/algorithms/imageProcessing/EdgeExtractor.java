@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
+import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -642,8 +644,9 @@ public class EdgeExtractor {
                         }
                     }
                                             
-                    boolean closest1IsNearTop = ((float)(edge1Idx[0]/
-                        (edge1.getN() - edge1Idx[0]))) <= 0.5;
+                    boolean closest1IsNearTop = (
+                        ((float)edge1Idx[0]/
+                        (float)(edge1.getN() - edge1Idx[0]))) <= 0.5;
                     
                     if (closest1IsNearTop) {
                         // if we trim the top, is remaining bottom connected?

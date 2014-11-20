@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.ResourceFinder;
+import algorithms.util.ResourceFinder;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +56,7 @@ public class EdgeExtractorTest extends TestCase {
                     edge1.add(13, 10);
                     edge1.add(14, 10);
                     edge1.add(15, 10);
-                    expectedOutput = edge0.clone();
+                    expectedOutput = edge0.copy();
                     expectedOutput.add(13, 10);
                     expectedOutput.add(14, 10);
                     expectedOutput.add(15, 10);
@@ -63,7 +65,7 @@ public class EdgeExtractorTest extends TestCase {
                     edge1.add(13, 9);
                     edge1.add(14, 9);
                     edge1.add(15, 9);
-                    expectedOutput = edge0.clone();
+                    expectedOutput = edge0.copy();
                     expectedOutput.add(13, 9);
                     expectedOutput.add(14, 9);
                     expectedOutput.add(15, 9);
@@ -72,7 +74,7 @@ public class EdgeExtractorTest extends TestCase {
                     edge1.add(12, 9);
                     edge1.add(13, 9);
                     edge1.add(14, 9);
-                    expectedOutput = edge0.clone();
+                    expectedOutput = edge0.copy();
                     expectedOutput.add(12, 9);
                     expectedOutput.add(13, 9);
                     expectedOutput.add(14, 9);
@@ -81,7 +83,7 @@ public class EdgeExtractorTest extends TestCase {
                     edge1.add(11, 9);
                     edge1.add(12, 9);
                     edge1.add(13, 9);
-                    expectedOutput = edge0.clone();
+                    expectedOutput = edge0.copy();
                     expectedOutput.add(11, 9);
                     expectedOutput.add(12, 9);
                     expectedOutput.add(13, 9);
@@ -142,8 +144,8 @@ public class EdgeExtractorTest extends TestCase {
             System.out.println("orientation case=" + orientation);
             
             List<PairIntArray> edges = new ArrayList<PairIntArray>();
-            edges.add(edge0.clone());
-            edges.add(edge1.clone());
+            edges.add(edge0.copy());
+            edges.add(edge1.copy());
 
             List<PairIntArray> output = contourExtractor.mergeAdjacentEndPoints(
                 edges);
@@ -226,8 +228,8 @@ public class EdgeExtractorTest extends TestCase {
         edge1.add(335, 143);
         
         List<PairIntArray> edges = new ArrayList<PairIntArray>();
-        edges.add(edge0.clone());
-        edges.add(edge1.clone());
+        edges.add(edge0.copy());
+        edges.add(edge1.copy());
         
         List<PairIntArray> output = contourExtractor.fillInGaps(edges);
         
@@ -296,8 +298,8 @@ public class EdgeExtractorTest extends TestCase {
         edge1.add(187,305);
         
         edges = new ArrayList<PairIntArray>();
-        edges.add(edge0.clone());
-        edges.add(edge1.clone());
+        edges.add(edge0.copy());
+        edges.add(edge1.copy());
         
         output = contourExtractor.fillInGaps(edges);
         
@@ -362,8 +364,8 @@ public class EdgeExtractorTest extends TestCase {
         edge1.add(338, 309);
         
         edges = new ArrayList<PairIntArray>();
-        edges.add(edge0.clone());
-        edges.add(edge1.clone());
+        edges.add(edge0.copy());
+        edges.add(edge1.copy());
         
         output = contourExtractor.fillInGaps(edges);
         
@@ -425,8 +427,8 @@ public class EdgeExtractorTest extends TestCase {
         edge1.add(43, 126);
         
         edges = new ArrayList<PairIntArray>();
-        edges.add(edge0.clone());
-        edges.add(edge1.clone());
+        edges.add(edge0.copy());
+        edges.add(edge1.copy());
         
         output = contourExtractor.fillInGaps(edges);
         
@@ -631,8 +633,8 @@ public class EdgeExtractorTest extends TestCase {
             edge1.getX(edge1.getN() - 1), edge1.getY(edge1.getN() - 1));
         
         List<PairIntArray> edges = new ArrayList<PairIntArray>();
-        edges.add(edge0.clone());
-        edges.add(edge1.clone());
+        edges.add(edge0.copy());
+        edges.add(edge1.copy());
         
         EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(200, 200));
@@ -749,8 +751,8 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         //======
         
         List<PairIntArray> edges = new ArrayList<PairIntArray>();
-        edges.add(edge0.clone());
-        edges.add(edge1.clone());
+        edges.add(edge0.copy());
+        edges.add(edge1.copy());
         
         EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(200, 200));
@@ -864,8 +866,8 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         //======
         
         List<PairIntArray> edges = new ArrayList<PairIntArray>();
-        edges.add(edge0.clone());
-        edges.add(edge1.clone());
+        edges.add(edge0.copy());
+        edges.add(edge1.copy());
         
         EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(200, 200));
@@ -980,8 +982,8 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         //======
         
         List<PairIntArray> edges = new ArrayList<PairIntArray>();
-        edges.add(edge0.clone());
-        edges.add(edge1.clone());
+        edges.add(edge0.copy());
+        edges.add(edge1.copy());
         
         EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(200, 200));

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;

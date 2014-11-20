@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairFloat;
+
 /**
  * class holding data for a contour for an edge in a scale space image.
  * The class holds the peak of the contour.  It also carries information to 

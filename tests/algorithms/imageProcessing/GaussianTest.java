@@ -1,7 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.PolygonAndPointPlotter;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.After;
@@ -83,7 +84,7 @@ public class GaussianTest {
         }
         
         // make the same a0 test vector, but displaced by 400 in x
-        PairIntArray a1 = a0.clone();
+        PairIntArray a1 = a0.copy();
         
         for (int i = 0; i < a1.getN(); i++) {
             a1.set(i, (int)(i + mu1), a1.getY(i));
@@ -250,7 +251,7 @@ public class GaussianTest {
         }
          
         // make the same a0 test vector, but displaced by 400 in x
-        PairIntArray a1 = a0.clone();
+        PairIntArray a1 = a0.copy();
         
         for (int i = 0; i < a1.getN(); i++) {
             a1.set(i, (int)(i + mu1), a1.getY(i));
@@ -451,7 +452,7 @@ public class GaussianTest {
         }
         
         // make the same a0 test vector, but displaced by 400 in x
-        PairIntArray a1 = a0.clone();
+        PairIntArray a1 = a0.copy();
         
         for (int i = 0; i < a1.getN(); i++) {
             a1.set(i, (int)(i + mu1), a1.getY(i));

@@ -1,6 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.ResourceFinder;
+import algorithms.util.ResourceFinder;
 import java.io.File;
 import org.junit.After;
 import org.junit.Before;

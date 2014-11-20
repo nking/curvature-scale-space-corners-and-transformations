@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.util;
 
 import java.util.Arrays;
 

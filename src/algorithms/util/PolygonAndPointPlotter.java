@@ -1,4 +1,4 @@
-package algorithms;
+package algorithms.util;
 
 import algorithms.misc.MiscMath;
 import java.io.BufferedReader;
@@ -44,10 +44,10 @@ public class PolygonAndPointPlotter {
         
         StringBuilder dataSB = new StringBuilder();
 
-        dataSB.append("\nvar xmin = ").append(minX).append(";\n");
-        dataSB.append("var xmax = ").append(maxX).append(";\n");
-        dataSB.append("var ymin = ").append(minY).append(";\n");
-        dataSB.append("var ymax = ").append(maxY).append(";\n");
+        dataSB.append("%nvar xmin = ").append(minX).append(";%n");
+        dataSB.append("var xmax = ").append(maxX).append(";%n");
+        dataSB.append("var ymin = ").append(minY).append(";%n");
+        dataSB.append("var ymax = ").append(maxY).append(";%n");
 
         String srchFor = "/* === DO NOT REMOVE THIS == START DATA */";
         int insertOffset = plotContent.indexOf(srchFor);
@@ -64,23 +64,22 @@ public class PolygonAndPointPlotter {
         int[] xPoints, int[] yPoints, int[] xPolygon, int[] yPolygon, 
         String plotLabel) {
 
-        float[] x0 = new float[xPoints.length];
-    	float[] y0 = new float[xPoints.length];
-        float[] x1 = new float[xPolygon.length];
-    	float[] y1 = new float[xPolygon.length];
+        int n0 = (xPoints != null) ? xPoints.length : 0;
+        int n1 = (xPolygon != null) ? xPolygon.length : 0;
         
-        if (xPoints != null) {
-            for (int i = 0; i < xPoints.length; i++) {
-                x0[i] = xPoints[i];
-                y0[i] = yPoints[i];
-            }
+        float[] x0 = new float[n0];
+    	float[] y0 = new float[n0];
+        float[] x1 = new float[n1];
+    	float[] y1 = new float[n1];
+        
+        for (int i = 0; i < n0; i++) {
+            x0[i] = xPoints[i];
+            y0[i] = yPoints[i];
         }
         
-        if (xPolygon != null) {
-            for (int i = 0; i < xPolygon.length; i++) {
-                x1[i] = xPolygon[i];
-                y1[i] = yPolygon[i];
-            }
+        for (int i = 0; i < n1; i++) {
+            x1[i] = xPolygon[i];
+            y1[i] = yPolygon[i];
         }
         
         addPlot(minX, maxX, minY, maxY, x0, y0, null, null,
@@ -98,12 +97,19 @@ public class PolygonAndPointPlotter {
     public void addPlot(int[] xPoints, float[] yPoints, int[] xPolygon, 
         float[] yPolygon, String plotLabel) {
         
-    	float[] xx = new float[xPoints.length];
-    	float[] xp = new float[xPoints.length];
-    	for (int i = 0; i < xx.length; i++) {
+        int n0 = (xPoints != null) ? xPoints.length : 0;
+        int n1 = (xPolygon != null) ? xPolygon.length : 0;
+      
+    	float[] xx = new float[n0];
+        for (int i = 0; i < n0; i++) {
     		xx[i] = (float)xPoints[i];
+    	}
+        
+    	float[] xp = new float[n1];
+    	for (int i = 0; i < n1; i++) {
     		xp[i] = (float)xPolygon[i];
     	}
+        
     	addPlot(xx, yPoints, null, null, xp, yPolygon, plotLabel);
     }
 
@@ -116,15 +122,18 @@ public class PolygonAndPointPlotter {
     public void addPlot(int[] xPoints, int[] yPoints, int[] xPolygon, 
         int[] yPolygon, String plotLabel) {
         
-        float[] x0 = new float[xPoints.length];
-    	float[] y0 = new float[xPoints.length];
-    	for (int i = 0; i < x0.length; i++) {
+        int n0 = (xPoints != null) ? xPoints.length : 0;
+        int n1 = (xPolygon != null) ? xPolygon.length : 0;
+        
+        float[] x0 = new float[n0];
+    	float[] y0 = new float[n0];
+    	for (int i = 0; i < n0; i++) {
     		x0[i] = (float)xPoints[i];
     		y0[i] = (float)yPoints[i];
     	}
-        float[] x1 = new float[xPolygon.length];
-    	float[] y1 = new float[xPolygon.length];
-    	for (int i = 0; i < x1.length; i++) {
+        float[] x1 = new float[n1];
+    	float[] y1 = new float[n1];
+    	for (int i = 0; i < n1; i++) {
     		x1[i] = (float)xPolygon[i];
     		y1[i] = (float)yPolygon[i];
     	}
@@ -172,21 +181,21 @@ public class PolygonAndPointPlotter {
         float[] xPoints, float[] yPoints, float[] xErrPoints, float[] yErrPoints,
         float[] xPolygon, float[] yPolygon, String plotLabel) {
 
-        StringBuffer dataSB = new StringBuffer("\n");
+        StringBuffer dataSB = new StringBuffer("%n");
         
         //  ===== add plotLabel data =====
         dataSB.append("var data_plot_label_").append(plotNumber)
-            .append(" = '").append(plotLabel).append("';\n");
+            .append(" = '").append(plotLabel).append("';%n");
 
         //  ===== add points data =====
         if (xPoints == null) {
             dataSB.append("var data_points_").append(plotNumber)
-                .append(" = undefined;\n");
+                .append(" = undefined;%n");
         } else {
-            dataSB.append("var data_points_").append(plotNumber).append(" = [\n");
+            dataSB.append("var data_points_").append(plotNumber).append(" = [%n");
             for (int i = 0; i < xPoints.length; i++) {
                 if (i > 0) {
-                    dataSB.append(",\n");
+                    dataSB.append(",%n");
                 }
                 dataSB.append("    {x:").append(xPoints[i]).append(", y:").append(yPoints[i]);
                 if (xErrPoints != null) {
@@ -194,15 +203,15 @@ public class PolygonAndPointPlotter {
                 }
                 dataSB.append("}");
             }
-            dataSB.append("\n];\n");
+            dataSB.append("%n];%n");
         }
 
         if (xPolygon == null) {
             dataSB.append("var data_polygon_").append(plotNumber)
-                .append(" = undefined;\n");
+                .append(" = undefined;%n");
         } else {
             //  ===== add polygon =====
-            dataSB.append("var data_polygon_").append(plotNumber).append(" = [\n");
+            dataSB.append("var data_polygon_").append(plotNumber).append(" = [%n");
             dataSB.append("    [");
             for (int ii = 0; ii < xPolygon.length; ii++) {
                 String xStr = String.format("%.7f", xPolygon[ii]);
@@ -212,21 +221,21 @@ public class PolygonAndPointPlotter {
                 }
                 dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
             }
-            dataSB.append("],\n ");
-            dataSB.append("];\n");
+            dataSB.append("],%n ");
+            dataSB.append("];%n");
         }
 
         dataSB.append("var xmin_").append(plotNumber).append("=")
-            .append(xmn).append(";\n");
+            .append(xmn).append(";%n");
         dataSB.append("var xmax_").append(plotNumber).append("=")
-            .append(xmx).append(";\n");
+            .append(xmx).append(";%n");
         dataSB.append("var ymin_").append(plotNumber).append("=")
-            .append(ymn).append(";\n");
+            .append(ymn).append(";%n");
         dataSB.append("var ymax_").append(plotNumber).append("=")
-            .append(ymx).append(";\n");
+            .append(ymx).append(";%n");
 
         // ======= add RENDER statement ==========
-        dataSB.append("\nrenderPlot('plot").append(plotNumber)
+        dataSB.append("%nrenderPlot('plot").append(plotNumber)
             .append("', data_points_").append(plotNumber)
             .append(", data_polygon_").append(plotNumber)
             .append(", data_plot_label_").append(plotNumber)
@@ -235,7 +244,7 @@ public class PolygonAndPointPlotter {
             .append(" xmax_").append(plotNumber).append(", ")
             .append(" ymin_").append(plotNumber).append(", ")
             .append(" ymax_").append(plotNumber)
-            .append( ");\n\n");
+            .append( ");%n%n");
 
         String srchFor = "/* === DO NOT REMOVE THIS == END DATA */";
         int insertOffset = plotContent.indexOf(srchFor);
@@ -248,7 +257,7 @@ public class PolygonAndPointPlotter {
 
         // ========== add the PLOT DIVS ==============
         StringBuffer plotDivs = new StringBuffer();
-        plotDivs.append("<div id='plot").append(plotNumber).append("' class='plot'></div>\n");
+        plotDivs.append("<div id='plot").append(plotNumber).append("' class='plot'></div>%n");
 
 
         srchFor = "<!-- === DO NOT REMOVE THIS == END PLOT DIVS -->";
@@ -265,20 +274,21 @@ public class PolygonAndPointPlotter {
     public void addPlot(double[] xPoints, double[] yPoints, double[] xPolygon, 
         double[] yPolygon, String plotLabel) {
 
-        float[] xx = new float[xPoints.length];
-        float[] yy = new float[xPoints.length];
-    	for (int i = 0; i < xx.length; i++) {
+        int n0 = (xPoints != null) ? xPoints.length : 0;
+        int n1 = (xPolygon != null) ? xPolygon.length : 0;
+        
+        float[] xx = new float[n0];
+        float[] yy = new float[n0];
+    	for (int i = 0; i < n0; i++) {
     		xx[i] = (float)xPoints[i];
             yy[i] = (float)yPoints[i];
     	}
         
-        float[] xp = (xPolygon != null) ? new float[xPolygon.length] : null;
-        float[] yp = (xPolygon != null) ? new float[xPolygon.length] : null;
-        if ((xPolygon != null)) {
-    	       for (int i = 0; i < xPolygon.length; i++) {
-                xp[i] = (float) xPolygon[i];
-                yp[i] = (float) yPolygon[i];
-            }
+        float[] xp = new float[n1];
+        float[] yp = new float[n1];
+        for (int i = 0; i < n1; i++) {
+            xp[i] = (float) xPolygon[i];
+            yp[i] = (float) yPolygon[i];
         }
         
         addPlot(xx, yy, null, null, xp, yp, plotLabel);
@@ -294,7 +304,6 @@ public class PolygonAndPointPlotter {
 
         StringBuffer sb = new StringBuffer();
 
-        FileReader reader = null;
         BufferedReader in = null;
 
         try {
@@ -303,15 +312,12 @@ public class PolygonAndPointPlotter {
             String line = in.readLine();
 
             while (line != null) {
-                sb.append(line).append("\n");
+                sb.append(line).append("%n");
                 line = in.readLine();
             }
         } finally {
             if (in != null) {
                 in.close();
-            }
-            if (reader != null) {
-                reader.close();
             }
         }
 

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairFloatArray;
 import Jama.*;
 import algorithms.imageProcessing.util.MatrixUtil;
 import java.util.Arrays;

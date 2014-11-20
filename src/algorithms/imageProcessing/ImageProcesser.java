@@ -567,9 +567,7 @@ public class ImageProcesser {
         GreyscaleImage input2 = input.copyImage();
         
         blur(input, sigma);
-        
-        Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
-        
+                
         for (int i = 0; i < input.getWidth(); i++) {
             for (int j = 0; j < input.getHeight(); j++) {
                 int v = input.getValue(i, j);

@@ -47,7 +47,7 @@ public class KMeansPlusPlus {
     // instead of variances
     protected float[] seedVariances = null;
     
-    protected final int nMaxIter = 20;
+    protected final static int nMaxIter = 20;
     protected int nIter = 0;
     
     public KMeansPlusPlus() {
@@ -118,7 +118,7 @@ public class KMeansPlusPlus {
         seed[nSeedsChosen] = img.getValue(index);
         indexes[nSeedsChosen] = index;
         
-        log.info(String.format("choose seed %d) %d", nSeedsChosen, 
+        log.fine(String.format("choose seed %d) %d", nSeedsChosen, 
             seed[nSeedsChosen]));
         
         nSeedsChosen++;
@@ -163,7 +163,7 @@ public class KMeansPlusPlus {
             seed[nSeedsChosen] = img.getValue(index);
             indexes[nSeedsChosen] = index;
 
-            log.info(String.format("choose seed %d) %d", nSeedsChosen, 
+            log.fine(String.format("choose seed %d) %d", nSeedsChosen, 
                 seed[nSeedsChosen]));
             
             nSeedsChosen++;
@@ -215,7 +215,7 @@ public class KMeansPlusPlus {
                 sum[i] /= nSum[i];
             }
 
-            log.info(String.format("seed mean = %d) %d number of points=%d", 
+            log.fine(String.format("seed mean = %d) %d number of points=%d", 
                 i, sum[i], nSum[i]));
             
         }
@@ -304,8 +304,6 @@ public class KMeansPlusPlus {
             nSumStDev[seedIndex]++;
         }
 
-        System.out.println("\nFinal stats:");
-
         for (int i = 0; i < sumStDev.length; i++) {
 
             if ((float)(nSumStDev[i] - 1) > 0) {
@@ -317,7 +315,7 @@ public class KMeansPlusPlus {
             }
             seedVariances[i] = sumStDev[i];
 
-            log.info(String.format("seed %d) %d stDev=%.2f number of points=%d", 
+            log.fine(String.format("seed %d) %d stDev=%.2f number of points=%d", 
                 i, center[i], seedVariances[i], nSumStDev[i]));
             
         }

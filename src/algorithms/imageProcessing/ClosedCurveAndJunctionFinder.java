@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.util.List;
 
 /**

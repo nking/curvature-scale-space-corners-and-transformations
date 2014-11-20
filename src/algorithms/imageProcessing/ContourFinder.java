@@ -13,21 +13,11 @@ import java.util.logging.Logger;
 public class ContourFinder {
     
     private double thresholdFactor = 0.15;
-    
-    private boolean useLowestSigma = false;
-    
+        
     protected Logger log = null;
     
     public ContourFinder() {
         log = Logger.getLogger(this.getClass().getName());
-    }
-    
-    public void useLowestThreshold() {
-        
-        useLowestSigma = true;
-        
-        throw new UnsupportedOperationException("useLowestThreshold is not yet"
-            + " implemented");
     }
     
     /**

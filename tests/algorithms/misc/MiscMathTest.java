@@ -4,7 +4,7 @@ import algorithms.util.ArrayPair;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
-import algorithms.PolygonAndPointPlotter;
+import algorithms.util.PolygonAndPointPlotter;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 

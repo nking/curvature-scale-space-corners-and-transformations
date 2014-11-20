@@ -1,6 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.ResourceFinder;
+import algorithms.util.ResourceFinder;
 import java.util.Arrays;
 import junit.framework.TestCase;
 import org.junit.Test;

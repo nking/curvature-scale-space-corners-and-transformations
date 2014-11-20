@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
-import algorithms.ResourceFinder;
+import algorithms.util.ResourceFinder;
+import algorithms.util.PairIntArray;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

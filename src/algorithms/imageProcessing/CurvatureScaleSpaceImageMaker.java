@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -352,7 +354,8 @@ public final class CurvatureScaleSpaceImageMaker extends
         return closedCurves;
     }
     
-    private class DescendingScaleSpaceComparator implements Comparator<Float> {
+    private static class DescendingScaleSpaceComparator implements 
+        Comparator<Float> {
         
         @Override
         public int compare(Float o1, Float o2) {

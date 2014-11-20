@@ -1,6 +1,9 @@
 package algorithms.imageProcessing;
 
 import Jama.Matrix;
+import algorithms.util.PairFloatArray;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;

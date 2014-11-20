@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

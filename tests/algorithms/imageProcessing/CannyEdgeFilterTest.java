@@ -1,6 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.ResourceFinder;
+import algorithms.util.ResourceFinder;
 import java.io.IOException;
 
 import org.junit.After;

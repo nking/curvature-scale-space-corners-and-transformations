@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.util;
 
 import java.security.SecureRandom;
 import junit.framework.TestCase;
@@ -185,11 +185,11 @@ public class PairIntArrayTest extends TestCase {
         int n = xy.getN();
         assertTrue(n == 5);
         
-        PairIntArray clone = xy.clone();
-        assertTrue(clone.getN() == xy.getN());
+        PairIntArray copy = xy.copy();
+        assertTrue(copy.getN() == xy.getN());
         for (int i = 0; i < 5; i++) {
-           assertTrue(xy.getX(i) == clone.getX(i));
-           assertTrue(xy.getY(i) == clone.getY(i));
+           assertTrue(xy.getX(i) == copy.getX(i));
+           assertTrue(xy.getY(i) == copy.getY(i));
         }
         
     }

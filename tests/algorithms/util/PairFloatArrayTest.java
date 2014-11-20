@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.util;
 
 import java.security.SecureRandom;
 import org.junit.After;

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -54,9 +55,7 @@ public class AbstractCurvatureScaleSpaceMapper {
     protected boolean useOutdoorMode = false;
     
     protected GreyscaleImage gradientXY = null;
-    
-    protected GreyscaleImage thetaXY = null;
- 
+     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     /**
@@ -208,9 +207,7 @@ public class AbstractCurvatureScaleSpaceMapper {
         filter.applyFilter(img);
         
         gradientXY = filter.getGradientXY();
-        
-        thetaXY = filter.getThetaXY();
-                
+                        
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
 

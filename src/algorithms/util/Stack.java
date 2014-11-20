@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.util;
 
 /**
  * data structure in which last inserted is first out (LIFO).

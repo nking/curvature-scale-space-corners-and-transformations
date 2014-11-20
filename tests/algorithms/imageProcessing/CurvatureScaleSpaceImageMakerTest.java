@@ -1,8 +1,9 @@
 package algorithms.imageProcessing;
 
-import algorithms.PolygonAndPointPlotter;
-import algorithms.ResourceFinder;
+import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;

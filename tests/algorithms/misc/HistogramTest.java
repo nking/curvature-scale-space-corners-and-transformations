@@ -2,8 +2,8 @@ package algorithms.misc;
 
 import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
-import algorithms.PolygonAndPointPlotter;
-import algorithms.ResourceFinder;
+import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

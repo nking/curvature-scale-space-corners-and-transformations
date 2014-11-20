@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
 import java.util.logging.Logger;
 
 /**
@@ -214,7 +215,7 @@ public class TransformationCalculator {
             if (debug) {
                 
                 sb.append(String.format(
-                    "%5.1f %5.1f    %5.1f %5.1f %5.1f %5.1f %5.0f %5.0f (%5d,%5d) (%5d,%5d)\n", 
+                    "%5.1f %5.1f    %5.1f %5.1f %5.1f %5.1f %5.0f %5.0f (%5d,%5d) (%5d,%5d)%n", 
                     x1, y1, x2, y2, len1, len2, theta1, theta2, 
                     matchedXY1.getX(i), matchedXY1.getY(i), 
                     matchedXY2.getX(i), matchedXY2.getY(i)));

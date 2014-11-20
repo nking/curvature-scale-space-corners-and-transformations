@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.ResourceFinder;
+import algorithms.util.ResourceFinder;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

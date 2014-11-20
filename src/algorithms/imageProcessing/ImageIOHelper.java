@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
-import algorithms.ResourceFinder;
+import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
 import java.awt.Color;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
@@ -80,30 +81,6 @@ public class ImageIOHelper {
             }
             
             BufferedImage img = ImageIO.read(file);
-            
-            int type = img.getType();
-            
-            /*
-            System.out.println("BufferedImage.TYPE_INT_RGB=" + BufferedImage.TYPE_INT_RGB);
-            System.out.println("BufferedImage.TYPE_INT_ARGB=" + BufferedImage.TYPE_INT_ARGB);
-            System.out.println("BufferedImage.TYPE_INT_ARGB_PRE=" + BufferedImage.TYPE_INT_ARGB_PRE);
-            System.out.println("BufferedImage.TYPE_BYTE_GRAY=" + BufferedImage.TYPE_BYTE_GRAY);
-            System.out.println("BufferedImage.TYPE_BYTE_BINARY=" + BufferedImage.TYPE_BYTE_BINARY);
-            System.out.println("BufferedImage.TYPE_BYTE_INDEXED=" + BufferedImage.TYPE_BYTE_INDEXED);
-            System.out.println("BufferedImage.TYPE_USHORT_GRAY=" + BufferedImage.TYPE_USHORT_GRAY);
-            System.out.println("BufferedImage.TYPE_CUSTOM=" + BufferedImage.TYPE_CUSTOM);
-            System.out.println("IMAGE TYPE=" + type);
-            */
-            /*
-            BufferedImage.TYPE_INT_RGB, BufferedImage.TYPE_INT_ARGB, 
-            BufferedImage.TYPE_INT_ARGB_PRE, BufferedImage.TYPE_INT_BGR, 
-            BufferedImage.TYPE_3BYTE_BGR, BufferedImage.TYPE_4BYTE_ABGR, 
-            BufferedImage.TYPE_4BYTE_ABGR_PRE, 
-            BufferedImage.TYPE_BYTE_GRAY, BufferedImage.TYPE_BYTE_BINARY, 
-            BufferedImage.TYPE_BYTE_INDEXED, BufferedImage.TYPE_USHORT_GRAY, 
-            BufferedImage.TYPE_USHORT_565_RGB, 
-            BufferedImage.TYPE_USHORT_555_RGB, BufferedImage.TYPE_CUSTOM
-            */
             
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
             ColorConvertOp op = new ColorConvertOp(cs, null);
@@ -319,15 +296,6 @@ public class ImageIOHelper {
             }
             
             BufferedImage img = ImageIO.read(file);
-            
-            int type = img.getType();
-            
-            /*
-            BufferedImage.TYPE_INT_RGB, BufferedImage.TYPE_INT_ARGB, BufferedImage.TYPE_INT_ARGB_PRE, BufferedImage.TYPE_INT_BGR, BufferedImage.TYPE_3BYTE_BGR, BufferedImage.TYPE_4BYTE_ABGR, BufferedImage.TYPE_4BYTE_ABGR_PRE, 
-            BufferedImage.TYPE_BYTE_GRAY, BufferedImage.TYPE_BYTE_BINARY, 
-            BufferedImage.TYPE_BYTE_INDEXED, BufferedImage.TYPE_USHORT_GRAY, 
-            BufferedImage.TYPE_USHORT_565_RGB, BufferedImage.TYPE_USHORT_555_RGB, BufferedImage.TYPE_CUSTOM
-            */
             
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
             ColorConvertOp op = new ColorConvertOp(cs, null);  
@@ -612,6 +580,8 @@ public class ImageIOHelper {
                     break;
                 case 5:
                     c = Color.MAGENTA.getRGB();
+                    break;
+                default:
                     break;
             }
             for (int ii = 0; ii < edge.getN(); ii++) {
