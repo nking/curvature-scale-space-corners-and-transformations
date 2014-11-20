@@ -367,20 +367,27 @@ public final class CurvatureScaleSpaceInflectionMapper {
         if (transAppliedTo1 == null || transAppliedTo2 == null) {
             return null;
         }
-        
-        assert(transAppliedTo1.size() == transAppliedTo2.size());
-        
+        if (transAppliedTo1.size() != transAppliedTo2.size()) {
+            throw new IllegalStateException(
+                "contour matcher should have same number of contours in both lists");
+        }
+                
         matchedContours1.addAll(transAppliedTo1);
         
         matchedContours2.addAll(transAppliedTo2);
                 
+        log.info("Contour matcher solution scale=" + matcher.getSolvedScale());
+        
+        log.info("Contour matcher solution shift=" + matcher.getSolvedShift());
+        
         // ==== adding back the image offsets removed when trimming image
         
         // ======= make a weighted sum of points to get the centroid of the edge
         // ============= the weight is sigma of total sum of sigmas
         
         
-        //for each edge, we calculate the transformation from its contours
+        // for each edge, we calculate the transformation from its contours
+        // because the contours match, they must be from edges that match
         List<Integer> edgeNumbers1 = new ArrayList<Integer>();
         List<Integer> edgeNumbers2 = new ArrayList<Integer>();
         for (int i = 0; i < transAppliedTo1.size(); i++) {
