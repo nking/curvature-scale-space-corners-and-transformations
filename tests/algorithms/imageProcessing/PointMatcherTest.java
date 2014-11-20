@@ -124,9 +124,7 @@ public class PointMatcherTest {
     
     @Test
     public void testCalculateTransformation() throws Exception {
-        
-        log.info("start testCalculateTransformation");
-        
+                
         PairIntArray set1 = new PairIntArray();
         set1.add(10, 10);
         set1.add(20, 20);
@@ -160,7 +158,6 @@ public class PointMatcherTest {
         assertTrue(Math.abs(fit.getParameters().getTranslationY() - 14) 
             < (200*0.02));
         
-        log.info("stop testCalculateTransformation");
     }
     
     @Test

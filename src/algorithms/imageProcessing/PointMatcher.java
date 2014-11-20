@@ -275,8 +275,8 @@ public final class PointMatcher {
         
         int centroidY1 = image1Height >> 1;
         
-        // projection effects such as those that are most apparent as 
-        // differential projection are not calculated in this point matcher, 
+        // projection effects from different camera positions or orientations
+        // are not calculated in this point matcher, 
         // but one can set a
         // tolerance in translation to try to allow for a small amount of it.
         // 
@@ -291,11 +291,6 @@ public final class PointMatcher {
         
         int convergence = (set1.getN() < set2.getN()) ? set1.getN() 
             : set2.getN();
-        
-        /*
-        try rotation from 0 to 359 with intervals of dR = 1
-        try scale from 1 to 10 and 1 to 0.1 with intervals of dS = 0.1
-        */
         
         TransformationPointFit bestFit = null;
         
@@ -330,8 +325,8 @@ public final class PointMatcher {
         
         int centroidY1 = image1Height >> 1;
         
-        // projection effects such as those that are most apparent as 
-        // differential projection are not calculated in this point matcher, 
+        // projection effects from different camera positions or orientations
+        // are not calculated in this point matcher, 
         // but one can set a
         // tolerance in translation to try to allow for a small amount of it.
         // 
@@ -396,7 +391,7 @@ public final class PointMatcher {
         float reflectionCoeff = 1;   // > 0
         float expansionCoeff = 2;   // > 1
         float contractionCoeff = -0.5f;
-        float reductionCoeff = 0.5f; // 0.5 default.  larger makes smaller reduction
+        float reductionCoeff = 0.5f;
 
         TransformationPointFit bestFit = fitWithDownhillSimplex(
             set1, set2, 
@@ -607,7 +602,6 @@ public final class PointMatcher {
                                     rReduction, sReduction,
                                     centroidX1, centroidY1);
                         }
-                        log.info("reaching here often means not better than grid");
                     }
                 }
             }
@@ -756,7 +750,7 @@ public final class PointMatcher {
             }
         }
         
-        log.info("number of combinations tried=" + combinationsTried.size() +
+        log.fine("number of combinations tried=" + combinationsTried.size() +
             " n1*n2=" + nMax);
         
         return (bestFit != null) ? bestFit.getParameters() : null;
