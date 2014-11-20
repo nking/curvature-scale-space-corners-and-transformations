@@ -825,7 +825,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         for (int i = 0; i < scaleSpace.getSize(); i++) {
             String str = String.format("(%.0f, %.0f) k=%f", scaleSpace.getX(i),
                 scaleSpace.getY(i), scaleSpace.getK(i));
-            sb.append(str).append("%n");
+            sb.append(str).append("\n");
         }
         log.info(sb.toString());
     }

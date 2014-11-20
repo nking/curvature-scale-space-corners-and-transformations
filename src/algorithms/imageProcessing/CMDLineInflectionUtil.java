@@ -327,13 +327,31 @@ public class CMDLineInflectionUtil {
 
             Transformer transformer = new Transformer();
             
-            PairIntArray xy1 = mapper.getMatchedXY1();
+            PairIntArray[] xy1 = mapper.getMatchedXY1();
+            PairIntArray[] xy1Tr;
+            if (xy1 == null) {
+                xy1 = new PairIntArray[0];
+                xy1Tr = new PairIntArray[0];
+            } else {
+                xy1Tr = transformer.applyTransformation(
+                    transformationParams, xy1);
+            }
             
-            PairIntArray xy1Tr = transformer.applyTransformation(
-                transformationParams, new PairIntArray[]{xy1})[0];
+            PairIntArray[] xy2 = mapper.getMatchedXY2();
+            if (xy1 == null) {
+                xy2 = new PairIntArray[0];
+            }
             
-            PairIntArray xy2 = mapper.getMatchedXY2();
-            
+            PairIntArray xy1Tot = new PairIntArray();
+            PairIntArray xy1TrTot = new PairIntArray();
+            PairIntArray xy2Tot = new PairIntArray();
+            for (int i = 0; i < xy1.length; i++) {
+                for (int j = 0; j < xy1[i].getN(); j++) {
+                    xy1Tot.add(xy1[i].getX(j), xy1[i].getY(j));
+                    xy1TrTot.add(xy1Tr[i].getX(j), xy1Tr[i].getY(j));
+                    xy2Tot.add(xy2[i].getX(j), xy2[i].getY(j));
+                }
+            }
             
             PairIntArray[] edges1Tr = transformer.applyTransformation(
                 transformationParams, 
@@ -344,7 +362,7 @@ public class CMDLineInflectionUtil {
             
             if (writeTextOutput) {
 
-                cmdLineInvoker.writeMatchingPoints(xy1, xy1Tr, xy2,
+                cmdLineInvoker.writeMatchingPoints(xy1Tot, xy1TrTot, xy2Tot,
                     transformationParams, imageFileName1, imageFileName2);
 
                 cmdLineInvoker.writeTransformation(transformationParams,
@@ -369,6 +387,7 @@ public class CMDLineInflectionUtil {
                      image2.getWidth() : image1.getWidth();
                  int maxHeight = (image2.getHeight() > image1.getHeight()) ?
                      image2.getHeight() : image1.getHeight();
+                 
                  Image image1Tr = transformer.applyTransformation(image1, 
                      transformationParams, maxWidth, maxHeight);
                  
@@ -384,11 +403,11 @@ public class CMDLineInflectionUtil {
                          image2);
                  }
                  
-                 ImageIOHelper.addCurveToImage(xy1, image1, 2, 255, 0, 0);
+                 ImageIOHelper.addCurveToImage(xy1Tot, image1, 2, 255, 0, 0);
                  
-                 ImageIOHelper.addCurveToImage(xy2, image2, 2, 255, 0, 0);
+                 ImageIOHelper.addCurveToImage(xy2Tot, image2, 2, 255, 0, 0);
                  
-                 ImageIOHelper.addCurveToImage(xy1Tr, image1Tr, 2, 255, 0, 0);
+                 ImageIOHelper.addCurveToImage(xy1TrTot, image1Tr, 2, 255, 0, 0);
                  
                  String outFilePath1 = cwd + "inflection_points_" + 
                      imageFileName1 + ".png";
@@ -409,6 +428,7 @@ public class CMDLineInflectionUtil {
                  System.out.println(eol + "wrote: " + outFilePath2);
                  System.out.println(eol + "wrote: " + outFilePath1Tr);
                  
+                 int z = 1;
              }
 
         } catch (Exception e) {

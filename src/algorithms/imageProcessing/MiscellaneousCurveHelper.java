@@ -1058,7 +1058,7 @@ public class MiscellaneousCurveHelper {
         for (int i = 0; i < edge.getN(); i++) {
              int x = edge.getX(i);
              int y = edge.getY(i);
-             sb.append(String.format("%d)  (%d, %d)%n", i, x, y));
+             sb.append(String.format("%d)  (%d, %d)\n", i, x, y));
         }
         log.info(sb.toString());
     }

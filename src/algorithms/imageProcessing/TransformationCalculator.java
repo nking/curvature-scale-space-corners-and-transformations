@@ -19,12 +19,11 @@ public class TransformationCalculator {
     }
     
     /**
-     * NOTE: there's an error here in the centroid that has to be
-     * included in tests and fixed.  It's not using the image centroid
-     * as it should.
-     * 
      * coordinate transformations from image 1 to image 2 are calculated from
      * matching lists of x, y coordinates.
+     * 
+     * Note that if this is used for contours, only one contour at a time
+     * should be passed in because the centroids are w.r.t. one contour.
      *
      * positive Y is down 
        positive X is right
@@ -40,10 +39,16 @@ public class TransformationCalculator {
      * </pre>
      * @param matchedXY1
      * @param matchedXY2
+     * @param centroidX1
+     * @param centroidY1
+     * @param centroidX2
+     * @param centroidY2
      * @return 
      */
     public TransformationParameters calulateEuclidean(
-        PairIntArray matchedXY1, PairIntArray matchedXY2) {
+        PairIntArray matchedXY1, PairIntArray matchedXY2, 
+        double centroidX1, double centroidY1,
+        double centroidX2, double centroidY2) {
         
         if (matchedXY1 == null) {
             throw new IllegalArgumentException("matchedXY1 cannot be null");
@@ -69,17 +74,17 @@ public class TransformationCalculator {
             weights2[i] = invN;
         }
         
-        return calulateEuclidean(matchedXY1, weights1, matchedXY2, weights2);
+        return calulateEuclidean(matchedXY1, weights1, matchedXY2, weights2,
+            centroidX1, centroidY1, centroidX2, centroidY2);
     }
     
     /**
-     * NOTE: there's an error here in the centroid that has to be
-     * included in tests and fixed.  It's not using the image centroid
-     * as it should.
-     * 
      * coordinate transformations from image 1 to image 2 are calculated from
      * matching lists of x, y coordinates.
      *
+     * Note that if this is used for contours, only one contour at a time
+     * should be passed in because the centroids are w.r.t. one contour.
+     * 
      * positive Y is down 
        positive X is right
        positive theta starts from Y=0, X>=0 and proceeds CW
@@ -96,11 +101,18 @@ public class TransformationCalculator {
      * @param weights1
      * @param matchedXY2
      * @param weights2
+     * @param centroidX1
+     * @param centroidY1
+     * @param centroidX2
+     * @param centroidY2
      * @return 
      */
     public TransformationParameters calulateEuclidean(
         PairIntArray matchedXY1, float[] weights1,
-        PairIntArray matchedXY2, float[] weights2) {
+        PairIntArray matchedXY2, float[] weights2, 
+        double centroidX1, double centroidY1,
+        double centroidX2, double centroidY2
+        ) {
         
         if (matchedXY1 == null) {
             throw new IllegalArgumentException("matchedXY1 cannot be null");
@@ -112,15 +124,6 @@ public class TransformationCalculator {
             throw new IllegalArgumentException(
                 "matchedXY1 and matchedXY2 must have same number of points");
         }
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        double[] centroidsX1 = curveHelper.calculateXYCentroids(matchedXY1);
-        double centroidX1 = centroidsX1[0];
-        double centroidY1 = centroidsX1[1];
-        double[] centroidsX2 = curveHelper.calculateXYCentroids(matchedXY2);
-        double centroidX2 = centroidsX2[0];
-        double centroidY2 = centroidsX2[1];
         
         if (debug) {
             log.info("centroidX1=" + centroidX1 + " centroidY1=" + centroidY1
@@ -215,7 +218,7 @@ public class TransformationCalculator {
             if (debug) {
                 
                 sb.append(String.format(
-                    "%5.1f %5.1f    %5.1f %5.1f %5.1f %5.1f %5.0f %5.0f (%5d,%5d) (%5d,%5d)%n", 
+                    "%5.1f %5.1f    %5.1f %5.1f %5.1f %5.1f %5.0f %5.0f (%5d,%5d) (%5d,%5d)\n", 
                     x1, y1, x2, y2, len1, len2, theta1, theta2, 
                     matchedXY1.getX(i), matchedXY1.getY(i), 
                     matchedXY2.getX(i), matchedXY2.getY(i)));

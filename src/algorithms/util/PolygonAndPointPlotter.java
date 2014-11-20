@@ -44,10 +44,10 @@ public class PolygonAndPointPlotter {
         
         StringBuilder dataSB = new StringBuilder();
 
-        dataSB.append("%nvar xmin = ").append(minX).append(";%n");
-        dataSB.append("var xmax = ").append(maxX).append(";%n");
-        dataSB.append("var ymin = ").append(minY).append(";%n");
-        dataSB.append("var ymax = ").append(maxY).append(";%n");
+        dataSB.append("\nvar xmin = ").append(minX).append(";\n");
+        dataSB.append("var xmax = ").append(maxX).append(";\n");
+        dataSB.append("var ymin = ").append(minY).append(";\n");
+        dataSB.append("var ymax = ").append(maxY).append(";\n");
 
         String srchFor = "/* === DO NOT REMOVE THIS == START DATA */";
         int insertOffset = plotContent.indexOf(srchFor);
@@ -181,21 +181,21 @@ public class PolygonAndPointPlotter {
         float[] xPoints, float[] yPoints, float[] xErrPoints, float[] yErrPoints,
         float[] xPolygon, float[] yPolygon, String plotLabel) {
 
-        StringBuffer dataSB = new StringBuffer("%n");
+        StringBuffer dataSB = new StringBuffer("\n");
         
         //  ===== add plotLabel data =====
         dataSB.append("var data_plot_label_").append(plotNumber)
-            .append(" = '").append(plotLabel).append("';%n");
+            .append(" = '").append(plotLabel).append("';\n");
 
         //  ===== add points data =====
         if (xPoints == null) {
             dataSB.append("var data_points_").append(plotNumber)
-                .append(" = undefined;%n");
+                .append(" = undefined;\n");
         } else {
-            dataSB.append("var data_points_").append(plotNumber).append(" = [%n");
+            dataSB.append("var data_points_").append(plotNumber).append(" = [\n");
             for (int i = 0; i < xPoints.length; i++) {
                 if (i > 0) {
-                    dataSB.append(",%n");
+                    dataSB.append(",\n");
                 }
                 dataSB.append("    {x:").append(xPoints[i]).append(", y:").append(yPoints[i]);
                 if (xErrPoints != null) {
@@ -203,15 +203,15 @@ public class PolygonAndPointPlotter {
                 }
                 dataSB.append("}");
             }
-            dataSB.append("%n];%n");
+            dataSB.append("\n];\n");
         }
 
         if (xPolygon == null) {
             dataSB.append("var data_polygon_").append(plotNumber)
-                .append(" = undefined;%n");
+                .append(" = undefined;\n");
         } else {
             //  ===== add polygon =====
-            dataSB.append("var data_polygon_").append(plotNumber).append(" = [%n");
+            dataSB.append("var data_polygon_").append(plotNumber).append(" = [\n");
             dataSB.append("    [");
             for (int ii = 0; ii < xPolygon.length; ii++) {
                 String xStr = String.format("%.7f", xPolygon[ii]);
@@ -221,21 +221,21 @@ public class PolygonAndPointPlotter {
                 }
                 dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
             }
-            dataSB.append("],%n ");
-            dataSB.append("];%n");
+            dataSB.append("],\n ");
+            dataSB.append("];\n");
         }
 
         dataSB.append("var xmin_").append(plotNumber).append("=")
-            .append(xmn).append(";%n");
+            .append(xmn).append(";\n");
         dataSB.append("var xmax_").append(plotNumber).append("=")
-            .append(xmx).append(";%n");
+            .append(xmx).append(";\n");
         dataSB.append("var ymin_").append(plotNumber).append("=")
-            .append(ymn).append(";%n");
+            .append(ymn).append(";\n");
         dataSB.append("var ymax_").append(plotNumber).append("=")
-            .append(ymx).append(";%n");
+            .append(ymx).append(";\n");
 
         // ======= add RENDER statement ==========
-        dataSB.append("%nrenderPlot('plot").append(plotNumber)
+        dataSB.append("\nrenderPlot('plot").append(plotNumber)
             .append("', data_points_").append(plotNumber)
             .append(", data_polygon_").append(plotNumber)
             .append(", data_plot_label_").append(plotNumber)
@@ -244,7 +244,7 @@ public class PolygonAndPointPlotter {
             .append(" xmax_").append(plotNumber).append(", ")
             .append(" ymin_").append(plotNumber).append(", ")
             .append(" ymax_").append(plotNumber)
-            .append( ");%n%n");
+            .append( ");\n\n");
 
         String srchFor = "/* === DO NOT REMOVE THIS == END DATA */";
         int insertOffset = plotContent.indexOf(srchFor);
@@ -257,7 +257,7 @@ public class PolygonAndPointPlotter {
 
         // ========== add the PLOT DIVS ==============
         StringBuffer plotDivs = new StringBuffer();
-        plotDivs.append("<div id='plot").append(plotNumber).append("' class='plot'></div>%n");
+        plotDivs.append("<div id='plot").append(plotNumber).append("' class='plot'></div>\n");
 
 
         srchFor = "<!-- === DO NOT REMOVE THIS == END PLOT DIVS -->";
@@ -312,7 +312,7 @@ public class PolygonAndPointPlotter {
             String line = in.readLine();
 
             while (line != null) {
-                sb.append(line).append("%n");
+                sb.append(line).append("\n");
                 line = in.readLine();
             }
         } finally {

@@ -57,4 +57,18 @@ public class CMDLineInflectionUtilTest {
         }
     }
 
+    public static void main(String[] args) {
+        
+        try {
+            
+            CMDLineInflectionUtilTest test = 
+                new CMDLineInflectionUtilTest();
+            
+            test.test();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("ERROR: " + e.getMessage());
+        }
+    }
 }

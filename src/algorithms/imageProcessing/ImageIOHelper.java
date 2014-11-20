@@ -585,7 +585,15 @@ public class ImageIOHelper {
                     break;
             }
             for (int ii = 0; ii < edge.getN(); ii++) {
-                input.setRGB(edge.getX(ii), edge.getY(ii), c);
+                
+                int col = edge.getX(ii);
+                int row = edge.getY(ii);
+                
+                if ((col > -1) && (col < input.getWidth()) &&
+                    (row > -1) && (row < input.getHeight())) {
+                
+                    input.setRGB(col, row, c);
+                }
             }
             clr++;
         }

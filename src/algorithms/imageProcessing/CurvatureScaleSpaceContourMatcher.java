@@ -734,5 +734,5 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         return minDiff2TIdx;
     }
-    
+
 }

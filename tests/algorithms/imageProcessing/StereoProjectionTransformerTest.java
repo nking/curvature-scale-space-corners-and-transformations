@@ -399,7 +399,7 @@ System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
             int y = corners.getY(i);
             int xe = (int)Math.sqrt(x);
             int ye = (int)Math.sqrt(y);
-            sb.append(String.format("%d\t%d\t%d\t%d%n", x, y, xe, ye));
+            sb.append(String.format("%d\t%d\t%d\t%d\n", x, y, xe, ye));
         }
         ResourceFinder.writeToCWD(sb.toString(), "tmp2.tsv");
         
