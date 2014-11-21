@@ -63,8 +63,29 @@ public class PointMatcherTest {
             transXTol, transYTol, centroidX1, centroidY1);
         
         assertNotNull(fit);
+        assertNotNull(fit.getParameters());
         
         assertTrue(fit.getNumberOfMatchedPoints() == 2);
+        
+        assertTrue(fit.getMeanDistFromModel() == 0);
+        
+        assertTrue(fit.getStDevFromMean() == 0);
+        
+        assertTrue(fit.getParameters().getScale() == 4);
+        
+        assertTrue((Math.abs(fit.getParameters().getRotationInDegrees()) 
+            - 25) < 1);
+        
+        assertTrue(
+            Math.abs(
+                fit.getParameters().getRotationInRadians() - (25*Math.PI/180)) 
+                < (5*Math.PI/180));
+        
+        assertTrue((Math.abs(fit.getParameters().getTranslationX()) 
+            - 125) < 1);
+        
+        assertTrue((Math.abs(fit.getParameters().getTranslationY()) 
+            - 14) < 1);
     }
     
     @Test
@@ -89,14 +110,19 @@ public class PointMatcherTest {
         int centroidX1 = 100;
         int centroidY1 = 100;
         
-        TransformationParameters params = 
+        TransformationPointFit fit = 
             matcher.calculateTranslation(set1, set2,
             transXTol, transYTol, rotation, scale, 
             centroidX1, centroidY1);
         
-        assertTrue(Math.abs(params.getTranslationX() - transX) < transXTol);
+        assertNotNull(fit);
+        assertNotNull(fit.getParameters());
         
-        assertTrue(Math.abs(params.getTranslationY() - transY) < transYTol);
+        assertTrue(fit.getNumberOfMatchedPoints() == 2);
+        
+        assertTrue(fit.getMeanDistFromModel() == 0);
+        
+        assertTrue(fit.getStDevFromMean() == 0);
     }
    
     @Test
@@ -143,22 +169,29 @@ public class PointMatcherTest {
             200, 200);
         
         assertNotNull(fit);
-        
         assertNotNull(fit.getParameters());
                 
+        assertTrue(fit.getNumberOfMatchedPoints() == 3);
+        
+        assertTrue(fit.getMeanDistFromModel() == 0);
+        
+        assertTrue(fit.getStDevFromMean() == 0);
+        
+        assertTrue(fit.getParameters().getScale() == 4);
+        
+        assertTrue((Math.abs(fit.getParameters().getRotationInDegrees()) 
+            - 25) < 1);
+        
         assertTrue(
             Math.abs(
                 fit.getParameters().getRotationInRadians() - (25*Math.PI/180)) 
                 < (5*Math.PI/180));
         
-        assertTrue(Math.abs(fit.getParameters().getScale() - 4) < 0.1);
+        assertTrue((Math.abs(fit.getParameters().getTranslationX()) 
+            - 125) < 1);
         
-        assertTrue(Math.abs(fit.getParameters().getTranslationX() - 125) 
-            < (200*0.02));
-        
-        assertTrue(Math.abs(fit.getParameters().getTranslationY() - 14) 
-            < (200*0.02));
-        
+        assertTrue((Math.abs(fit.getParameters().getTranslationY()) 
+            - 14) < 1);
     }
     
     @Test
@@ -187,6 +220,11 @@ public class PointMatcherTest {
     
     private PairIntArray[] readCornersSets1And2() throws IOException {
                 
+        /*
+        corners were found in this project for the images
+        below.  the images are from the Brown & Lowe 2003 paper, referenced
+        in the file testresources/brown_lowe_2003.txt
+        */
         String filePath1 = null;
         
         BufferedReader br = null;

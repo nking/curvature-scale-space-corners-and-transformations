@@ -615,25 +615,6 @@ public class MiscellaneousCurveHelper {
         return new double[]{xc, yc};
     }
     
-    public double[] calculateXYCentroids(SearchableCurve xy) {
-        
-        double xc = 0;
-        double yc = 0;
-        
-        for (int i = 0; i < xy.getN(); i++) {
-            
-            xc += xy.getX()[i];
-            
-            yc += xy.getY()[i];
-        }
-        
-        xc /= (double)xy.getN();
-        
-        yc /= (double)xy.getN();
-        
-        return new double[]{xc, yc};
-    }
-
     /**
      * search for point in edge with value (x, y) within indexes lowIdx to 
      * highIdx, inclusive and return true if found, else false.

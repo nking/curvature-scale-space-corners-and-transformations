@@ -387,12 +387,6 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         cenXY = helper.calculateXYCentroids(xyf);
         assertTrue(cenXY[0] == 5.0);
         assertTrue(cenXY[1] == 3.0);
-
-        SearchableCurve searchableXY = new SearchableCurve(xy);
-        
-        cenXY = helper.calculateXYCentroids(searchableXY);
-        assertTrue(cenXY[0] == 5.0);
-        assertTrue(cenXY[1] == 3.0);
     }
     
     /**

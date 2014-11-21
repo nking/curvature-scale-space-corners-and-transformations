@@ -625,53 +625,6 @@ public class ImageIOHelper {
         }
     }
 
-    /**
-     * create an image with edges2 in green and edges1 in white and write
-     * it to fileName.
-     * @param edges1
-     * @param edges2
-     * @param img
-     * @param fileName 
-     */
-    public static void writeImage(PairIntArray[] edges1,
-        SearchableCurve[] edges2, Image img, String fileName) {
-        
-        if (edges1 == null || edges2 == null) {
-            return;
-        }
-        if (edges1.length != edges2.length) {
-            throw new IllegalArgumentException(
-                "edgeX and edgeY should be same length");
-        }
-        if (fileName == null) {
-            throw new IllegalArgumentException(
-                "fileName cannot be null");
-        }
-        
-        try {
-            for (int i = 0; i < edges2.length; i++) {
-                SearchableCurve edge = edges2[i];
-                addCurveToImage(edge.getX(), edge.getY(), edge.getN(),
-                    img, 0, 0, 255, 0);
-            }
-
-            for (int i = 0; i < edges1.length; i++) {
-                PairIntArray edge = edges1[i];
-                addCurveToImage(edge.getX(), edge.getY(), edge.getN(),
-                    img, 0, 255, 255, 255);
-            }
-
-            String dirPath = ResourceFinder.findDirectory("bin");
-
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/" + fileName, img);
-            
-        } catch(IOException e) {
-            Logger.getLogger(ImageIOHelper.class.getName()).severe(
-                e.getMessage());
-        }
-    }
-    
     public static void addCurveToImage(ScaleSpaceCurve curve, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         

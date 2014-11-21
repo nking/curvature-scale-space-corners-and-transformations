@@ -202,33 +202,25 @@ public aspect CurvatureAspect {
             log2.fine(str);
         }
         
-        PairIntArray[] matchedXY1 = instance.getMatchedXY1();
-        PairIntArray[] matchedXY2 = instance.getMatchedXY2();
+        PairIntArray matchedXY1 = instance.getMatchedXY1();
+        PairIntArray matchedXY2 = instance.getMatchedXY2();
         if (matchedXY1 == null) {
-            matchedXY1 = new PairIntArray[0];
-            matchedXY2 = new PairIntArray[0];
-        }
-        PairIntArray xy1Tot = new PairIntArray();
-        PairIntArray xy2Tot = new PairIntArray();
-        for (int i = 0; i < matchedXY1.length; i++) {
-            for (int j = 0; j < matchedXY1[i].getN(); j++) {
-                xy1Tot.add(matchedXY1[i].getX(j), matchedXY1[i].getY(j));
-                xy2Tot.add(matchedXY2[i].getX(j), matchedXY2[i].getY(j));
-            }
+            matchedXY1 = new PairIntArray();
+            matchedXY2 = new PairIntArray();
         }
 
         try {
 
             Image img1 = instance.getImage1().copyImageToGreen();
             
-            ImageIOHelper.addCurveToImage(xy1Tot, img1, 1, 255, 0, 0);
+            ImageIOHelper.addCurveToImage(matchedXY1, img1, 1, 255, 0, 0);
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
                 dirPath + "/contour_peaks1.png", img1);
 
             Image img2 = instance.getImage2().copyImageToGreen();
             
-            ImageIOHelper.addCurveToImage(xy2Tot, img2, 1, 255, 0, 0);
+            ImageIOHelper.addCurveToImage(matchedXY2, img2, 1, 255, 0, 0);
             ImageIOHelper.writeOutputImage(
                 dirPath + "/contour_peaks2.png", img2);
 
