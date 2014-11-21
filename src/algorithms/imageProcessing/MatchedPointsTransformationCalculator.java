@@ -71,6 +71,9 @@ public class MatchedPointsTransformationCalculator {
             throw new IllegalArgumentException(
                 "weights1 and weights2 must have same number of points");
         }
+        if (matchedXY1.getN() < 2) {
+            return null;
+        }
         
         /*
         solve for rotation.
@@ -114,8 +117,12 @@ public class MatchedPointsTransformationCalculator {
                 x1im2 = matchedXY2.getX(i + 1);
                 y1im2 = matchedXY2.getY(i + 1);
             }
-            double thetaim1 = Math.atan((y1im1 - y0im1)/(x1im1 - x0im1));
-            double thetaim2 = Math.atan((y1im2 - y0im2)/(x1im2 - x0im2));
+            double xdiff = (x1im1 - x0im1);
+            double thetaim1 = (xdiff == 0) ? Math.PI/2. :
+                Math.atan((y1im1 - y0im1)/(x1im1 - x0im1));
+            xdiff = (x1im2 - x0im2);
+            double thetaim2 = (xdiff == 0) ? Math.PI/2. : 
+                Math.atan((y1im2 - y0im2)/(x1im2 - x0im2));
             double rot = thetaim2 - thetaim1;
             rotSum += rot;
             
