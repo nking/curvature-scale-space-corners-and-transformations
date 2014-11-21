@@ -88,6 +88,8 @@ public class CannyEdgeFilter {
     */
     public void useLineDrawingMode() {
         
+        //TODO: consider dilate before erosion
+        
         this.useLineDrawingMode = true;
         
         highThreshold = 2.0f;
