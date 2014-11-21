@@ -75,6 +75,12 @@ public class MatchedPointsTransformationCalculator {
             return null;
         }
         
+        //TODO: this could be improved by making pairs out of points with 
+        // furthest x and y from each other
+        // or by using all combinations weighted by deltax and deltay.
+        // could use bipartite max weight algorithm such as 
+        // Hungarian or a max flow algorithm.
+        
         /*
         solve for rotation.
         
@@ -93,12 +99,16 @@ public class MatchedPointsTransformationCalculator {
                       = 0.3490522203358645
                       = 20.0
 
-            rotation = theta_iamge1 - theta_image2 = 25 degrees
+            rotation = theta_image1 - theta_image2 = 25 degrees
         */
-                
-        //TODO: this could be improved by comparing furthest pairs
-        // or all combinations of pairs
-        double rotSum = 0;
+            
+        /*
+        discard outside avg +- stdev
+        */
+        
+        double[] thetas = new double[matchedXY1.getN()];
+        double[] scales = new double[matchedXY1.getN()];
+        double thetaSum = 0;
         double scaleSum = 0;
         for (int i = 0; i < matchedXY1.getN(); i++) {
             int x0im1 = matchedXY1.getX(i);
@@ -117,25 +127,63 @@ public class MatchedPointsTransformationCalculator {
                 x1im2 = matchedXY2.getX(i + 1);
                 y1im2 = matchedXY2.getY(i + 1);
             }
-            double xdiff = (x1im1 - x0im1);
-            double thetaim1 = (xdiff == 0) ? Math.PI/2. :
-                Math.atan((y1im1 - y0im1)/(x1im1 - x0im1));
-            xdiff = (x1im2 - x0im2);
-            double thetaim2 = (xdiff == 0) ? Math.PI/2. : 
-                Math.atan((y1im2 - y0im2)/(x1im2 - x0im2));
-            double rot = thetaim2 - thetaim1;
-            rotSum += rot;
+            double diffX1 = (x0im1 - x1im1);
+            double diffY1 = (y0im1 - y1im1);
             
-            double lenim1 = Math.sqrt(Math.pow(x1im1 - x0im1, 2) 
-                + Math.pow(y1im1 - y0im1, 2));
-            double lenim2 = Math.sqrt(Math.pow(x1im2 - x0im2, 2) 
-                + Math.pow(y1im2 - y0im2, 2));
-            double scl = lenim2/lenim1;
-            scaleSum += scl;
+            double diffX2 = (x0im2 - x1im2);
+            double diffY2 = (y0im2 - y1im2);
+            
+            double thetaim1 = (diffX1 == 0) ? Math.PI/2. :
+                Math.atan(diffY1/diffX1);
+            double thetaim2 = (diffX2 == 0) ? Math.PI/2. : 
+                Math.atan(diffY2/diffX2);
+            thetas[i] = thetaim2 - thetaim1;
+            
+            thetaSum += thetas[i];
+            
+            double lenim1 = Math.sqrt(Math.pow(diffX1, 2) 
+                + Math.pow(diffY1, 2));
+            double lenim2 = Math.sqrt(Math.pow(diffX2, 2) 
+                + Math.pow(diffY2, 2));
+            scales[i] = lenim2/lenim1;
+            scaleSum += scales[i];
         }
         
-        double theRotation = rotSum/(double)matchedXY1.getN();
-        double theScale = scaleSum/(double)matchedXY1.getN();
+        double avgScale = scaleSum / (double)matchedXY1.getN();
+        double avgTheta = thetaSum / (double)matchedXY1.getN();
+        double stDevThetaSum = 0;
+        double stDevScaleSum = 0;
+        for (int i = 0; i < matchedXY1.getN(); i++) {            
+            stDevThetaSum += Math.pow(thetas[i] - avgTheta, 2); 
+            stDevScaleSum += Math.pow(scales[i] - avgScale, 2); 
+        }
+        double stDevTheta= Math.sqrt(stDevThetaSum/(matchedXY1.getN() - 1));
+        double stDevScale= Math.sqrt(stDevScaleSum/(matchedXY1.getN() - 1));
+        
+        double rotSum = 0;
+        double rCount = 0;
+        scaleSum = 0;
+        double sCount = 0;
+        for (int i = 0; i < matchedXY1.getN(); i++) {
+            
+            if (Math.abs(scales[i] - avgScale) <= stDevScale) {
+                scaleSum += scales[i];
+                sCount++;
+            }
+            if (Math.abs(thetas[i] - avgTheta) <= stDevTheta) {
+                rotSum += thetas[i];
+                rCount++;
+            }
+log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
++ " (theta-avg)=" + (thetas[i] - avgTheta) 
++ " w1=" + weights1[i] + " w2=" + weights2[i]);
+log.info("scl=" + scales[i] + " stDevScale=" + stDevScale
++ " (scale-avg)=" + (scales[i] - avgScale));
+            
+        }
+        
+        double theRotation = -1*rotSum/rCount;
+        double theScale = scaleSum/sCount;
         
         log.info("given scale=" + scale + " found scale=" + theScale);
         log.info("rotation = " + theRotation);

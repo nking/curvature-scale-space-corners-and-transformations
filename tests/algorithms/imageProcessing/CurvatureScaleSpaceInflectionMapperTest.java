@@ -38,10 +38,10 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         
         for (String rotDegrees : rotDegreesList) {
             
-            
+            /*
             if (!rotDegrees.equals("60")) {
                 continue;
-            }
+            }*/
             
             String fileName1 = "closed_curve.png";
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);

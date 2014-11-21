@@ -946,10 +946,24 @@ public final class PointMatcher {
         double dR = (1.0 * Math.PI/180.);
         double dS = 0.1;
         
-        double rMin = r - (10 * Math.PI/180);
-        double rMax = r + (10 * Math.PI/180);
+        //double rMin = r - (10 * Math.PI/180);
+        //double rMax = r + (10 * Math.PI/180);
         double sMin = s - 0.5;
         double sMax = s + 0.5;
+        
+        if (s == 1) {
+            sMin = 1;
+        }
+        /*if (rMin < 0) {
+            rMin = 0;
+        }
+        if ((r - dR) < 0) {
+            dR = 0;
+        }
+        */
+        if ((s - dS) < 1) {
+            dS = 0;
+        }
         
         //TODO: these starting points could be improved.
         
@@ -1031,8 +1045,8 @@ public final class PointMatcher {
                 edges1, edges2, centroidX1, centroidY1);
             
             boolean relectIsWithinBounds = 
-                (rReflect >= rMin) && (rReflect <= rMax) 
-                && (sReflect >= sMin) && (sReflect <= sMax);
+                /*(rReflect >= rMin) && (rReflect <= rMax) 
+                &&*/ (sReflect >= sMin) && (sReflect <= sMax);
 
             if (fitIsBetter(fits[secondWorstFitIdx], fitReflected)
                 && relectIsWithinBounds
@@ -1056,8 +1070,8 @@ public final class PointMatcher {
                         centroidX1, centroidY1);
                     
                     if (fitIsBetter(fitReflected, fitExpansion)
-                        && ((rExpansion >= rMin) && (rExpansion <= rMax)
-                        && (sExpansion >= sMin) && (sExpansion <= sMax))) {
+                        && (/*(rExpansion >= rMin) && (rExpansion <= rMax)
+                        &&*/ (sExpansion >= sMin) && (sExpansion <= sMax))) {
 
                         fits[worstFitIdx] = fitExpansion;
                         
@@ -1081,8 +1095,8 @@ public final class PointMatcher {
                         centroidX1, centroidY1);
                     
                     if (fitIsBetter(fits[worstFitIdx], fitContraction)
-                        && 
-                        (rContraction >= rMin) && (rContraction <= rMax) 
+                        /*&& 
+                        (rContraction >= rMin) && (rContraction <= rMax)*/
                         && (sContraction >= sMin) && (sContraction <= sMax)
                     ) {
 
@@ -1136,8 +1150,8 @@ public final class PointMatcher {
             if ((fits[bestFitIdx].getNumberOfMatchedPoints() == convergence) 
                 && (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
                 go = false;
-            } else if ((r > rMax) || (r < rMin)) {
-                go = false;
+            /*} else if ((r > rMax) || (r < rMin)) {
+                go = false;*/
             } else if ((s > sMax) || (s < sMin)) {
                 go = false;
             }
@@ -1320,17 +1334,9 @@ public final class PointMatcher {
         
             int x = set1.getX(i);
             int y = set1.getY(i);
-            
-            double termsX = centroidX1*scale + ( 
-                ((x - centroidX1) * scaleTimesCosine) +
-                ((y - centroidY1) * scaleTimesSine));
-            
-            double termsY = centroidY1*scale + ( 
-                (-(x - centroidX1) * scaleTimesSine) +
-                ((y - centroidY1) * scaleTimesCosine));
-            
-            int xt = (int)Math.round(termsX + params.getTranslationX());
-            int yt = (int)Math.round(termsY + params.getTranslationY());
+           
+            int xt = (int)Math.round(x + params.getTranslationX());
+            int yt = (int)Math.round(y + params.getTranslationY());
             
             int lowerX = xt - (int)transXTol;
             int higherX = xt + (int)transXTol;

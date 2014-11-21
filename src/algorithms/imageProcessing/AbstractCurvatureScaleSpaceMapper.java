@@ -48,9 +48,9 @@ public class AbstractCurvatureScaleSpaceMapper {
     
     protected boolean useSegmentationForSky = false;
     
-    protected int trimmedXOffset = 0;
+    protected final int trimmedXOffset;
     
-    protected int trimmedYOffset = 0;
+    protected final int trimmedYOffset;
     
     protected boolean useOutdoorMode = false;
     

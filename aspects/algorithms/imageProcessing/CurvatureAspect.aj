@@ -25,6 +25,7 @@ public aspect CurvatureAspect {
 
     // for the ContourFinder plots:
     private PolygonAndPointPlotter plotter9 = null;
+    private PolygonAndPointPlotter plotter10 = null;
 
     private Logger log2 = Logger.getAnonymousLogger();
 
@@ -39,6 +40,7 @@ public aspect CurvatureAspect {
         if (plotter9 == null) {
             try {
             plotter9 = new PolygonAndPointPlotter();
+            plotter10 = new PolygonAndPointPlotter();
             } catch (IOException e) {
                 log2.severe("ERROR: " + e.getMessage());
             }
@@ -68,10 +70,10 @@ public aspect CurvatureAspect {
         log2.fine("===> in aspect for ContourFinder, filePath=" + filePath);
     }
 
-    after(ScaleSpaceCurveImage scaleSpaceImage, int edgeNumber) 
-        returning(List<CurvatureScaleSpaceContour> contours) :
-        execution(List<CurvatureScaleSpaceContour> algorithms.imageProcessing.ContourFinder.findContours(ScaleSpaceCurveImage, int))
-        && args(scaleSpaceImage, edgeNumber) 
+    after(ScaleSpaceCurveImage scaleSpaceImage, int sigmaIndex, int tIndex) 
+        returning() :
+        execution(void algorithms.imageProcessing.ContourFinder.removeContourFromImage(ScaleSpaceCurveImage, int, int))
+        && args(scaleSpaceImage, sigmaIndex, tIndex) 
 	    && target(algorithms.imageProcessing.ContourFinder) {
 
         Object obj = thisJoinPoint.getThis();
@@ -80,24 +82,15 @@ public aspect CurvatureAspect {
             return;
         }
 
-        ContourFinder instance = (ContourFinder)obj;
+        Object[] args = (Object[])thisJoinPoint.getArgs();
 
-        for (int i = 0; i < contours.size(); i++) {
+        ScaleSpaceCurveImage scaleSpaceImageIn = (ScaleSpaceCurveImage)args[0];
 
-            CurvatureScaleSpaceContour contour = contours.get(i);
-
-            float sigma = contour.getPeakSigma();
-            float t = contour.getPeakScaleFreeLength();
-
-            String str = String.format("edge=%d contour=%d (%f, %f)", 
-                contour.getEdgeNumber(), i, sigma, t);
-
-            log2.fine(str);
-        }
+        String filePath = printImage(scaleSpaceImageIn, plotter10, 10);
     }
 
     after() returning() 
-        : execution(public void algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper*.initialize() ) 
+        : execution(void algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper*.createMatchedPointArraysFromContourPeaks() ) 
         && args() 
         && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper) {
     
@@ -109,118 +102,25 @@ public aspect CurvatureAspect {
 
         CurvatureScaleSpaceInflectionMapper instance = (CurvatureScaleSpaceInflectionMapper)obj;
 
-        List<CurvatureScaleSpaceContour> contours1 = instance.getContours1();
+        // these are in the reference frame of the original image
+        PairIntArray xyc1 = instance.getMatchedXY1().copy();
+        PairIntArray xyc2 = instance.getMatchedXY2().copy();
 
-        List<CurvatureScaleSpaceContour> contours2 = instance.getContours2();
-
-        log2.fine("number of matched contours1=" + contours1.size() +
-            " number of matched contours2=" + contours2.size());
-
-        PairIntArray xyc1 = new PairIntArray();
-        PairIntArray xyc2 = new PairIntArray();
-
-        for (int i = 0; i < contours1.size(); i++) {
-            CurvatureScaleSpaceContour c1 = contours1.get(i);
-            CurvatureScaleSpaceImagePoint[] details = c1.getPeakDetails();
-            for (CurvatureScaleSpaceImagePoint detail : details) {
-                xyc1.add(detail.getXCoord(), detail.getYCoord());
-            }
-        }
-        for (int i = 0; i < contours2.size(); i++) {
-            CurvatureScaleSpaceContour c2 = contours2.get(i);
-            CurvatureScaleSpaceImagePoint[] details = c2.getPeakDetails();
-            for (CurvatureScaleSpaceImagePoint detail : details) {
-                xyc2.add(detail.getXCoord(), detail.getYCoord());
-            }
-        }
-
-        log2.info("Number of contours from image1=" + contours1.size() +
-            " number of contours from image2=" + contours2.size());
+        log2.info("n matched contour points in image1 = " + xyc1.getN());
+        log2.info("n matched contour points in image2 = " + xyc2.getN());
 
         try {
 
-            Image img1 = instance.getImage1().copyImageToGreen();
+            Image img1 = instance.getOriginalImage1().copyImageToGreen();
             
             ImageIOHelper.addCurveToImage(xyc1, img1, 2, 255, 0, 0);
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
                 dirPath + "/contour_peaks1.png", img1);
 
-            Image img2 = instance.getImage2().copyImageToGreen();
+            Image img2 = instance.getOriginalImage2().copyImageToGreen();
             
             ImageIOHelper.addCurveToImage(xyc2, img2, 2, 255, 0, 0);
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/contour_peaks2.png", img2);
-
-        } catch (IOException e) {
-            log2.severe("ERROR: " + e.getMessage());
-        }
-
-    }
-
-    after() 
-        returning(TransformationParameters params) :
-        execution(public TransformationParameters algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper.createEuclideanTransformation())
-	    && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper) {
-
-        Object obj = thisJoinPoint.getThis();
-
-        if (!(obj instanceof CurvatureScaleSpaceInflectionMapper)) {
-            return;
-        }
-
-        if (params == null) {
-            return;
-        }
-
-        CurvatureScaleSpaceInflectionMapper instance = (CurvatureScaleSpaceInflectionMapper)obj;
-
-        List<CurvatureScaleSpaceContour> contours1 = instance.getMatchedContours1();
-
-        List<CurvatureScaleSpaceContour> contours2 = instance.getMatchedContours2();
-
-        log2.fine("number of matched contours1=" + contours1.size() +
-            " number of matched contours2=" + contours2.size());
-
-        for (int i = 0; i < contours1.size(); i++) {
-
-            CurvatureScaleSpaceContour c1 = contours1.get(i);
-            CurvatureScaleSpaceContour c2 = contours2.get(i);
-
-            float sigma1 = c1.getPeakSigma();
-            float t1 = c1.getPeakScaleFreeLength();
-            int i1 = c1.getEdgeNumber();
-
-            float sigma2 = c2.getPeakSigma();
-            float t2 = c2.getPeakScaleFreeLength();
-            int i2 = c2.getEdgeNumber();
-
-            String str = String.format(
-                "matched edge=%d (%f, %f) (%f, %f) edge=%d", i1, sigma1, t1, 
-                sigma2, t2, i2);
-
-            log2.fine(str);
-        }
-        
-        PairIntArray matchedXY1 = instance.getMatchedXY1();
-        PairIntArray matchedXY2 = instance.getMatchedXY2();
-        if (matchedXY1 == null) {
-            matchedXY1 = new PairIntArray();
-            matchedXY2 = new PairIntArray();
-        }
-
-        try {
-
-            Image img1 = instance.getImage1().copyImageToGreen();
-            
-            ImageIOHelper.addCurveToImage(matchedXY1, img1, 1, 255, 0, 0);
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/contour_peaks1.png", img1);
-
-            Image img2 = instance.getImage2().copyImageToGreen();
-            
-            ImageIOHelper.addCurveToImage(matchedXY2, img2, 1, 255, 0, 0);
             ImageIOHelper.writeOutputImage(
                 dirPath + "/contour_peaks2.png", img2);
 

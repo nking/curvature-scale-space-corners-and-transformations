@@ -33,6 +33,11 @@ public final class CurvatureScaleSpaceInflectionMapper {
     
     private final GreyscaleImage image1; 
     private final GreyscaleImage image2;
+    // for debugging, keeping a reference of originals
+    private final GreyscaleImage originalImage1; 
+    private final GreyscaleImage originalImage2;
+    
+    
     public final int image1OriginalWidth;
     public final int image1OriginalHeight;
     private final int image2OriginalWidth;
@@ -108,8 +113,10 @@ public final class CurvatureScaleSpaceInflectionMapper {
         GreyscaleImage image2) {
         
         this.image1 = image1;
-        
         this.image2 = image2;
+        
+        originalImage1 = image1.copyImage();
+        originalImage2 = image2.copyImage();
         
         image1OriginalWidth = image1.getWidth();
         image1OriginalHeight = image1.getHeight();
@@ -138,6 +145,8 @@ public final class CurvatureScaleSpaceInflectionMapper {
         if (initialized) {
             return;
         }
+        
+        initialized = true;
         
         // note that if the orientation of image2 with respect to image1 is
         // more than 180 degrees, the code in the edge extractor will be forming
@@ -190,7 +199,13 @@ public final class CurvatureScaleSpaceInflectionMapper {
                     
             PairIntArray testContour = new PairIntArray();
             for (int j = 0; j < result.size(); j++) {
+                
                 CurvatureScaleSpaceContour c = result.get(j);
+                
+                //NOTE: errors due to peak not being completely resolved and
+                // instead using left and right of peak can be reduced by 
+                // changing the factor in the image maker
+                
                 CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();
                 for (int jj = 0; jj < points.length; jj++) {
                     testContour.add((int)points[jj].getXCoord(), 
@@ -364,7 +379,6 @@ public final class CurvatureScaleSpaceInflectionMapper {
             }
         }
       
-        initialized = true;
     }
   
     void createMatchedPointArraysFromContourPeaks() {
@@ -638,6 +652,12 @@ public final class CurvatureScaleSpaceInflectionMapper {
     protected GreyscaleImage getImage2() {
         return image2;
     }
+    GreyscaleImage getOriginalImage1() {
+        return originalImage1;
+    }
+    GreyscaleImage getOriginalImage2() {
+        return originalImage2;
+    }
     protected List<PairIntArray> getEdges1() {
         return edges1;
     }
@@ -768,4 +788,18 @@ public final class CurvatureScaleSpaceInflectionMapper {
         
         return indexes;
     }
+    
+    int getOffsetImageX1() {
+        return offsetImageX1;
+    }
+    int getOffsetImageY1() {
+        return offsetImageY1;
+    }
+    int getOffsetImageX2() {
+        return offsetImageX2;
+    }
+    int getOffsetImageY2() {
+        return offsetImageY2;
+    }
+    
 }
