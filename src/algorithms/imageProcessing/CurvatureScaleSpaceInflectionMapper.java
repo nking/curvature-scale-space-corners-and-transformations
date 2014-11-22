@@ -597,16 +597,14 @@ public final class CurvatureScaleSpaceInflectionMapper {
             matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights, 
             image1OriginalWidth >> 1, image1OriginalHeight >> 1);
        
-        if (!doNotRefineTransformations) {
+        if (false && !doNotRefineTransformations) {
                             
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
             
             PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
 
             PointMatcher matcher = new PointMatcher();
-        
-            //refine transformation is somehow makin the fit worse for transX and Y
-            
+                    
             params = matcher.refineTransformation(
                 set1, set2, params, 
                 image1OriginalWidth >> 1, image1OriginalHeight >> 1);

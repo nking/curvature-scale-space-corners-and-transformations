@@ -2,8 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -263,10 +261,13 @@ public final class PointMatcher {
         if (compareFit == null) {
             return false;
         }
+        if (bestFit == null) {
+            return true;
+        }
         
         int nMatches = compareFit.getNumberOfMatchedPoints();
         
-        if (bestFit == null || (nMatches > bestFit.getNumberOfMatchedPoints())) {
+        if (nMatches > bestFit.getNumberOfMatchedPoints()) {
             return true;
         } else if (nMatches == bestFit.getNumberOfMatchedPoints()) {
             if (compareFit.getMeanDistFromModel()
@@ -516,9 +517,6 @@ public final class PointMatcher {
         
         int nMax = set1.getN() * set2.getN();
         
-        Map<Integer, Integer> combinationsTried = new 
-            HashMap<Integer, Integer>();
-        
         int maxFound = Integer.MIN_VALUE;
         TransformationPointFit bestFit = null;
         
@@ -547,32 +545,22 @@ public final class PointMatcher {
                 int transX = (int)Math.round(x2 - xr);
                 
                 int transY = (int)Math.round(y2 - yr);
-                
-                // if (transX, transY) hasn't been tried:
-                if (!combinationsTried.containsKey(Integer.valueOf(transX))) {
-                
-                    TransformationParameters params = 
-                        new TransformationParameters();
-                    params.setRotationInRadians((float) rotation);
-                    params.setScale((float) scale);
-                    params.setTranslationX(transX);
-                    params.setTranslationY(transY);
-                    
-                    TransformationPointFit fit = transform(set1, set2, params, 
-                        transXTol, transYTol, centroidX1, centroidY1);
-                    
-                    if (fitIsBetter(bestFit, fit)) {
-                        bestFit = fit;
-                    }
-                    
-                    combinationsTried.put(Integer.valueOf(transX), 
-                        Integer.valueOf(transY));
+                                
+                TransformationParameters params = 
+                    new TransformationParameters();
+                params.setRotationInRadians((float) rotation);
+                params.setScale((float) scale);
+                params.setTranslationX(transX);
+                params.setTranslationY(transY);
+
+                TransformationPointFit fit = transform(set1, set2, params, 
+                    transXTol, transYTol, centroidX1, centroidY1);
+
+                if (fitIsBetter(bestFit, fit)) {
+                    bestFit = fit;
                 }
             }
         }
-        
-        log.fine("number of combinations tried=" + combinationsTried.size() +
-            " n1*n2=" + nMax);
         
         return (bestFit != null) ? bestFit : null;
     }
@@ -927,6 +915,9 @@ public final class PointMatcher {
      * 1 to 1 matches (that is, the input is not expected to be matched 
      * already).
      * 
+     * TODO: improve transformEdges to find translation for all edges
+     * via a search method rather than trying all pairs of points.
+     * 
      * @param edges1
      * @param edges2
      * @param params
@@ -944,12 +935,9 @@ public final class PointMatcher {
         double r = params.getRotationInRadians();
         double s = params.getScale();
         
-        double transXTol = (centroidX1*2) * 0.02;
-        
-        double transYTol = (centroidY1*2) * 0.02;
-        
         double[] drs = new double[] {
-            -7.0 * Math.PI/180., -4.0 * Math.PI/180., -1.0 * Math.PI/180., 1.0 * Math.PI/180.
+            
+            -1.0 * Math.PI/180., 1.0 * Math.PI/180.
         };
         if (r == 0) {
              drs = new double[]{0};
@@ -1020,15 +1008,18 @@ public final class PointMatcher {
             sortByDescendingMatches(fits, 0, (fits.length - 1));
             
             if ((lastNMatches == fits[bestFitIdx].getNumberOfMatchedPoints()) &&
-                (Math.abs(lastAvgDistModel - fits[bestFitIdx].getMeanDistFromModel())
-                < 0.01)) {
+                (Math.abs(lastAvgDistModel - 
+                fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
+                
                 nIterSameMin++;
                 if (nIterSameMin >= 5) {
                     break;
                 }
+                
             } else {
                 nIterSameMin = 0;
             }
+            
             lastNMatches = fits[bestFitIdx].getNumberOfMatchedPoints();
             lastAvgDistModel = fits[bestFitIdx].getMeanDistFromModel();
             
@@ -1178,6 +1169,18 @@ public final class PointMatcher {
         return fits[bestFitIdx].getParameters();
     }
     
+    /**
+     * TODO: improve transformEdges to find translation for all edges
+     * via a search method rather than trying all pairs of points.
+     * 
+     * @param rotInRad
+     * @param scl
+     * @param edges1
+     * @param edges2
+     * @param centroidX1
+     * @param centroidY1
+     * @return 
+     */
     private TransformationPointFit transformEdges(double rotInRad, double scl, 
         PairIntArray[] edges1, PairIntArray[] edges2, 
         int centroidX1, int centroidY1) {
@@ -1201,7 +1204,13 @@ public final class PointMatcher {
         OR take a weighted average of the translation and re-apply it
         to all edges to return that as the fit for all edges.
         
-        For now, using the longer, more accurate approach.
+        Will the edge with the fit w/ largest number of matches
+        ever be the wrong answer?
+            If there's a repeated patterns, such as clovers in an image,
+            and one clover's match has a few more points and it's the
+            wrong match, we can see that best fit will not be the
+            right answer for the whole image.
+        Trying for a weighted average for now.  This section could be improved.
         */
         
         double transXTolerance = (2 * centroidX1) * 0.02;
@@ -1214,15 +1223,7 @@ public final class PointMatcher {
         
         /*
         weights: 
-        
-        smaller dist should be larger weight, but the total has to be 1
-        
-        for example:
-           d=[0.5, 0.3, 0.2] so the 3rd item should have largest w 
-        
-        the normalization is ((1/d1) + (1/d2) + (1/d3))/100.
-        
-        then each weight is (1/d_i)*norm
+            by larger number of matched points
         */
         double[] w = new double[edges1.length];
         double norm = 0;
@@ -1235,16 +1236,14 @@ public final class PointMatcher {
                 edge1, edge2, transXTolerance, transYTolerance,
                 rotInRad, scl, centroidX1, centroidY1);
             
+            if (p == null) {
+                continue;
+            }
+            
             transXArray[i] = p.getTranslationX();            
             transYArray[i] = p.getTranslationY();
-            
-            w[i] = p.getMeanDistFromModel();
-            if (w[i] != 0) {
-                if (w[i] < 0) {
-                    w[i] *= -1;
-                }
-                w[i] = 1./w[i];
-            }
+                
+            w[i] = p.getNumberOfMatchedPoints();
             
             norm += w[i];
         }
@@ -1254,6 +1253,8 @@ public final class PointMatcher {
         for (int i = 0; i < edges1.length; i++) {
             w[i] *= norm;
         }
+        
+log.info("WEIGHTS: " + Arrays.toString(w));
         
         double weightAvgTransX = 0;
         double weightAvgTransY = 0;

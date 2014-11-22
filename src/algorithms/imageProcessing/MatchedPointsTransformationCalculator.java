@@ -295,8 +295,9 @@ log.info("scl=" + scales[i] + " stDevScale=" + stDevScale
                 + " the estimate here uses pairs of points which may"
                 + " be close to one another.  choosing the scale given to "
                 + " the method and continuing.");
-            theScale = scale;
         }
+        
+        theScale = scale;
         
         /*
         estimate translation:
