@@ -530,11 +530,11 @@ public final class PointMatcher {
             int x = set1.getX(i);
             int y = set1.getY(i);
             
-            double termsX = centroidX1*scale + ( 
+            double xr = centroidX1*scale + ( 
                 ((x - centroidX1) * scaleTimesCosine) +
                 ((y - centroidY1) * scaleTimesSine));
             
-            double termsY = centroidY1*scale + ( 
+            double yr = centroidY1*scale + ( 
                 (-(x - centroidX1) * scaleTimesSine) +
                 ((y - centroidY1) * scaleTimesCosine));
                             
@@ -944,52 +944,59 @@ public final class PointMatcher {
         double r = params.getRotationInRadians();
         double s = params.getScale();
         
-        double dR = (1.0 * Math.PI/180.);
-        double dS = 0.1;
+        double transXTol = (centroidX1*2) * 0.02;
         
-        //double rMin = r - (10 * Math.PI/180);
-        //double rMax = r + (10 * Math.PI/180);
+        double transYTol = (centroidY1*2) * 0.02;
+        
+        double[] drs = new double[] {
+            -7.0 * Math.PI/180., -4.0 * Math.PI/180., -1.0 * Math.PI/180., 1.0 * Math.PI/180.
+        };
+        if (r == 0) {
+             drs = new double[]{0};
+        }
+
+        double rMin = r - (10 * Math.PI/180);
+        double rMax = r + (10 * Math.PI/180);
         double sMin = s - 0.5;
         double sMax = s + 0.5;
         
+        double[] dss = new double[] {
+            0.1
+        };
         if (s == 1) {
+            dss = new double[]{0};
             sMin = 1;
         }
-        /*if (rMin < 0) {
+        if (rMin < 0) {
             rMin = 0;
         }
-        if ((r - dR) < 0) {
-            dR = 0;
-        }
-        */
-        if ((s - dS) < 1) {
-            dS = 0;
+        
+        int n = (1 + dss.length) * (1 + drs.length);
+        
+        TransformationPointFit[] fits = new TransformationPointFit[n];
+        
+        int count = 0;
+        for (int i = 0; i <= dss.length; i++) {
+            
+            double scale = (i == 0) ? s : s + dss[i - 1];
+            
+            for (int j = 0; j <= drs.length; j++) {
+                
+                double rotation = (j == 0) ? r : r + drs[j - 1];
+                
+                fits[count] = transformEdges(rotation, scale, edges1, edges2, 
+                    centroidX1, centroidY1);
+                
+                if (fits[count] != null) {
+                    count++;
+                }
+            }
         }
         
-        //TODO: these starting points could be improved.
+        if (count < n) {
+            fits = Arrays.copyOf(fits, count);
+        }
         
-        // start with simplex for at least 3 points (fitting 2 parameters)
-        TransformationPointFit[] fits = new TransformationPointFit[9];
-        fits[0] = transformEdges(r, s, edges1, edges2, centroidX1, centroidY1);
-        fits[1] = transformEdges(r + dR, s, edges1, edges2, centroidX1, 
-            centroidY1);
-        fits[2] = transformEdges(r - dR, s, edges1, edges2, centroidX1, 
-            centroidY1);
-        // adding additional points.  need small changes more than changes
-        // near the size of the value
-        fits[3] = transformEdges(r, s + dS, edges1, edges2, centroidX1, 
-            centroidY1);
-        fits[4] = transformEdges(r, s - dS, edges1, edges2, centroidX1, 
-            centroidY1);
-        fits[5] = transformEdges(r + dR, s + dS, edges1, edges2, centroidX1, 
-            centroidY1);
-        fits[6] = transformEdges(r + dR, s - dS, edges1, edges2, centroidX1, 
-            centroidY1);
-        fits[7] = transformEdges(r - dR, s + dS, edges1, edges2, centroidX1, 
-            centroidY1);
-        fits[8] = transformEdges(r - dR, s - dS, edges1, edges2, centroidX1, 
-            centroidY1);
-
         float alpha = 1;   // > 0
         float gamma = 2;   // > 1
         float beta = -0.5f; 
@@ -1344,8 +1351,8 @@ public final class PointMatcher {
                 + ((-(x - centroidX1) * scaleTimesSine)
                 + ((y - centroidY1) * scaleTimesCosine));
 
-            int xt = (int)Math.round(x + params.getTranslationX());
-            int yt = (int)Math.round(y + params.getTranslationY());
+            int xt = (int)Math.round(xr + params.getTranslationX());
+            int yt = (int)Math.round(yr + params.getTranslationY());
             
             int lowerX = xt - (int)transXTol;
             int higherX = xt + (int)transXTol;

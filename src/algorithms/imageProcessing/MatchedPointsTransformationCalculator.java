@@ -166,31 +166,6 @@ public class MatchedPointsTransformationCalculator {
             a change is made below after the blocks
             */
             
-             /*
-            defaults fine for:
-            1:1 1.406,1.2375
-            4:4 -.54, -.987
-            3:3 .588 .423
-            2:1 -1.55, 1.24
-            4:4 -0.785,-.93
-            3:3 .6,.327
-            ------
-            1:1 1.41,.54
-            4:3 -.54, 1.48
-            3:2 .588,-.48
-            2:1 -1.55,.303
-            4:4 -0.79, -1.57
-            3:2 0.6,-.4
-            --
-            GOOD TOO: 1:3 1.4, 0.785
-            BAD:      4:2 -.54, -1.45 result should be ~-4, not -2.2
-                      3:4 0.59, -0.09
-                      2:3 -1.55,.8067
-                      4:2 -0.785,-1.48
-                      3:4 .6, -.0677
-             
-            */
-            
             double t = thetaim1 - thetaim2;
             if ((qim1 == 1) && (qim2 == 2)) {
                 t = Math.PI + thetaim1 - thetaim2;
@@ -210,7 +185,6 @@ public class MatchedPointsTransformationCalculator {
                 t = Math.PI + thetaim1 - thetaim2;
             } else if ((qim1 == 2) && (qim2 == 2)) {
                 if (thetaim1 < thetaim2) {
-                    //t *= -1;
                     t = -thetaim2 + 2 * Math.PI + thetaim1;
                 }
             } else if ((qim1 == 2) && (qim2 == 3)) {
