@@ -544,9 +544,9 @@ public final class PointMatcher {
                 
                 int y2 = set2.getY(j);
                 
-                int transX = (int)Math.round(x2 - termsX);
+                int transX = (int)Math.round(x2 - xr);
                 
-                int transY = (int)Math.round(y2 - termsY);
+                int transY = (int)Math.round(y2 - yr);
                 
                 // if (transX, transY) hasn't been tried:
                 if (!combinationsTried.containsKey(Integer.valueOf(transX))) {
