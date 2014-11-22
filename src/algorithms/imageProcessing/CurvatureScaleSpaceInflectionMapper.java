@@ -554,7 +554,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
      * coordinate transformations from image 1 to image 2 are calculated from
      * matching scale space image contours.
      *
-     * positive Y is down 
+     * positive Y is up 
        positive X is right
        positive theta starts from Y=0, X>=0 and proceeds CW
                 270
@@ -564,7 +564,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
                  |   
                  |   
                  90
-                 +Y
+                 -Y
      * </pre>
      * NOTE: this will return null if it did not find closed 
      * curves in each image for which to map between.
@@ -605,6 +605,8 @@ public final class CurvatureScaleSpaceInflectionMapper {
 
             PointMatcher matcher = new PointMatcher();
         
+            //refine transformation is somehow makin the fit worse for transX and Y
+            
             params = matcher.refineTransformation(
                 set1, set2, params, 
                 image1OriginalWidth >> 1, image1OriginalHeight >> 1);

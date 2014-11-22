@@ -24,7 +24,7 @@ public class MatchedPointsTransformationCalculator {
      * parameter.  Scale is determined roughly from the contour matcher,
      * so can be used to get a rough first solution.
      * 
-     * positive Y is down 
+     * positive Y is up 
        positive X is right
        positive theta starts from Y=0, X>=0 and proceeds CW
                 270
@@ -34,7 +34,7 @@ public class MatchedPointsTransformationCalculator {
                  |   
                  |   
                  90
-                 +Y
+                 -Y
      * </pre>
      * @param scale
      * @param matchedXY1
@@ -127,17 +127,143 @@ public class MatchedPointsTransformationCalculator {
                 x1im2 = matchedXY2.getX(i + 1);
                 y1im2 = matchedXY2.getY(i + 1);
             }
-            double diffX1 = (x0im1 - x1im1);
-            double diffY1 = (y0im1 - y1im1);
+            double diffX1 = (x1im1 - x0im1);
+            double diffY1 = (y1im1 - y0im1);
             
-            double diffX2 = (x0im2 - x1im2);
-            double diffY2 = (y0im2 - y1im2);
+            double diffX2 = (x1im2 - x0im2);
+            double diffY2 = (y1im2 - y0im2);
             
             double thetaim1 = (diffX1 == 0) ? Math.PI/2. :
                 Math.atan(diffY1/diffX1);
             double thetaim2 = (diffX2 == 0) ? Math.PI/2. : 
                 Math.atan(diffY2/diffX2);
-            thetas[i] = thetaim2 - thetaim1;
+            
+            thetaim1 *= -1;
+            thetaim2 *= -1;
+            
+            // Q1, Q2, Q3, Q4
+            int qim1 = 1;
+            if ((diffX1 < 0) && (diffY1 < 0)) {
+                qim1 = 2;
+            } else if ((diffX1 < 0) && (diffY1 >= 0)) {
+                qim1 = 3;
+            } else if ((diffX1 >= 0) && (diffY1 >= 0)) {
+                qim1 = 4;
+            }
+            int qim2 = 1;
+            if ((diffX2 < 0) && (diffY2 < 0)) {
+                qim2 = 2;
+            } else if ((diffX2 < 0) && (diffY2 >= 0)) {
+                qim2 = 3;
+            } else if ((diffX2 >= 0) && (diffY2 >= 0)) {
+                qim2 = 4;
+            }
+            
+            // interpretation of subtracting angles
+            
+            /*
+            note that they were made with positive as CCW, so 
+            a change is made below after the blocks
+            */
+            
+             /*
+            defaults fine for:
+            1:1 1.406,1.2375
+            4:4 -.54, -.987
+            3:3 .588 .423
+            2:1 -1.55, 1.24
+            4:4 -0.785,-.93
+            3:3 .6,.327
+            ------
+            1:1 1.41,.54
+            4:3 -.54, 1.48
+            3:2 .588,-.48
+            2:1 -1.55,.303
+            4:4 -0.79, -1.57
+            3:2 0.6,-.4
+            --
+            GOOD TOO: 1:3 1.4, 0.785
+            BAD:      4:2 -.54, -1.45 result should be ~-4, not -2.2
+                      3:4 0.59, -0.09
+                      2:3 -1.55,.8067
+                      4:2 -0.785,-1.48
+                      3:4 .6, -.0677
+             
+            */
+            
+            double t = thetaim1 - thetaim2;
+            if ((qim1 == 1) && (qim2 == 2)) {
+                t = Math.PI + thetaim1 - thetaim2;
+            } else if ((qim1 == 1) && (qim2 == 3)) {
+                if (thetaim1 > 45.*Math.PI/180.) {
+                    t = Math.PI + thetaim1 - thetaim2;
+                } else {
+                    t = Math.PI + thetaim2 - thetaim1;
+                }
+            } else if ((qim1 == 1) && (qim2 == 4)) {
+                //t = thetaim1 - thetaim2;
+            } else if ((qim1 == 1) && (qim2 == 1)) {
+                if (thetaim1 < thetaim2) {
+                    t *= -1;
+                }
+            } else if ((qim1 == 2) && (qim2 == 1)) {
+                t = Math.PI + thetaim1 - thetaim2;
+            } else if ((qim1 == 2) && (qim2 == 2)) {
+                if (thetaim1 < thetaim2) {
+                    //t *= -1;
+                    t = -thetaim2 + 2 * Math.PI + thetaim1;
+                }
+            } else if ((qim1 == 2) && (qim2 == 3)) {
+                t = 2 * Math.PI +thetaim1 - thetaim2;
+            } else if ((qim1 == 2) && (qim2 == 4)) {
+                if (thetaim1 < -45.*Math.PI/180.) {
+                    t = Math.PI + thetaim1 - thetaim2;
+                } else {
+                    t = Math.PI - thetaim1 + thetaim2;
+                }
+            } else if ((qim1 == 3) && (qim2 == 4)) {
+                t = Math.PI + thetaim1 - thetaim2;
+               
+            } else if ((qim1 == 3) && (qim2 == 1)) {
+                if (thetaim1 < 45.*Math.PI/180.) {
+                    t = Math.PI + thetaim1 - thetaim2;
+                } else {
+                    t = Math.PI - thetaim1 + thetaim2;
+                }
+            } else if ((qim1 == 3) && (qim2 == 2)) {
+                t = thetaim1 - thetaim2;
+            } else if ((qim1 == 3) && (qim2 == 3)) {
+                if (thetaim1 < thetaim2) {
+                    t = thetaim2 - 2 * Math.PI - thetaim1;
+                } 
+            } else if ((qim1 == 4) && (qim2 == 1)) {
+                t = 2*Math.PI + thetaim1 - thetaim2;
+            } else if ((qim1 == 4) && (qim2 == 2)) {
+                if (thetaim1 > -45.*Math.PI/180.) {
+                    t = Math.PI + thetaim1 - thetaim2; 
+                } else if (thetaim2 < -45.*Math.PI/180.) {
+                    t = Math.PI + thetaim1 - thetaim2;
+                } else {
+                    t = Math.PI - thetaim1 + thetaim2;
+                }
+            } else if ((qim1 == 4) && (qim2 == 3)) {
+                t = Math.PI + thetaim1 - thetaim2;
+            } else if ((qim1 == 4) && (qim2 == 4)) {
+                if (thetaim1 < -45. * Math.PI/180.) {
+                    t = thetaim2 - 2 * Math.PI - thetaim1;
+                } else if (thetaim1 > 45. * Math.PI/180.) {
+                    t = thetaim2 - 2 * Math.PI - thetaim1;
+                }
+            }
+            
+            // reverse the direction to CW
+            t *= -1;
+            
+            if (t < 0) {
+                t += 2*Math.PI;
+            }
+            
+            thetas[i] = t;
             
             thetaSum += thetas[i];
             
@@ -182,7 +308,7 @@ log.info("scl=" + scales[i] + " stDevScale=" + stDevScale
             
         }
         
-        double theRotation = -1*rotSum/rCount;
+        double theRotation = rotSum/rCount;
         double theScale = scaleSum/sCount;
         
         log.info("given scale=" + scale + " found scale=" + theScale);

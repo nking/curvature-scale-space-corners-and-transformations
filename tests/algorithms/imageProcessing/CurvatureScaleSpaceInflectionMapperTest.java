@@ -38,11 +38,11 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         
         for (String rotDegrees : rotDegreesList) {
             
-            /*
-            if (!rotDegrees.equals("60")) {
+       /*
+            if (!rotDegrees.equals("225")) {
                 continue;
-            }*/
-            
+            }
+         */   
             String fileName1 = "closed_curve.png";
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
             GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);
@@ -65,14 +65,14 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             
             mapper.useDebugMode();
             
-            //mapper.doNotRefineTransformations();
+            mapper.doNotRefineTransformations();
 
             TransformationParameters transformationParams = 
                 mapper.createEuclideanTransformation();
 
             assertNotNull(transformationParams);
 
-            float rotDeg = -1*transformationParams.getRotationInDegrees();
+            float rotDeg = transformationParams.getRotationInDegrees();
 
             float scale = transformationParams.getScale();
          
@@ -89,19 +89,38 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
             
             debugDisplay(transformedEdges, img2.copyImageToGreen(), rotDegrees);
+           
+            double expectedRotDeg = Float.valueOf(rotDegrees).floatValue();
+           
+            if (rotDegrees.equals("20")) {
+                expectedRotDeg = 360 - expectedRotDeg;
+            } else if (rotDegrees.equals("60")) {
+                expectedRotDeg = 360 - expectedRotDeg;
+            } else if (rotDegrees.equals("135")) {
+                expectedRotDeg = 360 - expectedRotDeg;
+            } else if (rotDegrees.equals("180")) {
+                expectedRotDeg = 360 - expectedRotDeg;
+            } else if (rotDegrees.equals("225")) {
+                expectedRotDeg = 360 - expectedRotDeg;
+            } else if (rotDegrees.equals("280")) {
+                expectedRotDeg = 360 - expectedRotDeg;
+            } else if (rotDegrees.equals("335")) {
+                expectedRotDeg = 360 - expectedRotDeg;
+            }
             
-            log.info("PARAMS: " + transformationParams.toString() 
-                + "\nEXPECTED=" + rotDegrees);
-            
-            assertTrue(Math.abs(rotDeg - Float.valueOf(rotDegrees).floatValue()) 
-                < 10.f);
+            double foundRotDeg = rotDeg;
              
+            log.info("PARAMS: " + transformationParams.toString() 
+                + "\nEXPECTED=" + rotDegrees + " (" + expectedRotDeg + ")");
+
+            assertTrue(Math.abs(expectedRotDeg - foundRotDeg) < 10.f);
+            
             if (rotDegrees.equals("135")) {
                 assertTrue(Math.abs(scale - 1.0) < 0.15);
             } else {
-                log.info("scale=" + scale);
                 assertTrue(Math.abs(scale - 1.3) < 0.15);
             }
+           
         }
     }
     

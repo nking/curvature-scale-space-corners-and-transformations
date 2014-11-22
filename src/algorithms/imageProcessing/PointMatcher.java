@@ -89,6 +89,7 @@ import java.util.logging.Logger;
   rotation work against one another and don't proceed in a total combined
   single direction with theta, we can't use a gradient descent solver.
  
+       (note, this hasn't been edited for positive Y up yet)
        positive Y is down 
        positive X is right
        positive theta starts from Y=0, X>=0 and proceeds CW
@@ -728,7 +729,7 @@ public final class PointMatcher {
 
         boolean go = true;
 
-        int nMaxIter = 1000;
+        int nMaxIter = 100;
         int nIter = 0;
         
         int bestFitIdx = 0;
@@ -1241,7 +1242,7 @@ public final class PointMatcher {
             norm += w[i];
         }
         
-        norm /= 100.;
+        norm = 1./norm;
         
         for (int i = 0; i < edges1.length; i++) {
             w[i] *= norm;
@@ -1335,6 +1336,14 @@ public final class PointMatcher {
             int x = set1.getX(i);
             int y = set1.getY(i);
            
+            double xr = centroidX1 * scale
+                + (((x - centroidX1) * scaleTimesCosine)
+                + ((y - centroidY1) * scaleTimesSine));
+
+            double yr = centroidY1 * scale
+                + ((-(x - centroidX1) * scaleTimesSine)
+                + ((y - centroidY1) * scaleTimesCosine));
+
             int xt = (int)Math.round(x + params.getTranslationX());
             int yt = (int)Math.round(y + params.getTranslationY());
             
