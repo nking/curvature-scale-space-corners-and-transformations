@@ -77,6 +77,11 @@ public final class CurvatureScaleSpaceContourMatcher {
     private final Logger log = Logger.getLogger(this.getClass().getName());
     
     /**
+     * constructor taking required contour lists as arguments.  note that the
+     * contour lists should only be from one edge each.
+     * (Note, it should be possible to find shadows in an image too using this 
+     * on edges in same image).
+     * 
      * constructor.  the creation of internal data structures in this method
      * has runtime complexity:
      * <pre>
@@ -267,7 +272,8 @@ public final class CurvatureScaleSpaceContourMatcher {
                     sigma2 = kScale * sigma1
                     */
                     double sigma2 = scale * contour1s.getPeakSigma();
-                    double t2 = (scale * contour1s.getPeakScaleFreeLength()) + shift;
+                    double t2 = (scale * contour1s.getPeakScaleFreeLength()) 
+                        + shift;
                     //double t2 = contour1s.getPeakScaleFreeLength() + shift;
                     if (t2 < 0) {
                         t2 = 1 + t2;
@@ -275,8 +281,8 @@ public final class CurvatureScaleSpaceContourMatcher {
                         t2 = t2 - 1;
                     }
                      
-                    // this marks as visited if found
-                    int index2s = findClosestC2MatchBinarySearch(sigma2, t2);
+                    int index2s = findClosestC2MatchOrderedSearch(sigma2, t2, 0,
+                        c2.size() - 1);
                     
                     CurvatureScaleSpaceContour contour2s;
                     
@@ -294,9 +300,8 @@ public final class CurvatureScaleSpaceContourMatcher {
                     double cost2 = calculateCost(contour2s, sigma2, t2);                    
 
                     /*if (contour2s != null) {
-                
-                        log.info("\nMATCHED: " + contour1s.toString() + "\n   WITH: "
-                            + contour2s.toString());
+                        log.info("\nMATCHED: " + contour1s.toString() 
+                            + "\n   WITH: " + contour2s.toString());
                     }*/
                     
                     cost += cost2;
@@ -450,18 +455,9 @@ public final class CurvatureScaleSpaceContourMatcher {
                 t2 = t2 - 1;
             }
             
-            // this marks as visited if found
-            int index2s = findClosestC2MatchBinarySearch(sigma2, t2);
-            
-            // if already matched for this node OR it returned -1,
-            // do a slower search for min diff over all members of c2.
-            if ((index2s == -1) || 
-                nc.getMatchedContours2().contains(c2.get(index2s))) {
-                
-                // this marks as visited if found
-                index2s = findClosestC2MatchForSigmaTooHigh(sigma2, t2);
-            }
-            
+            int index2s = findClosestC2MatchOrderedSearch(sigma2, t2, 0, 
+                c2.size() - 1);
+           
             CurvatureScaleSpaceContour contour2s = (index2s == -1) ?
                 null : c2.get(index2s);
                         
@@ -483,167 +479,6 @@ public final class CurvatureScaleSpaceContourMatcher {
         }
         
         return u;
-    }
-
-    /**
-     * find the closest match to a contour having (sigma, scaleFreeLength) 
-     * in list c2 and return that index w.r.t. list c2, else -1 if not found
-     * using a binary search.  This method runtime complexity is O(lg_2(N))
-     * at best.
-     * 
-     * @param sigma
-     * @param scaleFreeLength
-     * @return 
-     */
-    protected int findClosestC2MatchBinarySearch(double sigma, 
-        double scaleFreeLength) {
-        
-        // use iterative binary search to find closest match
-        
-        //TODO: revisit this as ordered 2 key search and add ALOT more tests for it
-        
-        //TODO: use 0.1*sigma? current sigma factor peak center error
-        double tolSigma = 0.01*sigma;
-        if (tolSigma < 1E-2) {
-            tolSigma = 1E-2;
-        }
-        
-        double minDiffS = Double.MAX_VALUE;
-        double minDiffT = Double.MAX_VALUE;
-        int idx = -1;
-        
-        int lowIdx = 0;
-        int highIdx = c2.size() - 1;
-                
-        while (true) {
-            
-            if (lowIdx > highIdx) {
-                
-                break;
-            
-            } else {
-                
-                int midIdx = (lowIdx + highIdx) >> 1;
-                
-                CurvatureScaleSpaceContour c = c2.get(midIdx);
-                
-                double diffS = Math.abs(c.getPeakSigma() - sigma);
-                double diffT = Math.abs(c.getPeakScaleFreeLength() - scaleFreeLength);
-                
-                if (diffS <= (minDiffS + tolSigma)) {
-                    if (diffT <= minDiffT) {
-                        minDiffS = diffS;
-                        minDiffT = diffT;
-                        idx = midIdx;
-                    } else if ((minDiffS/diffS) > 2) {
-                        
-                        //TODO: needs more tests for this and a diffT conditional
-                        
-                        // breaking from binary pattern to search all between
-                        // lowIdx and highIdx and return the best
-                        idx = findClosestC2MatchOrderedSearch(
-                            sigma, scaleFreeLength, lowIdx, highIdx);
-                        
-                        return idx;
-                    }
-                }
-
-                if ((Math.abs(diffS) < tolSigma) && (Math.abs(diffT) < 0.05)) {
-                    
-                    idx = midIdx;
-                    break;
-                
-                } else if (Math.abs(diffS) < tolSigma) {
-                    
-                    // smaller scaleFreeLength is at a lower index
-                    if (c.getPeakScaleFreeLength() < scaleFreeLength) {
-                        lowIdx = midIdx + 1;
-                        
-                    } else {
-                        // breaking from binary pattern to search all between
-                        // lowIdx and highIdx and return the best
-                        idx = findClosestC2MatchOrderedSearch(
-                            sigma, scaleFreeLength, lowIdx, highIdx);
-                        
-                        return idx;
-                    }
-                    
-                } else if (c.getPeakSigma() < sigma) {
-                    
-                    // contour list has more than one item with same first key
-                    // value, so check before decrease high end
-                    if ((highIdx < (c2.size() - 1)) 
-                        && (c2.get(highIdx).getPeakSigma() > c.getPeakSigma())) {
-                        
-                        highIdx = midIdx - 1;
-                        
-                    } else {
-                        
-                        lowIdx = midIdx + 1;
-                    }
-                                        
-                } else {
-                    // (sigma, t) are at a higher index
-                    lowIdx = midIdx + 1;
-                }
-            }
-        }
-      
-        if (idx > -1) {
-            return idx;
-        }
-        
-        return -1;
-    }
-    
-    /**
-     * find the closest match to a contour having (sigma, scaleFreeLength) 
-     * in list c2 and return that index w.r.t. list c2, else -1 if not found.  
-     * This method runtime complexity is O(N).
-     * 
-     * This method can find points where the predicted sigma is too high for
-     * the contour which should be found and there's a higher sigma match
-     * at too high of a scaleFreeLength.
-     * 
-     * @param sigma
-     * @param scaleFreeLength
-     * @return 
-     */
-    protected int findClosestC2MatchForSigmaTooHigh(double sigma, 
-        double scaleFreeLength) {
-        
-        //TODO: use 0.1*sigma? current sigma factor peak center error
-        double tolSigma = 0.1*sigma;
-        if (tolSigma < 1E-2) {
-            tolSigma = 1E-2;
-        }
-        
-        double minDiffS = Double.MAX_VALUE;
-        double minDiffT = Double.MAX_VALUE;
-        int idx = -1;
-        
-        for (int i = 0; i < c2.size(); i++) {
-            
-            CurvatureScaleSpaceContour c = c2.get(i);
-            
-            double diffS = sigma - c.getPeakSigma();
-            
-            double diffT = Math.abs(c.getPeakScaleFreeLength() - scaleFreeLength);
-            
-            /*
-            we're looking for cases where sigma is too high, but the 
-            scaleFreeLength is close.
-            */
-            if ((diffS > 0) && (diffS <= (minDiffS + tolSigma)) 
-                && (diffT <= minDiffT)) {
-                
-                minDiffS = diffS;
-                minDiffT = diffT;
-                idx = i;
-            }
-        }
-      
-        return idx;
     }
 
     /**

@@ -38,11 +38,11 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         
         for (String rotDegrees : rotDegreesList) {
             
-            
-            if (!rotDegrees.equals("60")) {
+            /*
+            if (!rotDegrees.equals("20")) {
                 continue;
             }
-            
+            */
           
             String fileName1 = "closed_curve.png";
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -66,7 +66,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             
             mapper.useDebugMode();
             
-            //mapper.doNotRefineTransformations();
+            mapper.doNotRefineTransformations();
 
             TransformationParameters transformationParams = 
                 mapper.createEuclideanTransformation();

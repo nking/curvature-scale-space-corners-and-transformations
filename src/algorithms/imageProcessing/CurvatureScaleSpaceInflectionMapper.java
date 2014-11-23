@@ -387,6 +387,13 @@ public final class CurvatureScaleSpaceInflectionMapper {
             return;
         }
         
+        /**
+         * TODO: 
+         * change to match contours from one edge against contours of another
+         * edge rather than all contours at once.
+         * 
+         */
+        
         CurvatureScaleSpaceContourMatcher matcher = 
             new CurvatureScaleSpaceContourMatcher(contours1, contours2);
         
@@ -597,8 +604,9 @@ public final class CurvatureScaleSpaceInflectionMapper {
             matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights, 
             image1OriginalWidth >> 1, image1OriginalHeight >> 1);
        
-        if (false && !doNotRefineTransformations) {
+        if (!doNotRefineTransformations) {
                             
+            // note, these are closed curves
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
             
             PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
