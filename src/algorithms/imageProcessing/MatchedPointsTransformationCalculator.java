@@ -1,6 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -161,6 +165,8 @@ public class MatchedPointsTransformationCalculator {
             
             // interpretation of subtracting angles
             
+            //TODO: put the angle difference in its own testable class
+            
             /*
             note that they were made with positive as CCW, so 
             a change is made below after the blocks
@@ -264,15 +270,23 @@ public class MatchedPointsTransformationCalculator {
         double rCount = 0;
         scaleSum = 0;
         double sCount = 0;
+        List<Integer> rm = new ArrayList<Integer>();
         for (int i = 0; i < matchedXY1.getN(); i++) {
             
             if (Math.abs(scales[i] - avgScale) <= stDevScale) {
                 scaleSum += scales[i];
                 sCount++;
+            } else {
+                rm.add(Integer.valueOf(i));
             }
             if (Math.abs(thetas[i] - avgTheta) <= stDevTheta) {
                 rotSum += thetas[i];
                 rCount++;
+            } else {
+                Integer idx = Integer.valueOf(i);
+                if (!rm.contains(idx)) {
+                    rm.add(idx);
+                }
             }
 log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
 + " (theta-avg)=" + (thetas[i] - avgTheta) 
@@ -287,7 +301,7 @@ log.info("scl=" + scales[i] + " stDevScale=" + stDevScale
         
         log.info("given scale=" + scale + " found scale=" + theScale);
         log.info("rotation = " + theRotation);
-
+        
         if (Math.abs(theScale - scale) > scale*0.1) {
             log.warning("the differences in estimated scale and given scale are"
                 + " large.  this can happen if the given scale value was " 

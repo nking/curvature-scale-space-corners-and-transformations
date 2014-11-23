@@ -576,7 +576,9 @@ public final class CurvatureScaleSpaceInflectionMapper {
      * NOTE: this will return null if it did not find closed 
      * curves in each image for which to map between.
      * 
-     * @return 
+     * @return transformation parameters determined from the contours, else
+     * null if there weren't contours in the image or there wasn't a valid 
+     * solution 
      */
     public TransformationParameters createEuclideanTransformation() {
         
@@ -604,6 +606,10 @@ public final class CurvatureScaleSpaceInflectionMapper {
             matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights, 
             image1OriginalWidth >> 1, image1OriginalHeight >> 1);
        
+        if (params == null) {
+            return null;
+        }
+        
         if (false && !doNotRefineTransformations) {
                             
             // note, these are closed curves
