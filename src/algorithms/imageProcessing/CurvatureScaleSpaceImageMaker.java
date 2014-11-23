@@ -279,7 +279,7 @@ public final class CurvatureScaleSpaceImageMaker extends
         // if use 2^(1/8) as a sigma factor should result in an error less than 10%
         // in determing the peak of a contour.  smaller factors have smaller
         // errors than that.
-        float factor = (float)Math.pow(2, 1./8.);
+        float factor = (float)Math.pow(2, 1./32.);
         
         /*
         SIGMA=0:

@@ -1,14 +1,13 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -48,7 +47,7 @@ import java.util.logging.Logger;
 public final class CurvatureScaleSpaceContourMatcher {
     
     protected final Heap heap = new Heap();
-  
+    
     /**
      * the costs calculated here are small fractions, so they need to be
      * multiplied by a large constant for use with the Fibonacci heap
@@ -242,8 +241,8 @@ public final class CurvatureScaleSpaceContourMatcher {
                 visited.add(contour1);
                 visited.add(contour2);
                 
-                NextContour nc = new NextContour(c1, visited);
-                
+                NextContour nc = new NextContour(c1, true, curveIndexToC1,
+                    visited);
                 nc.addMatchedContours(contour1, contour2);
                 
                 obj.setNextContour(nc);
@@ -282,7 +281,8 @@ public final class CurvatureScaleSpaceContourMatcher {
                         t2 = t2 - 1;
                     }
                      
-                    int index2s = findClosestC2MatchOrderedSearch(sigma2, t2);
+                    int index2s = findClosestC2MatchOrderedSearch(sigma2, t2, 0,
+                        c2.size() - 1);
                     
                     CurvatureScaleSpaceContour contour2s;
                     
@@ -401,7 +401,7 @@ public final class CurvatureScaleSpaceContourMatcher {
        The process is repeated until there are no more admissable contours
        for an extracted min cost node.
       
-     * @return
+     * @return 
      */
     private HeapNode solve() {
         
@@ -416,14 +416,23 @@ public final class CurvatureScaleSpaceContourMatcher {
             NextContour nc = obj.getNextContour();
             
             CurvatureScaleSpaceContour c = c1.get(obj.getContourIndex1());
+            int curveIndex = c.getEdgeNumber();
             
             CurvatureScaleSpaceContour contour1s = 
-                nc.findTallestContourWithinAScaleSpace();
+                nc.findTallestContourWithinAScaleSpace(curveIndex);
             
             if ((contour1s == null) || 
                 nc.getMatchedContours1().contains(contour1s)) {
                 
-                contour1s = nc.findTheNextSmallestUnvisitedSibling(c);
+                //TODO: refactor to improve handling of these indexes to remove
+                // possibilities of using them incorrectly
+                
+                int contourIndex = nc.origContours.indexOf(c);
+                
+                PairInt target = new PairInt(curveIndex, contourIndex);
+                
+                contour1s = nc.findTheNextSmallestUnvisitedSibling(target);
+                
             }
             
             if (contour1s == null) {
@@ -446,7 +455,8 @@ public final class CurvatureScaleSpaceContourMatcher {
                 t2 = t2 - 1;
             }
             
-            int index2s = findClosestC2MatchOrderedSearch(sigma2, t2);
+            int index2s = findClosestC2MatchOrderedSearch(sigma2, t2, 0, 
+                c2.size() - 1);
            
             CurvatureScaleSpaceContour contour2s = (index2s == -1) ?
                 null : c2.get(index2s);
@@ -455,74 +465,9 @@ public final class CurvatureScaleSpaceContourMatcher {
             
             if (contour2s != null) {
                 
-                int alreadyVisitedIdx = nc.getMatchedContours2().indexOf(
-                    contour2s);
-                            
-                Set<Integer> excludeIds = new HashSet<Integer>();
+                //log.info("MATCHED: " + contour1s.toString() + " WITH: " + 
+                //    contour2s.toString());
                 
-                while (alreadyVisitedIdx > -1) {
-                                        
-                    // if cost of this match is less than it's previous match,
-                    // remove previous match and let the previous node 1
-                    // be rematched or not found 
-                    // (and hence the loop still terminates)
-                    
-                    CurvatureScaleSpaceContour alreadyVisited1 = 
-                        nc.getMatchedContours1().get(alreadyVisitedIdx);
-                    
-                    CurvatureScaleSpaceContour alreadyVisited2 = 
-                        nc.getMatchedContours2().get(alreadyVisitedIdx);
-                    
-                    double targetSigma = scale * alreadyVisited1.getPeakSigma();
-                    
-                    double targetT = (scale * 
-                        alreadyVisited1.getPeakScaleFreeLength()) + shift;
-                    
-                    double alreadyVisitedCost = calculateCost(alreadyVisited2, 
-                        targetSigma, targetT);
-                    
-                    if (alreadyVisitedCost > cost2) {
-                        
-                        // the previous match cost > current contour2s cost
-                        
-                        // remove previous match from nc and subtract the
-                        // alreadyVisitedCost from u.key and let the new match
-                        // be added in the next block
-                        
-                        nc.unVisitMatchedContours(alreadyVisitedIdx);
-                        
-                        u.setKey(u.getKey() - 
-                            (long)(alreadyVisitedCost * heapKeyFactor));
-                        
-                        break;
-                        
-                    } else {
-
-                        // let alreadyVisited remain in nc
-                        // search for another match to sigma2 and t2 
-                        
-                        excludeIds.add(Integer.valueOf(alreadyVisitedIdx));
-                                                    
-                        index2s = findClosestC2MatchOrderedSearch(sigma2, 
-                            t2, excludeIds);
-
-                        contour2s = (index2s == -1) ? null : c2.get(index2s);
-
-                        cost2 = calculateCost(contour2s, sigma2, t2);
-
-                        if (contour2s == null) {
-                            break;
-                        }
-
-                        alreadyVisitedIdx = nc.getMatchedContours2().indexOf(
-                            contour2s);
-
-                        // let the loop continue.  it will reeval if > -1
-                    } 
-                }                
-            }
-            
-            if (contour2s != null) {
                 nc.addMatchedContours(contour1s, contour2s);
             }
             
@@ -569,15 +514,18 @@ public final class CurvatureScaleSpaceContourMatcher {
     }
 
     /**
-     * an ordered search for the closest match of peaks in list c2
+     * a strict ordered search for the closest match of peaks in list c2
+     * from index lowIdx to highIdx, inclusive.
      * 
-     * runtime complexity is O(m) where m is the size of list c2
+     * runtime complexity is O(m) where m is highIdx - lowIdx + 1
      * @param sigma
      * @param scaleFreeLength
+     * @param lowIdx
+     * @param highIdx
      * @return 
      */
     private int findClosestC2MatchOrderedSearch(double sigma, 
-        double scaleFreeLength) {
+        double scaleFreeLength, int lowIdx, int highIdx) {
         
         //TODO: use 0.1*sigma? current sigma factor peak center error
         double tolSigma = 0.01*sigma;
@@ -592,66 +540,7 @@ public final class CurvatureScaleSpaceContourMatcher {
         double minDiff2T = Double.MAX_VALUE;
         int minDiff2TIdx = -1;
         
-        for (int i = 0; i < c2.size(); i++) {
-        
-            CurvatureScaleSpaceContour c = c2.get(i);
-                
-            double diffS = Math.abs(c.getPeakSigma() - sigma);
-            double diffT = Math.abs(c.getPeakScaleFreeLength() - 
-                scaleFreeLength);
-            
-            if (diffS <= (minDiffS + tolSigma)) {
-                if (diffT <= minDiffT) {
-                    minDiffS = diffS;
-                    minDiffT = diffT;
-                    idx = i;
-                }
-                
-            } else if (diffS <= (minDiffS + 3*tolSigma)) {
-                if (diffT < minDiff2T) {
-                    minDiff2T = diffT;
-                    minDiff2TIdx = idx;
-                }
-            }
-        }
-        
-        if (minDiffT <= minDiff2T) {
-            return idx;
-        }
-        
-        return minDiff2TIdx;
-    }
-    
-    /**
-     * an ordered search for the closest match of peaks in list c2
-     * 
-     * runtime complexity is O(m) where m is the size of list c2
-     * @param sigma
-     * @param scaleFreeLength
-     * @param excludeIdx
-     * @return 
-     */
-    private int findClosestC2MatchOrderedSearch(double sigma, 
-        double scaleFreeLength, Set<Integer> excludeIdx) {
-        
-        //TODO: use 0.1*sigma? current sigma factor peak center error
-        double tolSigma = 0.01*sigma;
-        if (tolSigma < 1E-2) {
-            tolSigma = 1E-2;
-        }
-        
-        double minDiffS = Double.MAX_VALUE;
-        double minDiffT = Double.MAX_VALUE;
-        int idx = -1;
-        
-        double minDiff2T = Double.MAX_VALUE;
-        int minDiff2TIdx = -1;
-        
-        for (int i = 0; i < c2.size(); i++) {
-            
-            if (excludeIdx.contains(Integer.valueOf(i))) {
-                continue;
-            }
+        for (int i = lowIdx; i <= highIdx; i++) {
         
             CurvatureScaleSpaceContour c = c2.get(i);
                 

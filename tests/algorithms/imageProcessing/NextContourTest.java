@@ -1,9 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.ResourceFinder;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.After;
@@ -33,24 +34,45 @@ public class NextContourTest {
         
         List<CurvatureScaleSpaceContour> contours = 
             getImageContours("closed_curve.png");
-       
+        
+        Map<Integer, List<Integer> > curveIndexToContour =  
+            new HashMap<Integer, List<Integer> >();
+        
+        for (int i = 0; i < contours.size(); i++) {
+            
+            CurvatureScaleSpaceContour contour = contours.get(i);
+            
+            Integer curveIdx = Integer.valueOf(contour.getEdgeNumber());
+            
+            List<Integer> indexes = curveIndexToContour.get(curveIdx);
+            if (indexes == null) {
+                indexes = new ArrayList<Integer>();
+                curveIndexToContour.put(curveIdx, indexes);
+            }
+            
+            indexes.add(Integer.valueOf(i));            
+        }
+        
         List<CurvatureScaleSpaceContour> alreadyVisited = 
             new ArrayList<CurvatureScaleSpaceContour>();
         
-        NextContour nextContour = new NextContour(contours, 
-            alreadyVisited);
+        NextContour nextContour = new NextContour(contours, true, 
+            curveIndexToContour, alreadyVisited);
         
-        assertTrue(nextContour.unvisitedContours.size() == contours.size());
-                
+        assertTrue(nextContour.origContours.size() == contours.size());
+        assertTrue(nextContour.curveIndexToOrigContours.size() 
+            == curveIndexToContour.size());
+        
+        assertTrue(nextContour.contourIndex.size() == contours.size());
+        
+        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
+        
         //assert that internal data structure is sorted by descending sigma
         float lastSigma = Float.MAX_VALUE;
-        
-        Iterator<CurvatureScaleSpaceContour> iter = 
-            nextContour.unvisitedContours.iterator();
-        
-        while (iter.hasNext()) {
+        for (int i = 0; i < nextContour.origContours.size(); i++) {
             
-            CurvatureScaleSpaceContour contour = iter.next();
+            CurvatureScaleSpaceContour contour = 
+                nextContour.origContours.get(i);
             
             float sigma = contour.getPeakSigma();
             
@@ -59,15 +81,60 @@ public class NextContourTest {
             lastSigma = sigma;
         }
         
-        assertTrue(nextContour.getMatchedContours1().isEmpty());
-        assertTrue(nextContour.getMatchedContours2().isEmpty());
         
-        //TODO: add an assert that t is increasing for same sigma
+        //assert that internal data structure is sorted by descending sigma
+        lastSigma = Float.MAX_VALUE;
+        for (PairInt ci : nextContour.contourIndex) {
+                        
+            int curveIdx = ci.getX();
+            
+            int contourIdx = ci.getY();
+            
+            CurvatureScaleSpaceContour contour = 
+                nextContour.origContours.get(contourIdx);
+            
+            assertTrue(contour.getEdgeNumber() == curveIdx);
+            
+            float sigma = contour.getPeakSigma();
+            
+            assertTrue(sigma <= lastSigma);
+            
+            assertTrue(nextContour.curveList[curveIdx].length > 0);
+            boolean found = false;
+            for (int j = 0; j < nextContour.curveList[curveIdx].length; j++) {
+                PairInt ci2 = nextContour.curveList[curveIdx][j];
+                if ((ci2.getX() == ci.getX()) && (ci2.getY() == ci.getY())) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(found);
+            
+            lastSigma = sigma;
+        }
+        
+        int nTot = 0;
+        for (int i = 0; i < nextContour.curveList.length; i++) {
+            
+            PairInt[] indexes = nextContour.curveList[i];
+            
+            for (int j = 0; j < indexes.length; j++) {
+                PairInt ci = indexes[j];
+                assertTrue(nextContour.contourIndex.contains(ci));
+                int idx = ci.getY();
+                assertTrue(idx > -1 && idx < nextContour.origContours.size());
+            }
+            
+            nTot += indexes.length;
+        }
+        
+        assertTrue(nTot == contours.size());
+        
         
         // ======= using the find methods has side effect of removing the
         //         contour from the lookup datastructures
         CurvatureScaleSpaceContour contour = 
-            nextContour.findTallestContourWithinAScaleSpace();
+            nextContour.findTallestContourWithinAScaleSpace(0);
                 
         assertNotNull(contour);
         
@@ -75,21 +142,17 @@ public class NextContourTest {
         assertTrue(contour.getEdgeNumber() == contours.get(0).getEdgeNumber());
                 
         // assert internal look-up structures don't have this found contour now        
-        assertFalse(nextContour.unvisitedContours.contains(contour));
+        assertTrue(nextContour.contourIndex.size() == (contours.size() - 1));
+        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
+        assertTrue(nextContour.curveList[0].length == 3);
+        assertNull(nextContour.curveList[0][0]);
         
-        nextContour.addMatchedContours(contour, new CurvatureScaleSpaceContour(
-            12345, 0.12345f));
         
-        assertTrue(nextContour.getMatchedContours1().size() == 1);
-        assertTrue(nextContour.getMatchedContours2().size() == 1);
-        assertTrue(nextContour.getMatchedContours1().get(0).equals(contour));
-        assertTrue(nextContour.getMatchedContours2().get(0).getPeakSigma() 
-            == 12345);
-                
         // ======= using the find methods has side effect of removing the
         //         contour from the lookup datastructures
+        PairInt target = nextContour.curveList[0][1];
         contour = 
-            nextContour.findTheNextSmallestUnvisitedSibling(contour);
+            nextContour.findTheNextSmallestUnvisitedSibling(target);
         
         assertNotNull(contour);
         
@@ -97,20 +160,15 @@ public class NextContourTest {
         assertTrue(contour.getEdgeNumber() == contours.get(2).getEdgeNumber());
         
         // assert internal look-up structures don't have this found contour now        
-        assertFalse(nextContour.unvisitedContours.contains(contour));
-        
-        nextContour.addMatchedContours(contour, new CurvatureScaleSpaceContour(
-            2345, 0.2345f));
-        
-        assertTrue(nextContour.getMatchedContours1().size() == 2);
-        assertTrue(nextContour.getMatchedContours2().size() == 2);
-        assertTrue(nextContour.getMatchedContours1().get(1).equals(contour));
-        assertTrue(nextContour.getMatchedContours2().get(1).getPeakSigma() 
-            == 2345);
+        assertTrue(nextContour.contourIndex.size() == 1);
+        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
+        assertTrue(nextContour.curveList[0].length == 3);
+        assertNull(nextContour.curveList[0][0]);
+        assertNull(nextContour.curveList[0][2]);
         
         // ====== get the last contour remaining in lookups
         contour = 
-            nextContour.findTallestContourWithinAScaleSpace();
+            nextContour.findTallestContourWithinAScaleSpace(0);
         
         assertNotNull(contour);
         
@@ -118,18 +176,116 @@ public class NextContourTest {
         assertTrue(contour.getEdgeNumber() == contours.get(1).getEdgeNumber());
         
         // assert internal look-up structures don't have this found contour now
-        assertFalse(nextContour.unvisitedContours.contains(contour));
+        assertTrue(nextContour.contourIndex.isEmpty());
+        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
+        assertNull(nextContour.curveList[0]);
         
-        nextContour.addMatchedContours(contour, new CurvatureScaleSpaceContour(
-            345, 0.345f));
-        
-        assertTrue(nextContour.getMatchedContours1().size() == 3);
-        assertTrue(nextContour.getMatchedContours2().size() == 3);
-        assertTrue(nextContour.getMatchedContours1().get(2).equals(contour));
-        assertTrue(nextContour.getMatchedContours2().get(2).getPeakSigma() 
-            == 345);
     }
     
+    @Test
+    public void testInternalDataStructures1() throws Exception {
+        
+        List<CurvatureScaleSpaceContour> contours = 
+            getImageContours("closed_curve.png");
+        
+        Map<Integer, List<Integer> > curveIndexToContour =  
+            new HashMap<Integer, List<Integer> >();
+        
+        for (int i = 0; i < contours.size(); i++) {
+            
+            CurvatureScaleSpaceContour contour = contours.get(i);
+            
+            Integer curveIdx = Integer.valueOf(contour.getEdgeNumber());
+            
+            List<Integer> indexes = curveIndexToContour.get(curveIdx);
+            if (indexes == null) {
+                indexes = new ArrayList<Integer>();
+                curveIndexToContour.put(curveIdx, indexes);
+            }
+            
+            indexes.add(Integer.valueOf(i));            
+        }
+        
+        List<CurvatureScaleSpaceContour> alreadyVisited = 
+            new ArrayList<CurvatureScaleSpaceContour>();
+        alreadyVisited.add(contours.get(0));
+        
+        NextContour nextContour = new NextContour(contours, true,
+            curveIndexToContour, alreadyVisited);
+        
+        assertTrue(nextContour.origContours.size() == contours.size());
+        assertTrue(nextContour.curveIndexToOrigContours.size() 
+            == curveIndexToContour.size());
+        
+        assertTrue(nextContour.contourIndex.size() == (contours.size() - 1));
+        
+        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
+        
+        //assert that internal data structure is sorted by descending sigma
+        float lastSigma = Float.MAX_VALUE;
+        for (int i = 0; i < nextContour.origContours.size(); i++) {
+            
+            CurvatureScaleSpaceContour contour = 
+                nextContour.origContours.get(i);
+            
+            float sigma = contour.getPeakSigma();
+            
+            assertTrue(sigma <= lastSigma);
+            
+            lastSigma = sigma;
+        }
+        
+        
+        //assert that internal data structure is sorted by descending sigma
+        lastSigma = Float.MAX_VALUE;
+        for (PairInt ci : nextContour.contourIndex) {
+                        
+            int curveIdx = ci.getX();
+            
+            int contourIdx = ci.getY();
+            
+            CurvatureScaleSpaceContour contour = 
+                nextContour.origContours.get(contourIdx);
+            
+            assertTrue(contour.getEdgeNumber() == curveIdx);
+            
+            float sigma = contour.getPeakSigma();
+            
+            assertTrue(sigma <= lastSigma);
+            
+            assertTrue(nextContour.curveList[curveIdx].length > 0);
+            boolean found = false;
+            for (int j = 0; j < nextContour.curveList[curveIdx].length; j++) {
+                PairInt ci2 = nextContour.curveList[curveIdx][j];
+                if ((ci2.getX() == ci.getX()) && (ci2.getY() == ci.getY())) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(found);
+            
+            lastSigma = sigma;
+        }
+        
+        int nTot = 0;
+        for (int i = 0; i < nextContour.curveList.length; i++) {
+            
+            PairInt[] indexes = nextContour.curveList[i];
+            
+            for (int j = 0; j < indexes.length; j++) {
+                PairInt ci = indexes[j];
+                assertTrue(nextContour.contourIndex.contains(ci));
+                int idx = ci.getY();
+                assertTrue(idx > -1 && idx < nextContour.origContours.size());
+            }
+            
+            nTot += indexes.length;
+        }
+        
+        assertTrue(nTot == (contours.size() - 1));
+        
+    }
+
     protected List<CurvatureScaleSpaceContour> getImageContours(String fileName)
         throws Exception {
 
