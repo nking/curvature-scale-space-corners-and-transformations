@@ -1,11 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.ResourceFinder;
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -110,7 +105,7 @@ public class MatchedPointsTransformationCalculatorTest {
             matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights, 
             centroidX1, centroidY1);
         
-        assertTrue(Math.abs(params.getRotationInDegrees() - -20) < 10.f);
+        assertTrue(Math.abs(params.getRotationInDegrees() - 340) < 10.f);
              
         assertTrue(Math.abs(params.getScale() - 1.3) < 0.1);
         
