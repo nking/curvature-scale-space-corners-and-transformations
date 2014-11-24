@@ -1089,22 +1089,23 @@ public final class PointMatcher {
         double r = params.getRotationInRadians();
         double s = params.getScale();
         
+        double rMin = r - (10 * Math.PI/180);
+        double rMax = r + (10 * Math.PI/180);
+        double sMin = s - 1.5;
+        double sMax = s + 1.5;
+        
+        // the positive offsets can be found w/ reflection?
+        // TODO: needs testing for starter points.  these are supplying the
+        // "grid search" portion of exploring more than local space
         double[] drs = new double[] {
-            -5.0 * Math.PI/180., -2.5 * Math.PI/180., -1.0 * Math.PI/180., 
-            1.0 * Math.PI/180.
+            -5.0 * Math.PI/180., -2.5 * Math.PI/180., -1.0 * Math.PI/180.
+        };
+        double[] dss = new double[] {
+            -1.0, -0.1, -0.05 /*, 0.05, 0.1, 1.0*/
         };
         if (r == 0) {
              drs = new double[]{0};
         }
-
-        double rMin = r - (10 * Math.PI/180);
-        double rMax = r + (10 * Math.PI/180);
-        double sMin = s - 0.5;
-        double sMax = s + 0.5;
-        
-        double[] dss = new double[] {
-            -0.1, 0.1
-        };
         if (s == 1) {
             dss = new double[]{0};
             sMin = 1;
@@ -1121,6 +1122,8 @@ public final class PointMatcher {
         for (int i = 0; i <= dss.length; i++) {
             
             double scale = (i == 0) ? s : s + dss[i - 1];
+            
+            int z = 1;
             
             for (int j = 0; j <= drs.length; j++) {
                 

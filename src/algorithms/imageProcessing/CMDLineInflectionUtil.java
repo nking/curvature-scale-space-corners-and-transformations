@@ -236,6 +236,7 @@ public class CMDLineInflectionUtil {
         boolean writeImageOutput = false;
         boolean includeEdgesInImageOutput = false;
         boolean useLineDrawingMode = false;
+        boolean doRefineTransformations = false;
         
         //TODO:  tidy log statements and logging.properties and add a debug 
         //       flag to print details to stdout
@@ -277,6 +278,8 @@ public class CMDLineInflectionUtil {
                 includeEdgesInImageOutput = true;
             } else if (arg.equalsIgnoreCase("-input_is_line_drawing")) {
                 useLineDrawingMode = true;
+            } else if (arg.equalsIgnoreCase("-refine_transformations")) {
+                doRefineTransformations = true;
             }
         }
         
@@ -320,6 +323,10 @@ public class CMDLineInflectionUtil {
 
             if (useLineDrawingMode) {
                 mapper.useLineDrawingLineMode();
+            }
+            
+            if (doRefineTransformations) {
+                mapper.setToRefineTransformations();
             }
 
             TransformationParameters transformationParams
@@ -454,6 +461,8 @@ public class CMDLineInflectionUtil {
         System.out.println("  -input_is_line_drawing");
         System.out.println("      changes internal logic to handle an image");
         System.out.println("      of lines or solid blocks.");
+        System.out.println("  -refine_transformations");
+        System.out.println("      improve the transformations (takes more time).");
         System.out.println(eol
             + "Note that default is to create matching_points.tsv in the currect directory");
         System.out.println(eol);

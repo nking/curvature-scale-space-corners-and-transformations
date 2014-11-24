@@ -31,7 +31,8 @@ public class CMDLineInflectionUtilTest {
             "-image2=testresources/closed_curve_translate_scale_rotate135.png",
             "-mark_image",
             "-include_edges",
-            "-text_output"
+            "-text_output",
+            "-refine_transformations"
             //,"-input_is_line_drawing",
             
         };

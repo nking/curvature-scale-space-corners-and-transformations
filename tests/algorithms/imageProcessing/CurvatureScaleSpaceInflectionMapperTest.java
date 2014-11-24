@@ -66,7 +66,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             
             mapper.useDebugMode();
             
-            //mapper.doNotRefineTransformations();
+            mapper.setToRefineTransformations();
 
             TransformationParameters transformationParams = 
                 mapper.createEuclideanTransformation();

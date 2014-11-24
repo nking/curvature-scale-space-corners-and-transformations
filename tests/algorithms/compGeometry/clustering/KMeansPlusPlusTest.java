@@ -159,8 +159,8 @@ public class KMeansPlusPlusTest extends TestCase {
                 i, centers[i], std[i], expected[i]));
             
             // 95% confidence intervals:
-            double upper = centers[i] + std[i];
-            double lower = centers[i] - std[i];
+            double upper = centers[i] + 2*std[i];
+            double lower = centers[i] - 2*std[i];
             
             assertTrue((expected[i] >= lower) && (expected[i] <= upper));
         }

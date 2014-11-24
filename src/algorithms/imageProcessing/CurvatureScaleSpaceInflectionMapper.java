@@ -27,7 +27,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
     
     private boolean useLineDrawingMode = false;
         
-    private boolean doNotRefineTransformations = false;
+    private boolean doRefineTransformations = false;
     
     private boolean initialized = false;
     
@@ -132,8 +132,8 @@ public final class CurvatureScaleSpaceInflectionMapper {
         this.useLineDrawingMode = true;
     }
     
-    public void doNotRefineTransformations() {
-        doNotRefineTransformations = true;
+    public void setToRefineTransformations() {
+        doRefineTransformations = true;
     }
     
     public void useDebugMode() {
@@ -604,7 +604,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
             matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights, 
             image1OriginalWidth >> 1, image1OriginalHeight >> 1);
        
-        if (!doNotRefineTransformations) {
+        if (doRefineTransformations) {
                             
             // note, these are closed curves
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
