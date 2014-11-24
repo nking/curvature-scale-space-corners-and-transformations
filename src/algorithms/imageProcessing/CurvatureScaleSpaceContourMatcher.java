@@ -4,11 +4,8 @@ import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.TreeSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 /**
@@ -538,63 +535,6 @@ public final class CurvatureScaleSpaceContourMatcher {
         double len = Math.sqrt(ds*ds + dt*dt);
         
         return len;
-    }
-
-    /**
-     * a strict ordered search for the closest match of peaks in list c2
-     * from index lowIdx to highIdx, inclusive.
-     * 
-     * runtime complexity is O(m) where m is highIdx - lowIdx + 1
-     * @param sigma
-     * @param scaleFreeLength
-     * @param lowIdx
-     * @param highIdx
-     * @return 
-     */
-    private int findClosestC2MatchOrderedSearch(double sigma, 
-        double scaleFreeLength, int lowIdx, int highIdx) {
-        
-        //TODO: use 0.1*sigma? current sigma factor peak center error
-        double tolSigma = 0.01*sigma;
-        if (tolSigma < 1E-2) {
-            tolSigma = 1E-2;
-        }
-        
-        double minDiffS = Double.MAX_VALUE;
-        double minDiffT = Double.MAX_VALUE;
-        int idx = -1;
-        
-        double minDiff2T = Double.MAX_VALUE;
-        int minDiff2TIdx = -1;
-        
-        for (int i = lowIdx; i <= highIdx; i++) {
-        
-            CurvatureScaleSpaceContour c = c2.get(i);
-                
-            double diffS = Math.abs(c.getPeakSigma() - sigma);
-            double diffT = Math.abs(c.getPeakScaleFreeLength() - 
-                scaleFreeLength);
-            
-            if (diffS <= (minDiffS + tolSigma)) {
-                if (diffT <= minDiffT) {
-                    minDiffS = diffS;
-                    minDiffT = diffT;
-                    idx = i;
-                }
-                
-            } else if (diffS <= (minDiffS + 3*tolSigma)) {
-                if (diffT < minDiff2T) {
-                    minDiff2T = diffT;
-                    minDiff2TIdx = i;
-                }
-            }
-        }
-        
-        if (minDiffT <= minDiff2T) {
-            return idx;
-        }
-        
-        return minDiff2TIdx;
     }
 
     private CurvatureScaleSpaceContour findMatchingC2(
