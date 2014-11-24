@@ -604,7 +604,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
             matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights, 
             image1OriginalWidth >> 1, image1OriginalHeight >> 1);
        
-        if (false && !doNotRefineTransformations) {
+        if (!doNotRefineTransformations) {
                             
             // note, these are closed curves
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
@@ -615,7 +615,8 @@ public final class CurvatureScaleSpaceInflectionMapper {
                     
             params = matcher.refineTransformation(
                 set1, set2, params, 
-                image1OriginalWidth >> 1, image1OriginalHeight >> 1);
+                image1OriginalWidth >> 1, image1OriginalHeight >> 1,
+                image2OriginalWidth >> 1, image2OriginalHeight >> 1);
             
             log.info("FINAL:\n" + params.toString());
         }

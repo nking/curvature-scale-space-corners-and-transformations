@@ -332,7 +332,7 @@ public final class PointMatcher {
         
         return bestFit;
     }
-   
+    
     /**
      * apply the parameters to set1 and find the matches to points in set2
      * within the given tolerance for translations.
@@ -369,8 +369,12 @@ public final class PointMatcher {
         double scale = params.getScale();
         
         if (scale < 1) {
-            // numerical errors in rounding to integer will give wrong solutions
-            throw new IllegalStateException("scale cannot be smaller than 1");
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+            
+            log.severe("scale cannot be smaller than 1");
+            
+            return null;
         }        
         
         int nMaxMatchable = 0;
@@ -417,6 +421,40 @@ public final class PointMatcher {
         return fit;
     }
 
+     /**
+     * apply the parameters to set1 and find the matches to points in set2
+     * within the given tolerance for translations.
+     * 
+     * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * ALSO NOTE: if you know a better solution exists for translation 
+     * parameters that matches fewer points, but has a small avg dist from
+     * model and smaller standard deviation from the avg dist from model,
+     * then transXTol and transYTol should be smaller.
+     * @param set1 points matched to set 2
+     * @param set2 points matched to set 1
+     * @param transXTol
+     * @param transYTol
+     * @param centroidX1
+     * @param centroidY1
+     * @return 
+     */
+    TransformationPointFit transform(PairIntArray set1, PairIntArray set2, 
+        double scale, double rotationInRadians, double translationX,
+        double translationY, double transXTol, double transYTol, 
+        int centroidX1, int centroidY1) {
+    
+        TransformationParameters params = new TransformationParameters();
+        params.setScale((float)scale);
+        params.setRotationInRadians((float)rotationInRadians);
+        params.setTranslationX((float)translationX);
+        params.setTranslationY((float)translationY);
+        
+        return transform(set1, set2, params, transXTol, transYTol, centroidX1,
+            centroidY1);
+    }
+    
     /**
      * apply the parameters to set1 and find the matches to points in set2
      * within the given tolerance for translations.
@@ -449,8 +487,12 @@ public final class PointMatcher {
         double scale = params.getScale();
         
         if (scale < 1) {
-            // numerical errors in rounding to integer will give wrong solutions
-            throw new IllegalStateException("scale cannot be smaller than 1");
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+            
+            log.severe("scale cannot be smaller than 1");
+            
+            return null;
         }        
         
         int nMaxMatchable = set1.getN();
@@ -518,8 +560,12 @@ public final class PointMatcher {
         double scale, int centroidX1, int centroidY1) {
         
         if (scale < 1) {
-            // numerical errors in rounding to integer will give wrong solutions
-            throw new IllegalStateException("scale cannot be smaller than 1");
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+            
+            log.severe("scale cannot be smaller than 1");
+            
+            return null;
         }
         
         //TODO:  offer a simplex search w/ fixed scale, fixed rotation and
@@ -571,12 +617,105 @@ public final class PointMatcher {
                 if (fitIsBetter(bestFit, fit)) {
                     bestFit = fit;
                 }
+                if ((fit.getNumberOfMatchedPoints() > (0.3*set1.getN())) 
+                    && (fit.getMeanDistFromModel() == 0)) {
+                    break;
+                }
             }
         }
         
         return (bestFit != null) ? bestFit : null;
     }
     
+    public TransformationPointFit calculateTranslation(PairIntArray set1, 
+        PairIntArray set2, 
+        double prevNearTransX, double prevNearTransY,
+        double transXTol, double transYTol, double rotation, 
+        double scale, int centroidX1, int centroidY1) {
+        
+        if (scale < 1) {
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+            
+            log.severe("scale cannot be smaller than 1");
+            
+            return null;
+        }
+        
+        //TODO:  offer a simplex search w/ fixed scale, fixed rotation and
+        // widely varying translation and
+        // compare accuracy to grid search here
+        
+        int nMax = set1.getN() * set2.getN();
+        
+        int maxFound = Integer.MIN_VALUE;
+        TransformationPointFit bestFit = null;
+        
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        double[] xyCentroids1 = curveHelper.calculateXYCentroids(set1);
+        double[] xyCentroids2 = curveHelper.calculateXYCentroids(set2);
+        
+        double xr = centroidX1*scale + ( 
+            ((xyCentroids1[0] - centroidX1) * scaleTimesCosine)
+            + ((xyCentroids1[1] - centroidY1) * scaleTimesSine));
+        
+        double yr = centroidY1 * scale 
+            + ((-(xyCentroids1[0] - centroidX1) * scaleTimesSine)
+            + ((xyCentroids1[1] - centroidY1) * scaleTimesCosine));
+        
+        int transXC = (int)Math.round(xyCentroids2[0] - xr);
+        int transYC = (int)Math.round(xyCentroids2[1] - yr);
+        
+        //TODO: need tests for this.  the assumed change is small
+        double deltaTransX = prevNearTransX - transXC;
+        if (deltaTransX < 0) {
+            deltaTransX *= -1;
+        }
+        if (deltaTransX < 1) {
+            deltaTransX = 7;
+        }
+        double deltaTransY = prevNearTransY - transYC;
+        if (deltaTransY < 0) {
+            deltaTransY *= -1;
+        }
+        if (deltaTransY < 1) {
+            deltaTransY = 7;
+        }
+        
+        int tx0 = (int)(((prevNearTransX + transXC)/2.) - 1.2*deltaTransX);
+        int ty0 = (int)(((prevNearTransY + transYC)/2.) - 1.2*deltaTransY);
+        
+        int tx1 = (int)(((prevNearTransX + transXC)/2.) + 1.2*deltaTransX);
+        int ty1 = (int)(((prevNearTransY + transYC)/2.) + 1.2*deltaTransY);
+        
+        for (int transX = tx0; transX < tx1; transX++) {
+            for (int transY = (int)ty0; transY < ty1; transY++) {                
+                TransformationParameters params = 
+                    new TransformationParameters();
+                params.setRotationInRadians((float) rotation);
+                params.setScale((float) scale);
+                params.setTranslationX(transX);
+                params.setTranslationY(transY);
+
+                TransformationPointFit fit = transform(set1, set2, params, 
+                    transXTol, transYTol, centroidX1, centroidY1);
+
+                if (fitIsBetter(bestFit, fit)) {
+                    bestFit = fit;
+                }
+                if ((fit.getNumberOfMatchedPoints() > (0.3*set1.getN())) 
+                    && (fit.getMeanDistFromModel() == 0)) {
+                    break;
+                }
+            }
+        }
+        
+        return (bestFit != null) ? bestFit : null;
+    }
+     
     /**
      * refine the transformation params for set1 to better match set2.
      * @param params
@@ -935,11 +1074,14 @@ public final class PointMatcher {
      * @param params
      * @param centroidX1
      * @param centroidY1
+     * @param centroidX2
+     * @param centroidY2
      * @return 
      */
     public TransformationParameters refineTransformation(PairIntArray[] edges1, 
         PairIntArray[] edges2, final TransformationParameters params,
-        final int centroidX1, final int centroidY1) {
+        final int centroidX1, final int centroidY1,
+        final int centroidX2, final int centroidY2) {
                     
         //TODO: set this empirically from tests
         double convergence = 0;
@@ -948,8 +1090,8 @@ public final class PointMatcher {
         double s = params.getScale();
         
         double[] drs = new double[] {
-            
-            -1.0 * Math.PI/180., 1.0 * Math.PI/180.
+            -5.0 * Math.PI/180., -2.5 * Math.PI/180., -1.0 * Math.PI/180., 
+            1.0 * Math.PI/180.
         };
         if (r == 0) {
              drs = new double[]{0};
@@ -961,7 +1103,7 @@ public final class PointMatcher {
         double sMax = s + 0.5;
         
         double[] dss = new double[] {
-            0.1
+            -0.1, 0.1
         };
         if (s == 1) {
             dss = new double[]{0};
@@ -983,10 +1125,11 @@ public final class PointMatcher {
             for (int j = 0; j <= drs.length; j++) {
                 
                 double rotation = (j == 0) ? r : r + drs[j - 1];
-                
-                fits[count] = refineTranslationAndTransformEdges(
-                    params, rotation, scale, edges1, edges2, 
-                    centroidX1, centroidY1);
+                                
+                fits[count] = calculateTranslationAndTransformEdges(
+                    rotation, scale, edges1, edges2, 
+                    params.getTranslationX(), params.getTranslationY(),
+                    centroidX1, centroidY1, centroidX2, centroidY2);
                 
                 if (fits[count] != null) {
                     count++;
@@ -1053,9 +1196,11 @@ public final class PointMatcher {
                 (s - alpha * (fits[worstFitIdx].getScale()));
             
             TransformationPointFit fitReflected = 
-                refineTranslationAndTransformEdges(
-                params, rReflect, sReflect, 
-                edges1, edges2, centroidX1, centroidY1);
+                calculateTranslationAndTransformEdges(
+                rReflect, sReflect, 
+                edges1, edges2, 
+                params.getTranslationX(), params.getTranslationY(),
+                centroidX1, centroidY1, centroidX2, centroidY2);
             
             boolean relectIsWithinBounds = 
                 /*(rReflect >= rMin) && (rReflect <= rMax) 
@@ -1079,9 +1224,10 @@ public final class PointMatcher {
                         (s - fits[worstFitIdx].getScale()));
                     
                     TransformationPointFit fitExpansion = 
-                        refineTranslationAndTransformEdges(
-                        params, rExpansion, sExpansion, edges1, edges2,
-                        centroidX1, centroidY1);
+                        calculateTranslationAndTransformEdges(
+                        rExpansion, sExpansion, edges1, edges2,
+                        params.getTranslationX(), params.getTranslationY(),
+                        centroidX1, centroidY1, centroidX2, centroidY2);
                     
                     if (fitIsBetter(fitReflected, fitExpansion)
                         && (/*(rExpansion >= rMin) && (rExpansion <= rMax)
@@ -1105,9 +1251,10 @@ public final class PointMatcher {
                         (s - fits[worstFitIdx].getScale()));
                     
                     TransformationPointFit fitContraction = 
-                        refineTranslationAndTransformEdges(
-                        params, rContraction, sContraction, edges1, edges2,
-                        centroidX1, centroidY1);
+                        calculateTranslationAndTransformEdges(
+                        rContraction, sContraction, edges1, edges2,
+                        params.getTranslationX(), params.getTranslationY(),
+                        centroidX1, centroidY1, centroidX2, centroidY2);
                     
                     if (fitIsBetter(fits[worstFitIdx], fitContraction)
                         /*&& 
@@ -1140,9 +1287,13 @@ public final class PointMatcher {
                             //  fall to the bottom of the list after the next 
                             //  sort.
                             TransformationPointFit fit = 
-                                refineTranslationAndTransformEdges(
-                                params, rReduction, sReduction, 
-                                edges1, edges2, centroidX1, centroidY1);
+                                calculateTranslationAndTransformEdges(
+                                rReduction, sReduction, 
+                                edges1, edges2, 
+                                params.getTranslationX(), 
+                                params.getTranslationY(),
+                                centroidX1, centroidY1,
+                                centroidX2, centroidY2);
                             
                             if (fit != null) {
                                 fits[i] = fit;
@@ -1202,11 +1353,11 @@ public final class PointMatcher {
      * @param centroidY1
      * @return 
      */
-    private TransformationPointFit refineTranslationAndTransformEdges(
-        TransformationParameters originalParameters,
+    private TransformationPointFit calculateTranslationAndTransformEdges(
         double rotInRad, double scl, 
         PairIntArray[] edges1, PairIntArray[] edges2, 
-        int centroidX1, int centroidY1) {
+        double prevNearTransX, double prevNearTransY,
+        int centroidX1, int centroidY1, int centroidX2, int centroidY2) {
         
         if (edges1 == null) {
             throw new IllegalArgumentException("edges1 cannot be null");
@@ -1218,69 +1369,8 @@ public final class PointMatcher {
             throw new IllegalArgumentException(
             "edges1 and edges2 must be the same length");
         }
-            
-        /*
-        Given fixed rotation and scale
-            find best translation X and Y for all edges, knowing already that 
-            the edges match one another.
-                
-        Current implementation:
-        
-            (discards previous translation estimates)
-        
-            for each edge pair: 
-                for each point in e1:  (rt: O(n1))
-                    for each point in e2:  ... (rt: O(n1 * n2))
-                        determine implied translation
-                        apply it to all of e1 and e2 to find number of matching
-                            (rt: O(n1*n2) * O(n1*n2))
-                        store the fit
-                for the best fit or combined fit, reapply it to all points to
-                get the returned fit.
-             
-            the result is optimal or very nearly optimal, but the runtime is 
-                too long
-
-        TODO: revising this implementation:
-        
-            need fewer and better choices of translation to
-            to reduce O(n1 * n2) factor above.
-        
-            consider other data, usable to speed up the search:
-               -- all edges are closed, so could use their centroids, that is, 
-                  scale and rotate the centroids to get an initial translation
-                  from scaled and rotated edge1 centroid and the edge2 centroid.
-                  *caveat* is that this would not be correct one or both closed
-                  curves are occluded.
-               -- a rough translation is already known from the first 
-                  transformation determined from the contour peaks.  could that
-                  be used with the current fixed scale and rotation to estimate
-                  what the translation should now be?  estimating in that
-                  manner needs a fixed reference point to calculate a scaled, 
-                  rotated, then translated point.  If occlusion weren't a 
-                  possibility, one could use the centroids of the closed curves 
-                  to estimate the latest translation from the original 
-                  transformation parameters and the current scale and rotation.
-        
-            so, ways towards an accurate, but faster solution for 
-            translation would be:
-               (1) a wide interval grid search over translation
-                   followed by a fine scale simplex search over the local
-                   region found by grid search, changing only translation
-               (2) OR a wide search over translation with a simplex.
-                   this later alone can produce a near optimal solution if
-                   there is a single minimum which is the same as the 
-                   global minimum.
-                   Since rotation and scale are fixed, and only translation
-                   has to be found, the simplex alone, even when the range
-                   of possible translations is large, should produce a near
-                   optimal result (literature suggests that it hasn't been
-                   proven that the nelder mead downhill simplex produces
-                   optimal result even for the later conditions).            
-
-            Will implement (2)...
-        ------------
-        
+       
+       /* 
         For final solution, could choose the best fit
         OR take a weighted average of the translation and re-apply it
         to all edges to return that as the fit for all edges.
@@ -1313,8 +1403,10 @@ public final class PointMatcher {
             PairIntArray edge1 = edges1[i];
             PairIntArray edge2 = edges2[i];
             
-            TransformationPointFit p = refineTranslation(
-                edge1, edge2, rotInRad, scl, centroidX1, centroidY1);
+            TransformationPointFit p = calculateTranslation(edge1, edge2, 
+                prevNearTransX, prevNearTransY,
+                transXTolerance, transYTolerance,
+                rotInRad, scl, centroidX1, centroidY1);
                 
             if (p == null) {
                 continue;
@@ -1361,46 +1453,6 @@ log.info("WEIGHTS: " + Arrays.toString(w));
     }
     
     /**
-     * given the scale, rotation and edge1's reference frame centroids,
-     * calculate the translation between edge1 and edge2 assuming that not all
-     * points will match.  transXTol and transYTol allow a tolerance when
-     * matching the predicted position of a point in edge2.
-     * 
-     * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
-     * be the first set given in arguments.
-     * 
-     * ALSO NOTE: if you know a better solution exists for translation 
-     * parameters that matches fewer points, but has a small avg dist from
-     * model and smaller standard deviation from the avg dist from model,
-     * then transXTol and transYTol should be set to a smaller value and passed
-     * to this method.
-     * 
-     * @param edge1 curve from image 1 to match to image2.
-     * @param edge2 curve from image 2 to be matched with image 1
-     * @param rotation given in radians with value between 0 and 2*pi, exclusive
-     * @param scale
-     * @param centroidX1 the x coordinate of the center of image 1 from which
-     * set 1 point are from.
-     * @param centroidY1 the y coordinate of the center of image 1 from which
-     * set 1 point are from.
-     * 
-     * @return 
-     */
-    TransformationPointFit refineTranslation(PairIntArray edge1, 
-        PairIntArray edge2, double rotation, double scale, 
-        int centroidX1, int centroidY1) {
-        
-        if (scale < 1) {
-            // numerical errors in rounding to integer will give wrong solutions
-            throw new IllegalStateException("scale cannot be smaller than 1");
-        }
-        
-        // change this to a downhill simplex search over range of translation
-        
-        throw new UnsupportedOperationException("method not yet implemented");
-    }
-    
-    /**
      * apply the parameters to set1 and find the matches to points in set2
      * within the given tolerance for translations.
      * 
@@ -1426,7 +1478,7 @@ log.info("WEIGHTS: " + Arrays.toString(w));
      * array diffFromModel for which points are added from this method.
      * @param avgDiffModel output variable holding the average difference from
      * the model.
-     * @return number of matched points
+     * @return number of matched points.  returns -1 if the scale is less than 1
      */
     int populateDiffFromModel(PairIntArray set1, PairIntArray set2, 
         TransformationParameters params, double transXTol, double transYTol, 
@@ -1451,8 +1503,12 @@ log.info("WEIGHTS: " + Arrays.toString(w));
         double rotation = params.getRotationInRadians();
         
         if (scale < 1) {
-            // numerical errors in rounding to integer will give wrong solutions
-            throw new IllegalStateException("scale cannot be smaller than 1");
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+            
+            log.severe("scale cannot be smaller than 1");
+            
+            return -1;
         }
         
         int nMatched = 0;

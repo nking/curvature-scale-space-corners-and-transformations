@@ -30,8 +30,9 @@ import java.util.logging.Logger;
  *    Extract-min and delete should be used sparingly for this structure to be
  * best utilized and are usually implemented as O(log_2 N).
  *
- * This was implemented following pseudo-code from Introduction to Algorithms, 
- * by Cormen et al.
+ * This was implemented following pseudo-code from 
+ * "Introduction to Algorithms", by Cormen, Leiserson, Rivest, & Stein
+ * on the Fibonacci Heap.
  * </pre>
  * 
  * @author nichole
