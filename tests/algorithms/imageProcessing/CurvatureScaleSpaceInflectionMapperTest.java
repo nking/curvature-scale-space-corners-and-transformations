@@ -39,7 +39,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         for (String rotDegrees : rotDegreesList) {
             
             /*
-            if (!rotDegrees.equals("20")) {
+            if (!rotDegrees.equals("60")) {
                 continue;
             }
             */

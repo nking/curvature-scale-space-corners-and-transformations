@@ -4,6 +4,7 @@ import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.TreeSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -164,79 +165,58 @@ public final class CurvatureScaleSpaceContourMatcher {
     */
     private void initialize() {
                 
-        //(1)  create initial scale and translate from only tallest contours
-        
-        /*
-        If edge1 in TransformationPair below has strong features, but its
-        strongest inflection point (contour peak) is somehow
-        missing from it's true match, edge2, in c2
-        (due to occlusion for example), the algorithm won't currently find a
-        match for those 2 curves via the TransformationPair for edge1, but
-        the best solution TransformationPair may still match those curves
-        via another edge's true match (the shift and offsets are correct for
-        all contours w.r.t. the edges they belong to).
-        
-        If there's only one edge in c1 and this condition of an occluded
-        strongest peak in the other contour list exists,
-        one could create an alternate initialization() to create a node
-        for each contour peak.  
-        TODO: consider the alternate initialization() for each node when
-        c1 is from only one edge.
-        
-        TODO: consider the case when a curve's true match is missing one
-        of the higher sigma peaks, but is well matched for weaker peaks.
-        In that case, an early false match could prevent a later better
-        match because only the unmatched are searched.
-        For that case, a "best match" within an edge's contours in c2 is 
-        needed and the ability to undo a previous false match for the
-        better matched pair.
-        
-        TODO: consider whether for the initialization(), which creates
-        the initial solutions in the heap, the algorithm should create
-        a node for every contour in c1.
-        While it would increase the complexity, it would solve the above
-        2 cases, and it would still result in a "savings" over a full
-        point to point comparison because the tried solutions would not
-        be applied to the nodes with the worse initial solutions.
-        The complexity for the first portion of the initialization stage 
-        would roughly change from O(N_edges_c1) to O(N_contours_c1).
-        Not needing to "undo" previous worse matches makes this change
-        appealling for ease of maintenance too.
-        */
-        
-        Iterator<Entry<Integer, List<Integer> > > iter1 = 
-            curveIndexToC1.entrySet().iterator();
-        
-        while (iter1.hasNext()) {
-            
-            Entry<Integer, List<Integer> > entry = iter1.next();
-            
-            List<Integer> indexes1 = entry.getValue();
-            
-            if ((indexes1 == null) || indexes1.isEmpty()) {
-                continue;
-            }
-            
-            int index1 = indexes1.get(0).intValue();
+        // (1)  create initial scale and translate nodes from all possible 
+        // contour combinations
+       
+        for (int index1 = 0; index1 < c1.size(); index1++) {
             
             CurvatureScaleSpaceContour contour1 = c1.get(index1);
             
-            Iterator<Entry<Integer, List<Integer> > > iter2 = 
-                curveIndexToC2.entrySet().iterator();
-            
-            while (iter2.hasNext()) {
-            
-                Entry<Integer, List<Integer> > entry2 = iter2.next();
-
-                List<Integer> indexes2 = entry2.getValue();
-
-                if ((indexes2 == null) || indexes2.isEmpty()) {
-                    continue;
+            // find this contour's place within the parent edge's contours
+            // to correct shift due to wrapping around 1 to 0 or vice versa                
+            float minT = Float.MAX_VALUE;
+            float maxT = Float.MIN_VALUE;
+            boolean isTallestPeakInEdge1 = false;
+            List<Integer> c1Indexes = curveIndexToC1.get(
+                Integer.valueOf(contour1.getEdgeNumber()));
+            for (int i = 0; i < c1Indexes.size(); i++) {
+                int c1Idx = c1Indexes.get(i);
+                CurvatureScaleSpaceContour ei = c1.get(c1Idx);
+                float t = ei.getPeakScaleFreeLength();
+                if (t < minT) {
+                    minT = t;
                 }
-
-                int index2 = indexes2.get(0).intValue();
-                                
+                if (t > maxT) {
+                    maxT = t;
+                }
+                if ((i == 0) && contour1.equals(ei)) {
+                    isTallestPeakInEdge1 = true;
+                }
+            }
+            boolean contour1IsLast = (contour1.getPeakScaleFreeLength() == maxT);
+            boolean contour1IsFirst = (contour1.getPeakScaleFreeLength() == minT);
+            
+            for (int index2 = 0; index2 < c2.size(); index2++) {
+            
                 CurvatureScaleSpaceContour contour2 = c2.get(index2);
+                
+                // find this contour's place within the parent edge's contours
+                // to correct shift due to wrapping around 1 to 0 or vice versa                
+                minT = Float.MAX_VALUE;
+                maxT = Float.MIN_VALUE;
+                for (Integer i
+                    : curveIndexToC2.get(Integer.valueOf(contour2.getEdgeNumber()))) {
+                    CurvatureScaleSpaceContour ei = c2.get(i.intValue());
+                    float t = ei.getPeakScaleFreeLength();
+                    if (t < minT) {
+                        minT = t;
+                    }
+                    if (t > maxT) {
+                        maxT = t;
+                    }
+                }
+                boolean contour2IsLast = (contour2.getPeakScaleFreeLength() == maxT);
+                boolean contour2IsFirst = (contour2.getPeakScaleFreeLength() == minT);
                 
                 TransformationPair obj = new TransformationPair(index1, index2);
                 
@@ -252,14 +232,15 @@ public final class CurvatureScaleSpaceContourMatcher {
                 double shift = contour2.getPeakScaleFreeLength() -
                     (contour1.getPeakScaleFreeLength() * scale);
                 
-                //double shift = contour2.getPeakScaleFreeLength() -
-                //    contour1.getPeakScaleFreeLength();
-                
-                if ((contour1.getPeakScaleFreeLength() < 0.2) &&
-                    (contour2.getPeakScaleFreeLength() > 0.8)) {
- throw new IllegalStateException("algorithm needs improvement here");
-                    //double con2 = contour2.getPeakScaleFreeLength() - 1;
-                    //shift = con2 - contour1.getPeakScaleFreeLength();
+                /*
+                correct for wrapping around the scale free axis
+                */
+                if (contour1IsLast && contour2IsFirst) {
+                    shift = (1 - contour1.getPeakScaleFreeLength()) +
+                        contour2.getPeakScaleFreeLength();
+                } else if (contour1IsFirst && contour2IsLast) {
+                    shift = -1 * (contour1.getPeakScaleFreeLength() +
+                        (1 - contour2.getPeakScaleFreeLength()));
                 }
                 
                 obj.setScale(scale);
@@ -310,33 +291,45 @@ public final class CurvatureScaleSpaceContourMatcher {
                     } else if (t2 > 1) {
                         t2 = t2 - 1;
                     }
-                     
-                    int index2s = findClosestC2MatchOrderedSearch(sigma2, t2, 0,
-                        c2.size() - 1);
                     
-                    CurvatureScaleSpaceContour contour2s;
-                    
-                    if (index2s == -1) {
-                        
-                        contour2s = null;
-                        
-                    } else {
-                        
-                        contour2s = c2.get(index2s);
-                        
+                    CurvatureScaleSpaceContour contour2s =
+                        findMatchingC2(contour1s.getEdgeNumber(),
+                        sigma2, t2, nc);
+                 
+                    if (contour2s != null) {
                         nc.addMatchedContours(contour1s, contour2s);                    
                     }
                     
                     double cost2 = calculateCost(contour2s, sigma2, t2);                    
 
-                    /*if (contour2s != null) {
-                        log.info("\nMATCHED: " + contour1s.toString() 
-                            + "\n   WITH: " + contour2s.toString());
-                    }*/
-                    
                     cost += cost2;
                 }
                 
+                /*
+                Penalty for starting a match from a peak which is not the max
+                height peak for the edge:
+                [last paragraph, section IV. A. of Mokhtarian & Macworth 1896]
+                "Since it is desirable to find a match corresponding to the 
+                coarse features of the curves, there is a penalty associated 
+                with starting a match with a small contour.  
+                This penalty is a linear function of the difference in height
+                of that contour and the tallest contour of the same scale space
+                image and is added to the cost of the match computed when a node
+                is created.
+                */
+                if (!isTallestPeakInEdge1) {
+                    
+                    int c1Idx = curveIndexToC1.get(
+                        Integer.valueOf(contour1.getEdgeNumber()))
+                        .get(0).intValue();
+                    
+                    CurvatureScaleSpaceContour ei = c1.get(c1Idx);
+                    
+                    double penalty = ei.getPeakSigma() - contour1.getPeakSigma();
+                    
+                    cost += penalty;
+                }
+            
                 long costL = (long)(cost * heapKeyFactor);
                 
                 HeapNode node = new HeapNode(costL);
@@ -484,22 +477,29 @@ public final class CurvatureScaleSpaceContourMatcher {
             } else if (t2 > 1) {
                 t2 = t2 - 1;
             }
-            
-            int index2s = findClosestC2MatchOrderedSearch(sigma2, t2, 0, 
-                c2.size() - 1);
-           
-            CurvatureScaleSpaceContour contour2s = (index2s == -1) ?
-                null : c2.get(index2s);
-                        
-            double cost2 = calculateCost(contour2s, sigma2, t2);
-            
+
+            CurvatureScaleSpaceContour contour2s
+                = findMatchingC2(contour1s.getEdgeNumber(), sigma2, t2, nc);
+
             if (contour2s != null) {
-                
-                //log.info("MATCHED: " + contour1s.toString() + " WITH: " + 
-                //    contour2s.toString());
-                
                 nc.addMatchedContours(contour1s, contour2s);
             }
+           
+            double cost2 = calculateCost(contour2s, sigma2, t2);
+            
+             /*
+            NOTE: if the penalty is needed for matches after the initialization,
+            it isn't clear.  
+            TODO: follow up on this.
+            [last paragraph, section IV. A. of Mokhtarian & Macworth 1896]
+            "Since it is desirable to find a match corresponding to the coarse
+            features of the curves, there is a penalty associated with starting
+            a match with a small contour.  
+            This penalty is a linear function of the difference in height
+            of that contour and the tallest contour of the same scale space
+            image and is added to the cost of the match computed when a node
+            is created.
+            */
             
             u.setData(obj);
             
@@ -523,9 +523,6 @@ public final class CurvatureScaleSpaceContourMatcher {
         double sigma, double scaleFreeLength) {
         
         if (contour == null) {
-            //throw new IllegalStateException("contour is null");
-            // ? scaleFreeLength contrib must be neglible
-            //double alt = Math.sqrt(sigma*sigma + scaleFreeLength*scaleFreeLength);
             return sigma;
         }
 
@@ -588,7 +585,139 @@ public final class CurvatureScaleSpaceContourMatcher {
             } else if (diffS <= (minDiffS + 3*tolSigma)) {
                 if (diffT < minDiff2T) {
                     minDiff2T = diffT;
-                    minDiff2TIdx = idx;
+                    minDiff2TIdx = i;
+                }
+            }
+        }
+        
+        if (minDiffT <= minDiff2T) {
+            return idx;
+        }
+        
+        return minDiff2TIdx;
+    }
+
+    private CurvatureScaleSpaceContour findMatchingC2(
+        int edgeNumber1, double sigma2, double t2, NextContour nc) {
+        
+        int expectedEdgeNumber2 = nc.getMatchedEdgeNumber2(edgeNumber1);
+
+        int idx2;
+        
+        if (expectedEdgeNumber2 == -1) {
+            
+            // choose from all of c2
+            idx2 = findClosestC2MatchOrderedSearch(sigma2, t2, 
+                nc.getMatchedContours2());
+            
+        } else {
+            
+            // choose from contours of expectedEdgeNumber2
+            List<Integer> indexes = curveIndexToC2.get(
+                Integer.valueOf(expectedEdgeNumber2));
+            
+            idx2 = findClosestC2MatchOrderedSearch(sigma2, t2, 
+                indexes, nc.getMatchedContours2());
+        }
+        
+        if (idx2 == -1) {
+            return null;
+        }
+
+        return c2.get(idx2);
+            
+    }
+
+    private int findClosestC2MatchOrderedSearch(double sigma, 
+        double scaleFreeLength, List<CurvatureScaleSpaceContour> exclude) {
+        
+        //TODO: use 0.1*sigma? current sigma factor peak center error
+        double tolSigma = 0.01*sigma;
+        if (tolSigma < 1E-2) {
+            tolSigma = 1E-2;
+        }
+        
+        double minDiffS = Double.MAX_VALUE;
+        double minDiffT = Double.MAX_VALUE;
+        int idx = -1;
+        
+        double minDiff2T = Double.MAX_VALUE;
+        int minDiff2TIdx = -1;
+        
+        for (int i = 0; i < c2.size(); i++) {
+        
+            CurvatureScaleSpaceContour c = c2.get(i);
+            
+            if (exclude.contains(c)) {
+                continue;
+            }
+                
+            double diffS = Math.abs(c.getPeakSigma() - sigma);
+            double diffT = Math.abs(c.getPeakScaleFreeLength() - 
+                scaleFreeLength);
+            
+            if (diffS <= (minDiffS + tolSigma)) {
+                if (diffT <= minDiffT) {
+                    minDiffS = diffS;
+                    minDiffT = diffT;
+                    idx = i;
+                }
+                
+            } else if (diffS <= (minDiffS + 3*tolSigma)) {
+                if (diffT < minDiff2T) {
+                    minDiff2T = diffT;
+                    minDiff2TIdx = i;
+                }
+            }
+        }
+        
+        if (minDiffT <= minDiff2T) {
+            return idx;
+        }
+        
+        return minDiff2TIdx;
+    }
+    
+    private int findClosestC2MatchOrderedSearch(double sigma, 
+        double scaleFreeLength, List<Integer> c2Indexes,
+        List<CurvatureScaleSpaceContour> exclude) {
+        
+        //TODO: use 0.1*sigma? current sigma factor peak center error
+        double tolSigma = 0.01*sigma;
+        if (tolSigma < 1E-2) {
+            tolSigma = 1E-2;
+        }
+        
+        double minDiffS = Double.MAX_VALUE;
+        double minDiffT = Double.MAX_VALUE;
+        int idx = -1;
+        
+        double minDiff2T = Double.MAX_VALUE;
+        int minDiff2TIdx = -1;
+        
+        for (Integer i : c2Indexes) {
+        
+            CurvatureScaleSpaceContour c = c2.get(i.intValue());
+            
+            if (exclude.contains(c)) {
+                continue;
+            }
+            
+            double diffS = Math.abs(c.getPeakSigma() - sigma);
+            double diffT = Math.abs(c.getPeakScaleFreeLength() - 
+                scaleFreeLength);
+            
+            if (diffS <= (minDiffS + tolSigma)) {
+                if (diffT <= minDiffT) {
+                    minDiffS = diffS;
+                    minDiffT = diffT;
+                    idx = i.intValue();
+                }
+                
+            } else if (diffS <= (minDiffS + 3*tolSigma)) {
+                if (diffT < minDiff2T) {
+                    minDiff2T = diffT;
+                    minDiff2TIdx = i.intValue();
                 }
             }
         }

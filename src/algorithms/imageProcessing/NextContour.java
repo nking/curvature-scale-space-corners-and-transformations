@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,10 +58,14 @@ public class NextContour implements Comparator<PairInt> {
     protected final List<CurvatureScaleSpaceContour> matchedContours1;
     protected final List<CurvatureScaleSpaceContour> matchedContours2;
     
+    protected final Map<Integer, Integer> matchedEdgeNumbers;
+    
     public NextContour(final List<CurvatureScaleSpaceContour> contours,
-        final boolean alreadySorted,
+        final boolean alreadySorted, 
         final Map<Integer, List<Integer> > edgeIndexToOrigContours,
-        final List<CurvatureScaleSpaceContour> alreadyVisited) {
+        List<CurvatureScaleSpaceContour> alreadyVisited) {
+        
+        matchedEdgeNumbers = new HashMap<Integer, Integer>();
         
         origContours = contours;
         
@@ -196,7 +201,6 @@ public class NextContour implements Comparator<PairInt> {
             
             contourIndex.remove(ci);
         }
-        
     }
     
     public void addMatchedContours(CurvatureScaleSpaceContour contour1,
@@ -204,6 +208,35 @@ public class NextContour implements Comparator<PairInt> {
         
         matchedContours1.add(contour1);
         matchedContours2.add(contour2);
+        
+        Integer edgeNumber1 = Integer.valueOf(contour1.getEdgeNumber());
+        
+        Integer edgeNumber2 = matchedEdgeNumbers.get(edgeNumber1);
+        
+        if (edgeNumber2 != null) {
+            if (contour2.getEdgeNumber() != edgeNumber2.intValue()) {
+                throw new IllegalArgumentException(
+                "contour2 is from edge number " 
+                + String.valueOf(contour2.getEdgeNumber()) 
+                + " but edge number " + edgeNumber2.toString() 
+                + " has already been matched to " + edgeNumber1.toString()
+                + " in c1");
+            }
+        } else {
+            matchedEdgeNumbers.put(edgeNumber1, 
+                Integer.valueOf(contour2.getEdgeNumber()));
+        }
+    }
+    
+    public int getMatchedEdgeNumber2(int edgeNumber1) {
+        
+        Integer edgeNumber2 = matchedEdgeNumbers.get(edgeNumber1);
+        
+        if (edgeNumber2 == null) {
+            return -1;
+        }
+        
+        return edgeNumber2.intValue();
     }
     
     /**
@@ -211,7 +244,9 @@ public class NextContour implements Comparator<PairInt> {
      * found by looking up the contour that target references.  Note that
      * this method has the side effect of removing the returned contour
      * from the internal look-up data structures.
-     * @param target
+     * 
+     * @param target holds edgeNumber as X and the origContours index as Y
+     * 
      * @return 
      */
     public CurvatureScaleSpaceContour findTheNextSmallestUnvisitedSibling(
@@ -225,9 +260,10 @@ public class NextContour implements Comparator<PairInt> {
         
         if (nextLower != null) {
             
-            int ocIdx = nextLower.getY();
+            int originalContoursIndex = nextLower.getY();
                 
-            CurvatureScaleSpaceContour contour = origContours.get(ocIdx);
+            CurvatureScaleSpaceContour contour = 
+                origContours.get(originalContoursIndex);
 
             int i = findCurveList2ndIndex(nextLower);
             
@@ -246,6 +282,11 @@ public class NextContour implements Comparator<PairInt> {
         return null;
     }
     
+    /**
+     * 
+     * @param target holds edgeNumber as X and the origContours index as Y
+     * @return 
+     */
     private int findCurveList2ndIndex(PairInt target) {
         
         int idx1 = target.getX();
@@ -276,8 +317,8 @@ public class NextContour implements Comparator<PairInt> {
      * a comparator to use to make a descending peak sigma sort for contours
      * in origContours referenced by o1 and o2.
      * 
-     * @param o1
-     * @param o2
+     * @param o1 holds edgeNumber as X and the origContours index as Y
+     * @param o2 holds edgeNumber as X and the origContours index as Y
      * @return 
      */
     @Override
@@ -290,6 +331,11 @@ public class NextContour implements Comparator<PairInt> {
         return Float.compare(c2.getPeakSigma(), c1.getPeakSigma());
     }
 
+    /**
+     * 
+     * @param target holds edgeNumber as X and the origContours index as Y
+     * @return 
+     */
     private PairInt findNextLower(PairInt target) {
         
         int idx = contourIndex.indexOf(target);
