@@ -31,16 +31,7 @@ import java.util.logging.Logger;
  * t vs sigma "images" are created and the contours are extracted from those.
  * 
  * This code accepts the contours from two different images and maps the first
- * image to the other using the contours.  It returns an affine transformation
- * matrix which can be used to find points in the first image in the second 
- * image.
- * 
- * The mapping is implemented by estimating the
- * 
- * 
- * NOTE: if one knew that the 2 lists of scale space images had the same members
- * present, that is both had same sets of contours, one could solve the mapping
- * faster with a bipartite min cost algorithm (runtime complexity: O(N^2)).
+ * image to the other using the contours. 
  * 
  * @author nichole
  */
@@ -174,6 +165,45 @@ public final class CurvatureScaleSpaceContourMatcher {
     private void initialize() {
                 
         //(1)  create initial scale and translate from only tallest contours
+        
+        /*
+        If edge1 in TransformationPair below has strong features, but its
+        strongest inflection point (contour peak) is somehow
+        missing from it's true match, edge2, in c2
+        (due to occlusion for example), the algorithm won't currently find a
+        match for those 2 curves via the TransformationPair for edge1, but
+        the best solution TransformationPair may still match those curves
+        via another edge's true match (the shift and offsets are correct for
+        all contours w.r.t. the edges they belong to).
+        
+        If there's only one edge in c1 and this condition of an occluded
+        strongest peak in the other contour list exists,
+        one could create an alternate initialization() to create a node
+        for each contour peak.  
+        TODO: consider the alternate initialization() for each node when
+        c1 is from only one edge.
+        
+        TODO: consider the case when a curve's true match is missing one
+        of the higher sigma peaks, but is well matched for weaker peaks.
+        In that case, an early false match could prevent a later better
+        match because only the unmatched are searched.
+        For that case, a "best match" within an edge's contours in c2 is 
+        needed and the ability to undo a previous false match for the
+        better matched pair.
+        
+        TODO: consider whether for the initialization(), which creates
+        the initial solutions in the heap, the algorithm should create
+        a node for every contour in c1.
+        While it would increase the complexity, it would solve the above
+        2 cases, and it would still result in a "savings" over a full
+        point to point comparison because the tried solutions would not
+        be applied to the nodes with the worse initial solutions.
+        The complexity for the first portion of the initialization stage 
+        would roughly change from O(N_edges_c1) to O(N_contours_c1).
+        Not needing to "undo" previous worse matches makes this change
+        appealling for ease of maintenance too.
+        */
+        
         Iterator<Entry<Integer, List<Integer> > > iter1 = 
             curveIndexToC1.entrySet().iterator();
         
