@@ -343,5 +343,106 @@ log.info("scl=" + scales[i] + " stDevScale=" + stDevScale
         
         return params;
     }
+
+    /**
+     * from a set of transformation parameters params that transform
+     * points in reference frame 1 into reference frame 2,
+     * transform the point (x1, y1) into reference frame 2.
+     * 
+     * @param params
+     * @param centroidX1 x centroid of reference frame 1
+     * @param centroidY1 y centroid of reference frame 1
+     * @param x1 the x coordinate of point (x1, y1) to transform
+     * @param y1 the y coordinate of point (x1, y1) to transform
+     * @return the coordinates of (x1, y1) transformed into reference frame 2
+     */
+    public double[] applyTransformation(TransformationParameters params, 
+        int centroidX1, int centroidY1,
+        double x1, double y1) {
+        
+        float rot = params.getRotationInRadians();
+        float scl = params.getScale();
+                
+        double mc = Math.cos(rot);
+        double ms = Math.sin(rot);
+                
+        double x2 = (double) centroidX1 * scl
+            + (((x1 - centroidX1) * scl * mc)
+            + ((y1 - centroidY1) * scl * ms));
+        x2 += params.getTranslationX();
+
+        double y2 = (double) centroidY1 * scl
+            + ((-(x1 - centroidX1) * scl * ms)
+            + ((y1 - centroidY1) * scl * mc));
+        y2 += params.getTranslationY();
+        
+        return new double[]{x2, y2};
+    }
+
+    /**
+     * from a set of transformation parameters params that transform
+     * points in reference frame 1 into reference frame 2, create
+     * a transformation that can transform points in reference frame 2
+     * into reference frame 1.  (x1, y1) and (x2, y2) are the same point
+     * in both frames and are used to calculate the translation.
+     * @param params transformation parameters to apply to points in reference
+     * frame 1 to put them in reference frame 2
+     * @param centroidX2 the x centroid of reference frame 2
+     * @param centroidY2 the y centroid of reference frame 2
+     * @param x1 x coordinate of point (x1, y1) in reference frame 1
+     * @param y1 y coordinate of point (x1, y1) in reference frame 1
+     * @param x2 x coordinate of point (x2, y2) in reference frame 2, where 
+     *    (x2, y2) is the (x1, y1) transformed to reference frame 2
+     * @param y2 y coordinate of point (x2, y2) in reference frame 2, where
+     *    (x2, y2) is the (x1, y1) transformed to reference frame 2
+     * @return transformation parameters that can transform points in reference
+     * frame 2 into reference frame 1
+     */
+    TransformationParameters swapReferenceFrames(TransformationParameters 
+        params, int centroidX2, int centroidY2,
+        double x1, double y1, double x2, double y2) {
+        
+        /*
+        use (centroidX of edge1, centroidY of edge1) for (x0, y0) 
+        to solve for (x1, y1) here and then reverse and invert the 
+        rotation and scale to solve for the "reverse" translations.
+
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) 
+            + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + ((-(x0-xc)*scale*math.sin(theta)) 
+            + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+     
+        float revRot = -1 * params.getRotationInRadians();
+        if (revRot < 0) {
+            revRot += 2. * Math.PI;
+        }
+        float revScale = 1.f / params.getScale();
+
+        double rmc = Math.cos(revRot);
+        double rms = Math.sin(revRot);
+
+        double x1_ = revScale * ((double) centroidX2 
+            + (((x2 - centroidX2) * rmc) + ((y2 - centroidY2) * rms)));
+        // (x1,y1) transformed to image 1 needs translation to equal (x0, y0)
+        float revTransX = (float) (x1 - x1_);
+
+        double y1_ = revScale * ((double) centroidY2
+            + ((-(x2 - centroidX2) * rms) + ((y2 - centroidY2) * rmc)));
+        float revTransY = (float) (y1 - y1_);
+
+        TransformationParameters paramsRev = new TransformationParameters();
+        paramsRev.setScale(revScale);
+        paramsRev.setRotationInRadians(revRot);
+        paramsRev.setTranslationX(revTransX);
+        paramsRev.setTranslationY(revTransY);
+        
+        return paramsRev;
+    }
     
 }

@@ -53,7 +53,7 @@ public class NextContour implements Comparator<PairInt> {
      * of PairInt here are stored also in contourTree, to make it easier
      * to remove/update contourTree at the same time.
      */
-    protected final PairInt[][] curveList;
+    protected final Map<Integer, List<PairInt> > curveList;
     
     protected final List<CurvatureScaleSpaceContour> matchedContours1;
     protected final List<CurvatureScaleSpaceContour> matchedContours2;
@@ -71,9 +71,7 @@ public class NextContour implements Comparator<PairInt> {
         
         curveIndexToOrigContours = edgeIndexToOrigContours;
         
-        curveList = new PairInt[edgeIndexToOrigContours.size()][];
-        
-        int[] countOfCurveContours = new int[edgeIndexToOrigContours.size()];
+        curveList = new HashMap<Integer, List<PairInt> >();
         
         // populate with contours that haven't been visited
         contourIndex = new ArrayList<PairInt>(origContours.size());
@@ -92,28 +90,24 @@ public class NextContour implements Comparator<PairInt> {
 
             contourIndex.add(ci);
 
-            countOfCurveContours[curveIndex]++;
+            Integer key = Integer.valueOf(curveIndex);
+            if (!curveList.containsKey(key)) {
+                curveList.put(key, new ArrayList<PairInt>());
+            }
         }
         
         if (!alreadySorted) {
             Collections.sort(contourIndex, this);
         }
         
-        // initialize the 2nd dimension of curveList
-        for (int i = 0; i < countOfCurveContours.length; i++) {
-            curveList[i] = new PairInt[countOfCurveContours[i]];
-        }
-        Arrays.fill(countOfCurveContours, 0);
         // fill curveList.  items are already ordered by descending peak sigma
         for (PairInt ci : contourIndex) {
             
             int curveIndex = ci.getX();
             
-            int i = countOfCurveContours[curveIndex];
+            Integer key = Integer.valueOf(curveIndex);
             
-            curveList[curveIndex][i] = ci;
-            
-            countOfCurveContours[curveIndex]++;
+            curveList.get(key).add(ci);
         }
         
         matchedContours1 = new ArrayList<CurvatureScaleSpaceContour>();
@@ -137,15 +131,15 @@ public class NextContour implements Comparator<PairInt> {
             throw new IllegalStateException("curveIndex is out of bounds");
         }
         
-        PairInt[] indexes = curveList[curveIndex];
+        List<PairInt> indexes = curveList.get(Integer.valueOf(curveIndex));
         
-        if ((indexes == null) || (indexes.length == 0)) {
+        if ((indexes == null) || indexes.isEmpty()) {
             return null;
         }
         
-        for (int i = 0; i < indexes.length; i++) {
+        for (int i = 0; i < indexes.size(); i++) {
             
-            PairInt ci = indexes[i];
+            PairInt ci = indexes.get(i);
             
             if (ci == null) {
                 
@@ -159,7 +153,7 @@ public class NextContour implements Comparator<PairInt> {
                 
                 CurvatureScaleSpaceContour contour = origContours.get(ocIdx);
                 
-                curveList[curveIndex][i] = null;
+                indexes.remove(ci);
                 
                 nullifyIfEmpty(curveIndex);
                 
@@ -181,22 +175,22 @@ public class NextContour implements Comparator<PairInt> {
         }
         
         PairInt ci = null;
-        PairInt[] indexes = curveList[curveIndex];
-        if ((indexes == null) || (indexes.length == 0)) {
+        List<PairInt> indexes = curveList.get(Integer.valueOf(curveIndex));
+        if ((indexes == null) || indexes.isEmpty()) {
             return;
         }
-        for (int i = 0; i < indexes.length; i++) {
-            PairInt pi = indexes[i];
+        for (int i = 0; i < indexes.size(); i++) {
+            PairInt pi = indexes.get(i);
             int cntrIdx = pi.getY();
             if (origContours.get(cntrIdx).equals(contour)) {
-                indexes[i] = null;
+                indexes.remove(pi);
                 ci = pi;
                 break;
             }
         }
         
         if (ci != null) {
-                    
+            
             nullifyIfEmpty(curveIndex);
             
             contourIndex.remove(ci);
@@ -265,11 +259,14 @@ public class NextContour implements Comparator<PairInt> {
             CurvatureScaleSpaceContour contour = 
                 origContours.get(originalContoursIndex);
 
-            int i = findCurveList2ndIndex(nextLower);
+            PairInt i = findCurveList2ndIndex(nextLower);
             
-            if (i != -1) {
+            if (i != null) {
                 
-                curveList[nextLower.getX()][i] = null;
+                List<PairInt> indexes = curveList.get(Integer.valueOf(
+                    nextLower.getX()));
+                
+                indexes.remove(i);
                 
                 nullifyIfEmpty(nextLower.getX());
             }
@@ -287,30 +284,28 @@ public class NextContour implements Comparator<PairInt> {
      * @param target holds edgeNumber as X and the origContours index as Y
      * @return 
      */
-    private int findCurveList2ndIndex(PairInt target) {
-        
-        int idx1 = target.getX();
-        
-        PairInt[] indexes = curveList[idx1];
+    private PairInt findCurveList2ndIndex(PairInt target) {
+                
+        List<PairInt> indexes = curveList.get(Integer.valueOf(target.getX()));
             
-        if ((indexes != null) && (indexes.length > 0)) {
+        if ((indexes != null) && !indexes.isEmpty()) {
 
-            for (int i = 0; i < indexes.length; i++) {
+            for (int i = 0; i < indexes.size(); i++) {
 
-                PairInt ci = indexes[i];
+                PairInt ci = indexes.get(i);
 
                 if (ci != null) {
 
                     if ((ci.getX() == target.getX()) && 
                         (ci.getY() == target.getY())) {
 
-                        return i;
+                        return ci;
                     }
                 }
             }
         }
         
-        return -1;
+        return null;
     }
     
     /**
@@ -376,16 +371,10 @@ public class NextContour implements Comparator<PairInt> {
         }
     }
 
-    private void nullifyIfEmpty(int curveListIndex) {
-        boolean canBeNulled = true;
-        for (int j = 0; j < curveList[curveListIndex].length; j++) {
-            if (curveList[curveListIndex][j] != null) {
-                canBeNulled = false;
-                break;
-            }
-        }
-        if (canBeNulled) {
-            curveList[curveListIndex] = null;
+    private void nullifyIfEmpty(int curveIndex) {
+        List<PairInt> indexes = curveList.get(Integer.valueOf(curveIndex));
+        if (indexes.isEmpty()) {
+            curveList.remove(Integer.valueOf(curveIndex));
         }
     }
     

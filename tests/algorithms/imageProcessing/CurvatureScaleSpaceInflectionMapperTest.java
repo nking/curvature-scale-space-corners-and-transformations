@@ -36,92 +36,107 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             "280", "335"
         };
         
-        for (String rotDegrees : rotDegreesList) {
-            
-            /*
-            if (!rotDegrees.equals("20")) {
-                continue;
+        for (boolean swapDueToScale : new boolean[]{false, true}) {
+        
+            for (String rotDegrees : rotDegreesList) {
+
+                /*
+                if (!rotDegrees.equals("180")) {
+                    continue;
+                }
+                */
+
+                String fileName1 = "closed_curve.png";
+                String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+
+                //String fileName2 = "closed_curve_translate.png";
+                //String fileName2 = "closed_curve_translate_scale.png";
+                String fileName2 = "closed_curve_translate_scale_rotate" + rotDegrees 
+                    + ".png";
+
+                String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+
+                if (swapDueToScale) {
+                    String swap = filePath1;
+                    filePath1 = filePath2;
+                    filePath2 = swap;
+                }
+                
+                GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);
+                GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
+                
+                double centroidX1 = img1.getWidth() >> 1;
+                double centroidY1 = img1.getHeight() >> 1;
+
+                CurvatureScaleSpaceInflectionMapper mapper = new 
+                    CurvatureScaleSpaceInflectionMapper(img1, img2);
+
+                mapper.useLineDrawingLineMode();
+
+                mapper.useDebugMode();
+
+                mapper.setToRefineTransformations();
+
+                TransformationParameters transformationParams = 
+                    mapper.createEuclideanTransformation();
+
+                assertNotNull(transformationParams);
+
+                float rotDeg = transformationParams.getRotationInDegrees();
+
+                float scale = transformationParams.getScale();
+
+                int nEdges1 = mapper.getEdges1InOriginalReferenceFrame().size();
+                PairIntArray[] edges1 = 
+                    mapper.getEdges1InOriginalReferenceFrame().toArray(
+                    new PairIntArray[nEdges1]);
+
+                Transformer transformer = new Transformer();
+                PairIntArray[] transformedEdges = 
+                    transformer.applyTransformation(transformationParams, 
+                        edges1, centroidX1, centroidY1);
+
+                img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
+
+                debugDisplay(transformedEdges, img2.copyImageToGreen(), rotDegrees);
+
+                double expectedRotDeg = Float.valueOf(rotDegrees).floatValue();
+
+                if (!swapDueToScale) {
+                    if (rotDegrees.equals("20")) {
+                        expectedRotDeg = 360 - expectedRotDeg;
+                    } else if (rotDegrees.equals("60")) {
+                        expectedRotDeg = 360 - expectedRotDeg;
+                    } else if (rotDegrees.equals("135")) {
+                        expectedRotDeg = 360 - expectedRotDeg;
+                    } else if (rotDegrees.equals("180")) {
+                        expectedRotDeg = 360 - expectedRotDeg;
+                    } else if (rotDegrees.equals("225")) {
+                        expectedRotDeg = 360 - expectedRotDeg;
+                    } else if (rotDegrees.equals("280")) {
+                        expectedRotDeg = 360 - expectedRotDeg;
+                    } else if (rotDegrees.equals("335")) {
+                        expectedRotDeg = 360 - expectedRotDeg;
+                    }
+                }
+
+                double foundRotDeg = rotDeg;
+
+                log.info("PARAMS: " + transformationParams.toString() 
+                    + "\nEXPECTED=" + rotDegrees + " (" + expectedRotDeg + ")");
+
+                assertTrue(Math.abs(expectedRotDeg - foundRotDeg) < 10.f);
+
+                if (rotDegrees.equals("135")) {
+                    assertTrue(Math.abs(scale - 1.0) < 0.15);
+                } else {
+                    if (swapDueToScale) {
+                        assertTrue(Math.abs(scale - (1./1.3)) < 0.15);
+                    } else {
+                        assertTrue(Math.abs(scale - 1.3) < 0.15);
+                    }
+                }
             }
-            */
-          
-            String fileName1 = "closed_curve.png";
-            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-            GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);
-
-            //String fileName2 = "closed_curve_translate.png";
-            //String fileName2 = "closed_curve_translate_scale.png";
-            String fileName2 = "closed_curve_translate_scale_rotate" + rotDegrees 
-                + ".png";
-
-            String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-            GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
-            
-            double centroidX1 = img1.getWidth() >> 1;
-            double centroidY1 = img1.getHeight() >> 1;
-
-            CurvatureScaleSpaceInflectionMapper mapper = new 
-                CurvatureScaleSpaceInflectionMapper(img1, img2);
-
-            mapper.useLineDrawingLineMode();
-            
-            mapper.useDebugMode();
-            
-            mapper.setToRefineTransformations();
-
-            TransformationParameters transformationParams = 
-                mapper.createEuclideanTransformation();
-
-            assertNotNull(transformationParams);
-
-            float rotDeg = transformationParams.getRotationInDegrees();
-
-            float scale = transformationParams.getScale();
-         
-            int nEdges1 = mapper.getEdges1InOriginalReferenceFrame().size();
-            PairIntArray[] edges1 = 
-                mapper.getEdges1InOriginalReferenceFrame().toArray(
-                new PairIntArray[nEdges1]);
-
-            Transformer transformer = new Transformer();
-            PairIntArray[] transformedEdges = 
-                transformer.applyTransformation(transformationParams, 
-                    edges1, centroidX1, centroidY1);
-                        
-            img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
-            
-            debugDisplay(transformedEdges, img2.copyImageToGreen(), rotDegrees);
-           
-            double expectedRotDeg = Float.valueOf(rotDegrees).floatValue();
-           
-            if (rotDegrees.equals("20")) {
-                expectedRotDeg = 360 - expectedRotDeg;
-            } else if (rotDegrees.equals("60")) {
-                expectedRotDeg = 360 - expectedRotDeg;
-            } else if (rotDegrees.equals("135")) {
-                expectedRotDeg = 360 - expectedRotDeg;
-            } else if (rotDegrees.equals("180")) {
-                expectedRotDeg = 360 - expectedRotDeg;
-            } else if (rotDegrees.equals("225")) {
-                expectedRotDeg = 360 - expectedRotDeg;
-            } else if (rotDegrees.equals("280")) {
-                expectedRotDeg = 360 - expectedRotDeg;
-            } else if (rotDegrees.equals("335")) {
-                expectedRotDeg = 360 - expectedRotDeg;
-            }
-            
-            double foundRotDeg = rotDeg;
-             
-            log.info("PARAMS: " + transformationParams.toString() 
-                + "\nEXPECTED=" + rotDegrees + " (" + expectedRotDeg + ")");
-
-            assertTrue(Math.abs(expectedRotDeg - foundRotDeg) < 10.f);
-            
-            if (rotDegrees.equals("135")) {
-                assertTrue(Math.abs(scale - 1.0) < 0.15);
-            } else {
-                assertTrue(Math.abs(scale - 1.3) < 0.15);
-            }
-           
         }
     }
     

@@ -1164,6 +1164,10 @@ public final class PointMatcher {
         
         while (go && (nIter < nMaxIter)) {
 
+            if (fits.length == 0) {
+                break;
+            }
+            
             sortByDescendingMatches(fits, 0, (fits.length - 1));
             
             if ((lastNMatches == fits[bestFitIdx].getNumberOfMatchedPoints()) &&

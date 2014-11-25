@@ -4,8 +4,10 @@ import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 /**
@@ -259,9 +261,14 @@ public final class CurvatureScaleSpaceContourMatcher {
                 
                 //(2) calc cost: apply to tallest contours from each curve
                 
-                for (int ii = 0; ii < curveIndexToC1.size(); ii++) {
+                Iterator<Entry<Integer, List<Integer> > > iter = 
+                    curveIndexToC1.entrySet().iterator();
+                
+                while (iter.hasNext()) {
+                
+                    List<Integer> indexes = iter.next().getValue();
             
-                    int index1s = curveIndexToC1.get(ii).get(0);
+                    int index1s = indexes.get(0);
                     
                     CurvatureScaleSpaceContour contour1s = c1.get(index1s);
                     

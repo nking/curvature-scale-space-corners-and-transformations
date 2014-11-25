@@ -599,26 +599,69 @@ public final class CurvatureScaleSpaceInflectionMapper {
             tc.useDebugMode();
         }
         
-        TransformationParameters params = tc.calulateEuclideanGivenScale(
-            matchedScale,
-            matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights, 
-            image1OriginalWidth >> 1, image1OriginalHeight >> 1);
-       
+        int centroidX1 = image1OriginalWidth >> 1;
+        int centroidY1 = image1OriginalHeight >> 1;
+        int centroidX2 = image2OriginalWidth >> 1;
+        int centroidY2 = image2OriginalHeight >> 1;
+        
+        TransformationParameters params = null;
+        
+        // if scale < 1, we have to swap the order of datasets to avoid
+        // numerical errors in some of the methods that are the result of
+        // dividing by a small number
+        
+        boolean reverseDatasetOrder = (matchedScale < 1.0);
+        
+        if (reverseDatasetOrder) {
+            params = tc.calulateEuclideanGivenScale(
+                1. / matchedScale,
+                matchedXY2, matchedXY2Weights, matchedXY1, matchedXY1Weights,
+                centroidX2, centroidY2);
+        } else {
+            params = tc.calulateEuclideanGivenScale(
+                matchedScale,
+                matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights,
+                centroidX1, centroidY1);
+        }
+               
         if (doRefineTransformations) {
                             
             // note, these are closed curves
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
-            
             PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
-
             PointMatcher matcher = new PointMatcher();
-                    
-            params = matcher.refineTransformation(
-                set1, set2, params, 
-                image1OriginalWidth >> 1, image1OriginalHeight >> 1,
-                image2OriginalWidth >> 1, image2OriginalHeight >> 1);
             
-            log.info("FINAL:\n" + params.toString());
+            if (reverseDatasetOrder) {
+                
+                params = matcher.refineTransformation(
+                    set2, set1, params, 
+                    centroidX2, centroidY2, centroidX1, centroidY1);
+                
+            } else {
+                
+                params = matcher.refineTransformation(
+                    set1, set2, params, 
+                    centroidX1, centroidY1, centroidX2, centroidY2);
+            }
+            
+            if (params != null) {
+                log.info("FINAL:\n" + params.toString());
+            }
+        }
+        
+        if (reverseDatasetOrder) {
+            
+            MiscellaneousCurveHelper curveHelper = 
+                new MiscellaneousCurveHelper();
+            
+            double[] x2y2 = curveHelper.calculateXYCentroids(
+                getMatchedEdges2InOriginalReferenceFrameArray()[0]);
+            
+            double[] x1y1 = tc.applyTransformation(params, 
+                centroidX2, centroidY2, x2y2[0], x2y2[1]);
+            
+            params = tc.swapReferenceFrames(params, 
+                centroidX1, centroidY1, x2y2[0], x2y2[1], x1y1[0], x1y1[1]);
         }
         
         return params;

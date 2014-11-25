@@ -5,8 +5,10 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,7 +67,7 @@ public class NextContourTest {
         
         assertTrue(nextContour.contourIndex.size() == contours.size());
         
-        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
+        assertTrue(nextContour.curveList.size() == curveIndexToContour.size());
         
         //assert that internal data structure is sorted by descending sigma
         float lastSigma = Float.MAX_VALUE;
@@ -99,10 +101,12 @@ public class NextContourTest {
             
             assertTrue(sigma <= lastSigma);
             
-            assertTrue(nextContour.curveList[curveIdx].length > 0);
+            Integer key = Integer.valueOf(curveIdx);
+            
+            assertTrue(nextContour.curveList.get(key).size() > 0);
             boolean found = false;
-            for (int j = 0; j < nextContour.curveList[curveIdx].length; j++) {
-                PairInt ci2 = nextContour.curveList[curveIdx][j];
+            for (int j = 0; j < nextContour.curveList.get(key).size(); j++) {
+                PairInt ci2 = nextContour.curveList.get(key).get(j);
                 if ((ci2.getX() == ci.getX()) && (ci2.getY() == ci.getY())) {
                     found = true;
                     break;
@@ -112,20 +116,22 @@ public class NextContourTest {
             
             lastSigma = sigma;
         }
-        
+                
         int nTot = 0;
-        for (int i = 0; i < nextContour.curveList.length; i++) {
+        for (int i = 0; i < nextContour.curveList.size(); i++) {
             
-            PairInt[] indexes = nextContour.curveList[i];
+            Integer key = Integer.valueOf(i);
             
-            for (int j = 0; j < indexes.length; j++) {
-                PairInt ci = indexes[j];
+            List<PairInt> indexes = nextContour.curveList.get(key);
+            
+            for (int j = 0; j < indexes.size(); j++) {
+                PairInt ci = indexes.get(j);
                 assertTrue(nextContour.contourIndex.contains(ci));
                 int idx = ci.getY();
                 assertTrue(idx > -1 && idx < nextContour.origContours.size());
             }
             
-            nTot += indexes.length;
+            nTot += indexes.size();
         }
         
         assertTrue(nTot == contours.size());
@@ -141,16 +147,16 @@ public class NextContourTest {
         assertTrue(contour.getPeakSigma() == contours.get(0).getPeakSigma());
         assertTrue(contour.getEdgeNumber() == contours.get(0).getEdgeNumber());
                 
+        Integer key = Integer.valueOf(0);
+        
         // assert internal look-up structures don't have this found contour now        
         assertTrue(nextContour.contourIndex.size() == (contours.size() - 1));
-        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
-        assertTrue(nextContour.curveList[0].length == 3);
-        assertNull(nextContour.curveList[0][0]);
-        
+        assertTrue(nextContour.curveList.size() == curveIndexToContour.size());
+        assertTrue(nextContour.curveList.get(key).size() == 2);        
         
         // ======= using the find methods has side effect of removing the
         //         contour from the lookup datastructures
-        PairInt target = nextContour.curveList[0][1];
+        PairInt target = nextContour.curveList.get(key).get(0);//<== '1'
         contour = 
             nextContour.findTheNextSmallestUnvisitedSibling(target);
         
@@ -161,10 +167,8 @@ public class NextContourTest {
         
         // assert internal look-up structures don't have this found contour now        
         assertTrue(nextContour.contourIndex.size() == 1);
-        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
-        assertTrue(nextContour.curveList[0].length == 3);
-        assertNull(nextContour.curveList[0][0]);
-        assertNull(nextContour.curveList[0][2]);
+        assertTrue(nextContour.curveList.size() == curveIndexToContour.size());
+        assertTrue(nextContour.curveList.get(key).size() == 1);
         
         // ====== get the last contour remaining in lookups
         contour = 
@@ -177,8 +181,7 @@ public class NextContourTest {
         
         // assert internal look-up structures don't have this found contour now
         assertTrue(nextContour.contourIndex.isEmpty());
-        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
-        assertNull(nextContour.curveList[0]);
+        assertTrue(nextContour.curveList.isEmpty());
         
     }
     
@@ -219,7 +222,7 @@ public class NextContourTest {
         
         assertTrue(nextContour.contourIndex.size() == (contours.size() - 1));
         
-        assertTrue(nextContour.curveList.length == curveIndexToContour.size());
+        assertTrue(nextContour.curveList.size() == curveIndexToContour.size());
         
         //assert that internal data structure is sorted by descending sigma
         float lastSigma = Float.MAX_VALUE;
@@ -234,7 +237,6 @@ public class NextContourTest {
             
             lastSigma = sigma;
         }
-        
         
         //assert that internal data structure is sorted by descending sigma
         lastSigma = Float.MAX_VALUE;
@@ -252,11 +254,13 @@ public class NextContourTest {
             float sigma = contour.getPeakSigma();
             
             assertTrue(sigma <= lastSigma);
+
+            Integer key = Integer.valueOf(curveIdx);
             
-            assertTrue(nextContour.curveList[curveIdx].length > 0);
+            assertTrue(nextContour.curveList.get(key).size() > 0);
             boolean found = false;
-            for (int j = 0; j < nextContour.curveList[curveIdx].length; j++) {
-                PairInt ci2 = nextContour.curveList[curveIdx][j];
+            for (int j = 0; j < nextContour.curveList.get(key).size(); j++) {
+                PairInt ci2 = nextContour.curveList.get(key).get(j);
                 if ((ci2.getX() == ci.getX()) && (ci2.getY() == ci.getY())) {
                     found = true;
                     break;
@@ -267,19 +271,24 @@ public class NextContourTest {
             lastSigma = sigma;
         }
         
+        Iterator<Entry<Integer, List<PairInt> > > iter = 
+            nextContour.curveList.entrySet().iterator();
+        
         int nTot = 0;
-        for (int i = 0; i < nextContour.curveList.length; i++) {
+        while (iter.hasNext()) {
             
-            PairInt[] indexes = nextContour.curveList[i];
+            Entry<Integer, List<PairInt> > entry = iter.next();
             
-            for (int j = 0; j < indexes.length; j++) {
-                PairInt ci = indexes[j];
+            List<PairInt> indexes = entry.getValue();
+            
+            for (int j = 0; j < indexes.size(); j++) {
+                PairInt ci = indexes.get(j);
                 assertTrue(nextContour.contourIndex.contains(ci));
                 int idx = ci.getY();
                 assertTrue(idx > -1 && idx < nextContour.origContours.size());
             }
             
-            nTot += indexes.length;
+            nTot += indexes.size();
         }
         
         assertTrue(nTot == (contours.size() - 1));

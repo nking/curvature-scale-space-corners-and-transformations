@@ -114,6 +114,101 @@ public class MatchedPointsTransformationCalculatorTest {
         assertTrue(Math.abs(params.getTranslationY() - 21.3) < (centroidY1*0.02));
     }
 
+    /*
+    public double[] applyTransformation(TransformationParameters params, 
+        int centroidX1, int centroidY1,
+        double x1, double y1) {
+    
+    TransformationParameters swapReferenceFrames(TransformationParameters 
+        params, int centroidX2, int centroidY2,
+        double x1, double y1, double x2, double y2) {
+    */
+    
+    @Test
+    public void testApplyTransformation() throws Exception {
+        PairIntArray set1 = new PairIntArray();
+        set1.add(10, 10);
+        set1.add(20, 20);
+        
+        PairIntArray set2 = new PairIntArray();
+        set2.add(47, 240);
+        set2.add(100, 259);
+        
+        int transX = 125;
+        int transY = 14;
+        double transXTol = 10.3;
+        double transYTol = 5.9;
+        double rotation = 25 * Math.PI/180.;
+        double scale = 4;
+        int centroidX1 = 100;
+        int centroidY1 = 100;
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setRotationInRadians((float)rotation);
+        params.setScale((float)scale);
+        params.setTranslationX(transX);
+        params.setTranslationY(transY);
+        
+        MatchedPointsTransformationCalculator tc = new 
+            MatchedPointsTransformationCalculator();
+        
+        for (int i = 0; i < set1.getN(); i++) {
+            
+            double[] x1y1 = tc.applyTransformation(params, 
+                centroidX1, centroidY1,
+                (double)set1.getX(i), (double)set1.getY(i));
+            
+            assertTrue(Math.abs(x1y1[0] - set2.getX(i)) <= 1);
+            assertTrue(Math.abs(x1y1[1] - set2.getY(i)) <= 1);
+        }
+    }
+    
+    @Test
+    public void testSwapReferenceFrames() throws Exception {
+        
+        PairIntArray set1 = new PairIntArray();
+        set1.add(10, 10);
+        set1.add(20, 20);
+        
+        PairIntArray set2 = new PairIntArray();
+        set2.add(47, 240);
+        set2.add(100, 259);
+        
+        int transX = 125;
+        int transY = 14;
+        double rotation = 25 * Math.PI/180.;
+        double scale = 4;
+        int centroidX1 = 100;
+        int centroidY1 = 100;
+        
+        int centroidX2 = 400;
+        int centroidY2 = 400;
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setRotationInRadians((float)rotation);
+        params.setScale((float)scale);
+        params.setTranslationX(transX);
+        params.setTranslationY(transY);
+        
+        MatchedPointsTransformationCalculator tc = new 
+            MatchedPointsTransformationCalculator();
+          
+        TransformationParameters revParams = tc.swapReferenceFrames(params, 
+            centroidX2, centroidY2, 
+            set1.getX(0), set1.getX(0), set2.getX(0), set2.getY(0));
+      
+        for (int i = 0; i < set1.getN(); i++) {
+            
+            double[] x1y1 = tc.applyTransformation(revParams, 
+                centroidX2, centroidY2,
+                (double)set2.getX(i), (double)set2.getY(i));
+            
+            assertTrue(Math.abs(x1y1[0] - set1.getX(i)) <= 1);
+            assertTrue(Math.abs(x1y1[1] - set1.getY(i)) <= 1);
+        }
+        
+    }
+    
     public static void main(String[] args) {
         
         try {
