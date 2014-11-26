@@ -465,7 +465,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                 
             }
             
-            if (contour1s == null) {
+            if (contour1s == null) {                
                 return u;
             }
             
@@ -513,6 +513,8 @@ public final class CurvatureScaleSpaceContourMatcher {
             u.setKey(u.getKey() + (long)(cost2 * heapKeyFactor));
             
             heap.insert(u);
+            
+            u = heap.extractMin();
         }
         
         return u;
