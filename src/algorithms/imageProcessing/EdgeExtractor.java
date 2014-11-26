@@ -296,6 +296,8 @@ public class EdgeExtractor {
             new Object[]{Long.toString(sum2), 
                 Long.toString(numberOfPixelsAboveThreshold)});
        
+        //pruneSpurs(output);
+        
         adjustEdgesTowardsBrightPixels(output);
         
         return output;
@@ -767,6 +769,268 @@ public class EdgeExtractor {
                 output.remove(i);
             }
         }
+    }
+    
+    private void pruneSpurs(List<PairIntArray> tmpEdges) {
+        
+        //TODO: improve this to follow a spur when found and remove the
+        //  resulting spurs from the remove action
+        
+        int nIter = 0;
+        int nMaxIter = 3;
+        int nRemoved = 0;
+                
+        while (nIter < nMaxIter) {
+            
+            nRemoved = 0;
+            
+            /*
+            0 0 0    0 0 0
+            0 1 0    0 1 0
+            0 _ _    _ _ 0
+            */
+            // indexes that have to be zeros that is, not within an edge
+            int[] topXIdx = new int[]{-1, 0, 1, -1, 1};
+            int[] topYIdx = new int[]{ 1, 1, 1,  0, 0};
+            int[] leftXIdx = new int[]{-1};
+            int[] leftYIdx = new int[]{-1};
+            int[] rightXIdx = new int[]{1};
+            int[] rightYIdx = new int[]{-1};
+            // one must be a zero:
+            int[] leftOrZeroXIdx = new int[]{0, 1};
+            int[] leftOrZeroYIdx = new int[]{-1, -1};
+            int[] rightOrZeroXIdx = new int[]{-1, 0};
+            int[] rightOrZeroYIdx = new int[]{-1, -1};
+        
+            for (int r = 0; r < 4; r++) {
+                if (r > 0) {
+                    rotateIndexesBy90(topXIdx, topYIdx);
+                    rotateIndexesBy90(leftXIdx, leftYIdx);
+                    rotateIndexesBy90(rightXIdx, rightYIdx);
+                    rotateIndexesBy90(leftOrZeroXIdx, leftOrZeroYIdx);
+                    rotateIndexesBy90(rightOrZeroXIdx, rightOrZeroYIdx);
+                }
+                for (int i = 0; i < tmpEdges.size(); i++) {
+                    
+                    PairIntArray edge = tmpEdges.get(i);
+                    
+                    // skip the endpoints
+                    for (int j = (edge.getN() - 1); j > 0; j--) {
+                        
+                        if ((j < 0) || (j > (edge.getN() - 1))) {break;}
+                        
+                        int x = edge.getX(j);
+                        int y = edge.getY(j);
+                        
+                        // TODO: consider a smaller range to search than +-10
+                        int start = j - 10;
+                        if (start < 0) {
+                            continue;
+                        }
+                        int stop = j + 10;
+                        if (stop > (edge.getN() - 1)) {
+                            continue;
+                        }
+                        // "notFound" is "all are zeroes"
+                        boolean notFound = notFound(edge, topXIdx, topYIdx, x, y, 
+                            start, stop);
+                        if (notFound) {
+                            notFound = notFound(edge, leftXIdx, leftYIdx, x, y, 
+                                start, stop);
+                            if (notFound) {
+                                if (hasAtLeastOneZero(edge, leftOrZeroXIdx,
+                                    leftOrZeroYIdx, x, y, start, stop)) {
+                                    
+                                    edge.removeRange(j, j);
+                                    nRemoved++;
+                                }
+                            } else {
+                                notFound = notFound(edge, rightXIdx, rightYIdx, x, y, 
+                                    start, stop);
+                                if (notFound) {
+                                    if (hasAtLeastOneZero(edge, rightOrZeroXIdx,
+                                        rightOrZeroYIdx, x, y, start, stop)) {
+                                        
+                                        edge.removeRange(j, j);
+                                        nRemoved++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            log.info("nRemoved=" + nRemoved);
+            if (nRemoved == 0) {
+                break;
+            }
+            nIter++;
+        }
+    }
+    
+    /**
+     * edge contains point pairs of (x, y).  this method searches edge to assert
+     * that all of the specified points are not present, else returns as soon
+     * as one of the specified points is found.  
+     * The specified points are 
+     * (xIndex + xIndexOffsets[i], yIndex + yIndexOffsets[i]).
+     * The search through edge is done from startIdx to stopIdx, inclusive.
+     * @param edge
+     * @param xIndexOffsets
+     * @param yIndexOffsets
+     * @param xIndex
+     * @param yIndex
+     * @param startIdx
+     * @param stopIdx
+     * @return 
+     */
+    private boolean notFound(PairIntArray edge, 
+        int[] xIndexOffsets, int[] yIndexOffsets,
+        int xIndex, int yIndex, int startIdx, int stopIdx) {
+        
+StringBuilder sb2 = new StringBuilder();
+        
+        for (int j = 0; j < xIndexOffsets.length; j++) {
+            int xFind = xIndex + xIndexOffsets[j];
+            int yFind = yIndex + yIndexOffsets[j];
+sb2.append(String.format("(%d, %d)\n", xFind, yFind));
+            for (int i = startIdx; i <= stopIdx; i++) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+                if ((x == xFind) && (y == yFind)) {
+                    return false;
+                }
+            }
+        }
+        
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < edge.getN(); i++) {
+     int x = edge.getX(i);
+     int y = edge.getY(i);
+     sb.append(String.format("%d)  (%d, %d)\n", i, x, y));
+}
+        
+        return true;
+    }
+    
+    /**
+     * edge contains point pairs of (x, y).  this method searches edge to assert
+     * that all of the specified points are not present, else returns as soon
+     * as one of the specified points is found.  
+     * The specified points are 
+     * (xIndex + xIndexOffsets[i], yIndex + yIndexOffsets[i]).
+     * The search through edge is done from startIdx to stopIdx, inclusive.
+     * NOTE: also checks for whether nulling the pixel at (xP, yP) is 
+     * connected to the wall and returns false if it is.
+     * @param edge
+     * @param xIndexOffsets
+     * @param yIndexOffsets
+     * @param xIndex
+     * @param yIndex
+     * @param startIdx
+     * @param stopIdx
+     * @return 
+     */
+    private boolean hasAtLeastOneZero(PairIntArray edge, 
+        int[] xIndexOffsets, int[] yIndexOffsets,
+        int xP, int yP, int startIdx, int stopIdx) {
+        
+        // side logic of checking whether connected to wall.  return false if so
+        if ((xP == 0) || (yP == 0)) {
+            return false;
+        }
+        if ((xP == (img.getWidth() - 1)) 
+            || (yP == (img.getHeight() - 1))) {
+            return false;
+        }
+        
+        int nOnes = 0;
+        for (int j = 0; j < xIndexOffsets.length; j++) {
+            int xFind = xP + xIndexOffsets[j];
+            int yFind = yP + yIndexOffsets[j];
+            for (int i = startIdx; i <= stopIdx; i++) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+                if ((x == xFind) && (y == yFind)) {
+                    nOnes++;
+                }
+            }
+        }        
+        
+        return (nOnes < (xIndexOffsets.length));
+    }
+    
+    private void rotateIndexesBy90(int[] xOffsetIndexes, int[] yOffsetIndexes) {
+        
+        for (int i = 0; i < xOffsetIndexes.length; i++) {
+            int xoff = xOffsetIndexes[i];
+            int yoff = yOffsetIndexes[i];
+           
+            switch(xoff) {
+                case -1:
+                    switch (yoff) {
+                        case -1:
+                            xOffsetIndexes[i] = -1;
+                            yOffsetIndexes[i] = 1;
+                            break;
+                        case 0:
+                            xOffsetIndexes[i] = 0;
+                            yOffsetIndexes[i] = 1;
+                            break;
+                        case 1:
+                            xOffsetIndexes[i] = 1;
+                            yOffsetIndexes[i] = 1;
+                            break;
+                    }
+                    break;
+                case 0:
+                    switch (yoff) {
+                        case -1:
+                            xOffsetIndexes[i] = -1;
+                            yOffsetIndexes[i] = 0;
+                            break;
+                        case 0:
+                            // remains same
+                            break;
+                        case 1:
+                            xOffsetIndexes[i] = 1;
+                            yOffsetIndexes[i] = 0;
+                            break;
+                    }
+                    break;
+                case 1:
+                    switch (yoff) {
+                        case -1:
+                            xOffsetIndexes[i] = -1;
+                            yOffsetIndexes[i] = -1;
+                            break;
+                        case 0:
+                            xOffsetIndexes[i] = 0;
+                            yOffsetIndexes[i] = -1;
+                            break;
+                        case 1:
+                            xOffsetIndexes[i] = 1;
+                            yOffsetIndexes[i] = -1;
+                            break;
+                    }
+                    break;
+            }
+        }
+        /*
+        1 2 3    7 4 1  
+        4 5 6      5 2  
+        7 _ _      6 3 
+        
+        (-1,1)    (1,1)   0
+        (0,1)     (1,0)   1
+        (1,1)     (1,-1)  2
+        (-1,0)    (0,1)   3
+        (0,0)     (0,0)   4
+        (1,0)     (0,-1)  5
+        (-1,-1)   (-1,1)  6
+        (0,-1)    (-1,0)  7
+        (1,-1)    (-1,-1) 8
+        */
     }
     
     private void adjustEdgesTowardsBrightPixels(List<PairIntArray> tmpEdges) {

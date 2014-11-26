@@ -1098,7 +1098,12 @@ public final class PointMatcher {
         // TODO: needs testing for starter points.  these are supplying the
         // "grid search" portion of exploring more than local space
         double[] drs = new double[] {
-            -5.0 * Math.PI/180., -2.5 * Math.PI/180., -1.0 * Math.PI/180.
+            -5.0 * Math.PI/180., 
+            -2.5 * Math.PI/180.,
+            -1.0 * Math.PI/180.,
+            1.0 * Math.PI/180.,
+            2.5 * Math.PI/180.,
+            5.0 * Math.PI/180.
         };
         double[] dss = new double[] {
             -1.0, -0.1, -0.05 /*, 0.05, 0.1, 1.0*/
@@ -1108,6 +1113,9 @@ public final class PointMatcher {
         }
         if (s == 1) {
             dss = new double[]{0};
+            sMin = 1;
+        }
+        if (sMin < 1) {
             sMin = 1;
         }
         if (rMin < 0) {
@@ -1169,7 +1177,13 @@ public final class PointMatcher {
             }
             
             sortByDescendingMatches(fits, 0, (fits.length - 1));
-            
+
+if (fits.length > 0) {
+    log.info("best fit:  n=" + fits[bestFitIdx].getNumberOfMatchedPoints()
+    + " dm=" + fits[bestFitIdx].getMeanDistFromModel()
+    + " params:\n" + fits[bestFitIdx].getParameters().toString());
+}           
+
             if ((lastNMatches == fits[bestFitIdx].getNumberOfMatchedPoints()) &&
                 (Math.abs(lastAvgDistModel - 
                 fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
@@ -1427,13 +1441,17 @@ public final class PointMatcher {
             norm += w[i];
         }
         
+        if (norm == 0) {
+            return null;
+        }
+        
         norm = 1./norm;
         
         for (int i = 0; i < edges1.length; i++) {
             w[i] *= norm;
         }
         
-log.info("WEIGHTS: " + Arrays.toString(w));
+//log.info("WEIGHTS: " + Arrays.toString(w));
         
         double weightAvgTransX = 0;
         double weightAvgTransY = 0;

@@ -59,7 +59,7 @@ public final class CurvatureScaleSpaceContourMatcher {
     
     private double solutionShift = Double.MAX_VALUE;
     
-    private long solutionCost = Long.MAX_VALUE;
+    private double solutionCost = Double.MAX_VALUE;
     
     private List<CurvatureScaleSpaceContour> solutionMatchedContours1 = null;
     
@@ -368,7 +368,7 @@ public final class CurvatureScaleSpaceContourMatcher {
      * first set of contours and the second set.
      * @return 
      */
-    public long getSolvedCost() {
+    public double getSolvedCost() {
         return solutionCost;
     }
   
@@ -395,7 +395,7 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         solutionShift = shift;
         solutionScale = scale;
-        solutionCost = minCost.getKey();
+        solutionCost = (double)(minCost.getKey()/heapKeyFactor);
   
         NextContour nc = obj.getNextContour();
                 
@@ -491,7 +491,7 @@ public final class CurvatureScaleSpaceContourMatcher {
            
             double cost2 = calculateCost(contour2s, sigma2, t2);
             
-             /*
+            /*
             NOTE: if the penalty is needed for matches after the initialization,
             it isn't clear.  
             TODO: follow up on this.
@@ -529,6 +529,15 @@ public final class CurvatureScaleSpaceContourMatcher {
         if (contour == null) {
             return sigma;
         }
+        /*
+        It's not clear whether the cost should include the scale free length
+        and sigma or just sigma.
+        From Mokhatarian & Mackworth 1986, Section IV, middle of column 1:
+        "The average distance between two contours is the average of the 
+        distances between the peaks, the right branches, and the left branches. 
+        The cost of matching two contours is defined to be the averaged 
+        distance between them after one of them has been transformed."
+        */
 
         double ds = sigma - contour.getPeakSigma();
         /*double tolSigma = 0.1*sigma;

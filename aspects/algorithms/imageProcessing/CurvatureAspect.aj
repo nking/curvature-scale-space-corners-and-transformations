@@ -91,7 +91,7 @@ public aspect CurvatureAspect {
 
     after() returning() 
         : execution(void algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper*.createMatchedPointArraysFromContourPeaks() ) 
-        && args() 
+        && args()
         && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper) {
     
         Object obj = thisJoinPoint.getThis();
@@ -116,11 +116,68 @@ public aspect CurvatureAspect {
             ImageIOHelper.addCurveToImage(xyc1, img1, 2, 255, 0, 0);
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
-                dirPath + "/contour_peaks1.png", img1);
+                dirPath + "/matched_contour_peaks1.png", img1);
 
             Image img2 = instance.getOriginalImage2().copyImageToGreen();
             
             ImageIOHelper.addCurveToImage(xyc2, img2, 2, 255, 0, 0);
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/matched_contour_peaks2.png", img2);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+
+    }
+
+    after() returning() 
+        : execution(public void algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper*.initialize() ) 
+        && args()
+        && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper) {
+    
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof CurvatureScaleSpaceInflectionMapper)) {
+            return;
+        }
+
+        CurvatureScaleSpaceInflectionMapper instance = 
+            (CurvatureScaleSpaceInflectionMapper)obj;
+
+        List<CurvatureScaleSpaceContour> c1 = instance.getContours1();
+        List<CurvatureScaleSpaceContour> c2 = instance.getContours2();
+        PairIntArray xy1 = new PairIntArray();
+        PairIntArray xy2 = new PairIntArray();
+
+        for (int i = 0; i < c1.size(); i++) {
+            CurvatureScaleSpaceImagePoint[] cp = c1.get(i).getPeakDetails();
+            for (int j = 0; j < cp.length; j++) {
+                int x = cp[j].getXCoord() + instance.getOffsetImageX1();
+                int y = cp[j].getYCoord() + instance.getOffsetImageY1();
+                xy1.add(x, y);
+            }
+        }
+        for (int i = 0; i < c2.size(); i++) {
+            CurvatureScaleSpaceImagePoint[] cp = c2.get(i).getPeakDetails();
+            for (int j = 0; j < cp.length; j++) {
+                int x = cp[j].getXCoord() + instance.getOffsetImageX2();
+                int y = cp[j].getYCoord() + instance.getOffsetImageY2();
+                xy2.add(x, y);
+            }
+        }
+
+        try {
+
+            Image img1 = instance.getOriginalImage1().copyImageToGreen();
+            
+            ImageIOHelper.addCurveToImage(xy1, img1, 2, 255, 0, 0);
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/contour_peaks1.png", img1);
+
+            Image img2 = instance.getOriginalImage2().copyImageToGreen();
+            
+            ImageIOHelper.addCurveToImage(xy2, img2, 2, 255, 0, 0);
             ImageIOHelper.writeOutputImage(
                 dirPath + "/contour_peaks2.png", img2);
 
@@ -245,7 +302,7 @@ public aspect CurvatureAspect {
     }
 
     after(GreyscaleImage input) returning() :
-        call(void CannyEdgeFilter*.apply2LayerFilter(GreyscaleImage))
+        execution(void CannyEdgeFilter*.apply2LayerFilter(GreyscaleImage))
         && args(input)
 	    && target(algorithms.imageProcessing.CannyEdgeFilter) {
 

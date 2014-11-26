@@ -39,19 +39,38 @@ public class MiscellaneousCurveHelper {
     public boolean curveIsOrderedClockwise(PairIntArray closedCurve) {
       
         if (closedCurve.getN() < 3) {
-            return true;
+            return false;
         }
         
         int nNeg = 0;
         int n = closedCurve.getN();
         
-        for (int i = 1; i < (n - 1); i++) {
+        for (int i = 0; i < (n - 1); i++) {
             
+            long xm1, ym1, x, y, xp1, yp1;
+            
+            if (i == 0) {
+                xm1 = closedCurve.getX(closedCurve.getN() - 1);
+                ym1 = closedCurve.getY(closedCurve.getN() - 1);
+                xp1 = closedCurve.getX(i + 1);
+                yp1 = closedCurve.getY(i + 1);
+            } else if (i == (closedCurve.getN() - 1)) {
+                xm1 = closedCurve.getX(i - 1);
+                ym1 = closedCurve.getY(i - 1);
+                xp1 = closedCurve.getX(0);
+                yp1 = closedCurve.getY(0);
+            } else {
+                xm1 = closedCurve.getX(i - 1);
+                ym1 = closedCurve.getY(i - 1);
+                xp1 = closedCurve.getX(i + 1);
+                yp1 = closedCurve.getY(i + 1);
+            }
+            x = closedCurve.getX(i);
+            y = closedCurve.getY(i);
+                
             //(xi - xi-1) * (yi+1 - yi) - (yi - yi-1) * (xi+1 - xi)
-            long crossProduct = ((closedCurve.getX(i) - closedCurve.getX(i - 1))
-                * (closedCurve.getY(i + 1) - closedCurve.getY(i)))
-                - ((closedCurve.getY(i) - closedCurve.getY(i - 1))*
-                (closedCurve.getX(i + 1) - closedCurve.getX(i)));
+            long crossProduct = ((x - xm1) * (yp1 - y))
+                - ((y - ym1) * (xp1 - x));
             
             if (crossProduct < 0) {
                 nNeg++;

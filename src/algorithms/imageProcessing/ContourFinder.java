@@ -44,8 +44,8 @@ public class ContourFinder {
         
         double lowLimit = space.getImageSigmas()[0]*thresholdFactor;
         //TODO: consider a low limit of sigma=3
-        if (lowLimit < 2) {
-            lowLimit = 2;
+        if (lowLimit < 3) {
+            lowLimit = 3;
         }
                 
         // find the first contour at this height and extract it from the
@@ -166,7 +166,7 @@ public class ContourFinder {
             
             // for case when there's a single point for the peak:
             removeContourFromImage(scaleSpaceImage, sigmaIndex, tIndex);
-                        
+
             return contour;
         }
         
@@ -207,9 +207,36 @@ public class ContourFinder {
 
 
             float[] t = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex + 1];
+            // sometimes for low sigma, the contours are misshapen and have
+            // vertical gaps, so iterating now to levels below to assert have
+            // the contour values below this peak or partial peak
+            if (sigma < 3.5) {
+                int t0 = (tIndex > 0) ? (tIndex - 1) : tIndex;
+                int t1 = ((tIndex + 1) < t.length) ? tIndex + 1 : tIndex;
+                if (t1 > t0) {
+                    int si = sigmaIndex + 1;
+                    while (si < (scaleSpaceImage.getScaleSpaceImage().length - 1)) {
+                        t = scaleSpaceImage.getScaleSpaceImage()[si + 1];
+                        int n = 0;
+                        for (int j = t0; j < t.length; j++) {
+                            float tt = t[j];
+                            if (tt > -1) {
+                                n++;
+                            }
+                        }
+                        if (n > 1) {
+                            break;
+                        }
+                        si++;
+                    }
+                }
+            }
 
             int start = (tIndex > 0) ? (tIndex - 1) : tIndex;
             for (int j = start; j < t.length; j++) {
+                if (t[j] < 0) {
+                    continue;
+                }
                 float lD = tPoint - t[j];
                 float rD = t[j] - tPoint;
 
@@ -240,7 +267,7 @@ public class ContourFinder {
                 
                 float tNext = 
                     scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];
-            
+                
                 isASinglePeak = (t[rightIndexBelow] < tNext) || (tNext < 0);
             }
         }
@@ -282,7 +309,7 @@ public class ContourFinder {
                 sigma, (tPoint + tNext)/2.f);
             
             contour.setEdgeNumber(scaleSpaceImage.getEdgeNumber());
-                        
+
             float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
             float t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];
             

@@ -258,7 +258,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
             Collections.sort(contours1, new DescendingSigmaComparator());
         }
         
-        float highestPeak1 = contours1.get(0).getPeakSigma();
+        /*float highestPeak1 = contours1.get(0).getPeakSigma();
         
         float lowThresh1 = 0.15f * highestPeak1;
         
@@ -266,7 +266,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
             if (contours1.get(i).getPeakSigma() < lowThresh1) {
                 contours1.remove(i);
             }
-        }
+        }*/
         
         /*
         note that when modifying the contour lists in any way, one has to
@@ -304,7 +304,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
 
             ScaleSpaceCurveImage scaleSpaceImage
                 = imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i);
-                 
+
             ContourFinder contourFinder = new ContourFinder();
 
             List<CurvatureScaleSpaceContour> result = contourFinder.findContours(
@@ -369,7 +369,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
             Collections.sort(contours2, new DescendingSigmaComparator());            
         }
         
-        float highestPeak2 = contours2.get(0).getPeakSigma();
+        /*float highestPeak2 = contours2.get(0).getPeakSigma();
         
         float lowThresh2 = 0.15f * highestPeak2;
         
@@ -377,7 +377,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
             if (contours2.get(i).getPeakSigma() < lowThresh2) {
                 contours2.remove(i);
             }
-        }
+        }*/
       
     }
   
@@ -422,7 +422,16 @@ public final class CurvatureScaleSpaceInflectionMapper {
         log.info("Contour matcher solution shift=" + matcher.getSolvedShift());
         
         matchedScale = matcher.getSolvedScale();
-  
+        
+        log.info("Contour matcher solution cost=" + matcher.getSolvedCost());
+        
+        /*
+        3 lobed polygon tests have cost:
+             0 to 3.0 for 6 matched points.
+        
+        
+        */
+
         PairIntArray xy1 = new PairIntArray(transAppliedTo1.size());
         PairIntArray xy2 = new PairIntArray(transAppliedTo1.size());
         List<Float> weights1 = new ArrayList<Float>();
@@ -623,7 +632,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
                 matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights,
                 centroidX1, centroidY1);
         }
-               
+        
         if (doRefineTransformations) {
                             
             // note, these are closed curves
