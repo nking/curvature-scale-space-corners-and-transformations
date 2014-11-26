@@ -314,10 +314,14 @@ public final class CurvatureScaleSpaceInflectionMapper {
             for (int j = 0; j < result.size(); j++) {
                 CurvatureScaleSpaceContour c = result.get(j);
                 CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();
-                for (int jj = 0; jj < points.length; jj++) {
-                    testContour.add((int)points[jj].getXCoord(), 
-                        (int)points[jj].getYCoord());
+                int n = points.length;
+                double sumX = 0;
+                double sumY = 0;
+                for (int jj = 0; jj < n; jj++) {
+                    sumX += points[jj].getXCoord();
+                    sumX += points[jj].getYCoord();
                 }
+                testContour.add((int)(sumX/(double)n), (int)(sumY/(double)n));
             }
             
             boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);

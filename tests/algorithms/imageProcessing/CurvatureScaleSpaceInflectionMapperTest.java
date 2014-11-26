@@ -28,7 +28,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
     @After
     public void tearDown() {
     }
-    
+
     @Test
     public void testMap() throws Exception {
         
@@ -138,6 +138,68 @@ public class CurvatureScaleSpaceInflectionMapperTest {
                 }
             }
         }
+    }
+    
+    //@Test
+    public void testMap2Objects() throws Exception {
+        
+        //"20", "60", "135", "180", "225","280", "335"
+        
+        String fileName1 = "closed_curve_translate_scale_rotate20.png";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+
+        String fileName2 = "closed_curve_translate_scale_rotate180.png";
+
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+
+        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);
+        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
+
+        double centroidX1 = img1.getWidth() >> 1;
+        double centroidY1 = img1.getHeight() >> 1;
+
+        CurvatureScaleSpaceInflectionMapper mapper = new 
+            CurvatureScaleSpaceInflectionMapper(img1, img2);
+
+        mapper.useLineDrawingLineMode();
+
+        mapper.useDebugMode();
+
+        mapper.setToRefineTransformations();
+
+        TransformationParameters transformationParams = 
+            mapper.createEuclideanTransformation();
+
+        assertNotNull(transformationParams);
+
+        float rotDeg = transformationParams.getRotationInDegrees();
+
+        float scale = transformationParams.getScale();
+
+        int nEdges1 = mapper.getEdges1InOriginalReferenceFrame().size();
+        PairIntArray[] edges1 = 
+            mapper.getEdges1InOriginalReferenceFrame().toArray(
+            new PairIntArray[nEdges1]);
+
+        Transformer transformer = new Transformer();
+        PairIntArray[] transformedEdges
+            = transformer.applyTransformation(transformationParams,
+                edges1, centroidX1, centroidY1);
+
+        img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
+
+        debugDisplay(transformedEdges, img2.copyImageToGreen(), "20-180");
+        double expectedRotDeg = 360 + (20 - 180);
+       
+        double foundRotDeg = rotDeg;
+
+        log.info("PARAMS: " + transformationParams.toString() 
+            + "\nEXPECTED=" + "20-180" + " (" + expectedRotDeg + ")");
+
+        assertTrue(Math.abs(expectedRotDeg - foundRotDeg) < 10.f);
+
+        assertTrue(Math.abs(scale - 1.0) < 0.15);
+        
     }
     
     //@Test
@@ -527,7 +589,9 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             CurvatureScaleSpaceInflectionMapperTest test = 
                 new CurvatureScaleSpaceInflectionMapperTest();
             
-            test.testMap();
+            test.testMap2Objects();
+            
+            //test.testMap();
             
             //test.testMap2();
             

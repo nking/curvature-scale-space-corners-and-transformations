@@ -301,7 +301,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                         sigma2, t2, nc);
                  
                     if (contour2s != null) {
-                        nc.addMatchedContours(contour1s, contour2s);                    
+                        nc.addMatchedContours(contour1s, contour2s);                   
                     }
                     
                     double cost2 = calculateCost(contour2s, sigma2, t2);                    
@@ -321,7 +321,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                 image and is added to the cost of the match computed when a node
                 is created.
                 */
-                if (!isTallestPeakInEdge1) {
+                /*if (!isTallestPeakInEdge1) {
                     
                     int c1Idx = curveIndexToC1.get(
                         Integer.valueOf(contour1.getEdgeNumber()))
@@ -332,8 +332,11 @@ public final class CurvatureScaleSpaceContourMatcher {
                     double penalty = ei.getPeakSigma() - contour1.getPeakSigma();
                     
                     cost += penalty;
-                }
-            
+                }*/
+                double penalty = c1.get(0).getPeakSigma() 
+                    - contour1.getPeakSigma();
+                cost += penalty;
+                
                 long costL = (long)(cost * heapKeyFactor);
                 
                 HeapNode node = new HeapNode(costL);
@@ -447,7 +450,7 @@ public final class CurvatureScaleSpaceContourMatcher {
             
             CurvatureScaleSpaceContour contour1s = 
                 nc.findTallestContourWithinAScaleSpace(curveIndex);
-            
+     
             if ((contour1s == null) || 
                 nc.getMatchedContours1().contains(contour1s)) {
                 

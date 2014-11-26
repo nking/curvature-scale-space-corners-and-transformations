@@ -38,14 +38,14 @@ public class MiscellaneousCurveHelper {
      */
     public boolean curveIsOrderedClockwise(PairIntArray closedCurve) {
       
-        if (closedCurve.getN() < 3) {
+        if (closedCurve.getN() < 2) {
             return false;
         }
         
         int nNeg = 0;
         int n = closedCurve.getN();
         
-        for (int i = 0; i < (n - 1); i++) {
+        for (int i = 0; i < n; i++) {
             
             long xm1, ym1, x, y, xp1, yp1;
             
@@ -67,10 +67,14 @@ public class MiscellaneousCurveHelper {
             }
             x = closedCurve.getX(i);
             y = closedCurve.getY(i);
+            
+            long dxmxm1 = (x - xm1);
+            long dymym1 = (y - ym1);
+            long dxp1mx = (xp1 - x);
+            long dyp1my = (yp1 - y);
                 
             //(xi - xi-1) * (yi+1 - yi) - (yi - yi-1) * (xi+1 - xi)
-            long crossProduct = ((x - xm1) * (yp1 - y))
-                - ((y - ym1) * (xp1 - x));
+            long crossProduct = (dxmxm1 * dyp1my) - (dymym1 * dxp1mx);
             
             if (crossProduct < 0) {
                 nNeg++;
@@ -78,22 +82,13 @@ public class MiscellaneousCurveHelper {
         }
         
         Logger.getLogger(this.getClass().getName()).fine(
-            "nNeg=" + nNeg + " nTot=" + n);
-        
-        Logger.getLogger(this.getClass().getName()).fine(
-            String.format("(%d,%d)", closedCurve.getX(0), closedCurve.getY(0))
-            + String.format(" (%d,%d)", closedCurve.getX(1), closedCurve.getY(1))
-            + String.format(" (%d,%d)", closedCurve.getX(2), closedCurve.getY(2))
-            + " ... "
-            + String.format(" (%d,%d)", closedCurve.getX(n - 2), closedCurve.getY(n-2))
-            + String.format(" (%d,%d)", closedCurve.getX(n - 1), closedCurve.getY(n-1))
-        );
+            "nNegative=" + nNeg + " nTotal=" + n);
         
         int nPos = n - 2 - nNeg;
         
         // note, may want to adjust this for image perspective where
         // positive y is in downward direction.
-        return (nNeg >= nPos);
+        return ((n > 2) && (nNeg >= nPos)) || (nNeg > nPos);
      }
      
     public void additionalThinning45DegreeEdges(
@@ -1502,8 +1497,8 @@ public class MiscellaneousCurveHelper {
             if (i >= stopIndex) {
                 return lineSegmentRanges;
             }
-            dx = (int) (curve.getX(i) - curve.getX(i - 1));
-            dy = (int) (curve.getY(i) - curve.getY(i - 1));
+            dx = (curve.getX(i) - curve.getX(i - 1));
+            dy = (curve.getY(i) - curve.getY(i - 1));
             if (dx == 0) {
                 widthIsAlongX = Boolean.FALSE;
             } else if (dy == 0) {
@@ -1521,8 +1516,8 @@ public class MiscellaneousCurveHelper {
                 if (i >= stopIndex) {
                     return lineSegmentRanges;
                 }
-                dx = (int) (curve.getX(i) - curve.getX(i - 1));
-                dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                dx = (curve.getX(i) - curve.getX(i - 1));
+                dy = (curve.getY(i) - curve.getY(i - 1));
                 if (dx == 0) {
                     widthIsAlongX = Boolean.FALSE;
                 } else if (dy == 0) {
@@ -1542,12 +1537,12 @@ public class MiscellaneousCurveHelper {
         
         for (i = start; i <= stopIndex; i++) {
                     
-            int x = (int)curve.getX(i);
-            int y = (int)curve.getY(i);
+            int x = curve.getX(i);
+            int y = curve.getY(i);
             
-            int diffX = (int)(x - curve.getX(i - 1));
+            int diffX = (x - curve.getX(i - 1));
             
-            int diffY = (int)(y - curve.getY(i - 1));
+            int diffY = (y - curve.getY(i - 1));
             
             // if not a continuation of current step, increment step
             if (!(
@@ -1636,8 +1631,8 @@ public class MiscellaneousCurveHelper {
                     if (i >= stopIndex) {
                         return lineSegmentRanges;
                     }
-                    dx = (int) (curve.getX(i) - curve.getX(i - 1));
-                    dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                    dx = (curve.getX(i) - curve.getX(i - 1));
+                    dy = (curve.getY(i) - curve.getY(i - 1));
                     if (dx == 0) {
                         widthIsAlongX = Boolean.FALSE;
                     } else if (dy == 0) {
@@ -1654,8 +1649,8 @@ public class MiscellaneousCurveHelper {
                         if (i >= stopIndex) {
                             return lineSegmentRanges;
                         }
-                        dx = (int) (curve.getX(i) - curve.getX(i - 1));
-                        dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                        dx = (curve.getX(i) - curve.getX(i - 1));
+                        dy = (curve.getY(i) - curve.getY(i - 1));
                         if (dx == 0) {
                             widthIsAlongX = Boolean.FALSE;
                         } else if (dy == 0) {
@@ -1668,8 +1663,8 @@ public class MiscellaneousCurveHelper {
                     // should be between tmpI and i
                     boolean iChanged = false;
                     for (int j = (i - 1); j > tmpI; j--) {
-                        diffX = (int)(curve.getX(j) - curve.getX(j - 1));
-                        diffY = (int)(curve.getY(j) - curve.getY(j - 1));
+                        diffX = (curve.getX(j) - curve.getX(j - 1));
+                        diffY = (curve.getY(j) - curve.getY(j - 1));
                         if (widthIsAlongX && (diffY == 0) && (diffX == dx)) {
                             i = j;
                             iChanged = true;

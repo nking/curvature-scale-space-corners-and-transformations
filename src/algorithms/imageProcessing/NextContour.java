@@ -147,7 +147,7 @@ public class NextContour implements Comparator<PairInt> {
                 
             } else {
                 
-                 //look up contour and remove this item from contourTree
+                //look up contour and remove this item from contourTree
                 // and curveList
                 int ocIdx = ci.getY();
                 
@@ -199,6 +199,8 @@ public class NextContour implements Comparator<PairInt> {
     
     public void addMatchedContours(CurvatureScaleSpaceContour contour1,
         CurvatureScaleSpaceContour contour2) {
+        
+        markAsVisited(contour1);
         
         matchedContours1.add(contour1);
         matchedContours2.add(contour2);
