@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -74,6 +76,8 @@ public class MatchedPointsTransformationCalculator {
         if (matchedXY1.getN() < 2) {
             return null;
         }
+        
+        log.info("start solution for " + matchedXY1.getN() + " points");
         
         //TODO: this could be improved by making pairs out of points with 
         // furthest x and y from each other
@@ -264,22 +268,56 @@ public class MatchedPointsTransformationCalculator {
         double rCount = 0;
         scaleSum = 0;
         double sCount = 0;
+        List<Integer> rm = new ArrayList<Integer>();
         for (int i = 0; i < matchedXY1.getN(); i++) {
+            double dss = Math.abs(scales[i] - avgScale);
+            if (dss > 1.5*stDevScale) {
+                rm.add(Integer.valueOf(i));
+                continue;
+            }
+            double dtt = Math.abs(thetas[i] - avgTheta);
+            if (dtt > 1.5*stDevTheta) {
+                rm.add(Integer.valueOf(i));
+                continue;
+            }
             
-            if (Math.abs(scales[i] - avgScale) <= stDevScale) {
-                scaleSum += scales[i];
-                sCount++;
-            }
-            if (Math.abs(thetas[i] - avgTheta) <= stDevTheta) {
-                rotSum += thetas[i];
-                rCount++;
-            }
-log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
-+ " (theta-avg)=" + (thetas[i] - avgTheta) 
-+ " w1=" + weights1[i] + " w2=" + weights2[i]);
 log.info("scl=" + scales[i] + " stDevScale=" + stDevScale
-+ " (scale-avg)=" + (scales[i] - avgScale));
++ " abs(scale-avg)=" + dss);
             
+            scaleSum += scales[i];
+            sCount++;
+           
+log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
++ " abs(theta-avg)=" + dtt 
++ " w1=" + weights1[i] + " w2=" + weights2[i]);
+            
+            rotSum += thetas[i];
+            rCount++;
+        }
+        
+        if (!rm.isEmpty()) {
+            
+            // remove from datasets and re-try
+            int nrm = rm.size();
+            PairIntArray xy1 = new PairIntArray();
+            PairIntArray xy2 = new PairIntArray();
+            float[] w1 = new float[weights1.length - nrm];
+            float[] w2 = new float[weights2.length - nrm];
+            
+            int ii = 0;
+            for (int i = 0; i < matchedXY1.getN(); i++) {
+                if (rm.contains(Integer.valueOf(i))) {
+                    continue;
+                }
+                xy1.add(matchedXY1.getX(i), matchedXY1.getY(i));
+                xy2.add(matchedXY2.getX(i), matchedXY2.getY(i));
+                w1[ii] = weights1[i];
+                w2[ii] = weights2[i];
+                ii++;
+            }
+            
+            return calulateEuclideanGivenScale(scale, xy1, w1,
+                xy2, w2, centroidX1, centroidY1);
         }
         
         double theRotation = rotSum/rCount;

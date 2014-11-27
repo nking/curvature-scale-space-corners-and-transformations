@@ -47,13 +47,13 @@ public final class CurvatureScaleSpaceContourMatcher {
      */
     protected final static long heapKeyFactor= 1000000000000l;
     
-    protected final List<CurvatureScaleSpaceContour> c1;
+    protected List<CurvatureScaleSpaceContour> c1;
     
-    protected final List<CurvatureScaleSpaceContour> c2;
+    protected List<CurvatureScaleSpaceContour> c2;
     
-    protected final Map<Integer, List<Integer> > curveIndexToC1;
+    protected Map<Integer, List<Integer> > curveIndexToC1;
     
-    protected final Map<Integer, List<Integer> > curveIndexToC2;
+    protected Map<Integer, List<Integer> > curveIndexToC2;
         
     private double solutionScale = Double.MAX_VALUE;
     
@@ -66,6 +66,8 @@ public final class CurvatureScaleSpaceContourMatcher {
     private List<CurvatureScaleSpaceContour> solutionMatchedContours2 = null;
     
     private final Logger log = Logger.getLogger(this.getClass().getName());
+    
+    private boolean scalesAllSmallerThanOne = false;
     
     /**
      * constructor taking required contour lists as arguments.  note that the
@@ -85,11 +87,19 @@ public final class CurvatureScaleSpaceContourMatcher {
      *                 than N.  
      * </pre>
      * 
+     * Note that if matchContours() produces a null
+     * 
      * @param contours1
      * @param contours2 
      */
     public CurvatureScaleSpaceContourMatcher(
         List<CurvatureScaleSpaceContour> contours1, 
+        List<CurvatureScaleSpaceContour> contours2) {
+        
+        initializeVariables(contours1, contours2);
+    }
+    
+    private void initializeVariables(List<CurvatureScaleSpaceContour> contours1, 
         List<CurvatureScaleSpaceContour> contours2) {
         
         // then use collections synchronized and LongestEdgeComparator to
@@ -129,7 +139,7 @@ public final class CurvatureScaleSpaceContourMatcher {
             indexes.add(Integer.valueOf(i));            
         }
         
-        initialize();
+        initializeHeapNodes();
     }
     
     /**
@@ -162,7 +172,7 @@ public final class CurvatureScaleSpaceContourMatcher {
             The runtime complexity for this (2) is N_curves * O(N_curves^2).
     </pre>
     */
-    private void initialize() {
+    private void initializeHeapNodes() {
                 
         // (1)  create initial scale and translate nodes from all possible 
         // contour combinations
@@ -224,9 +234,14 @@ public final class CurvatureScaleSpaceContourMatcher {
                 sigma2 = kScale * sigma1
                 */
                 
-                //TODO:  note, see paper caveat about applying transformation 
-                //to a taller peak for contour2
                 double scale = contour2.getPeakSigma()/contour1.getPeakSigma();
+                
+                // tolerance for within range of '1'?
+                if ((scale + 0.05) < 1) {
+                    // cannot match for scale < 1 because cost function could
+                    // prefer smaller sigma peaks that were not good matches.
+                    continue;
+                }
                 
                 double shift = contour2.getPeakScaleFreeLength() -
                     (contour1.getPeakScaleFreeLength() * scale);
@@ -346,6 +361,27 @@ public final class CurvatureScaleSpaceContourMatcher {
                 heap.insert(node);
             }
         }
+        
+        if ((heap.n == 0) && !scalesAllSmallerThanOne) {
+            
+            scalesAllSmallerThanOne = true;
+            
+            // swap the order of datasets and try again.
+            log.info("initialization resulted in 0 nodes, presumably due to "
+            + " scale < 0, so swapping the order and trying again.");
+            
+            List<CurvatureScaleSpaceContour> contours1 = new 
+                ArrayList<CurvatureScaleSpaceContour>(c1);
+        
+            List<CurvatureScaleSpaceContour> contours2 = new 
+                ArrayList<CurvatureScaleSpaceContour>(c2);
+            
+            initializeVariables(contours2, contours1);
+        }
+    }    
+    
+    public boolean solutionScalesWereAllSmallerThanOne() {
+        return scalesAllSmallerThanOne;
     }
     
     /**
@@ -378,9 +414,15 @@ public final class CurvatureScaleSpaceContourMatcher {
      /**
      * match contours from the first list to the second.  the best scale and
      * shifts between the contour lists can be retrieved with getSolvedScale()
-     * and getSolvedShift()
+     * and getSolvedShift().  if a solution was found, returns true, else
+     * returns false.
+     * @return 
      */
-    public void matchContours() {
+    public boolean matchContours() {
+        
+        if (scalesAllSmallerThanOne && (heap.n == 0)) {
+            return false;
+        }
         
         // use a specialization of A* algorithm to apply transformation to 
         // contours for best cost solutions (does not compute all possible 
@@ -388,14 +430,14 @@ public final class CurvatureScaleSpaceContourMatcher {
         HeapNode minCost = solve();
         
         if (minCost == null) {
-            return;
+            return false;
         }
         
         TransformationPair obj = (TransformationPair)minCost.getData();
         
         float shift = (float)obj.getShift();
         float scale = (float)obj.getScale();
-        
+     
         solutionShift = shift;
         solutionScale = scale;
         solutionCost = (double)(minCost.getKey()/heapKeyFactor);
@@ -406,6 +448,25 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         solutionMatchedContours2 = nc.getMatchedContours2();
         
+        if (scalesAllSmallerThanOne) {
+            
+            log.info("have solution.  swapping the datasets back and inverting"
+                + " the solution for reference frame 1 to reference frame 2");
+        
+            List<CurvatureScaleSpaceContour> swap = c1;
+            c1 = c2;
+            c2 = swap;
+            Map<Integer, List<Integer> > swap2 = curveIndexToC1;
+            curveIndexToC1 = curveIndexToC2;
+            curveIndexToC2 = swap2;
+            List<CurvatureScaleSpaceContour> swap3 = solutionMatchedContours1;
+            solutionMatchedContours1 = solutionMatchedContours2;
+            solutionMatchedContours2 = swap3;
+            solutionScale = 1./solutionScale;
+            solutionShift = 1. - solutionShift;
+        }
+        
+        return true;
     }
     
     public List<CurvatureScaleSpaceContour> getSolutionMatchedContours1() {
@@ -491,13 +552,12 @@ public final class CurvatureScaleSpaceContourMatcher {
             if (contour2s != null) {
                 nc.addMatchedContours(contour1s, contour2s);
             }
-           
-            double cost2 = calculateCost(contour2s, sigma2, t2);
             
+            double cost2 = calculateCost(contour2s, sigma2, t2);
+
             /*
-            NOTE: if the penalty is needed for matches after the initialization,
-            it isn't clear.  
-            TODO: follow up on this.
+            NOTE: Not sure about applying this penalty for this cost.  
+            Empirically validating with tests currently...
             [last paragraph, section IV. A. of Mokhtarian & Macworth 1896]
             "Since it is desirable to find a match corresponding to the coarse
             features of the curves, there is a penalty associated with starting
@@ -507,6 +567,9 @@ public final class CurvatureScaleSpaceContourMatcher {
             image and is added to the cost of the match computed when a node
             is created.
             */
+            double penalty = c1.get(0).getPeakSigma() 
+                - contour1s.getPeakSigma();
+            //cost2 += penalty;
             
             u.setData(obj);
             
@@ -519,13 +582,13 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         return u;
     }
-
+    
     /**
      * calculate the cost as the as the straight line difference between
      * the closest found contour and the model's sigma and peak.
-     * @param contour2s
-     * @param sigma2
-     * @param t2
+     * @param contour
+     * @param sigma
+     * @param scaleFreeLength
      * @return 
      */
     private double calculateCost(CurvatureScaleSpaceContour contour, 
