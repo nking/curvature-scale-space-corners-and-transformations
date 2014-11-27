@@ -199,17 +199,11 @@ public final class CurvatureScaleSpaceInflectionMapper {
                     
             PairIntArray testContour = new PairIntArray();
             for (int j = 0; j < result.size(); j++) {
-                
                 CurvatureScaleSpaceContour c = result.get(j);
-                
-                //NOTE: errors due to peak not being completely resolved and
-                // instead using left and right of peak can be reduced by 
-                // changing the factor in the image maker
-                
                 CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();
                 for (int jj = 0; jj < points.length; jj++) {
-                    testContour.add((int)points[jj].getXCoord(), 
-                        (int)points[jj].getYCoord());
+                    testContour.add(points[jj].getXCoord(), 
+                        points[jj].getYCoord());
                 }
             }
             
@@ -314,14 +308,10 @@ public final class CurvatureScaleSpaceInflectionMapper {
             for (int j = 0; j < result.size(); j++) {
                 CurvatureScaleSpaceContour c = result.get(j);
                 CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();
-                int n = points.length;
-                double sumX = 0;
-                double sumY = 0;
-                for (int jj = 0; jj < n; jj++) {
-                    sumX += points[jj].getXCoord();
-                    sumX += points[jj].getYCoord();
+                for (int jj = 0; jj < points.length; jj++) {
+                    testContour.add(points[jj].getXCoord(), 
+                        points[jj].getYCoord());
                 }
-                testContour.add((int)(sumX/(double)n), (int)(sumY/(double)n));
             }
             
             boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);
@@ -635,6 +625,10 @@ public final class CurvatureScaleSpaceInflectionMapper {
                 matchedScale,
                 matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights,
                 centroidX1, centroidY1);
+        }
+        
+        if (params == null) {
+            return null;
         }
         
         if (doRefineTransformations) {
