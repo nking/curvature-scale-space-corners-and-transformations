@@ -36,12 +36,12 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             "280", "335"
         };
         
-        for (boolean swapDueToScale : new boolean[]{false, true}) {
-        
+        for (boolean swapDueToScale : new boolean[]{true, false}) {
+        //boolean swapDueToScale = false;
             for (String rotDegrees : rotDegreesList) {
 
                 /*
-                if (!rotDegrees.equals("180")) {
+                if (!rotDegrees.equals("20")) {
                     continue;
                 }
                 */
@@ -589,9 +589,9 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             CurvatureScaleSpaceInflectionMapperTest test = 
                 new CurvatureScaleSpaceInflectionMapperTest();
             
-            test.testMap2Objects();
+            //test.testMap2Objects();
             
-            //test.testMap();
+            test.testMap();
             
             //test.testMap2();
             

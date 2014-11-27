@@ -37,7 +37,7 @@ import java.util.logging.Logger;
  */
 public final class CurvatureScaleSpaceContourMatcher {
     
-    protected final Heap heap = new Heap();
+    protected Heap heap = null;
     
     /**
      * the costs calculated here are small fractions, so they need to be
@@ -66,8 +66,8 @@ public final class CurvatureScaleSpaceContourMatcher {
     private List<CurvatureScaleSpaceContour> solutionMatchedContours2 = null;
     
     private final Logger log = Logger.getLogger(this.getClass().getName());
-    
-    private boolean scalesAllSmallerThanOne = false;
+        
+    private boolean scalesSomeSmallerThanOne = false;
     
     /**
      * constructor taking required contour lists as arguments.  note that the
@@ -86,21 +86,12 @@ public final class CurvatureScaleSpaceContourMatcher {
      *       N_curve = number of encapsulating curves.  this number is smaller
      *                 than N.  
      * </pre>
-     * 
-     * Note that if matchContours() produces a null
-     * 
-     * @param contours1
-     * @param contours2 
      */
-    public CurvatureScaleSpaceContourMatcher(
-        List<CurvatureScaleSpaceContour> contours1, 
-        List<CurvatureScaleSpaceContour> contours2) {
-        
-        initializeVariables(contours1, contours2);
+    public CurvatureScaleSpaceContourMatcher() {
     }
     
-    private void initializeVariables(List<CurvatureScaleSpaceContour> contours1, 
-        List<CurvatureScaleSpaceContour> contours2) {
+    private void initializeVariables(final List<CurvatureScaleSpaceContour> contours1, 
+        final List<CurvatureScaleSpaceContour> contours2) {
         
         // then use collections synchronized and LongestEdgeComparator to
         // sort the ordered list
@@ -174,6 +165,8 @@ public final class CurvatureScaleSpaceContourMatcher {
     */
     private void initializeHeapNodes() {
                 
+        heap = new Heap();
+        
         // (1)  create initial scale and translate nodes from all possible 
         // contour combinations
        
@@ -185,7 +178,6 @@ public final class CurvatureScaleSpaceContourMatcher {
             // to correct shift due to wrapping around 1 to 0 or vice versa                
             float minT = Float.MAX_VALUE;
             float maxT = Float.MIN_VALUE;
-            boolean isTallestPeakInEdge1 = false;
             List<Integer> c1Indexes = curveIndexToC1.get(
                 Integer.valueOf(contour1.getEdgeNumber()));
             for (int i = 0; i < c1Indexes.size(); i++) {
@@ -197,9 +189,6 @@ public final class CurvatureScaleSpaceContourMatcher {
                 }
                 if (t > maxT) {
                     maxT = t;
-                }
-                if ((i == 0) && contour1.equals(ei)) {
-                    isTallestPeakInEdge1 = true;
                 }
             }
             boolean contour1IsLast = (contour1.getPeakScaleFreeLength() == maxT);
@@ -240,6 +229,7 @@ public final class CurvatureScaleSpaceContourMatcher {
                 if ((scale + 0.05) < 1) {
                     // cannot match for scale < 1 because cost function could
                     // prefer smaller sigma peaks that were not good matches.
+                    scalesSomeSmallerThanOne = true;
                     continue;
                 }
                 
@@ -287,14 +277,13 @@ public final class CurvatureScaleSpaceContourMatcher {
                     
                     CurvatureScaleSpaceContour contour1s = c1.get(index1s);
                     
-                    while (nc.getMatchedContours1().contains(contour1s)) {
-                        if ((index1s + 1) < c1.size()) { 
-                            index1s++;
-                            contour1s = c1.get(index1s);
-                        } else {
-                            // no next curve to attempt to match
-                            continue;
-                        }
+                    while (nc.getMatchedContours1().contains(contour1s)
+                        && ((index1s + 1) < c1.size())) {
+                        index1s++;
+                        contour1s = c1.get(index1s);
+                    }
+                    if (nc.getMatchedContours1().contains(contour1s)) {
+                        continue;
                     }
                                                             
                     /*
@@ -361,27 +350,6 @@ public final class CurvatureScaleSpaceContourMatcher {
                 heap.insert(node);
             }
         }
-        
-        if ((heap.n == 0) && !scalesAllSmallerThanOne) {
-            
-            scalesAllSmallerThanOne = true;
-            
-            // swap the order of datasets and try again.
-            log.info("initialization resulted in 0 nodes, presumably due to "
-            + " scale < 0, so swapping the order and trying again.");
-            
-            List<CurvatureScaleSpaceContour> contours1 = new 
-                ArrayList<CurvatureScaleSpaceContour>(c1);
-        
-            List<CurvatureScaleSpaceContour> contours2 = new 
-                ArrayList<CurvatureScaleSpaceContour>(c2);
-            
-            initializeVariables(contours2, contours1);
-        }
-    }    
-    
-    public boolean solutionScalesWereAllSmallerThanOne() {
-        return scalesAllSmallerThanOne;
     }
     
     /**
@@ -410,18 +378,193 @@ public final class CurvatureScaleSpaceContourMatcher {
     public double getSolvedCost() {
         return solutionCost;
     }
-  
+    
      /**
+     * match contours from the first list to the second.  the best scale and
+     * shifts between the contour lists can be retrieved with getSolvedScale()
+     * and getSolvedShift().  if a solution was found, returns true, else
+     * returns false.
+     * @param contours1
+     * @param contours2
+     * @return 
+     */
+    public boolean matchContours(List<CurvatureScaleSpaceContour> contours1, 
+        List<CurvatureScaleSpaceContour> contours2) {
+        
+        initializeVariables(contours1, contours2);
+                
+        if (heap.n == 0) {            
+            return swapOrderAndMatchContours();            
+        }
+        
+        matchContours();
+        
+        if (!scalesSomeSmallerThanOne) {
+            if (solutionScale < Double.MAX_VALUE) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        
+        // else, some scales were smaller than one, so swap and try again
+        // and return the best solution,
+        // while also swapping the order back
+        
+        double origOrderScale = solutionScale;
+        double origOrderShift = solutionShift;
+        double origOrderCost = solutionCost;
+
+        List<CurvatureScaleSpaceContour> origOrderC1 = 
+            new ArrayList<CurvatureScaleSpaceContour>(c1);
+        List<CurvatureScaleSpaceContour> origOrderC2 = 
+            new ArrayList<CurvatureScaleSpaceContour>(c2);
+
+        Map<Integer, List<Integer> > origOrderCurveIndexToC1 =
+            new HashMap<Integer, List<Integer> >(curveIndexToC1);
+
+        Map<Integer, List<Integer> > origOrderCurveIndexToC2 =
+            new HashMap<Integer, List<Integer> >(curveIndexToC2);
+            
+        List<CurvatureScaleSpaceContour> origOrderSolutionMatchedContours1 = 
+            new ArrayList<CurvatureScaleSpaceContour>(
+            solutionMatchedContours1);
+
+        List<CurvatureScaleSpaceContour> origOrderSolutionMatchedContours2 =
+            new ArrayList<CurvatureScaleSpaceContour>(
+            solutionMatchedContours2);
+    
+        initializeVariables(contours2, contours1);
+        
+        if (heap.n > 0) {
+            matchContours();
+        }
+          
+        // compare solutions and re-order the variables
+        
+        if (solutionScale == Double.MAX_VALUE) {
+            
+            log.info("the first solution was the best");
+            
+            solutionScale = origOrderScale;
+            solutionShift = origOrderShift;
+            
+        } else {
+            
+            /*
+            compare the solutions.  
+                number of matches and cost...
+            TODO: retain both solutions to determine best with the refinement
+            using edges?
+            */
+            
+            double normalizedCost1 = origOrderCost/
+                (double)origOrderSolutionMatchedContours1.size();
+
+            double normalizedCost2 = solutionCost/
+                (double)solutionMatchedContours2.size();
+            
+            StringBuilder sb = new StringBuilder("first solution:\n");
+            sb.append(String.format(" cost=%f  nMatched1=%d  normalizedCost=%f\n"
+                , origOrderCost, origOrderSolutionMatchedContours1.size(), 
+                normalizedCost1));
+            sb.append(String.format(" scale=%f  shift=%f\n", origOrderScale,
+                origOrderShift));
+            log.info(sb.toString());
+            
+            sb = new StringBuilder("second solution:\n");
+            sb.append(String.format(" cost=%f  nMatched1=%d  normalizedCost=%f\n"
+                , solutionCost, solutionMatchedContours2.size(), 
+                normalizedCost2));
+            sb.append(String.format(" scale=%f  shift=%f\n", solutionScale,
+                solutionShift));
+            log.info(sb.toString());
+
+            
+            if (normalizedCost2 < normalizedCost1) {
+                solutionScale = 1./solutionScale;
+                solutionShift = 1. - solutionShift;
+                
+                List<CurvatureScaleSpaceContour> swap3 = solutionMatchedContours1;
+                solutionMatchedContours1 = solutionMatchedContours2;
+                solutionMatchedContours2 = swap3;        
+            } else {
+                solutionScale = origOrderScale;
+                solutionShift = origOrderShift;
+                
+                solutionMatchedContours1 = origOrderSolutionMatchedContours1;
+                solutionMatchedContours2 = origOrderSolutionMatchedContours2;
+            }
+        }
+                            
+        log.info("have solution.  swapping the datasets back and inverting"
+            + " the solution for reference frame 1 to reference frame 2");
+
+        List<CurvatureScaleSpaceContour> swap = c1;
+        c1 = c2;
+        c2 = swap;
+        Map<Integer, List<Integer> > swap2 = curveIndexToC1;
+        curveIndexToC1 = curveIndexToC2;
+        curveIndexToC2 = swap2;
+        
+        if (solutionScale < Double.MAX_VALUE) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    private boolean swapOrderAndMatchContours() {
+        
+        // swap the order of datasets and try again.
+        log.info("initialization resulted in 0 nodes, presumably due to "
+            + " scale < 0, so swapping the order and trying again.");
+
+        List<CurvatureScaleSpaceContour> contours1 = 
+            new ArrayList<CurvatureScaleSpaceContour>(c1);
+
+        List<CurvatureScaleSpaceContour> contours2 = 
+            new ArrayList<CurvatureScaleSpaceContour>(c2);
+
+        initializeVariables(contours2, contours1);
+        
+        matchContours();
+        
+        log.info("have solution.  swapping the datasets back and inverting"
+            + " the solution for reference frame 1 to reference frame 2");
+        
+        boolean solved = (solutionScale < Double.MAX_VALUE);
+        
+        List<CurvatureScaleSpaceContour> swap = c1;
+        c1 = c2;
+        c2 = swap;
+        Map<Integer, List<Integer>> swap2 = curveIndexToC1;
+        curveIndexToC1 = curveIndexToC2;
+        curveIndexToC2 = swap2;
+        List<CurvatureScaleSpaceContour> swap3 = solutionMatchedContours1;
+        solutionMatchedContours1 = solutionMatchedContours2;
+        solutionMatchedContours2 = swap3;
+        solutionScale = 1. / solutionScale;
+        solutionShift = 1. - solutionShift;
+        
+        return solved;
+    }
+
+    /**
      * match contours from the first list to the second.  the best scale and
      * shifts between the contour lists can be retrieved with getSolvedScale()
      * and getSolvedShift().  if a solution was found, returns true, else
      * returns false.
      * @return 
      */
-    public boolean matchContours() {
+    private void matchContours() {
         
-        if (scalesAllSmallerThanOne && (heap.n == 0)) {
-            return false;
+        solutionShift = Double.MAX_VALUE;
+        solutionScale = Double.MAX_VALUE;
+        solutionCost = Double.MAX_VALUE;
+        
+        if (heap.n == 0) {
+            return;
         }
         
         // use a specialization of A* algorithm to apply transformation to 
@@ -430,7 +573,7 @@ public final class CurvatureScaleSpaceContourMatcher {
         HeapNode minCost = solve();
         
         if (minCost == null) {
-            return false;
+            return;
         }
         
         TransformationPair obj = (TransformationPair)minCost.getData();
@@ -448,25 +591,6 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         solutionMatchedContours2 = nc.getMatchedContours2();
         
-        if (scalesAllSmallerThanOne) {
-            
-            log.info("have solution.  swapping the datasets back and inverting"
-                + " the solution for reference frame 1 to reference frame 2");
-        
-            List<CurvatureScaleSpaceContour> swap = c1;
-            c1 = c2;
-            c2 = swap;
-            Map<Integer, List<Integer> > swap2 = curveIndexToC1;
-            curveIndexToC1 = curveIndexToC2;
-            curveIndexToC2 = swap2;
-            List<CurvatureScaleSpaceContour> swap3 = solutionMatchedContours1;
-            solutionMatchedContours1 = solutionMatchedContours2;
-            solutionMatchedContours2 = swap3;
-            solutionScale = 1./solutionScale;
-            solutionShift = 1. - solutionShift;
-        }
-        
-        return true;
     }
     
     public List<CurvatureScaleSpaceContour> getSolutionMatchedContours1() {
@@ -752,5 +876,5 @@ public final class CurvatureScaleSpaceContourMatcher {
         
         return minDiff2TIdx;
     }
-
+    
 }

@@ -77,7 +77,7 @@ public class CurvatureScaleSpaceContourMatcherTest {
             getImageContours("closed_curve_translate.png");
         
         CurvatureScaleSpaceContourMatcher matcher = new
-            CurvatureScaleSpaceContourMatcher(contours1, contours2);
+            CurvatureScaleSpaceContourMatcher();
         
         for (int i = 0; i < contours1.size(); i++) {            
             CurvatureScaleSpaceContour c = contours1.get(i);
@@ -90,7 +90,7 @@ public class CurvatureScaleSpaceContourMatcherTest {
                 + " t=" + c.getPeakScaleFreeLength());
         }
         
-        matcher.matchContours();
+        matcher.matchContours(contours1, contours2);
        
         assertTrue(Math.abs(matcher.getSolvedShift()) < 0.1);
        

@@ -389,9 +389,9 @@ public final class CurvatureScaleSpaceInflectionMapper {
          */
         
         CurvatureScaleSpaceContourMatcher matcher = 
-            new CurvatureScaleSpaceContourMatcher(contours1, contours2);
+            new CurvatureScaleSpaceContourMatcher();
         
-        matcher.matchContours();
+        matcher.matchContours(contours1, contours2);
         
         List<CurvatureScaleSpaceContour> transAppliedTo1 = 
             matcher.getSolutionMatchedContours1();

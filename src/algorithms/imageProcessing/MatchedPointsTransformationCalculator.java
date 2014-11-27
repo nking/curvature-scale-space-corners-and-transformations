@@ -226,6 +226,7 @@ public class MatchedPointsTransformationCalculator {
                 }
             } else if ((qim1 == 4) && (qim2 == 3)) {
                 t = Math.PI + thetaim1 - thetaim2;
+                //t = thetaim1 + thetaim2;
             } else if ((qim1 == 4) && (qim2 == 4)) {
                 if (thetaim1 < thetaim2) {
                     t = thetaim1 - thetaim2;
