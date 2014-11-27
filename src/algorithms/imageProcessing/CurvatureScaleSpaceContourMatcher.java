@@ -169,7 +169,7 @@ public final class CurvatureScaleSpaceContourMatcher {
            differences.
            (the paper isn't clear)
            
-            The runtime complexity for this (2) is N_curves * O(N_curves^2).
+            The runtime complexity for this (2) is 
     </pre>
     */
     private void initializeHeapNodes() {

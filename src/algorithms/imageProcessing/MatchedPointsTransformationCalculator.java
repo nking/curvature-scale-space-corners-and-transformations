@@ -212,7 +212,7 @@ public class MatchedPointsTransformationCalculator {
                 t = thetaim1 - thetaim2;
             } else if ((qim1 == 3) && (qim2 == 3)) {
                 if (thetaim1 < thetaim2) {
-                    t = thetaim2 - 2 * Math.PI - thetaim1;
+                    t = thetaim1 - thetaim2;
                 } 
             } else if ((qim1 == 4) && (qim2 == 1)) {
                 t = 2*Math.PI + thetaim1 - thetaim2;
@@ -227,10 +227,8 @@ public class MatchedPointsTransformationCalculator {
             } else if ((qim1 == 4) && (qim2 == 3)) {
                 t = Math.PI + thetaim1 - thetaim2;
             } else if ((qim1 == 4) && (qim2 == 4)) {
-                if (thetaim1 < -45. * Math.PI/180.) {
-                    t = thetaim2 - 2 * Math.PI - thetaim1;
-                } else if (thetaim1 > 45. * Math.PI/180.) {
-                    t = thetaim2 - 2 * Math.PI - thetaim1;
+                if (thetaim1 < thetaim2) {
+                    t = thetaim1 - thetaim2;
                 }
             }
             
