@@ -24,6 +24,11 @@ public class AngleUtil {
                   |      
          QII      |       QI     
      *            +Y
+     * 
+     * @param diffX1
+     * @param diffY1
+     * @param diffX2
+     * @param diffY2
      * @return 
      */
     public double subtract(double diffX1, double diffY1, double diffX2, 
@@ -85,14 +90,14 @@ public class AngleUtil {
             } else if (q2 == 2) {
                 t = Math.PI + theta1 - theta2;
             } else if (q2 == 3) {
-               if (theta1 < theta2) {
+                if (theta1 < theta2) {
                     t = Math.PI - theta1 + theta2;
                 } else {
                     t = Math.PI + theta1 - theta2;
                 }
             } else if (q2 == 4) {
                 //t = theta1 - theta2;
-            } 
+            }
         } else if (q1 == 2) {
             if (q2 == 1) {
                 t = Math.PI + theta1 - theta2;
@@ -103,16 +108,17 @@ public class AngleUtil {
             } else if (q2 == 3) {
                 t = 2 * Math.PI + theta1 - theta2;
             } else if (q2 == 4) {
-                if (theta1 < theta2) {
+                if (theta1 < -45. * Math.PI / 180.) {
+                    t = Math.PI + theta1 - theta2;
+                } else if (theta2 > -45. * Math.PI / 180.) {
                     t = Math.PI + theta1 - theta2;
                 } else {
                     t = Math.PI + theta1 - theta2;
                 }
             }
         } else if (q1 == 3) {
-            
             if (q2 == 1) {
-                if (theta1 < 45. * Math.PI / 180.) {
+                if (theta1 < theta2) {
                     t = Math.PI + theta1 - theta2;
                 } else {
                     t = Math.PI - theta1 + theta2;
@@ -136,7 +142,7 @@ public class AngleUtil {
                     t = Math.PI + theta1 - theta2;
                 } else {
                     t = Math.PI - theta1 + theta2;
-                }
+                }                
             } else if (q2 == 3) {
                 t = Math.PI + theta1 - theta2;
                 //t = theta1 + theta2;
