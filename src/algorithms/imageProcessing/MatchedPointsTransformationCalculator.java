@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.List;
@@ -110,6 +111,8 @@ public class MatchedPointsTransformationCalculator {
         discard outside avg +- stdev
         */
         
+        AngleUtil angleUtil = new AngleUtil();
+        
         double[] thetas = new double[matchedXY1.getN()];
         double[] scales = new double[matchedXY1.getN()];
         double thetaSum = 0;
@@ -137,32 +140,6 @@ public class MatchedPointsTransformationCalculator {
             double diffX2 = (x1im2 - x0im2);
             double diffY2 = (y1im2 - y0im2);
             
-            double thetaim1 = (diffX1 == 0) ? Math.PI/2. :
-                Math.atan(diffY1/diffX1);
-            double thetaim2 = (diffX2 == 0) ? Math.PI/2. : 
-                Math.atan(diffY2/diffX2);
-            
-            thetaim1 *= -1;
-            thetaim2 *= -1;
-            
-            // Q1, Q2, Q3, Q4
-            int qim1 = 1;
-            if ((diffX1 < 0) && (diffY1 < 0)) {
-                qim1 = 2;
-            } else if ((diffX1 < 0) && (diffY1 >= 0)) {
-                qim1 = 3;
-            } else if ((diffX1 >= 0) && (diffY1 >= 0)) {
-                qim1 = 4;
-            }
-            int qim2 = 1;
-            if ((diffX2 < 0) && (diffY2 < 0)) {
-                qim2 = 2;
-            } else if ((diffX2 < 0) && (diffY2 >= 0)) {
-                qim2 = 3;
-            } else if ((diffX2 >= 0) && (diffY2 >= 0)) {
-                qim2 = 4;
-            }
-            
             // interpretation of subtracting angles
             
             /*
@@ -170,75 +147,7 @@ public class MatchedPointsTransformationCalculator {
             a change is made below after the blocks
             */
             
-            double t = thetaim1 - thetaim2;
-            if ((qim1 == 1) && (qim2 == 2)) {
-                t = Math.PI + thetaim1 - thetaim2;
-            } else if ((qim1 == 1) && (qim2 == 3)) {
-                if (thetaim1 > 45.*Math.PI/180.) {
-                    t = Math.PI + thetaim1 - thetaim2;
-                } else {
-                    t = Math.PI + thetaim2 - thetaim1;
-                }
-            } else if ((qim1 == 1) && (qim2 == 4)) {
-                //t = thetaim1 - thetaim2;
-            } else if ((qim1 == 1) && (qim2 == 1)) {
-                if (thetaim1 < thetaim2) {
-                    t *= -1;
-                }
-            } else if ((qim1 == 2) && (qim2 == 1)) {
-                t = Math.PI + thetaim1 - thetaim2;
-            } else if ((qim1 == 2) && (qim2 == 2)) {
-                if (thetaim1 < thetaim2) {
-                    t = -thetaim2 + 2 * Math.PI + thetaim1;
-                }
-            } else if ((qim1 == 2) && (qim2 == 3)) {
-                t = 2 * Math.PI +thetaim1 - thetaim2;
-            } else if ((qim1 == 2) && (qim2 == 4)) {
-                if (thetaim1 < -45.*Math.PI/180.) {
-                    t = Math.PI + thetaim1 - thetaim2;
-                } else {
-                    t = Math.PI - thetaim1 + thetaim2;
-                }
-            } else if ((qim1 == 3) && (qim2 == 4)) {
-                t = Math.PI + thetaim1 - thetaim2;
-               
-            } else if ((qim1 == 3) && (qim2 == 1)) {
-                if (thetaim1 < 45.*Math.PI/180.) {
-                    t = Math.PI + thetaim1 - thetaim2;
-                } else {
-                    t = Math.PI - thetaim1 + thetaim2;
-                }
-            } else if ((qim1 == 3) && (qim2 == 2)) {
-                t = thetaim1 - thetaim2;
-            } else if ((qim1 == 3) && (qim2 == 3)) {
-                if (thetaim1 < thetaim2) {
-                    t = thetaim1 - thetaim2;
-                } 
-            } else if ((qim1 == 4) && (qim2 == 1)) {
-                t = 2*Math.PI + thetaim1 - thetaim2;
-            } else if ((qim1 == 4) && (qim2 == 2)) {
-                if (thetaim1 > -45.*Math.PI/180.) {
-                    t = Math.PI + thetaim1 - thetaim2; 
-                } else if (thetaim2 < -45.*Math.PI/180.) {
-                    t = Math.PI + thetaim1 - thetaim2;
-                } else {
-                    t = Math.PI - thetaim1 + thetaim2;
-                }
-            } else if ((qim1 == 4) && (qim2 == 3)) {
-                t = Math.PI + thetaim1 - thetaim2;
-                //t = thetaim1 + thetaim2;
-            } else if ((qim1 == 4) && (qim2 == 4)) {
-                if (thetaim1 < thetaim2) {
-                    t = thetaim1 - thetaim2;
-                }
-            }
-            
-            // reverse the direction to CW
-            t *= -1;
-            
-            if (t < 0) {
-                t += 2*Math.PI;
-            }
+            double t = angleUtil.subtract(diffX1, diffY1, diffX2, diffY2);
             
             thetas[i] = t;
             
