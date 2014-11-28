@@ -208,7 +208,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
             }
             
             boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);
-            log.fine("EDGES1: contour isCW=" + isCW);
+            log.info("EDGES1: contour isCW=" + isCW);
             
             if (isCW) {
                 
@@ -315,7 +315,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
             }
             
             boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);
-            log.fine("EDGES2: contour isCW=" + isCW);
+            log.info("EDGES2: contour isCW=" + isCW);
             
             if (isCW) {
                 

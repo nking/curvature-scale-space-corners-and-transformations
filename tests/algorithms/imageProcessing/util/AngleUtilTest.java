@@ -29,14 +29,17 @@ public class AngleUtilTest {
     }
 
     /* not tested:
-     (q1 == 1) && (q2 == 1) && !(theta1 < theta2)
+     (q1 == 1) && (q2 == 1) && (theta1 < theta2)
      (q1 == 1) && (q2 == 2) && (theta1 < theta2)
      (q1 == 1) && (q2 == 3) && (theta1 < theta2)
      (q1 == 1) && (q2 == 4) && (theta1 < theta2)
+    
      (q1 == 2) && (q2 == 2) && !(theta1 < theta2)
      (q1 == 2) && (q2 == 3) && !(theta1 < theta2)
+    
      (q1 == 3) && (q2 == 2) && (theta1 < theta2)
      (q1 == 3) && (q2 == 4) && (theta1 < theta2)
+
      (q1 == 4) && (q2 == 1) && !(theta1 < theta2)
     */
     
@@ -57,7 +60,7 @@ public class AngleUtilTest {
             + "\\)";
         Pattern p = Pattern.compile(pattern);
         Matcher m = null;
-            
+        
         String filePath1 = ResourceFinder.findFileInTestResources("angles.tsv");
         try {
             reader = new FileReader(new File(filePath1));

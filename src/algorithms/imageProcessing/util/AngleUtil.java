@@ -15,7 +15,7 @@ public class AngleUtil {
         positive X is right.
         theta is negative in QII and QIV.
         theta is given by Math.atan with respect to the X-axis (Y=0).
-      
+                 +Y
         QIII      |       QIV
                   |     
                   |
@@ -23,7 +23,7 @@ public class AngleUtil {
                   |   
                   |      
          QII      |       QI     
-     *            +Y
+     *           
      * 
      * @param diffX1
      * @param diffY1

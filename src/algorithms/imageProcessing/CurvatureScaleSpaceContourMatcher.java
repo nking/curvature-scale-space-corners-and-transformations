@@ -448,6 +448,7 @@ public final class CurvatureScaleSpaceContourMatcher {
             
             solutionScale = origOrderScale;
             solutionShift = origOrderShift;
+            solutionCost = origOrderCost;
             
         } else {
             

@@ -32,8 +32,8 @@ public class CurvatureScaleSpaceInflectionMapperTest {
     @Test
     public void testMap() throws Exception {
         
-        String[] rotDegreesList = new String[]{"20", "60", "135", "180", "225",
-            "280", "335"
+        String[] rotDegreesList = new String[]{"20", "45", "60", "110", 
+            "135", "180", "225", "280", "335"
         };
         
         for (boolean swapDueToScale : new boolean[]{true, false}) {
@@ -41,7 +41,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             for (String rotDegrees : rotDegreesList) {
 
                 /*
-                if (!rotDegrees.equals("20")) {
+                if (!rotDegrees.equals("110")) {
                     continue;
                 }
                 */
@@ -103,21 +103,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
                 double expectedRotDeg = Float.valueOf(rotDegrees).floatValue();
 
                 if (!swapDueToScale) {
-                    if (rotDegrees.equals("20")) {
-                        expectedRotDeg = 360 - expectedRotDeg;
-                    } else if (rotDegrees.equals("60")) {
-                        expectedRotDeg = 360 - expectedRotDeg;
-                    } else if (rotDegrees.equals("135")) {
-                        expectedRotDeg = 360 - expectedRotDeg;
-                    } else if (rotDegrees.equals("180")) {
-                        expectedRotDeg = 360 - expectedRotDeg;
-                    } else if (rotDegrees.equals("225")) {
-                        expectedRotDeg = 360 - expectedRotDeg;
-                    } else if (rotDegrees.equals("280")) {
-                        expectedRotDeg = 360 - expectedRotDeg;
-                    } else if (rotDegrees.equals("335")) {
-                        expectedRotDeg = 360 - expectedRotDeg;
-                    }
+                    expectedRotDeg = 360 - expectedRotDeg;
                 }
 
                 double foundRotDeg = rotDeg;
