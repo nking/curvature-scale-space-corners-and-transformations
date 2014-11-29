@@ -27,21 +27,6 @@ public class AngleUtilTest {
     @After
     public void tearDown() {
     }
-
-    /* not tested:
-     (q1 == 1) && (q2 == 1) && (theta1 < theta2)
-     (q1 == 1) && (q2 == 2) && (theta1 < theta2)
-     (q1 == 1) && (q2 == 3) && (theta1 < theta2)
-     (q1 == 1) && (q2 == 4) && (theta1 < theta2)
-    
-     (q1 == 2) && (q2 == 2) && !(theta1 < theta2)
-     (q1 == 2) && (q2 == 3) && !(theta1 < theta2)
-    
-     (q1 == 3) && (q2 == 2) && (theta1 < theta2)
-     (q1 == 3) && (q2 == 4) && (theta1 < theta2)
-
-     (q1 == 4) && (q2 == 1) && !(theta1 < theta2)
-    */
     
     @Test
     public void testSubtract() throws Exception {
