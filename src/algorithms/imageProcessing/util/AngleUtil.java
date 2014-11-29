@@ -118,11 +118,11 @@ public class AngleUtil {
             }
         } else if (q1 == 3) {
             if (q2 == 1) {
-                if (theta1 < theta2) {
+                //if (theta1 < theta2) {
                     t = Math.PI + theta1 - theta2;
-                } else {
+                /*} else {
                     t = Math.PI - theta1 + theta2;
-                }
+                }*/
             } else if (q2 == 2) {
                 t = theta1 - theta2;
             } else if (q2 == 3) {
@@ -149,6 +149,8 @@ public class AngleUtil {
             } else if (q2 == 4) {
                 if (theta1 < theta2) {
                     t = theta1 - theta2;
+                } else {
+                    
                 }
             }
         }
