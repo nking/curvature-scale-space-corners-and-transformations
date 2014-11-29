@@ -789,6 +789,11 @@ public final class CurvatureScaleSpaceContourMatcher {
             tolSigma = 1E-2;
         }
         
+        // consider wrap around searches too, for scaleFreeLength > 0.5 or 
+        // scaleFreeLength < 0.5
+        double wrapScaleFreeLength = (scaleFreeLength > 0.5) ?
+            scaleFreeLength - 1 : 1 + scaleFreeLength;
+        
         double minDiffS = Double.MAX_VALUE;
         double minDiffT = Double.MAX_VALUE;
         int idx = -1;
@@ -807,6 +812,23 @@ public final class CurvatureScaleSpaceContourMatcher {
             double diffS = Math.abs(c.getPeakSigma() - sigma);
             double diffT = Math.abs(c.getPeakScaleFreeLength() - 
                 scaleFreeLength);
+            
+            if (diffS <= (minDiffS + tolSigma)) {
+                if (diffT <= minDiffT) {
+                    minDiffS = diffS;
+                    minDiffT = diffT;
+                    idx = i;
+                }
+                
+            } else if (diffS <= (minDiffS + 3*tolSigma)) {
+                if (diffT < minDiff2T) {
+                    minDiff2T = diffT;
+                    minDiff2TIdx = i;
+                }
+            }
+            
+            diffT = Math.abs(c.getPeakScaleFreeLength() - 
+                wrapScaleFreeLength);
             
             if (diffS <= (minDiffS + tolSigma)) {
                 if (diffT <= minDiffT) {
@@ -840,6 +862,11 @@ public final class CurvatureScaleSpaceContourMatcher {
             tolSigma = 1E-2;
         }
         
+        // consider wrap around searches too, for scaleFreeLength > 0.5 or 
+        // scaleFreeLength < 0.5
+        double wrapScaleFreeLength = (scaleFreeLength > 0.5) ?
+            scaleFreeLength - 1 : 1 + scaleFreeLength;
+        
         double minDiffS = Double.MAX_VALUE;
         double minDiffT = Double.MAX_VALUE;
         int idx = -1;
@@ -858,6 +885,23 @@ public final class CurvatureScaleSpaceContourMatcher {
             double diffS = Math.abs(c.getPeakSigma() - sigma);
             double diffT = Math.abs(c.getPeakScaleFreeLength() - 
                 scaleFreeLength);
+            
+            if (diffS <= (minDiffS + tolSigma)) {
+                if (diffT <= minDiffT) {
+                    minDiffS = diffS;
+                    minDiffT = diffT;
+                    idx = i.intValue();
+                }
+                
+            } else if (diffS <= (minDiffS + 3*tolSigma)) {
+                if (diffT < minDiff2T) {
+                    minDiff2T = diffT;
+                    minDiff2TIdx = i.intValue();
+                }
+            }
+            
+            diffT = Math.abs(c.getPeakScaleFreeLength() - 
+                wrapScaleFreeLength);
             
             if (diffS <= (minDiffS + tolSigma)) {
                 if (diffT <= minDiffT) {
