@@ -99,12 +99,12 @@ public class InflectionMapperTwoObjectTest {
                 debugDisplay(transformedEdges, img2.copyImageToGreen(), 
                     list1[i] + "->" + list2[j]);
                 
-                int expectedRotDeg = 360 - rotation2 - rotation1;
+                int expectedRotDeg = 360 - (rotation2 - rotation1);
                 
                 double foundRotDeg = rotDeg;
                 
                 log.info("PARAMS: " + transformationParams.toString() 
-                    + "\nEXPECTED=" + expectedRotDeg);
+                    + "\nEXPECTED=" + expectedRotDeg  + " found=" + foundRotDeg);
 
                 assertTrue(Math.abs(expectedRotDeg - foundRotDeg) < 10.f);
                 
