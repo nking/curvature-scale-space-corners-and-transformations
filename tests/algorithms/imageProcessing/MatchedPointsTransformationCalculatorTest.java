@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
+import java.util.Arrays;
 import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -88,10 +90,10 @@ public class MatchedPointsTransformationCalculatorTest {
         matchedXY1.add(69, 54);
         
         PairIntArray matchedXY2 = new PairIntArray();
-        matchedXY2.add(150, 117); 
-        matchedXY2.add(159, 91); 
-        matchedXY2.add(196, 147); 
-        matchedXY2.add(176, 156); 
+        matchedXY2.add(157, 107); 
+        matchedXY2.add(159, 101); 
+        matchedXY2.add(190, 143); 
+        matchedXY2.add(177, 150); 
         matchedXY2.add(200, 85);
         matchedXY2.add(209, 97);
      
@@ -109,9 +111,9 @@ public class MatchedPointsTransformationCalculatorTest {
              
         assertTrue(Math.abs(params.getScale() - 1.3) < 0.1);
         
-        assertTrue(Math.abs(params.getTranslationX() - 110.9) < (centroidX1*0.02));
+        assertTrue(Math.abs(params.getTranslationX() - 110.6) < (centroidX1*0.02));
         
-        assertTrue(Math.abs(params.getTranslationY() - 21.3) < (centroidY1*0.02));
+        assertTrue(Math.abs(params.getTranslationY() - 19.8) < (centroidY1*0.02));
     }
 
     /*
