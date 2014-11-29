@@ -33,7 +33,7 @@ public class AngleUtil {
      */
     public double subtract(double diffX1, double diffY1, double diffX2, 
         double diffY2) {
-
+        
         double theta1 = (diffX1 == 0) ? Math.PI/2. : Math.atan(diffY1/diffX1);
         double theta2 = (diffX2 == 0) ? Math.PI/2. : Math.atan(diffY2/diffX2);
 
@@ -129,20 +129,20 @@ public class AngleUtil {
                 if (theta1 < theta2) {
                     t = theta1 - theta2;
                 }
-            } else if (q2 == 4) {
-                t = Math.PI + theta1 - theta2;
+            } else if (q2 == 4) {                    
+                t = Math.PI + theta1 - theta2; 
             }
         } else if (q1 == 4) {
             if (q2 == 1) {
                 t = 2 * Math.PI + theta1 - theta2;
             } else if (q2 == 2) {
-                if (theta1 > -45. * Math.PI / 180.) {
+                /*if (theta1 > -45. * Math.PI / 180.) {
                     t = Math.PI + theta1 - theta2;
-                } else if (theta2 < -45. * Math.PI / 180.) {
+                } else if (theta2 < -45. * Math.PI / 180.) {*/
                     t = Math.PI + theta1 - theta2;
-                } else {
+                /*} else {
                     t = Math.PI - theta1 + theta2;
-                }                
+                }*/               
             } else if (q2 == 3) {
                 t = Math.PI + theta1 - theta2;
                 //t = theta1 + theta2;

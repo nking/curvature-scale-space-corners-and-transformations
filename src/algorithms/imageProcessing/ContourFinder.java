@@ -255,6 +255,7 @@ public class ContourFinder {
             boolean isAnEdgePair = false;
             
             if (rightIndexBelow == -1) {
+                //TODO: the 2nd conditional should be revised
                 if ((nToRight == 1) && (tPoint > 0.9)) {
                     isAnEdgePair = true;
                 } else {
@@ -479,6 +480,13 @@ public class ContourFinder {
                     minDiffRight = rD;
                     rightIndex = j;
                 }
+            }
+            
+            // TODO: improve correction for wrap around.
+            // Also, this only includes peaks found at end, not beginning.
+            if (leftIndex == (t.length - 1) && (t[leftIndex] >= 0.9) &&
+                (t[0] < 0.1)) {
+                rightIndex = 0;
             }
             
             if (leftIndex > -1) {

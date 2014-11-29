@@ -32,7 +32,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
     @Test
     public void testMap() throws Exception {
         
-        String[] rotDegreesList = new String[]{"20", "45", "60", "110", 
+        String[] rotDegreesList = new String[]{"20", "45", "60", "110", "160",
             "135", "180", "225", "280", "335"
         };
         
@@ -41,7 +41,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             for (String rotDegrees : rotDegreesList) {
 
                 /*
-                if (!rotDegrees.equals("110")) {
+                if (!rotDegrees.equals("160")) {
                     continue;
                 }
                 */
