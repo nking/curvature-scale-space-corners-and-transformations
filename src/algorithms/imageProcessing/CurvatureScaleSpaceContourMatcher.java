@@ -620,14 +620,9 @@ public final class CurvatureScaleSpaceContourMatcher {
      * @return 
      */
     private HeapNode solve() {
-        
-        //TODO: consider using decreaseKey instead extractMin
-        //   and only extract it if not matched.
-        
+                
         HeapNode u = heap.extractMin();
         
-        //TODO:  assert that while loop will always terminate
-
         while (u != null) {
             
             TransformationPair obj = (TransformationPair)u.getData();
