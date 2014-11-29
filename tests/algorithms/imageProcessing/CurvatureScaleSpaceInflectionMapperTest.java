@@ -40,11 +40,11 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         //boolean swapDueToScale = false;
             for (String rotDegrees : rotDegreesList) {
 
-                
-                if (rotDegrees.equals("315")) {
+                /*
+                if (!rotDegrees.equals("315")) {
                     continue;
                 }
-                
+                */
 
                 String fileName1 = "closed_curve.png";
                 String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
