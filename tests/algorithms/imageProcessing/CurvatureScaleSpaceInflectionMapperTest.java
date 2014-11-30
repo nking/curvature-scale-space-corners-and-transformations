@@ -55,9 +55,9 @@ public class CurvatureScaleSpaceInflectionMapperTest {
 
         assertNotNull(transformationParams);
 
-        float rotDeg = -1*transformationParams.getRotationInDegrees();
+        float rotDeg = transformationParams.getRotationInDegrees();
         
-        assertTrue(Math.abs(rotDeg - 225.f) < 10.f);
+        assertTrue(Math.abs(rotDeg - 136.f) < 10.f);
 
         float scale = transformationParams.getScale();
 
@@ -194,9 +194,9 @@ public class CurvatureScaleSpaceInflectionMapperTest {
 
         assertNotNull(transformationParams);
 
-        float rotDeg = -1*transformationParams.getRotationInDegrees();
+        float rotDeg = transformationParams.getRotationInDegrees();
         
-        assertTrue(Math.abs(rotDeg - 225.f) < 10.f);
+        assertTrue(Math.abs(rotDeg - 136.f) < 10.f);
 
         float scale = transformationParams.getScale();
 
