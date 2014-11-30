@@ -37,11 +37,8 @@ public class InflectionMapperTwoObjectTest {
         
         String[] list1 = new String[]{"20", "45", "210"};
         
-        String[] list2 = new String[]{"110", "160", "180", "225"};
-        
-        list1 = new String[]{"20"};
-        list2 = new String[]{"110"};
-        
+        String[] list2 = new String[]{"110", "160", "180"};
+                
         for (int i = 0; i < list1.length; i++) {
             
             for (int j = 0; j < list2.length; j++) {
