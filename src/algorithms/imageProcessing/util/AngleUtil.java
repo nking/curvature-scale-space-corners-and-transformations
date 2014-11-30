@@ -107,11 +107,6 @@ public class AngleUtil {
         */
         t = 2.*Math.PI - t;
         
-        String str = String.format("=>%d %d %f %f %f (%f, %f, %f, %f)", 
-            q1, q2, theta1, theta2, t, diffX1, diffY1, diffX2, diffY2);
-
-        System.out.println(str.toString());
-        
         return t;  
     }
 }

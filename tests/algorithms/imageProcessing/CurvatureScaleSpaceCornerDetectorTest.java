@@ -81,7 +81,8 @@ public class CurvatureScaleSpaceCornerDetectorTest extends TestCase {
 
                 double lx = kernelDHelper.convolvePointWithKernel(edge, i, g, 
                     true);
-                convolvedX.add((int)lx, y);
+                int lxRound = (int) Math.round(lx);
+                convolvedX.add(lxRound, y);
                 //cImg.setRGB((int)lx, y, 0, 255, 0);
                 eImg.setValue(x, y, 255);
             }

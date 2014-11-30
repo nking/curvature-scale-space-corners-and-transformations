@@ -141,7 +141,10 @@ public class Transformer {
             double xt = xr + translationX;
             double yt = yr + translationY;
 
-            te.add((int)xt, (int)yt);
+            int xte = (int) Math.round(xt);
+            int yte = (int) Math.round(yt);
+            
+            te.add(xte, yte);
         }
           
         return te;
@@ -183,8 +186,8 @@ public class Transformer {
                     double xt = xr + translationX;
                     double yt = yr + translationY;
                 
-                    int x2 = (int)xt;
-                    int y2 = (int)yt;
+                    int x2 = (int)Math.round(xt);
+                    int y2 = (int)Math.round(yt);
                     
                     if ((x2 > -1) && (x2 < (output.getWidth() - 1) &&
                         (y2 > -1) && (y2 < (output.getHeight() - 1)))) {
@@ -233,8 +236,8 @@ public class Transformer {
                 double xt = xr + translationX;
                 double yt = yr + translationY;
                 
-                int x2 = (int)xt;
-                int y2 = (int)yt;
+                int x2 = (int)Math.round(xt);
+                int y2 = (int)Math.round(yt);
 
                 if ((x2 > -1) && (x2 < (output.getWidth() - 1) &&
                     (y2 > -1) && (y2 < (output.getHeight() - 1)))) {

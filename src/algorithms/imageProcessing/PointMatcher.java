@@ -642,10 +642,6 @@ public final class PointMatcher {
             return null;
         }
         
-        //TODO:  offer a simplex search w/ fixed scale, fixed rotation and
-        // widely varying translation and
-        // compare accuracy to grid search here
-        
         int nMax = set1.getN() * set2.getN();
         
         int maxFound = Integer.MIN_VALUE;
@@ -684,15 +680,27 @@ public final class PointMatcher {
         if (deltaTransY < 1) {
             deltaTransY = 7;
         }
-        
-        int tx0 = (int)(((prevNearTransX + transXC)/2.) - 1.2*deltaTransX);
-        int ty0 = (int)(((prevNearTransY + transYC)/2.) - 1.2*deltaTransY);
-        
-        int tx1 = (int)(((prevNearTransX + transXC)/2.) + 1.2*deltaTransX);
-        int ty1 = (int)(((prevNearTransY + transYC)/2.) + 1.2*deltaTransY);
+
+        int tx0 = (int)Math.round
+            (((prevNearTransX + transXC)/2.) - 1.2*deltaTransX);
+        int ty0 = (int)Math.round
+            (((prevNearTransY + transYC)/2.) - 1.2*deltaTransY);
+
+        int tx1 = (int)Math.round
+            (((prevNearTransX + transXC)/2.) + 1.2*deltaTransX);
+        int ty1 = (int)Math.round
+            (((prevNearTransY + transYC)/2.) + 1.2*deltaTransY);
+
+        if (ty0 > -2) {
+            ty0 = -2;
+        }
+        if (ty1 < 2) {
+            ty1 = 2;
+        }
         
         for (int transX = tx0; transX < tx1; transX++) {
-            for (int transY = (int)ty0; transY < ty1; transY++) {                
+            for (int transY = ty0; transY < ty1; transY++) {
+                
                 TransformationParameters params = 
                     new TransformationParameters();
                 params.setRotationInRadians((float) rotation);
@@ -706,8 +714,9 @@ public final class PointMatcher {
                 if (fitIsBetter(bestFit, fit)) {
                     bestFit = fit;
                 }
-                if ((fit.getNumberOfMatchedPoints() > (0.3*set1.getN())) 
-                    && (fit.getMeanDistFromModel() == 0)) {
+                if ((fit.getMeanDistFromModel() == 0) &&
+                    (fit.getNumberOfMatchedPoints() > (0.3*set1.getN())) 
+                    ) {
                     break;
                 }
             }
@@ -1405,8 +1414,16 @@ if (fits.length > 0) {
         Trying for a weighted average for now.  This section could be improved.
         */
         
-        double transXTolerance = (2 * centroidX1) * 0.02;
-        double transYTolerance = (2 * centroidY1) * 0.02;
+        /*
+        TODO: once the stereo projection tests are in place, decide
+        between a generous tolerance here and a precise one.
+        using a high tolerance such as (2 * centroidX1) * 0.02 helps allow
+        for projection effects, but a precise solution for euclidean
+        geometry should use a tolerance of 1.
+        */
+        
+        double transXTolerance = 1.0;//(2 * centroidX1) * 0.02;
+        double transYTolerance = 1.0;//(2 * centroidY1) * 0.02;
                 
         // make a weighted average of translations
         
@@ -1546,14 +1563,15 @@ if (fits.length > 0) {
         
             int x = set1.getX(i);
             int y = set1.getY(i);
+            
+            double xmcx1 = x - centroidX1;
+            double ymcy1 = y - centroidY1;
            
             double xr = centroidX1 * scale
-                + (((x - centroidX1) * scaleTimesCosine)
-                + ((y - centroidY1) * scaleTimesSine));
+                + ((xmcx1 * scaleTimesCosine) + (ymcy1 * scaleTimesSine));
 
             double yr = centroidY1 * scale
-                + ((-(x - centroidX1) * scaleTimesSine)
-                + ((y - centroidY1) * scaleTimesCosine));
+                + ((-xmcx1 * scaleTimesSine) + (ymcy1 * scaleTimesCosine));
 
             int xt = (int)Math.round(xr + params.getTranslationX());
             int yt = (int)Math.round(yr + params.getTranslationY());
@@ -1574,11 +1592,12 @@ if (fits.length > 0) {
                     continue;
                 }
                 
-                diffFromModel[diffFromModelOffset + nMatched] = Math.sqrt(
-                    Math.pow(xt - x2, 2) + Math.pow(yt - y2, 2)
+                double d = Math.sqrt(Math.pow(xt - x2, 2) + Math.pow(yt - y2, 2)
                 );
                 
-                avgDiffModel[0] += diffFromModel[diffFromModelOffset + nMatched];
+                diffFromModel[diffFromModelOffset + nMatched] = d;
+                
+                avgDiffModel[0] += d;
                 
                 nMatched++;
                 

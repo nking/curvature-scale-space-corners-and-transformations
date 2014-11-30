@@ -199,8 +199,9 @@ public class CurvatureScaleSpaceCornerDetector extends
                 int idx = subList.get(j).intValue();
                 // exclude if k < 0.1?
                 //if (Math.abs(scaleSpace.getK(idx)) > 0.1) {
-                    cornersForMatching.add((int)scaleSpace.getX(idx), 
-                        (int)scaleSpace.getY(idx));
+                    int xte = (int) Math.round(scaleSpace.getX(idx));
+                    int yte = (int) Math.round(scaleSpace.getY(idx));            
+                    cornersForMatching.add(xte, yte);
                 //}
             }
             
@@ -271,9 +272,9 @@ public class CurvatureScaleSpaceCornerDetector extends
                                  
         //store xc and yc for the edge
         for (int ii = 0; ii < candidateCornersXY.getN(); ii++) {
-            
-            edgeCorners.add((int)candidateCornersXY.getX(ii), 
-                (int)candidateCornersXY.getY(ii));
+            int xte = (int) Math.round(candidateCornersXY.getX(ii));
+            int yte = (int) Math.round(candidateCornersXY.getY(ii)); 
+            edgeCorners.add(xte, yte);
         }
         
         return edgeCorners;

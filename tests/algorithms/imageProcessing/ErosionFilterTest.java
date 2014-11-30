@@ -489,7 +489,10 @@ public class ErosionFilterTest {
             double c = Math.cos(thetaRadians);
             double s = Math.sin(thetaRadians);
             
-            xy.add((int) (xc + (r2 * c)), (int) (yc + (r2 * s)));
+            int xt = (int) Math.round(xc + (r2 * c));
+            int yt = (int) Math.round(yc + (r2 * s)); 
+            
+            xy.add(xt, yt);
         }
         
         return xy;

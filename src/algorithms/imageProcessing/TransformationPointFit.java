@@ -85,4 +85,19 @@ public class TransformationPointFit {
         return stDevFromMean;
     }
    
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("nMatchedPoints=").append(Integer.toString(nMatchedPoints))
+            .append(" meanDistFromModel=")
+            .append(Double.toString(meanDistFromModel))
+            .append(" stDevFromMean=")
+            .append(Double.toString(stDevFromMean))
+            .append(parameters.toString());
+        
+        return sb.toString();
+    }
+    
 }
