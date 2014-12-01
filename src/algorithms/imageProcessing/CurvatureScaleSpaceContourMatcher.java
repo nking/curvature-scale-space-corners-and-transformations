@@ -796,6 +796,9 @@ public final class CurvatureScaleSpaceContourMatcher {
         double minDiff2T = Double.MAX_VALUE;
         int minDiff2TIdx = -1;
         
+        double minDiffLen = Double.MAX_VALUE;
+        int minDiffLenIdx = -1;
+        
         for (int i = 0; i < c2.size(); i++) {
         
             CurvatureScaleSpaceContour c = c2.get(i);
@@ -803,10 +806,16 @@ public final class CurvatureScaleSpaceContourMatcher {
             if (exclude.contains(c)) {
                 continue;
             }
-                
+             
             double diffS = Math.abs(c.getPeakSigma() - sigma);
             double diffT = Math.abs(c.getPeakScaleFreeLength() - 
                 scaleFreeLength);
+            
+            double len = Math.sqrt(diffS * diffS + diffT * diffT);
+            if (len < minDiffLen) {
+                minDiffLen = len;
+                minDiffLenIdx = i;
+            }
             
             if (diffS <= (minDiffS + tolSigma)) {
                 if (diffT <= minDiffT) {
@@ -825,6 +834,12 @@ public final class CurvatureScaleSpaceContourMatcher {
             diffT = Math.abs(c.getPeakScaleFreeLength() - 
                 wrapScaleFreeLength);
             
+            len = Math.sqrt(diffS * diffS + diffT * diffT);
+            if (len < minDiffLen) {
+                minDiffLen = len;
+                minDiffLenIdx = i;
+            }
+            
             if (diffS <= (minDiffS + tolSigma)) {
                 if (diffT <= minDiffT) {
                     minDiffS = diffS;
@@ -840,11 +855,15 @@ public final class CurvatureScaleSpaceContourMatcher {
             }
         }
         
-        if (minDiffT <= minDiff2T) {
-            return idx;
+        if (minDiffS > 0.2*sigma) {
+            return minDiffLenIdx;
         }
         
-        return minDiff2TIdx;
+        if (minDiffT <= minDiff2T) {
+            return minDiffLenIdx;//idx;
+        }
+        
+        return minDiffLenIdx;//minDiff2TIdx;
     }
     
     private int findClosestC2MatchOrderedSearch(double sigma, 
@@ -869,6 +888,9 @@ public final class CurvatureScaleSpaceContourMatcher {
         double minDiff2T = Double.MAX_VALUE;
         int minDiff2TIdx = -1;
         
+        double minDiffLen = Double.MAX_VALUE;
+        int minDiffLenIdx = -1;
+        
         for (Integer i : c2Indexes) {
         
             CurvatureScaleSpaceContour c = c2.get(i.intValue());
@@ -880,6 +902,12 @@ public final class CurvatureScaleSpaceContourMatcher {
             double diffS = Math.abs(c.getPeakSigma() - sigma);
             double diffT = Math.abs(c.getPeakScaleFreeLength() - 
                 scaleFreeLength);
+            
+            double len = Math.sqrt(diffS * diffS + diffT * diffT);
+            if (len < minDiffLen) {
+                minDiffLen = len;
+                minDiffLenIdx = i;
+            }
             
             if (diffS <= (minDiffS + tolSigma)) {
                 if (diffT <= minDiffT) {
@@ -898,6 +926,12 @@ public final class CurvatureScaleSpaceContourMatcher {
             diffT = Math.abs(c.getPeakScaleFreeLength() - 
                 wrapScaleFreeLength);
             
+            len = Math.sqrt(diffS * diffS + diffT * diffT);
+            if (len < minDiffLen) {
+                minDiffLen = len;
+                minDiffLenIdx = i;
+            }
+            
             if (diffS <= (minDiffS + tolSigma)) {
                 if (diffT <= minDiffT) {
                     minDiffS = diffS;
@@ -911,6 +945,10 @@ public final class CurvatureScaleSpaceContourMatcher {
                     minDiff2TIdx = i.intValue();
                 }
             }
+        }
+        
+        if (minDiffS > 0.2*sigma) {
+            return minDiffLenIdx;
         }
         
         if (minDiffT <= minDiff2T) {

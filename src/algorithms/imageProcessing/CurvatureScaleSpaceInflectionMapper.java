@@ -4,6 +4,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -58,6 +59,11 @@ public final class CurvatureScaleSpaceInflectionMapper {
     private List<CurvatureScaleSpaceContour> matchedContours2 = new 
         ArrayList<CurvatureScaleSpaceContour>();
     
+    private Map<Integer, PairIntArray> matchedXY1ByEdgeInOrigRefFrame = null;
+    private Map<Integer, PairIntArray> matchedXY2ByEdgeInOrigRefFrame = null;
+    private Map<Integer, List<Float> > matchedXY1ByEdgeWeights = null;
+    private Map<Integer, List<Float> > matchedXY2ByEdgeWeights = null;
+        
     /**
      * matched points from the contour lists of image 1 (matched to the same
      * in image 2) with coordinates being in the reference frames of the
@@ -408,24 +414,13 @@ public final class CurvatureScaleSpaceInflectionMapper {
         }
                 
         matchedContours1.addAll(transAppliedTo1);
-        
         matchedContours2.addAll(transAppliedTo2);
-                
-        log.info("Contour matcher solution scale=" + matcher.getSolvedScale());
-        
-        log.info("Contour matcher solution shift=" + matcher.getSolvedShift());
-        
         matchedScale = matcher.getSolvedScale();
         
+        log.info("Contour matcher solution scale=" + matcher.getSolvedScale());
+        log.info("Contour matcher solution shift=" + matcher.getSolvedShift());        
         log.info("Contour matcher solution cost=" + matcher.getSolvedCost());
         
-        /*
-        3 lobed polygon tests have cost:
-             0 to 3.0 for 6 matched points.
-        
-        
-        */
-
         PairIntArray xy1 = new PairIntArray(transAppliedTo1.size());
         PairIntArray xy2 = new PairIntArray(transAppliedTo1.size());
         List<Float> weights1 = new ArrayList<Float>();
@@ -436,11 +431,14 @@ public final class CurvatureScaleSpaceInflectionMapper {
         
         List<Integer> matchedE1Idxs = new ArrayList<Integer>();
         List<Integer> matchedE2Idxs = new ArrayList<Integer>();
-                    
+        matchedXY1ByEdgeInOrigRefFrame = new HashMap<Integer, PairIntArray>();
+        matchedXY2ByEdgeInOrigRefFrame = new HashMap<Integer, PairIntArray>();
+        matchedXY1ByEdgeWeights = new HashMap<Integer, List<Float> >();
+        matchedXY2ByEdgeWeights = new HashMap<Integer, List<Float> >();
+        
         for (int i = 0; i < transAppliedTo1.size(); i++) {
                         
             CurvatureScaleSpaceContour c1 = transAppliedTo1.get(i);
-            
             CurvatureScaleSpaceContour c2 = transAppliedTo2.get(i);
             
             Integer e1Index = Integer.valueOf(c1.getEdgeNumber());
@@ -453,6 +451,10 @@ public final class CurvatureScaleSpaceInflectionMapper {
             } else {
                 matchedE1Idxs.add(e1Index);
                 matchedE2Idxs.add(e2Index);
+                matchedXY1ByEdgeInOrigRefFrame.put(e1Index, new PairIntArray());
+                matchedXY2ByEdgeInOrigRefFrame.put(e2Index, new PairIntArray());
+                matchedXY1ByEdgeWeights.put(e1Index, new ArrayList<Float>());
+                matchedXY2ByEdgeWeights.put(e2Index, new ArrayList<Float>());
             }
             
             float sigma1 = c1.getPeakSigma();
@@ -499,6 +501,10 @@ public final class CurvatureScaleSpaceInflectionMapper {
                 xy1.add(x, y);
                 weights1.add(Float.valueOf(sigma1));
                 sumS1 += sigma1;
+                
+                matchedXY1ByEdgeInOrigRefFrame.get(e1Index).add(
+                    x + offsetImageX1, y + offsetImageY1);
+                matchedXY1ByEdgeWeights.get(e1Index).add(Float.valueOf(sigma1));
                    
                 if (debug) {
                     s1.append(String.format(" (%d, %d)", x, y));
@@ -512,6 +518,10 @@ public final class CurvatureScaleSpaceInflectionMapper {
                 weights2.add(Float.valueOf(sigma2));
                 sumS2 += sigma2;
                     
+                matchedXY2ByEdgeInOrigRefFrame.get(e2Index).add(
+                    x + offsetImageX2, y + offsetImageX2);
+                matchedXY2ByEdgeWeights.get(e2Index).add(Float.valueOf(sigma2));
+                
                 if (debug) {
                     s2.append(String.format(" (%d, %d)", x, y));
                 }
@@ -534,7 +544,16 @@ public final class CurvatureScaleSpaceInflectionMapper {
                 + " offsetImgY2=" + offsetImageY2
             );
         }
-            
+        
+        matchedEdge1Indexes = new int[matchedE1Idxs.size()];
+        matchedEdge2Indexes = new int[matchedE2Idxs.size()];
+        for (int i = 0; i < matchedE1Idxs.size(); i++) {
+            int e1Idx = matchedE1Idxs.get(i).intValue();
+            int e2Idx = matchedE2Idxs.get(i).intValue();
+            matchedEdge1Indexes[i] = e1Idx;
+            matchedEdge2Indexes[i] = e2Idx;
+        }
+        
         matchedXY1 = xy1;
         matchedXY2 = xy2;
                 
@@ -549,38 +568,8 @@ public final class CurvatureScaleSpaceInflectionMapper {
             double tmp = weights2.get(i).floatValue()/sumS2;
             matchedXY2Weights[i] = Float.valueOf((float)tmp);
         }
-        
-        matchedEdge1Indexes = new int[matchedE1Idxs.size()];
-        matchedEdge2Indexes = new int[matchedE2Idxs.size()];
-        for (int i = 0; i < matchedE1Idxs.size(); i++) {
-            int e1Idx = matchedE1Idxs.get(i).intValue();
-            int e2Idx = matchedE2Idxs.get(i).intValue();
-            matchedEdge1Indexes[i] = e1Idx;
-            matchedEdge2Indexes[i] = e2Idx;
-        }
     }
   
-    /**
-     * coordinate transformations from image 1 to image 2 are calculated from
-     * matching scale space image contours.
-     *
-     * positive Y is up 
-       positive X is right
-       positive theta starts from Y=0, X>=0 and proceeds CW
-                270
-                 |     
-                 |
-          180--------- 0   +X
-                 |   
-                 |   
-                 90
-                 -Y
-     * </pre>
-     * NOTE: this will return null if it did not find closed 
-     * curves in each image for which to map between.
-     * 
-     * @return 
-     */
     public TransformationParameters createEuclideanTransformation() {
         
         initialize();
@@ -673,7 +662,7 @@ public final class CurvatureScaleSpaceInflectionMapper {
         
         return params;
     }
-
+    
     public PairIntArray getMatchedXY1() {
         return matchedXY1;
     }

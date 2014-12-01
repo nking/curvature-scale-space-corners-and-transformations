@@ -176,6 +176,7 @@ public class MatchedPointsTransformationCalculator {
         double rCount = 0;
         scaleSum = 0;
         double sCount = 0;
+        
         List<Integer> rm = new ArrayList<Integer>();
         for (int i = 0; i < matchedXY1.getN(); i++) {
             double dss = Math.abs(scales[i] - avgScale);

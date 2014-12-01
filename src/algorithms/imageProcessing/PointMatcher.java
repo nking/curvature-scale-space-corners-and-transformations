@@ -1115,7 +1115,7 @@ public final class PointMatcher {
             5.0 * Math.PI/180.
         };
         double[] dss = new double[] {
-            -1.0, -0.1, -0.05 /*, 0.05, 0.1, 1.0*/
+            -1.0, -0.1, -0.05, 0.05 /*, 0.05, 0.1, 1.0*/
         };
         if (r == 0) {
              drs = new double[]{0};
@@ -1139,9 +1139,7 @@ public final class PointMatcher {
         for (int i = 0; i <= dss.length; i++) {
             
             double scale = (i == 0) ? s : s + dss[i - 1];
-            
-            int z = 1;
-            
+                        
             for (int j = 0; j <= drs.length; j++) {
                 
                 double rotation = (j == 0) ? r : r + drs[j - 1];
