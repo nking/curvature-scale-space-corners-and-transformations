@@ -473,21 +473,48 @@ public final class CurvatureScaleSpaceInflectionMapper {
             // the contours extracted from scale space images using a factor of
             // 2^(1/8) for recursive convolution tend to not have a single
             // peak, so the correction here for the single peak case is not 
-            // usually needed.  for that rare case, just doubling the peak
-            // for comparison to the matched contour
+            // usually needed.  for that rare case, the avg of the other peak
+            // is stored instead of both points
             if (c1.getPeakDetails().length != c2.getPeakDetails().length) {
                 if (c1.getPeakDetails().length == 1) {
+                    
+                    CurvatureScaleSpaceImagePoint p0 = c2.getPeakDetails()[0];
+                    CurvatureScaleSpaceImagePoint p1 = c2.getPeakDetails()[1];
+                    
+                    float t = p0.getScaleFreeLength();
+                    float s = p0.getSigma();
+                    int xAvg = Math.round((p0.getXCoord() + p1.getXCoord())/2.f);
+                    int yAvg = Math.round((p0.getYCoord() + p1.getYCoord())/2.f);
+                    
+                    CurvatureScaleSpaceImagePoint pAvg = 
+                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg);
+                    
                     CurvatureScaleSpaceImagePoint[] p = new
-                        CurvatureScaleSpaceImagePoint[]{
-                        c1.getPeakDetails()[0], c1.getPeakDetails()[0]};
-                    c1.setPeakDetails(p);
-                    transAppliedTo1.set(i, c1);
-                } else if (c2.getPeakDetails().length == 1) {
-                    CurvatureScaleSpaceImagePoint[] p = new
-                        CurvatureScaleSpaceImagePoint[]{
-                        c2.getPeakDetails()[0], c2.getPeakDetails()[0]};                
+                        CurvatureScaleSpaceImagePoint[]{pAvg};
+                   
                     c2.setPeakDetails(p);
+                    
                     transAppliedTo2.set(i, c2);
+                    
+                } else if (c2.getPeakDetails().length == 1) {
+                    
+                    CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];
+                    CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];
+                    
+                    float t = p0.getScaleFreeLength();
+                    float s = p0.getSigma();
+                    int xAvg = Math.round((p0.getXCoord() + p1.getXCoord())/2.f);
+                    int yAvg = Math.round((p0.getYCoord() + p1.getYCoord())/2.f);
+                    
+                    CurvatureScaleSpaceImagePoint pAvg = 
+                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg);
+                    
+                    CurvatureScaleSpaceImagePoint[] p = new
+                        CurvatureScaleSpaceImagePoint[]{pAvg};
+                   
+                    c1.setPeakDetails(p);
+                    
+                    transAppliedTo1.set(i, c1);
                 }
             }
                                 

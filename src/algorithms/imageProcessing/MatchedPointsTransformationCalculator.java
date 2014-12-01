@@ -80,12 +80,6 @@ public class MatchedPointsTransformationCalculator {
         
         log.info("start solution for " + matchedXY1.getN() + " points");
         
-        //TODO: this could be improved by making pairs out of points with 
-        // furthest x and y from each other
-        // or by using all combinations weighted by deltax and deltay.
-        // could use bipartite max weight algorithm such as 
-        // Hungarian or a max flow algorithm.
-        
         /*
         solve for rotation.
         
@@ -139,14 +133,7 @@ public class MatchedPointsTransformationCalculator {
             
             double diffX2 = (x1im2 - x0im2);
             double diffY2 = (y1im2 - y0im2);
-            
-            // interpretation of subtracting angles
-            
-            /*
-            note that they were made with positive as CCW, so 
-            a change is made below after the blocks
-            */
-            
+                        
             double t = angleUtil.subtract(diffX1, diffY1, diffX2, diffY2);
             
             thetas[i] = t;

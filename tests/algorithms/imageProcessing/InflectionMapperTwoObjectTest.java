@@ -38,7 +38,10 @@ public class InflectionMapperTwoObjectTest {
         String[] list1 = new String[]{"20", "45", "210"};
         
         String[] list2 = new String[]{"110", "160", "180"};
-                
+        
+        //list1 = new String[]{"45"};
+        //list2 = new String[]{"180"};
+
         for (int i = 0; i < list1.length; i++) {
             
             for (int j = 0; j < list2.length; j++) {
@@ -46,6 +49,8 @@ public class InflectionMapperTwoObjectTest {
                 String fileName1 = rootName + list1[i] + ".png";
                 
                 String fileName2 = rootName + list2[j] + ".png";
+                
+                log.info("TRANSFORM " + fileName1 + " to " + fileName2);
                 
                 int rotation1 = Integer.valueOf(list1[i]).intValue();
                 
