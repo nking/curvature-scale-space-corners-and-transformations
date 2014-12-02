@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CurvatureScaleSpaceInflectionMapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CurvatureScaleSpaceInflectionMapper.java</span></div><h1>CurvatureScaleSpaceInflectionMapper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
+import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -17,65 +20,139 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L20" title="1 of 2 branches missed.">public final class CurvatureScaleSpaceInflectionMapper {</span>
+public final class CurvatureScaleSpaceInflectionMapper {
     
-<span class="fc" id="L22">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L25">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="fc" id="L24">    private boolean debug = false;</span>
+<span class="fc" id="L27">    private boolean debug = false;</span>
     
-<span class="fc" id="L26">    private boolean useLineDrawingMode = false;</span>
+<span class="fc" id="L29">    private boolean useLineDrawingMode = false;</span>
         
-<span class="fc" id="L28">    private boolean doNotRefineTransformations = false;</span>
+<span class="fc" id="L31">    private boolean doRefineTransformations = false;</span>
     
-<span class="fc" id="L30">    private boolean initialized = false;</span>
+<span class="fc" id="L33">    private boolean initialized = false;</span>
     
     private final GreyscaleImage image1; 
     private final GreyscaleImage image2;
+    // for debugging, keeping a reference of originals
+    private final GreyscaleImage originalImage1; 
+    private final GreyscaleImage originalImage2;
     
-<span class="fc" id="L35">    private List&lt;PairIntArray&gt; edges1 = null;</span>
-<span class="fc" id="L36">    private List&lt;PairIntArray&gt; edges2 = null;</span>
     
-<span class="fc" id="L38">    private List&lt;CurvatureScaleSpaceContour&gt; contours1 = new </span>
+    public final int image1OriginalWidth;
+    public final int image1OriginalHeight;
+    private final int image2OriginalWidth;
+    private final int image2OriginalHeight;
+    
+<span class="fc" id="L47">    private List&lt;PairIntArray&gt; edges1 = null;</span>
+<span class="fc" id="L48">    private List&lt;PairIntArray&gt; edges2 = null;</span>
+    
+<span class="fc" id="L50">    private List&lt;CurvatureScaleSpaceContour&gt; contours1 = new </span>
         ArrayList&lt;CurvatureScaleSpaceContour&gt;();
     
-<span class="fc" id="L41">    private List&lt;CurvatureScaleSpaceContour&gt; contours2 = new </span>
+<span class="fc" id="L53">    private List&lt;CurvatureScaleSpaceContour&gt; contours2 = new </span>
         ArrayList&lt;CurvatureScaleSpaceContour&gt;();
         
-<span class="fc" id="L44">    private List&lt;CurvatureScaleSpaceContour&gt; matchedContours1 = new </span>
+<span class="fc" id="L56">    private List&lt;CurvatureScaleSpaceContour&gt; matchedContours1 = new </span>
         ArrayList&lt;CurvatureScaleSpaceContour&gt;();
     
-<span class="fc" id="L47">    private List&lt;CurvatureScaleSpaceContour&gt; matchedContours2 = new </span>
+<span class="fc" id="L59">    private List&lt;CurvatureScaleSpaceContour&gt; matchedContours2 = new </span>
         ArrayList&lt;CurvatureScaleSpaceContour&gt;();
     
-<span class="fc" id="L50">    private PairIntArray matchedXY1 = null;</span>
-    
-<span class="fc" id="L52">    private PairIntArray matchedXY2 = null;</span>
-    
-<span class="fc" id="L54">    private int offsetImageX1 = 0;</span>
-    
-<span class="fc" id="L56">    private int offsetImageY1 = 0;</span>
-    
-<span class="fc" id="L58">    private int offsetImageX2 = 0;</span>
-    
-<span class="fc" id="L60">    private int offsetImageY2 = 0;</span>
+<span class="fc" id="L62">    private Map&lt;Integer, PairIntArray&gt; matchedXY1ByEdgeInOrigRefFrame = null;</span>
+<span class="fc" id="L63">    private Map&lt;Integer, PairIntArray&gt; matchedXY2ByEdgeInOrigRefFrame = null;</span>
+<span class="fc" id="L64">    private Map&lt;Integer, List&lt;Float&gt; &gt; matchedXY1ByEdgeWeights = null;</span>
+<span class="fc" id="L65">    private Map&lt;Integer, List&lt;Float&gt; &gt; matchedXY2ByEdgeWeights = null;</span>
         
+    /**
+     * matched points from the contour lists of image 1 (matched to the same
+     * in image 2) with coordinates being in the reference frames of the
+     * original image 1 before any trimming.
+     */
+<span class="fc" id="L72">    private PairIntArray matchedXY1 = null;</span>
+    
+    /**
+     * matched points from the contour lists of image 2 (matched to the same
+     * in image 1) with coordinates being in the reference frames of the
+     * original image 2 before any trimming.
+     */
+<span class="fc" id="L79">    private PairIntArray matchedXY2 = null;</span>
+    
+    /**
+     * weights for points in matchedXY1 created from the peak strengths.
+     */
+<span class="fc" id="L84">    private float[] matchedXY1Weights = null;</span>
+    
+    /**
+     * weights for points in matchedXY2 created from the peak strengths.
+     */
+<span class="fc" id="L89">    private float[] matchedXY2Weights = null;</span>
+    
+    /**
+     * scale derived from matching contours.  it's not necessarily the same
+     * as the final scale returned in transformation solutions, but it should
+     * be close;
+     */
+<span class="fc" id="L96">    private double matchedScale = 1;</span>
+    
+    /**
+     * indexes for edges from edges1 which produced matching contours
+     */
+<span class="fc" id="L101">    private int[] matchedEdge1Indexes = null;</span>
+    
+    /**
+     * indexes for edges from edges2 which produced matching contours
+     */
+<span class="fc" id="L106">    private int[] matchedEdge2Indexes = null;</span>
+    
+<span class="fc" id="L108">    private int offsetImageX1 = 0;</span>
+    
+<span class="fc" id="L110">    private int offsetImageY1 = 0;</span>
+    
+<span class="fc" id="L112">    private int offsetImageX2 = 0;</span>
+    
+<span class="fc" id="L114">    private int offsetImageY2 = 0;</span>
+    
+<span class="fc" id="L116">    private boolean useOutdoorMode = false;</span>
+      
+    public CurvatureScaleSpaceInflectionMapper(GreyscaleImage image1, 
+<span class="fc" id="L119">        GreyscaleImage image2) {</span>
+        
+<span class="fc" id="L121">        this.image1 = image1;</span>
+<span class="fc" id="L122">        this.image2 = image2;</span>
+        
+<span class="fc" id="L124">        originalImage1 = image1.copyImage();</span>
+<span class="fc" id="L125">        originalImage2 = image2.copyImage();</span>
+        
+<span class="fc" id="L127">        image1OriginalWidth = image1.getWidth();</span>
+<span class="fc" id="L128">        image1OriginalHeight = image1.getHeight();</span>
+<span class="fc" id="L129">        image2OriginalWidth = image2.getWidth();</span>
+<span class="fc" id="L130">        image2OriginalHeight = image2.getHeight();</span>
+<span class="fc" id="L131">    }</span>
+    
+    public void useOutdoorMode() {
+<span class="nc" id="L134">        useOutdoorMode = true;</span>
+<span class="nc" id="L135">    }</span>
+    
     public void useLineDrawingLineMode() {
-<span class="fc" id="L63">        this.useLineDrawingMode = true;</span>
-<span class="fc" id="L64">    }</span>
+<span class="fc" id="L138">        this.useLineDrawingMode = true;</span>
+<span class="fc" id="L139">    }</span>
     
-    public void doNotRefineTransformations() {
-<span class="nc" id="L67">        doNotRefineTransformations = true;</span>
-<span class="nc" id="L68">    }</span>
+    public void setToRefineTransformations() {
+<span class="fc" id="L142">        doRefineTransformations = true;</span>
+<span class="fc" id="L143">    }</span>
     
     public void useDebugMode() {
-<span class="nc" id="L71">        debug = true;</span>
-<span class="nc" id="L72">    }</span>
+<span class="fc" id="L146">        debug = true;</span>
+<span class="fc" id="L147">    }</span>
     
     public void initialize() {
         
-<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (initialized) {</span>
-<span class="nc" id="L77">            return;</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (initialized) {</span>
+<span class="nc" id="L152">            return;</span>
         }
+        
+<span class="fc" id="L155">        initialized = true;</span>
         
         // note that if the orientation of image2 with respect to image1 is
         // more than 180 degrees, the code in the edge extractor will be forming
@@ -92,83 +169,104 @@ import java.util.logging.Logger;
         // (left and right) for clockwise order gives the right answer 
         // and is less work computationally
         
-<span class="fc" id="L95">        CurvatureScaleSpaceImageMaker imgMaker</span>
-            = new CurvatureScaleSpaceImageMaker(image1);
-        
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
-<span class="fc" id="L99">            imgMaker.useLineDrawingMode();</span>
+<span class="fc" id="L172">        CurvatureScaleSpaceImageMaker imgMaker = new </span>
+            CurvatureScaleSpaceImageMaker(image1);
+            
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
+<span class="fc" id="L176">            imgMaker.useLineDrawingMode();</span>
         }
         
-<span class="fc" id="L102">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">        if (useOutdoorMode) {</span>
+<span class="nc" id="L180">            imgMaker.useOutdoorMode();</span>
+        }
         
-<span class="fc" id="L104">        edges1 = imgMaker.getClosedCurves();</span>
+<span class="fc" id="L183">        imgMaker.initialize();</span>
         
-<span class="fc" id="L106">        boolean didReverse = false;</span>
+<span class="fc" id="L185">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="fc bfc" id="L108" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.size(); i++) {</span>
+<span class="fc" id="L187">        edges1 = imgMaker.getClosedCurves();</span>
+        
+<span class="fc" id="L189">        boolean didReverse = false;</span>
+        
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.size(); i++) {</span>
 
-<span class="fc" id="L110">            PairIntArray curve = edges1.get(i);</span>
+<span class="fc" id="L193">            PairIntArray curve = edges1.get(i);</span>
 
-<span class="fc" id="L112">            Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap</span>
+<span class="fc" id="L195">            Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap</span>
                 = imgMaker.createScaleSpaceMetricsForEdge2(curve);
 
-<span class="fc" id="L115">            ScaleSpaceCurveImage scaleSpaceImage</span>
+<span class="fc" id="L198">            ScaleSpaceCurveImage scaleSpaceImage</span>
                 = imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i);
                  
-<span class="fc" id="L118">            ContourFinder contourFinder = new ContourFinder();</span>
+<span class="fc" id="L201">            ContourFinder contourFinder = new ContourFinder();</span>
 
-<span class="fc" id="L120">            List&lt;CurvatureScaleSpaceContour&gt; result = contourFinder.findContours(</span>
+<span class="fc" id="L203">            List&lt;CurvatureScaleSpaceContour&gt; result = contourFinder.findContours(</span>
                 scaleSpaceImage, i);
                     
-<span class="fc" id="L123">            PairIntArray testContour = new PairIntArray();</span>
-<span class="fc bfc" id="L124" title="All 2 branches covered.">            for (int j = 0; j &lt; result.size(); j++) {</span>
-<span class="fc" id="L125">                CurvatureScaleSpaceContour c = result.get(j);</span>
-<span class="fc" id="L126">                CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">                for (int jj = 0; jj &lt; points.length; jj++) {</span>
-<span class="fc" id="L128">                    testContour.add((int)points[jj].getXCoord(), </span>
-                        (int)points[jj].getYCoord());
+<span class="fc" id="L206">            PairIntArray testContour = new PairIntArray();</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            for (int j = 0; j &lt; result.size(); j++) {</span>
+<span class="fc" id="L208">                CurvatureScaleSpaceContour c = result.get(j);</span>
+<span class="fc" id="L209">                CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">                for (int jj = 0; jj &lt; points.length; jj++) {</span>
+<span class="fc" id="L211">                    testContour.add(points[jj].getXCoord(), </span>
+                        points[jj].getYCoord());
                 }
             }
             
-<span class="fc" id="L133">            boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);</span>
-<span class="fc" id="L134">            log.fine(&quot;EDGES1: contour isCW=&quot; + isCW);</span>
+<span class="fc" id="L216">            boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);</span>
+<span class="fc" id="L217">            log.info(&quot;EDGES1: contour isCW=&quot; + isCW);</span>
             
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">            if (isCW) {</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            if (isCW) {</span>
                 
-<span class="nc" id="L138">                didReverse = true;</span>
+<span class="fc" id="L221">                didReverse = true;</span>
                 
-<span class="nc bnc" id="L140" title="All 2 branches missed.">                for (int j = 0; j &lt; result.size(); j++) {</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                for (int j = 0; j &lt; result.size(); j++) {</span>
                     
-<span class="nc" id="L142">                    CurvatureScaleSpaceContour contour = result.get(j);</span>
+<span class="fc" id="L225">                    CurvatureScaleSpaceContour contour = result.get(j);</span>
                                         
-<span class="nc" id="L144">                    CurvatureScaleSpaceContour reversed = </span>
+<span class="fc" id="L227">                    CurvatureScaleSpaceContour reversed = </span>
                         new CurvatureScaleSpaceContour(contour.getPeakSigma(), 
                         1.0f - contour.getPeakScaleFreeLength());
                     
-<span class="nc" id="L148">                    CurvatureScaleSpaceImagePoint[] points = </span>
+<span class="fc" id="L231">                    CurvatureScaleSpaceImagePoint[] points = </span>
                         contour.getPeakDetails();
-<span class="nc bnc" id="L150" title="All 2 branches missed.">                    if (points.length &gt; 1) {</span>
-<span class="nc" id="L151">                        CurvatureScaleSpaceImagePoint tmp = points[0];</span>
-<span class="nc" id="L152">                        points[0] = points[1];</span>
-<span class="nc" id="L153">                        points[1] = tmp;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">                    if (points.length &gt; 1) {</span>
+<span class="fc" id="L234">                        CurvatureScaleSpaceImagePoint tmp = points[0];</span>
+<span class="fc" id="L235">                        points[0] = points[1];</span>
+<span class="fc" id="L236">                        points[1] = tmp;</span>
                     }
-<span class="nc bnc" id="L155" title="All 2 branches missed.">                    for (int jj = 0; jj &lt; points.length; jj++) {</span>
-<span class="nc" id="L156">                        points[jj].setScaleFreeLength(1.0f - </span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">                    for (int jj = 0; jj &lt; points.length; jj++) {</span>
+<span class="fc" id="L239">                        points[jj].setScaleFreeLength(1.0f - </span>
                             points[jj].getScaleFreeLength());
                     }
-<span class="nc" id="L159">                    reversed.setPeakDetails(points);</span>
-<span class="nc" id="L160">                    reversed.setEdgeNumber(contour.getEdgeNumber());</span>
+<span class="fc" id="L242">                    reversed.setPeakDetails(points);</span>
+<span class="fc" id="L243">                    reversed.setEdgeNumber(contour.getEdgeNumber());</span>
                                         
-<span class="nc" id="L162">                    result.set(j, reversed);</span>
+<span class="fc" id="L245">                    result.set(j, reversed);</span>
                 }
             }
             
-<span class="fc" id="L166">            contours1.addAll(result);</span>
+<span class="fc" id="L249">            contours1.addAll(result);</span>
         }
         
-<span class="pc bpc" id="L169" title="2 of 4 branches missed.">        if ((edges1.size() &gt; 1) || didReverse) {</span>
-<span class="nc" id="L170">            Collections.sort(contours1, new DescendingSigmaComparator());</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        if (contours1.isEmpty()) {</span>
+<span class="nc" id="L253">            log.info(&quot;no contours found in image 1&quot;);</span>
+<span class="nc" id="L254">            return;</span>
         }
+        
+<span class="pc bpc" id="L257" title="1 of 4 branches missed.">        if ((edges1.size() &gt; 1) || didReverse) {</span>
+<span class="fc" id="L258">            Collections.sort(contours1, new DescendingSigmaComparator());</span>
+        }
+        
+        /*float highestPeak1 = contours1.get(0).getPeakSigma();
+        
+        float lowThresh1 = 0.15f * highestPeak1;
+        
+        for (int i = (contours1.size() - 1); i &gt; -1; i--) {
+            if (contours1.get(i).getPeakSigma() &lt; lowThresh1) {
+                contours1.remove(i);
+            }
+        }*/
         
         /*
         note that when modifying the contour lists in any way, one has to
@@ -177,405 +275,606 @@ import java.util.logging.Logger;
         two of the search methods in the matcher depend upon those properties.
         */
         
-<span class="fc" id="L180">        offsetImageX1 = imgMaker.getTrimmedXOffset();</span>
+<span class="fc" id="L278">        offsetImageX1 = imgMaker.getTrimmedXOffset();</span>
         
-<span class="fc" id="L182">        offsetImageY1 = imgMaker.getTrimmedYOffset();</span>
+<span class="fc" id="L280">        offsetImageY1 = imgMaker.getTrimmedYOffset();</span>
+                    
+<span class="fc" id="L282">        imgMaker = new CurvatureScaleSpaceImageMaker(image2);</span>
         
-<span class="fc" id="L184">        imgMaker</span>
-            = new CurvatureScaleSpaceImageMaker(image2);
-        
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
-<span class="fc" id="L188">            imgMaker.useLineDrawingMode();</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
+<span class="fc" id="L285">            imgMaker.useLineDrawingMode();</span>
         }
         
-<span class="fc" id="L191">        edges2 = imgMaker.getClosedCurves();</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">        if (useOutdoorMode) {</span>
+<span class="nc" id="L289">            imgMaker.useOutdoorMode();</span>
+        }
         
-<span class="fc" id="L193">        didReverse = false;</span>
+<span class="fc" id="L292">        imgMaker.initialize();</span>
         
-<span class="fc bfc" id="L195" title="All 2 branches covered.">        for (int i = 0; i &lt; edges2.size(); i++) {</span>
+<span class="fc" id="L294">        edges2 = imgMaker.getClosedCurves();</span>
+        
+<span class="fc" id="L296">        didReverse = false;</span>
+        
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        for (int i = 0; i &lt; edges2.size(); i++) {</span>
 
-<span class="fc" id="L197">            PairIntArray curve = edges2.get(i);</span>
+<span class="fc" id="L300">            PairIntArray curve = edges2.get(i);</span>
             
-<span class="fc" id="L199">            Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap</span>
+<span class="fc" id="L302">            Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap</span>
                 = imgMaker.createScaleSpaceMetricsForEdge2(curve);
 
-<span class="fc" id="L202">            ScaleSpaceCurveImage scaleSpaceImage</span>
+<span class="fc" id="L305">            ScaleSpaceCurveImage scaleSpaceImage</span>
                 = imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i);
-                 
-<span class="fc" id="L205">            ContourFinder contourFinder = new ContourFinder();</span>
 
-<span class="fc" id="L207">            List&lt;CurvatureScaleSpaceContour&gt; result = contourFinder.findContours(</span>
+<span class="fc" id="L308">            ContourFinder contourFinder = new ContourFinder();</span>
+
+<span class="fc" id="L310">            List&lt;CurvatureScaleSpaceContour&gt; result = contourFinder.findContours(</span>
                 scaleSpaceImage, i);
             
-<span class="fc" id="L210">            PairIntArray testContour = new PairIntArray();</span>
-<span class="fc bfc" id="L211" title="All 2 branches covered.">            for (int j = 0; j &lt; result.size(); j++) {</span>
-<span class="fc" id="L212">                CurvatureScaleSpaceContour c = result.get(j);</span>
-<span class="fc" id="L213">                CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();</span>
-<span class="fc bfc" id="L214" title="All 2 branches covered.">                for (int jj = 0; jj &lt; points.length; jj++) {</span>
-<span class="fc" id="L215">                    testContour.add((int)points[jj].getXCoord(), </span>
-                        (int)points[jj].getYCoord());
+<span class="fc" id="L313">            PairIntArray testContour = new PairIntArray();</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">            for (int j = 0; j &lt; result.size(); j++) {</span>
+<span class="fc" id="L315">                CurvatureScaleSpaceContour c = result.get(j);</span>
+<span class="fc" id="L316">                CurvatureScaleSpaceImagePoint[] points = c.getPeakDetails();</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">                for (int jj = 0; jj &lt; points.length; jj++) {</span>
+<span class="fc" id="L318">                    testContour.add(points[jj].getXCoord(), </span>
+                        points[jj].getYCoord());
                 }
             }
             
-<span class="fc" id="L220">            boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);</span>
-<span class="fc" id="L221">            log.fine(&quot;EDGES2: contour isCW=&quot; + isCW);</span>
+<span class="fc" id="L323">            boolean isCW = curveHelper.curveIsOrderedClockwise(testContour);</span>
+<span class="fc" id="L324">            log.info(&quot;EDGES2: contour isCW=&quot; + isCW);</span>
             
-<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (isCW) {</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">            if (isCW) {</span>
                 
-<span class="fc" id="L225">                didReverse = true;</span>
+<span class="fc" id="L328">                didReverse = true;</span>
                 
-<span class="fc bfc" id="L227" title="All 2 branches covered.">                for (int j = 0; j &lt; result.size(); j++) {</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">                for (int j = 0; j &lt; result.size(); j++) {</span>
                     
-<span class="fc" id="L229">                    CurvatureScaleSpaceContour contour = result.get(j);</span>
+<span class="fc" id="L332">                    CurvatureScaleSpaceContour contour = result.get(j);</span>
                                         
-<span class="fc" id="L231">                    CurvatureScaleSpaceContour reversed = </span>
+<span class="fc" id="L334">                    CurvatureScaleSpaceContour reversed = </span>
                         new CurvatureScaleSpaceContour(contour.getPeakSigma(), 
                         1.0f - contour.getPeakScaleFreeLength());
                     
-<span class="fc" id="L235">                    CurvatureScaleSpaceImagePoint[] points = </span>
+<span class="fc" id="L338">                    CurvatureScaleSpaceImagePoint[] points = </span>
                         contour.getPeakDetails();
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">                    if (points.length &gt; 1) {</span>
-<span class="fc" id="L238">                        CurvatureScaleSpaceImagePoint tmp = points[0];</span>
-<span class="fc" id="L239">                        points[0] = points[1];</span>
-<span class="fc" id="L240">                        points[1] = tmp;</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">                    if (points.length &gt; 1) {</span>
+<span class="fc" id="L341">                        CurvatureScaleSpaceImagePoint tmp = points[0];</span>
+<span class="fc" id="L342">                        points[0] = points[1];</span>
+<span class="fc" id="L343">                        points[1] = tmp;</span>
                     }
-<span class="fc bfc" id="L242" title="All 2 branches covered.">                    for (int jj = 0; jj &lt; points.length; jj++) {</span>
-<span class="fc" id="L243">                        points[jj].setScaleFreeLength(1.0f - </span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">                    for (int jj = 0; jj &lt; points.length; jj++) {</span>
+<span class="fc" id="L346">                        points[jj].setScaleFreeLength(1.0f - </span>
                             points[jj].getScaleFreeLength());
                     }
-<span class="fc" id="L246">                    reversed.setPeakDetails(points);</span>
-<span class="fc" id="L247">                    reversed.setEdgeNumber(contour.getEdgeNumber());</span>
+<span class="fc" id="L349">                    reversed.setPeakDetails(points);</span>
+<span class="fc" id="L350">                    reversed.setEdgeNumber(contour.getEdgeNumber());</span>
                                         
-<span class="fc" id="L249">                    result.set(j, reversed);</span>
+<span class="fc" id="L352">                    result.set(j, reversed);</span>
                 }
             }
             
-<span class="fc" id="L253">            contours2.addAll(result);</span>
+<span class="fc" id="L356">            contours2.addAll(result);</span>
+        }
+          
+<span class="fc" id="L359">        offsetImageX2 = imgMaker.getTrimmedXOffset();</span>
+        
+<span class="fc" id="L361">        offsetImageY2 = imgMaker.getTrimmedYOffset();</span>
+        
+<span class="pc bpc" id="L363" title="1 of 2 branches missed.">        if (contours2.isEmpty()) {</span>
+<span class="nc" id="L364">            log.info(&quot;did not find contours in image 2&quot;);</span>
+<span class="nc" id="L365">            return;</span>
         }
         
-<span class="fc bfc" id="L256" title="All 4 branches covered.">        if ((edges2.size() &gt; 1) || didReverse) {</span>
-<span class="fc" id="L257">            Collections.sort(contours2, new DescendingSigmaComparator());            </span>
+<span class="pc bpc" id="L368" title="1 of 4 branches missed.">        if ((edges2.size() &gt; 1) || didReverse) {</span>
+<span class="fc" id="L369">            Collections.sort(contours2, new DescendingSigmaComparator());            </span>
         }
         
-<span class="fc" id="L260">        offsetImageX2 = imgMaker.getTrimmedXOffset();</span>
+        /*float highestPeak2 = contours2.get(0).getPeakSigma();
         
-<span class="fc" id="L262">        offsetImageY2 = imgMaker.getTrimmedYOffset();</span>
+        float lowThresh2 = 0.15f * highestPeak2;
         
-<span class="fc" id="L264">        initialized = true;</span>
-<span class="fc" id="L265">    }</span>
-    
-    public CurvatureScaleSpaceInflectionMapper(GreyscaleImage image1, 
-<span class="fc" id="L268">        GreyscaleImage image2) {</span>
-        
-<span class="fc" id="L270">        this.image1 = image1;</span>
-        
-<span class="fc" id="L272">        this.image2 = image2;</span>
-<span class="fc" id="L273">    }</span>
+        for (int i = (contours2.size() - 1); i &gt; -1; i--) {
+            if (contours2.get(i).getPeakSigma() &lt; lowThresh2) {
+                contours2.remove(i);
+            }
+        }*/
+      
+<span class="fc" id="L382">    }</span>
   
-    /**
-     * coordinate transformations from image 1 to image 2 are calculated from
-     * matching scale space image contours.
-     *
-     * positive Y is down 
-       positive X is right
-       positive theta starts from Y=0, X&gt;=0 and proceeds CW
-                270
-                 |     
-                 |
-          180--------- 0   +X
-                 |   
-                 |   
-                 90
-                 +Y
-     * &lt;/pre&gt;
-     * NOTE: this will return null if it did not find closed 
-     * curves in each image for which to map between.
-     * 
-     * @return 
-     */
-    public TransformationParameters createEuclideanTransformation() {
+    void createMatchedPointArraysFromContourPeaks() {
         
-<span class="fc" id="L298">        initialize();</span>
-        
-<span class="pc bpc" id="L300" title="2 of 4 branches missed.">        if (contours2.isEmpty() || contours1.isEmpty()) {</span>
-<span class="nc" id="L301">            return null;</span>
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">        if (matchedXY1 != null) {</span>
+<span class="nc" id="L387">            return;</span>
         }
         
-<span class="fc" id="L304">        CurvatureScaleSpaceContourMatcher matcher = </span>
-            new CurvatureScaleSpaceContourMatcher(contours1, contours2);
+        /**
+         * TODO: 
+         * change to match contours from one edge against contours of another
+         * edge rather than all contours at once.
+         * 
+         */
         
-<span class="fc" id="L307">        matcher.matchContours();</span>
+<span class="fc" id="L397">        CurvatureScaleSpaceContourMatcher matcher = </span>
+            new CurvatureScaleSpaceContourMatcher();
         
-<span class="fc" id="L309">        List&lt;CurvatureScaleSpaceContour&gt; transAppliedTo1 = </span>
+<span class="fc" id="L400">        matcher.matchContours(contours1, contours2);</span>
+        
+<span class="fc" id="L402">        List&lt;CurvatureScaleSpaceContour&gt; transAppliedTo1 = </span>
             matcher.getSolutionMatchedContours1();
         
-<span class="fc" id="L312">        List&lt;CurvatureScaleSpaceContour&gt; transAppliedTo2 = </span>
+<span class="fc" id="L405">        List&lt;CurvatureScaleSpaceContour&gt; transAppliedTo2 = </span>
             matcher.getSolutionMatchedContours2();
         
-<span class="pc bpc" id="L315" title="3 of 4 branches missed.">        assert(transAppliedTo1.size() == transAppliedTo2.size());</span>
-        
-<span class="fc" id="L317">        matchedContours1.addAll(transAppliedTo1);</span>
-        
-<span class="fc" id="L319">        matchedContours2.addAll(transAppliedTo2);</span>
+<span class="pc bpc" id="L408" title="2 of 4 branches missed.">        if (transAppliedTo1 == null || transAppliedTo2 == null) {</span>
+<span class="nc" id="L409">            return;</span>
+        }
+<span class="pc bpc" id="L411" title="1 of 2 branches missed.">        if (transAppliedTo1.size() != transAppliedTo2.size()) {</span>
+<span class="nc" id="L412">            throw new IllegalStateException(</span>
+            &quot;contour matcher should have same number of contours in both lists&quot;);
+        }
                 
-        // ==== adding back the image offsets removed when trimming image
+<span class="fc" id="L416">        matchedContours1.addAll(transAppliedTo1);</span>
+<span class="fc" id="L417">        matchedContours2.addAll(transAppliedTo2);</span>
+<span class="fc" id="L418">        matchedScale = matcher.getSolvedScale();</span>
         
-        // ======= make a weighted sum of points to get the centroid of the edge
-        // ============= the weight is sigma of total sum of sigmas
+<span class="fc" id="L420">        log.info(&quot;Contour matcher solution scale=&quot; + matcher.getSolvedScale());</span>
+<span class="fc" id="L421">        log.info(&quot;Contour matcher solution shift=&quot; + matcher.getSolvedShift());        </span>
+<span class="fc" id="L422">        log.info(&quot;Contour matcher solution cost=&quot; + matcher.getSolvedCost());</span>
         
-<span class="fc" id="L326">        PairIntArray xy1 = new PairIntArray(transAppliedTo1.size());</span>
-<span class="fc" id="L327">        PairIntArray xy2 = new PairIntArray(transAppliedTo1.size());</span>
-<span class="fc" id="L328">        List&lt;Float&gt; weights1 = new ArrayList&lt;Float&gt;();</span>
-<span class="fc" id="L329">        List&lt;Float&gt; weights2 = new ArrayList&lt;Float&gt;();</span>
+<span class="fc" id="L424">        PairIntArray xy1 = new PairIntArray(transAppliedTo1.size());</span>
+<span class="fc" id="L425">        PairIntArray xy2 = new PairIntArray(transAppliedTo1.size());</span>
+<span class="fc" id="L426">        List&lt;Float&gt; weights1 = new ArrayList&lt;Float&gt;();</span>
+<span class="fc" id="L427">        List&lt;Float&gt; weights2 = new ArrayList&lt;Float&gt;();</span>
      
-<span class="fc" id="L331">        double sumS1 = 0;</span>
-<span class="fc" id="L332">        double sumS2 = 0;</span>
-                    
-<span class="fc bfc" id="L334" title="All 2 branches covered.">        for (int i = 0; i &lt; transAppliedTo1.size(); i++) {</span>
+<span class="fc" id="L429">        double sumS1 = 0;</span>
+<span class="fc" id="L430">        double sumS2 = 0;</span>
+        
+<span class="fc" id="L432">        List&lt;Integer&gt; matchedE1Idxs = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L433">        List&lt;Integer&gt; matchedE2Idxs = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L434">        matchedXY1ByEdgeInOrigRefFrame = new HashMap&lt;Integer, PairIntArray&gt;();</span>
+<span class="fc" id="L435">        matchedXY2ByEdgeInOrigRefFrame = new HashMap&lt;Integer, PairIntArray&gt;();</span>
+<span class="fc" id="L436">        matchedXY1ByEdgeWeights = new HashMap&lt;Integer, List&lt;Float&gt; &gt;();</span>
+<span class="fc" id="L437">        matchedXY2ByEdgeWeights = new HashMap&lt;Integer, List&lt;Float&gt; &gt;();</span>
+        
+<span class="fc bfc" id="L439" title="All 2 branches covered.">        for (int i = 0; i &lt; transAppliedTo1.size(); i++) {</span>
                         
-<span class="fc" id="L336">            CurvatureScaleSpaceContour c1 = transAppliedTo1.get(i);</span>
+<span class="fc" id="L441">            CurvatureScaleSpaceContour c1 = transAppliedTo1.get(i);</span>
+<span class="fc" id="L442">            CurvatureScaleSpaceContour c2 = transAppliedTo2.get(i);</span>
             
-<span class="fc" id="L338">            CurvatureScaleSpaceContour c2 = transAppliedTo2.get(i);</span>
+<span class="fc" id="L444">            Integer e1Index = Integer.valueOf(c1.getEdgeNumber());</span>
+<span class="fc" id="L445">            Integer e2Index = Integer.valueOf(c2.getEdgeNumber());</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">            if (matchedE1Idxs.contains(e1Index)) {</span>
+<span class="pc bpc" id="L447" title="1 of 2 branches missed.">                if (!matchedE2Idxs.contains(e2Index)) {</span>
+<span class="nc" id="L448">                    throw new IllegalStateException(</span>
+                    &quot;inconsistency in matched edges for matched contours&quot;);
+                }
+            } else {
+<span class="fc" id="L452">                matchedE1Idxs.add(e1Index);</span>
+<span class="fc" id="L453">                matchedE2Idxs.add(e2Index);</span>
+<span class="fc" id="L454">                matchedXY1ByEdgeInOrigRefFrame.put(e1Index, new PairIntArray());</span>
+<span class="fc" id="L455">                matchedXY2ByEdgeInOrigRefFrame.put(e2Index, new PairIntArray());</span>
+<span class="fc" id="L456">                matchedXY1ByEdgeWeights.put(e1Index, new ArrayList&lt;Float&gt;());</span>
+<span class="fc" id="L457">                matchedXY2ByEdgeWeights.put(e2Index, new ArrayList&lt;Float&gt;());</span>
+            }
             
-<span class="fc" id="L340">            float sigma1 = c1.getPeakSigma();</span>
-<span class="fc" id="L341">            float sigma2 = c2.getPeakSigma();</span>
+<span class="fc" id="L460">            float sigma1 = c1.getPeakSigma();</span>
+<span class="fc" id="L461">            float sigma2 = c2.getPeakSigma();</span>
 
-<span class="fc" id="L343">            StringBuilder s1 = new StringBuilder();</span>
-<span class="fc" id="L344">            StringBuilder s2 = new StringBuilder();</span>
+<span class="fc" id="L463">            StringBuilder s1 = new StringBuilder();</span>
+<span class="fc" id="L464">            StringBuilder s2 = new StringBuilder();</span>
 
-<span class="pc bpc" id="L346" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L347">                s1.append(String.format(&quot;CONTOUR PEAK1: (%f, %f)&quot;, </span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">            if (debug) {</span>
+<span class="fc" id="L467">                s1.append(String.format(&quot;CONTOUR PEAK1: (%f, %f)&quot;, </span>
                     c1.getPeakSigma(), c1.getPeakScaleFreeLength()));
-<span class="nc" id="L349">                s2.append(String.format(&quot;CONTOUR PEAK2: (%f, %f)&quot;, </span>
+<span class="fc" id="L469">                s2.append(String.format(&quot;CONTOUR PEAK2: (%f, %f)&quot;, </span>
                     c2.getPeakSigma(), c2.getPeakScaleFreeLength()));
             }
             
             // the contours extracted from scale space images using a factor of
             // 2^(1/8) for recursive convolution tend to not have a single
             // peak, so the correction here for the single peak case is not 
-            // usually needed.  for that rare case, just doubling the peak
-            // for comparison to the matched contour
-<span class="pc bpc" id="L358" title="1 of 2 branches missed.">            if (c1.getPeakDetails().length != c2.getPeakDetails().length) {</span>
-<span class="nc bnc" id="L359" title="All 2 branches missed.">                if (c1.getPeakDetails().length == 1) {</span>
-<span class="nc" id="L360">                    CurvatureScaleSpaceImagePoint[] p = new</span>
-                        CurvatureScaleSpaceImagePoint[]{
-                        c1.getPeakDetails()[0], c1.getPeakDetails()[0]};
-<span class="nc" id="L363">                    c1.setPeakDetails(p);</span>
-<span class="nc" id="L364">                    transAppliedTo1.set(i, c1);</span>
-<span class="nc bnc" id="L365" title="All 2 branches missed.">                } else if (c2.getPeakDetails().length == 1) {</span>
-<span class="nc" id="L366">                    CurvatureScaleSpaceImagePoint[] p = new</span>
-                        CurvatureScaleSpaceImagePoint[]{
-                        c2.getPeakDetails()[0], c2.getPeakDetails()[0]};                
-<span class="nc" id="L369">                    c2.setPeakDetails(p);</span>
-<span class="nc" id="L370">                    transAppliedTo2.set(i, c2);</span>
+            // usually needed.  for that rare case, the avg of the other peak
+            // is stored instead of both points
+<span class="fc bfc" id="L478" title="All 2 branches covered.">            if (c1.getPeakDetails().length != c2.getPeakDetails().length) {</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">                if (c1.getPeakDetails().length == 1) {</span>
+                    
+<span class="fc" id="L481">                    CurvatureScaleSpaceImagePoint p0 = c2.getPeakDetails()[0];</span>
+<span class="fc" id="L482">                    CurvatureScaleSpaceImagePoint p1 = c2.getPeakDetails()[1];</span>
+                    
+<span class="fc" id="L484">                    float t = p0.getScaleFreeLength();</span>
+<span class="fc" id="L485">                    float s = p0.getSigma();</span>
+<span class="fc" id="L486">                    int xAvg = Math.round((p0.getXCoord() + p1.getXCoord())/2.f);</span>
+<span class="fc" id="L487">                    int yAvg = Math.round((p0.getYCoord() + p1.getYCoord())/2.f);</span>
+                    
+<span class="fc" id="L489">                    CurvatureScaleSpaceImagePoint pAvg = </span>
+                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg);
+                    
+<span class="fc" id="L492">                    CurvatureScaleSpaceImagePoint[] p = new</span>
+                        CurvatureScaleSpaceImagePoint[]{pAvg};
+                   
+<span class="fc" id="L495">                    c2.setPeakDetails(p);</span>
+                    
+<span class="fc" id="L497">                    transAppliedTo2.set(i, c2);</span>
+                    
+<span class="pc bpc" id="L499" title="1 of 2 branches missed.">                } else if (c2.getPeakDetails().length == 1) {</span>
+                    
+<span class="fc" id="L501">                    CurvatureScaleSpaceImagePoint p0 = c1.getPeakDetails()[0];</span>
+<span class="fc" id="L502">                    CurvatureScaleSpaceImagePoint p1 = c1.getPeakDetails()[1];</span>
+                    
+<span class="fc" id="L504">                    float t = p0.getScaleFreeLength();</span>
+<span class="fc" id="L505">                    float s = p0.getSigma();</span>
+<span class="fc" id="L506">                    int xAvg = Math.round((p0.getXCoord() + p1.getXCoord())/2.f);</span>
+<span class="fc" id="L507">                    int yAvg = Math.round((p0.getYCoord() + p1.getYCoord())/2.f);</span>
+                    
+<span class="fc" id="L509">                    CurvatureScaleSpaceImagePoint pAvg = </span>
+                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg);
+                    
+<span class="fc" id="L512">                    CurvatureScaleSpaceImagePoint[] p = new</span>
+                        CurvatureScaleSpaceImagePoint[]{pAvg};
+                   
+<span class="fc" id="L515">                    c1.setPeakDetails(p);</span>
+                    
+<span class="fc" id="L517">                    transAppliedTo1.set(i, c1);</span>
                 }
             }
                                 
-<span class="fc bfc" id="L374" title="All 2 branches covered.">            for (int j = 0; j &lt; c1.getPeakDetails().length; j++) {</span>
+<span class="fc bfc" id="L521" title="All 2 branches covered.">            for (int j = 0; j &lt; c1.getPeakDetails().length; j++) {</span>
 
-<span class="fc" id="L376">                CurvatureScaleSpaceImagePoint spaceImagePoint = </span>
+<span class="fc" id="L523">                CurvatureScaleSpaceImagePoint spaceImagePoint = </span>
                     c1.getPeakDetails()[j];
 
-<span class="fc" id="L379">                int x = spaceImagePoint.getXCoord() + offsetImageX1;</span>
-<span class="fc" id="L380">                int y = spaceImagePoint.getYCoord() + offsetImageY1;</span>
-<span class="fc" id="L381">                xy1.add(x, y);</span>
-<span class="fc" id="L382">                weights1.add(Float.valueOf(sigma1));</span>
-<span class="fc" id="L383">                sumS1 += sigma1;</span>
+<span class="fc" id="L526">                int x = spaceImagePoint.getXCoord() + offsetImageX1;</span>
+<span class="fc" id="L527">                int y = spaceImagePoint.getYCoord() + offsetImageY1;</span>
+<span class="fc" id="L528">                xy1.add(x, y);</span>
+<span class="fc" id="L529">                weights1.add(Float.valueOf(sigma1));</span>
+<span class="fc" id="L530">                sumS1 += sigma1;</span>
+                
+<span class="fc" id="L532">                matchedXY1ByEdgeInOrigRefFrame.get(e1Index).add(</span>
+                    x + offsetImageX1, y + offsetImageY1);
+<span class="fc" id="L534">                matchedXY1ByEdgeWeights.get(e1Index).add(Float.valueOf(sigma1));</span>
                    
-<span class="pc bpc" id="L385" title="1 of 2 branches missed.">                if (debug) {</span>
-<span class="nc" id="L386">                    s1.append(String.format(&quot; (%d, %d)&quot;, x, y));</span>
+<span class="fc bfc" id="L536" title="All 2 branches covered.">                if (debug) {</span>
+<span class="fc" id="L537">                    s1.append(String.format(&quot; (%d, %d)&quot;, x, y));</span>
                 }
 
-<span class="fc" id="L389">                spaceImagePoint = c2.getPeakDetails()[j];</span>
+<span class="fc" id="L540">                spaceImagePoint = c2.getPeakDetails()[j];</span>
 
-<span class="fc" id="L391">                x = spaceImagePoint.getXCoord() + offsetImageX2;</span>
-<span class="fc" id="L392">                y = spaceImagePoint.getYCoord() + offsetImageY2;</span>
-<span class="fc" id="L393">                xy2.add(x, y);</span>
-<span class="fc" id="L394">                weights2.add(Float.valueOf(sigma2));</span>
-<span class="fc" id="L395">                sumS2 += sigma2;</span>
+<span class="fc" id="L542">                x = spaceImagePoint.getXCoord() + offsetImageX2;</span>
+<span class="fc" id="L543">                y = spaceImagePoint.getYCoord() + offsetImageY2;</span>
+<span class="fc" id="L544">                xy2.add(x, y);</span>
+<span class="fc" id="L545">                weights2.add(Float.valueOf(sigma2));</span>
+<span class="fc" id="L546">                sumS2 += sigma2;</span>
                     
-<span class="pc bpc" id="L397" title="1 of 2 branches missed.">                if (debug) {</span>
-<span class="nc" id="L398">                    s2.append(String.format(&quot; (%d, %d)&quot;, x, y));</span>
+<span class="fc" id="L548">                matchedXY2ByEdgeInOrigRefFrame.get(e2Index).add(</span>
+                    x + offsetImageX2, y + offsetImageX2);
+<span class="fc" id="L550">                matchedXY2ByEdgeWeights.get(e2Index).add(Float.valueOf(sigma2));</span>
+                
+<span class="fc bfc" id="L552" title="All 2 branches covered.">                if (debug) {</span>
+<span class="fc" id="L553">                    s2.append(String.format(&quot; (%d, %d)&quot;, x, y));</span>
                 }
             }
             
-<span class="pc bpc" id="L402" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L403">                log.info(s1.toString());</span>
-<span class="nc" id="L404">                log.info(s2.toString());</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">            if (debug) {</span>
+<span class="fc" id="L558">                log.info(s1.toString());</span>
+<span class="fc" id="L559">                log.info(s2.toString());</span>
             }
         }
 
-<span class="pc bpc" id="L408" title="1 of 2 branches missed.">        if (xy1.getN() &lt; 3) {</span>
-<span class="nc" id="L409">            throw new IllegalStateException(&quot;need at least 3 points&quot;);</span>
+<span class="pc bpc" id="L563" title="1 of 2 branches missed.">        if (xy1.getN() &lt; 3) {</span>
+<span class="nc" id="L564">            throw new IllegalStateException(&quot;need at least 3 points&quot;);</span>
         }
         
-<span class="pc bpc" id="L412" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L413">            log.info(&quot;offsetImgX1=&quot; + offsetImageX1 </span>
+<span class="fc bfc" id="L567" title="All 2 branches covered.">        if (debug) {</span>
+<span class="fc" id="L568">            log.info(&quot;offsetImgX1=&quot; + offsetImageX1 </span>
                 + &quot; offsetImgY1=&quot; + offsetImageY1
                 + &quot;\noffsetImgX2=&quot; + offsetImageX2 
                 + &quot; offsetImgY2=&quot; + offsetImageY2
             );
         }
-            
-<span class="fc" id="L420">        matchedXY1 = xy1;</span>
-<span class="fc" id="L421">        matchedXY2 = xy2;</span>
+        
+<span class="fc" id="L575">        matchedEdge1Indexes = new int[matchedE1Idxs.size()];</span>
+<span class="fc" id="L576">        matchedEdge2Indexes = new int[matchedE2Idxs.size()];</span>
+<span class="fc bfc" id="L577" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedE1Idxs.size(); i++) {</span>
+<span class="fc" id="L578">            int e1Idx = matchedE1Idxs.get(i).intValue();</span>
+<span class="fc" id="L579">            int e2Idx = matchedE2Idxs.get(i).intValue();</span>
+<span class="fc" id="L580">            matchedEdge1Indexes[i] = e1Idx;</span>
+<span class="fc" id="L581">            matchedEdge2Indexes[i] = e2Idx;</span>
+        }
+        
+<span class="fc" id="L584">        matchedXY1 = xy1;</span>
+<span class="fc" id="L585">        matchedXY2 = xy2;</span>
                 
-<span class="fc" id="L423">        float[] w1 = new float[weights1.size()];</span>
-<span class="fc" id="L424">        float[] w2 = new float[weights2.size()];</span>
+<span class="fc" id="L587">        matchedXY1Weights = new float[weights1.size()];</span>
+<span class="fc" id="L588">        matchedXY2Weights = new float[weights2.size()];</span>
         
-<span class="fc bfc" id="L426" title="All 2 branches covered.">        for (int i = 0; i &lt; weights1.size(); i++) {</span>
-<span class="fc" id="L427">            double tmp = weights1.get(i).floatValue()/sumS1;</span>
-<span class="fc" id="L428">            w1[i] = Float.valueOf((float)tmp);</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">        for (int i = 0; i &lt; weights1.size(); i++) {</span>
+<span class="fc" id="L591">            double tmp = weights1.get(i).floatValue()/sumS1;</span>
+<span class="fc" id="L592">            matchedXY1Weights[i] = Float.valueOf((float)tmp);</span>
         }
-<span class="fc bfc" id="L430" title="All 2 branches covered.">        for (int i = 0; i &lt; weights2.size(); i++) {</span>
-<span class="fc" id="L431">            double tmp = weights2.get(i).floatValue()/sumS2;</span>
-<span class="fc" id="L432">            w2[i] = Float.valueOf((float)tmp);</span>
+<span class="fc bfc" id="L594" title="All 2 branches covered.">        for (int i = 0; i &lt; weights2.size(); i++) {</span>
+<span class="fc" id="L595">            double tmp = weights2.get(i).floatValue()/sumS2;</span>
+<span class="fc" id="L596">            matchedXY2Weights[i] = Float.valueOf((float)tmp);</span>
         }
+<span class="fc" id="L598">    }</span>
+  
+    public TransformationParameters createEuclideanTransformation() {
         
-<span class="fc" id="L435">        TransformationCalculator tc = new TransformationCalculator();</span>
-<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L437">            tc.useDebugMode();</span>
-        }
+<span class="fc" id="L602">        initialize();</span>
         
-<span class="fc" id="L440">        TransformationParameters params =</span>
-            tc.calulateEuclidean(matchedXY1, w1,
-                matchedXY2, w2);
-       
-<span class="pc bpc" id="L444" title="1 of 2 branches missed.">        if (!doNotRefineTransformations) {</span>
-            
-<span class="fc" id="L446">            params = refineEuclideanSolution(params);</span>
-            
-<span class="fc" id="L448">            double mc =  (float) Math.cos(params.getRotationInRadians());</span>
-<span class="fc" id="L449">            double ms =  (float) Math.sin(params.getRotationInRadians());</span>
-<span class="fc" id="L450">            double scale = params.getScale();</span>
-            
-<span class="fc" id="L452">            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
-        
-<span class="fc" id="L454">            double[] centroidsX1 = curveHelper.calculateXYCentroids(matchedXY1);</span>
-<span class="fc" id="L455">            double centroidX1 = centroidsX1[0];</span>
-<span class="fc" id="L456">            double centroidY1 = centroidsX1[1];</span>
-<span class="fc" id="L457">            double[] centroidsX2 = curveHelper.calculateXYCentroids(matchedXY2);</span>
-<span class="fc" id="L458">            double centroidX2 = centroidsX2[0];</span>
-<span class="fc" id="L459">            double centroidY2 = centroidsX2[1];</span>
-            
-<span class="fc" id="L461">            float translationX = (float)(centroidX2 - (centroidX1*scale*mc) </span>
-                - (centroidY1*scale*ms));
-<span class="fc" id="L463">            float translationY = (float)(centroidY2 + (centroidX1*scale*ms) </span>
-                - (centroidY1*scale*mc));
-            
-<span class="fc" id="L466">            params.setTranslationX(translationX);</span>
-<span class="fc" id="L467">            params.setTranslationY(translationY);</span>
-            
-<span class="fc" id="L469">            log.info(&quot;FINAL:\n&quot; + params.toString());</span>
+<span class="pc bpc" id="L604" title="2 of 4 branches missed.">        if (contours2.isEmpty() || contours1.isEmpty()) {</span>
+<span class="nc" id="L605">            return null;</span>
         }
         
-<span class="fc" id="L472">        return params;</span>
+<span class="fc" id="L608">        createMatchedPointArraysFromContourPeaks();</span>
+        
+<span class="pc bpc" id="L610" title="1 of 2 branches missed.">        if (matchedXY1.getN() &lt; 3) {</span>
+<span class="nc" id="L611">            throw new IllegalStateException(&quot;need at least 3 points&quot;);</span>
+        }
+        
+<span class="fc" id="L614">        MatchedPointsTransformationCalculator tc = </span>
+            new MatchedPointsTransformationCalculator();
+        
+<span class="fc bfc" id="L617" title="All 2 branches covered.">        if (debug) {</span>
+<span class="fc" id="L618">            tc.useDebugMode();</span>
+        }
+        
+<span class="fc" id="L621">        int centroidX1 = image1OriginalWidth &gt;&gt; 1;</span>
+<span class="fc" id="L622">        int centroidY1 = image1OriginalHeight &gt;&gt; 1;</span>
+<span class="fc" id="L623">        int centroidX2 = image2OriginalWidth &gt;&gt; 1;</span>
+<span class="fc" id="L624">        int centroidY2 = image2OriginalHeight &gt;&gt; 1;</span>
+        
+<span class="fc" id="L626">        TransformationParameters params = null;</span>
+        
+        // if scale &lt; 1, we have to swap the order of datasets to avoid
+        // numerical errors in some of the methods that are the result of
+        // dividing by a small number
+        
+<span class="fc bfc" id="L632" title="All 2 branches covered.">        boolean reverseDatasetOrder = (matchedScale &lt; 1.0);</span>
+        
+<span class="fc bfc" id="L634" title="All 2 branches covered.">        if (reverseDatasetOrder) {</span>
+<span class="fc" id="L635">            params = tc.calulateEuclideanGivenScale(</span>
+                1. / matchedScale,
+                matchedXY2, matchedXY2Weights, matchedXY1, matchedXY1Weights,
+                centroidX2, centroidY2);
+        } else {
+<span class="fc" id="L640">            params = tc.calulateEuclideanGivenScale(</span>
+                matchedScale,
+                matchedXY1, matchedXY1Weights, matchedXY2, matchedXY2Weights,
+                centroidX1, centroidY1);
+        }
+        
+<span class="pc bpc" id="L646" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc" id="L647">            return null;</span>
+        }
+        
+<span class="fc bfc" id="L650" title="All 2 branches covered.">        if (doRefineTransformations) {</span>
+                            
+            // note, these are closed curves
+<span class="fc" id="L653">            PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();</span>
+<span class="fc" id="L654">            PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();</span>
+<span class="fc" id="L655">            PointMatcher matcher = new PointMatcher();</span>
+            
+<span class="fc bfc" id="L657" title="All 2 branches covered.">            if (reverseDatasetOrder) {</span>
+                
+<span class="fc" id="L659">                params = matcher.refineTransformation(</span>
+                    set2, set1, params, 
+                    centroidX2, centroidY2, centroidX1, centroidY1);
+                
+            } else {
+                
+<span class="fc" id="L665">                params = matcher.refineTransformation(</span>
+                    set1, set2, params, 
+                    centroidX1, centroidY1, centroidX2, centroidY2);
+            }
+            
+<span class="pc bpc" id="L670" title="1 of 2 branches missed.">            if (params != null) {</span>
+<span class="fc" id="L671">                log.info(&quot;FINAL:\n&quot; + params.toString());</span>
+            }
+        }
+        
+<span class="fc bfc" id="L675" title="All 2 branches covered.">        if (reverseDatasetOrder) {</span>
+            
+<span class="fc" id="L677">            MiscellaneousCurveHelper curveHelper = </span>
+                new MiscellaneousCurveHelper();
+            
+<span class="fc" id="L680">            double[] x2y2 = curveHelper.calculateXYCentroids(</span>
+                getMatchedEdges2InOriginalReferenceFrameArray()[0]);
+            
+<span class="fc" id="L683">            double[] x1y1 = tc.applyTransformation(params, </span>
+                centroidX2, centroidY2, x2y2[0], x2y2[1]);
+            
+<span class="fc" id="L686">            params = tc.swapReferenceFrames(params, </span>
+                centroidX1, centroidY1, x2y2[0], x2y2[1], x1y1[0], x1y1[1]);
+        }
+        
+<span class="fc" id="L690">        return params;</span>
     }
-    
+   
     public PairIntArray getMatchedXY1() {
-<span class="nc" id="L476">        return matchedXY1;</span>
+<span class="nc" id="L694">        return matchedXY1;</span>
     }
     
     public PairIntArray getMatchedXY2() {
-<span class="nc" id="L480">        return matchedXY2;</span>
+<span class="nc" id="L698">        return matchedXY2;</span>
+    }
+    
+    public float[] getMatchedXY1Weights() {
+<span class="nc" id="L702">        return matchedXY1Weights;</span>
+    }
+    
+    public float[] getMatchedXY2Weights() {
+<span class="nc" id="L706">        return matchedXY2Weights;</span>
     }
 
     public List&lt;CurvatureScaleSpaceContour&gt; getMatchedContours1() {
-<span class="nc" id="L484">        return matchedContours1;</span>
+<span class="nc" id="L710">        return matchedContours1;</span>
     }
     
     public List&lt;CurvatureScaleSpaceContour&gt; getMatchedContours2() {
-<span class="nc" id="L488">        return matchedContours2;</span>
+<span class="nc" id="L714">        return matchedContours2;</span>
+    }
+    List&lt;CurvatureScaleSpaceContour&gt; getContours1() {
+<span class="nc" id="L717">        return contours1;</span>
+    }
+    
+    List&lt;CurvatureScaleSpaceContour&gt; getContours2() {
+<span class="nc" id="L721">        return contours2;</span>
     }
     
     protected GreyscaleImage getImage1() {
-<span class="nc" id="L492">        return image1;</span>
+<span class="nc" id="L725">        return image1;</span>
     }
     protected GreyscaleImage getImage2() {
-<span class="nc" id="L495">        return image2;</span>
+<span class="nc" id="L728">        return image2;</span>
+    }
+    GreyscaleImage getOriginalImage1() {
+<span class="nc" id="L731">        return originalImage1;</span>
+    }
+    GreyscaleImage getOriginalImage2() {
+<span class="nc" id="L734">        return originalImage2;</span>
     }
     protected List&lt;PairIntArray&gt; getEdges1() {
-<span class="fc" id="L498">        return edges1;</span>
+<span class="nc" id="L737">        return edges1;</span>
     }
     protected List&lt;PairIntArray&gt; getEdges2() {
-<span class="fc" id="L501">        return edges2;</span>
+<span class="nc" id="L740">        return edges2;</span>
+    }
+    
+    public double getMatchedScale() {
+<span class="nc" id="L744">        return matchedScale;</span>
     }
     
     protected List&lt;PairIntArray&gt; getEdges1InOriginalReferenceFrame() {
-<span class="fc" id="L505">        List&lt;PairIntArray&gt; oe = new ArrayList&lt;PairIntArray&gt;();</span>
-<span class="fc bfc" id="L506" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.size(); i++) {</span>
-<span class="fc" id="L507">            PairIntArray edge = edges1.get(i);</span>
-<span class="fc" id="L508">            PairIntArray e = new PairIntArray();</span>
-<span class="fc bfc" id="L509" title="All 2 branches covered.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
-<span class="fc" id="L510">                e.add(edge.getX(j) + offsetImageX1, edge.getY(j) + offsetImageY1);</span>
+<span class="fc" id="L748">        List&lt;PairIntArray&gt; oe = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="fc bfc" id="L749" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.size(); i++) {</span>
+<span class="fc" id="L750">            PairIntArray edge = edges1.get(i).copy();</span>
+<span class="fc bfc" id="L751" title="All 2 branches covered.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="fc" id="L752">                edge.set(j, edge.getX(j) + offsetImageX1, </span>
+                    edge.getY(j) + offsetImageY1);
             }
-<span class="fc" id="L512">            oe.add(e);</span>
+<span class="fc" id="L755">            oe.add(edge);</span>
         } 
-<span class="fc" id="L514">        return oe;</span>
+<span class="fc" id="L757">        return oe;</span>
+    }
+    protected PairIntArray[] getEdges1InOriginalReferenceFrameArray() {
+<span class="nc" id="L760">        PairIntArray[] oe = new PairIntArray[edges1.size()];</span>
+<span class="nc bnc" id="L761" title="All 2 branches missed.">        for (int i = 0; i &lt; edges1.size(); i++) {</span>
+<span class="nc" id="L762">            PairIntArray edge = edges1.get(i).copy();</span>
+<span class="nc bnc" id="L763" title="All 2 branches missed.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="nc" id="L764">                edge.set(j, edge.getX(j) + offsetImageX1, </span>
+                    edge.getY(j) + offsetImageY1);
+            }
+<span class="nc" id="L767">            oe[i] = edge;</span>
+        } 
+<span class="nc" id="L769">        return oe;</span>
     }
     protected List&lt;PairIntArray&gt; getEdges2InOriginalReferenceFrame() {
-<span class="nc" id="L517">        List&lt;PairIntArray&gt; oe = new ArrayList&lt;PairIntArray&gt;();</span>
-<span class="nc bnc" id="L518" title="All 2 branches missed.">        for (int i = 0; i &lt; edges2.size(); i++) {</span>
-<span class="nc" id="L519">            PairIntArray edge = edges2.get(i);</span>
-<span class="nc" id="L520">            PairIntArray e = new PairIntArray();</span>
-<span class="nc bnc" id="L521" title="All 2 branches missed.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
-<span class="nc" id="L522">                e.add(edge.getX(j) + offsetImageX2, edge.getY(j) + offsetImageY2);</span>
+<span class="nc" id="L772">        List&lt;PairIntArray&gt; oe = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc bnc" id="L773" title="All 2 branches missed.">        for (int i = 0; i &lt; edges2.size(); i++) {</span>
+<span class="nc" id="L774">            PairIntArray edge = edges2.get(i).copy();</span>
+<span class="nc bnc" id="L775" title="All 2 branches missed.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="nc" id="L776">                edge.set(j, edge.getX(j) + offsetImageX2, </span>
+                    edge.getY(j) + offsetImageY2);
             }
-<span class="nc" id="L524">            oe.add(e);</span>
+<span class="nc" id="L779">            oe.add(edge);</span>
         } 
-<span class="nc" id="L526">        return oe;</span>
+<span class="nc" id="L781">        return oe;</span>
     }
     
+    protected PairIntArray[] getEdges2InOriginalReferenceFrameArray() {
+<span class="nc" id="L785">        PairIntArray[] oe = new PairIntArray[edges2.size()];</span>
+<span class="nc bnc" id="L786" title="All 2 branches missed.">        for (int i = 0; i &lt; edges2.size(); i++) {</span>
+<span class="nc" id="L787">            PairIntArray edge = edges2.get(i).copy();</span>
+<span class="nc bnc" id="L788" title="All 2 branches missed.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="nc" id="L789">                edge.set(j, edge.getX(j) + offsetImageX2, </span>
+                    edge.getY(j) + offsetImageY2);
+            }
+<span class="nc" id="L792">            oe[i] = edge;</span>
+        } 
+<span class="nc" id="L794">        return oe;</span>
+    }
+    
+    protected PairIntArray[] getMatchedEdges1InOriginalReferenceFrameArray() {
+        
+<span class="pc bpc" id="L799" title="1 of 2 branches missed.">        if (matchedEdge1Indexes == null) {</span>
+<span class="nc" id="L800">            return new PairIntArray[0];</span>
+        }
+        
+<span class="fc" id="L803">        PairIntArray[] oe = new PairIntArray[matchedEdge1Indexes.length];</span>
+        
+<span class="fc bfc" id="L805" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedEdge1Indexes.length; i++) {</span>
+<span class="fc" id="L806">            int eIdx = matchedEdge1Indexes[i];</span>
+            
+<span class="fc" id="L808">            PairIntArray edge = edges1.get(eIdx).copy();</span>
+                        
+<span class="fc bfc" id="L810" title="All 2 branches covered.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="fc" id="L811">                edge.set(j, edge.getX(j) + offsetImageX1,</span>
+                    edge.getY(j) + offsetImageY1);
+            }
+<span class="fc" id="L814">            oe[i] = edge;</span>
+        }
+        
+<span class="fc" id="L817">        return oe;</span>
+    }
+    
+    protected PairIntArray[] getMatchedEdges2InOriginalReferenceFrameArray() {
+        
+<span class="pc bpc" id="L822" title="1 of 2 branches missed.">        if (matchedEdge2Indexes == null) {</span>
+<span class="nc" id="L823">            return new PairIntArray[0];</span>
+        }
+        
+<span class="fc" id="L826">        PairIntArray[] oe = new PairIntArray[matchedEdge2Indexes.length];</span>
+        
+<span class="fc bfc" id="L828" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedEdge2Indexes.length; i++) {</span>
+<span class="fc" id="L829">            int eIdx = matchedEdge2Indexes[i];</span>
+            
+<span class="fc" id="L831">            PairIntArray edge = edges2.get(eIdx).copy();</span>
+            
+<span class="fc bfc" id="L833" title="All 2 branches covered.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="fc" id="L834">                edge.set(j, edge.getX(j) + offsetImageX2,</span>
+                    edge.getY(j) + offsetImageY2);
+            }
+<span class="fc" id="L837">            oe[i] = edge;</span>
+        }
+        
+<span class="fc" id="L840">        return oe;</span>
+    }
+        
     public PairInt[] getMatchedEdgesIndexes() {
          
-<span class="fc" id="L531">        List&lt;Integer&gt; idx1 = new ArrayList&lt;Integer&gt;();</span>
-<span class="fc" id="L532">        List&lt;Integer&gt; idx2 = new ArrayList&lt;Integer&gt;();</span>
-<span class="fc bfc" id="L533" title="All 2 branches covered.">        for (int i = 0; i &lt; this.matchedContours1.size(); i++) {</span>
-<span class="fc" id="L534">            Integer edge1Idx = Integer.valueOf(</span>
+<span class="nc" id="L845">        List&lt;Integer&gt; idx1 = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc" id="L846">        List&lt;Integer&gt; idx2 = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc bnc" id="L847" title="All 2 branches missed.">        for (int i = 0; i &lt; this.matchedContours1.size(); i++) {</span>
+<span class="nc" id="L848">            Integer edge1Idx = Integer.valueOf(</span>
                 matchedContours1.get(i).getEdgeNumber());
-<span class="fc" id="L536">            Integer edge2Idx = Integer.valueOf(</span>
+<span class="nc" id="L850">            Integer edge2Idx = Integer.valueOf(</span>
                 matchedContours2.get(i).getEdgeNumber());
             
-<span class="fc bfc" id="L539" title="All 2 branches covered.">            if (!idx1.contains(edge1Idx)) {</span>
-<span class="fc" id="L540">                idx1.add(edge1Idx);</span>
-<span class="fc" id="L541">                idx2.add(edge2Idx);</span>
+<span class="nc bnc" id="L853" title="All 2 branches missed.">            if (!idx1.contains(edge1Idx)) {</span>
+<span class="nc" id="L854">                idx1.add(edge1Idx);</span>
+<span class="nc" id="L855">                idx2.add(edge2Idx);</span>
             }
         }
         
-<span class="fc" id="L545">        PairInt[] indexes = new PairInt[idx1.size()];</span>
-<span class="fc bfc" id="L546" title="All 2 branches covered.">        for (int i = 0; i &lt; idx1.size(); i++) {</span>
-<span class="fc" id="L547">            indexes[i] = new PairInt(idx1.get(i), idx2.get(i));</span>
+<span class="nc" id="L859">        PairInt[] indexes = new PairInt[idx1.size()];</span>
+<span class="nc bnc" id="L860" title="All 2 branches missed.">        for (int i = 0; i &lt; idx1.size(); i++) {</span>
+<span class="nc" id="L861">            indexes[i] = new PairInt(idx1.get(i), idx2.get(i));</span>
         }
         
-<span class="fc" id="L550">        return indexes;</span>
+<span class="nc" id="L864">        return indexes;</span>
     }
-
-    private TransformationParameters refineEuclideanSolution(
-        TransformationParameters params) {
-        
-        // transform edges in matchedContours1 to matchedContours2
-        // and reduce the difference within max num of iterations and 
-        // tolerance
-       
-<span class="fc" id="L560">        PairInt[] matchedEdgesIndexes = getMatchedEdgesIndexes();</span>
-        
-<span class="fc" id="L562">        PairIntArray[] matchedEdges1 = new PairIntArray[matchedEdgesIndexes.length];</span>
-<span class="fc" id="L563">        PairIntArray[] matchedEdges2 = new PairIntArray[matchedEdges1.length];</span>
-<span class="fc bfc" id="L564" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedEdgesIndexes.length; i++) {</span>
-<span class="fc" id="L565">            int edge1Idx = matchedEdgesIndexes[i].getX();</span>
-<span class="fc" id="L566">            int edge2Idx = matchedEdgesIndexes[i].getY();</span>
-<span class="fc" id="L567">            matchedEdges1[i] = edges1.get(edge1Idx);</span>
-<span class="fc" id="L568">            matchedEdges2[i] = edges2.get(edge2Idx);</span>
-        }
-        
-        //TODO: consider impl a non-linear conjugate gradient search to replace
-        // this:
-<span class="fc" id="L573">        TransformationRefiner chSqMin = new TransformationRefiner();</span>
-        
-<span class="fc" id="L575">        TransformationParameters out = chSqMin.refineTransformation(matchedEdges1, </span>
-            matchedEdges2, params);
-        
-<span class="fc" id="L578">        return out;</span>
+    
+    int getOffsetImageX1() {
+<span class="nc" id="L868">        return offsetImageX1;</span>
+    }
+    int getOffsetImageY1() {
+<span class="nc" id="L871">        return offsetImageY1;</span>
+    }
+    int getOffsetImageX2() {
+<span class="nc" id="L874">        return offsetImageX2;</span>
+    }
+    int getOffsetImageY2() {
+<span class="nc" id="L877">        return offsetImageY2;</span>
     }
     
 }

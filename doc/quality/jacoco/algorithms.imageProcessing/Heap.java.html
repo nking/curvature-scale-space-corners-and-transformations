@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Heap.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Heap.java</span></div><h1>Heap.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.util.Stack;
 import java.util.logging.Logger;
 
 /**
  * Class contains a Fibonacci heap, that is, a loose collection of trees based 
  * upon binomial heaps, hence satisfying the minimum heap property:
  *     object.child.key &gt;= object.key.
- * 
- * Binomial heaps allow the merging of 2 heaps quickly.
  * 
  * With a Fibonacci heap, the minimum key of the entire heap is always at the
  * top of one of the trees.
@@ -31,8 +30,9 @@ import java.util.logging.Logger;
  *    Extract-min and delete should be used sparingly for this structure to be
  * best utilized and are usually implemented as O(log_2 N).
  *
- * This was implemented following pseudo-code from Introduction to Algorithms, 
- * by Cormen et al.
+ * This was implemented following pseudo-code from 
+ * &quot;Introduction to Algorithms&quot;, by Cormen, Leiserson, Rivest, &amp; Stein
+ * on the Fibonacci Heap.
  * &lt;/pre&gt;
  * 
  * @author nichole

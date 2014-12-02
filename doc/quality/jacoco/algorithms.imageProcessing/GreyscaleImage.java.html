@@ -79,60 +79,75 @@ public class GreyscaleImage {
 <span class="fc" id="L79">        return a[idx];</span>
     }
     
+    /**
+     * get pixel using the internal index of 0 through width x height pixels.
+     * 
+     * @param internalIndex
+     * @return 
+     */
+    public int getValue(int internalIndex) {
+        
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (internalIndex &gt; a.length) {</span>
+<span class="nc" id="L91">            throw new IllegalArgumentException(&quot;internalIndex is out of bounds&quot;);</span>
+        }
+        
+<span class="fc" id="L94">        return a[internalIndex];</span>
+    }
+    
     public int[] getValues() {
-<span class="fc" id="L83">        return a;</span>
+<span class="fc" id="L98">        return a;</span>
     }
  
     public int getWidth() {
-<span class="fc" id="L87">        return width;</span>
+<span class="fc" id="L102">        return width;</span>
     }
     
     public int getHeight() {
-<span class="fc" id="L91">        return height;</span>
+<span class="fc" id="L106">        return height;</span>
     }
     
     public GreyscaleImage copyImage() {
        
-<span class="fc" id="L96">        GreyscaleImage img2 = new GreyscaleImage(width, height);</span>
+<span class="fc" id="L111">        GreyscaleImage img2 = new GreyscaleImage(width, height);</span>
         
-<span class="fc" id="L98">        System.arraycopy(a, 0, img2.a, 0, nPixels);</span>
+<span class="fc" id="L113">        System.arraycopy(a, 0, img2.a, 0, nPixels);</span>
         
-<span class="fc" id="L100">        return img2;</span>
+<span class="fc" id="L115">        return img2;</span>
     }
     
     public Image copyImageToGreen() {
         
-<span class="fc" id="L105">        Image img2 = new Image(width, height);</span>
+<span class="fc" id="L120">        Image img2 = new Image(width, height);</span>
         
-<span class="fc" id="L107">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
+<span class="fc" id="L122">        System.arraycopy(a, 0, img2.g, 0, nPixels);</span>
         
-<span class="fc" id="L109">        return img2;</span>
+<span class="fc" id="L124">        return img2;</span>
     }
     
     public void resetTo(final GreyscaleImage copyThis) {
         
-<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (copyThis.nPixels == nPixels) {</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (copyThis.nPixels == nPixels) {</span>
             
-<span class="fc" id="L116">            System.arraycopy(copyThis.a, 0, a, 0, nPixels);</span>
+<span class="fc" id="L131">            System.arraycopy(copyThis.a, 0, a, 0, nPixels);</span>
             
         } else {
             
-<span class="fc" id="L120">            a = copyThis.a;</span>
+<span class="fc" id="L135">            a = copyThis.a;</span>
     
-<span class="fc" id="L122">            width = copyThis.width;</span>
+<span class="fc" id="L137">            width = copyThis.width;</span>
     
-<span class="fc" id="L124">            height = copyThis.height;</span>
+<span class="fc" id="L139">            height = copyThis.height;</span>
     
-<span class="fc" id="L126">            nPixels = copyThis.nPixels;</span>
+<span class="fc" id="L141">            nPixels = copyThis.nPixels;</span>
         }
         
-<span class="fc" id="L129">    }</span>
+<span class="fc" id="L144">    }</span>
 
     /**
      * @return the nPixels
      */
     public int getNPixels() {
-<span class="fc" id="L135">        return nPixels;</span>
+<span class="fc" id="L150">        return nPixels;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

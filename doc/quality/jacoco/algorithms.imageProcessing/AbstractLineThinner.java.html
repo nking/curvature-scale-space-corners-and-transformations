@@ -25,21 +25,21 @@
                 // what its position
 <span class="nc" id="L26">                return true;</span>
             }
-<span class="fc bfc" id="L28" title="All 2 branches covered.">            if ((row - 1) &lt; 0) {</span>
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">            if ((row - 1) &lt; 0) {</span>
                 /*
                 | @ @
                 | C @
                 */
-<span class="pc bpc" id="L33" title="1 of 2 branches missed.">                if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">                if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
                     /*
                     | C @
                     */
 <span class="nc" id="L37">                    return true;</span>
                 }
-<span class="pc bpc" id="L39" title="3 of 6 branches missed.">                if ((input.getValue(col, row + 1) &gt; 0) || </span>
+<span class="nc bnc" id="L39" title="All 6 branches missed.">                if ((input.getValue(col, row + 1) &gt; 0) || </span>
                     (input.getValue(col + 1, row + 1) &gt; 0) || 
                     (input.getValue(col + 1, row) &gt; 0)) {
-<span class="fc" id="L42">                    return true;</span>
+<span class="nc" id="L42">                    return true;</span>
                 }
 <span class="nc" id="L44">                return false;</span>
 <span class="pc bpc" id="L45" title="1 of 2 branches missed.">            } else if ((row + 1) &gt; (input.getHeight() - 1)) {</span>
@@ -222,7 +222,7 @@
             ?  .  _       AND AtLeastOne (? is 1)
              */
 <span class="fc bfc" id="L224" title="All 6 branches covered.">            if (((input.getValue(col + 1, row - 1) &gt; 0) || (input.getValue(col + 1, row) &gt; 0)) &amp;&amp; (input.getValue(col, row - 1) == 0)) {</span>
-<span class="pc bpc" id="L225" title="1 of 4 branches missed.">                if ((input.getValue(col - 1, row) &gt; 0) || (input.getValue(col - 1, row - 1) &gt; 0)) {</span>
+<span class="fc bfc" id="L225" title="All 4 branches covered.">                if ((input.getValue(col - 1, row) &gt; 0) || (input.getValue(col - 1, row - 1) &gt; 0)) {</span>
 <span class="fc" id="L226">                    return true;</span>
                 }
             }

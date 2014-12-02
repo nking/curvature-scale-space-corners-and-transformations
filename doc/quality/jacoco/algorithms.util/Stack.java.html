@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Stack.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">Stack.java</span></div><h1>Stack.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+/**
+ * data structure in which last inserted is first out (LIFO).
+ * it's primary methods are push and pop, both of which have
+ * runtime complexity of O(1).
+ * 
+ * The structure has a space complexity of O(N).
+ * 
+ * @author nichole
+ *
+ */
+<span class="fc" id="L13">public class Stack&lt;T&gt; {</span>
+
+<span class="fc" id="L15">    private Node&lt;T&gt; list = null;</span>
+    
+<span class="fc" id="L17">    private int n = 0;</span>
+    
+    public void push(T obj) {
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">        if (obj == null) {</span>
+<span class="nc" id="L21">            return;</span>
+        }
+        
+<span class="fc" id="L24">        Node&lt;T&gt; nd = new Node&lt;T&gt;();</span>
+<span class="fc" id="L25">        nd.data = obj;</span>
+        
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (list == null) {</span>
+<span class="fc" id="L28">            list = nd;</span>
+        } else {
+<span class="fc" id="L30">            nd.next = list;</span>
+<span class="fc" id="L31">            this.list = nd;</span>
+        }
+<span class="fc" id="L33">        n++;</span>
+<span class="fc" id="L34">    }</span>
+    
+    public T pop() {
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (list == null) {</span>
+<span class="nc" id="L38">            return null;</span>
+        }
+<span class="fc" id="L40">        Node&lt;T&gt; top = list;</span>
+<span class="fc" id="L41">        list = top.next;</span>
+<span class="fc" id="L42">        n--;</span>
+<span class="fc" id="L43">        return top.data;</span>
+    }
+    
+    public T peek() {
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (list == null) {</span>
+<span class="nc" id="L48">            return null;</span>
+        }
+<span class="fc" id="L50">        return list.data;</span>
+    }
+    
+    public boolean isEmpty() {
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        return (list == null);</span>
+    }
+    
+<span class="fc" id="L57">    protected class Node&lt;S&gt; {</span>
+<span class="fc" id="L58">        Node&lt;S&gt; next = null;</span>
+<span class="fc" id="L59">        T data = null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

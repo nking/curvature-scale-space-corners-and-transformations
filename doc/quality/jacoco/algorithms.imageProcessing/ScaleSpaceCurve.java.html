@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScaleSpaceCurve.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ScaleSpaceCurve.java</span></div><h1>ScaleSpaceCurve.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.util.Arrays;
 
 /**
@@ -52,88 +54,88 @@ public class ScaleSpaceCurve {
     private int kIsZeroIdxSize;
     
     public ScaleSpaceCurve(float theSigma, PairIntArray curve, 
-<span class="fc" id="L55">        boolean curveIsClosed) {</span>
+<span class="fc" id="L57">        boolean curveIsClosed) {</span>
 
-<span class="fc" id="L57">        sigma = theSigma;</span>
+<span class="fc" id="L59">        sigma = theSigma;</span>
 
-<span class="fc" id="L59">        k = new float[curve.getN()];</span>
+<span class="fc" id="L61">        k = new float[curve.getN()];</span>
         
-<span class="fc bfc" id="L61" title="All 2 branches covered.">        xy = (curve instanceof PairIntArrayWithColor) ? </span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        xy = (curve instanceof PairIntArrayWithColor) ? </span>
             (PairIntArrayWithColor) curve : new PairIntArrayWithColor(curve);
         
-<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (curveIsClosed) {</span>
-<span class="fc" id="L65">            xy.setColor(1);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (curveIsClosed) {</span>
+<span class="fc" id="L67">            xy.setColor(1);</span>
         }
         
-<span class="fc" id="L68">        size = curve.getN();</span>
+<span class="fc" id="L70">        size = curve.getN();</span>
         
-<span class="fc" id="L70">        t = new float[curve.getN()];</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (int i = 0; i &lt; curve.getN(); i++) {</span>
-<span class="fc" id="L72">            t[i] = i / ((float) curve.getN());</span>
+<span class="fc" id="L72">        t = new float[curve.getN()];</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int i = 0; i &lt; curve.getN(); i++) {</span>
+<span class="fc" id="L74">            t[i] = i / ((float) curve.getN());</span>
         }
 
         // this will be reduced in size later:
-<span class="fc" id="L76">        kIsZeroIdx = new int[curve.getN()];</span>
-<span class="fc" id="L77">        kIsZeroX = new int[kIsZeroIdx.length];</span>
-<span class="fc" id="L78">        kIsZeroY = new int[kIsZeroIdx.length];</span>
+<span class="fc" id="L78">        kIsZeroIdx = new int[curve.getN()];</span>
+<span class="fc" id="L79">        kIsZeroX = new int[kIsZeroIdx.length];</span>
+<span class="fc" id="L80">        kIsZeroY = new int[kIsZeroIdx.length];</span>
 
-<span class="fc" id="L80">        kIsZeroIdxSize = 0;</span>
-<span class="fc" id="L81">    }</span>
+<span class="fc" id="L82">        kIsZeroIdxSize = 0;</span>
+<span class="fc" id="L83">    }</span>
     
     /**
      * @return the sigma
      */
     public float getSigma() {
-<span class="fc" id="L87">        return sigma;</span>
+<span class="fc" id="L89">        return sigma;</span>
     }
 
     public float getX(int idx) {
-<span class="pc bpc" id="L91" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
-<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
+<span class="nc" id="L94">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
         }
-<span class="fc" id="L94">        return xy.getX(idx);</span>
+<span class="fc" id="L96">        return xy.getX(idx);</span>
     }
     
     public float getY(int idx) {
-<span class="pc bpc" id="L98" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
-<span class="nc" id="L99">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
+<span class="nc" id="L101">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
         }
-<span class="fc" id="L101">        return xy.getY(idx);</span>
+<span class="fc" id="L103">        return xy.getY(idx);</span>
     }
     
     public void setXY(int idx, int xValue, int yValue) {
-<span class="nc bnc" id="L105" title="All 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
-<span class="nc" id="L106">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
+<span class="nc bnc" id="L107" title="All 4 branches missed.">        if (idx &lt; 0 || idx &gt; (xy.getN() - 1)) {</span>
+<span class="nc" id="L108">            throw new IllegalArgumentException(&quot;idx is out of bounds of xy&quot;);</span>
         }
-<span class="nc" id="L108">        xy.set(idx, xValue, yValue);</span>
-<span class="nc" id="L109">    }</span>
+<span class="nc" id="L110">        xy.set(idx, xValue, yValue);</span>
+<span class="nc" id="L111">    }</span>
 
     public float getK(int idx) {
-<span class="pc bpc" id="L112" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (k.length - 1)) {</span>
-<span class="nc" id="L113">            throw new IllegalArgumentException(&quot;idx is out of bounds of array k&quot;);</span>
+<span class="pc bpc" id="L114" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (k.length - 1)) {</span>
+<span class="nc" id="L115">            throw new IllegalArgumentException(&quot;idx is out of bounds of array k&quot;);</span>
         }
-<span class="fc" id="L115">        return k[idx];</span>
+<span class="fc" id="L117">        return k[idx];</span>
     }
     
     public void setK(int idx, float value) {
-<span class="pc bpc" id="L119" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (k.length - 1)) {</span>
-<span class="nc" id="L120">            throw new IllegalArgumentException(&quot;idx is out of bounds of array k&quot;);</span>
+<span class="pc bpc" id="L121" title="2 of 4 branches missed.">        if (idx &lt; 0 || idx &gt; (k.length - 1)) {</span>
+<span class="nc" id="L122">            throw new IllegalArgumentException(&quot;idx is out of bounds of array k&quot;);</span>
         }
-<span class="fc" id="L122">        k[idx] = value;</span>
-<span class="fc" id="L123">    }</span>
+<span class="fc" id="L124">        k[idx] = value;</span>
+<span class="fc" id="L125">    }</span>
     
     /**
      * @return the t
      */
     public float[] getT() {
-<span class="fc" id="L129">        return t;</span>
+<span class="fc" id="L131">        return t;</span>
     }
 
     /**
      * @return the kIsZeroIdx
      */
     public int[] getKIsZeroIdx() {
-<span class="fc" id="L136">        return kIsZeroIdx;</span>
+<span class="fc" id="L138">        return kIsZeroIdx;</span>
     }
     
     /**
@@ -141,7 +143,7 @@ public class ScaleSpaceCurve {
      * @return 
      */
     public int[] getKIsZeroX() {
-<span class="fc" id="L144">        return kIsZeroX;</span>
+<span class="fc" id="L146">        return kIsZeroX;</span>
     }
     
     /**
@@ -149,53 +151,53 @@ public class ScaleSpaceCurve {
      * @return 
      */
     public int[] getKIsZeroY() {
-<span class="fc" id="L152">        return kIsZeroY;</span>
+<span class="fc" id="L154">        return kIsZeroY;</span>
     }
 
     /**
      * @return the kIsZeroIdxSize
      */
     public int getKIsZeroIdxSize() {
-<span class="fc" id="L159">        return kIsZeroIdxSize;</span>
+<span class="fc" id="L161">        return kIsZeroIdxSize;</span>
     }
     
     public void addKIsZeroIdx(int idxForAZeroValue, int xCoord, int yCoord) {
         
-<span class="fc" id="L164">        kIsZeroIdx[kIsZeroIdxSize] = idxForAZeroValue;</span>
-<span class="fc" id="L165">        kIsZeroX[kIsZeroIdxSize] = xCoord;</span>
-<span class="fc" id="L166">        kIsZeroY[kIsZeroIdxSize] = yCoord;</span>
+<span class="fc" id="L166">        kIsZeroIdx[kIsZeroIdxSize] = idxForAZeroValue;</span>
+<span class="fc" id="L167">        kIsZeroX[kIsZeroIdxSize] = xCoord;</span>
+<span class="fc" id="L168">        kIsZeroY[kIsZeroIdxSize] = yCoord;</span>
         
-<span class="fc" id="L168">        kIsZeroIdxSize++;</span>
-<span class="fc" id="L169">    }</span>
+<span class="fc" id="L170">        kIsZeroIdxSize++;</span>
+<span class="fc" id="L171">    }</span>
     
     public void compressKIsZeroIdx() {
-<span class="fc" id="L172">        kIsZeroIdx = Arrays.copyOf(kIsZeroIdx, kIsZeroIdxSize);</span>
-<span class="fc" id="L173">        kIsZeroX = Arrays.copyOf(kIsZeroX, kIsZeroIdxSize);</span>
-<span class="fc" id="L174">        kIsZeroY = Arrays.copyOf(kIsZeroY, kIsZeroIdxSize);</span>
-<span class="fc" id="L175">    }</span>
+<span class="fc" id="L174">        kIsZeroIdx = Arrays.copyOf(kIsZeroIdx, kIsZeroIdxSize);</span>
+<span class="fc" id="L175">        kIsZeroX = Arrays.copyOf(kIsZeroX, kIsZeroIdxSize);</span>
+<span class="fc" id="L176">        kIsZeroY = Arrays.copyOf(kIsZeroY, kIsZeroIdxSize);</span>
+<span class="fc" id="L177">    }</span>
     
     public int getSize() {
-<span class="fc" id="L178">        return size;</span>
+<span class="fc" id="L180">        return size;</span>
     }
     
     public float[] getK() {
-<span class="fc" id="L182">        return k;</span>
+<span class="fc" id="L184">        return k;</span>
     }
     
     public int[] getX() {
-<span class="nc" id="L186">        return xy.getX();</span>
+<span class="nc" id="L188">        return xy.getX();</span>
     }
     
     public int[] getY() {
-<span class="nc" id="L190">        return xy.getY();</span>
+<span class="nc" id="L192">        return xy.getY();</span>
     }
     
     public boolean curveIsClosed() {
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        return (xy.getColor() == 1);</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">        return (xy.getColor() == 1);</span>
     }
     
     public PairIntArray getXYCurve() {
-<span class="fc" id="L198">        return xy;</span>
+<span class="fc" id="L200">        return xy;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

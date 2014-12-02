@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TransformationPointFit.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">TransformationPointFit.java</span></div><h1>TransformationPointFit.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ *
+ * @author nichole
+ */
+public class TransformationPointFit {
+    
+<span class="fc" id="L9">    private TransformationParameters parameters = null;</span>
+    
+<span class="fc" id="L11">    private int nMatchedPoints = 0;</span>
+    
+<span class="fc" id="L13">    private double meanDistFromModel = Double.MAX_VALUE;</span>
+    
+<span class="fc" id="L15">    private double stDevFromMean = Double.MAX_VALUE;</span>
+            
+    public TransformationPointFit(TransformationParameters theParameters, 
+        int numberOfMatchedPoints, double theMeanDistFromModel, 
+<span class="fc" id="L19">        double theStDevFromMean) {</span>
+        
+<span class="fc" id="L21">        parameters = theParameters;</span>
+        
+<span class="fc" id="L23">        nMatchedPoints = numberOfMatchedPoints;</span>
+        
+<span class="fc" id="L25">        meanDistFromModel = theMeanDistFromModel;</span>
+        
+<span class="fc" id="L27">        stDevFromMean = theStDevFromMean;</span>
+<span class="fc" id="L28">    }</span>
+
+    /**
+     * @return the parameters
+     */
+    public TransformationParameters getParameters() {
+<span class="fc" id="L34">        return parameters;</span>
+    }
+
+    
+    public int getNumberOfMatchedPoints() {
+<span class="fc" id="L39">        return nMatchedPoints;</span>
+    }
+    
+    public double getRotationInRadians() {
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L44">            return 0;</span>
+        }
+        
+<span class="fc" id="L47">        return (parameters.getRotationInDegrees() * Math.PI/180.);</span>
+    }
+    
+    public double getScale() {
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L52">            return 0;</span>
+        }
+        
+<span class="fc" id="L55">        return parameters.getScale();</span>
+    }
+    
+    public double getTranslationX() {
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L60">            return 0;</span>
+        }
+        
+<span class="fc" id="L63">        return parameters.getTranslationX();</span>
+    }
+    
+    public double getTranslationY() {
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L68">            return 0;</span>
+        }
+        
+<span class="fc" id="L71">        return parameters.getTranslationY();</span>
+    }
+
+    /**
+     * @return the meanDistFromModel
+     */
+    public double getMeanDistFromModel() {
+<span class="fc" id="L78">        return meanDistFromModel;</span>
+    }
+
+    /**
+     * @return the stDevFromMean
+     */
+    public double getStDevFromMean() {
+<span class="fc" id="L85">        return stDevFromMean;</span>
+    }
+   
+    @Override
+    public String toString() {
+        
+<span class="nc" id="L91">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="nc" id="L93">        sb.append(&quot;nMatchedPoints=&quot;).append(Integer.toString(nMatchedPoints))</span>
+            .append(&quot; meanDistFromModel=&quot;)
+            .append(Double.toString(meanDistFromModel))
+            .append(&quot; stDevFromMean=&quot;)
+            .append(Double.toString(stDevFromMean))
+            .append(parameters.toString());
+        
+<span class="nc" id="L100">        return sb.toString();</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

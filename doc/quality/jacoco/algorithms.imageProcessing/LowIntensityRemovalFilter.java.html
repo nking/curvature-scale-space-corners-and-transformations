@@ -13,6 +13,10 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L14">    protected float lowThreshFactor = 1.0f;</span>
 
+    public void overrideLowThresholdFactor(float theFactor) {
+<span class="nc" id="L17">        lowThreshFactor = theFactor;</span>
+<span class="nc" id="L18">    }</span>
+    
     /**
      * determine a lower threshold for removing pixels below that
      * as background and noise and return the threshold used.
@@ -23,48 +27,48 @@ import java.util.logging.Logger;
     public ImageStatistics removeLowIntensityPixels(final GreyscaleImage input, 
         HistogramHolder originalImageHistogram) {
         
-<span class="fc" id="L26">        boolean useSturges = false;</span>
+<span class="fc" id="L30">        boolean useSturges = false;</span>
                 
-<span class="fc" id="L28">        ImageStatistics stats = ImageStatisticsHelper.examineImageBorders(</span>
+<span class="fc" id="L32">        ImageStatistics stats = ImageStatisticsHelper.examineImageBorders(</span>
             input, useSturges);
         //ImageStatistics stats = ImageStatisticsHelper.examineImage(
         //    input, useSturges);
         
-<span class="fc" id="L33">        int lowThresh = determineLowThreshold(stats, originalImageHistogram);</span>
+<span class="fc" id="L37">        int lowThresh = determineLowThreshold(stats, originalImageHistogram);</span>
 
-<span class="fc" id="L35">        stats.setLowThresholdApplied(lowThresh);</span>
+<span class="fc" id="L39">        stats.setLowThresholdApplied(lowThresh);</span>
         
-<span class="fc" id="L37">        log.fine(stats.toString());</span>
+<span class="fc" id="L41">        log.fine(stats.toString());</span>
         
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (lowThresh &gt; 0) {</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (lowThresh &gt; 0) {</span>
             
-<span class="fc" id="L41">            removeLowIntensityPixels(input, lowThresh);</span>
+<span class="fc" id="L45">            removeLowIntensityPixels(input, lowThresh);</span>
         }
         
-<span class="fc" id="L44">        return stats;</span>
+<span class="fc" id="L48">        return stats;</span>
     }
 
     protected int determineLowThreshold(ImageStatistics stats, 
         HistogramHolder originalImageHistogram) {
                  
-<span class="fc" id="L50">        return (int) (lowThreshFactor * stats.getMean());</span>
+<span class="fc" id="L54">        return (int) (lowThreshFactor * stats.getMean());</span>
      
     }
         
     public void removeLowIntensityPixels(final GreyscaleImage input, 
         int threshold) {
        
-<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getWidth(); i++) {</span>
-<span class="fc bfc" id="L58" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getWidth(); i++) {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
                 
-<span class="fc" id="L60">                int v = input.getValue(i, j);</span>
+<span class="fc" id="L64">                int v = input.getValue(i, j);</span>
                 
-<span class="fc bfc" id="L62" title="All 2 branches covered.">                if (v &lt; threshold) {</span>
-<span class="fc" id="L63">                    input.setValue(i, j, 0);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">                if (v &lt; threshold) {</span>
+<span class="fc" id="L67">                    input.setValue(i, j, 0);</span>
                 }
             }
         }
-<span class="fc" id="L67">    }</span>
+<span class="fc" id="L71">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

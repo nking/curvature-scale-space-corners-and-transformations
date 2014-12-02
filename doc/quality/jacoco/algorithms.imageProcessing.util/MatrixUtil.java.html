@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MatrixUtil.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing.util</a> &gt; <span class="el_source">MatrixUtil.java</span></div><h1>MatrixUtil.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.util;
+
+import Jama.Matrix;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="nc" id="L9">public class MatrixUtil {</span>
+    
+    public static double[] multiply(double[][] m, double[] n) {
+
+<span class="pc bpc" id="L13" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L14">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+        }
+<span class="pc bpc" id="L16" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
+<span class="nc" id="L17">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+        }
+        
+<span class="fc" id="L20">        int mcols = m.length;</span>
+
+<span class="fc" id="L22">        int mrows = m[0].length;</span>
+
+<span class="fc" id="L24">        int ncols = n.length;</span>
+        
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">        if (mcols != ncols) {</span>
+<span class="nc" id="L27">            throw new IllegalArgumentException(</span>
+                &quot;the number of columns in m must equal the number of rows in n&quot;);
+        }
+        
+<span class="fc" id="L31">        double[] c = new double[mrows];</span>
+
+<span class="fc" id="L33">        int cCol = 0;</span>
+        
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
+                        
+<span class="fc bfc" id="L37" title="All 2 branches covered.">            for (int col = 0; col &lt; mcols; col++) {</span>
+                
+<span class="fc" id="L39">                c[cCol] += (m[col][row] * n[col]);</span>
+            }
+            
+<span class="fc" id="L42">            cCol++;        </span>
+        }
+
+<span class="fc" id="L45">        return c;</span>
+    }
+    
+    public static double[][] dot(Matrix m1, Matrix m2) {
+        
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (m1 == null) {</span>
+<span class="nc" id="L51">            throw new IllegalArgumentException(&quot;m1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (m2 == null) {</span>
+<span class="nc" id="L54">            throw new IllegalArgumentException(&quot;m2 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (m1.getArray().length != m2.getArray()[0].length) {</span>
+<span class="nc" id="L57">            throw new IllegalArgumentException(</span>
+                &quot;the number of columns in m1 != number of rows in m2&quot;);
+        }
+         
+<span class="nc" id="L61">        int cCols = m2.getArray().length;</span>
+<span class="nc" id="L62">        int cRows = m1.getArray()[0].length;        </span>
+        
+        // m1 dot m2
+<span class="nc" id="L65">        double[][] m = new double[cCols][cRows];</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        for (int i = 0; i &lt; m.length; i++) {</span>
+<span class="nc" id="L67">            m[i] = new double[cRows];</span>
+        }
+               
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        for (int cRow = 0; cRow &lt; cRows; cRow++) {        </span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">            for (int cCol = 0; cCol &lt; cCols; cCol++) {</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">                for (int col = 0; col &lt; m1.getArray().length; col++) {</span>
+<span class="nc" id="L73">                    m[cCol][cRow] += (m1.get(col, cRow) * m2.get(cCol, col));</span>
+                }
+            }
+        }
+
+<span class="nc" id="L78">        return m;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

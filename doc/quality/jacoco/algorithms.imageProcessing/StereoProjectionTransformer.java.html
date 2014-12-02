@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>StereoProjectionTransformer.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">StereoProjectionTransformer.java</span></div><h1>StereoProjectionTransformer.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairFloatArray;
+import Jama.*;
+import algorithms.imageProcessing.util.MatrixUtil;
+import java.util.Arrays;
+import java.util.logging.Logger;
+
+/**
+ * class to solve for the epipoles for two images with stereo projection
+ * and apply the solution.
+ * 
+ * Following:
+ * 
+ * IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE, VOL. 19, 
+ * NO. 6, JUNE 1997
+ * &quot;In Defense of the Eight-Point Algorithm&quot; by Richard Hartley
+
+ * The 8-point algorithm matrix represents epipolar geometry, and can be
+ * used with data from cameras whose characteristics are not known to solve
+ * up to the projective transformation.
+ * 
+ * Some definitions:
+    u^T*v represents the inner product
+    u*v^T is a matrix
+    the norm of a vector f is the square root of the sum or squares of its 
+        entries.
+    u_1 is the (x,y) points from image 1 and u_2 are the matched (x,y) points 
+        from image 2.
+    
+    the fundamental matrix is defined:
+        u_2^T * F * u_1 = 0  where u are the x,y points in images _1 and _2
+
+    u_1 = (x_1, y_1, 1)^T
+    u_2 = (x_2, y_2, 1)^T
+
+    x_1*x_2*F_1_1 + x_1*y_2*F_2_1 + x_1*F_3_1 + y_1*x_2*F_1_2 + y_1*y_2*F_2_2
+        + y_1*F_3_2 + x_2*F_1_3 + y_2*F_2_3 + F_3_3 = 0
+
+    A * f = 0
+
+    where A = x_1*x_2, x_1*y_2, x_1, y_1*x_2, y_1*y_2, y_1, x_2, y_2, 1
+
+    To avoid the trivial scale, ||f|| = 1 where f is the norm of f
+
+    And we need least squares fits because the set may be over determined 
+    and not have a zero solution.
+
+    we want the vector f that minimizes ||A*f|| subject to the constraint
+    that ||f|| = f^T*f = 1
+
+    the solution is the unit eigenvector corresponding to the smallest 
+    eigenvalue of A^T*A.
+
+    Since A^T*A is semi-definite and symmetric, all of its eigenvectors
+    are real and positive or zero.
+    This eigenvector is what he calls the least eigenvector of A^T*A and
+    it is found via the Jacobi algorithm or Singular Value Decomposition.
+
+    The solved for matrix will in general not have rank 2 and needs to, so
+    further corrections are necessary:
+        matrix F is replaced by F' that minimizes the Frobenius norm
+        ||F - F'|| subject to the condition det F' = 0.
+        A convenient method of doing this is to use the Singular Value
+        Decomposition (SVD).
+           let F = U*D*V^T be the SVD of F, where D is diagonal matrix 
+           D = diag(r, s, t) satisfying r &gt;= s &gt;= t.
+           let F' = U*diag(r, s, 0)*V^T.
+
+ (1) Transforming the coordinates:
+
+     Normalization for isotropic scaling.
+
+     utrans = T * u ==&gt; u = utrans * inv(T)
+
+     u_2^T * F * u_1 = 0 
+     
+        becomes   utrans_2^T * inv(T_2) * F * inv(T_1) * utrans_1 = 0
+
+        and inv(T_2) * F * inv(T_1) is the fundamental matrix for
+        utrans_2 &lt; -- &gt; utrans_1 which when found, will be subsequently
+        denormalized.
+
+    a) points are translated so that their centroid is at the origin.
+    b) points are then scaled so that the average distance from the
+       origin is sqrt(2)
+    c) the transformation is applied to each of the 2 images separately.
+     
+ (2) build matrix A with the normalized x,y points
+ 
+ (3) compute linear least square solution to the least eigenvector of f.
+     solve A = U * D * V^T   for A*f = [..x...]*f = 0
+     A has rank 8.  f has rank 2.
+     calculate [U,D,V] from svd(A)
+ 
+ (4) make the fundamental matrix have a rank of 2
+     by performing a svd and then reconstructing with the two largest 
+     singular values.
+         [U,D,V] = svd(F,0);
+         F = U * diag([D(1,1) D(2,2) 0]) * V'; 
+ 
+ (5) denormalize the fundamental matrix
+     The related part of the normalization equation: inv(T_2) * F * inv(T_1)
+     so denormalizing is:
+     
+         F = (T_1)^T * F * T_2
+   
+ (6) estimate the error in the fundamental matrix by calculting epipolar
+     lines for points in image 1 and find their nearest points in image 2 
+     and measure the perpendicular distance from the epipolar line for
+     those nearest points.
+     
+ * @author nichole
+ */
+<span class="nc" id="L115">public class StereoProjectionTransformer {</span>
+    
+<span class="nc" id="L117">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+<span class="nc" id="L119">    private Matrix leftXY = null;</span>
+        
+<span class="nc" id="L121">    private Matrix rightXY = null;</span>
+        
+<span class="nc" id="L123">    private Matrix fundamentalMatrix = null;</span>
+    
+<span class="nc" id="L125">    private double[] leftEpipole = null;</span>
+    
+<span class="nc" id="L127">    private double[] rightEpipole = null;</span>
+    
+    /**
+     * each row is an epipolar line in the right image.
+     * Each column corresponds to a point in leftXY and rightXY which are
+     * in the same column.
+     */
+<span class="nc" id="L134">    private double[][] epipolarLinesInRight = null;</span>
+    
+    /**
+     * each row is an epipolar line in the left image.
+     * Each column corresponds to a point in leftXY and rightXY which are
+     * in the same column.
+     */
+<span class="nc" id="L141">    private double[][] epipolarLinesInLeft = null;</span>
+        
+    public void calculateEpipolarProjection(PairFloatArray refactorLeftXY, 
+        PairFloatArray refactorRightXY) {
+        
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (refactorLeftXY == null) {</span>
+<span class="nc" id="L147">            throw new IllegalArgumentException(&quot;refactorLeftXY cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (refactorRightXY == null) {</span>
+<span class="nc" id="L150">            throw new IllegalArgumentException(&quot;refactorRightXY cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        if (refactorLeftXY.getN() != refactorRightXY.getN()) {</span>
+<span class="nc" id="L153">            throw new IllegalArgumentException(</span>
+                &quot;refactorLeftXY and refactorRightXY must be same size&quot;);
+        }
+        
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (refactorLeftXY.getN() &lt; 8) {</span>
+            // cannot use this algorithm.
+<span class="nc" id="L159">            throw new IllegalArgumentException(</span>
+                &quot;the 8-point problem requires 8 or more points.&quot; 
+                + &quot; refactorLeftXY.n=&quot; + refactorLeftXY.getN());
+        }
+        
+<span class="nc" id="L164">        leftXY = rewriteInto3ColumnMatrix(refactorLeftXY);</span>
+        
+<span class="nc" id="L166">        rightXY = rewriteInto3ColumnMatrix(refactorRightXY);</span>
+        
+<span class="nc" id="L168">        fundamentalMatrix = calculateFundamentalMatrix(leftXY, rightXY);</span>
+     
+        // 2 x 3 matrix of leftEpipole in column 0 and rightEpipole in column 1.
+<span class="nc" id="L171">        double[][] leftRightEpipoles = calculateEpipoles(fundamentalMatrix);</span>
+        
+<span class="nc" id="L173">        leftEpipole = leftRightEpipoles[0];</span>
+        
+<span class="nc" id="L175">        rightEpipole = leftRightEpipoles[1];</span>
+        
+<span class="nc" id="L177">        epipolarLinesInRight = calculateRightEpipolarLines();</span>
+        
+<span class="nc" id="L179">        epipolarLinesInLeft = calculateLeftEpipolarLines();</span>
+       
+        /*
+        compute the perpendicular errors:
+        
+        transform points from the first image to get the equipolar lines
+           in the second image.
+        
+        find the closest points in the 2nd image to the epipolar lines 
+           store the difference
+        
+        do the same for the othe image
+        
+        equipolar lines:
+           aVector = F^T * u_1
+           then aVector^T*u_2 = aVector_1*x_2 + aVector_2*y_2 + aVector_3 = 0
+        
+        plot the differences, calc stats, determine inliers.
+        use iterative method of choosing 8 or 8-best and error inspection to
+        create a better solution (terminate when set of inliers does not 
+        change).
+        
+        */
+<span class="nc" id="L202">    }</span>
+    
+    protected Matrix calculateFundamentalMatrix(Matrix leftXY, 
+        Matrix rightXY) {
+        
+        //x is xy[0], y is xy[1], xy[2] is all 1's
+<span class="nc" id="L208">        NormalizedXY normalizedXY1 = normalize(leftXY);</span>
+        
+<span class="nc" id="L210">        NormalizedXY normalizedXY2 = normalize(rightXY);        </span>
+        
+        //build the fundamental matrix
+<span class="nc" id="L213">        Matrix aMatrix = new Matrix(createFundamentalMatrix(</span>
+            normalizedXY1.getXy(), normalizedXY2.getXy()));
+               
+        /*
+        compute linear least square solution:
+            solve A = U * D * V^T   for A*f = [..x...]*f = 0
+            A has rank 8.  f has rank 2.
+            calculate [U,D,V] from svd(A)
+        */       
+<span class="nc" id="L222">        SingularValueDecomposition svd = aMatrix.svd();</span>
+        
+        // creates U as 9 x nXY1 matrix
+        //         D as length 9 array
+        //         V as 9 x 9 matrix
+        
+        // f is the last column of V.  it's got 9 items in it.
+<span class="nc" id="L229">        double[] f = svd.getV().getArray()[svd.getV().getArray().length - 1];</span>
+        
+        // reshape it to 3x3
+<span class="nc" id="L232">        double[][] ff = new double[3][3];</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="nc" id="L234">            ff[i] = new double[3];</span>
+        }
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="nc" id="L237">            ff[i][0] = f[(i * 3) + 0];</span>
+<span class="nc" id="L238">            ff[i][1] = f[(i * 3) + 1];</span>
+<span class="nc bnc" id="L239" title="All 4 branches missed.">            if (i == 2 &amp;&amp; (f.length &gt;= 9)) { // npoints == 8</span>
+<span class="nc" id="L240">                ff[i][2] = f[(i * 3) + 2];</span>
+            }
+        }
+<span class="nc" id="L243">        Matrix fMatrix = new Matrix(ff);</span>
+        
+        /* make the fundamental matrix have a rank of 2
+           by performing a svd and then reconstructing with the two largest 
+           singular values.
+              [U,D,V] = svd(F,0);
+              F = U * diag([D(1,1) D(2,2) 0]) * V';
+        */
+<span class="nc" id="L251">        svd = fMatrix.svd();</span>
+        
+        // creates U as 3 x 3 matrix
+        //         D as length 3 array
+        //         V as 3 x 3 matrix
+        
+<span class="nc" id="L257">        Matrix d = svd.getS();</span>
+        
+        // remove the smallest singular value from D, making it rank 2
+<span class="nc" id="L260">        double[] keep = new double[]{d.get(0, 0), d.get(1, 1), d.get(2, 2)};</span>
+<span class="nc" id="L261">        Arrays.sort(keep);</span>
+<span class="nc" id="L262">        d.set(0, 0, keep[2]);</span>
+<span class="nc" id="L263">        d.set(1, 1, keep[1]);</span>
+<span class="nc" id="L264">        d.set(2, 2, 0);</span>
+        
+        /*
+        multiply the terms:
+             F = dot(U, dot(diag(D),V))
+        */
+<span class="nc" id="L270">        double[][] dDotV = MatrixUtil.dot(d, svd.getV());</span>
+                                
+        // 3x3
+<span class="nc" id="L273">        Matrix theFundamentalMatrix = new Matrix(MatrixUtil.dot(svd.getU(), </span>
+            new Matrix(dDotV)));
+                        
+        /*
+        denormalize
+            F = (T_1)^T * F * T_2  
+            where T_1 is normalizedXY1.getNormalizationMatrix();
+            and T2 is normalizedXY2.getNormalizationMatrix();
+        */
+        
+        // 3x3
+<span class="nc" id="L284">        Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();</span>
+<span class="nc" id="L285">        Matrix t2 = normalizedXY2.getNormalizationMatrix();</span>
+        
+<span class="nc" id="L287">        Matrix denormFundamentalMatrix = t1Transpose.times(</span>
+            theFundamentalMatrix.times(t2));
+        
+<span class="nc" id="L290">        log.info(&quot;F=&quot;);</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        for (int j = 0; j &lt; denormFundamentalMatrix.getArray()[0].length; j++) {</span>
+<span class="nc" id="L292">            StringBuilder sb = new StringBuilder();            </span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            for (int i = 0; i &lt; denormFundamentalMatrix.getArray().length; i++) {</span>
+<span class="nc" id="L294">                sb.append(denormFundamentalMatrix.get(i, j)).append(&quot; &quot;);                </span>
+            }            
+<span class="nc" id="L296">            log.info(sb.toString());</span>
+        }
+        
+<span class="nc" id="L299">        return denormFundamentalMatrix;</span>
+    }   
+
+    /**
+     normalize the x,y coordinates as recommended by Hartley 1997 and return
+     the matrix and coordinates.
+       
+     * @param xyPair
+     * @return 
+     */
+    private NormalizedXY normalize(Matrix xy) {
+        
+        /*
+        utrans = T * u ==&gt; u = utrans * inv(T)
+        
+            utrans_2^T * inv(T_2) * F * inv(T_1) * utrans_1
+        
+        format the tensors T_1 and T_2 such that the applied translation
+        and scaling have the effect of:
+       
+        a) points are translated so that their centroid is at the origin.
+        b) points are then scaled so that the average distance from the
+           origin is sqrt(2)
+        c) the transformation is applied to each of the 2 images separately.
+        */
+       
+<span class="nc" id="L325">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        
+<span class="nc" id="L327">        double[] centroidXY = curveHelper.calculateXYCentroids(xy);</span>
+        
+<span class="nc" id="L329">        double mean = 0;</span>
+<span class="nc" id="L330">        int n = xy.getArray()[0].length;</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L332">            double diffX = xy.get(0, i) - centroidXY[0];</span>
+<span class="nc" id="L333">            double diffY = xy.get(1, i) - centroidXY[1];</span>
+<span class="nc" id="L334">            double dist = Math.sqrt((diffX * diffX) + (diffY * diffY));</span>
+<span class="nc" id="L335">            mean += dist;</span>
+        }
+        
+<span class="nc" id="L338">        mean /= (double)n;</span>
+        
+        /*
+        mean * factor = sqrt(2)        
+        */
+<span class="nc" id="L343">        double scaleFactor = Math.sqrt(2)/mean;</span>
+        
+        /*
+        x_1_0   y_1_0  1          t00   0   0
+        x_1_1   y_1_1  1            0  t11  0
+        x_1_2   y_1_2  1          t02  t12  1
+        x_1_3   y_1_3  1
+        
+        x_1_0*t00 + y_1_0*t01 + 1*t02 = (x_1_0 - cX) * s = x_1_0 * s - cX * s
+                         0
+             =&gt; t01 = 0
+             =&gt; t00 = scaleFactor 
+             =&gt; t02 = -scaleFactor * centroidXY[0]
+        
+        x_1_0*t10 + y_1_0*t11 + 1*t12 = (y_1_0 - cY) * s = y_1_0 * s - cY * s
+            0
+             =&gt; t10 = 0
+             =&gt; t11 = scaleFactor 
+             =&gt; t12 = -scaleFactor * centroidXY[1]
+        */
+        
+<span class="nc" id="L364">        double[][] t = new double[3][];</span>
+<span class="nc" id="L365">        t[0] = new double[]{scaleFactor, 0,           -scaleFactor * centroidXY[0]};</span>
+<span class="nc" id="L366">        t[1] = new double[]{0,           scaleFactor, -scaleFactor * centroidXY[1]};</span>
+<span class="nc" id="L367">        t[2] = new double[]{0,           0,           1};</span>
+<span class="nc" id="L368">        Matrix tMatrix = new Matrix(t);</span>
+                
+<span class="nc" id="L370">        Matrix normXY = new Matrix(MatrixUtil.dot(xy, tMatrix));</span>
+              
+<span class="nc" id="L372">        NormalizedXY normalizedXY = new NormalizedXY();</span>
+<span class="nc" id="L373">        normalizedXY.setCentroidXY(centroidXY);</span>
+<span class="nc" id="L374">        normalizedXY.setNormMatrix(tMatrix);</span>
+<span class="nc" id="L375">        normalizedXY.setXy(normXY);</span>
+        
+<span class="nc" id="L377">        return normalizedXY;</span>
+    }
+    
+    protected Matrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
+        
+        // rewrite xyPairs into a matrix of size 3 X xy.getN();
+        // column 0 is x
+        // column 1 is y
+        // column 2 is all 1's
+<span class="nc" id="L386">        double[][] xyPoints = new double[3][xyPairs.getN()];</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="nc" id="L388">            xyPoints[i] = new double[xyPairs.getN()];</span>
+        }
+<span class="nc bnc" id="L390" title="All 2 branches missed.">        for (int i = 0; i &lt; xyPairs.getN(); i++) {</span>
+<span class="nc" id="L391">            xyPoints[0][i] = xyPairs.getX(i);</span>
+<span class="nc" id="L392">            xyPoints[1][i] = xyPairs.getY(i);</span>
+<span class="nc" id="L393">            xyPoints[2][i] = 1;</span>
+        }
+        
+<span class="nc" id="L396">        Matrix xy = new Matrix(xyPoints);</span>
+        
+<span class="nc" id="L398">        return xy;</span>
+    }
+  
+    /**
+     * @param normXY1 a matrix of size 3 x nPoints, where 1st column is x,
+     * second is y.
+     * @param normXY2 a matrix of size 3 x nPoints, where 1st column is x,
+     * second is y.
+     * @return 
+     */
+    private double[][] createFundamentalMatrix(Matrix normXY1, 
+        Matrix normXY2) {
+        
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        if (normXY1 == null) {</span>
+<span class="nc" id="L412">            throw new IllegalArgumentException(&quot;normXY1 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L414" title="All 2 branches missed.">        if (normXY2 == null) {</span>
+<span class="nc" id="L415">            throw new IllegalArgumentException(&quot;normXY2 cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L417" title="All 2 branches missed.">        if (normXY1.getArray()[0].length != normXY2.getArray()[0].length) {</span>
+<span class="nc" id="L418">            throw new IllegalArgumentException(</span>
+            &quot;the number of columns in normXY1 != number of rows in normXY2&quot;);
+        }
+        
+<span class="nc" id="L422">        int nXY1 = normXY1.getArray()[0].length;</span>
+        
+        /*
+        (2) each row in matrix A:
+            x_1*x_2, x_1*y_2, x_1, y_1*x_2, y_1*y_2, y_1, x_2, y_2, 1
+        */
+<span class="nc" id="L428">        double[][] a = new double[9][nXY1];</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">        for (int i = 0; i &lt; 9; i++) {</span>
+<span class="nc" id="L430">            a[i] = new double[nXY1];</span>
+        }
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        for (int i = 0; i &lt; nXY1; i++) {</span>
+<span class="nc" id="L433">            double x1 = normXY1.get(0, i);</span>
+<span class="nc" id="L434">            double x2 = normXY2.get(0, i);</span>
+<span class="nc" id="L435">            double y1 = normXY1.get(1, i);</span>
+<span class="nc" id="L436">            double y2 = normXY2.get(1, i);</span>
+<span class="nc" id="L437">            a[0][i] = x1 * x2;</span>
+<span class="nc" id="L438">            a[1][i] = x1 * y2;</span>
+<span class="nc" id="L439">            a[2][i] = x1;</span>
+<span class="nc" id="L440">            a[3][i] = y1 * x2;</span>
+<span class="nc" id="L441">            a[4][i] = y1 * y2;</span>
+<span class="nc" id="L442">            a[5][i] = y1;</span>
+<span class="nc" id="L443">            a[6][i] = x2;</span>
+<span class="nc" id="L444">            a[7][i] = y2;</span>
+<span class="nc" id="L445">            a[8][i] = 1;</span>
+        }
+        
+<span class="nc" id="L448">        return a;</span>
+    }
+
+    /**
+     * calculate the epipoles of the fundamental matrix and return them as
+     * an array with left epipole in column 0 and right epipole in column 1.
+     * @param fundamentalMatrix
+     * @return 
+     */
+    private double[][] calculateEpipoles(Matrix fundamentalMatrix) {
+        /*
+        epipoles: 
+             [U,D,V] = svd(denormalized FundamentalMatrix);
+             e1 = last column of V divided by it's last item
+             e2 = last column of U divided by it's last item
+        */
+<span class="nc" id="L464">        SingularValueDecomposition svdE = fundamentalMatrix.svd();</span>
+        
+<span class="nc" id="L466">        double[] e1 = svdE.getV().getArray()[2];</span>
+<span class="nc" id="L467">        double e1Div = e1[2];</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">        for (int i = 0; i &lt; e1.length; i++) {</span>
+<span class="nc" id="L469">            e1[i] /= e1Div;</span>
+        }
+<span class="nc" id="L471">        double[] e2 = svdE.getU().getArray()[2];</span>
+<span class="nc" id="L472">        double e2Div = e2[2];</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">        for (int i = 0; i &lt; e2.length; i++) {</span>
+<span class="nc" id="L474">            e2[i] /= e2Div;</span>
+        }
+        
+<span class="nc" id="L477">        StringBuilder sb = new StringBuilder(&quot;e1=&quot;);</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        for (int i = 0; i &lt; e1.length; i++) {</span>
+<span class="nc" id="L479">            sb.append(e1[i]).append(&quot; &quot;);</span>
+        }
+<span class="nc" id="L481">        log.info(sb.toString());</span>
+        
+<span class="nc" id="L483">        sb = new StringBuilder(&quot;e2=&quot;);</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">        for (int i = 0; i &lt; e2.length; i++) {</span>
+<span class="nc" id="L485">            sb.append(e2[i]).append(&quot; &quot;);</span>
+        }
+<span class="nc" id="L487">        log.info(sb.toString());</span>
+        
+<span class="nc" id="L489">        double[][] e = new double[2][];</span>
+<span class="nc" id="L490">        e[0] = e1;</span>
+<span class="nc" id="L491">        e[1] = e2;</span>
+        
+<span class="nc" id="L493">        return e;</span>
+    }
+
+    private double[][] calculateRightEpipolarLines() {
+        
+        /* calculate right epipolar lines
+        F * leftPoint
+        */
+<span class="nc" id="L501">        int nPoints = leftXY.getArray()[0].length;</span>
+<span class="nc" id="L502">        double[][] rightEpipolarLines = new double[3][nPoints];</span>
+<span class="nc bnc" id="L503" title="All 2 branches missed.">        for (int i = 0; i &lt; nPoints; i++) {</span>
+<span class="nc" id="L504">            rightEpipolarLines[i] = new double[3];</span>
+        }
+<span class="nc bnc" id="L506" title="All 2 branches missed.">        for (int i = 0; i &lt; nPoints; i++) {</span>
+            
+<span class="nc" id="L508">            double[] leftPoint = new double[]{leftXY.get(0, i), </span>
+                leftXY.get(1, i), 1};
+            
+<span class="nc" id="L511">            rightEpipolarLines[i] = MatrixUtil.multiply(</span>
+                fundamentalMatrix.getArray(), leftPoint);
+        }
+ 
+<span class="nc" id="L515">        return rightEpipolarLines;</span>
+    }
+    
+    private double[][] calculateLeftEpipolarLines() {
+        
+        /* calculate left epipolar lines
+        F^T * rightPoint
+        */
+        
+<span class="nc" id="L524">        Matrix fundamentalMatrixTranspose = fundamentalMatrix.transpose();</span>
+        
+<span class="nc" id="L526">        int nPoints = rightXY.getArray()[0].length;</span>
+<span class="nc" id="L527">        double[][] leftEpipolarLines = new double[3][nPoints];</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">        for (int i = 0; i &lt; nPoints; i++) {</span>
+<span class="nc" id="L529">            leftEpipolarLines[i] = new double[3];</span>
+        }
+<span class="nc bnc" id="L531" title="All 2 branches missed.">        for (int i = 0; i &lt; nPoints; i++) {</span>
+            
+<span class="nc" id="L533">            double[] rightPoint = new double[]{rightXY.get(0, i), </span>
+                rightXY.get(1, i), 1};
+            
+<span class="nc" id="L536">            leftEpipolarLines[i] = MatrixUtil.multiply(</span>
+                fundamentalMatrixTranspose.getArray(), 
+                rightPoint);
+        }
+ 
+<span class="nc" id="L541">        return leftEpipolarLines;</span>
+    }
+    
+    //TODO: put this in aspect
+    void drawEpipolarLinesOnImage(Image image, double[][] epipolarLines) {
+        
+            /*
+            [ a b c ]
+            y = - (a/b) * x - (c/b)
+            */
+        
+<span class="nc" id="L552">    }</span>
+    
+    //TODO: put this in aspect
+    void drawPointsOnImage(Image image, Matrix xyPoints) {
+        
+<span class="nc" id="L557">    }</span>
+    
+<span class="nc" id="L559">    private static class NormalizedXY {</span>
+
+        /**
+         * 3 dimensional matrix, with column 0 being x, column 1 being y,
+         * and the last column is place holder 1's
+         */
+<span class="nc" id="L565">        private Matrix xy = null;</span>
+        
+<span class="nc" id="L567">        private double[] centroidXY = null;</span>
+        
+<span class="nc" id="L569">        private Matrix normalizationMatrix = null;</span>
+
+        /**
+         * @return the centroidXY
+         */
+        public double[] getCentroidXY() {
+<span class="nc" id="L575">            return centroidXY;</span>
+        }
+
+        /**
+         * @param centroidXY the centroidXY to set
+         */
+        public void setCentroidXY(double[] centroidXY) {
+<span class="nc" id="L582">            this.centroidXY = centroidXY;</span>
+<span class="nc" id="L583">        }</span>
+
+        /**
+         * @return the factor
+         */
+        public Matrix getNormalizationMatrix() {
+<span class="nc" id="L589">            return normalizationMatrix;</span>
+        }
+
+        /**
+         * @param matrix holding the scale and offsets to apply to x, y
+         */
+        public void setNormMatrix(Matrix normMatrix) {
+<span class="nc" id="L596">            this.normalizationMatrix = normMatrix;</span>
+<span class="nc" id="L597">        }</span>
+
+        /**
+         * @return the xy
+         */
+        public Matrix getXy() {
+<span class="nc" id="L603">            return xy;</span>
+        }
+
+        /**
+         * @param xy the xy to set
+         */
+        public void setXy(Matrix xy) {
+<span class="nc" id="L610">            this.xy = xy;</span>
+<span class="nc" id="L611">        }</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

@@ -1,0 +1,1677 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PointMatcher.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">PointMatcher.java</span></div><h1>PointMatcher.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairIntArray;
+import java.util.Arrays;
+import java.util.logging.Logger;
+
+/**
+ * class to match the points extracted from two images.
+ * 
+ * the transformation parameters of translation, rotation and scale are 
+ * found given the two sets of points.
+ * 
+ &lt;pre&gt;
+   Details of determining the transformation from points.
+   
+   After points are matched:
+       Estimating scale:
+           Take 2 pairs of points in both datasets and compute the distance 
+           between them and then take the ratio:
+
+           scale = (distance between pair in set 1) 
+                   / (distance between pair in set 2)
+      
+           Note: scale is roughly determined from contour matching too in the
+              inflection matcher.
+      
+       Estimating rotation:
+           Take the same 2 pairs and determine the difference in their angles:
+               tan(theta) = delta y / delta x
+      
+           rotation = atan((delta y between pair in set 1)
+                          /(delta x between pair in set 1)) 
+                      -
+                      atan((delta y between pair in set 2)
+                          /(delta x between pair in set 2))
+      
+       Estimate translation:
+           Performed on one point in set 1 with its candidate match in set 2:
+           From the full transformation equation, we can rewrite:
+               transX = xt0 - xc*scale - 
+                   (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+       
+               transY = yt0 - yc*scale - 
+                    ((-(x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+       
+               where (xc, yc) is the center of the first image
+ 
+ Matching the points:
+ 
+   For the contour matching, we were able to choose subsets of the entire
+   sets of contours for better matching characteristics (subsets that had larger
+   sigma values for their peaks could be used).
+   
+   For the points given here, there isn't a clear indicator for a subset that 
+   could be used preferably so that all nodes might not need to be visited.
+   
+   The need to use pairs of points in set1 matched against pairs in set 2
+   means that if one tries every combination of pairs, the runtime complexity 
+   is exponential.
+   
+       number of ways to make pairs in set 1 times the number of ways to make
+       pairs in set 2 = 
+             n_1!            n_2!
+         ------------  X  ------------
+         2*(n_1 - 2)!     2*(n_2 - 2)!
+    
+   This is not feasible as soon as the sets get larger than a dozen points.
+    
+   Alternately, one could try a search algorithm to visit the space of all 
+   possible combinations of parameters instead of all combinations of subsets 
+   of pairs.
+       
+        max translation x possible = width of image 2
+        max translation y possible = height of image 2
+        max scale is set to some reasonable number like 10?
+        max rotation is 1 degree changes = 360 (or quadrants?)
+    
+        then total number of permutations 
+            = maxTransX * maxTransY * maxScale * 360
+            = 1000 * 500 * 10 * 360 = 1.8 billion for pure grid search over 
+              parameter space
+  
+        then trying the parameters on all points puts another factor into there
+        of nPoints set 1 * nPoints set 2.
+        
+  Note, because the cosine and sine terms in the transformation equation due to
+  rotation work against one another and don't proceed in a total combined
+  single direction with theta, we can't use a gradient descent solver.
+ 
+       (note, this hasn't been edited for positive Y up yet)
+       positive Y is down 
+       positive X is right
+       positive theta starts from Y=0, X&gt;=0 and proceeds CW
+                270
+           QIII  |  QIV   
+                 |
+          180--------- 0   +X
+                 |   
+           QII   |   QI
+                 90
+                 +Y
+           
+  theta        cos(theta)  sin(theta)
+  0     0        1.0         0    -----
+  30    0.5236   0.87        0.5       |
+  45    0.785    0.707       0.707     | QI
+  60    1.047    0.5         0.866     |
+  90    1.57     0.0         1.0  -----
+  120   2.09    -0.5         0.866     | QII
+  150   2.618   -0.866       0.5       |
+  180   3.1416  -1.0         0.0  -----
+  210   3.6652  -0.866      -0.5       | QIII
+  240                                  |
+  270   4.7124   0.0        -1.0  -----
+  300   5.236    0.5        -0.866     | QIV
+  330                                  |
+                                  -----
+  So then, it looks like a grid search over rotation and scale intervals
+  followed by fitting for translation to get into the local neighborhood
+  of the transformation solution, followed by the use of the 
+  Nelder-Mead Downhill Simplex to refine the transformation is a better 
+  solution.
+  
+  runtime complexity of:
+  
+      grid search: nRotationIntervals * nScaleIntervals * nSet1 * nSet2 
+  
+      downhill search: not polynomial nor deterministic.  varies by dataset.
+ 
+     In the searches, if rotation and scale are fixed, and transX and transY 
+     are to be found, one can use either:
+
+         (1) compare the offsets implied by each combination of points in set 1
+             and set 2.
+             for brown_lowe_2003 image1 and image2, the number of corners is
+             n1 = 78
+             n2 = 88
+             n1 * n2 = 5616
+
+             How does one determine the best solution among those translations?  
+             One needs an assumed tolerance for the translation, and then to 
+             count the number of matches to a point in the 2nd set.
+             The best solution has the highest number of matches with the same
+             rules for an assumed tolerance and the smallest avg difference
+             with predicted positions for matches in set 2.
+              
+             For the tolerance, the reasons that translation might be different
+             as a function of position in the image might be:
+               -- due to rounding to a pixel.  these are very small errors.
+               -- due to projection effects for different epipolar geometry 
+                  (camera nadir perpendicular to different feature, for example).  
+                  these are potentially very large and are not
+                  solved in the transformation with this point matcher though a
+                  tolerance is made for a small amount of it.  
+                  (NOTE however, that once the points are matched, the true 
+                  epipolar geometry can be calculated with the StereoProjection 
+                  classes).
+               -- due to errors in the location of the corner.  this can be due
+                  to the edge detector.  these are small errors.
+               -- due to image warping such as distortions from the shape of the
+                  lens.  one would need a point matcher tailored for the 
+                  specific geometric projection.
+               -- due to a camera not completely perpendicularly aligned with
+                  the optical axis. presumably, this is an extreme case and
+                  you'd want better data...
+             
+             For the Brown &amp; Lowe 2003 points, 
+                 transX=293.1 (stdDev=10.3)
+                 transY=14.3 (stdDev=5.9)
+             the large standard deviation appears to be due to projection 
+             effects.  the skyline is rotated about 13 degrees w.r.t. skyline 
+             in second image while the features at the bottom remain horizontal 
+             in both.
+             
+             The spread in standard deviation appears to be correlated w/
+             the image dimensions, as would be expected with projection being 
+             the largest reason for a spread in translation.
+             That is, the X axis is twice the size of the Y and so are their
+             respective standard deviations.
+             
+             Could make a generous allowance for projection effects by assuming 
+             a maximum present such as that in the Brown &amp; Lowe images, that is 
+             image size times an error due to a differential spread 
+             over those pixels for a maximum difference in rotation such as 
+             20 degrees or something.  For Brown &amp; Lowe images, the tolerance 
+             would be number of pixels for dimension times 0.02.
+             
+             If there is no reasonable solution using only scale, rotation, and 
+             translation, then a more computationally expensive point matcher 
+             that solves for epipolar geometry too or a differential rotation
+             and associated variance in other parameters
+             is needed (and hasn't been implemented 
+             here yet).  **OR, even better, an approach using contours and an
+             understanding of occlusion (the later possibly requires shape
+             identification) can be made with the contour matcher in this 
+             project.**
+             The contour matcher approach is currently not **commonly**
+             possible with this project, because most edges are not closed 
+             curves.
+
+    OR
+
+         (2) try every possible combination of translation for X and Y which
+             would be width of image 2 in pixels times the height of image 2
+             in pixels.
+             for brown_lowe_2003 image1 and image2,
+             image2 width = 517, height = 374
+             w * h = 193358
+             so this method is 34 times more
+
+             The best solution among those translations is found in the same
+             way as (1) above.
+ &lt;/pre&gt;
+
+ * @author nichole
+ */
+<span class="fc" id="L217">public final class PointMatcher {</span>
+     
+<span class="fc" id="L219">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+ 
+    /**
+     * calculate the rotation, scale, and translation that can be applied
+     * to set1 to match points to set2 where the matches are not already known.  
+     * The image1Width and imageHeight are used to create a tolerance in 
+     * translation for matches.
+     * 
+     * NOTE: scale has be &gt;= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * @param set1 set of points such as corners from an image
+     * @param set2 set of points such as corners from another image.
+     * @param image1Width
+     * @param image1Height
+     * @return 
+     */
+    public TransformationPointFit calculateTransformation(PairIntArray set1, 
+        PairIntArray set2, int image1Width, int image1Height) {
+        
+<span class="fc" id="L238">        TransformationPointFit fit = calculateTransformationWithGridSearch(</span>
+            set1, set2, image1Width, image1Height);
+        
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">        if (fit == null) {</span>
+<span class="nc" id="L242">            return null;</span>
+        }
+        
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        int convergence = (set1.getN() &lt; set2.getN()) ? set1.getN() </span>
+            : set2.getN();
+        
+<span class="pc bpc" id="L248" title="3 of 4 branches missed.">        if ((fit.getNumberOfMatchedPoints() == convergence)</span>
+            &amp;&amp; (fit.getMeanDistFromModel() == 0)) {
+<span class="nc" id="L250">            return fit;</span>
+        }
+
+<span class="fc" id="L253">        fit = refineTransformationWithDownhillSimplex(fit.getParameters(),</span>
+            set1, set2, image1Width, image1Height);
+
+<span class="fc" id="L256">        return fit;</span>
+    }
+
+    private boolean fitIsBetter(TransformationPointFit bestFit, 
+        TransformationPointFit compareFit) {
+        
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        if (compareFit == null) {</span>
+<span class="fc" id="L263">            return false;</span>
+        }
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        if (bestFit == null) {</span>
+<span class="fc" id="L266">            return true;</span>
+        }
+        
+<span class="fc" id="L269">        int nMatches = compareFit.getNumberOfMatchedPoints();</span>
+        
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        if (nMatches &gt; bestFit.getNumberOfMatchedPoints()) {</span>
+<span class="fc" id="L272">            return true;</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        } else if (nMatches == bestFit.getNumberOfMatchedPoints()) {</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">            if (compareFit.getMeanDistFromModel()</span>
+                &lt; bestFit.getMeanDistFromModel()) {
+<span class="fc" id="L276">                return true;</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">            } else if (compareFit.getMeanDistFromModel()</span>
+                == bestFit.getMeanDistFromModel()) {
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                if (compareFit.getStDevFromMean() &lt; bestFit.getStDevFromMean()) {</span>
+<span class="fc" id="L280">                    return true;</span>
+                }
+            }
+        }
+<span class="fc" id="L284">        return false;</span>
+    }
+    
+    private TransformationPointFit calculateTransformationWithGridSearch(
+        PairIntArray set1, PairIntArray set2, 
+        int image1Width, int image1Height) {
+        
+<span class="fc" id="L291">        int centroidX1 = image1Width &gt;&gt; 1;</span>
+        
+<span class="fc" id="L293">        int centroidY1 = image1Height &gt;&gt; 1;</span>
+        
+        // projection effects from different camera positions or orientations
+        // are not calculated in this point matcher, 
+        // but one can set a
+        // tolerance in translation to try to allow for a small amount of it.
+        // 
+        // as an example: rotation of 13 degrees at top of image, 
+        // and 0 at bottom from turning the camera slightly during panoramic
+        // photos can result in delta translation of 0.02 per pix in X and 
+        // 0.016 per pix in Y
+        
+<span class="fc" id="L305">        double transXTol = image1Width * 0.02;</span>
+        
+<span class="fc" id="L307">        double transYTol = image1Height * 0.02;</span>
+        
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        int convergence = (set1.getN() &lt; set2.getN()) ? set1.getN() </span>
+            : set2.getN();
+        
+<span class="fc" id="L312">        TransformationPointFit bestFit = null;</span>
+        
+<span class="fc bfc" id="L314" title="All 2 branches covered.">        for (int rot = 0; rot &lt; 360; rot += 10) {</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">            for (int scale = 1; scale &lt; 10; scale++) {</span>
+                
+<span class="fc" id="L317">                TransformationPointFit fit = calculateTranslation(set1, set2, </span>
+                    transXTol, transYTol, 
+                    rot*Math.PI/180., scale, centroidX1, centroidY1);
+
+<span class="fc bfc" id="L321" title="All 2 branches covered.">                if (fitIsBetter(bestFit, fit)) {</span>
+                
+<span class="fc" id="L323">                    bestFit = fit;</span>
+                    
+<span class="pc bpc" id="L325" title="3 of 4 branches missed.">                    if ((bestFit.getNumberOfMatchedPoints() == convergence) </span>
+                        &amp;&amp; (bestFit.getMeanDistFromModel() == 0)) {
+<span class="nc" id="L327">                        return bestFit;</span>
+                    }
+                }
+            }
+        }
+        
+<span class="fc" id="L333">        return bestFit;</span>
+    }
+    
+    /**
+     * apply the parameters to set1 and find the matches to points in set2
+     * within the given tolerance for translations.
+     * 
+     * NOTE: scale has be &gt;= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * ALSO NOTE: if you know a better solution exists for translation 
+     * parameters that matches fewer points, but has a small avg dist from
+     * model and smaller standard deviation from the avg dist from model,
+     * then transXTol and transYTol should be smaller.
+     * @param edges1
+     * @param edges2
+     * @param params
+     * @param transXTol
+     * @param transYTol
+     * @param centroidX1
+     * @param centroidY1
+     * @return 
+     */
+    TransformationPointFit transform(PairIntArray[] edges1, 
+        PairIntArray[] edges2, TransformationParameters params, 
+        double transXTol, double transYTol, int centroidX1, int centroidY1) {
+        
+<span class="pc bpc" id="L360" title="2 of 4 branches missed.">        if (edges1 == null || edges2 == null) {</span>
+<span class="nc" id="L361">            throw new IllegalArgumentException(</span>
+            &quot;neither edges1 nor edges2 can be null&quot;);
+        }
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">        if (edges1.length != edges2.length) {</span>
+<span class="nc" id="L365">            throw new IllegalArgumentException(</span>
+            &quot;edges1 must be the same length as edges2&quot;);
+        }
+                
+<span class="fc" id="L369">        double scale = params.getScale();</span>
+        
+<span class="pc bpc" id="L371" title="1 of 2 branches missed.">        if (scale &lt; 1) {</span>
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException(&quot;scale cannot be smaller than 1&quot;);
+            
+<span class="nc" id="L375">            log.severe(&quot;scale cannot be smaller than 1&quot;);</span>
+            
+<span class="nc" id="L377">            return null;</span>
+        }        
+        
+<span class="fc" id="L380">        int nMaxMatchable = 0;</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.length; i++) {</span>
+<span class="fc" id="L382">            int n = edges1[i].getN();</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">            if (edges2[i].getN() &gt; n) {</span>
+<span class="fc" id="L384">                n = edges2[i].getN();</span>
+            }
+<span class="fc" id="L386">            nMaxMatchable += n;</span>
+        }
+        
+<span class="fc" id="L389">        double[] diffFromModel = new double[nMaxMatchable];</span>
+<span class="fc" id="L390">        double[] avgDiffModel = new double[1];</span>
+        
+<span class="fc" id="L392">        int nMatched = 0;</span>
+<span class="fc" id="L393">        int avgDiffModelSum = 0;</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.length; i++) {</span>
+            
+<span class="fc" id="L396">            PairIntArray set1 = edges1[i];</span>
+<span class="fc" id="L397">            PairIntArray set2 = edges2[i];</span>
+            
+<span class="fc" id="L399">            int n = populateDiffFromModel(set1, set2, params, </span>
+                transXTol, transYTol, centroidX1, centroidY1,
+                diffFromModel, nMatched, avgDiffModel);
+            
+<span class="fc" id="L403">            avgDiffModelSum += (avgDiffModel[0] * n);</span>
+            
+<span class="fc" id="L405">            nMatched += n;</span>
+        }       
+        
+<span class="fc" id="L408">        double finalAvgDiffModel = avgDiffModelSum / (double)nMatched;</span>
+        
+<span class="fc" id="L410">        double stDevDiffModel = 0;</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">        for (int i = 0; i &lt; nMatched; i++) {</span>
+<span class="fc" id="L412">            double d = diffFromModel[i] - avgDiffModel[0];</span>
+<span class="fc" id="L413">            stDevDiffModel += (d * d);</span>
+        }
+        
+<span class="fc" id="L416">        stDevDiffModel = (Math.sqrt(stDevDiffModel/(nMatched - 1.0f)));</span>
+        
+<span class="fc" id="L418">        TransformationPointFit fit = new TransformationPointFit(params, </span>
+            nMatched, finalAvgDiffModel, stDevDiffModel);
+        
+<span class="fc" id="L421">        return fit;</span>
+    }
+
+     /**
+     * apply the parameters to set1 and find the matches to points in set2
+     * within the given tolerance for translations.
+     * 
+     * NOTE: scale has be &gt;= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * ALSO NOTE: if you know a better solution exists for translation 
+     * parameters that matches fewer points, but has a small avg dist from
+     * model and smaller standard deviation from the avg dist from model,
+     * then transXTol and transYTol should be smaller.
+     * @param set1 points matched to set 2
+     * @param set2 points matched to set 1
+     * @param transXTol
+     * @param transYTol
+     * @param centroidX1
+     * @param centroidY1
+     * @return 
+     */
+    TransformationPointFit transform(PairIntArray set1, PairIntArray set2, 
+        double scale, double rotationInRadians, double translationX,
+        double translationY, double transXTol, double transYTol, 
+        int centroidX1, int centroidY1) {
+    
+<span class="nc" id="L448">        TransformationParameters params = new TransformationParameters();</span>
+<span class="nc" id="L449">        params.setScale((float)scale);</span>
+<span class="nc" id="L450">        params.setRotationInRadians((float)rotationInRadians);</span>
+<span class="nc" id="L451">        params.setTranslationX((float)translationX);</span>
+<span class="nc" id="L452">        params.setTranslationY((float)translationY);</span>
+        
+<span class="nc" id="L454">        return transform(set1, set2, params, transXTol, transYTol, centroidX1,</span>
+            centroidY1);
+    }
+    
+    /**
+     * apply the parameters to set1 and find the matches to points in set2
+     * within the given tolerance for translations.
+     * 
+     * NOTE: scale has be &gt;= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * ALSO NOTE: if you know a better solution exists for translation 
+     * parameters that matches fewer points, but has a small avg dist from
+     * model and smaller standard deviation from the avg dist from model,
+     * then transXTol and transYTol should be smaller.
+     * @param set1 points matched to set 2
+     * @param set2 points matched to set 1
+     * @param params
+     * @param transXTol
+     * @param transYTol
+     * @param centroidX1
+     * @param centroidY1
+     * @return 
+     */
+    TransformationPointFit transform(PairIntArray set1, PairIntArray set2, 
+        TransformationParameters params, double transXTol, double transYTol, 
+        int centroidX1, int centroidY1) {
+        
+<span class="pc bpc" id="L482" title="2 of 4 branches missed.">        if (set1 == null || set2 == null) {</span>
+<span class="nc" id="L483">            throw new IllegalArgumentException(</span>
+            &quot;neither set1 nor set2 can be null&quot;);
+        }
+                
+<span class="fc" id="L487">        double scale = params.getScale();</span>
+        
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">        if (scale &lt; 1) {</span>
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException(&quot;scale cannot be smaller than 1&quot;);
+            
+<span class="nc" id="L493">            log.severe(&quot;scale cannot be smaller than 1&quot;);</span>
+            
+<span class="nc" id="L495">            return null;</span>
+        }        
+        
+<span class="fc" id="L498">        int nMaxMatchable = set1.getN();</span>
+<span class="fc bfc" id="L499" title="All 2 branches covered.">        if (set2.getN() &gt; nMaxMatchable) {</span>
+<span class="fc" id="L500">            nMaxMatchable = set2.getN();</span>
+        }
+        
+<span class="fc" id="L503">        double[] diffFromModel = new double[nMaxMatchable];</span>
+<span class="fc" id="L504">        double[] avgDiffModel = new double[1];</span>
+        
+<span class="fc" id="L506">        int nMatched = populateDiffFromModel(set1, set2, </span>
+            params, transXTol, transYTol, centroidX1, centroidY1,
+            diffFromModel, 0, avgDiffModel);
+        
+<span class="fc" id="L510">        double stDevDiffModel = 0;</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">        for (int i = 0; i &lt; nMatched; i++) {</span>
+<span class="fc" id="L512">            double d = diffFromModel[i] - avgDiffModel[0];</span>
+<span class="fc" id="L513">            stDevDiffModel += (d * d);</span>
+        }
+        
+<span class="fc" id="L516">        stDevDiffModel = (Math.sqrt(stDevDiffModel/(nMatched - 1.0f)));</span>
+        
+<span class="fc" id="L518">        TransformationPointFit fit = new TransformationPointFit(params, </span>
+            nMatched, avgDiffModel[0], stDevDiffModel);
+        
+<span class="fc" id="L521">        return fit;</span>
+    }
+     
+    /**
+     * given the scale, rotation and set 1's reference frame centroids,
+     * calculate the translation between set1 and set2 assuming that not all
+     * points will match.  transXTol and transYTol allow a tolerance when
+     * matching the predicted position of a point in set2.
+     * 
+     * It's expected that the invoker of this method is trying to solve for
+     * translation for sets of points like corners in images.  This assumption
+     * means that the number of point pair combinations is always far less
+     * than the pixel combinations of translations over x and y.
+     * 
+     * NOTE: scale has be &gt;= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * ALSO NOTE: if you know a better solution exists for translation 
+     * parameters that matches fewer points, but has a small avg dist from
+     * model and smaller standard deviation from the avg dist from model,
+     * then transXTol and transYTol should be set to a smaller value and passed
+     * to this method.
+     * 
+     * @param set1 set of points from image 1 to match to image2.
+     * @param set2 set of points from image 2 to be matched with image 1
+     * @param transXTol tolerance in x for finding a match for translation.
+     * For example, transXTol = image1.getWidth() * 0.02; 
+     * @param transYTol tolerance in y for finding a match for translation.
+     * For example, transYTol = image1.getHeight() * 0.02;
+     * @param rotation given in radians with value between 0 and 2*pi, exclusive
+     * @param scale
+     * @param centroidX1 the x coordinate of the center of image 1 from which
+     * set 1 point are from.
+     * @param centroidY1 the y coordinate of the center of image 1 from which
+     * set 1 point are from.
+     * @return 
+     */
+    public TransformationPointFit calculateTranslation(PairIntArray set1, 
+        PairIntArray set2, double transXTol, double transYTol, double rotation, 
+        double scale, int centroidX1, int centroidY1) {
+        
+<span class="pc bpc" id="L562" title="1 of 2 branches missed.">        if (scale &lt; 1) {</span>
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException(&quot;scale cannot be smaller than 1&quot;);
+            
+<span class="nc" id="L566">            log.severe(&quot;scale cannot be smaller than 1&quot;);</span>
+            
+<span class="nc" id="L568">            return null;</span>
+        }
+        
+        //TODO:  offer a simplex search w/ fixed scale, fixed rotation and
+        // widely varying translation and
+        // compare accuracy to grid search here
+        
+        
+<span class="fc" id="L576">        int nMax = set1.getN() * set2.getN();</span>
+        
+<span class="fc" id="L578">        int maxFound = Integer.MIN_VALUE;</span>
+<span class="fc" id="L579">        TransformationPointFit bestFit = null;</span>
+        
+<span class="fc" id="L581">        double scaleTimesCosine = scale * Math.cos(rotation);</span>
+<span class="fc" id="L582">        double scaleTimesSine = scale * Math.sin(rotation);</span>
+        
+<span class="fc bfc" id="L584" title="All 2 branches covered.">        for (int i = 0; i &lt; set1.getN(); i++) {</span>
+            
+<span class="fc" id="L586">            int x = set1.getX(i);</span>
+<span class="fc" id="L587">            int y = set1.getY(i);</span>
+            
+<span class="fc" id="L589">            double xr = centroidX1*scale + ( </span>
+                ((x - centroidX1) * scaleTimesCosine) +
+                ((y - centroidY1) * scaleTimesSine));
+            
+<span class="fc" id="L593">            double yr = centroidY1*scale + ( </span>
+                (-(x - centroidX1) * scaleTimesSine) +
+                ((y - centroidY1) * scaleTimesCosine));
+                            
+<span class="fc bfc" id="L597" title="All 2 branches covered.">            for (int j = 0; j &lt; set2.getN(); j++) {</span>
+                
+<span class="fc" id="L599">                int x2 = set2.getX(j);</span>
+                
+<span class="fc" id="L601">                int y2 = set2.getY(j);</span>
+                
+<span class="fc" id="L603">                int transX = (int)Math.round(x2 - xr);</span>
+                
+<span class="fc" id="L605">                int transY = (int)Math.round(y2 - yr);</span>
+                                
+<span class="fc" id="L607">                TransformationParameters params = </span>
+                    new TransformationParameters();
+<span class="fc" id="L609">                params.setRotationInRadians((float) rotation);</span>
+<span class="fc" id="L610">                params.setScale((float) scale);</span>
+<span class="fc" id="L611">                params.setTranslationX(transX);</span>
+<span class="fc" id="L612">                params.setTranslationY(transY);</span>
+
+<span class="fc" id="L614">                TransformationPointFit fit = transform(set1, set2, params, </span>
+                    transXTol, transYTol, centroidX1, centroidY1);
+
+<span class="fc bfc" id="L617" title="All 2 branches covered.">                if (fitIsBetter(bestFit, fit)) {</span>
+<span class="fc" id="L618">                    bestFit = fit;</span>
+                }
+<span class="fc bfc" id="L620" title="All 4 branches covered.">                if ((fit.getNumberOfMatchedPoints() &gt; (0.3*set1.getN())) </span>
+                    &amp;&amp; (fit.getMeanDistFromModel() == 0)) {
+<span class="fc" id="L622">                    break;</span>
+                }
+            }
+        }
+        
+<span class="pc bpc" id="L627" title="1 of 2 branches missed.">        return (bestFit != null) ? bestFit : null;</span>
+    }
+    
+    public TransformationPointFit calculateTranslation(PairIntArray set1, 
+        PairIntArray set2, 
+        double prevNearTransX, double prevNearTransY,
+        double transXTol, double transYTol, double rotation, 
+        double scale, int centroidX1, int centroidY1) {
+        
+<span class="fc bfc" id="L636" title="All 2 branches covered.">        if (scale &lt; 1) {</span>
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException(&quot;scale cannot be smaller than 1&quot;);
+            
+<span class="fc" id="L640">            log.severe(&quot;scale cannot be smaller than 1&quot;);</span>
+            
+<span class="fc" id="L642">            return null;</span>
+        }
+        
+<span class="fc" id="L645">        int nMax = set1.getN() * set2.getN();</span>
+        
+<span class="fc" id="L647">        int maxFound = Integer.MIN_VALUE;</span>
+<span class="fc" id="L648">        TransformationPointFit bestFit = null;</span>
+        
+<span class="fc" id="L650">        double scaleTimesCosine = scale * Math.cos(rotation);</span>
+<span class="fc" id="L651">        double scaleTimesSine = scale * Math.sin(rotation);</span>
+
+<span class="fc" id="L653">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L654">        double[] xyCentroids1 = curveHelper.calculateXYCentroids(set1);</span>
+<span class="fc" id="L655">        double[] xyCentroids2 = curveHelper.calculateXYCentroids(set2);</span>
+        
+<span class="fc" id="L657">        double xr = centroidX1*scale + ( </span>
+            ((xyCentroids1[0] - centroidX1) * scaleTimesCosine)
+            + ((xyCentroids1[1] - centroidY1) * scaleTimesSine));
+        
+<span class="fc" id="L661">        double yr = centroidY1 * scale </span>
+            + ((-(xyCentroids1[0] - centroidX1) * scaleTimesSine)
+            + ((xyCentroids1[1] - centroidY1) * scaleTimesCosine));
+        
+<span class="fc" id="L665">        int transXC = (int)Math.round(xyCentroids2[0] - xr);</span>
+<span class="fc" id="L666">        int transYC = (int)Math.round(xyCentroids2[1] - yr);</span>
+        
+        //TODO: need tests for this.  the assumed change is small
+<span class="fc" id="L669">        double deltaTransX = prevNearTransX - transXC;</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">        if (deltaTransX &lt; 0) {</span>
+<span class="fc" id="L671">            deltaTransX *= -1;</span>
+        }
+<span class="fc bfc" id="L673" title="All 2 branches covered.">        if (deltaTransX &lt; 1) {</span>
+<span class="fc" id="L674">            deltaTransX = 7;</span>
+        }
+<span class="fc" id="L676">        double deltaTransY = prevNearTransY - transYC;</span>
+<span class="fc bfc" id="L677" title="All 2 branches covered.">        if (deltaTransY &lt; 0) {</span>
+<span class="fc" id="L678">            deltaTransY *= -1;</span>
+        }
+<span class="fc bfc" id="L680" title="All 2 branches covered.">        if (deltaTransY &lt; 1) {</span>
+<span class="fc" id="L681">            deltaTransY = 7;</span>
+        }
+
+<span class="fc" id="L684">        int tx0 = (int)Math.round</span>
+            (((prevNearTransX + transXC)/2.) - 1.2*deltaTransX);
+<span class="fc" id="L686">        int ty0 = (int)Math.round</span>
+            (((prevNearTransY + transYC)/2.) - 1.2*deltaTransY);
+
+<span class="fc" id="L689">        int tx1 = (int)Math.round</span>
+            (((prevNearTransX + transXC)/2.) + 1.2*deltaTransX);
+<span class="fc" id="L691">        int ty1 = (int)Math.round</span>
+            (((prevNearTransY + transYC)/2.) + 1.2*deltaTransY);
+
+<span class="fc bfc" id="L694" title="All 2 branches covered.">        if (ty0 &gt; -2) {</span>
+<span class="fc" id="L695">            ty0 = -2;</span>
+        }
+<span class="fc bfc" id="L697" title="All 2 branches covered.">        if (ty1 &lt; 2) {</span>
+<span class="fc" id="L698">            ty1 = 2;</span>
+        }
+        
+<span class="fc bfc" id="L701" title="All 2 branches covered.">        for (int transX = tx0; transX &lt; tx1; transX++) {</span>
+<span class="fc bfc" id="L702" title="All 2 branches covered.">            for (int transY = ty0; transY &lt; ty1; transY++) {</span>
+                
+<span class="fc" id="L704">                TransformationParameters params = </span>
+                    new TransformationParameters();
+<span class="fc" id="L706">                params.setRotationInRadians((float) rotation);</span>
+<span class="fc" id="L707">                params.setScale((float) scale);</span>
+<span class="fc" id="L708">                params.setTranslationX(transX);</span>
+<span class="fc" id="L709">                params.setTranslationY(transY);</span>
+
+<span class="fc" id="L711">                TransformationPointFit fit = transform(set1, set2, params, </span>
+                    transXTol, transYTol, centroidX1, centroidY1);
+
+<span class="fc bfc" id="L714" title="All 2 branches covered.">                if (fitIsBetter(bestFit, fit)) {</span>
+<span class="fc" id="L715">                    bestFit = fit;</span>
+                }
+<span class="pc bpc" id="L717" title="3 of 4 branches missed.">                if ((fit.getMeanDistFromModel() == 0) &amp;&amp;</span>
+                    (fit.getNumberOfMatchedPoints() &gt; (0.3*set1.getN())) 
+                    ) {
+<span class="nc" id="L720">                    break;</span>
+                }
+            }
+        }
+        
+<span class="pc bpc" id="L725" title="1 of 2 branches missed.">        return (bestFit != null) ? bestFit : null;</span>
+    }
+     
+    /**
+     * refine the transformation params for set1 to better match set2.
+     * @param params
+     * @param set1
+     * @param set2
+     * @param image1Width
+     * @param image1Height
+     * @return 
+     */
+    public TransformationPointFit refineTransformationWithDownhillSimplex(
+        TransformationParameters params,
+        PairIntArray set1, PairIntArray set2, 
+        int image1Width, int image1Height) {
+        
+<span class="fc" id="L742">        int centroidX1 = image1Width &gt;&gt; 1;</span>
+        
+<span class="fc" id="L744">        int centroidY1 = image1Height &gt;&gt; 1;</span>
+        
+        // projection effects from different camera positions or orientations
+        // are not calculated in this point matcher, 
+        // but one can set a
+        // tolerance in translation to try to allow for a small amount of it.
+        // 
+        // as an example: rotation of 13 degrees at top of image, 
+        // and 0 at bottom from turning the camera slightly during panoramic
+        // photos can result in delta translation of 0.02 per pix in X and 
+        // 0.016 per pix in Y
+        
+<span class="fc" id="L756">        double transXTol = image1Width * 0.02;</span>
+        
+<span class="fc" id="L758">        double transYTol = image1Height * 0.02;</span>
+        
+<span class="fc" id="L760">        double r = params.getRotationInRadians();</span>
+<span class="fc" id="L761">        double s = params.getScale();</span>
+
+<span class="fc" id="L763">        double[] drs = new double[] {</span>
+            -5.0 * Math.PI/180., -1.0 * Math.PI/180., 
+            1.0 * Math.PI/180., 5.0 * Math.PI/180.
+        };
+<span class="fc bfc" id="L767" title="All 2 branches covered.">        if (r == 0) {</span>
+<span class="fc" id="L768">             drs = new double[]{0};</span>
+        }
+
+<span class="fc" id="L771">        double rMin = r - (10 * Math.PI/180);</span>
+<span class="fc" id="L772">        double rMax = r + (10 * Math.PI/180);</span>
+<span class="fc" id="L773">        double sMin = s - 0.5;</span>
+<span class="fc" id="L774">        double sMax = s + 0.5;</span>
+        
+<span class="fc" id="L776">        double[] dss = new double[] {</span>
+            0.1
+        };
+<span class="fc bfc" id="L779" title="All 2 branches covered.">        if (s == 1) {</span>
+<span class="fc" id="L780">            dss = new double[]{0};</span>
+<span class="fc" id="L781">            sMin = 1;</span>
+        }
+<span class="fc bfc" id="L783" title="All 2 branches covered.">        if (rMin &lt; 0) {</span>
+<span class="fc" id="L784">            rMin = 0;</span>
+        }
+        
+<span class="fc" id="L787">        int n = (1 + dss.length) * (1 + drs.length);</span>
+        
+        // start with simplex for at least 3 points (fitting 2 parameters)
+<span class="fc" id="L790">        TransformationPointFit[] fits = new TransformationPointFit[n];</span>
+        
+<span class="fc" id="L792">        int count = 0;</span>
+<span class="fc bfc" id="L793" title="All 2 branches covered.">        for (int i = 0; i &lt;= dss.length; i++) {</span>
+            
+<span class="fc bfc" id="L795" title="All 2 branches covered.">            double scale = (i == 0) ? s : s + dss[i - 1];</span>
+            
+<span class="fc bfc" id="L797" title="All 2 branches covered.">            for (int j = 0; j &lt;= drs.length; j++) {</span>
+                
+<span class="fc bfc" id="L799" title="All 2 branches covered.">                double rotation = (j == 0) ? r : r + drs[j - 1];</span>
+                
+<span class="fc" id="L801">                fits[count] = calculateTranslation(set1, set2, </span>
+                    transXTol, transYTol, 
+                    rotation, scale, centroidX1, centroidY1);
+                
+<span class="pc bpc" id="L805" title="1 of 2 branches missed.">                if (fits[count] != null) {</span>
+<span class="fc" id="L806">                    count++;</span>
+                }
+            }
+        }
+        
+<span class="pc bpc" id="L811" title="1 of 2 branches missed.">        if (count &lt; n) {</span>
+<span class="nc" id="L812">            fits = Arrays.copyOf(fits, count);</span>
+        }
+        
+<span class="fc" id="L815">        float reflectionCoeff = 1;   // &gt; 0</span>
+<span class="fc" id="L816">        float expansionCoeff = 2;   // &gt; 1</span>
+<span class="fc" id="L817">        float contractionCoeff = -0.5f;</span>
+<span class="fc" id="L818">        float reductionCoeff = 0.5f;</span>
+
+<span class="fc" id="L820">        TransformationPointFit bestFit = fitWithDownhillSimplex(</span>
+            set1, set2, 
+            fits, centroidX1, centroidY1, transXTol, transYTol,
+            r, s, rMin, rMax, sMin, sMax,
+            reflectionCoeff, expansionCoeff, contractionCoeff, reductionCoeff
+        );
+        
+<span class="fc" id="L827">        return bestFit;</span>
+    }
+  
+    /**
+     * 
+     * @param set1
+     * @param set2
+     * @param fits
+     * @param centroidX1
+     * @param centroidY1
+     * @param transXTol
+     * @param transYTol
+     * @param r
+     * @param s
+     * @param rMin
+     * @param rMax
+     * @param sMin
+     * @param sMax
+     * @param alpha parameter used to adjust size of changes for &quot;reflection&quot;
+     * @param gamma parameter used to adjust size of changes for &quot;expansion&quot;
+     * @param beta parameter used to adjust size of changes for &quot;contraction&quot;
+     * @param tau parameter used to adjust size of changes for &quot;reduction&quot;
+     * 
+     * @return 
+     */
+    private TransformationPointFit fitWithDownhillSimplex(
+        PairIntArray set1, PairIntArray set2, 
+        TransformationPointFit[] fits, int centroidX1, int centroidY1,
+        double transXTol, double transYTol,
+        double r, double s,
+        double rMin, double rMax, double sMin, double sMax,
+        float alpha, float gamma, float beta, float tau
+        ) {
+        
+<span class="pc bpc" id="L861" title="1 of 2 branches missed.">        if (alpha &lt; 0) {</span>
+<span class="nc" id="L862">            throw new IllegalArgumentException(&quot;alpha must be &gt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L864" title="1 of 2 branches missed.">        if (gamma &lt; 1) {</span>
+<span class="nc" id="L865">            throw new IllegalArgumentException(&quot;gamma must be &gt; 1&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L868" title="All 2 branches covered.">        int convergence = (set1.getN() &lt; set2.getN()) ? set1.getN() </span>
+            : set2.getN();
+      
+<span class="fc bfc" id="L871" title="All 2 branches covered.">        if (s == 1) {</span>
+<span class="fc" id="L872">            sMin = 1;</span>
+        }
+<span class="pc bpc" id="L874" title="1 of 2 branches missed.">        if (rMin &lt; 0) {</span>
+<span class="nc" id="L875">            rMin = 0;</span>
+        }
+
+<span class="fc" id="L878">        boolean go = true;</span>
+
+<span class="fc" id="L880">        int nMaxIter = 100;</span>
+<span class="fc" id="L881">        int nIter = 0;</span>
+        
+<span class="fc" id="L883">        int bestFitIdx = 0;</span>
+<span class="fc" id="L884">        int secondWorstFitIdx = fits.length - 2;</span>
+<span class="fc" id="L885">        int worstFitIdx = fits.length - 1;</span>
+
+<span class="fc" id="L887">        int lastNMatches = Integer.MIN_VALUE;</span>
+<span class="fc" id="L888">        double lastAvgDistModel = Double.MAX_VALUE;</span>
+<span class="fc" id="L889">        int nIterSameMin = 0;</span>
+        
+<span class="pc bpc" id="L891" title="1 of 4 branches missed.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+
+            // this has changed to allow smaller avg +- stdv to be better
+            // than more matches when close
+<span class="fc" id="L895">            sortByDescendingMatches(fits, 0, (fits.length - 1));</span>
+            
+<span class="pc bpc" id="L897" title="1 of 4 branches missed.">            if ((lastNMatches == fits[0].getNumberOfMatchedPoints()) &amp;&amp;</span>
+                (Math.abs(lastAvgDistModel - fits[0].getMeanDistFromModel())
+                &lt; 0.01)) {
+<span class="fc" id="L900">                nIterSameMin++;</span>
+<span class="fc bfc" id="L901" title="All 2 branches covered.">                if (nIterSameMin &gt;= 5) {</span>
+<span class="fc" id="L902">                    break;</span>
+                }
+            } else {
+<span class="fc" id="L905">                nIterSameMin = 0;</span>
+            }
+<span class="fc" id="L907">            lastNMatches = fits[0].getNumberOfMatchedPoints();</span>
+<span class="fc" id="L908">            lastAvgDistModel = fits[0].getMeanDistFromModel();</span>
+            
+
+            // determine center for all points excepting the worse fit
+<span class="fc" id="L912">            double rSum = 0.0;</span>
+<span class="fc" id="L913">            double sSum = 0.0;</span>
+<span class="fc bfc" id="L914" title="All 2 branches covered.">            for (int i = 0; i &lt; (fits.length - 1); i++) {</span>
+<span class="fc" id="L915">                rSum += fits[i].getRotationInRadians();</span>
+<span class="fc" id="L916">                sSum += fits[i].getScale();</span>
+            }
+<span class="fc" id="L918">            r = rSum / (double)(fits.length - 1);</span>
+<span class="fc" id="L919">            s = sSum / (double)(fits.length - 1);</span>
+
+            // &quot;Reflection&quot;
+<span class="fc" id="L922">            double rReflect = r + (alpha * </span>
+                (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="fc" id="L924">            double sReflect = s +</span>
+                (s - alpha * (fits[worstFitIdx].getScale()));
+         
+<span class="pc bpc" id="L927" title="1 of 2 branches missed.">            if (sReflect &lt; 1) {</span>
+<span class="nc" id="L928">                sReflect = 1;</span>
+            }
+
+<span class="fc" id="L931">            TransformationPointFit fitReflected = </span>
+                calculateTranslation(set1, set2, transXTol, transYTol, 
+                    rReflect, sReflect,
+                    centroidX1, centroidY1);
+            
+<span class="pc bpc" id="L936" title="4 of 8 branches missed.">            boolean relectIsWithinBounds = </span>
+                (rReflect &gt;= rMin) &amp;&amp; (rReflect &lt;= rMax) 
+                &amp;&amp; (sReflect &gt;= sMin) &amp;&amp; (sReflect &lt;= sMax);
+
+<span class="pc bpc" id="L940" title="2 of 6 branches missed.">            if (fitIsBetter(fits[secondWorstFitIdx], fitReflected)</span>
+                &amp;&amp; relectIsWithinBounds
+                &amp;&amp; !fitIsBetter(fits[bestFitIdx], fitReflected) ) {
+                
+<span class="fc" id="L944">                fits[worstFitIdx] = fitReflected;</span>
+                
+            } else {
+                
+<span class="pc bpc" id="L948" title="3 of 4 branches missed.">                if (fitIsBetter(fits[bestFitIdx], fitReflected)</span>
+                    &amp;&amp; relectIsWithinBounds) {
+                    
+                    // &quot;Expansion&quot;
+<span class="nc" id="L952">                    double rExpansion = r + (gamma * </span>
+                        (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="nc" id="L954">                    double sExpansion = s + (gamma * </span>
+                        (s - fits[worstFitIdx].getScale()));
+                    
+<span class="nc bnc" id="L957" title="All 2 branches missed.">                    if (sExpansion &lt; 1) {</span>
+<span class="nc" id="L958">                        sExpansion = 1;</span>
+                    }
+                    
+<span class="nc" id="L961">                    TransformationPointFit fitExpansion = </span>
+                        calculateTranslation(set1, set2, transXTol, transYTol, 
+                            rExpansion, sExpansion,
+                            centroidX1, centroidY1);
+                    
+<span class="nc bnc" id="L966" title="All 10 branches missed.">                    if (fitIsBetter(fitReflected, fitExpansion)</span>
+                        &amp;&amp; ((rExpansion &gt;= rMin) &amp;&amp; (rExpansion &lt;= rMax)
+                        &amp;&amp; (sExpansion &gt;= sMin) &amp;&amp; (sExpansion &lt;= sMax))) {
+
+<span class="nc" id="L970">                        fits[worstFitIdx] = fitExpansion;</span>
+                        
+                    } else {
+                        
+<span class="nc" id="L974">                        fits[worstFitIdx] = fitReflected;</span>
+                    }
+                    
+<span class="nc" id="L977">                } else {</span>
+                
+                    // we know that the reflection fit is worse than the 2nd worse
+
+                    // &quot;Contraction&quot;
+<span class="fc" id="L982">                    double rContraction = r + (beta * </span>
+                        (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="fc" id="L984">                    double sContraction = s + (beta * </span>
+                        (s - fits[worstFitIdx].getScale()));
+                    
+<span class="fc" id="L987">                    TransformationPointFit fitContraction = </span>
+                        calculateTranslation(set1, set2, transXTol, transYTol, 
+                            rContraction, sContraction,
+                            centroidX1, centroidY1);
+                
+<span class="pc bpc" id="L992" title="1 of 2 branches missed.">                    if (sContraction &lt; 1) {</span>
+<span class="nc" id="L993">                        sContraction = 1;</span>
+                    }
+
+<span class="pc bpc" id="L996" title="9 of 10 branches missed.">                    if (fitIsBetter(fits[worstFitIdx], fitContraction)</span>
+                        &amp;&amp; 
+                        (rContraction &gt;= rMin) &amp;&amp; (rContraction &lt;= rMax) 
+                        &amp;&amp; (sContraction &gt;= sMin) &amp;&amp; (sContraction &lt;= sMax)
+                    ) {
+
+<span class="nc" id="L1002">                        fits[worstFitIdx] = fitContraction;</span>
+                        
+                    } else {
+                                                
+                        // &quot;Reduction&quot;
+<span class="fc bfc" id="L1007" title="All 2 branches covered.">                        for (int i = 1; i &lt; fits.length; i++) {</span>
+                            
+<span class="fc" id="L1009">                            double rReduction = </span>
+                                fits[bestFitIdx].getRotationInRadians()
+                                + (tau * 
+                                (fits[i].getRotationInRadians()
+                                - fits[bestFitIdx].getRotationInRadians()));
+<span class="fc" id="L1014">                            double sReduction = </span>
+                                fits[bestFitIdx].getScale()
+                                + (tau * 
+                                (fits[i].getScale()
+                                - fits[bestFitIdx].getScale()));
+                            
+<span class="pc bpc" id="L1020" title="1 of 2 branches missed.">                            if (sReduction &lt; 1) {</span>
+<span class="nc" id="L1021">                                sReduction = 1;</span>
+                            }
+                            
+                            //NOTE: there's a possibility of a null fit.
+                            //  instead of re-writing the fits array, will 
+                            //  assign a fake infinitely bad fit which will 
+                            //  fall to the bottom of the list after the next 
+                            //  sort.
+<span class="fc" id="L1029">                            TransformationPointFit fit = calculateTranslation(</span>
+                                set1, set2, transXTol, transYTol, 
+                                rReduction, sReduction, centroidX1, centroidY1);
+                            
+<span class="pc bpc" id="L1033" title="1 of 2 branches missed.">                            if (fit != null) {</span>
+<span class="fc" id="L1034">                                fits[i] = fit;</span>
+                            } else {
+<span class="nc" id="L1036">                                fits[i] = new TransformationPointFit(</span>
+                                    new TransformationParameters(),
+                                    0, Double.MAX_VALUE, Double.MAX_VALUE);
+                            }
+                        }
+                    }
+                }
+            }
+
+<span class="fc" id="L1045">            log.finest(&quot;best fit so far: &quot; + </span>
+                fits[bestFitIdx].getNumberOfMatchedPoints());
+            
+<span class="fc" id="L1048">            nIter++;</span>
+
+<span class="pc bpc" id="L1050" title="1 of 4 branches missed.">            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == convergence) </span>
+                &amp;&amp; (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
+<span class="fc" id="L1052">                go = false;</span>
+<span class="pc bpc" id="L1053" title="2 of 4 branches missed.">            } else if ((r &gt; rMax) || (r &lt; rMin)) {</span>
+<span class="nc" id="L1054">                go = false;</span>
+<span class="pc bpc" id="L1055" title="2 of 4 branches missed.">            } else if ((s &gt; sMax) || (s &lt; sMin)) {</span>
+<span class="nc" id="L1056">                go = false;</span>
+            }
+<span class="fc" id="L1058">        }</span>
+        
+        // if rotation &gt; 2PI, subtract 2PI
+<span class="pc bpc" id="L1061" title="1 of 2 branches missed.">        if (fits[bestFitIdx].getParameters().getRotationInRadians() &gt; 2*Math.PI) {</span>
+<span class="nc" id="L1062">            float rot = fits[bestFitIdx].getParameters().getRotationInRadians();</span>
+<span class="nc bnc" id="L1063" title="All 2 branches missed.">            while (rot &gt;= 2*Math.PI) {</span>
+<span class="nc" id="L1064">                rot -= 2*Math.PI;</span>
+            }
+<span class="nc" id="L1066">            fits[bestFitIdx].getParameters().setRotationInRadians(rot);</span>
+        }
+        
+<span class="fc" id="L1069">        return fits[bestFitIdx];</span>
+    }
+   
+    /**
+     * refine the transformation params to make a better match of edges1 to
+     * edges2 where the points within edges in both sets are not necessarily
+     * 1 to 1 matches (that is, the input is not expected to be matched 
+     * already).
+     * 
+     * TODO: improve transformEdges to find translation for all edges
+     * via a search method rather than trying all pairs of points.
+     * 
+     * @param edges1
+     * @param edges2
+     * @param params
+     * @param centroidX1
+     * @param centroidY1
+     * @param centroidX2
+     * @param centroidY2
+     * @return 
+     */
+    public TransformationParameters refineTransformation(PairIntArray[] edges1, 
+        PairIntArray[] edges2, final TransformationParameters params,
+        final int centroidX1, final int centroidY1,
+        final int centroidX2, final int centroidY2) {
+                    
+        //TODO: set this empirically from tests
+<span class="fc" id="L1096">        double convergence = 0;</span>
+                
+<span class="fc" id="L1098">        double r = params.getRotationInRadians();</span>
+<span class="fc" id="L1099">        double s = params.getScale();</span>
+        
+<span class="fc" id="L1101">        double rMin = r - (10 * Math.PI/180);</span>
+<span class="fc" id="L1102">        double rMax = r + (10 * Math.PI/180);</span>
+<span class="fc" id="L1103">        double sMin = s - 1.5;</span>
+<span class="fc" id="L1104">        double sMax = s + 1.5;</span>
+        
+        // the positive offsets can be found w/ reflection?
+        // TODO: needs testing for starter points.  these are supplying the
+        // &quot;grid search&quot; portion of exploring more than local space
+<span class="fc" id="L1109">        double[] drs = new double[] {</span>
+            -5.0 * Math.PI/180., 
+            -2.5 * Math.PI/180.,
+            -1.0 * Math.PI/180.,
+            1.0 * Math.PI/180.,
+            2.5 * Math.PI/180.,
+            5.0 * Math.PI/180.
+        };
+<span class="fc" id="L1117">        double[] dss = new double[] {</span>
+            -1.0, -0.1, -0.05, 0.05 /*, 0.05, 0.1, 1.0*/
+        };
+<span class="pc bpc" id="L1120" title="1 of 2 branches missed.">        if (r == 0) {</span>
+<span class="nc" id="L1121">             drs = new double[]{0};</span>
+        }
+<span class="fc bfc" id="L1123" title="All 2 branches covered.">        if (s == 1) {</span>
+<span class="fc" id="L1124">            dss = new double[]{0};</span>
+<span class="fc" id="L1125">            sMin = 1;</span>
+        }
+<span class="fc bfc" id="L1127" title="All 2 branches covered.">        if (sMin &lt; 1) {</span>
+<span class="fc" id="L1128">            sMin = 1;</span>
+        }
+<span class="pc bpc" id="L1130" title="1 of 2 branches missed.">        if (rMin &lt; 0) {</span>
+<span class="nc" id="L1131">            rMin = 0;</span>
+        }
+        
+<span class="fc" id="L1134">        int n = (1 + dss.length) * (1 + drs.length);</span>
+        
+<span class="fc" id="L1136">        TransformationPointFit[] fits = new TransformationPointFit[n];</span>
+        
+<span class="fc" id="L1138">        int count = 0;</span>
+<span class="fc bfc" id="L1139" title="All 2 branches covered.">        for (int i = 0; i &lt;= dss.length; i++) {</span>
+            
+<span class="fc bfc" id="L1141" title="All 2 branches covered.">            double scale = (i == 0) ? s : s + dss[i - 1];</span>
+                        
+<span class="fc bfc" id="L1143" title="All 2 branches covered.">            for (int j = 0; j &lt;= drs.length; j++) {</span>
+                
+<span class="fc bfc" id="L1145" title="All 2 branches covered.">                double rotation = (j == 0) ? r : r + drs[j - 1];</span>
+                                
+<span class="fc" id="L1147">                fits[count] = calculateTranslationAndTransformEdges(</span>
+                    rotation, scale, edges1, edges2, 
+                    params.getTranslationX(), params.getTranslationY(),
+                    centroidX1, centroidY1, centroidX2, centroidY2);
+                
+<span class="fc bfc" id="L1152" title="All 2 branches covered.">                if (fits[count] != null) {</span>
+<span class="fc" id="L1153">                    count++;</span>
+                }
+            }
+        }
+        
+<span class="fc bfc" id="L1158" title="All 2 branches covered.">        if (count &lt; n) {</span>
+<span class="fc" id="L1159">            fits = Arrays.copyOf(fits, count);</span>
+        }
+        
+<span class="fc" id="L1162">        float alpha = 1;   // &gt; 0</span>
+<span class="fc" id="L1163">        float gamma = 2;   // &gt; 1</span>
+<span class="fc" id="L1164">        float beta = -0.5f; </span>
+<span class="fc" id="L1165">        float tau = 0.5f;</span>
+            
+<span class="fc" id="L1167">        boolean go = true;</span>
+
+<span class="fc" id="L1169">        int nMaxIter = 100;</span>
+<span class="fc" id="L1170">        int nIter = 0;</span>
+        
+<span class="fc" id="L1172">        int bestFitIdx = 0;</span>
+<span class="fc" id="L1173">        int secondWorstFitIdx = fits.length - 2;</span>
+<span class="fc" id="L1174">        int worstFitIdx = fits.length - 1;</span>
+
+<span class="fc" id="L1176">        int lastNMatches = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1177">        double lastAvgDistModel = Double.MAX_VALUE;</span>
+<span class="fc" id="L1178">        int nIterSameMin = 0;</span>
+        
+<span class="pc bpc" id="L1180" title="2 of 4 branches missed.">        while (go &amp;&amp; (nIter &lt; nMaxIter)) {</span>
+
+<span class="pc bpc" id="L1182" title="1 of 2 branches missed.">            if (fits.length == 0) {</span>
+<span class="nc" id="L1183">                break;</span>
+            }
+            
+<span class="fc" id="L1186">            sortByDescendingMatches(fits, 0, (fits.length - 1));</span>
+
+<span class="pc bpc" id="L1188" title="1 of 2 branches missed.">if (fits.length &gt; 0) {</span>
+<span class="fc" id="L1189">    log.info(&quot;best fit:  n=&quot; + fits[bestFitIdx].getNumberOfMatchedPoints()</span>
+    + &quot; dm=&quot; + fits[bestFitIdx].getMeanDistFromModel()
+    + &quot; params:\n&quot; + fits[bestFitIdx].getParameters().toString());
+}           
+
+<span class="pc bpc" id="L1194" title="1 of 4 branches missed.">            if ((lastNMatches == fits[bestFitIdx].getNumberOfMatchedPoints()) &amp;&amp;</span>
+                (Math.abs(lastAvgDistModel - 
+                fits[bestFitIdx].getMeanDistFromModel()) &lt; 0.01)) {
+                
+<span class="fc" id="L1198">                nIterSameMin++;</span>
+<span class="fc bfc" id="L1199" title="All 2 branches covered.">                if (nIterSameMin &gt;= 5) {</span>
+<span class="fc" id="L1200">                    break;</span>
+                }
+                
+            } else {
+<span class="fc" id="L1204">                nIterSameMin = 0;</span>
+            }
+            
+<span class="fc" id="L1207">            lastNMatches = fits[bestFitIdx].getNumberOfMatchedPoints();</span>
+<span class="fc" id="L1208">            lastAvgDistModel = fits[bestFitIdx].getMeanDistFromModel();</span>
+            
+            // determine center for all points excepting the worse fit
+<span class="fc" id="L1211">            double rSum = 0.0;</span>
+<span class="fc" id="L1212">            double sSum = 0.0;</span>
+<span class="fc bfc" id="L1213" title="All 2 branches covered.">            for (int i = 0; i &lt; (fits.length - 1); i++) {</span>
+<span class="fc" id="L1214">                rSum += fits[i].getRotationInRadians();</span>
+<span class="fc" id="L1215">                sSum += fits[i].getScale();</span>
+            }
+<span class="fc" id="L1217">            r = rSum / (double)(fits.length - 1);</span>
+<span class="fc" id="L1218">            s = sSum / (double)(fits.length - 1);</span>
+
+            // &quot;Reflection&quot;
+<span class="fc" id="L1221">            double rReflect = r + (alpha * </span>
+                (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="fc" id="L1223">            double sReflect = s +</span>
+                (s - alpha * (fits[worstFitIdx].getScale()));
+            
+<span class="fc" id="L1226">            TransformationPointFit fitReflected = </span>
+                calculateTranslationAndTransformEdges(
+                rReflect, sReflect, 
+                edges1, edges2, 
+                params.getTranslationX(), params.getTranslationY(),
+                centroidX1, centroidY1, centroidX2, centroidY2);
+            
+<span class="pc bpc" id="L1233" title="1 of 4 branches missed.">            boolean relectIsWithinBounds = </span>
+                /*(rReflect &gt;= rMin) &amp;&amp; (rReflect &lt;= rMax) 
+                &amp;&amp;*/ (sReflect &gt;= sMin) &amp;&amp; (sReflect &lt;= sMax);
+
+<span class="pc bpc" id="L1237" title="1 of 6 branches missed.">            if (fitIsBetter(fits[secondWorstFitIdx], fitReflected)</span>
+                &amp;&amp; relectIsWithinBounds
+                &amp;&amp; !fitIsBetter(fits[bestFitIdx], fitReflected) ) {
+                                
+<span class="fc" id="L1241">                fits[worstFitIdx] = fitReflected;</span>
+                
+            } else {
+                
+<span class="pc bpc" id="L1245" title="1 of 4 branches missed.">                if (fitIsBetter(fits[bestFitIdx], fitReflected)</span>
+                    &amp;&amp; relectIsWithinBounds) {
+                    
+                    // &quot;Expansion&quot;
+<span class="fc" id="L1249">                    double rExpansion = r + (gamma * </span>
+                        (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="fc" id="L1251">                    double sExpansion = s + (gamma * </span>
+                        (s - fits[worstFitIdx].getScale()));
+                    
+<span class="fc" id="L1254">                    TransformationPointFit fitExpansion = </span>
+                        calculateTranslationAndTransformEdges(
+                        rExpansion, sExpansion, edges1, edges2,
+                        params.getTranslationX(), params.getTranslationY(),
+                        centroidX1, centroidY1, centroidX2, centroidY2);
+                    
+<span class="pc bpc" id="L1260" title="5 of 6 branches missed.">                    if (fitIsBetter(fitReflected, fitExpansion)</span>
+                        &amp;&amp; (/*(rExpansion &gt;= rMin) &amp;&amp; (rExpansion &lt;= rMax)
+                        &amp;&amp;*/ (sExpansion &gt;= sMin) &amp;&amp; (sExpansion &lt;= sMax))) {
+
+<span class="nc" id="L1264">                        fits[worstFitIdx] = fitExpansion;</span>
+                        
+                    } else {
+                        
+<span class="fc" id="L1268">                        fits[worstFitIdx] = fitReflected;</span>
+                    }
+                    
+<span class="fc" id="L1271">                } else {</span>
+                
+                    // the reflection fit is worse than the 2nd worse
+
+                    // &quot;Contraction&quot;
+<span class="fc" id="L1276">                    double rContraction = r + (beta * </span>
+                        (r - fits[worstFitIdx].getRotationInRadians()));
+<span class="fc" id="L1278">                    double sContraction = s + (beta * </span>
+                        (s - fits[worstFitIdx].getScale()));
+                    
+<span class="fc" id="L1281">                    TransformationPointFit fitContraction = </span>
+                        calculateTranslationAndTransformEdges(
+                        rContraction, sContraction, edges1, edges2,
+                        params.getTranslationX(), params.getTranslationY(),
+                        centroidX1, centroidY1, centroidX2, centroidY2);
+                    
+<span class="pc bpc" id="L1287" title="2 of 6 branches missed.">                    if (fitIsBetter(fits[worstFitIdx], fitContraction)</span>
+                        /*&amp;&amp; 
+                        (rContraction &gt;= rMin) &amp;&amp; (rContraction &lt;= rMax)*/
+                        &amp;&amp; (sContraction &gt;= sMin) &amp;&amp; (sContraction &lt;= sMax)
+                    ) {
+
+<span class="fc" id="L1293">                        fits[worstFitIdx] = fitContraction;</span>
+                        
+                    } else {
+                        
+                        // &quot;Reduction&quot;
+<span class="fc bfc" id="L1298" title="All 2 branches covered.">                        for (int i = 1; i &lt; fits.length; i++) {</span>
+                            
+<span class="fc" id="L1300">                            double rReduction = </span>
+                                fits[bestFitIdx].getRotationInRadians()
+                                + (tau * 
+                                (fits[i].getRotationInRadians()
+                                - fits[bestFitIdx].getRotationInRadians()));
+                            
+<span class="fc" id="L1306">                            double sReduction = </span>
+                                fits[bestFitIdx].getScale()
+                                + (tau * 
+                                (fits[i].getScale()
+                                - fits[bestFitIdx].getScale()));
+                                                        
+                            //NOTE: there's a possibility of a null fit.
+                            //  instead of re-writing the fits array, will 
+                            //  assign a fake infinitely bad fit which will 
+                            //  fall to the bottom of the list after the next 
+                            //  sort.
+<span class="fc" id="L1317">                            TransformationPointFit fit = </span>
+                                calculateTranslationAndTransformEdges(
+                                rReduction, sReduction, 
+                                edges1, edges2, 
+                                params.getTranslationX(), 
+                                params.getTranslationY(),
+                                centroidX1, centroidY1,
+                                centroidX2, centroidY2);
+                            
+<span class="pc bpc" id="L1326" title="1 of 2 branches missed.">                            if (fit != null) {</span>
+<span class="fc" id="L1327">                                fits[i] = fit;</span>
+                            } else {
+<span class="nc" id="L1329">                                fits[i] = new TransformationPointFit(</span>
+                                    new TransformationParameters(),
+                                    0, Double.MAX_VALUE, Double.MAX_VALUE);
+                            }
+                        }                        
+                    }
+                }
+            }
+
+<span class="fc" id="L1338">            log.finest(&quot;best fit so far: nMatches=&quot; </span>
+                + fits[bestFitIdx].getNumberOfMatchedPoints() + 
+                &quot; diff from model=&quot; + fits[bestFitIdx].getMeanDistFromModel()
+                );
+            
+<span class="fc" id="L1343">            nIter++;</span>
+
+<span class="pc bpc" id="L1345" title="3 of 4 branches missed.">            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == convergence) </span>
+                &amp;&amp; (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
+<span class="nc" id="L1347">                go = false;</span>
+            /*} else if ((r &gt; rMax) || (r &lt; rMin)) {
+                go = false;*/
+<span class="pc bpc" id="L1350" title="2 of 4 branches missed.">            } else if ((s &gt; sMax) || (s &lt; sMin)) {</span>
+<span class="nc" id="L1351">                go = false;</span>
+            }
+<span class="fc" id="L1353">        }</span>
+        
+        // if rotation &gt; 2PI, subtract 2PI
+<span class="pc bpc" id="L1356" title="1 of 2 branches missed.">        if (fits[bestFitIdx].getParameters().getRotationInRadians() &gt; 2*Math.PI) </span>
+        {
+<span class="nc" id="L1358">            float rot = fits[bestFitIdx].getParameters().getRotationInRadians();</span>
+<span class="nc bnc" id="L1359" title="All 2 branches missed.">            while (rot &gt;= 2*Math.PI) {</span>
+<span class="nc" id="L1360">                rot -= 2*Math.PI;</span>
+            }
+<span class="nc" id="L1362">            fits[bestFitIdx].getParameters().setRotationInRadians(rot);</span>
+        }
+        
+<span class="fc" id="L1365">        return fits[bestFitIdx].getParameters();</span>
+    }
+    
+    /**
+     * TODO: improve transformEdges to find translation for all edges
+     * via a search method rather than trying all pairs of points.
+     * 
+     * Given edges1 and edges2 which we already know are matched edges due to
+     * contour matching or other means, and given the rotation and scale,
+     * determine the translation between the edges and return the fit.
+     * 
+     * @param rotInRad
+     * @param scl
+     * @param edges1
+     * @param edges2
+     * @param centroidX1
+     * @param centroidY1
+     * @return 
+     */
+    private TransformationPointFit calculateTranslationAndTransformEdges(
+        double rotInRad, double scl, 
+        PairIntArray[] edges1, PairIntArray[] edges2, 
+        double prevNearTransX, double prevNearTransY,
+        int centroidX1, int centroidY1, int centroidX2, int centroidY2) {
+        
+<span class="pc bpc" id="L1390" title="1 of 2 branches missed.">        if (edges1 == null) {</span>
+<span class="nc" id="L1391">            throw new IllegalArgumentException(&quot;edges1 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L1393" title="1 of 2 branches missed.">        if (edges2 == null) {</span>
+<span class="nc" id="L1394">            throw new IllegalArgumentException(&quot;edges2 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L1396" title="1 of 2 branches missed.">        if ((edges1.length != edges2.length)) {</span>
+<span class="nc" id="L1397">            throw new IllegalArgumentException(</span>
+            &quot;edges1 and edges2 must be the same length&quot;);
+        }
+       
+       /* 
+        For final solution, could choose the best fit
+        OR take a weighted average of the translation and re-apply it
+        to all edges to return that as the fit for all edges.
+        
+        Will the edge with the fit w/ largest number of matches
+        ever be the wrong answer?
+            If there's a repeated patterns, such as clovers in an image,
+            and one clover's match has a few more points and it's the
+            wrong match, we can see that best fit will not be the
+            right answer for the whole image.
+        Trying for a weighted average for now.  This section could be improved.
+        */
+        
+        /*
+        TODO: once the stereo projection tests are in place, decide
+        between a generous tolerance here and a precise one.
+        using a high tolerance such as (2 * centroidX1) * 0.02 helps allow
+        for projection effects, but a precise solution for euclidean
+        geometry should use a tolerance of 1.
+        */
+        
+<span class="fc" id="L1423">        double transXTolerance = 1.0;//(2 * centroidX1) * 0.02;</span>
+<span class="fc" id="L1424">        double transYTolerance = 1.0;//(2 * centroidY1) * 0.02;</span>
+                
+        // make a weighted average of translations
+        
+<span class="fc" id="L1428">        double[] transXArray = new double[edges1.length];</span>
+<span class="fc" id="L1429">        double[] transYArray = new double[edges1.length];</span>
+        
+        /*
+        weights: 
+            by larger number of matched points
+        */
+<span class="fc" id="L1435">        double[] w = new double[edges1.length];</span>
+<span class="fc" id="L1436">        double norm = 0;</span>
+<span class="fc bfc" id="L1437" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.length; i++) {</span>
+            
+<span class="fc" id="L1439">            PairIntArray edge1 = edges1[i];</span>
+<span class="fc" id="L1440">            PairIntArray edge2 = edges2[i];</span>
+            
+<span class="fc" id="L1442">            TransformationPointFit p = calculateTranslation(edge1, edge2, </span>
+                prevNearTransX, prevNearTransY,
+                transXTolerance, transYTolerance,
+                rotInRad, scl, centroidX1, centroidY1);
+                
+<span class="fc bfc" id="L1447" title="All 2 branches covered.">            if (p == null) {</span>
+<span class="fc" id="L1448">                continue;</span>
+            }
+            
+<span class="fc" id="L1451">            transXArray[i] = p.getTranslationX();            </span>
+<span class="fc" id="L1452">            transYArray[i] = p.getTranslationY();</span>
+                
+<span class="fc" id="L1454">            w[i] = p.getNumberOfMatchedPoints();</span>
+            
+<span class="fc" id="L1456">            norm += w[i];</span>
+        }
+        
+<span class="fc bfc" id="L1459" title="All 2 branches covered.">        if (norm == 0) {</span>
+<span class="fc" id="L1460">            return null;</span>
+        }
+        
+<span class="fc" id="L1463">        norm = 1./norm;</span>
+        
+<span class="fc bfc" id="L1465" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.length; i++) {</span>
+<span class="fc" id="L1466">            w[i] *= norm;</span>
+        }
+        
+//log.info(&quot;WEIGHTS: &quot; + Arrays.toString(w));
+        
+<span class="fc" id="L1471">        double weightAvgTransX = 0;</span>
+<span class="fc" id="L1472">        double weightAvgTransY = 0;</span>
+<span class="fc bfc" id="L1473" title="All 2 branches covered.">        for (int i = 0; i &lt; edges1.length; i++) {</span>
+<span class="fc" id="L1474">            weightAvgTransX += transXArray[i] * w[i];</span>
+<span class="fc" id="L1475">            weightAvgTransY += transYArray[i] * w[i];</span>
+        }
+        
+<span class="fc" id="L1478">        TransformationParameters params = new TransformationParameters();</span>
+<span class="fc" id="L1479">        params.setScale((float)scl);</span>
+<span class="fc" id="L1480">        params.setRotationInRadians((float)rotInRad);</span>
+<span class="fc" id="L1481">        params.setTranslationX((float)weightAvgTransX);</span>
+<span class="fc" id="L1482">        params.setTranslationY((float)weightAvgTransY);</span>
+        
+        /*
+        apply the averaged translation to all edges for the final fit
+        */
+        
+<span class="fc" id="L1488">        TransformationPointFit fit = transform(edges1, </span>
+            edges2, params, transXTolerance, transYTolerance,
+            centroidX1, centroidY1);
+        
+<span class="fc" id="L1492">        return fit;</span>
+    }
+    
+    /**
+     * apply the parameters to set1 and find the matches to points in set2
+     * within the given tolerance for translations.
+     * 
+     * runtime complexity is O(n_set1 * n_set2)
+     * 
+     * NOTE: scale has be &gt;= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * ALSO NOTE: if you know a better solution exists for translation 
+     * parameters that matches fewer points, but has a small avg dist from
+     * model and smaller standard deviation from the avg dist from model,
+     * then transXTol and transYTol should be smaller.
+     * @param set1
+     * @param set2
+     * @param params
+     * @param transXTol
+     * @param transYTol
+     * @param centroidX1
+     * @param centroidY1
+     * @param diffFromModel output variable holding difference of matched
+     *    points from model
+     * @param diffFromModelOffset input variable holding the offset in 
+     * array diffFromModel for which points are added from this method.
+     * @param avgDiffModel output variable holding the average difference from
+     * the model.
+     * @return number of matched points.  returns -1 if the scale is less than 1
+     */
+    int populateDiffFromModel(PairIntArray set1, PairIntArray set2, 
+        TransformationParameters params, double transXTol, double transYTol, 
+        int centroidX1, int centroidY1,
+        double[] diffFromModel, final int diffFromModelOffset,
+        double[] avgDiffModel) {
+                
+<span class="pc bpc" id="L1529" title="1 of 2 branches missed.">        if (diffFromModel == null) {</span>
+<span class="nc" id="L1530">            throw new IllegalArgumentException(&quot;diffFromModel cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L1532" title="1 of 2 branches missed.">        if (diffFromModelOffset &lt; -1) {</span>
+<span class="nc" id="L1533">            throw new IllegalArgumentException(</span>
+            &quot;diffFromModelOffset cannot be &lt; 0&quot;);
+        }
+<span class="pc bpc" id="L1536" title="1 of 2 branches missed.">        if ((diffFromModelOffset + set1.getN()) &gt; diffFromModel.length) {</span>
+<span class="nc" id="L1537">            throw new IllegalArgumentException(</span>
+            &quot;diffFromModelOffset + potentially all matched points is larger&quot;
+            + &quot; than array size.&quot;);
+        }
+            
+<span class="fc" id="L1542">        double scale = params.getScale();</span>
+<span class="fc" id="L1543">        double rotation = params.getRotationInRadians();</span>
+        
+<span class="pc bpc" id="L1545" title="1 of 2 branches missed.">        if (scale &lt; 1) {</span>
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException(&quot;scale cannot be smaller than 1&quot;);
+            
+<span class="nc" id="L1549">            log.severe(&quot;scale cannot be smaller than 1&quot;);</span>
+            
+<span class="nc" id="L1551">            return -1;</span>
+        }
+        
+<span class="fc" id="L1554">        int nMatched = 0;</span>
+<span class="fc" id="L1555">        double scaleTimesCosine = scale * Math.cos(rotation);</span>
+<span class="fc" id="L1556">        double scaleTimesSine = scale * Math.sin(rotation);</span>
+        
+<span class="fc" id="L1558">        avgDiffModel[0] = 0;</span>
+        
+<span class="fc bfc" id="L1560" title="All 2 branches covered.">        for (int i = 0; i &lt; set1.getN(); i++) {</span>
+        
+<span class="fc" id="L1562">            int x = set1.getX(i);</span>
+<span class="fc" id="L1563">            int y = set1.getY(i);</span>
+            
+<span class="fc" id="L1565">            double xmcx1 = x - centroidX1;</span>
+<span class="fc" id="L1566">            double ymcy1 = y - centroidY1;</span>
+           
+<span class="fc" id="L1568">            double xr = centroidX1 * scale</span>
+                + ((xmcx1 * scaleTimesCosine) + (ymcy1 * scaleTimesSine));
+
+<span class="fc" id="L1571">            double yr = centroidY1 * scale</span>
+                + ((-xmcx1 * scaleTimesSine) + (ymcy1 * scaleTimesCosine));
+
+<span class="fc" id="L1574">            int xt = (int)Math.round(xr + params.getTranslationX());</span>
+<span class="fc" id="L1575">            int yt = (int)Math.round(yr + params.getTranslationY());</span>
+            
+<span class="fc" id="L1577">            int lowerX = xt - (int)transXTol;</span>
+<span class="fc" id="L1578">            int higherX = xt + (int)transXTol;</span>
+<span class="fc" id="L1579">            int lowerY = yt - (int)transYTol;</span>
+<span class="fc" id="L1580">            int higherY = yt + (int)transYTol;</span>
+            
+<span class="fc bfc" id="L1582" title="All 2 branches covered.">            for (int j = 0; j &lt; set2.getN(); j++) {</span>
+                
+<span class="fc" id="L1584">                int x2 = set2.getX(j);</span>
+<span class="fc" id="L1585">                int y2 = set2.getY(j);</span>
+                
+<span class="fc bfc" id="L1587" title="All 8 branches covered.">                if ((x2 &lt; lowerX) || (x2 &gt; higherX) || (y2 &lt; lowerY) </span>
+                    || (y2 &gt; higherY)) {
+                    
+<span class="fc" id="L1590">                    continue;</span>
+                }
+                
+<span class="fc" id="L1593">                double d = Math.sqrt(Math.pow(xt - x2, 2) + Math.pow(yt - y2, 2)</span>
+                );
+                
+<span class="fc" id="L1596">                diffFromModel[diffFromModelOffset + nMatched] = d;</span>
+                
+<span class="fc" id="L1598">                avgDiffModel[0] += d;</span>
+                
+<span class="fc" id="L1600">                nMatched++;</span>
+                
+<span class="fc" id="L1602">                break;</span>
+            }
+        }
+        
+<span class="fc" id="L1606">        avgDiffModel[0] /= (double)nMatched;</span>
+        
+<span class="fc" id="L1608">        return nMatched;</span>
+    }
+
+    /**
+     * sort the fits by descending number of matches. 
+     * @param fits
+     * @param idxLo
+     * @param idxHi 
+     */
+    void sortByDescendingMatches(TransformationPointFit[] fits, int idxLo, 
+        int idxHi) {
+        
+<span class="fc bfc" id="L1620" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L1622">            int idxMid = partition(fits, idxLo, idxHi);</span>
+
+<span class="fc" id="L1624">            sortByDescendingMatches(fits, idxLo, idxMid - 1);</span>
+
+<span class="fc" id="L1626">            sortByDescendingMatches(fits, idxMid + 1, idxHi);</span>
+        }
+<span class="fc" id="L1628">    }</span>
+
+    private int partition(TransformationPointFit[] fits, int idxLo, int idxHi) {
+        
+<span class="fc" id="L1632">        TransformationPointFit x = fits[idxHi];</span>
+        
+<span class="fc" id="L1634">        int store = idxLo - 1;</span>
+        
+<span class="fc bfc" id="L1636" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
+<span class="fc bfc" id="L1637" title="All 2 branches covered.">            if (fitIsBetter(x, fits[i])) {</span>
+<span class="fc" id="L1638">                store++;</span>
+<span class="fc" id="L1639">                TransformationPointFit swap = fits[store];</span>
+<span class="fc" id="L1640">                fits[store] = fits[i];</span>
+<span class="fc" id="L1641">                fits[i] = swap;</span>
+            }
+        }
+        
+<span class="fc" id="L1645">        store++;</span>
+<span class="fc" id="L1646">        TransformationPointFit swap = fits[store];</span>
+<span class="fc" id="L1647">        fits[store] = fits[idxHi];</span>
+<span class="fc" id="L1648">        fits[idxHi] = swap;</span>
+        
+<span class="fc" id="L1650">        return store;</span>
+    }
+
+    /**
+     * create an array of values starting with start and ending before stop
+     * with separations of size delta.
+     * @param start start of intervals, inclusive
+     * @param stop end of intervals, exclusive
+     * @param delta difference between returned sequential values
+     * @return 
+     */
+    double[] createIntervals(double start, double stop, double delta) {
+        
+<span class="fc" id="L1663">        int n = (int)Math.ceil((stop - start)/delta);</span>
+        
+<span class="fc" id="L1665">        double[] values = new double[n];</span>
+        
+<span class="fc" id="L1667">        int count = 0;</span>
+<span class="fc bfc" id="L1668" title="All 2 branches covered.">        for (double v = start; v &lt; stop; v += delta) { </span>
+<span class="fc" id="L1669">            values[count] = v;</span>
+<span class="fc" id="L1670">            count ++;</span>
+        }
+        
+<span class="fc" id="L1673">        return values;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>

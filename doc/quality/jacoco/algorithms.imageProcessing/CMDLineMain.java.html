@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMDLineMain.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="right"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CMDLineMain.java</span></div><h1>CMDLineMain.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+/**
+ * a wrapper to suggest command line usage options.
+ * 
+ * @author nichole
+ */
+public class CMDLineMain {
+        
+<span class="nc" id="L10">    private static String eol = System.getProperty(&quot;line.separator&quot;);</span>
+        
+<span class="nc" id="L12">    public CMDLineMain() {           </span>
+<span class="nc" id="L13">    }</span>
+    
+    public static void main(String[] args) {
+        
+<span class="nc bnc" id="L17" title="All 4 branches missed.">        if (args == null || args.length == 0) {</span>
+<span class="nc" id="L18">            printUsage();</span>
+<span class="nc" id="L19">            return;</span>
+        }
+<span class="nc" id="L21">    }</span>
+    
+    public static void printUsage() {
+                
+<span class="nc" id="L25">        System.out.print(eol + &quot;There are two classes to invoke code from the &quot;);</span>
+<span class="nc" id="L26">        System.out.println(&quot;command line.&quot;);</span>
+<span class="nc" id="L27">        System.out.println(&quot;One for the corner deteector and the other for the image transformer via&quot;);</span>
+<span class="nc" id="L28">        System.out.println(&quot;inflection points.&quot;);</span>
+<span class="nc" id="L29">        System.out.println(eol + &quot;Corner Detector:&quot;);</span>
+<span class="nc" id="L30">        System.out.println(&quot;     java -classpath 'insert path to scalespace.jar' algorithms.imageProcessing.CMDLineCornerDetector&quot;);</span>
+<span class="nc" id="L31">        System.out.println(eol + &quot;Image Transformer/Inflection Points Detector:&quot;);</span>
+<span class="nc" id="L32">        System.out.println(&quot;     java -classpath 'insert path to scalespace.jar' algorithms.imageProcessing.CMDLineInflectionUtil&quot;);</span>
+<span class="nc" id="L33">        System.out.print(eol);</span>
+<span class="nc" id="L34">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.6.3.201306030806</span></div></body></html>
