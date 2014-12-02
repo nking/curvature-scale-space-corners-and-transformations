@@ -39,8 +39,8 @@ public class InflectionMapperTwoObjectTest {
         
         String[] list2 = new String[]{"110", "160", "180"};
         
-        //list1 = new String[]{"45"};
-        //list2 = new String[]{"180"};
+        //list1 = new String[]{"210"};
+        //list2 = new String[]{"110"};
 
         for (int i = 0; i < list1.length; i++) {
             
@@ -102,6 +102,9 @@ public class InflectionMapperTwoObjectTest {
                     list1[i] + "->" + list2[j]);
                 
                 int expectedRotDeg = 360 - (rotation2 - rotation1);
+                while (expectedRotDeg > 360) {
+                    expectedRotDeg -= 360;
+                }
                 
                 double foundRotDeg = rotDeg;
                 

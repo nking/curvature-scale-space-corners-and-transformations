@@ -487,7 +487,7 @@ public class ContourFinder {
             if (leftIndex == (t.length - 1) && (t[leftIndex] >= 0.9) &&
                 (t[0] < 0.1)) {
                 rightIndex = 0;
-            }
+            } 
             
             if (leftIndex > -1) {
                 tLeft = t[leftIndex];
