@@ -1,4 +1,6 @@
 algorithms
+algorithms.compGeometry.clustering
 algorithms.imageProcessing
+algorithms.imageProcessing.util
 algorithms.misc
 algorithms.util
