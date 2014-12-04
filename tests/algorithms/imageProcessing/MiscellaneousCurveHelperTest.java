@@ -369,7 +369,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertTrue(cenXY[0] == 5);
         assertTrue(cenXY[1] == 3);
         
-        double[][] xyM = new double[2][4];
+        double[][] xyM = new double[3][4];
         xyM[0] = new double[]{1, 9, 9, 1};
         xyM[1] = new double[]{1, 1, 5, 5};
         Matrix xyMatrix = new Matrix(xyM);

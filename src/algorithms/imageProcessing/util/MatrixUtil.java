@@ -53,24 +53,43 @@ public class MatrixUtil {
         if (m2 == null) {
             throw new IllegalArgumentException("m2 cannot be null");
         }
-        if (m1.getArray().length != m2.getArray()[0].length) {
+        if (m1.getColumnDimension() != m2.getRowDimension()) {
             throw new IllegalArgumentException(
                 "the number of columns in m1 != number of rows in m2");
         }
-         
-        int cCols = m2.getArray().length;
-        int cRows = m1.getArray()[0].length;        
+        
+        int cCols = m2.getColumnDimension();
+        int cRows = m1.getRowDimension();
         
         // m1 dot m2
-        double[][] m = new double[cCols][cRows];
-        for (int i = 0; i < m.length; i++) {
-            m[i] = new double[cRows];
+        double[][] m = new double[cRows][cCols];
+        for (int i = 0; i < cRows; i++) {
+            m[i] = new double[cCols];
         }
-               
-        for (int cRow = 0; cRow < cRows; cRow++) {        
-            for (int cCol = 0; cCol < cCols; cCol++) {
-                for (int col = 0; col < m1.getArray().length; col++) {
-                    m[cCol][cRow] += (m1.get(col, cRow) * m2.get(cCol, col));
+        /*
+        0     1     0     2  1
+        1000  100  10     3  0
+                          4  0
+        
+        0*2    + 1*3   + 0*4     0*1    +  1*0   +  0*0
+        1000*2 + 100*3 + 10*4    1000*1 +  100*0 + 10*0
+        */
+                
+        for (int colAdd = 0; colAdd < m2.getColumnDimension(); colAdd++) {
+            for (int cRow = 0; cRow < cRows; cRow++) {
+                for (int col = 0; col < m1.getColumnDimension(); col++) {
+                
+                    // a[0][0]  b[0][0]
+                    // a[0][1]  b[1][0]
+                    // a[0][2]  b[2][0]
+                    //
+                    // a[1][0]  b[0][0]
+                    //
+                    // a[1][0]  b[0][0]
+                    //
+                    double a = m1.get(cRow, col);
+                    double b = m2.get(col, colAdd);
+                    m[cRow][colAdd] += (a * b);
                 }
             }
         }

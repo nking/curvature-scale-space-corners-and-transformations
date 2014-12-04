@@ -470,9 +470,10 @@ public aspect CurvatureAspect {
             }
             ImageIOHelper.addCurveToImage(corners, img3, 1, 255, 0, 0);
             
-            ImageIOHelper.addCurveToImage(
+            /*ImageIOHelper.addCurveToImage(
                 instance.getCornersForMatchingInOriginalReferenceFrame(),
                 img3, 2, 255, 0, 255);
+            */
 
             debugDisplay(img3, "original image w/ edges and corners overplotted");
             String dirPath = ResourceFinder.findDirectory("bin");

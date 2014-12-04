@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.util.PairFloatArray;
 import Jama.*;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.util.PairIntArray;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
@@ -105,7 +106,7 @@ import java.util.logging.Logger;
      
          F = (T_1)^T * F * T_2
    
- (6) estimate the error in the fundamental matrix by calculting epipolar
+ (6) estimate the error in the fundamental matrix by calculating epipolar
      lines for points in image 1 and find their nearest points in image 2 
      and measure the perpendicular distance from the epipolar line for
      those nearest points.
@@ -131,41 +132,112 @@ public class StereoProjectionTransformer {
      * Each column corresponds to a point in leftXY and rightXY which are
      * in the same column.
      */
-    private double[][] epipolarLinesInRight = null;
+    private Matrix epipolarLinesInRight = null;
     
     /**
      * each row is an epipolar line in the left image.
      * Each column corresponds to a point in leftXY and rightXY which are
      * in the same column.
      */
-    private double[][] epipolarLinesInLeft = null;
+    private Matrix epipolarLinesInLeft = null;
+   
+    public void calculateEpipolarProjection(PairFloatArray pointsLeftXY, 
+        PairFloatArray pointsRightXY) {
         
-    public void calculateEpipolarProjection(PairFloatArray refactorLeftXY, 
-        PairFloatArray refactorRightXY) {
-        
-        if (refactorLeftXY == null) {
+        if (pointsLeftXY == null) {
             throw new IllegalArgumentException("refactorLeftXY cannot be null");
         }
-        if (refactorRightXY == null) {
+        if (pointsRightXY == null) {
             throw new IllegalArgumentException("refactorRightXY cannot be null");
         }
-        if (refactorLeftXY.getN() != refactorRightXY.getN()) {
+        if (pointsLeftXY.getN() != pointsRightXY.getN()) {
             throw new IllegalArgumentException(
                 "refactorLeftXY and refactorRightXY must be same size");
         }
         
-        if (refactorLeftXY.getN() < 8) {
+        if (pointsLeftXY.getN() < 8) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the 8-point problem requires 8 or more points." 
-                + " refactorLeftXY.n=" + refactorLeftXY.getN());
+                + " refactorLeftXY.n=" + pointsLeftXY.getN());
         }
         
-        leftXY = rewriteInto3ColumnMatrix(refactorLeftXY);
+        /*
+        note that the Jama matrix convention is new Matrix(mRows, nCols)
+        */
         
-        rightXY = rewriteInto3ColumnMatrix(refactorRightXY);
+        leftXY = rewriteInto3ColumnMatrix(pointsLeftXY);
         
-        fundamentalMatrix = calculateFundamentalMatrix(leftXY, rightXY);
+        rightXY = rewriteInto3ColumnMatrix(pointsRightXY);
+        
+        fundamentalMatrix = calculateFundamentalMatrix(leftXY, rightXY)
+            .transpose();
+     
+        // 2 x 3 matrix of leftEpipole in column 0 and rightEpipole in column 1.
+        double[][] leftRightEpipoles = calculateEpipoles(fundamentalMatrix);
+        
+        leftEpipole = leftRightEpipoles[0];
+        
+        rightEpipole = leftRightEpipoles[1];
+        
+        epipolarLinesInRight = calculateRightEpipolarLines();
+        
+        epipolarLinesInLeft = calculateLeftEpipolarLines();
+       
+        /*
+        compute the perpendicular errors:
+        
+        transform points from the first image to get the equipolar lines
+           in the second image.
+        
+        find the closest points in the 2nd image to the epipolar lines 
+           store the difference
+        
+        do the same for the othe image
+        
+        equipolar lines:
+           aVector = F^T * u_1
+           then aVector^T*u_2 = aVector_1*x_2 + aVector_2*y_2 + aVector_3 = 0
+        
+        plot the differences, calc stats, determine inliers.
+        use iterative method of choosing 8 or 8-best and error inspection to
+        create a better solution (terminate when set of inliers does not 
+        change).
+        
+        */
+    }
+    
+    public void calculateEpipolarProjectionWithoutNormalization(
+        PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
+        
+        if (pointsLeftXY == null) {
+            throw new IllegalArgumentException("refactorLeftXY cannot be null");
+        }
+        if (pointsRightXY == null) {
+            throw new IllegalArgumentException("refactorRightXY cannot be null");
+        }
+        if (pointsLeftXY.getN() != pointsRightXY.getN()) {
+            throw new IllegalArgumentException(
+                "refactorLeftXY and refactorRightXY must be same size");
+        }
+        
+        if (pointsLeftXY.getN() < 8) {
+            // cannot use this algorithm.
+            throw new IllegalArgumentException(
+                "the 8-point problem requires 8 or more points." 
+                + " refactorLeftXY.n=" + pointsLeftXY.getN());
+        }
+        
+        /*
+        note that the Jama matrix convention is new Matrix(mRows, nCols)
+        */
+        
+        leftXY = rewriteInto3ColumnMatrix(pointsLeftXY);
+        
+        rightXY = rewriteInto3ColumnMatrix(pointsRightXY);
+        
+        fundamentalMatrix = calculateFundamentalMatrixWithoutNormalization(
+            leftXY, rightXY).transpose();
      
         // 2 x 3 matrix of leftEpipole in column 0 and rightEpipole in column 1.
         double[][] leftRightEpipoles = calculateEpipoles(fundamentalMatrix);
@@ -209,36 +281,130 @@ public class StereoProjectionTransformer {
         
         NormalizedXY normalizedXY2 = normalize(rightXY);        
         
+        return calculateFundamentalMatrix(normalizedXY1, normalizedXY2);
+    }
+    
+    Matrix calculateFundamentalMatrix(NormalizedXY normalizedXY1, 
+        NormalizedXY normalizedXY2) {
+        
         //build the fundamental matrix
         Matrix aMatrix = new Matrix(createFundamentalMatrix(
             normalizedXY1.getXy(), normalizedXY2.getXy()));
-               
+
         /*
         compute linear least square solution:
             solve A = U * D * V^T   for A*f = [..x...]*f = 0
             A has rank 8.  f has rank 2.
-            calculate [U,D,V] from svd(A)
-        */       
-        SingularValueDecomposition svd = aMatrix.svd();
         
+        calculate [U,D,V] from svd(A):
+           result has mRows = number of data points
+                      nCols = 9
+        */
+        SingularValueDecomposition svd = aMatrix.svd();
+
         // creates U as 9 x nXY1 matrix
         //         D as length 9 array
         //         V as 9 x 9 matrix
         
-        // f is the last column of V.  it's got 9 items in it.
-        double[] f = svd.getV().getArray()[svd.getV().getArray().length - 1];
-        
+        // mRows = 9; nCols = 9
+        Matrix V = svd.getV();
+        int vNCols = V.getColumnDimension();
+        assert(V.getColumnDimension() == 9);
+        assert(V.getRowDimension() == 9);
         // reshape it to 3x3
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
             ff[i] = new double[3];
+            ff[i][0] = V.get((i * 3) + 0, vNCols - 1);
+            ff[i][1] = V.get((i * 3) + 1, vNCols - 1);
+            ff[i][2] = V.get((i * 3) + 2, vNCols - 1);
         }
+        Matrix fMatrix = new Matrix(ff);
+        
+        /* make the fundamental matrix have a rank of 2
+           by performing a svd and then reconstructing with the two largest 
+           singular values.
+              [U,D,V] = svd(F,0);
+              F = U * diag([D(1,1) D(2,2) 0]) * V';
+        */
+        svd = fMatrix.svd();
+        
+        // creates U as 3 x 3 matrix
+        //         D as length 3 array
+        //         V as 3 x 3 matrix
+        
+        Matrix d = svd.getS();
+        
+        // remove the smallest singular value from D, making it rank 2
+        double[] keep = new double[]{d.get(0, 0), d.get(1, 1), d.get(2, 2)};
+        Arrays.sort(keep);
+        d.set(0, 0, keep[2]);
+        d.set(1, 1, keep[1]);
+        d.set(2, 2, 0);
+        
+        /*
+        multiply the terms:
+             F = dot(U, dot(diag(D),V))
+        */               
+        Matrix dDotV = d.times(svd.getV().transpose());
+        
+        // 3x3        
+        Matrix theFundamentalMatrix = svd.getU().times(dDotV);
+        
+        /*
+        denormalize
+            F = (T_1)^T * F * T_2  
+            where T_1 is normalizedXY1.getNormalizationMatrix();
+            and T2 is normalizedXY2.getNormalizationMatrix();
+        */
+        
+        // 3x3
+        Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
+        Matrix t2 = normalizedXY2.getNormalizationMatrix();
+        
+        Matrix denormFundamentalMatrix = t1Transpose.times(
+            theFundamentalMatrix.times(t2));
+        
+        denormFundamentalMatrix = denormFundamentalMatrix.times(
+            1./denormFundamentalMatrix.get(2, 2));
+        
+        return denormFundamentalMatrix;
+    }   
+    
+    Matrix calculateFundamentalMatrixWithoutNormalization(Matrix matchedXY1, 
+        Matrix matchedXY2) {
+        
+        //build the fundamental matrix
+        Matrix aMatrix = new Matrix(createFundamentalMatrix(
+            matchedXY1, matchedXY2));
+
+        /*
+        compute linear least square solution:
+            solve A = U * D * V^T   for A*f = [..x...]*f = 0
+            A has rank 8.  f has rank 2.
+        
+        calculate [U,D,V] from svd(A):
+           result has mRows = number of data points
+                      nCols = 9
+        */
+        SingularValueDecomposition svd = aMatrix.svd();
+
+        // creates U as 9 x nXY1 matrix
+        //         D as length 9 array
+        //         V as 9 x 9 matrix
+        
+        // mRows = 9; nCols = 9
+        Matrix V = svd.getV();
+        int vNCols = V.getColumnDimension();
+        assert(V.getColumnDimension() == 9);
+        assert(V.getRowDimension() == 9);
+        // reshape it to 3x3
+        double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
-            ff[i][0] = f[(i * 3) + 0];
-            ff[i][1] = f[(i * 3) + 1];
-            if (i == 2 && (f.length >= 9)) { // npoints == 8
-                ff[i][2] = f[(i * 3) + 2];
-            }
+            ff[i] = new double[3];
+            ff[i][0] = V.get((i * 3) + 0, vNCols - 1);
+            ff[i][1] = V.get((i * 3) + 1, vNCols - 1);
+            ff[i][2] = V.get((i * 3) + 2, vNCols - 1);
         }
         Matrix fMatrix = new Matrix(ff);
         
@@ -267,37 +433,16 @@ public class StereoProjectionTransformer {
         multiply the terms:
              F = dot(U, dot(diag(D),V))
         */
-        double[][] dDotV = MatrixUtil.dot(d, svd.getV());
-                                
-        // 3x3
-        Matrix theFundamentalMatrix = new Matrix(MatrixUtil.dot(svd.getU(), 
-            new Matrix(dDotV)));
-                        
-        /*
-        denormalize
-            F = (T_1)^T * F * T_2  
-            where T_1 is normalizedXY1.getNormalizationMatrix();
-            and T2 is normalizedXY2.getNormalizationMatrix();
-        */
+        Matrix dDotV = d.times(svd.getV().transpose());
         
-        // 3x3
-        Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
-        Matrix t2 = normalizedXY2.getNormalizationMatrix();
+        // 3x3        
+        Matrix theFundamentalMatrix = svd.getU().times(dDotV);  
         
-        Matrix denormFundamentalMatrix = t1Transpose.times(
-            theFundamentalMatrix.times(t2));
+        theFundamentalMatrix = theFundamentalMatrix.times(
+            1./theFundamentalMatrix.get(2, 2));
         
-        log.info("F=");
-        for (int j = 0; j < denormFundamentalMatrix.getArray()[0].length; j++) {
-            StringBuilder sb = new StringBuilder();            
-            for (int i = 0; i < denormFundamentalMatrix.getArray().length; i++) {
-                sb.append(denormFundamentalMatrix.get(i, j)).append(" ");                
-            }            
-            log.info(sb.toString());
-        }
-        
-        return denormFundamentalMatrix;
-    }   
+        return theFundamentalMatrix;
+    } 
 
     /**
      normalize the x,y coordinates as recommended by Hartley 1997 and return
@@ -306,12 +451,13 @@ public class StereoProjectionTransformer {
      * @param xyPair
      * @return 
      */
-    private NormalizedXY normalize(Matrix xy) {
+    NormalizedXY normalize(Matrix xy) {
         
         /*
-        utrans = T * u ==> u = utrans * inv(T)
+        uTransposed = T * u 
+        uTransposed * inv(T) = u
         
-            utrans_2^T * inv(T_2) * F * inv(T_1) * utrans_1
+                uTransposed_2^T * inv(T_2) * F * inv(T_1) * uTransposed_1
         
         format the tensors T_1 and T_2 such that the applied translation
         and scaling have the effect of:
@@ -343,10 +489,13 @@ public class StereoProjectionTransformer {
         double scaleFactor = Math.sqrt(2)/mean;
         
         /*
-        x_1_0   y_1_0  1          t00   0   0
-        x_1_1   y_1_1  1            0  t11  0
-        x_1_2   y_1_2  1          t02  t12  1
-        x_1_3   y_1_3  1
+        x_1_0  x_1_1  x_1_2  x_1_3
+        y_1_0  y_1_1  y_1_2  y_1_3
+        1      1      1      1
+        
+        t00     t01(=0)  t02
+        t10(=0) t11      t12
+        0        0        1
         
         x_1_0*t00 + y_1_0*t01 + 1*t02 = (x_1_0 - cX) * s = x_1_0 * s - cX * s
                          0
@@ -367,7 +516,7 @@ public class StereoProjectionTransformer {
         t[2] = new double[]{0,           0,           1};
         Matrix tMatrix = new Matrix(t);
                 
-        Matrix normXY = new Matrix(MatrixUtil.dot(xy, tMatrix));
+        Matrix normXY = new Matrix(MatrixUtil.dot(tMatrix, xy));
               
         NormalizedXY normalizedXY = new NormalizedXY();
         normalizedXY.setCentroidXY(centroidXY);
@@ -393,6 +542,9 @@ public class StereoProjectionTransformer {
             xyPoints[2][i] = 1;
         }
         
+        
+        // matrix of size mRows x nCols
+        
         Matrix xy = new Matrix(xyPoints);
         
         return xy;
@@ -405,7 +557,7 @@ public class StereoProjectionTransformer {
      * second is y.
      * @return 
      */
-    private double[][] createFundamentalMatrix(Matrix normXY1, 
+    double[][] createFundamentalMatrix(Matrix normXY1, 
         Matrix normXY2) {
         
         if (normXY1 == null) {
@@ -421,28 +573,28 @@ public class StereoProjectionTransformer {
         
         int nXY1 = normXY1.getArray()[0].length;
         
+        // mRows = 484;  nCols = 9
+        
         /*
         (2) each row in matrix A:
-            x_1*x_2, x_1*y_2, x_1, y_1*x_2, y_1*y_2, y_1, x_2, y_2, 1
+            x_1*x_2,  x_1*y_2,  x_1,  y_1*x_2,  y_1*y_2,  y_1,  x_2,  y_2,  1
         */
-        double[][] a = new double[9][nXY1];
-        for (int i = 0; i < 9; i++) {
-            a[i] = new double[nXY1];
-        }
+        double[][] a = new double[nXY1][9];
         for (int i = 0; i < nXY1; i++) {
+            a[i] = new double[9];
             double x1 = normXY1.get(0, i);
             double x2 = normXY2.get(0, i);
             double y1 = normXY1.get(1, i);
             double y2 = normXY2.get(1, i);
-            a[0][i] = x1 * x2;
-            a[1][i] = x1 * y2;
-            a[2][i] = x1;
-            a[3][i] = y1 * x2;
-            a[4][i] = y1 * y2;
-            a[5][i] = y1;
-            a[6][i] = x2;
-            a[7][i] = y2;
-            a[8][i] = 1;
+            a[i][0] = x1 * x2;
+            a[i][1] = x1 * y2;
+            a[i][2] = x1;
+            a[i][3] = y1 * x2;
+            a[i][4] = y1 * y2;
+            a[i][5] = y1;
+            a[i][6] = x2;
+            a[i][7] = y2;
+            a[i][8] = 1;
         }
         
         return a;
@@ -454,7 +606,7 @@ public class StereoProjectionTransformer {
      * @param fundamentalMatrix
      * @return 
      */
-    private double[][] calculateEpipoles(Matrix fundamentalMatrix) {
+    double[][] calculateEpipoles(Matrix fundamentalMatrix) {
         /*
         epipoles: 
              [U,D,V] = svd(denormalized FundamentalMatrix);
@@ -462,13 +614,14 @@ public class StereoProjectionTransformer {
              e2 = last column of U divided by it's last item
         */
         SingularValueDecomposition svdE = fundamentalMatrix.svd();
-        
-        double[] e1 = svdE.getV().getArray()[2];
+        Matrix V = svdE.getV().transpose();
+        double[] e1 = V.getArray()[2];
         double e1Div = e1[2];
         for (int i = 0; i < e1.length; i++) {
             e1[i] /= e1Div;
         }
-        double[] e2 = svdE.getU().getArray()[2];
+        Matrix U = svdE.getU();
+        double[] e2 = U.getArray()[2];
         double e2Div = e2[2];
         for (int i = 0; i < e2.length; i++) {
             e2[i] /= e2Div;
@@ -493,29 +646,18 @@ public class StereoProjectionTransformer {
         return e;
     }
 
-    private double[][] calculateRightEpipolarLines() {
+    private Matrix calculateRightEpipolarLines() {
         
         /* calculate right epipolar lines
         F * leftPoint
         */
-        int nPoints = leftXY.getArray()[0].length;
-        double[][] rightEpipolarLines = new double[3][nPoints];
-        for (int i = 0; i < nPoints; i++) {
-            rightEpipolarLines[i] = new double[3];
-        }
-        for (int i = 0; i < nPoints; i++) {
-            
-            double[] leftPoint = new double[]{leftXY.get(0, i), 
-                leftXY.get(1, i), 1};
-            
-            rightEpipolarLines[i] = MatrixUtil.multiply(
-                fundamentalMatrix.getArray(), leftPoint);
-        }
- 
-        return rightEpipolarLines;
+        
+        Matrix m = fundamentalMatrix.times(leftXY);
+        
+        return m;
     }
     
-    private double[][] calculateLeftEpipolarLines() {
+    private Matrix calculateLeftEpipolarLines() {
         
         /* calculate left epipolar lines
         F^T * rightPoint
@@ -523,32 +665,9 @@ public class StereoProjectionTransformer {
         
         Matrix fundamentalMatrixTranspose = fundamentalMatrix.transpose();
         
-        int nPoints = rightXY.getArray()[0].length;
-        double[][] leftEpipolarLines = new double[3][nPoints];
-        for (int i = 0; i < nPoints; i++) {
-            leftEpipolarLines[i] = new double[3];
-        }
-        for (int i = 0; i < nPoints; i++) {
-            
-            double[] rightPoint = new double[]{rightXY.get(0, i), 
-                rightXY.get(1, i), 1};
-            
-            leftEpipolarLines[i] = MatrixUtil.multiply(
-                fundamentalMatrixTranspose.getArray(), 
-                rightPoint);
-        }
- 
-        return leftEpipolarLines;
-    }
-    
-    //TODO: put this in aspect
-    void drawEpipolarLinesOnImage(Image image, double[][] epipolarLines) {
+        Matrix m = fundamentalMatrixTranspose.times(rightXY);
         
-            /*
-            [ a b c ]
-            y = - (a/b) * x - (c/b)
-            */
-        
+        return m;
     }
     
     //TODO: put this in aspect
@@ -556,7 +675,7 @@ public class StereoProjectionTransformer {
         
     }
     
-    private static class NormalizedXY {
+    public static class NormalizedXY {
 
         /**
          * 3 dimensional matrix, with column 0 being x, column 1 being y,
@@ -611,4 +730,44 @@ public class StereoProjectionTransformer {
         }
     }
     
+    public double[] getLeftEpipole() {
+        return leftEpipole;
+    }
+    public double[] getRightEpipole() {
+        return rightEpipole;
+    }
+    public Matrix getEpipolarLinesInRight() {
+        return epipolarLinesInRight;
+    }
+    public Matrix getEpipolarLinesInLeft() {
+        return epipolarLinesInLeft;
+    }
+    
+    public PairIntArray getEpipolarLineInLeft(int imgWidth, int pointNumber) {
+        
+        return getEpipolarLine(epipolarLinesInLeft, imgWidth, pointNumber);
+    }
+    
+     public PairIntArray getEpipolarLineInRight(int imgWidth, int pointNumber) {
+        return getEpipolarLine(epipolarLinesInRight, imgWidth, pointNumber);
+    }
+     
+    private PairIntArray getEpipolarLine(Matrix epipolarLines, int imgWidth, 
+        int pointNumber) {
+        
+        int n = imgWidth/10;
+        
+        PairIntArray line = new PairIntArray(n);
+        
+        double a = epipolarLines.get(0, pointNumber);
+        double b = epipolarLines.get(1, pointNumber);
+        double c = epipolarLines.get(2, pointNumber);
+        for (int i = 0; i < imgWidth; i+= 1) {
+            //y = - (a/b) * x - (c/b)
+            double y = (c + (a * (double)i)) / (-b);
+            line.add(i, (int) Math.round(y));
+        }
+  
+        return line;
+    }
 }

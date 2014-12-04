@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
@@ -463,6 +464,46 @@ public class ImageIOHelper {
                         float yy = y + dy;
                         if ((yy > -1) && (yy < (input.getHeight() - 1))) {
                             input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * draw the edge over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param edge
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addCurveToImage(PairFloatArray edge, Image input, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (edge == null || input == null) {
+            return;
+        }
+        
+        for (int i = 0; i < edge.getN(); i++) {
+            int x = Math.round(edge.getX(i));
+            int y = Math.round(edge.getY(i));
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                
+                int xx = x + dx;
+                
+                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                        dy++) {
+                        
+                        int yy = y + dy;
+                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                            input.setRGB(xx, yy, rClr, gClr, bClr);
                         }
                     }
                 }

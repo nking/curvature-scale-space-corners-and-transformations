@@ -25,16 +25,25 @@ public class MatrixUtilTest {
     
     @Test
     public void testDot() throws Exception {
+       
+        double[][] m1 = new double[2][3];
+        m1[0] = new double[]{0, 1, 0};
+        m1[1] = new double[]{1000, 100, 10};
         
-        double[][] m1 = new double[3][2];
-        m1[0] = new double[]{2, 1};
-        m1[1] = new double[]{3, 0};
-        m1[2] = new double[]{4, 0};
+        double[][] m2 = new double[3][2];
+        m2[0] = new double[]{2, 1};
+        m2[1] = new double[]{3, 0};
+        m2[2] = new double[]{4, 0};
+         
+        /*
+        0     1     0     2  1
+        1000  100  10     3  0
+                          4  0
         
-        double[][] m2 = new double[2][3];
-        m2[0] = new double[]{0, 1, 0};
-        m2[1] = new double[]{1000, 100, 10};
-        
+        0*2    + 1*3   + 0*0     0*1    +  1*0   +  0*0
+        1000*2 + 100*3 + 10*4    1000*1 +  100*0 + 10*0
+        */
+       
         double[][] m = MatrixUtil.dot(new Matrix(m1), new Matrix(m2));
         
         assertTrue(m.length == 2);

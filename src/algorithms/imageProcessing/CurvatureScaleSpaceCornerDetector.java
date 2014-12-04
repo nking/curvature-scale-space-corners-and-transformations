@@ -630,7 +630,8 @@ public class CurvatureScaleSpaceCornerDetector extends
     }
     
     /**
-     * note, this is not ready for use yet.  it's meant to be a sublist of
+     * <em>note, this is not ready for use yet.</em>
+     * it's meant to be a sublist of
      * the variable "corners" selected to be better for matching the same
      * corners in other images.
      * @return 
@@ -638,13 +639,13 @@ public class CurvatureScaleSpaceCornerDetector extends
     public PairIntArray getCornersForMatchingInOriginalReferenceFrame() {
         
         PairIntArray co = new PairIntArray();
-        for (int i = 0; i < cornersForMatching.getN(); i++) {
+        /*for (int i = 0; i < cornersForMatching.getN(); i++) {
             int x = cornersForMatching.getX(i);
             int y = cornersForMatching.getY(i);
             x += this.trimmedXOffset;
             y += this.trimmedYOffset;
             co.add(x, y);
-        }
+        }*/
         
         return co;
     }

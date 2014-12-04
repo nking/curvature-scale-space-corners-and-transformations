@@ -594,7 +594,7 @@ public class MiscellaneousCurveHelper {
         double xc = 0;
         double yc = 0;
         
-        int n = xy.getArray()[0].length;
+        int n = xy.getColumnDimension();
         
         for (int i = 0; i < n; i++) {
             
