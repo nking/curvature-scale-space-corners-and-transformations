@@ -57,7 +57,7 @@ public class LinearRegression {
         float[] s = new float[n*n];
         for (int i = 0; i < n; i++) {
             for (int j = (i + 1); j < n; j++) {
-                if ((x[j] - x[i]) == 0) {
+                if ((i == j) || (x[j] - x[i]) == 0) {
                     continue;
                 }
                 s[count] = (float)(y[j] - y[i])/((float)x[j] - x[i]);
@@ -65,9 +65,15 @@ public class LinearRegression {
             }
         }
         
-        float[] sCopy = Arrays.copyOf(s, count);
-        Arrays.sort(sCopy);
-        float median = sCopy[sCopy.length/2];
+        s = Arrays.copyOf(s, count);
+        Arrays.sort(s);
+        int idx = s.length/2;
+        float median;
+        if ((idx & 1) == 0) {
+            median = (s[idx] + s[idx - 1])/2.f;
+        } else {
+            median = s[idx];
+        }
         
         log.info("thiel sen beta=" + median);
        
@@ -89,7 +95,7 @@ public class LinearRegression {
         
         float yIntercept = y[medianIdx] - median * x[medianIdx];
         
-        //the estimation of yIntercept needed to be improved
+        //the estimation of yIntercept needs to be improved:
         int np = 10;
         while (((medianIdx - np) < 0) || ((medianIdx + np) > (x.length - 1))) {
             np--;
