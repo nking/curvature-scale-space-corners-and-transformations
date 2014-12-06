@@ -1,0 +1,5 @@
+images merton_college_I_001.jpg and merton_college_I_002.jpg are
+from the Merton College I dataset on:
+http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+
+The 2D Geometry points from the same dataset were also used in unit tests.

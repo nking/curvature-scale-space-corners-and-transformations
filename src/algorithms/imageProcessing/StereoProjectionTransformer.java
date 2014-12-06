@@ -557,8 +557,7 @@ public class StereoProjectionTransformer {
      * second is y.
      * @return 
      */
-    double[][] createFundamentalMatrix(Matrix normXY1, 
-        Matrix normXY2) {
+    double[][] createFundamentalMatrix(Matrix normXY1, Matrix normXY2) {
         
         if (normXY1 == null) {
             throw new IllegalArgumentException("normXY1 cannot be null");
@@ -668,11 +667,6 @@ public class StereoProjectionTransformer {
         Matrix m = fundamentalMatrixTranspose.times(rightXY);
         
         return m;
-    }
-    
-    //TODO: put this in aspect
-    void drawPointsOnImage(Image image, Matrix xyPoints) {
-        
     }
     
     public static class NormalizedXY {

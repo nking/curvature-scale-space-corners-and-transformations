@@ -154,7 +154,6 @@ public class LinearRegressionTest {
                 lineX1, lineY1, dxdy.getX(i), dxdy.getY(i));
         }
         
-        //292, 510
         double[] avgAndStDev = MiscMath.getAvgAndStDev(dist);
         
         // remove ~ 26 outliers out of 103 points
