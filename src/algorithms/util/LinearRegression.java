@@ -1,6 +1,6 @@
 package algorithms.util;
 
-import algorithms.KSelect;
+import algorithms.QuickSort;
 import algorithms.misc.MiscMath;
 import java.io.IOException;
 import java.util.Arrays;
@@ -54,23 +54,20 @@ public class LinearRegression {
         sample points. 
         */
         int count = 0;
-        
         float[] s = new float[n*n];
         for (int i = 0; i < n; i++) {
             for (int j = (i + 1); j < n; j++) {
-                float diffX = x[j] - x[i];
-                if (diffX == 0) {
+                if ((x[j] - x[i]) == 0) {
                     continue;
                 }
-                float diffY = y[j] - y[i];
-                s[count] = diffY/diffX;
+                s[count] = (float)(y[j] - y[i])/((float)x[j] - x[i]);
                 count++;
-            }            
+            }
         }
         
-        KSelect kSelect = new KSelect();
-        
-        float median = kSelect.findMedianOfMedians(s, 0, count - 1);
+        float[] sCopy = Arrays.copyOf(s, count);
+        Arrays.sort(sCopy);
+        float median = sCopy[sCopy.length/2];
         
         log.info("thiel sen beta=" + median);
        
@@ -79,10 +76,8 @@ public class LinearRegression {
         for (int i = 0; i < x.length; i++) {
             s2[i] = y[i] - median * x[i];
         }
-        
-        // x, y, and s2 are partially sorted here:
-        int medianIdx = kSelect.findMedianOfMediansIdx(s2, x, y, 
-            0, s2.length - 1);
+        QuickSort.sort(s2, x, y, 0, s2.length - 1);
+        int medianIdx = s2.length/2;
         
         /*
            (y1 - y0)/(x1 - x0) = slope
@@ -162,7 +157,7 @@ public class LinearRegression {
         int[] tsbY = new int[len];
         int count = 0;
         for (int xCoord = xMin; xCoord <= xMax; xCoord++) {
-            float yCoord = yIntercept + slope * xCoord;
+            float yCoord = yIntercept + slope * (float)xCoord;
             tsbX[count] = xCoord;
             tsbY[count] = (int)Math.round(yCoord);
             count++;
