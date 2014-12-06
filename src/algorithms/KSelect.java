@@ -98,6 +98,98 @@ public class KSelect {
     }
 
     /**
+     * find the median index of a, while performing the same sort (or swap)
+     * operations on b and c too though not reading the later.
+     * 
+     * Complexity of run time:
+
+            j = math.floor( math.log(N)/math.log(5))
+
+            Total cost =  T(    ∑   (N/(5*i)) * const   )  + 2T(j/2) + j
+                           ( ¡=1 to j                   )
+
+            ===> It's a little more than O(j) but less than O(j*lg(j)).
+
+     * @param a
+     * @param b array to perform same swap operations on that a receives
+     * @param c array to perform same swap operations on that a receives
+     * @param indexLo
+     * @param indexHi
+     * @return
+     */
+    public int findMedianOfMediansIdx(float[] a, int[] b, int[] c,
+        int indexLo, int indexHi) {
+        
+        int nItems = (indexHi - indexLo) + 1;
+
+        int nPerGroup = 5;
+
+        if (nItems <= nPerGroup) {
+            int i0 = indexLo;
+            int i1 = i0 + nPerGroup - 1;
+            if (i1 > indexHi) {
+                i1 = indexHi;
+            }
+            float median = findMedian(a, b, c, i0, i1);      // 2T(5/2) + 5
+            int medianIdx = (i1 + i0) >> 1;
+            return medianIdx;
+        }
+
+        int nDiv = (int) Math.ceil((float)nItems/nPerGroup);
+                                                      //    cost       times
+        for (int i = 0; i < nDiv; i++) {              //                n/5
+            int i0 = indexLo + i*nPerGroup;
+            int i1 = i0 + nPerGroup - 1;
+            if (i1 > indexHi) {
+                i1 = indexHi;
+            }
+            float median = findMedian(a, b, c, i0, i1);      // 2T(5/2) + 5
+            int medianIdx = (i1 + i0) >> 1;
+
+            float swap = a[medianIdx];
+            a[medianIdx] = a[indexLo + i];
+            a[indexLo + i] = swap;
+            
+            int swap2 = b[medianIdx];
+            b[medianIdx] = b[indexLo + i];
+            b[indexLo + i] = swap2;
+            
+            swap2 = c[medianIdx];
+            c[medianIdx] = c[indexLo + i];
+            c[indexLo + i] = swap2;
+        }
+
+        /*
+        for nPerGroup = 5
+        Total cost =  N/5 * cnst  +   N/(5*5) * cnst + ... while N/(5^x) < 6
+
+            j = math.floor( math.log(N)/math.log(5))
+
+        Total cost = summation from i = 1 to j inclusive of (N/(5*i)) * const
+
+            so it's basically linear so far, then add the next step
+
+        Next we sort on number of items = nDiv which is the j from
+        preceding comments.  2T(j/2) + j.
+             
+        Adding above to below, summary:
+            j = math.floor( math.log(N)/math.log(5))
+
+            Total cost =  T(    ∑   (N/(5*i)) * const   )  + 2T(j/2) + j
+                           ( ¡=1 to j                   )
+
+            ===> It's a little more than linear on j but less than O(j*lg2(j))
+
+            for N=1000, O(j*lg2(j)) = O(4)
+        */
+
+        float median = findMedian(a, b, c, indexLo, indexLo + nDiv);
+        int medianIdx = (indexLo + nDiv + indexLo) >> 1;
+
+        return medianIdx;
+    }
+
+    /**
      * select the smallest kth number in an unordered list of numbers.
      *
      * the complexity of run time is greater than linear O(N) but less than
@@ -228,6 +320,22 @@ public class KSelect {
     private static float findMedian(float[] a, int indexLo, int indexHi) {
                
         QuickSort.sort(a, indexLo, indexHi);
+
+        return a[(indexHi + indexLo) >> 1];
+    } 
+    
+    /**
+     * find the median index for very small (indexHi - indexLo).  Note that it 
+     * sorts a from indexLo to indexHi too.
+     * @param a
+     * @param indexLo
+     * @param indexHi
+     * @return
+     */
+    private static float findMedian(float[] a, int[] b, int[] c, 
+        int indexLo, int indexHi) {
+               
+        QuickSort.sort(a, b, c, indexLo, indexHi);
 
         return a[(indexHi + indexLo) >> 1];
     } 

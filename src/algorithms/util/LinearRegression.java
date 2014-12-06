@@ -31,6 +31,8 @@ public class LinearRegression {
      * calculate the theil sen estimator for the set of points and return
      * the yIntercept and slope that can be used to plot a line that is the
      * linear regression of the x and y points.
+     * NOTE: a side effect of the method is that x and y become partially
+     * sorted.
      * @param x
      * @param y
      * @return 
@@ -70,7 +72,6 @@ public class LinearRegression {
         
         float median = kSelect.findMedianOfMedians(s, 0, count - 1);
         
-        //y_i − median*x_i
         log.info("thiel sen beta=" + median);
        
         // find the y-intercept as the median of the values y[i] − median * x[i]
@@ -78,8 +79,11 @@ public class LinearRegression {
         for (int i = 0; i < x.length; i++) {
             s2[i] = y[i] - median * x[i];
         }
-                    
-        int s2MedianIdx = kSelect.findMedianOfMediansIdx(s2, 0, s2.length - 1);
+        
+        // x, y, and s2 are partially sorted here:
+        int medianIdx = kSelect.findMedianOfMediansIdx(s2, x, y, 
+            0, s2.length - 1);
+        
         /*
            (y1 - y0)/(x1 - x0) = slope
             y1 - y0 = slope*(x1 - x0);
@@ -88,23 +92,7 @@ public class LinearRegression {
             y1 =  yIntercept     + slope*x1
         */
         
-        float yIntercept = y[s2MedianIdx] - median * x[s2MedianIdx];
-        
-        //the estimation of yIntercept needed to be improved
-        int np = 10;
-        while (((s2MedianIdx - np) < 0) || ((s2MedianIdx + np) > (x.length - 1))) {
-            np--;
-            if (np < 0 || np == 0) {
-                break;
-            }
-        }
-        if (np > 0) {
-            float sum = 0;
-            for (int j = (s2MedianIdx - np); j <= (s2MedianIdx + np); j++) {
-                sum += (y[j] - median * x[j]);
-            }
-            yIntercept = sum/((float)(2*np + 1));
-        }
+        float yIntercept = y[medianIdx] - median * x[medianIdx];
         
         return new float[]{yIntercept, median};
     }
@@ -132,9 +120,16 @@ public class LinearRegression {
         plotTheLinearRegression(dx, dy);
     }
     
-    public void plotTheLinearRegression(int[] dx, int[] dy) {
+    /**
+     * make a plot of the linear regression of arrays x and y.
+     * NOTE: a side effect of the method is that x and y become partially
+     * sorted.
+     * @param x
+     * @param y 
+     */
+    public void plotTheLinearRegression(int[] x, int[] y) {
                         
-        float[] tsbParams = calculateTheilSenEstimatorParams(dx, dy);
+        float[] tsbParams = calculateTheilSenEstimatorParams(x, y);
         
         float yIntercept = tsbParams[0];
         
@@ -144,27 +139,27 @@ public class LinearRegression {
         plot dx, dy
         and plot a line generated from the yIntercept and median: yIntercept − median*x_i
         */        
-        int xMin = MiscMath.findMin(dx);
-        int xMax = MiscMath.findMax(dx);
+        int xMin = MiscMath.findMin(x);
+        int xMax = MiscMath.findMax(x);
         int len = xMax - xMin + 1;
         int[] tsbX = new int[len];
         int[] tsbY = new int[len];
         int count = 0;
-        for (int x = xMin; x <= xMax; x++) {
-            float y = yIntercept + slope * x;
-            tsbX[count] = x;
-            tsbY[count] = (int)Math.round(y);
+        for (int xCoord = xMin; xCoord <= xMax; xCoord++) {
+            float yCoord = yIntercept + slope * xCoord;
+            tsbX[count] = xCoord;
+            tsbY[count] = (int)Math.round(yCoord);
             count++;
         }
         
-        int yMin = MiscMath.findMin(dy);
-        int yMax = MiscMath.findMax(dy);
+        int yMin = MiscMath.findMin(y);
+        int yMax = MiscMath.findMax(y);
        
         try {
             PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
             plotter.addPlot(
                 xMin, xMax, yMin, yMax,
-                dx, dy, 
+                x, y, 
                 tsbX, tsbY,
                 "diff X vs diff Y and thiel sen beta linear regression line");
 
