@@ -34,7 +34,7 @@ public class KSelect {
      * @param indexHi
      * @return
      */
-    protected int findMedianOfMediansIdx(float[] a, int indexLo, int indexHi) {
+    public int findMedianOfMediansIdx(float[] a, int indexLo, int indexHi) {
         
         int nItems = (indexHi - indexLo) + 1;
 

@@ -108,7 +108,7 @@ public class MiscMath {
         return min;
     }
 
-    public static float findMin(int[] a) {
+    public static int findMin(int[] a) {
         int min = Integer.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
             if (a[i] < min) {
@@ -312,4 +312,72 @@ public class MiscMath {
         return sum;
     }
     
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @param x
+     * @return 
+     */
+    public static double[] getAvgAndStDev(int[] x) {
+        
+        int n = x.length;
+        long sumX = 0;
+        for (int i = 0; i < n; i++) {
+            sumX += x[i];
+        }
+        
+        double avgX = (double)sumX/(double)n;
+        
+        sumX = 0;
+        for (int i = 0; i < n; i++) {
+            double diffX = x[i] - avgX;
+            sumX += (diffX * diffX);
+        }
+        double stdDevX = (Math.sqrt(sumX/(n - 1.0f)));
+        
+        return new double[]{avgX, stdDevX};
+    }
+    
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @param x
+     * @return 
+     */
+    public static double[] getAvgAndStDev(double[] x) {
+        
+        int n = x.length;
+        long sumX = 0;
+        for (int i = 0; i < n; i++) {
+            sumX += x[i];
+        }
+        
+        double avgX = (double)sumX/(double)n;
+        
+        sumX = 0;
+        for (int i = 0; i < n; i++) {
+            double diffX = x[i] - avgX;
+            sumX += (diffX * diffX);
+        }
+        double stdDevX = (Math.sqrt(sumX/(n - 1.0f)));
+        
+        return new double[]{avgX, stdDevX};
+    }
+    
+    public static int[] add(int[] x, int amount) {
+        
+        if (x == null) {
+            throw new IllegalArgumentException("x cannot be null");
+        }
+        
+        int[] out = new int[x.length];
+        
+        int n = x.length;
+        
+        for (int i = 0; i < n; i++) {
+            out[i] = x[i] + amount;
+        }
+        
+        return out;
+    }
 }
