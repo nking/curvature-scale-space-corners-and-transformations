@@ -270,6 +270,14 @@ public class StereoProjectionTransformerTest {
     @Test
     public void testF() throws Exception {
         
+        /*
+        test the fundamental matrix using the Merton I College set from
+        http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+        
+        Note that this set was chosen to compare initial results with those from
+        the "Programming Computer Vision with Python" by Jan Solem.
+        */
+        
         // mRows = 484;  nCols = 9
         Matrix A = readMerton1FundamentalMatrixAData();
         
