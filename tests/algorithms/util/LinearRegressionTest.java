@@ -28,12 +28,8 @@ public class LinearRegressionTest {
     @Test
     public void test0() throws Exception {
        
-        // small random deviations from a straight line
+        // 2 parallel diagonal lines
         
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
-        
-        // create 2 diagonal straight lines
         PairIntArray dxdy = new PairIntArray();
         double slope = 2.0;
         double yIntercept1 = (110 - slope*10);
@@ -48,9 +44,52 @@ public class LinearRegressionTest {
             double dy = slope*(double)x;
             int y = (int)Math.round(yIntercept1 + dy);
             
+            dxdy.add(x, y);
+            y = (int)Math.round(yIntercept2 + dy);
+            dxdy.add(x, y);
+        }
+        
+        LinearRegression instance = new LinearRegression();
+        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY());
+        
+        float[] yInterceptAndSlope = 
+            instance.calculateTheilSenEstimatorParams(dxdy.getX(), dxdy.getY());
+        
+        double expectedYIntercept = (yIntercept1 + yIntercept2)/2.;
+        double expectedSlope = slope;
+        
+        assertTrue(Math.abs(yInterceptAndSlope[0] - expectedYIntercept) < 1);
+        
+        assertTrue(Math.abs(yInterceptAndSlope[1] - expectedSlope) < 0.1);
+        
+    }
+    
+    @Test
+    public void test00() throws Exception {
+       
+        // small random deviations from a straight line
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        sr.setSeed(System.currentTimeMillis());
+        
+        int d = 10;
+        
+        PairIntArray dxdy = new PairIntArray();
+        double slope = 2.0;
+        double yIntercept1 = (110 - slope*10);
+        for (int x = 10; x < 100; x++) {
+            /*
+            (y1 - y0)/(x1 - x0) = slope
+            y1 - y0 = slope*(x1 - x0);
+            y1 = y0 + slope*(x1 - x0);
+            y1 = (y0 - slope*x0) + slope*x1
+            */
+            double dy = slope*(double)x;
+            int y = (int)Math.round(yIntercept1 + dy);
+            
             if (sr.nextBoolean()) {
-                int xr = sr.nextInt(10);
-                int yr = sr.nextInt(10);
+                int xr = sr.nextInt(d);
+                int yr = sr.nextInt(d);
                 if (sr.nextBoolean()) {
                     xr *= -1;
                 }
@@ -62,8 +101,6 @@ public class LinearRegressionTest {
             }
             
             dxdy.add(x, y);
-            //y = (int)Math.round(yIntercept2 + dy);
-            //dxdy.add(x, y);
         }
         
         LinearRegression instance = new LinearRegression();
@@ -72,10 +109,10 @@ public class LinearRegressionTest {
         float[] yInterceptAndSlope = 
             instance.calculateTheilSenEstimatorParams(dxdy.getX(), dxdy.getY());
         
-        double expectedYIntercept = (yIntercept1 );//+ yIntercept2)/2.;
+        double expectedYIntercept = yIntercept1;
         double expectedSlope = slope;
         
-        assertTrue(Math.abs(yInterceptAndSlope[0] - expectedYIntercept) < 10);
+        assertTrue(Math.abs(yInterceptAndSlope[0] - expectedYIntercept) < Math.sqrt(d));
         
         assertTrue(Math.abs(yInterceptAndSlope[1] - expectedSlope) < 0.2);
         

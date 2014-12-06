@@ -7,6 +7,7 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import algorithms.misc.MiscMath;
+import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.awt.Color;
@@ -63,223 +64,9 @@ public class StereoProjectionTransformerTest {
         
        
         // diff in matched points and stdev
-        int n = matched1.getN();
-        long sumX = 0;
-        long sumY = 0;
-        int[] dx = new int[n];
-        int[] dy = new int[n];
-        int dxMin = Integer.MAX_VALUE;
-        int dxMax = Integer.MIN_VALUE;
-        int dyMin = Integer.MAX_VALUE;
-        int dyMax = Integer.MIN_VALUE;
-        for (int i = 0; i < n; i++) {
-            
-            int diffX = matched1.getX(i) - matched2.getX(i);
-            int diffY = matched1.getY(i) - matched2.getY(i);
-            sumX += diffX;
-            sumY += diffY;
-            
-            dx[i] = diffX;
-            dy[i] = diffY;
-            
-            if (dxMin > diffX) {
-                dxMin = diffX;
-            }
-            if (dyMin > diffY) {
-                dyMin = diffY;
-            }
-            if (dxMax < diffX) {
-                dxMax = diffX;
-            }
-            if (dyMax < diffY) {
-                dyMax = diffY;
-            }
-            log.info("dx=" + dx[i] + "  dy=" + dy[i]);
-        }
-        double transX = (double)sumX/(double)matched1.getN();
-        double transY = (double)sumY/(double)matched1.getN();
+        LinearRegression linReg = new LinearRegression();
         
-        sumX = 0;
-        sumY = 0;
-        for (int i = 0; i < matched1.getN(); i++) {
-            double diffX = dx[i] - transX;
-            double diffY = dy[i] - transY;
-            sumX += (diffX * diffX);
-            sumY += (diffY * diffY);
-        }
-        double stdDevX = (Math.sqrt(sumX/(n - 1.0f)));
-        double stdDevY = (Math.sqrt(sumY/(n - 1.0f)));
-        log.info("transX=" + transX + " (stdDev=" + stdDevX + ")");
-        log.info("transY=" + transY + " (stdDev=" + stdDevY + ")");
-        
-        /*
-        transX = 293.0882352941176 (stdDev=10.263203002789375)
-        transY = 14.323529411764707 (stdDev=5.898125121074294)
-      
-        for 1000 points, for each possible pair w/ image 2 points,
-        the real solution would be looking for a match within 
-        2.5*stdev        
-        */
-        for (int i = 0; i < n; i++) {
-            double diffX = Math.abs((dx[i] - transX));
-            double diffY = Math.abs((dy[i] - transY));
-            log.info("diffX=" + diffX + "  diffY=" + diffY);
-            assertTrue(diffX <= 3.0*stdDevX);
-            assertTrue(diffY <= 3.0*stdDevY);
-        }
-        
-        /* linear regression w/ theil sen estimator:
-        http://en.wikipedia.org/wiki/Theil%E2%80%93Sen_estimator
-        computing all O(n^2) lines and and then applying a linear time 
-        median finding algorithm
-        */
-        int count = 0;
-        
-        float[] s = new float[n*n];
-        for (int i = 0; i < n; i++) {
-            if (dx[i] == 0) {
-                continue;
-            }
-            s[count] = (float)(dy[i])/(float)(dx[i]);
-            count++;
-        }
-        
-        KSelect kSelect = new KSelect();
-        float median = kSelect.findMedianOfMedians(s, 0, count - 1);
-        log.info("thiel sen beta=" + median 
-            + " transY/transX=" + transY/transX);
-       
-        int[] x1T = new int[xy1.getN()];
-        int[] y1T = new int[xy1.getN()];
-        for (int i = 0; i < xy1.getN(); i++) {
-            x1T[i] = (int) (xy1.getX(i) - transX);
-            y1T[i] = (int) (xy1.getY(i) - transY);
-        }
-        int[] x2 = new int[xy2.getN()];
-        int[] y2 = new int[xy2.getN()];
-        for (int i = 0; i < xy2.getN(); i++) {
-            x2[i] = xy2.getX(i);
-            y2[i] = xy2.getY(i);
-        }
-        
-        /*
-        y = y0 + b*(x-x0)
-        y = y1[0] + deltay*(xMin - x1[0]);
-        
-        y = y1[0] + median*(0 - x1[0]);
-        */
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-        plotter.addPlot(dxMin, dxMax, dyMin, dyMax, dx, dy, 
-                    new int[]{0, dxMax}, 
-                    new int[]{(int)((dy[0] + median*(0 - dx[0]))),
-                    (int)((dy[0] + median*(dxMax - dx[0])))},
-                    "diff x (img1 - img2) vs diff y");
-        
-        int xMax = MiscMath.findMax(x1T);
-        int yMax1 = MiscMath.findMax(y1T);
-        int yMax2 = MiscMath.findMax(y2);
-        float yMin1 = MiscMath.findMin(y1T);
-        float yMin2 = MiscMath.findMin(y2);
-        int yMax = (yMax1 > yMax2) ? yMax1 : yMax2;
-        float yMin = (yMin1 < yMin2) ? yMin1 : yMin2;
-        plotter.addPlot(0, xMax, yMin, yMax,
-            x1T, y1T, 
-            new int[0], new int[0], "img1 corners Transformed");
-        
-        plotter.addPlot(0, xMax, yMin, yMax,
-            x2, y2, 
-            new int[0], new int[0], "img2 corners");
-        
-        plotter.writeFile();
-        
-        // === now, given transX and transY, find points in image2 within
-        // projected +- 3*stdDev
-        int[] xt = new int[xy1.getN()];
-        int[] yt = new int[xy1.getN()];
-        int n2 = 0;
-        int[] xmatched1 = new int[xy1.getN()];
-        int[] ymatched1 = new int[xy1.getN()];
-        int[] xfound2 = new int[xy1.getN()];
-        int[] yfound2 = new int[xy1.getN()];
-        int xPlot1Min = Integer.MAX_VALUE;
-        int xPlot1Max = Integer.MIN_VALUE;
-        int yPlot1Min = Integer.MAX_VALUE;
-        int yPlot1Max = Integer.MIN_VALUE;
-        
-        int xPlot2Min = Integer.MAX_VALUE;
-        int xPlot2Max = Integer.MIN_VALUE;
-        int yPlot2Min = Integer.MAX_VALUE;
-        int yPlot2Max = Integer.MIN_VALUE;
-        
-        for (int i = 0; i < xy1.getN(); i++) {
-            xt[i] = (int)(xy1.getX(i) - transX);
-            yt[i] = (int)(xy1.getY(i) - transY);
-            
-            double minDiff = Double.MAX_VALUE;
-            int minIdx2 = -1;
-            for (int j = 0; j < xy2.getN(); j++) {
-                double diffX = Math.abs(xy2.getX(j) - xt[i]);
-                if (diffX > 1.0*stdDevX) {
-                    continue;
-                }
-                double diffY = Math.abs(xy2.getY(j) - yt[i]);
-                if (diffY > 1.0*stdDevY) {
-                    continue;
-                }
-                double diff = Math.sqrt(diffX*diffX + diffY*diffY);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    minIdx2 = j;
-                }
-            }
-            if (minIdx2 > -1) {
-                xfound2[n2] = xy2.getX(minIdx2);
-                yfound2[n2] = xy2.getY(minIdx2);
-                xmatched1[n2] = xy1.getX(i);
-                ymatched1[n2] = xy1.getY(i);
-                
-                if (xPlot1Min > xmatched1[n2]) {
-                    xPlot1Min = xmatched1[n2];
-                }
-                if (xPlot1Max < xmatched1[n2]) {
-                    xPlot1Max = xmatched1[n2];
-                }
-                if (yPlot1Min > ymatched1[n2]) {
-                    yPlot1Min = ymatched1[n2];
-                }
-                if (yPlot1Max < ymatched1[n2]) {
-                    yPlot1Max = ymatched1[n2];
-                }
-                
-                if (xPlot2Min > xfound2[n2]) {
-                    xPlot2Min = xfound2[n2];
-                }
-                if (xPlot2Max < xfound2[n2]) {
-                    xPlot2Max = xfound2[n2];
-                }
-                if (yPlot2Min > yfound2[n2]) {
-                    yPlot2Min = yfound2[n2];
-                }
-                if (yPlot2Max < yfound2[n2]) {
-                    yPlot2Max = yfound2[n2];
-                }
-                
-                n2++;
-            }
-        }
-        
-        plotter.addPlot(xPlot1Min, xPlot1Max, yPlot1Min, yPlot1Max,
-            xmatched1, ymatched1, 
-            new int[0], new int[0], "the matched image1 points");
-    
-        plotter.addPlot(xPlot2Min, xPlot2Max, yPlot2Min, yPlot2Max,
-            xfound2, yfound2, 
-            new int[0], new int[0], "the matched image2 points");
-    
-        plotter.writeFile();
-        
-        log.info("original list matches=" + matched1.getN() 
-            + " final matches=" + n2);
+        linReg.plotTheLinearRegression(xy1, xy2);
     }
    
     public void testC() throws Exception {
@@ -418,16 +205,24 @@ public class StereoProjectionTransformerTest {
       
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImage(filePath1);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
         
         String fileName2 = "brown_lowe_2003_image2.jpg";
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImage(filePath2);
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
         
+        double rightEpipoleX = rightEpipole[0] / rightEpipole[2];
+        double rightEpipoleY = rightEpipole[1] / rightEpipole[2];
+        double leftEpipoleX = leftEpipole[0] / leftEpipole[2];
+        double leftEpipoleY = leftEpipole[1] / leftEpipole[2];
+        log.info("leftEpipole=" + Arrays.toString(leftEpipole));
+        log.info("rightEpipole=" + Arrays.toString(rightEpipole));
+        log.info("leftEpipole(X,Y) = ("  + leftEpipoleX + ", " + leftEpipoleY + ")");
+        log.info("rightEpipole(X,Y) = ("  + rightEpipoleX + ", " + rightEpipoleY + ")");
         PairIntArray leftMatches = new PairIntArray();
         PairIntArray rightMatches = new PairIntArray();
         
-        int nLimitTo = 5;//matched1.getN();
+        int nLimitTo = matched1.getN();
         
         for (int i = 0; i < nLimitTo; i++) {
             leftMatches.add((int)Math.round(matched1.getX(i)),

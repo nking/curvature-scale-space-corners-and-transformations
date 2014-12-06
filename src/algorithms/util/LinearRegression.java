@@ -94,6 +94,22 @@ public class LinearRegression {
         
         float yIntercept = y[medianIdx] - median * x[medianIdx];
         
+        //the estimation of yIntercept needed to be improved
+        int np = 10;
+        while (((medianIdx - np) < 0) || ((medianIdx + np) > (x.length - 1))) {
+            np--;
+            if (np < 0 || np == 0) {
+                break;
+            }
+        }
+        if (np > 0) {
+            float sum = 0;
+            for (int j = (medianIdx - np); j <= (medianIdx + np); j++) {
+                sum += (y[j] - median * x[j]);
+            }
+            yIntercept = sum/((float)(2*np + 1));
+        }
+        
         return new float[]{yIntercept, median};
     }
     
@@ -161,7 +177,7 @@ public class LinearRegression {
                 xMin, xMax, yMin, yMax,
                 x, y, 
                 tsbX, tsbY,
-                "diff X vs diff Y and thiel sen beta linear regression line");
+                "X vs Y and thiel sen beta linear regression line");
 
             plotter.writeFile();
             
