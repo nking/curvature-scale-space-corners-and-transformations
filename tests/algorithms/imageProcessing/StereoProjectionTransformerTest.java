@@ -2005,6 +2005,12 @@ public class StereoProjectionTransformerTest {
         return new Matrix(A);
     }
 
+    /**
+     * dataset from 'Merton College I" at
+     * http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+     * 
+     * @return 
+     */
     private Matrix readMerton1UnnormalizedX1Data() {
         
         double[][] x1 = new double[3][];
@@ -2162,6 +2168,12 @@ public class StereoProjectionTransformerTest {
         return new Matrix(x1);
     }
 
+    /**
+     * dataset from 'Merton College I" at
+     * http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+     * 
+     * @return 
+     */
     private Matrix readMerton1UnnormalizedX2Data() {
         
         double[][] x2 = new double[3][];
@@ -2340,6 +2352,12 @@ public class StereoProjectionTransformerTest {
         return xy;
     }
     
+    /**
+     * dataset from 'Merton College I" at
+     * http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+     * 
+     * @return 
+     */
     private PairFloatArray readMerton1UnnormalizedXY2Data() {
         
         Matrix m2 = readMerton1UnnormalizedX2Data();
