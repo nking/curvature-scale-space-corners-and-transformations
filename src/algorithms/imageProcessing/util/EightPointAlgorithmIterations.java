@@ -15,9 +15,10 @@ public class EightPointAlgorithmIterations {
      certainty that 8 points drawn randomly from nMatchedPoints will all be
      'true' matches, that is, not outliers.
      
+     <pre>
      It uses this table generated below following the statistics in the comments
      at the end of this class.
-     * 
+     
                     | nInliers percentage of nTotal
      nMatchedPoints |   50       75       100
      ------------------------------------------------------
@@ -26,6 +27,7 @@ public class EightPointAlgorithmIterations {
       100   |       | 0.003  | 0.09   |  1.0
       500   |       | 0.004  | 0.1    |  1.0
      1000   |       | 0.004  | 0.1    |  1.0
+     </pre>
      
      * @param nMatchedPoints
      * @return 
@@ -54,9 +56,10 @@ public class EightPointAlgorithmIterations {
      certainty that 8 points drawn randomly from nMatchedPoints will all be
      'true' matches, that is, not outliers.
      
+     <pre>
      It uses this table generated below following the statistics in the comments
      at the end of this class.
-     * 
+     
                     | nInliers percentage of nTotal
      nMatchedPoints |   50       75       100
      ------------------------------------------------------
@@ -65,6 +68,7 @@ public class EightPointAlgorithmIterations {
       100   |       | 0.003  | 0.09   |  1.0
       500   |       | 0.004  | 0.1    |  1.0
      1000   |       | 0.004  | 0.1    |  1.0
+     </pre>
      
      * @param nMatchedPoints
      * @return 

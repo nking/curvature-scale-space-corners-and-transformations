@@ -2,7 +2,6 @@ package algorithms.util;
 
 import java.security.SecureRandom;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -10,9 +9,10 @@ import static org.junit.Assert.*;
  */
 public class PairIntArrayTest extends TestCase {
     
-    public PairIntArrayTest() {
+    public PairIntArrayTest(String testName) {
+        super(testName);
     }
-    
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();

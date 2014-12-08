@@ -204,6 +204,67 @@ public class MiscMathTest extends TestCase {
         // constructor isn't used, this is to complete the coverage.
         MiscMath mm = new MiscMath();
     }
+    
+    public void testComputeNDivNMinusK() throws Exception {
+        
+        // n! / (n - k)!
+        long result = MiscMath.computeNDivNMinusK(2, 1);
+        assertTrue(result == 2);
+        
+        result = MiscMath.computeNDivNMinusK(4, 3);
+        assertTrue(result == 4*3*2);
+        
+        result = MiscMath.computeNDivNMinusK(4, 2);
+        assertTrue(result == 4*3);
+        
+        result = MiscMath.computeNDivNMinusK(6, 3);
+        assertTrue(result == 6*5*4);
+    }
+    
+    public void testFactorial() throws Exception {
+        
+        long result = MiscMath.factorial(2);
+        assertTrue(result == 2);
+        
+        result = MiscMath.factorial(4);
+        assertTrue(result == 4*3*2);
+        
+        result = MiscMath.factorial(5);
+        assertTrue(result == 5*4*3*2);
+        
+        result = MiscMath.factorial(1);
+        assertTrue(result == 1);
+        
+        result = MiscMath.factorial(0);
+        assertTrue(result == 0);
+    }
+    
+    public void testSubsets() throws Exception {
+       
+        /* for (4, 2)
+           0 1 2 3 are the numbers
+           0 1
+           0 2
+           0 3
+           1 2
+           1 3
+           2 3
+        3	        11        ==> '0' '1'
+        5	       101        ==> '0' '2'
+        6	       110        ==> '1' '2'
+        9	      1001        ==> '0' '3'
+        10	      1010        ==> '1' '3'
+        12	      1100        ==> '2' '3'
+        17	     10001        ==> '0' '4' <=== discard last
+        */
+        
+        //System.out.format("%d\t%10s\n", x, Long.toBinaryString(x));
+        MiscMath.printKSetBitsWithinNBits(4, 2);
+        
+        //No test. looking for pattern to calculate bitstring for
+        // ith iteration without iterating.
+                
+    }
 
     /**
      * Test of findMax method, of class MiscMath.

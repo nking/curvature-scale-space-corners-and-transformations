@@ -302,10 +302,10 @@ public class MiscMath {
             double f = Math.pow(x, i)/(float)i;
             if (i % 2 == 0) {
                 sum -= f;
-                System.out.print("     MINUS i=" + i);
+                //System.out.print("     MINUS i=" + i);
             } else {
                 sum += f;
-                System.out.print("     PLUS i=" + i);
+                //System.out.print("     PLUS i=" + i);
             }            
         }
         
@@ -379,5 +379,84 @@ public class MiscMath {
         }
         
         return out;
+    }
+    
+    /**
+     * compute n!/(n-k)!... needed for large numbers
+     *
+     * @param n
+     * @param k
+     * @return
+     */
+    public static long computeNDivNMinusK(int n, int k) {
+
+        if (n == k) {
+            return 1;
+        }
+
+        long result = 1;
+        for (int i = n; i > (n-k); i--) {
+            result *= i;
+        }
+        return result;
+    }
+    
+    /**
+     * compute n!/(n-k)!... needed for large numbers
+     *
+     * @param n
+     * @param k
+     * @return
+     */
+    public static long factorial(int n) {
+
+        if (n < 3) {
+            return n;
+        }
+
+        long result = 1;
+        for (int i = 2; i <= n; i++) {
+            result *= i;
+        }
+        return result;
+    }
+    
+    public static long printKSetBitsWithinNBits(long nBits, long kOnes) {
+
+        long x = (1L << kOnes) - 1;
+
+        String str = String.format("%d\t%10s\n", x, Long.toBinaryString(x));
+        System.out.println(str);
+        while ((x & (1L << nBits)) == 0) {
+
+            // 3 different ways to the same result:
+            
+            
+            long lo = x & ~(x - 1);       // lowest one bit
+            
+            long lz = (x + lo) & ~x;      // lowest zero bit above lo
+            
+            x |= lz;                      // add lz to the set
+            
+            x &= ~(lz - 1);               // reset bits below lz
+            
+            x |= (lz / lo / 2) - 1;       // put back right number of bits at end
+            
+            /*
+            long a = x & -x;
+            long b = x + a;
+            x = (((x^b) >>> 2)/a) | b;
+            */
+            
+            /*
+            long a = x & -x;
+            long b = x + a;
+            x = b + (((b ^ x) / a) >> 2);
+            */
+            
+            System.out.format("%d\t%10s\n", x, Long.toBinaryString(x));   
+        }
+        
+        return x;
     }
 }

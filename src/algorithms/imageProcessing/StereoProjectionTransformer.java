@@ -4,7 +4,9 @@ import algorithms.util.PairFloatArray;
 import Jama.*;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PairIntArray;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -98,7 +100,7 @@ import java.util.logging.Logger;
      by performing a svd and then reconstructing with the two largest 
      singular values.
          [U,D,V] = svd(F,0);
-         F = U * diag([D(1,1) D(2,2) 0]) * V'; 
+         F = U * diag([D(1,1) D(2,2) 0]) * V^T; 
  
  (5) denormalize the fundamental matrix
      The related part of the normalization equation: inv(T_2) * F * inv(T_1)
@@ -308,10 +310,14 @@ public class StereoProjectionTransformer {
         
         // mRows = 9; nCols = 9
         Matrix V = svd.getV();
-        int vNCols = V.getColumnDimension();
+        
         assert(V.getColumnDimension() == 9);
         assert(V.getRowDimension() == 9);
-        // reshape it to 3x3
+        
+        // reshape V to 3x3
+        
+        int vNCols = V.getColumnDimension();
+        
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
             ff[i] = new double[3];
@@ -322,10 +328,12 @@ public class StereoProjectionTransformer {
         Matrix fMatrix = new Matrix(ff);
         
         /* make the fundamental matrix have a rank of 2
-           by performing a svd and then reconstructing with the two largest 
-           singular values.
-              [U,D,V] = svd(F,0);
-              F = U * diag([D(1,1) D(2,2) 0]) * V';
+        by performing a svd and then reconstructing with the two largest 
+        singular values.
+            [U,D,V] = svd(F,0);
+        
+        From [U,D,V] we create:
+            F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
         */
         svd = fMatrix.svd();
         
@@ -344,7 +352,7 @@ public class StereoProjectionTransformer {
         
         /*
         multiply the terms:
-             F = dot(U, dot(diag(D),V))
+             F = dot(U, dot(diag(D),V^T))
         */               
         Matrix dDotV = d.times(svd.getV().transpose());
         
@@ -371,6 +379,14 @@ public class StereoProjectionTransformer {
         return denormFundamentalMatrix;
     }   
     
+    /**
+     * calculate the fundamental matrix without normalization.  Note, this
+     * method should not be used, but is present for comparing solutions
+     * during tests.
+     * @param matchedXY1
+     * @param matchedXY2
+     * @return 
+     */
     Matrix calculateFundamentalMatrixWithoutNormalization(Matrix matchedXY1, 
         Matrix matchedXY2) {
         
@@ -412,7 +428,9 @@ public class StereoProjectionTransformer {
            by performing a svd and then reconstructing with the two largest 
            singular values.
               [U,D,V] = svd(F,0);
-              F = U * diag([D(1,1) D(2,2) 0]) * V';
+        
+           then from [U,D,V], create F:
+              F = U * diag([D(1,1) D(2,2) 0]) * V^T;
         */
         svd = fMatrix.svd();
         
@@ -431,7 +449,7 @@ public class StereoProjectionTransformer {
         
         /*
         multiply the terms:
-             F = dot(U, dot(diag(D),V))
+             F = dot(U, dot(diag(D),V^T))
         */
         Matrix dDotV = d.times(svd.getV().transpose());
         
@@ -526,6 +544,11 @@ public class StereoProjectionTransformer {
         return normalizedXY;
     }
     
+    /**
+     * write a matrix of size mRows = 3, nCols = xyPairs.getN()
+     * @param xyPairs
+     * @return 
+     */
     protected Matrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
         
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
@@ -606,11 +629,33 @@ public class StereoProjectionTransformer {
      * @return 
      */
     double[][] calculateEpipoles(Matrix fundamentalMatrix) {
+        
         /*
+        The representation of lines in homogeneous projective coordinates
+        is:   line a*x + b*y + c = 0
+            | a |
+            | b |
+            | c |
+        The line can be rewritten in slope, intercept form:
+            y = intercept + slope * x
+              = -(c/b) - slope*(a/b)*x
+        
+        written as homogenization form of lines:
+            | -a/b |
+            | -c/b |
+        
+        
+        From u_2^T * F * u_1 = 0 
+        
+        The right epipole, 
+            e_right = 
+        
+        
         epipoles: 
              [U,D,V] = svd(denormalized FundamentalMatrix);
              e1 = last column of V divided by it's last item
              e2 = last column of U divided by it's last item
+                
         */
         SingularValueDecomposition svdE = fundamentalMatrix.svd();
         Matrix V = svdE.getV().transpose();
@@ -668,6 +713,87 @@ public class StereoProjectionTransformer {
         
         return m;
     }
+
+    /**
+    calculate the distance of points in set 2 from the epipolar lines and 
+    estimate the average and standard deviation and count the number within 
+    tolerance.
+     
+     * @param tolerance
+     * @return 
+     */
+    public StereoProjectionTransformerFit evaluateFitForRight(double tolerance) {
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        int nPoints = rightXY.getColumnDimension();
+         
+        // estimate endpoints of the epipolar line as the min and max x of right
+        int xBegin = Integer.MAX_VALUE;
+        int xEnd = Integer.MIN_VALUE;
+        for (int i = 0; i < nPoints; i++) {
+            double xP = rightXY.get(0, i);
+            int x = (int)Math.round(xP);
+            if (x < xBegin) {
+                xBegin = x;
+            }
+            if (x > xEnd) {
+                xEnd = x;
+            }
+        }
+        
+        List<Integer> outlierIndexes = new ArrayList<Integer>();
+        
+        double[] dist = new double[nPoints];
+        
+        //TODO: improve use of types to avoid casting
+        
+        // estimate the average distance of points that are within tolerance
+        double avg = 0;
+        int count = 0;
+        for (int i = 0; i < nPoints; i++) {
+            
+            float xP = (float) rightXY.get(0, i);
+            float yP = (float) rightXY.get(1, i);
+           
+            double[] lineYEndpoints = getEpipolarLineYEndpoints(
+                epipolarLinesInRight, xBegin, xEnd, i);
+            
+            double d = curveHelper.distanceFromPointToALine(
+                (float)xBegin, (float)lineYEndpoints[0],
+                (float)xEnd, (float)lineYEndpoints[1], xP, yP);
+            
+            if (d <= tolerance) {
+                
+                dist[count] = d;
+            
+                avg += dist[i];
+            
+                count++;
+                
+            } else {
+                
+                outlierIndexes.add(Integer.valueOf(i));
+            }
+        }
+        
+        avg /= (double)count;
+                
+        double stdev = 0;
+        // estimate the standard deviation from the mean
+        for (int i = 0; i < count; i++) {
+            double diff = dist[i] - avg;
+            stdev += (diff * diff);
+        }
+        stdev = Math.sqrt(stdev/((double) count - 1.0));
+        
+        StereoProjectionTransformerFit fit = new StereoProjectionTransformerFit(
+            count, tolerance, avg, stdev);
+        
+        fit.setOutlierIndexes(outlierIndexes);
+        
+        return fit;
+    }
     
     public static class NormalizedXY {
 
@@ -703,7 +829,7 @@ public class StereoProjectionTransformer {
         }
 
         /**
-         * @param matrix holding the scale and offsets to apply to x, y
+         * @param normMatrix holding the scale and offsets to apply to x, y
          */
         public void setNormMatrix(Matrix normMatrix) {
             this.normalizationMatrix = normMatrix;
@@ -763,5 +889,79 @@ public class StereoProjectionTransformer {
         }
   
         return line;
+    }
+    
+    private double[] getEpipolarLineYEndpoints(Matrix epipolarLines, int xBegin,
+        int xEnd, int pointNumber) {
+        
+        double a = epipolarLines.get(0, pointNumber);
+        double b = epipolarLines.get(1, pointNumber);
+        double c = epipolarLines.get(2, pointNumber);
+        
+        //y = - (a/b) * x - (c/b)
+        double yBegin = (c + (a * (double)xBegin)) / (-b);
+        
+        double yEnd = (c + (a * (double)xEnd)) / (-b);
+  
+        return new double[]{yBegin, yEnd};
+    }
+
+    public PairIntArray getRightXYInt() {
+                         
+        return getXYInt(rightXY);
+    }
+    
+    public PairIntArray getLeftXYInt() {
+                         
+        return getXYInt(leftXY);
+    }
+    
+    public int getNumberOfMatches() {
+        
+        return leftXY.getColumnDimension();
+    }
+    
+    public PairFloatArray getRightXYFloat() {
+                         
+        return getXYFloat(rightXY);
+    }
+    
+    public PairFloatArray getLeftXYFloat() {
+                         
+        return getXYFloat(leftXY);
+    }
+    
+    private PairIntArray getXYInt(Matrix leftOrRightXY) {
+                
+        int nPoints = leftOrRightXY.getColumnDimension();
+         
+        PairIntArray out = new PairIntArray();
+        
+        for (int i = 0; i < nPoints; i++) {
+            
+            float xP = (float) leftOrRightXY.get(0, i);
+            float yP = (float) leftOrRightXY.get(1, i);
+           
+            out.add((int)Math.round(xP), (int)Math.round(yP));
+        }
+        
+        return out;
+    }
+    
+    private PairFloatArray getXYFloat(Matrix leftOrRightXY) {
+                
+        int nPoints = leftOrRightXY.getColumnDimension();
+         
+        PairFloatArray out = new PairFloatArray();
+        
+        for (int i = 0; i < nPoints; i++) {
+            
+            float xP = (float) leftOrRightXY.get(0, i);
+            float yP = (float) leftOrRightXY.get(1, i);
+           
+            out.add(xP, yP);
+        }
+        
+        return out;
     }
 }

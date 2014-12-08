@@ -164,7 +164,7 @@
     	    destdir="${tests.out.dir}"
     	    source="${compile.target}"
             debug="true"
-            includes="**/*Test.java"
+            includes="**/*.java"
             excludes="**/*KDTree2Test*java"
             includeAntRuntime="false"
     	    deprecation="${compile.deprecation}"
@@ -423,7 +423,8 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <echo message="${src.out.dir}/logging.properties"/>
-        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" haltonerror="true" haltonfailure="true">
+        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" 
+            haltonerror="true" haltonfailure="true">
             
             <classpath>
                 <pathelement location="${tests.out.dir}"/>

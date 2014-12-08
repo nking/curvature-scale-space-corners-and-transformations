@@ -1,6 +1,7 @@
 package algorithms.util;
 
 import java.security.SecureRandom;
+import static junit.framework.Assert.assertTrue;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,11 +73,75 @@ public class PairFloatArrayTest {
             assertTrue(instance.getY()[i] == y[i]);
         }
         
+        PairFloatArray copied = instance.copy();
+        assertTrue(copied.getN() == instance.getN());
+        for (int i = 0; i < x.length; i++) {
+            assertTrue(copied.getX(i) == x[i]);
+            assertTrue(copied.getY(i) == y[i]);
+            assertTrue(copied.getX()[i] == x[i]);
+            assertTrue(copied.getY()[i] == y[i]);
+        }
+        
         instance.set(nr/2, 100, 101);
         assertTrue(instance.getX(nr/2) == 100);
         assertTrue(instance.getY(nr/2) == 101);
         
         assertTrue(instance.toString().contains("x="));
+        
     }
 
+    public void testRemoveRange() throws Exception {
+        
+        PairFloatArray xy = new PairFloatArray();
+        for (int i = 0; i < 7; i++) {
+            xy.add(i, i);
+        }
+        
+        xy.removeRange(0, 2);
+        
+        assertTrue(xy.getN() == 4);
+        
+        assertTrue(xy.getX(0) == 3);
+        assertTrue(xy.getY(0) == 3);
+        assertTrue(xy.getX(1) == 4);
+        assertTrue(xy.getY(1) == 4);
+        assertTrue(xy.getX(2) == 5);
+        assertTrue(xy.getY(2) == 5);
+        assertTrue(xy.getX(3) == 6);
+        assertTrue(xy.getY(3) == 6);
+        
+        //=======
+        xy = new PairFloatArray();
+        for (int i = 0; i < 7; i++) {
+            xy.add(i, i);
+        }
+        
+        xy.removeRange(4, 6);
+        
+        assertTrue(xy.getN() == 4);
+        
+        assertTrue(xy.getX(0) == 0);
+        assertTrue(xy.getY(0) == 0);
+        assertTrue(xy.getX(1) == 1);
+        assertTrue(xy.getY(1) == 1);
+        assertTrue(xy.getX(2) == 2);
+        assertTrue(xy.getY(2) == 2);
+        assertTrue(xy.getX(3) == 3);
+        assertTrue(xy.getY(3) == 3);
+        
+        xy = new PairFloatArray();
+        xy.add(0, 10);
+        xy.add(12, 23);
+        xy.add(23, 31);
+        xy.add(34, 84);
+        int i = 2;
+        int r1 = 31;
+        xy.set(i - 1, xy.getX(i - 1), r1);
+        xy.removeRange(i, i);
+        assertTrue(xy.getN() == 3);
+        assertTrue((xy.getX(0) == 0) && (xy.getY(0) == 10));
+        assertTrue((xy.getX(1) == 12) && (xy.getY(1) == 31));
+        assertTrue((xy.getX(2) == 34) && (xy.getY(2) == 84));
+
+    }
 }

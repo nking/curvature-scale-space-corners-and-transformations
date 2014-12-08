@@ -93,6 +93,55 @@ public class PairFloatArray {
         }
     }
     
+    public PairFloatArray copy() {
+        
+        PairFloatArray clone = new PairFloatArray(n);
+        
+        System.arraycopy(x, 0, clone.x, 0, n);
+        System.arraycopy(y, 0, clone.y, 0, n);
+        
+        clone.n = n;
+        
+        return clone;
+    }
+    
+    /**
+     * remove indexes from idxLo to idxHi, inclusive
+     * @param idxLo
+     * @param idxHi 
+     */
+    public void removeRange(int idxLo, int idxHi) {
+        
+        if ((idxLo < 0) || (idxLo > (n - 1))) {
+            throw new IllegalArgumentException("idxLo is out of range");
+        }
+        if ((idxHi < 0) || (idxHi > (n - 1))) {
+            throw new IllegalArgumentException("idxHi is out of range");
+        }
+        if (idxHi < idxLo) {
+            throw new IllegalArgumentException("idxHi has to be >= idxLo");
+        }
+        
+        int nRemove = idxHi - idxLo + 1;
+
+        int moveIdx = idxHi + 1;
+        if (moveIdx <= (n - 1)) {
+            for (int moveToIdx = idxLo; moveToIdx < (n - nRemove); moveToIdx++) {
+                x[moveToIdx] = x[moveIdx];
+                y[moveToIdx] = y[moveIdx];
+                moveIdx++;
+            }
+        }
+        
+        // not necessary, but easier debugging to reset the last nRemove to 0
+        for (int i = (n - nRemove); i < n; i++) {
+            x[i] = 0;
+            y[i] = 0;
+        }
+        
+        n -= nRemove;
+    }
+    
     public String toString() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) {
