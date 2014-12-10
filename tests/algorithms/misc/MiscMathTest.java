@@ -258,12 +258,20 @@ public class MiscMathTest extends TestCase {
         17	     10001        ==> '0' '4' <=== discard last
         */
         
-        //System.out.format("%d\t%10s\n", x, Long.toBinaryString(x));
-        MiscMath.printKSetBitsWithinNBits(4, 2);
+        
+        //
+        Long result = MiscMath.getNextSubsetBitstring(4, 2, null);
+        
+        while (result != null) {
+            
+            System.out.format("%s\t%10s\n", result.toString(), 
+                Long.toBinaryString(result.longValue()));
+            
+            result = MiscMath.getNextSubsetBitstring(4, 2, result);
+        }
         
         //No test. looking for pattern to calculate bitstring for
-        // ith iteration without iterating.
-                
+        // ith iteration without iterating...
     }
 
     /**

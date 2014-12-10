@@ -10,6 +10,8 @@ import java.util.Comparator;
 public class DescendingSigmaComparator implements 
     Comparator<CurvatureScaleSpaceContour>, Serializable {
 
+    private static final long serialVersionUID = 1;
+    
     @Override
     public int compare(CurvatureScaleSpaceContour o1, CurvatureScaleSpaceContour o2) {
         if (o1.getPeakSigma() > o2.getPeakSigma()) {

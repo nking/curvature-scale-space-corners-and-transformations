@@ -512,6 +512,70 @@ public class ImageIOHelper {
     }
     
     /**
+     * draw the point over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param x of point
+     * @param y of point
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addPointToImage(int x, int y, Image input, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+
+            int xx = x + dx;
+
+            if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                    dy++) {
+
+                    int yy = y + dy;
+                    if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                        input.setRGB(xx, yy, rClr, gClr, bClr);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * draw the point over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param x of point
+     * @param y of point
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addPointToImage(float x, float y, Image input, 
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+
+            int xx = Math.round(x + dx);
+
+            if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                    dy++) {
+
+                    int yy = Math.round(y + dy);
+                    if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                        input.setRGB(xx, yy, rClr, gClr, bClr);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
      * draw the edge over the image using the given rgb colors and the size
      * of the dot beyond 1 pixel.
      * 

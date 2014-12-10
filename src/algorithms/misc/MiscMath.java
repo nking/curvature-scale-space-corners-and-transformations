@@ -405,7 +405,6 @@ public class MiscMath {
      * compute n!/(n-k)!... needed for large numbers
      *
      * @param n
-     * @param k
      * @return
      */
     public static long factorial(int n) {
@@ -421,42 +420,60 @@ public class MiscMath {
         return result;
     }
     
-    public static long printKSetBitsWithinNBits(long nBits, long kOnes) {
-
-        long x = (1L << kOnes) - 1;
-
-        String str = String.format("%d\t%10s\n", x, Long.toBinaryString(x));
-        System.out.println(str);
-        while ((x & (1L << nBits)) == 0) {
-
-            // 3 different ways to the same result:
+    /**
+     * return the next subset after x, represented as a bitstring.
+     * if x is null, the first subset is returned, else the subset
+     * proceeding it.
+     * The set bits are the selected bits in the returned string, that is
+     * the set bits should represent the k subset bits in from nBits total
+     * to select from.
+     * 
+     * One can quickly see the results using Long.toBinaryString(x).
+     * 
+     * @param nBits
+     * @param kOnes
+     * @param x
+     * @return 
+     */
+    public static Long getNextSubsetBitstring(long nBits, long kOnes, Long x) {
+        
+        if (x == null) {
             
+            long t = (1L << kOnes) - 1;
             
-            long lo = x & ~(x - 1);       // lowest one bit
-            
-            long lz = (x + lo) & ~x;      // lowest zero bit above lo
-            
-            x |= lz;                      // add lz to the set
-            
-            x &= ~(lz - 1);               // reset bits below lz
-            
-            x |= (lz / lo / 2) - 1;       // put back right number of bits at end
-            
-            /*
-            long a = x & -x;
-            long b = x + a;
-            x = (((x^b) >>> 2)/a) | b;
-            */
-            
-            /*
-            long a = x & -x;
-            long b = x + a;
-            x = b + (((b ^ x) / a) >> 2);
-            */
-            
-            System.out.format("%d\t%10s\n", x, Long.toBinaryString(x));   
+            return Long.valueOf(t);
         }
         
-        return x;
+        long t = x.longValue();
+        
+        boolean proceed = ((t & (1L << nBits)) == 0);
+        
+        if (!proceed) {
+            return null;
+        }
+        
+        // 3 different ways to the same result:
+
+        /*
+        long lo = x & ~(x - 1);     // lowest one bit
+
+        long lz = (x + lo) & ~x;    // lowest zero bit above lo
+
+        x |= lz;                    // add lz to the set
+
+        x &= ~(lz - 1);             // reset bits below lz
+
+        x |= (lz / lo / 2) - 1;     // put back right number of bits at end
+        */
+
+        long a = t & -t;
+        long b = t + a;
+        t = (((t^b) >>> 2)/a) | b;
+
+        /*
+        t = b + (((b ^ t) / a) >> 2);
+        */            
+        
+        return Long.valueOf(t);
     }
 }

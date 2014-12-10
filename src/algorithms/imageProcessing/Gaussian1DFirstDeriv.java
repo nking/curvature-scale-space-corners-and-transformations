@@ -472,7 +472,7 @@ public class Gaussian1DFirstDeriv {
      * curvature tests for the non-binomial kernel show better results so
      * prefer that for sigma=4.
      * 
-     * @deprecated 
+     * @Deprecated 
      * @return 
      */
     protected static float[] getBinomialKernelSigmaFour() {

@@ -1723,8 +1723,8 @@ public class MiscellaneousCurveHelper {
             if (i >= stopIndex) {
                 return lineSegmentRanges;
             }
-            dx = (int) (curve.getX(i) - curve.getX(i - 1));
-            dy = (int) (curve.getY(i) - curve.getY(i - 1));
+            dx = (curve.getX(i) - curve.getX(i - 1));
+            dy = (curve.getY(i) - curve.getY(i - 1));
         }
         int start = i;
         
@@ -1738,12 +1738,12 @@ public class MiscellaneousCurveHelper {
         
         for (i = start; i <= stopIndex; i++) {
                     
-            int x = (int)curve.getX(i);
-            int y = (int)curve.getY(i);
+            int x = curve.getX(i);
+            int y = curve.getY(i);
             
-            int diffX = (int)(x - curve.getX(i - 1));
+            int diffX = (x - curve.getX(i - 1));
             
-            int diffY = (int)(y - curve.getY(i - 1));
+            int diffY = (y - curve.getY(i - 1));
           
             int currentStepWidth = i - stepStart;
 
@@ -1784,8 +1784,8 @@ public class MiscellaneousCurveHelper {
                     if (i >= stopIndex) {
                         return lineSegmentRanges;
                     }
-                    dx = (int) (curve.getX(i) - curve.getX(i - 1));
-                    dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                    dx = (curve.getX(i) - curve.getX(i - 1));
+                    dy = (curve.getY(i) - curve.getY(i - 1));
                 }
                 
                 sumStepWidth = 0;
@@ -1836,9 +1836,9 @@ public class MiscellaneousCurveHelper {
         int i;
         for (i = start; i <= stopIndex; i++) {
        
-            int diffX = (int)(curve.getX(i) - curve.getX(i - 1));
+            int diffX = (curve.getX(i) - curve.getX(i - 1));
             
-            int diffY = (int)(curve.getY(i) - curve.getY(i - 1));
+            int diffY = (curve.getY(i) - curve.getY(i - 1));
 
             if ((widthIsAlongX.booleanValue() && (diffX != dx)) ||
                 (widthIsAlongX.booleanValue() && (diffY != dy)
@@ -1982,8 +1982,8 @@ public class MiscellaneousCurveHelper {
             if (i > (stop - 1)) {
                 return;
             }
-            dx = (int) (curve.getX(i) - curve.getX(i - 1));
-            dy = (int) (curve.getY(i) - curve.getY(i - 1));
+            dx = (curve.getX(i) - curve.getX(i - 1));
+            dy = (curve.getY(i) - curve.getY(i - 1));
         }
 
         if (dx == 0) {
@@ -1997,8 +1997,8 @@ public class MiscellaneousCurveHelper {
         // back track to find where the current linestart
         // should be between start and i
         for (int j = (i - 1); j >= (start + 1); j--) {
-            int diffX = (int) (curve.getX(j) - curve.getX(j - 1));
-            int diffY = (int) (curve.getY(j) - curve.getY(j - 1));
+            int diffX = (curve.getX(j) - curve.getX(j - 1));
+            int diffY = (curve.getY(j) - curve.getY(j - 1));
             if ((diffY != dy) || (diffX != dx)) {
                 i = j;
             }
@@ -2016,9 +2016,9 @@ public class MiscellaneousCurveHelper {
             int x = curve.getX(i);
             int y = curve.getY(i);
             
-            int diffX = (int) (x - curve.getX(i - 1));
+            int diffX = (x - curve.getX(i - 1));
 
-            int diffY = (int) (y - curve.getY(i - 1));
+            int diffY = (y - curve.getY(i - 1));
 
             /* if there's a break in the line:
                   temporarily store the section so far.
@@ -2076,8 +2076,8 @@ public class MiscellaneousCurveHelper {
                         if (i >= stop) {
                             break;
                         }
-                        dx = (int) (curve.getX(i) - curve.getX(i - 1));
-                        dy = (int) (curve.getY(i) - curve.getY(i - 1));
+                        dx = (curve.getX(i) - curve.getX(i - 1));
+                        dy = (curve.getY(i) - curve.getY(i - 1));
                     }
 
                     if (i < stop) {
@@ -2090,8 +2090,8 @@ public class MiscellaneousCurveHelper {
                         // back track to find where the current linestart
                         // should be between tmpI and i
                         for (int j = (i - 1); j >= tmpI; j--) {
-                            diffX = (int) (curve.getX(j) - curve.getX(j - 1));
-                            diffY = (int) (curve.getY(j) - curve.getY(j - 1));
+                            diffX = (curve.getX(j) - curve.getX(j - 1));
+                            diffY = (curve.getY(j) - curve.getY(j - 1));
                             if ((diffY != dy) || (diffX != dx)) {
                                 i = j;
                             }

@@ -102,7 +102,7 @@ public class Image {
     
         int idx = (row * getWidth()) + col;
         
-        int rgb = (int)(((r[idx] & 0x0ff) << 16) 
+        int rgb = (((r[idx] & 0x0ff) << 16) 
             | ((g[idx] & 0x0ff) << 8) | (b[idx] & 0x0ff));
         
         return rgb;

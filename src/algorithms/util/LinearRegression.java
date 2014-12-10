@@ -165,7 +165,7 @@ public class LinearRegression {
         for (int xCoord = xMin; xCoord <= xMax; xCoord++) {
             float yCoord = yIntercept + slope * (float)xCoord;
             tsbX[count] = xCoord;
-            tsbY[count] = (int)Math.round(yCoord);
+            tsbY[count] = Math.round(yCoord);
             count++;
         }
         

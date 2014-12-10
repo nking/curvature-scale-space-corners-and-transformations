@@ -181,7 +181,7 @@ public class LinearRegressionTest {
         xy1.add((int) Math.round(368.504), (int) Math.round(2439.297));
         xy1.add((int) Math.round(396.851), (int) Math.round(2474.149));
         xy1.add((int) Math.round(425.197), (int) Math.round(2390.326));
-        xy1.add((int) Math.round(453.543), (int) Math.round(2410));
+        xy1.add((int) Math.round(453.543), (int) Math.round(2410.0));
         xy1.add((int) Math.round(481.89), (int) Math.round(2571.953));
         xy1.add((int) Math.round(510.236), (int) Math.round(2320.793));
         xy1.add((int) Math.round(538.583), (int) Math.round(2334.67));

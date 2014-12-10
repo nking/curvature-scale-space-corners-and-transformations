@@ -131,7 +131,8 @@ public class Transformer {
             double x = edge.getX(i);
             double y = edge.getY(i);
 
-            double xr = centroidX * scale + (((x - centroidX) *scale * cos) 
+            double xr = centroidX * scale 
+                + (((x - centroidX) *scale * cos) 
                 + ((y - centroidY) * scale * sin));
 
             double yr = centroidY * scale 

@@ -10,6 +10,8 @@ import java.util.Comparator;
 public class PairIntArrayComparator implements Comparator<PairIntArray>,
     Serializable {
 
+    private static final long serialVersionUID = 1;
+    
     @Override
     public int compare(PairIntArray o1, PairIntArray o2) {
         return Integer.compare(o1.getN(), o2.getN());
