@@ -8,6 +8,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 /**
  *
@@ -509,5 +511,98 @@ public class DataForTests {
                 }
             }
         }
+    }
+
+    public static void readMerton1Matched(PairIntArray matched1, 
+        PairIntArray matched2) {
+        
+        PairFloatArray xy1 = readMerton1UnnormalizedXY1Data();
+        PairFloatArray xy2 = readMerton1UnnormalizedXY2Data();
+        
+        for (int i = 0; i <  xy1.getN(); i++) {
+            int x = Math.round(xy1.getX(i));
+            int y = Math.round(xy1.getY(i));
+            matched1.add(x, y);
+        }
+        
+        for (int i = 0; i <  xy1.getN(); i++) {
+            int x = Math.round(xy2.getX(i));
+            int y = Math.round(xy2.getY(i));
+            matched2.add(x, y);
+        }
+    }
+
+    public static void readMerton1RandomlyScrambled(PairIntArray matched1, 
+        PairIntArray matched2) throws NoSuchAlgorithmException {
+        
+        readMerton1Matched(matched1, matched2);
+        
+        int n = matched1.getN();
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed(seed);
+        System.out.println("SEED=" + seed);
+        
+        int nScrambles = 2*n;
+        
+        for (int i = 0; i < nScrambles; i++) {
+            int idx1 = sr.nextInt(n);
+            int idx2 = sr.nextInt(n);
+            
+            int swapX = matched1.getX(idx1);
+            int swapY = matched1.getY(idx1);
+            matched1.set(idx1, matched1.getX(idx2), matched1.getY(idx2));
+            matched1.set(idx2, swapX, swapY);
+            
+            swapX = matched2.getX(idx1);
+            swapY = matched2.getY(idx1);
+            matched2.set(idx1, matched2.getX(idx2), matched2.getY(idx2));
+            matched2.set(idx2, swapX, swapY);
+        }
+    }
+
+    static void readUnmatchedMerton1CornersFromThisCode(PairIntArray corners1, 
+        PairIntArray corners2) throws IOException, Exception {
+        
+        String fileName1 = "merton_college_I_001.jpg";
+        String fileName2 = "merton_college_I_002.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(img1);
+        
+        detector.useOutdoorMode();
+       
+        detector.findCorners();
+        
+        PairIntArray c = detector.getCornersInOriginalReferenceFrame();
+        corners1.swapContents(c);
+        
+        Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        ImageIOHelper.addCurveToImage(corners1, image1, 2, 255, 0, 0);
+        ImageIOHelper.addAlternatingColorCurvesToImage(
+            detector.getEdgesInOriginalReferenceFrame(), image1);
+        
+        detector = new
+            CurvatureScaleSpaceCornerDetector(img2);
+        
+        detector.useOutdoorMode();
+       
+        detector.findCorners();
+        
+        c = detector.getCornersInOriginalReferenceFrame();
+        corners2.swapContents(c);
+        
+        Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        ImageIOHelper.addCurveToImage(corners2, image2, 2, 255, 0, 0);
+        ImageIOHelper.addAlternatingColorCurvesToImage(
+            detector.getEdgesInOriginalReferenceFrame(), image2);
+        
+        ImageDisplayer.displayImage("corners for image 1", image1);
+        ImageDisplayer.displayImage("corners for image 2", image2);
     }
 }

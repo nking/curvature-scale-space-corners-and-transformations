@@ -390,17 +390,21 @@ public class StereoProjectionTransformerTest {
         
         PairIntArray corn1 = new PairIntArray();
         PairIntArray corn2 = new PairIntArray();
-        DataForTests.readBrownAndLoweCorners(corn1, corn2);
         
+        
+        DataForTests.readBrownAndLoweCorners(corn1, corn2);
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String fileName2 = "brown_lowe_2003_image2.jpg";
-    
+        /*
+        String fileName1 = "merton_college_I_001.jpg";
+        String fileName2 = "merton_college_I_002.jpg";
+        DataForTests.readUnmatchedMerton1CornersFromThisCode(corn1, corn2);
+        */
+        
         PointMatcher pointMatcher = new PointMatcher();
         
         PairIntArray outputMatched1 = new PairIntArray();
-        PairIntArray outputMatched2 = new PairIntArray();
-        
-        // side effect is corn1 and corn2 become matched
+        PairIntArray outputMatched2 = new PairIntArray();        
         TransformationPointFit fit2 = pointMatcher.calculateTransformationAndMatch(
             corn1, corn2, 517, 374, outputMatched1, outputMatched2);
         

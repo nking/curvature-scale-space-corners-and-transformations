@@ -332,65 +332,83 @@ public final class PointMatcher {
         if (fit == null) {
             return null;
         }
-       
-        // trying a prune of first rough search results
-        double tmpTol = fit.getMeanDistFromModel() + 100 * fit.getStDevFromMean();
-        if (tmpTol < 1) {
-            tmpTol = 1;
-        }
         
-        //matchPointsUsingModelWithGreedyMatch(set1, set2,
-        matchPointsUsingModelUsingOptimal(set1, set2,
-            fit,
-            tmpTol, tmpTol, image1Width >> 1, image1Height >> 1,
-            outputMatched1, outputMatched2);
+        int nIter = 0;
+        int nMaxIter = 1;
         
-        setsAreMatched = true;
+        boolean repeat = true;
         
-        int scale = (int)Math.round(fit.getScale());
-        int rot = (int)Math.round(fit.getRotationInRadians());
-        
-        int rotStart = rot - (rotDelta/2);
-        if (rotStart < 0) {
-            rotStart += 360;
-        }
-        int rotStop = rot + (rotDelta/2);
-        if (rotStop > 360) {
-            rotStop -= 360;
-        }
-        if (rotStop < rotStart) {
-            rotStop += 360;
-        }
-        
-        int scaleStart = scale - 1;
-        if (scaleStart < 1) {
-            scaleStart = 1;
-        }
-        
-        fit = calculateTransformationWithGridSearch(
-            outputMatched1, outputMatched2, image1Width, image1Height,
-            rotStart, rotStop, 10,
-            scaleStart, scale + 1, 1, 
-            setsAreMatched
-            );
-        
-        if (fit == null) {
-            return null;
-        }
-        
-        int convergence = (outputMatched1.getN() < outputMatched2.getN()) 
-            ? outputMatched1.getN() 
-            : outputMatched2.getN();
-        
-        if ((fit.getNumberOfMatchedPoints() == convergence)
-            && (fit.getMeanDistFromModel() == 0)) {
-            return fit;
-        }
-        
-        fit = refineTransformationWithDownhillSimplex(fit.getParameters(),
-            outputMatched1, outputMatched2, image1Width, image1Height, 
-            setsAreMatched);
+        while ((nIter < nMaxIter) && repeat) {
+            
+            int scale = (int)Math.round(fit.getScale());
+            int rot = (int)Math.round(fit.getRotationInRadians());
 
+            // if scale ~ 1 and rotation ~ 0 then assume an early rough 
+            // euclidean match is fine:        
+
+            float rotComp = (rot == 0) ? 0 :
+                (fit.getParameters().getRotationInDegrees() <= 180)
+                ? fit.getParameters().getRotationInDegrees() : 
+                fit.getParameters().getRotationInDegrees() - 360.f;
+           
+            if ((scale == 1) && (Math.abs(rotComp) < 5)) {
+            
+                setsAreMatched = matchSets(setsAreMatched, set1, set2, fit, 
+                    image1Width >> 1, image1Height >> 1, 100,
+                    outputMatched1, outputMatched2);
+                
+                repeat = false;
+            }
+
+            int rotStart = rot - (rotDelta/2);
+            if (rotStart < 0) {
+                rotStart += 360;
+            }
+            int rotStop = rot + (rotDelta/2);
+            if (rotStop > 360) {
+                rotStop -= 360;
+            }
+            if (rotStop < rotStart) {
+                rotStop += 360;
+            }
+
+            int scaleStart = scale - 1;
+            if (scaleStart < 1) {
+                scaleStart = 1;
+            }
+        
+            fit = calculateTransformationWithGridSearch(
+                outputMatched1, outputMatched2, image1Width, image1Height,
+                rotStart, rotStop, 10,
+                scaleStart, scale + 1, 1, 
+                setsAreMatched
+                );
+
+            if (fit == null) {
+                return null;
+            }
+
+            int convergence = (outputMatched1.getN() < outputMatched2.getN()) 
+                ? outputMatched1.getN() 
+                : outputMatched2.getN();
+
+            if ((fit.getNumberOfMatchedPoints() == convergence)
+                && (fit.getMeanDistFromModel() == 0)) {
+                return fit;
+            }
+        
+            fit = refineTransformationWithDownhillSimplex(fit.getParameters(),
+                outputMatched1, outputMatched2, image1Width, image1Height, 
+                setsAreMatched);
+        
+            // using a generous factor of 10 for matching
+            setsAreMatched = matchSets(setsAreMatched, set1, set2, fit,
+                image1Width >> 1, image1Height >> 1, 10,
+                outputMatched1, outputMatched2);
+            
+            nIter++;
+        }
+        
         return fit;
     }
 
@@ -869,6 +887,14 @@ public final class PointMatcher {
                 params.setTranslationX(transX);
                 params.setTranslationY(transY);
 
+                //TODO:  Instead of trying each combination,
+                //  store the transX and transY then use least squares w/
+                //  thiel sen estimator OR
+                //  use rough histogram to find most frequent transX 
+                //  and transY and only try those to find the best solution.
+                //  (the best solution is evaluated by the fit to more than
+                //  one point, so the frequency approach has to be correct).
+                
                 TransformationPointFit fit = transform(set1, set2, params, 
                     transXTol, transYTol, centroidX1, centroidY1);
 
@@ -2351,6 +2377,30 @@ if (fits.length > 0) {
         }
         
         return values;
+    }
+
+    private boolean matchSets(boolean setsAreMatched, 
+        PairIntArray set1, PairIntArray set2, TransformationPointFit fit, 
+        int centroidX1, int centroidY1, float factorOfStandardDeviation,
+        PairIntArray outputMatched1, PairIntArray outputMatched2) {
+        
+        if (setsAreMatched) {
+            return setsAreMatched;
+        }
+        
+        double tmpTol = fit.getMeanDistFromModel() 
+            + factorOfStandardDeviation * fit.getStDevFromMean();
+        if (tmpTol < 1) {
+            tmpTol = 1;
+        }
+        
+        //matchPointsUsingModelWithGreedyMatch(set1, set2,
+        matchPointsUsingModelUsingOptimal(set1, set2,
+            fit,
+            tmpTol, tmpTol, centroidX1, centroidY1,
+            outputMatched1, outputMatched2);
+        
+        return true;
     }
 
 }
