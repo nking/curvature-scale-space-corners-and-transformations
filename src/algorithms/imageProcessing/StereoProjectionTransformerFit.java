@@ -121,4 +121,18 @@ public class StereoProjectionTransformerFit {
         
         return outlierIndexes;
     }
+    
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("nMatchedPoints=").append(Long.toString(nMatches))
+            .append(" tolerance=").append(Double.toString(tolerance))
+            .append(" meanDistFromModel=").append(Double.toString(avgDistance))
+            .append(" stDevFromMean=").append(Double.toString(stDevFromAvg))
+            ;
+        
+        return sb.toString();
+    }
 }

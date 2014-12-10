@@ -2,7 +2,10 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
+import thirdparty.HungarianAlgorithm;
 
 /**
  * class to match the points extracted from two images.
@@ -219,6 +222,7 @@ public final class PointMatcher {
     private final Logger log = Logger.getLogger(this.getClass().getName());
  
     /**
+     * 
      * calculate the rotation, scale, and translation that can be applied
      * to set1 to match points to set2 where the matches are not already known.  
      * The image1Width and imageHeight are used to create a tolerance in 
@@ -235,13 +239,51 @@ public final class PointMatcher {
     public TransformationPointFit calculateTransformation(PairIntArray set1, 
         PairIntArray set2, int image1Width, int image1Height) {
         
+        boolean setsAreMatched = false;
+        
+        int rotDelta = 90;
+        
         TransformationPointFit fit = calculateTransformationWithGridSearch(
-            set1, set2, image1Width, image1Height);
+            set1, set2, image1Width, image1Height,
+            0, 360, rotDelta,
+            1, 10, 2, setsAreMatched
+            );
         
         if (fit == null) {
             return null;
         }
+       
+        int scale = (int)Math.round(fit.getScale());
+        int rot = (int)Math.round(fit.getRotationInRadians());
         
+        int rotStart = rot - (rotDelta/2);
+        if (rotStart < 0) {
+            rotStart += 360;
+        }
+        int rotStop = rot + (rotDelta/2);
+        if (rotStop > 360) {
+            rotStop -= 360;
+        }
+        if (rotStop < rotStart) {
+            rotStop += 360;
+        }
+        
+        int scaleStart = scale - 1;
+        if (scaleStart < 1) {
+            scaleStart = 1;
+        }
+        
+        fit = calculateTransformationWithGridSearch(
+            set1, set2, image1Width, image1Height,
+            rotStart, rotStop, 10,
+            scaleStart, scale + 1, 1, 
+            setsAreMatched
+            );
+        
+        if (fit == null) {
+            return null;
+        }
+                  
         int convergence = (set1.getN() < set2.getN()) ? set1.getN() 
             : set2.getN();
         
@@ -251,12 +293,108 @@ public final class PointMatcher {
         }
 
         fit = refineTransformationWithDownhillSimplex(fit.getParameters(),
-            set1, set2, image1Width, image1Height);
+            set1, set2, image1Width, image1Height, setsAreMatched);
+        
+        return fit;
+    }
+    
+    /**
+     * 
+     * calculate the rotation, scale, and translation that can be applied
+     * to set1 to match points to set2 where the matches are not already known.  
+     * The image1Width and imageHeight are used to create a tolerance in 
+     * translation for matches.
+     * 
+     * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * @param set1 set of points such as corners from an image
+     * @param set2 set of points such as corners from another image.
+     * @param image1Width
+     * @param image1Height
+     * @param outputMatched1
+     * @param outputMatched2
+     * @return 
+     */
+    public TransformationPointFit calculateTransformationAndMatch(PairIntArray set1, 
+        PairIntArray set2, int image1Width, int image1Height,
+        PairIntArray outputMatched1, PairIntArray outputMatched2) {
+        
+        boolean setsAreMatched = false;
+        
+        int rotDelta = 90;
+        
+        TransformationPointFit fit = calculateTransformationWithGridSearch(
+            set1, set2, image1Width, image1Height,
+            0, 360, rotDelta,
+            1, 10, 2, setsAreMatched
+            );
+        
+        if (fit == null) {
+            return null;
+        }
+       
+        // trying a prune of first rough search results
+        double tmpTol = fit.getMeanDistFromModel() + 100 * fit.getStDevFromMean();
+        if (tmpTol < 1) {
+            tmpTol = 1;
+        }
+        
+        //matchPointsUsingModelWithGreedyMatch(set1, set2,
+        matchPointsUsingModelUsingOptimal(set1, set2,
+            fit,
+            tmpTol, tmpTol, image1Width >> 1, image1Height >> 1,
+            outputMatched1, outputMatched2);
+        
+        setsAreMatched = true;
+        
+        int scale = (int)Math.round(fit.getScale());
+        int rot = (int)Math.round(fit.getRotationInRadians());
+        
+        int rotStart = rot - (rotDelta/2);
+        if (rotStart < 0) {
+            rotStart += 360;
+        }
+        int rotStop = rot + (rotDelta/2);
+        if (rotStop > 360) {
+            rotStop -= 360;
+        }
+        if (rotStop < rotStart) {
+            rotStop += 360;
+        }
+        
+        int scaleStart = scale - 1;
+        if (scaleStart < 1) {
+            scaleStart = 1;
+        }
+        
+        fit = calculateTransformationWithGridSearch(
+            outputMatched1, outputMatched2, image1Width, image1Height,
+            rotStart, rotStop, 10,
+            scaleStart, scale + 1, 1, 
+            setsAreMatched
+            );
+        
+        if (fit == null) {
+            return null;
+        }
+        
+        int convergence = (outputMatched1.getN() < outputMatched2.getN()) 
+            ? outputMatched1.getN() 
+            : outputMatched2.getN();
+        
+        if ((fit.getNumberOfMatchedPoints() == convergence)
+            && (fit.getMeanDistFromModel() == 0)) {
+            return fit;
+        }
+        
+        fit = refineTransformationWithDownhillSimplex(fit.getParameters(),
+            outputMatched1, outputMatched2, image1Width, image1Height, 
+            setsAreMatched);
 
         return fit;
     }
 
-    private boolean fitIsBetter(TransformationPointFit bestFit, 
+    public boolean fitIsBetter(TransformationPointFit bestFit, 
         TransformationPointFit compareFit) {
         
         if (compareFit == null) {
@@ -266,13 +404,32 @@ public final class PointMatcher {
             return true;
         }
         
+        /*
+        double d = compareFit.getMeanDistFromModel();
+                
+        if (d < bestFit.getMeanDistFromModel()) {
+            return true;
+        } else if (d == bestFit.getMeanDistFromModel()) {
+            if (compareFit.getNumberOfMatchedPoints()
+                > bestFit.getNumberOfMatchedPoints()) {
+                return true;
+            } else if (compareFit.getNumberOfMatchedPoints()
+                == bestFit.getNumberOfMatchedPoints()) {
+                if (compareFit.getStDevFromMean() < bestFit.getStDevFromMean()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+        */
         int nMatches = compareFit.getNumberOfMatchedPoints();
         
         if (nMatches > bestFit.getNumberOfMatchedPoints()) {
             return true;
         } else if (nMatches == bestFit.getNumberOfMatchedPoints()) {
-            if (compareFit.getMeanDistFromModel()
-                < bestFit.getMeanDistFromModel()) {
+            if (!Double.isNaN(compareFit.getMeanDistFromModel()) && (
+                compareFit.getMeanDistFromModel()
+                < bestFit.getMeanDistFromModel())) {
                 return true;
             } else if (compareFit.getMeanDistFromModel()
                 == bestFit.getMeanDistFromModel()) {
@@ -284,9 +441,28 @@ public final class PointMatcher {
         return false;
     }
     
+    /**
+     * 
+     * @param set1
+     * @param set2
+     * @param image1Width
+     * @param image1Height
+     * @param rotStart start of rotation search in degrees
+     * @param rotStop stop (exclusive) or rotations search in degrees
+     * @param rotDelta change in rotation to add to reach next step in rotation search in degrees
+     * @param scaleStart
+     * @param scaleStop
+     * @param scaleDelta
+     * @param setsAreMatched
+     * @return 
+     */
     private TransformationPointFit calculateTransformationWithGridSearch(
         PairIntArray set1, PairIntArray set2, 
-        int image1Width, int image1Height) {
+        int image1Width, int image1Height,
+        int rotStart, int rotStop, int rotDelta,
+        int scaleStart, int scaleStop, int scaleDelta,
+        boolean setsAreMatched
+        ) {
         
         int centroidX1 = image1Width >> 1;
         
@@ -310,13 +486,14 @@ public final class PointMatcher {
             : set2.getN();
         
         TransformationPointFit bestFit = null;
-        
-        for (int rot = 0; rot < 360; rot += 10) {
-            for (int scale = 1; scale < 10; scale++) {
+                
+        for (int rot = rotStart; rot < rotStop; rot += rotDelta) {
+            for (int scale = scaleStart; scale < scaleStop; scale += scaleDelta) {
                 
                 TransformationPointFit fit = calculateTranslation(set1, set2, 
                     transXTol, transYTol, 
-                    rot*Math.PI/180., scale, centroidX1, centroidY1);
+                    rot*Math.PI/180., scale, centroidX1, centroidY1, 
+                    setsAreMatched);
 
                 if (fitIsBetter(bestFit, fit)) {
                 
@@ -324,10 +501,25 @@ public final class PointMatcher {
                     
                     if ((bestFit.getNumberOfMatchedPoints() == convergence) 
                         && (bestFit.getMeanDistFromModel() == 0)) {
+                        if (bestFit.getParameters().getRotationInRadians() > 2 * Math.PI) {
+                            float rot2 = bestFit.getParameters().getRotationInRadians();
+                            while (rot2 >= 2 * Math.PI) {
+                                rot2 -= 2 * Math.PI;
+                            }
+                            bestFit.getParameters().setRotationInRadians(rot2);
+                        }
                         return bestFit;
                     }
                 }
             }
+        }
+        
+        if (bestFit.getParameters().getRotationInRadians() > 2*Math.PI) {
+            float rot = bestFit.getParameters().getRotationInRadians();
+            while (rot >= 2*Math.PI) {
+                rot -= 2*Math.PI;
+            }
+            bestFit.getParameters().setRotationInRadians(rot);
         }
         
         return bestFit;
@@ -493,7 +685,7 @@ public final class PointMatcher {
             log.severe("scale cannot be smaller than 1");
             
             return null;
-        }        
+        }
         
         int nMaxMatchable = set1.getN();
         if (set2.getN() > nMaxMatchable) {
@@ -517,6 +709,66 @@ public final class PointMatcher {
         
         TransformationPointFit fit = new TransformationPointFit(params, 
             nMatched, avgDiffModel[0], stDevDiffModel);
+        
+        return fit;
+    }
+    
+    /**
+     * apply the parameters to matched1 and return the fit
+     * 
+     * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * @param matched1 points matched to set 2
+     * @param matched2 points matched to set 1
+     * @param params
+     * @param transXTol
+     * @param transYTol
+     * @param centroidX1
+     * @param centroidY1
+     * @return 
+     */
+    TransformationPointFit transformMatched(PairIntArray matched1, 
+        PairIntArray matched2, 
+        TransformationParameters params, 
+        int centroidX1, int centroidY1) {
+        
+        if (matched1 == null || matched2 == null) {
+            throw new IllegalArgumentException(
+            "neither matched1 nor matched2 can be null");
+        }
+        if (matched1.getN() != matched2.getN()) {
+            throw new IllegalArgumentException(
+            "matched1 and matched2 have to be the same length");
+        }
+                
+        double scale = params.getScale();
+        
+        if (scale < 1) {
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+            
+            log.severe("scale cannot be smaller than 1");
+            
+            return null;
+        }
+       
+        double[] diffFromModel = new double[matched1.getN()];
+        double[] avgDiffModel = new double[1];
+        
+        populateDiffFromModelWithMatchedPoints(matched1, matched2, 
+            params, centroidX1, centroidY1, diffFromModel, avgDiffModel);
+        
+        double stDevDiffModel = 0;
+        for (int i = 0; i < matched1.getN(); i++) {
+            double d = diffFromModel[i] - avgDiffModel[0];
+            stDevDiffModel += (d * d);
+        }
+        
+        stDevDiffModel = (Math.sqrt(stDevDiffModel/(matched1.getN() - 1.0f)));
+        
+        TransformationPointFit fit = new TransformationPointFit(params, 
+            matched1.getN(), avgDiffModel[0], stDevDiffModel);
         
         return fit;
     }
@@ -553,11 +805,17 @@ public final class PointMatcher {
      * set 1 point are from.
      * @param centroidY1 the y coordinate of the center of image 1 from which
      * set 1 point are from.
+     * @param setsAreMatched indicates whether set1 and set2 are already matched
      * @return 
      */
     public TransformationPointFit calculateTranslation(PairIntArray set1, 
         PairIntArray set2, double transXTol, double transYTol, double rotation, 
-        double scale, int centroidX1, int centroidY1) {
+        double scale, int centroidX1, int centroidY1, boolean setsAreMatched) {
+        
+        if (setsAreMatched) {
+            return calculateTranslationForMatched(set1, set2, 
+                rotation, scale, centroidX1, centroidY1);
+        }
         
         if (scale < 1) {
             // numerical errors in rounding to integer can give wrong solutions
@@ -625,6 +883,105 @@ public final class PointMatcher {
         }
         
         return (bestFit != null) ? bestFit : null;
+    }
+    
+    /**
+     * given the scale, rotation and set 1's reference frame centroids,
+     * calculate the translation between set1 and set2 assuming that not all
+     * points will match.  transXTol and transYTol allow a tolerance when
+     * matching the predicted position of a point in set2.
+     * 
+     * It's expected that the invoker of this method is trying to solve for
+     * translation for sets of points like corners in images.  This assumption
+     * means that the number of point pair combinations is always far less
+     * than the pixel combinations of translations over x and y.
+     * 
+     * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * ALSO NOTE: if you know a better solution exists for translation 
+     * parameters that matches fewer points, but has a small avg dist from
+     * model and smaller standard deviation from the avg dist from model,
+     * then transXTol and transYTol should be set to a smaller value and passed
+     * to this method.
+     * 
+     * @param matched1 set of points from image 1 to match to image2.
+     * @param matched2 set of points from image 2 to be matched with image 1
+     * @param rotation given in radians with value between 0 and 2*pi, exclusive
+     * @param scale
+     * @param centroidX1 the x coordinate of the center of image 1 from which
+     * set 1 point are from.
+     * @param centroidY1 the y coordinate of the center of image 1 from which
+     * set 1 point are from.
+     * @return 
+     */
+    public TransformationPointFit calculateTranslationForMatched(
+        PairIntArray matched1, 
+        PairIntArray matched2, double rotation, 
+        double scale, int centroidX1, int centroidY1) {
+        
+        if (scale < 1) {
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+            
+            log.severe("scale cannot be smaller than 1");
+            
+            return null;
+        }
+        
+        //TODO:  offer a simplex search w/ fixed scale, fixed rotation and
+        // widely varying translation and
+        // compare accuracy to grid search here
+        
+        
+        int nMax = matched1.getN() * matched2.getN();
+        
+        int maxFound = Integer.MIN_VALUE;
+        TransformationPointFit bestFit = null;
+        
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+        
+        double avgTransX = 0;
+        double avgTransY = 0;
+        
+        for (int i = 0; i < matched1.getN(); i++) {
+            
+            int x = matched1.getX(i);
+            int y = matched1.getY(i);
+            
+            double xr = centroidX1*scale + ( 
+                ((x - centroidX1) * scaleTimesCosine) +
+                ((y - centroidY1) * scaleTimesSine));
+            
+            double yr = centroidY1*scale + ( 
+                (-(x - centroidX1) * scaleTimesSine) +
+                ((y - centroidY1) * scaleTimesCosine));
+                            
+            int x2 = matched2.getX(i);
+                
+            int y2 = matched2.getY(i);
+                
+            avgTransX += (int)Math.round(x2 - xr);
+                
+            avgTransY += (int)Math.round(y2 - yr);
+        }
+        
+        avgTransX /= (double)matched1.getN();
+        
+        avgTransY /= (double)matched1.getN();
+                                
+        TransformationParameters params = 
+            new TransformationParameters();
+        params.setRotationInRadians((float) rotation);
+        params.setScale((float) scale);
+        params.setTranslationX((float)avgTransX);
+        params.setTranslationY((float)avgTransY);
+
+        TransformationPointFit fit = transformMatched(matched1, matched2, params, 
+            centroidX1, centroidY1);
+        
+        return fit;
     }
     
     public TransformationPointFit calculateTranslation(PairIntArray set1, 
@@ -711,13 +1068,15 @@ public final class PointMatcher {
                 TransformationPointFit fit = transform(set1, set2, params, 
                     transXTol, transYTol, centroidX1, centroidY1);
 
-                if (fitIsBetter(bestFit, fit)) {
+                if ((fit != null) && fitIsBetter(bestFit, fit)) {
+                    
                     bestFit = fit;
-                }
-                if ((fit.getMeanDistFromModel() == 0) &&
-                    (fit.getNumberOfMatchedPoints() > (0.3*set1.getN())) 
-                    ) {
-                    break;
+                
+                    if ((fit.getMeanDistFromModel() == 0) &&
+                        (fit.getNumberOfMatchedPoints() > (0.3*set1.getN())) 
+                        ) {
+                        break;
+                    }
                 }
             }
         }
@@ -732,12 +1091,13 @@ public final class PointMatcher {
      * @param set2
      * @param image1Width
      * @param image1Height
+     * @param setsAreMatched
      * @return 
      */
     public TransformationPointFit refineTransformationWithDownhillSimplex(
         TransformationParameters params,
         PairIntArray set1, PairIntArray set2, 
-        int image1Width, int image1Height) {
+        int image1Width, int image1Height, boolean setsAreMatched) {
         
         int centroidX1 = image1Width >> 1;
         
@@ -760,9 +1120,13 @@ public final class PointMatcher {
         double r = params.getRotationInRadians();
         double s = params.getScale();
 
-        double[] drs = new double[] {
-            -5.0 * Math.PI/180., -1.0 * Math.PI/180., 
-            1.0 * Math.PI/180., 5.0 * Math.PI/180.
+        double[] drs = new double[] {            
+            -5.0 * Math.PI/180., 
+            -2.5 * Math.PI/180.,
+            -1.0 * Math.PI/180.,
+            1.0 * Math.PI/180.,
+            2.5 * Math.PI/180.,
+            5.0 * Math.PI/180.
         };
         if (r == 0) {
              drs = new double[]{0};
@@ -775,6 +1139,7 @@ public final class PointMatcher {
         
         double[] dss = new double[] {
             0.1
+            //-1.0, -0.1, -0.05, 0.05
         };
         if (s == 1) {
             dss = new double[]{0};
@@ -800,7 +1165,7 @@ public final class PointMatcher {
                 
                 fits[count] = calculateTranslation(set1, set2, 
                     transXTol, transYTol, 
-                    rotation, scale, centroidX1, centroidY1);
+                    rotation, scale, centroidX1, centroidY1, setsAreMatched);
                 
                 if (fits[count] != null) {
                     count++;
@@ -821,8 +1186,17 @@ public final class PointMatcher {
             set1, set2, 
             fits, centroidX1, centroidY1, transXTol, transYTol,
             r, s, rMin, rMax, sMin, sMax,
-            reflectionCoeff, expansionCoeff, contractionCoeff, reductionCoeff
+            reflectionCoeff, expansionCoeff, contractionCoeff, reductionCoeff,
+            setsAreMatched
         );
+        
+        if (bestFit.getParameters().getRotationInRadians() > 2*Math.PI) {
+            float rot = bestFit.getParameters().getRotationInRadians();
+            while (rot >= 2*Math.PI) {
+                rot -= 2*Math.PI;
+            }
+            bestFit.getParameters().setRotationInRadians(rot);
+        }
         
         return bestFit;
     }
@@ -855,7 +1229,7 @@ public final class PointMatcher {
         double transXTol, double transYTol,
         double r, double s,
         double rMin, double rMax, double sMin, double sMax,
-        float alpha, float gamma, float beta, float tau
+        float alpha, float gamma, float beta, float tau, boolean setsAreMatched
         ) {
         
         if (alpha < 0) {
@@ -931,7 +1305,7 @@ public final class PointMatcher {
             TransformationPointFit fitReflected = 
                 calculateTranslation(set1, set2, transXTol, transYTol, 
                     rReflect, sReflect,
-                    centroidX1, centroidY1);
+                    centroidX1, centroidY1, setsAreMatched);
             
             boolean relectIsWithinBounds = 
                 (rReflect >= rMin) && (rReflect <= rMax) 
@@ -961,7 +1335,7 @@ public final class PointMatcher {
                     TransformationPointFit fitExpansion = 
                         calculateTranslation(set1, set2, transXTol, transYTol, 
                             rExpansion, sExpansion,
-                            centroidX1, centroidY1);
+                            centroidX1, centroidY1, setsAreMatched);
                     
                     if (fitIsBetter(fitReflected, fitExpansion)
                         && ((rExpansion >= rMin) && (rExpansion <= rMax)
@@ -987,7 +1361,7 @@ public final class PointMatcher {
                     TransformationPointFit fitContraction = 
                         calculateTranslation(set1, set2, transXTol, transYTol, 
                             rContraction, sContraction,
-                            centroidX1, centroidY1);
+                            centroidX1, centroidY1, setsAreMatched);
                 
                     if (sContraction < 1) {
                         sContraction = 1;
@@ -1028,7 +1402,8 @@ public final class PointMatcher {
                             //  sort.
                             TransformationPointFit fit = calculateTranslation(
                                 set1, set2, transXTol, transYTol, 
-                                rReduction, sReduction, centroidX1, centroidY1);
+                                rReduction, sReduction, centroidX1, centroidY1,
+                                setsAreMatched);
                             
                             if (fit != null) {
                                 fits[i] = fit;
@@ -1607,7 +1982,312 @@ if (fits.length > 0) {
         
         return nMatched;
     }
+    
+    /**
+     * apply the parameters to matched1 and return the residuals between
+     * items in matched2 and the model from matched1.
+     * 
+     * runtime complexity is O(N)
+     * 
+     * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     * 
+     * @param matched1
+     * @param matched2
+     * @param params
+     * @param centroidX1
+     * @param centroidY1
+     * @param diffFromModel output variable holding difference of matched
+     *    points from model
+     * @param avgDiffModel output variable holding the average difference from
+     * the model.
+     */
+    public void populateDiffFromModelWithMatchedPoints(PairIntArray matched1, 
+        PairIntArray matched2, 
+        TransformationParameters params, 
+        int centroidX1, int centroidY1,
+        double[] diffFromModel, double[] avgDiffModel) {
+                
+        if (diffFromModel == null) {
+            throw new IllegalArgumentException("diffFromModel cannot be null");
+        }
+        if (avgDiffModel == null) {
+            throw new IllegalArgumentException("avgDiffModel cannot be null");
+        }
+        if (matched1 == null) {
+            throw new IllegalArgumentException("matched1 cannot be null");
+        }
+        if (matched2 == null) {
+            throw new IllegalArgumentException("matched2 cannot be null");
+        }
+        if (matched1.getN() != matched2.getN()) {
+            throw new IllegalArgumentException(
+            "matched1 and matched2 should be the same size");
+        }
+            
+        double scale = params.getScale();
+        double rotation = params.getRotationInRadians();
+        
+        if (scale < 1) {
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+            
+            log.severe("scale cannot be smaller than 1");
+            
+            return;
+        }
+        
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+        
+        avgDiffModel[0] = 0;
+        
+        for (int i = 0; i < matched1.getN(); i++) {
+        
+            int x = matched1.getX(i);
+            int y = matched1.getY(i);
+            
+            double xmcx1 = x - centroidX1;
+            double ymcy1 = y - centroidY1;
+           
+            double xr = centroidX1 * scale
+                + ((xmcx1 * scaleTimesCosine) + (ymcy1 * scaleTimesSine));
 
+            double yr = centroidY1 * scale
+                + ((-xmcx1 * scaleTimesSine) + (ymcy1 * scaleTimesCosine));
+
+            int xt = (int)Math.round(xr + params.getTranslationX());
+            int yt = (int)Math.round(yr + params.getTranslationY());
+            
+            int x2 = matched2.getX(i);
+            int y2 = matched2.getY(i);
+               
+            double d = Math.sqrt(Math.pow(xt - x2, 2) + Math.pow(yt - y2, 2));
+                
+            diffFromModel[i] = d;
+                
+            avgDiffModel[0] += d;
+        }
+        
+        avgDiffModel[0] /= (double)matched1.getN();        
+    }
+
+    /**
+     * given unordered unmatched points set1 and set2 from image1 and image2
+     * respectively, apply the transformation to set 1 and then find the
+     * nearest matching in set2 within transXTol and transYTol.
+     * Note that the output matches if any will be in the argument variables
+     * outputMatched1 and outputMatched2;
+     * 
+     * @param set1
+     * @param set2
+     * @param fit
+     * @param transXTol
+     * @param transYTol
+     * @param centroidX1
+     * @param centroidY1
+     * @param outputMatched1 the container to hold the output matching points
+     * for image 1 that are paired with outputMatched2 as a result of running
+     * this method.
+     * @param outputMatched2 the container to hold the output matching points
+     * for image 2 that are paired with outputMatched1 as a result of running
+     * this method.
+     */
+    public void matchPointsUsingModelUsingOptimal(
+        PairIntArray set1, PairIntArray set2, TransformationPointFit fit,
+        double transXTol, double transYTol, int centroidX1, int centroidY1,
+        PairIntArray outputMatched1, PairIntArray outputMatched2) {
+
+        double scale = fit.getParameters().getScale();
+        double rotation = fit.getParameters().getRotationInRadians();
+
+        if (scale < 1) {
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+
+            log.severe("scale should not be smaller than 1");
+        }
+
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+        float transX = fit.getParameters().getTranslationX();
+        float transY = fit.getParameters().getTranslationY();
+
+        //TODO: consider using bipartite matching w/ min cost ~O(N^4)
+        int nPoints1 = set1.getN();
+        int nPoints2 = set2.getN();
+        
+        float[][] diffsAsCost = new float[nPoints1][nPoints2];
+
+        // the algorithm modifies diffsAsCost, so make a copy
+        float[][] diffsAsCostCopy = new float[nPoints1][nPoints2];
+        
+        for (int i = 0; i < set1.getN(); i++) {
+
+            diffsAsCost[i] = new float[nPoints2];
+            diffsAsCostCopy[i] = new float[nPoints2];
+                
+            int x = set1.getX(i);
+            int y = set1.getY(i);
+
+            double xmcx1 = x - centroidX1;
+            double ymcy1 = y - centroidY1;
+
+            double xr = centroidX1 * scale
+                + ((xmcx1 * scaleTimesCosine) + (ymcy1 * scaleTimesSine));
+
+            double yr = centroidY1 * scale
+                + ((-xmcx1 * scaleTimesSine) + (ymcy1 * scaleTimesCosine));
+
+            int xt = (int) Math.round(xr + transX);
+            int yt = (int) Math.round(yr + transY);
+
+            for (int j = 0; j < set2.getN(); j++) {
+
+                int x2 = set2.getX(j);
+                int y2 = set2.getY(j);
+
+                double dist = Math.sqrt(Math.pow(xt - x2, 2) 
+                    + Math.pow(yt - y2, 2));
+
+                diffsAsCost[i][j] = (float)dist;
+                    
+                diffsAsCostCopy[i][j] = (float)dist;
+            }         
+        }
+        
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        int[][] match = b.computeAssignments(diffsAsCostCopy);
+
+        assert(match.length == nPoints1);
+            
+        double tol = Math.sqrt(transXTol*transXTol + transYTol*transYTol);
+        
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            double diff = diffsAsCost[idx1][idx2];
+            
+            if (diff < tol) {
+                outputMatched1.add(set1.getX(idx1), set1.getY(idx1));
+                outputMatched2.add(set2.getX(idx2), set2.getY(idx2));
+            }
+        }        
+    }
+    
+    /**
+     * given unordered unmatched points set1 and set2 from image1 and image2
+     * respectively, apply the transformation to set 1 and then find the
+     * nearest matching in set2 within transXTol and transYTol.
+     * Note that the output matches if any will be in the argument variables
+     * outputMatched1 and outputMatched2;
+     * 
+     * @param set1
+     * @param set2
+     * @param fit
+     * @param transXTol
+     * @param transYTol
+     * @param centroidX1
+     * @param centroidY1
+     * @param outputMatched1 the container to hold the output matching points
+     * for image 1 that are paired with outputMatched2 as a result of running
+     * this method.
+     * @param outputMatched2 the container to hold the output matching points
+     * for image 2 that are paired with outputMatched1 as a result of running
+     * this method.
+     */
+    public void matchPointsUsingModelWithGreedyMatch(
+        PairIntArray set1, PairIntArray set2, TransformationPointFit fit,
+        double transXTol, double transYTol, int centroidX1, int centroidY1,
+        PairIntArray outputMatched1, PairIntArray outputMatched2) {
+
+        /*
+         implements a linear search for the nearest neighbors of each point
+         within translation tolerances.        
+         */
+        double scale = fit.getParameters().getScale();
+        double rotation = fit.getParameters().getRotationInRadians();
+
+        if (scale < 1) {
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+
+            log.severe("scale should not be smaller than 1");
+        }
+
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+        float transX = fit.getParameters().getTranslationX();
+        float transY = fit.getParameters().getTranslationY();       
+
+        Set<Integer> chosen = new HashSet<Integer>();
+        
+        for (int i = 0; i < set1.getN(); i++) {
+
+            int x = set1.getX(i);
+            int y = set1.getY(i);
+
+            double xmcx1 = x - centroidX1;
+            double ymcy1 = y - centroidY1;
+
+            double xr = centroidX1 * scale
+                + ((xmcx1 * scaleTimesCosine) + (ymcy1 * scaleTimesSine));
+
+            double yr = centroidY1 * scale
+                + ((-xmcx1 * scaleTimesSine) + (ymcy1 * scaleTimesCosine));
+
+            int xt = (int) Math.round(xr + transX);
+            int yt = (int) Math.round(yr + transY);
+
+            int lowerX = xt - (int) transXTol;
+            int higherX = xt + (int) transXTol;
+            int lowerY = yt - (int) transYTol;
+            int higherY = yt + (int) transYTol;
+
+            int bestX2 = -1;
+            int bestY2 = -1;
+            double bestDiff = Double.MAX_VALUE;
+            int best2Idx = -1;
+
+            for (int j = 0; j < set2.getN(); j++) {
+
+                if (chosen.contains(Integer.valueOf(j))) {
+                    continue;
+                }
+                
+                int x2 = set2.getX(j);
+                int y2 = set2.getY(j);
+
+                if ((x2 < lowerX) || (x2 > higherX) || (y2 < lowerY)
+                    || (y2 > higherY)) {
+
+                    continue;
+                }
+
+                double d = Math.sqrt(Math.pow(xt - x2, 2) + Math.pow(yt - y2, 2)
+                );
+
+                if (d < bestDiff) {
+                    bestDiff = d;
+                    bestX2 = x2;
+                    bestY2 = y2;
+                    best2Idx = j;
+                }
+            }
+            
+            if (bestDiff < Double.MAX_VALUE) {
+
+                outputMatched1.add(x, y);
+                outputMatched2.add(bestX2, bestY2);
+                
+                chosen.add(Integer.valueOf(best2Idx));
+            }            
+        }
+    }
+    
     /**
      * sort the fits by descending number of matches. 
      * @param fits

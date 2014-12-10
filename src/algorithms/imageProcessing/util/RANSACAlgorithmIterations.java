@@ -2,18 +2,18 @@ package algorithms.imageProcessing.util;
 
 /**
  * estimates the number of iterations for a RANSAC type algorithm that 
- * should be used to ensure with 95% certainty that a set of 8 points has 
- * all true matches when such a set exists.
+ * should be used to ensure with 95% certainty that a set of points is 
+ * findable as a subset of n matchable points.
  * 
  * @author nichole
  */
-public class EightPointAlgorithmIterations {
+public class RANSACAlgorithmIterations {
     
     /**
      The estimate assumes that at least 25 percent of the nMatchedPoints
      are outliers and determines the number of iterations needed for a 95%
      certainty that 8 points drawn randomly from nMatchedPoints will all be
-     'true' matches, that is, not outliers.
+     "true" matches, that is, not outliers.
      
      <pre>
      It uses this table generated below following the statistics in the comments
@@ -32,7 +32,7 @@ public class EightPointAlgorithmIterations {
      * @param nMatchedPoints
      * @return 
      */
-    public int estimateNIterForTwentyFivePercentOutliers(int nMatchedPoints) {
+    public int estimateNIterForTwentyFivePercentOutliersFor8Points(int nMatchedPoints) {
         
         double p;
         if (nMatchedPoints <= 30) {
@@ -54,7 +54,7 @@ public class EightPointAlgorithmIterations {
      The estimate assumes that at least 50 percent of the nMatchedPoints
      are outliers and determines the number of iterations needed for a 95%
      certainty that 8 points drawn randomly from nMatchedPoints will all be
-     'true' matches, that is, not outliers.
+     "true" matches, that is, not outliers.
      
      <pre>
      It uses this table generated below following the statistics in the comments
@@ -73,7 +73,7 @@ public class EightPointAlgorithmIterations {
      * @param nMatchedPoints
      * @return 
      */
-    public int estimateNIterForFiftyPercentOutliers(int nMatchedPoints) {
+    public int estimateNIterForFiftyPercentOutliersFor8Points(int nMatchedPoints) {
         
         double p;
         if (nMatchedPoints <= 30) {
@@ -90,6 +90,51 @@ public class EightPointAlgorithmIterations {
         
         return nIter;
     }
+
+    /**
+     The estimate assumes that at least 15 percent of the nPoints
+     are true matches with points in another set of points
+     and determines the number of iterations needed for a 95%
+     certainty that 2 points drawn randomly from nPoints will all be
+     "truly matchable" with points in set2 (whose characteristics are
+     presumed to be similar).
+     
+     <pre>
+     It uses this table generated below following the statistics in the comments
+     at the end of this class.
+     
+             | nInliers percentage of nTotal
+     nPoints |  15        25       50       75
+     ------------------------------------------------------
+       30    | 0.014  | 0.05   | 0.24   |  0.53
+       50    | 0.017  | 0.054  | 0.245  |  0.54
+      100    | 0.021  | 0.061  | 0.247  |  0.56
+      177    | 0.021  | 0.061  | 0.246  |  0.56
+      500    | 0.022  | 0.062  | 0.25   |  0.56
+     1000    | 0.022  | 0.062  | 0.25   |  0.56
+     </pre>
+     
+     * @param nPoints
+     * @return 
+     */
+    public int estimateNIterForFifteenPercentOutliersFor2Points(int nPoints) {
+        
+        double p;
+        if (nPoints <= 30) {
+            p = 0.014;
+        } else if (nPoints <= 50) {
+            p = 0.017;
+        } else if (nPoints <= 100) {
+            p = 0.021;
+        } else  {
+            p = 0.022;
+        }
+        
+        int nIter = (int)Math.round(1./p);
+        
+        return nIter;
+    }
+
 }
 
 /*
@@ -193,4 +238,20 @@ def tbl() :
             p = numer / denom
             print "nTotal=", nT, " nInliers fraction=", nF, " p=", p
     return;
+
+==============
+
+The same logic as above, used for finding 2 truly matchable points within set1:
+
+      p:
+            | nInliers percentage of nTotal
+     nToTal |  15        25       50       75
+     ------------------------------------------------------
+       30   | 0.014  | 0.05   | 0.24   |  0.53
+       50   | 0.017  | 0.054  | 0.245  |  0.54
+      100   | 0.021  | 0.061  | 0.247  |  0.56
+      177   | 0.021  | 0.061  | 0.246  |  0.56
+      500   | 0.022  | 0.062  | 0.25   |  0.56
+     1000   | 0.022  | 0.062  | 0.25   |  0.56
+
 */

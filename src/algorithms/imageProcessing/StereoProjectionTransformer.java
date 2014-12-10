@@ -6,8 +6,12 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
+import thirdparty.HungarianAlgorithm;
 
 /**
  * class to solve for the epipoles for two images with stereo projection
@@ -209,6 +213,13 @@ public class StereoProjectionTransformer {
         */
     }
     
+    /**
+     * NOTE: this method should only be used for comparison.  Prefer 
+     * calculateEpipolarProjection().
+     * 
+     * @param pointsLeftXY
+     * @param pointsRightXY 
+     */
     public void calculateEpipolarProjectionWithoutNormalization(
         PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
         
@@ -222,6 +233,8 @@ public class StereoProjectionTransformer {
             throw new IllegalArgumentException(
                 "refactorLeftXY and refactorRightXY must be same size");
         }
+        
+        log.warning("NOTE:  consider using calculateEpipolarProjection instead");
         
         if (pointsLeftXY.getN() < 8) {
             // cannot use this algorithm.
@@ -549,7 +562,7 @@ public class StereoProjectionTransformer {
      * @param xyPairs
      * @return 
      */
-    protected Matrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
+    public Matrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
         
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
         // column 0 is x
@@ -564,7 +577,6 @@ public class StereoProjectionTransformer {
             xyPoints[1][i] = xyPairs.getY(i);
             xyPoints[2][i] = 1;
         }
-        
         
         // matrix of size mRows x nCols
         
@@ -675,13 +687,13 @@ public class StereoProjectionTransformer {
         for (int i = 0; i < e1.length; i++) {
             sb.append(e1[i]).append(" ");
         }
-        log.info(sb.toString());
+        log.fine(sb.toString());
         
         sb = new StringBuilder("e2=");
         for (int i = 0; i < e2.length; i++) {
             sb.append(e2[i]).append(" ");
         }
-        log.info(sb.toString());
+        log.fine(sb.toString());
         
         double[][] e = new double[2][];
         e[0] = e1;
@@ -724,75 +736,8 @@ public class StereoProjectionTransformer {
      */
     public StereoProjectionTransformerFit evaluateFitForRight(double tolerance) {
         
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        int nPoints = rightXY.getColumnDimension();
-         
-        // estimate endpoints of the epipolar line as the min and max x of right
-        int xBegin = Integer.MAX_VALUE;
-        int xEnd = Integer.MIN_VALUE;
-        for (int i = 0; i < nPoints; i++) {
-            double xP = rightXY.get(0, i);
-            int x = (int)Math.round(xP);
-            if (x < xBegin) {
-                xBegin = x;
-            }
-            if (x > xEnd) {
-                xEnd = x;
-            }
-        }
-        
-        List<Integer> outlierIndexes = new ArrayList<Integer>();
-        
-        double[] dist = new double[nPoints];
-        
-        //TODO: improve use of types to avoid casting
-        
-        // estimate the average distance of points that are within tolerance
-        double avg = 0;
-        int count = 0;
-        for (int i = 0; i < nPoints; i++) {
-            
-            float xP = (float) rightXY.get(0, i);
-            float yP = (float) rightXY.get(1, i);
-           
-            double[] lineYEndpoints = getEpipolarLineYEndpoints(
-                epipolarLinesInRight, xBegin, xEnd, i);
-            
-            double d = curveHelper.distanceFromPointToALine(
-                (float)xBegin, (float)lineYEndpoints[0],
-                (float)xEnd, (float)lineYEndpoints[1], xP, yP);
-            
-            if (d <= tolerance) {
-                
-                dist[count] = d;
-            
-                avg += dist[i];
-            
-                count++;
-                
-            } else {
-                
-                outlierIndexes.add(Integer.valueOf(i));
-            }
-        }
-        
-        avg /= (double)count;
-                
-        double stdev = 0;
-        // estimate the standard deviation from the mean
-        for (int i = 0; i < count; i++) {
-            double diff = dist[i] - avg;
-            stdev += (diff * diff);
-        }
-        stdev = Math.sqrt(stdev/((double) count - 1.0));
-        
-        StereoProjectionTransformerFit fit = new StereoProjectionTransformerFit(
-            count, tolerance, avg, stdev);
-        
-        fit.setOutlierIndexes(outlierIndexes);
-        
-        return fit;
+        return evaluateFitInRightImageForMatchedPoints(leftXY, rightXY, 
+            tolerance);
     }
     
     public static class NormalizedXY {
@@ -863,17 +808,22 @@ public class StereoProjectionTransformer {
         return epipolarLinesInLeft;
     }
     
-    public PairIntArray getEpipolarLineInLeft(int imgWidth, int pointNumber) {
+    public PairIntArray getEpipolarLineInLeft(int imgWidth, int imgHeight, 
+        int pointNumber) {
         
-        return getEpipolarLine(epipolarLinesInLeft, imgWidth, pointNumber);
+        return getEpipolarLine(epipolarLinesInLeft, imgWidth, imgHeight, 
+             pointNumber);
     }
     
-     public PairIntArray getEpipolarLineInRight(int imgWidth, int pointNumber) {
-        return getEpipolarLine(epipolarLinesInRight, imgWidth, pointNumber);
+    public PairIntArray getEpipolarLineInRight(int imgWidth, int imgHeight, 
+        int pointNumber) {
+        
+        return getEpipolarLine(epipolarLinesInRight, imgWidth, imgHeight, 
+            pointNumber);
     }
      
-    private PairIntArray getEpipolarLine(Matrix epipolarLines, int imgWidth, 
-        int pointNumber) {
+    PairIntArray getEpipolarLine(Matrix epipolarLines, int imgWidth, 
+        int imgHeight, int pointNumber) {
         
         int n = imgWidth/10;
         
@@ -882,10 +832,21 @@ public class StereoProjectionTransformer {
         double a = epipolarLines.get(0, pointNumber);
         double b = epipolarLines.get(1, pointNumber);
         double c = epipolarLines.get(2, pointNumber);
-        for (int i = 0; i < imgWidth; i+= 1) {
-            //y = - (a/b) * x - (c/b)
-            double y = (c + (a * (double)i)) / (-b);
-            line.add(i, (int) Math.round(y));
+        boolean isHoriz = (Math.abs(a/b) <= 1.0);
+        if (isHoriz) {
+            for (int x = 0; x < imgWidth; x++) {
+                //y = - (a/b) * x - (c/b)
+                double y = (c + (a * (double)x)) / (-b);
+                line.add(x, (int) Math.round(y));
+            }
+        } else {
+            for (int y = 0; y < imgHeight; y++) {
+                //y = - (a/b) * x - (c/b)
+                //y+(c/b) = - (a/b) * x 
+                // ==> x = (-b/a) * (y+(c/b)) = y*(-b/a) - (c/a)
+                double x = -(c + (b * (double)y))/a;
+                line.add((int) Math.round(x), y);
+            }
         }
   
         return line;
@@ -905,29 +866,571 @@ public class StereoProjectionTransformer {
   
         return new double[]{yBegin, yEnd};
     }
+    
+    private double[] getEpipolarLineYEndpoints(Matrix epipolarLines, float xBegin,
+        float xEnd, int pointNumber) {
+        
+        double a = epipolarLines.get(0, pointNumber);
+        double b = epipolarLines.get(1, pointNumber);
+        double c = epipolarLines.get(2, pointNumber);
+        
+        //y = - (a/b) * x - (c/b)
+        double yBegin = (c + (a * xBegin)) / (-b);
+        
+        double yEnd = (c + (a * xEnd)) / (-b);
+  
+        return new double[]{yBegin, yEnd};
+    }
+    
+    Matrix calculateEpipolarRightLines(Matrix points) {
+        return fundamentalMatrix.times(points);
+    }
+    
+     Matrix calculateEpipolarLeftLines(Matrix points) {
+        return fundamentalMatrix.transpose().times(points);
+    }
+    
+     /**
+      * evaluate the fit as the distance of points in the left image from the
+      * projected right epipolar lines if the distance is within tolerance.
+      * Note that to include all points regardless of tolerance, set tolerance
+      * to a very high number such as Double.MAX_VALUE.
+      * 
+      * @param leftImagePoints
+      * @param rightImagePoints
+      * @param tolerance
+      * @return 
+      */
+    public StereoProjectionTransformerFit evaluateFit(
+        PairFloatArray leftImagePoints, PairFloatArray rightImagePoints, 
+        double tolerance) {
+        
+        /*
+        comparing the points in left image with the epipolar lines projected
+        from the right image points.
+        */
+        
+        Matrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
+        
+        Matrix theLeftEpipolarLines = calculateEpipolarLeftLines(theRightPoints);
+        
+        int[] minMaxLineXEndpoints = getMinMaxX(leftImagePoints);
+        float lineX0 = minMaxLineXEndpoints[0];
+        float lineX1 = minMaxLineXEndpoints[1];
+        
+        int nPoints1 = leftImagePoints.getN();
+        int nPoints2 = rightImagePoints.getN();
+               
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double[] diffs = new double[nPoints1];
+        int nMatched = 0;
+        long diffSum = 0;
+            
+        boolean useBipartiteMinCost = true;
+        
+        if (useBipartiteMinCost) {
+            
+            // === using an optimal bipartite min cost matching ~O(N^4) ====
+            // make the cost matrix
+            float[][] diffsAsCost = new float[nPoints2][nPoints1];
+            
+            // the algorithm modifies diffsAsCost, so make a copy
+            float[][] diffsAsCostCopy = new float[nPoints2][nPoints1];
+
+            for (int i = 0; i < nPoints2; i++) {
+
+                diffsAsCost[i] = new float[nPoints1];
+                diffsAsCostCopy[i] = new float[nPoints1];
+
+                double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
+                    theLeftEpipolarLines, lineX0, lineX1, i);
+
+                float lineY0 = (float)epipolarLineYEndPoints[0];
+                float lineY1 = (float)epipolarLineYEndPoints[1];
+
+                for (int j = 0; j < leftImagePoints.getN(); j++) {
+
+                    double dist = curveHelper.distanceFromPointToALine(
+                        lineX0, lineY0, lineX1, lineY1, 
+                        leftImagePoints.getX(j), leftImagePoints.getY(j));
+
+                    diffsAsCost[i][j] = (float)dist;
+                    diffsAsCostCopy[i][j] = (float)dist;
+                }
+            }
+
+            HungarianAlgorithm b = new HungarianAlgorithm();
+            int[][] match = b.computeAssignments(diffsAsCostCopy);
+
+            assert(match.length == nPoints2);
+            
+log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
+
+            
+            for (int i = 0; i < match.length; i++) {
+                int idx2 = match[i][0];
+                int idx1 = match[i][1];
+                if (idx1 == -1 || idx2 == -1) {
+                    continue;
+                }
+                double diff = diffsAsCost[idx2][idx1];
+                if (diff < tolerance) {
+                    diffs[nMatched] = diff;
+                    diffSum += diff;
+                    nMatched++;
+                }
+            }
+            
+        } else {
+        
+            // ==== using a greedy non-optimal min cost matching ~O(N^2) ======
+            Set<Integer> chosen = new HashSet<Integer>();
+            for (int i = 0; i < nPoints2; i++) {
+                double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
+                    theLeftEpipolarLines, lineX0, lineX1, i);
+                float lineY0 = (float)epipolarLineYEndPoints[0];
+                float lineY1 = (float)epipolarLineYEndPoints[1];
+                double minDiff = Double.MAX_VALUE;
+                int minIdx = -1;
+                for (int j = 0; j < leftImagePoints.getN(); j++) {
+                    if (chosen.contains(Integer.valueOf(j))) {
+                        continue;
+                    }
+                    double dist = curveHelper.distanceFromPointToALine(
+                        lineX0, lineY0, lineX1, lineY1, 
+                        leftImagePoints.getX(j), leftImagePoints.getY(j));
+                    if (dist < minDiff) {
+                        minDiff = dist;
+                        minIdx = j;
+                    }
+                }
+                if ((minDiff < Double.MAX_VALUE) && (minDiff < tolerance)) {
+                    diffs[nMatched] = minDiff;
+                    diffSum += minDiff;
+                    nMatched++;
+                    chosen.add(Integer.valueOf(minIdx));
+                }
+            }
+        }
+        
+        double avgDist = diffSum/(double)nMatched;
+        
+        diffSum = 0;
+        for (int i = 0; i < nMatched; i++) {
+            double d = diffs[i] - avgDist;
+            diffSum += (d * d);
+        }
+        double stdDevDist = Math.sqrt(diffSum/((double)nMatched - 1));
+        
+        StereoProjectionTransformerFit fit = new StereoProjectionTransformerFit(
+            nMatched, tolerance, avgDist, stdDevDist);
+        
+        return fit;
+    }
+
+    /**
+      * evaluate the fit in the right image as the distance of points there
+      * from the projected epipolar lines (created from the left points).
+      * The distances are only added if they are within tolerance.
+      * Note that to include all points regardless of tolerance, set tolerance
+      * to a very high number such as Double.MAX_VALUE.
+      * 
+      * @param leftImagePoints
+      * @param rightImagePoints
+      * @param tolerance
+      * @return 
+      */
+    public StereoProjectionTransformerFit evaluateFitInRightImage(
+        PairFloatArray leftImagePoints, PairFloatArray rightImagePoints, 
+        double tolerance) {
+        
+        Matrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
+        
+        Matrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
+       
+        return evaluateFitInRightImage(theLeftPoints, theRightPoints, tolerance);
+    }
+    
+    /**
+      * evaluate the fit in the right image as the distance of points there
+      * from the projected epipolar lines (created from the left points).
+      * The distances are only added if they are within tolerance.
+      * Note that to include all points regardless of tolerance, set tolerance
+      * to a very high number such as Double.MAX_VALUE.
+      * 
+      * @param leftImagePoints
+      * @param rightImagePoints
+      * @param tolerance
+      * @return 
+      */
+    public StereoProjectionTransformerFit 
+        evaluateFitInRightImageForMatchedPoints(
+        PairFloatArray leftImagePoints, PairFloatArray rightImagePoints,
+        double tolerance) {
+        
+        Matrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
+        
+        Matrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
+       
+        return evaluateFitInRightImageForMatchedPoints(theLeftPoints, 
+            theRightPoints, tolerance);
+    }
+        
+    public StereoProjectionTransformerFit evaluateRightForMatchedAndStoreOutliers(
+        PairFloatArray leftImagePoints, PairFloatArray rightImagePoints,
+        float factor, double minRemoval, LinkedHashSet<Integer> skipIndexes) {
+        
+        Matrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
+        
+        Matrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
+       
+        return evaluateRightForMatchedAndStoreOutliers(theLeftPoints, 
+            theRightPoints, factor, minRemoval, skipIndexes);
+    }
+
+    /**
+      * evaluate the fit in the right image as the distance of points there
+      * from the projected epipolar lines (created from the left points).
+      * The distances are only added if they are within tolerance.
+      * Note that to include all points regardless of tolerance, set tolerance
+      * to a very high number such as Double.MAX_VALUE.
+      * 
+      * @param leftPoints
+      * @param rightPoints
+      * @param tolerance
+      * @return 
+      */
+    public StereoProjectionTransformerFit evaluateFitInRightImage(
+        Matrix leftPoints, Matrix rightPoints, 
+        double tolerance) {
+       
+        Matrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
+      
+        int[] minMaxLineXEndpoints = getMinMaxX(rightPoints);
+        float lineX0 = minMaxLineXEndpoints[0];
+        float lineX1 = minMaxLineXEndpoints[1];
+        
+        int nPointsLeft = leftPoints.getColumnDimension();
+        int nPointsRight = rightPoints.getColumnDimension();
+      
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double[] diffs = new double[nPointsLeft];
+        int nMatched = 0;
+        long diffSum = 0;
+            
+        boolean useBipartiteMinCost = true;
+        
+        if (useBipartiteMinCost) {
+            
+            // === using an optimal bipartite min cost matching ~O(N^4) ====
+            // make the cost matrix
+            float[][] diffsAsCost = new float[nPointsLeft][nPointsRight];
+
+            // the algorithm modifies diffsAsCost, so make a copy
+            float[][] diffsAsCostCopy = new float[nPointsLeft][nPointsRight];
+
+            for (int i = 0; i < nPointsLeft; i++) {
+
+                diffsAsCost[i] = new float[nPointsRight];
+                diffsAsCostCopy[i] = new float[nPointsRight];
+
+                double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
+                    theRightEpipolarLines, lineX0, lineX1, i);
+
+                float lineY0 = (float)epipolarLineYEndPoints[0];
+                float lineY1 = (float)epipolarLineYEndPoints[1];
+
+                for (int j = 0; j < nPointsRight; j++) {
+
+                    double dist = curveHelper.distanceFromPointToALine(
+                        lineX0, lineY0, lineX1, lineY1, 
+                        (float)rightPoints.get(0, j), 
+                        (float)rightPoints.get(1, j));
+
+                    diffsAsCost[i][j] = (float)dist;
+                    diffsAsCostCopy[i][j] = (float)dist;
+                }
+            }
+
+            HungarianAlgorithm b = new HungarianAlgorithm();
+            int[][] match = b.computeAssignments(diffsAsCostCopy);
+
+            assert(match.length == nPointsLeft);
+            
+            for (int i = 0; i < match.length; i++) {
+                int idxLeft = match[i][0];
+                int idxRight = match[i][1];
+                if (idxLeft == -1 || idxRight == -1) {
+                    continue;
+                }
+                double diff = diffsAsCost[idxLeft][idxRight];
+                if (diff < tolerance) {
+                    diffs[nMatched] = diff;
+                    diffSum += diff;
+                    nMatched++;
+                }
+            }
+            
+        } else {
+        
+            // ==== using a greedy non-optimal min cost matching ~O(N^2) ======
+            Set<Integer> chosen = new HashSet<Integer>();
+            for (int i = 0; i < nPointsLeft; i++) {
+                double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
+                    theRightEpipolarLines, lineX0, lineX1, i);
+                float lineY0 = (float)epipolarLineYEndPoints[0];
+                float lineY1 = (float)epipolarLineYEndPoints[1];
+                double minDiff = Double.MAX_VALUE;
+                int minIdx = -1;
+                for (int j = 0; j < nPointsRight; j++) {
+                    if (chosen.contains(Integer.valueOf(j))) {
+                        continue;
+                    }
+                    double dist = curveHelper.distanceFromPointToALine(
+                        lineX0, lineY0, lineX1, lineY1, 
+                        (float)rightPoints.get(0, j), 
+                        (float)rightPoints.get(1, j));
+                    if (dist < minDiff) {
+                        minDiff = dist;
+                        minIdx = j;
+                    }
+                }
+                if ((minDiff < Double.MAX_VALUE) && (minDiff < tolerance)) {
+                    diffs[nMatched] = minDiff;
+                    diffSum += minDiff;
+                    nMatched++;
+                    chosen.add(Integer.valueOf(minIdx));
+                }
+            }
+        }
+        
+        log.fine("n epipolar lines=" + nPointsLeft + " right n=" + nPointsRight 
+            + " nMatched=" + nMatched);
+        
+        double avgDist = diffSum/(double)nMatched;
+        
+        diffSum = 0;
+        for (int i = 0; i < nMatched; i++) {
+            double d = diffs[i] - avgDist;
+            diffSum += (d * d);
+        }
+        double stdDevDist = Math.sqrt(diffSum/((double)nMatched - 1));
+        
+        StereoProjectionTransformerFit fit = new StereoProjectionTransformerFit(
+            nMatched, tolerance, avgDist, stdDevDist);
+        
+        return fit;
+    }
+    
+    /**
+      * evaluate the fit in the right image as the distance of points there
+      * from the projected epipolar lines (created from the left points).
+      * The distances are only added if they are within tolerance.
+      * Note that to include all points regardless of tolerance, set tolerance
+      * to a very high number such as Double.MAX_VALUE.
+      * 
+      * @param leftPoints
+      * @param rightPoints
+      * @param tolerance
+      * @return 
+      */
+    public StereoProjectionTransformerFit evaluateFitInRightImageForMatchedPoints(
+        Matrix leftPoints, Matrix rightPoints, 
+        double tolerance) {
+               
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+         
+        int nPointsLeft = leftPoints.getColumnDimension();
+        int nPointsRight = rightPoints.getColumnDimension();
+        
+        if (nPointsLeft != nPointsRight) {
+            throw new IllegalArgumentException("point lists must have same "
+                + " length since these are matched. " +
+                " For unmatched lists, use evaluateFitInRightImage()");
+        }
+      
+        Matrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
+      
+        int[] minMaxLineXEndpoints = getMinMaxX(rightPoints);
+        float lineX0 = minMaxLineXEndpoints[0];
+        float lineX1 = minMaxLineXEndpoints[1];
+       
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double[] diffs = new double[nPointsLeft];
+        int nMatched = 0;
+        long diffSum = 0;
+                    
+        for (int i = 0; i < nPointsLeft; i++) {
+
+            double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
+                theRightEpipolarLines, lineX0, lineX1, i);
+
+            float lineY0 = (float)epipolarLineYEndPoints[0];
+            float lineY1 = (float)epipolarLineYEndPoints[1];
+
+            double dist = curveHelper.distanceFromPointToALine(
+                lineX0, lineY0, lineX1, lineY1, 
+                (float)rightPoints.get(0, i), 
+                (float)rightPoints.get(1, i));
+
+            if (dist < tolerance) {
+                diffs[nMatched] = dist;
+                diffSum += dist;
+                nMatched++;
+            }
+        }
+        
+        double avgDist = diffSum/(double)nMatched;
+        
+        diffSum = 0;
+        for (int i = 0; i < nMatched; i++) {
+            double d = diffs[i] - avgDist;
+            diffSum += (d * d);
+        }
+        double stdDevDist = Math.sqrt(diffSum/((double)nMatched - 1));
+        
+        StereoProjectionTransformerFit fit = new StereoProjectionTransformerFit(
+            nMatched, tolerance, avgDist, stdDevDist);
+        
+        return fit;
+    }
+    
+    /**
+     * evaluate the fit of projection by calculating the difference between
+     * the right points and the epipolar lines that are calculated from the
+     * left points.  After the average distance and standard deviation are
+     * learned for the right points, those that are greater than 
+     * average distance + factor * standard deviation are added to the list
+     * skipIndexes.  Note that any points already in skipIndexes are
+     * skipped during the evaluation.
+     * @param leftPoints input matched points from left image, excepting those
+     * with indexes in skipIndexes.
+     * @param rightPoints input matched points from right image, excepting those
+     * with indexes in skipIndexes.
+     * @param factor
+     * @param minRemoval minimum distance above which an outlier distance
+     * can be applied
+     * @param skipIndexes existing indexes to skip in evaluation and to append 
+     * to with outliers from this evaluation.
+     * @return 
+     */
+    public StereoProjectionTransformerFit evaluateRightForMatchedAndStoreOutliers(
+        Matrix leftPoints, Matrix rightPoints, 
+        float factor, double minRemoval, LinkedHashSet<Integer> skipIndexes) {
+               
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        
+        if (skipIndexes == null) {
+            throw new IllegalArgumentException("skipIndexes cannot be null");
+        }
+         
+        int nPointsLeft = leftPoints.getColumnDimension();
+        int nPointsRight = rightPoints.getColumnDimension();
+        
+        if (nPointsLeft != nPointsRight) {
+            throw new IllegalArgumentException("point lists must have same "
+                + " length since these are matched. " +
+                " For unmatched lists, use evaluateFitInRightImage()");
+        }
+      
+        Matrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
+      
+        int[] minMaxLineXEndpoints = getMinMaxX(rightPoints);
+        float lineX0 = minMaxLineXEndpoints[0];
+        float lineX1 = minMaxLineXEndpoints[1];
+       
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double[] diffs = new double[nPointsLeft];
+        int nMatched = 0;
+        long diffSum = 0;
+                    
+        for (int i = 0; i < nPointsLeft; i++) {
+
+            double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
+                theRightEpipolarLines, lineX0, lineX1, i);
+
+            float lineY0 = (float)epipolarLineYEndPoints[0];
+            float lineY1 = (float)epipolarLineYEndPoints[1];
+
+            double dist = curveHelper.distanceFromPointToALine(
+                lineX0, lineY0, lineX1, lineY1, 
+                (float)rightPoints.get(0, i), 
+                (float)rightPoints.get(1, i));
+
+            diffs[i] = dist;
+            
+            if (!skipIndexes.contains(Integer.valueOf(i))) {
+                diffSum += dist;
+                nMatched++;
+            }
+        }
+        
+        double avgDist = diffSum/(double)nMatched;
+        
+        diffSum = 0;
+        for (int i = 0; i < nPointsLeft; i++) {
+            if (!skipIndexes.contains(Integer.valueOf(i))) {
+                double d = diffs[i] - avgDist;
+                diffSum += (d * d);
+            }
+        }
+        
+        double stdDevDist = Math.sqrt(diffSum/((double)nMatched - 1));
+        
+        double comp = avgDist + factor * stdDevDist;
+        
+        if (comp > minRemoval) {
+                    
+            for (int i = 0; i < nPointsLeft; i++) {
+                Integer idx = Integer.valueOf(i);
+                if (!skipIndexes.contains(idx)) {
+                    if (diffs[i] > comp) {
+                        skipIndexes.add(idx);
+                    }
+                }
+            }
+            
+        }
+        
+        StereoProjectionTransformerFit fit = new StereoProjectionTransformerFit(
+            nMatched, comp, avgDist, stdDevDist);
+        
+        return fit;
+    }
 
     public PairIntArray getRightXYInt() {
-                         
         return getXYInt(rightXY);
     }
     
-    public PairIntArray getLeftXYInt() {
-                         
+    public PairIntArray getLeftXYInt() {                         
         return getXYInt(leftXY);
     }
     
     public int getNumberOfMatches() {
-        
         return leftXY.getColumnDimension();
     }
     
-    public PairFloatArray getRightXYFloat() {
-                         
+    public PairFloatArray getRightXYFloat() {                         
         return getXYFloat(rightXY);
     }
     
     public PairFloatArray getLeftXYFloat() {
-                         
         return getXYFloat(leftXY);
     }
     
@@ -942,7 +1445,7 @@ public class StereoProjectionTransformer {
             float xP = (float) leftOrRightXY.get(0, i);
             float yP = (float) leftOrRightXY.get(1, i);
            
-            out.add((int)Math.round(xP), (int)Math.round(yP));
+            out.add(Math.round(xP), Math.round(yP));
         }
         
         return out;
@@ -963,5 +1466,47 @@ public class StereoProjectionTransformer {
         }
         
         return out;
+    }
+    
+    private int[] getMinMaxX(PairFloatArray points) {
+        
+        int nPoints = points.getN();
+         
+        // estimate endpoints of the epipolar line as the min and max x of right
+        int xBegin = Integer.MAX_VALUE;
+        int xEnd = Integer.MIN_VALUE;
+        for (int i = 0; i < nPoints; i++) {
+            double xP = points.getX(i);
+            int x = (int)Math.round(xP);
+            if (x < xBegin) {
+                xBegin = x;
+            }
+            if (x > xEnd) {
+                xEnd = x;
+            }
+        }
+        
+        return new int[]{xBegin, xEnd};
+    }
+    
+    private int[] getMinMaxX(Matrix points) {
+        
+        int nPoints = points.getColumnDimension();
+         
+        // estimate endpoints of the epipolar line as the min and max x of right
+        int xBegin = Integer.MAX_VALUE;
+        int xEnd = Integer.MIN_VALUE;
+        for (int i = 0; i < nPoints; i++) {
+            double xP = points.get(0, i);
+            int x = (int)Math.round(xP);
+            if (x < xBegin) {
+                xBegin = x;
+            }
+            if (x > xEnd) {
+                xEnd = x;
+            }
+        }
+        
+        return new int[]{xBegin, xEnd};
     }
 }

@@ -10,8 +10,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.junit.After;
 import static org.junit.Assert.assertTrue;
@@ -43,14 +50,14 @@ public class StereoProjectionTransformerTest {
     */
     
     //@Test
-    public void testB() throws Exception {
+    public void estB() throws Exception {
         
         //String cwd = System.getProperty("user.dir") + "/";
         
         PairIntArray matched1 = new PairIntArray();
         PairIntArray matched2 = new PairIntArray();
         
-        readBrownAndLoweMatches(matched1, matched2);
+        DataForTests.readBrownAndLoweMatches(matched1, matched2);
         
         PairIntArray xy1 = new PairIntArray();
         PairIntArray xy2 = new PairIntArray();
@@ -65,7 +72,7 @@ public class StereoProjectionTransformerTest {
     }
    
     //@Test
-    public void testC() throws Exception {
+    public void estC() throws Exception {
         
         String cwd = System.getProperty("user.dir") + "/";
         
@@ -136,7 +143,7 @@ public class StereoProjectionTransformerTest {
     }
     
     //@Test
-    public void testD() throws Exception {
+    public void estD() throws Exception {
         
         String fileName1 = "books_illum3_v0_695x555.png";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -184,7 +191,7 @@ public class StereoProjectionTransformerTest {
         int z = 1;
     }
     
-    public void testE() throws Exception {
+    public void estE() throws Exception {
         
         PairFloatArray matched1 = new PairFloatArray();
         PairFloatArray matched2 = new PairFloatArray();
@@ -222,10 +229,10 @@ public class StereoProjectionTransformerTest {
         int nLimitTo = matched1.getN();
         
         for (int i = 0; i < nLimitTo; i++) {
-            leftMatches.add((int)Math.round(matched1.getX(i)),
-                (int)Math.round(matched1.getY(i)));
-            rightMatches.add((int)Math.round(matched2.getX(i)),
-                (int)Math.round(matched2.getY(i)));
+            leftMatches.add(Math.round(matched1.getX(i)),
+                Math.round(matched1.getY(i)));
+            rightMatches.add(Math.round(matched2.getX(i)),
+                Math.round(matched2.getY(i)));
         }
         
         Color clr = null;
@@ -235,7 +242,7 @@ public class StereoProjectionTransformerTest {
             clr = getColor(clr);
             
             PairIntArray leftLine = spTransformer.getEpipolarLineInLeft(
-                img1.getWidth(), i);
+                img1.getWidth(), img1.getHeight(), i);
             
             ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
                 clr.getRed(), clr.getGreen(), clr.getBlue());
@@ -250,7 +257,7 @@ public class StereoProjectionTransformerTest {
             clr = getColor(clr);
             
             PairIntArray rightLine = spTransformer.getEpipolarLineInRight(
-                img2.getWidth(), i);
+                img2.getWidth(), img2.getHeight(), i);
             
             ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
                 clr.getRed(), clr.getGreen(), clr.getBlue()); 
@@ -270,8 +277,8 @@ public class StereoProjectionTransformerTest {
         
     }
     
-    @Test
-    public void testF() throws Exception {
+    //@Test
+    public void estF() throws Exception {
         
         /*
         test the fundamental matrix using the Merton I College set from
@@ -338,7 +345,7 @@ public class StereoProjectionTransformerTest {
             clr = getColor(clr);
             
             PairIntArray leftLine = spTransformer.getEpipolarLineInLeft(
-                img1.getWidth(), i);
+                img1.getWidth(), img1.getHeight(), i);
             
             ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
                 clr.getRed(), clr.getGreen(), clr.getBlue());
@@ -353,7 +360,7 @@ public class StereoProjectionTransformerTest {
             clr = getColor(clr);
             
             PairIntArray rightLine = spTransformer.getEpipolarLineInRight(
-                img2.getWidth(), i);
+                img2.getWidth(), img2.getHeight(), i);
             
             ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
                 clr.getRed(), clr.getGreen(), clr.getBlue()); 
@@ -372,6 +379,331 @@ public class StereoProjectionTransformerTest {
             3);
         
         assertTrue(fit.getNMatches() == unnormXY1.getColumnDimension());
+    }
+    
+    @Test
+    public void testG() throws Exception {
+                
+        PairFloatArray corners1 = new PairFloatArray();
+        PairFloatArray corners2 = new PairFloatArray();
+        DataForTests.readBrownAndLoweCorners(corners1, corners2);
+        
+        PairIntArray corn1 = new PairIntArray();
+        PairIntArray corn2 = new PairIntArray();
+        DataForTests.readBrownAndLoweCorners(corn1, corn2);
+        
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+    
+        PointMatcher pointMatcher = new PointMatcher();
+        
+        PairIntArray outputMatched1 = new PairIntArray();
+        PairIntArray outputMatched2 = new PairIntArray();
+        
+        // side effect is corn1 and corn2 become matched
+        TransformationPointFit fit2 = pointMatcher.calculateTransformationAndMatch(
+            corn1, corn2, 517, 374, outputMatched1, outputMatched2);
+        
+        log.info(fit2.toString());
+        
+        double[] diffFromModel = new double[corn1.getN()];
+        double[] avgDiffModel = new double[1];
+        
+        int centroidX1 = 517 >> 1;
+        int centroidY1 = 374 >> 1;
+        double transXTol = 517 * 0.02;
+        double transYTol = 374 * 0.02;
+        double tolerance = fit2.getMeanDistFromModel();
+        //7.5 is mean dist from model;  10 is mean dist + stdev;
+        
+        pointMatcher.populateDiffFromModelWithMatchedPoints(
+            outputMatched1, outputMatched2, 
+            fit2.getParameters(), centroidX1, centroidY1, 
+            diffFromModel, avgDiffModel);
+        
+        tolerance = avgDiffModel[0] + 0.5*fit2.getStDevFromMean();
+        
+        for (int i = (outputMatched1.getN() - 1); i > -1; i --) {
+            double diff = diffFromModel[i];
+            if (diff > tolerance) {
+                outputMatched1.removeRange(i, i);
+                outputMatched2.removeRange(i, i);
+            }
+        }
+        int nIterMax = 15;
+        int nIter = 0;
+        
+        log.info("Point matcher matched " + corn1.getN() + " from " 
+            + outputMatched1.getN());
+        
+        PairFloatArray matched1 = new PairFloatArray();
+        PairFloatArray matched2 = new PairFloatArray();
+        for (int i = 0; i < outputMatched1.getN(); i++) {
+            matched1.add(outputMatched1.getX(i), outputMatched1.getY(i));
+            matched2.add(outputMatched2.getX(i), outputMatched2.getY(i));
+        }
+        
+        // need the same number of corners, so truncating one without
+        // using criteria for which to remove
+                
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        sr.setSeed(System.currentTimeMillis());
+                
+        int nSubset = 16;
+        int[] selected = new int[nSubset];
+       
+        int nKeep = 20;
+        
+        tolerance = Double.MAX_VALUE;
+        
+        nIterMax = 5;
+        nIter = 0;
+        
+        double minRemoval = 5;
+                                
+        while (nIter < nIterMax) {
+            
+            StereoProjectionTransformer spTransformer = solveAndPlot(
+                matched1, matched2, fileName1, fileName2, "ALL",
+                matched1, matched2);
+
+            StereoProjectionTransformerFit fitOfAllMatches = 
+                spTransformer.evaluateFitInRightImageForMatchedPoints(
+                matched1, matched2, tolerance);
+
+            log.info("stereo projection FIT to all remaining corners) " 
+                + fitOfAllMatches.toString());
+            
+ if (true) {
+     break;
+ }
+ 
+ 
+            // keep the top fits and look at the image projections
+            List<FitHolder> best = new ArrayList<FitHolder>();
+            FitHolder ph = new FitHolder();
+            ph.fit = fitOfAllMatches;
+            ph.label = Long.MIN_VALUE; // not a subset bitstring, but used for label
+            ph.setSelected(selected);
+
+            best.add(ph);
+            
+            int nPoints = matched1.getN();
+        
+            Set<String> chosen = new HashSet<String>();
+        /*
+            for (int i = 0; i < 100; i++) {
+
+                chooseRandomly(sr, selected, chosen, nPoints);
+
+                PairFloatArray subset1 = new PairFloatArray();
+                PairFloatArray subset2 = new PairFloatArray();
+                for (int idx : selected) {
+                    subset1.add(matched1.getX(idx), matched1.getY(idx));
+                    subset2.add(matched2.getX(idx), matched2.getY(idx));
+                }
+
+                StereoProjectionTransformer spTransformer2 = new 
+                    StereoProjectionTransformer();
+
+                spTransformer2.calculateEpipolarProjection(subset1, subset2);
+
+                StereoProjectionTransformerFit fit = 
+                    spTransformer2.evaluateFitInRightImageForMatchedPoints(
+                    matched1, matched2, tolerance);
+
+                // look for idx=33 (471,156) and idx=36 (484,165)
+                if ((Arrays.binarySearch(selected, 33) > -1) && 
+                    (Arrays.binarySearch(selected, 36) > -1)) {
+
+                    log.info("i=" + i + " " + Arrays.toString(selected));
+
+                    log.info(i + ") " + fit.toString());
+                }
+
+                log.fine(i + ") " + fit.toString());
+
+                if (!Double.isNaN(fit.getAvgDistance()) &&
+                    fit.getAvgDistance() >= tolerance) {
+                    continue;
+                }
+
+                ph = new FitHolder();
+                ph.fit = fit;
+                ph.label = (long)i; // not a subset bitstring, but used for label
+                ph.setSelected(selected);
+
+                best.add(ph);
+
+                // trim best to size nKeep
+                if ((i > 0) && ((i % 50) == 0) && (best.size() > nKeep)) {
+                    Collections.sort(best, new FitComparator());
+                    while (best.size() > nKeep) {
+                        best.remove(best.size() - 1);
+                    }
+                }
+            }
+
+            Collections.sort(best, new FitComparator());
+            while (best.size() > nKeep) {
+                best.remove(best.size() - 1);
+            }
+         */
+            // ====== plot the best fitting projections =====
+            
+            for (FitHolder fh : best) {
+
+                StereoProjectionTransformerFit fit = fh.fit;
+
+                PairFloatArray subset1 = new PairFloatArray();
+                PairFloatArray subset2 = new PairFloatArray();
+                for (int idx : fh.getSelected()) {
+                    subset1.add(matched1.getX(idx), matched1.getY(idx));
+                    subset2.add(matched2.getX(idx), matched2.getY(idx));
+                }
+
+                spTransformer = solveAndPlot(
+                   subset1, subset2, fileName1, fileName2, 
+                    "_" + fh.label + "_", matched1, matched2);
+
+                log.info(fh.label + ") " +  fit.toString());
+            }
+
+            // ==== remove outliers using best fit and iterate if any were removed =====
+            
+            FitHolder bestFitHolder = best.get(0);
+        
+            PairFloatArray subset1 = new PairFloatArray();
+            PairFloatArray subset2 = new PairFloatArray();
+            for (int idx : bestFitHolder.getSelected()) {
+                subset1.add(matched1.getX(idx), matched1.getY(idx));
+                subset2.add(matched2.getX(idx), matched2.getY(idx));
+            }            
+            
+            LinkedHashSet<Integer> skipIndexes = new LinkedHashSet<Integer>();
+            
+            StereoProjectionTransformer spTransformer2 = new 
+                StereoProjectionTransformer();
+
+            spTransformer2.calculateEpipolarProjection(subset1, subset2);
+                        
+            float factor = 2.f;
+
+            StereoProjectionTransformerFit fit = 
+                spTransformer2.evaluateRightForMatchedAndStoreOutliers(
+                matched1, matched2, factor, minRemoval, skipIndexes);
+            
+            if (skipIndexes.isEmpty()) {
+                break;
+            }
+            
+            log.info("removing " + skipIndexes + " points");
+            
+            List<Integer> rm = new ArrayList<Integer>(skipIndexes);
+            
+            for (int i = (rm.size() - 1); i > -1; i--) {
+                int idx = rm.get(i).intValue();
+                matched1.removeRange(idx, idx);
+                matched2.removeRange(idx, idx);
+            }
+                
+            nIter++;
+        }
+    }
+    
+    private void chooseRandomly(SecureRandom sr, int[] selected, 
+        Set<String> chosen, int nPoints) {
+        
+        while (true) {
+            for (int i = 0; i < selected.length; i++) {
+                int sel = sr.nextInt(nPoints);
+                while (contains(selected, i, sel)) {
+                    sel = sr.nextInt(nPoints);
+                }
+                selected[i] = sel;
+            }
+            Arrays.sort(selected);
+            String str = Arrays.toString(selected);
+            if (!chosen.contains(str)) {
+                chosen.add(str);
+                break;
+            }
+        }
+    }
+
+    private StereoProjectionTransformer solveAndPlot(
+        PairFloatArray matchedSubset1, PairFloatArray matchedSubset2, 
+        String imageFileName1, 
+        String imageFileName2, String fileNumber,
+        PairFloatArray matched1, PairFloatArray matched2) throws Exception {
+        
+        StereoProjectionTransformer spTransformer 
+            = new StereoProjectionTransformer();
+        
+        spTransformer.calculateEpipolarProjection(matchedSubset1, matchedSubset2);
+                
+        String fileName1 = imageFileName1;
+        String fileName2 = imageFileName2;
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+                    
+        Matrix theLeftPoints = spTransformer.rewriteInto3ColumnMatrix(matched1);
+        Matrix theRightEpipolarLines = spTransformer.calculateEpipolarRightLines(
+            theLeftPoints);
+        
+        Matrix theRightPoints = spTransformer.rewriteInto3ColumnMatrix(matched2);
+        Matrix theLeftEpipolarLines = spTransformer.calculateEpipolarLeftLines(
+            theRightPoints);
+        
+        Color clr = null;
+        for (int i = 0; i < theLeftEpipolarLines.getColumnDimension(); i++) {
+            
+            clr = getColor(clr);
+            
+            PairIntArray leftLine = spTransformer.getEpipolarLine(
+                theLeftEpipolarLines, img1.getWidth(), img1.getHeight(), i);
+            
+            ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
+                clr.getRed(), clr.getGreen(), clr.getBlue());
+            
+            ImageIOHelper.addPointToImage(matched2.getX(i), matched2.getY(i), 
+                img2, 3, 255, 0, 0);
+            
+            ImageIOHelper.addPointToImage(matched2.getX(i), matched2.getY(i), 
+                img2, 2, 
+                clr.getRed(), clr.getGreen(), clr.getBlue());
+        }
+        
+        clr = null;
+        
+        for (int i = 0; i < theRightEpipolarLines.getColumnDimension(); i++) {
+            
+            clr = getColor(clr);
+            
+            PairIntArray rightLine = spTransformer.getEpipolarLine(
+                theRightEpipolarLines, img1.getWidth(), img1.getHeight(), i);
+            
+            ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
+                clr.getRed(), clr.getGreen(), clr.getBlue()); 
+            
+            ImageIOHelper.addPointToImage(matched1.getX(i), matched1.getY(i), 
+                img1, 3, 255, 0, 0);
+            
+            ImageIOHelper.addPointToImage(matched1.getX(i), matched1.getY(i), 
+                img1, 2, clr.getRed(), clr.getGreen(), clr.getBlue());
+        }
+    
+        String dirPath = ResourceFinder.findDirectory("bin");
+        
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/tmp_" + fileNumber + "_1.png", img1);
+       
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/tmp_" + fileNumber + "_2.png", img2);
+        
+        return spTransformer;
     }
     
     private Color getColor(Color clr) {
@@ -395,77 +727,72 @@ public class StereoProjectionTransformerTest {
         }
     }
     
-    public void testCalculateEpipolarProjection() {
-        
-        PairFloatArray leftXY = new PairFloatArray();
-        
-        PairFloatArray rightXY = new PairFloatArray();
-        
-        populateWithTestData0(leftXY, rightXY);
-        
-        StereoProjectionTransformer transformer = 
-            new StereoProjectionTransformer();
-        
-        transformer.calculateEpipolarProjection(leftXY, rightXY);
+    private boolean contains(int[] values, int lastIdx, int valueToCheck) {
+        for (int i = 0; i < lastIdx; i++) {
+            if (values[i] == valueToCheck) {
+                return true;
+            }
+        }
+        return false;
     }
     
-    private void populateWithTestData0(PairFloatArray leftXY, 
-        PairFloatArray rightXY) {
-        
-        /*
-        extracted from the books V0 and V6 images of the middlebury vision
-        database.
-        http://vision.middlebury.edu/stereo/data/
-        
-        The References listed with the data are:
-        
-        D. Scharstein and C. Pal. "Learning conditional random fields for 
-        stereo."  In IEEE Computer Society Conference on Computer Vision and 
-        Pattern Recognition (CVPR 2007), Minneapolis, MN, June 2007.
-
-        H. Hirschmüller and D. Scharstein. "Evaluation of cost functions for 
-        stereo matching."  In IEEE Computer Society Conference on Computer 
-        Vision and Pattern Recognition (CVPR 2007), Minneapolis, MN, June 2007.
-        
-        */
-        
+    public static class FitHolder {
+        public StereoProjectionTransformerFit fit;
+        public Long label;
+        private int[] selected = null;
+        public void setSelected(int[] theSelectedIndexes) {
+            selected = Arrays.copyOf(theSelectedIndexes, theSelectedIndexes.length);
+        }
+        public int[] getSelected() { return selected;}
     }
-    
-    private void readBrownAndLoweMatches(PairIntArray imageCorners1XY,
-        PairIntArray imageCorners2XY) throws IOException {
-        
-        String fileName1 = "brown_lowe_2003_matching.tsv";
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        
-        BufferedReader br = null;
-        FileReader reader = null;
+    public class FitComparator implements Comparator<FitHolder> {
 
-        try {
-            reader = new FileReader(new File(filePath1));
-            br = new BufferedReader(reader);
-            String line = br.readLine();
-            line = br.readLine();
-            while (line != null) {
-                String[] items = line.split("\\s+");
-                if ((items != null) && (items.length == 4)) {
-                    
-                    Integer x1 = Integer.valueOf(items[0]);
-                    Integer y1 = Integer.valueOf(items[1]);
-                    Integer x2 = Integer.valueOf(items[2]);
-                    Integer y2 = Integer.valueOf(items[3]);
-                    imageCorners1XY.add(x1.intValue(), y1.intValue());
-                    imageCorners2XY.add(x2.intValue(), y2.intValue());
-//System.out.println(x1 + ", " + y1 + "  " + x2 + ", " + y2);
+        @Override
+        public int compare(FitHolder o1, FitHolder o2) {
+            
+            if (o2 == null && o1 != null) {
+                return -1;
+            } else if (o1 == null && o2 != null) {
+                return 1;
+            } else if (o1 == null && o2 == null) {
+                return 0;
+            }
+            
+            if (o2.fit == null && o1.fit != null) {
+                return -1;
+            } else if (o1.fit == null && o2.fit != null) {
+                return 1;
+            } else if (o1.fit == null && o2.fit == null) {
+                return 0;
+            }
+            
+            if (o1.fit.getNMatches() > o2.fit.getNMatches()) {
+                return -1;
+            } else if (o1.fit.getNMatches() < o2.fit.getNMatches()) {
+                return 1;
+            }
+            
+            if (Double.isNaN(o2.fit.getAvgDistance()) && 
+                !Double.isNaN(o1.fit.getAvgDistance())) {
+                return -1;
+            } else if (Double.isNaN(o1.fit.getAvgDistance()) && 
+                !Double.isNaN(o2.fit.getAvgDistance())) {
+                return 1;
+            }
+            
+            if (o1.fit.getAvgDistance() < o2.fit.getAvgDistance()) {
+                return -1;
+            } else if (o1.fit.getAvgDistance() > o2.fit.getAvgDistance()) {
+                return 1;
+            } else {
+                if (o1.fit.getStDevFromAvg() < o2.fit.getStDevFromAvg()) {
+                    return -1;
+                } else if (o1.fit.getStDevFromAvg() > o2.fit.getStDevFromAvg()) {
+                    return 1;
                 }
-                line = br.readLine();
             }
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
-            if (br != null) {
-                br.close();
-            }
+            
+            return Long.compare(o1.fit.getNMatches(), o2.fit.getNMatches());
         }
     }
     
@@ -475,13 +802,15 @@ public class StereoProjectionTransformerTest {
             StereoProjectionTransformerTest test = 
                 new StereoProjectionTransformerTest();
             
-            test.testB();
+            //test.testB();
             
             //test.testC();
             
             //test.testE();
             
             //test.testF();
+            
+            test.testG();
             
         } catch(Exception e) {
             e.printStackTrace();

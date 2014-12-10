@@ -380,6 +380,23 @@ public class DataForTests {
         return xy;
     }
     
+    public static void readBrownAndLoweMatches(PairIntArray imageCorners1XY,
+        PairIntArray imageCorners2XY) throws IOException {
+        
+        PairFloatArray set1 = new PairFloatArray();
+        PairFloatArray set2 = new PairFloatArray();
+        readBrownAndLoweMatches(set1, set2);
+        
+        for (int i = 0; i < set1.getN(); i++) {
+            
+            imageCorners1XY.add(Math.round(set1.getX(i)), 
+                Math.round(set1.getY(i)));
+            
+            imageCorners2XY.add(Math.round(set2.getX(i)), 
+                Math.round(set2.getY(i)));
+        }
+    }
+    
     public static void readBrownAndLoweMatches(PairFloatArray imageCorners1XY,
         PairFloatArray imageCorners2XY) throws IOException {
         
@@ -453,7 +470,44 @@ public class DataForTests {
                 }
             }
         }
-        
     }
     
+    public static void readBrownAndLoweCorners(PairFloatArray imageCorners1XY,
+        PairFloatArray imageCorners2XY) throws IOException {
+                
+        BufferedReader br = null;
+        FileReader reader = null;
+        
+         String[] fileNames = new String[]{"brown_lowe_2003_image1.tsv", 
+            "brown_lowe_2003_image2.tsv"};
+        
+        for (String fileName : fileNames) {
+            
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName);
+            PairFloatArray xy = fileName.equals("brown_lowe_2003_image1.tsv") 
+                ? imageCorners1XY : imageCorners2XY;
+            
+            try {
+                reader = new FileReader(new File(filePath1));
+                br = new BufferedReader(reader);
+                String line = br.readLine();
+                while (line != null) {
+                    String[] items = line.split("\\s+");
+                    if ((items != null) && (items.length == 2)) {
+                        Integer x1 = Integer.valueOf(items[0]);
+                        Integer y1 = Integer.valueOf(items[1]);
+                        xy.add(x1.intValue(), y1.intValue());
+                    }
+                    line = br.readLine();
+                }
+            } finally {
+                if (reader != null) {
+                    reader.close();
+                }
+                if (br != null) {
+                    br.close();
+                }
+            }
+        }
+    }
 }
