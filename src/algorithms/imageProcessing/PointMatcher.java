@@ -276,7 +276,7 @@ public final class PointMatcher {
         fit = calculateTransformationWithGridSearch(
             set1, set2, image1Width, image1Height,
             rotStart, rotStop, 10,
-            scaleStart, scale + 1, 1, 
+            scaleStart, scale + 4, 1, 
             setsAreMatched
             );
         
