@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -87,11 +89,77 @@ public class Transformer {
 
             PairIntArray edge = edges[ii];
 
-            PairIntArray te = applyTransformation(rotInRadians,
-                scale, translationX, translationY,
-                centroidX, centroidY, edge);
+            PairIntArray te = applyTransformation(rotInRadians, scale, 
+                translationX, translationY, centroidX, centroidY, edge);
 
             transformedEdges[ii] = te;
+        }
+        
+        return transformedEdges;
+    }
+    
+    /**
+      * transform the given edges using the given parameters. 
+      * 
+      * @param params
+      * @param centroidX the horizontal center of the reference frame for edges.  
+      * this should be the center of the image if edges points are in the
+      * original image reference frame.
+      * @param centroidY the vertical center of the reference frame for edges.  
+      * this should be the center of the image if edges points are in the
+      * original image reference frame.
+      * @param edges
+      * @return 
+      */
+    public List<PairIntArray> applyTransformation(TransformationParameters
+        params, List<PairIntArray> edges, double centroidX, double centroidY) {
+        
+        List<PairIntArray> transformedEdges = new ArrayList<PairIntArray>();
+
+        double scale = params.getScale();
+        double rotInRadians = params.getRotationInRadians();
+        double translationX = params.getTranslationX();
+        double translationY = params.getTranslationY();
+        
+        for (PairIntArray edge : edges) {
+
+            PairIntArray te = applyTransformation(rotInRadians, scale, 
+                translationX, translationY, centroidX, centroidY, edge);
+
+            transformedEdges.add(te);
+        }
+        
+        return transformedEdges;
+    }
+    
+    /**
+      * transform the given edges using the given parameters. 
+      * 
+      * @param rotInRadians rotation in radians
+      * @param scale
+      * @param translationX translation along x axis in pixels
+      * @param translationY translation along y axis in pixels
+      * @param centroidX the horizontal center of the reference frame for edges.  
+      * this should be the center of the image if edges points are in the
+      * original image reference frame.
+      * @param centroidY the vertical center of the reference frame for edges.  
+      * this should be the center of the image if edges points are in the
+      * original image reference frame.
+      * @param edges
+      * @return 
+      */
+    public List<PairIntArray> applyTransformation(double rotInRadians,
+        double scale, double translationX, double translationY,
+        double centroidX, double centroidY, List<PairIntArray> edges) {
+        
+        List<PairIntArray> transformedEdges = new ArrayList<PairIntArray>();
+
+        for (PairIntArray edge : edges) {
+
+            PairIntArray te = applyTransformation(rotInRadians, scale, 
+                translationX, translationY, centroidX, centroidY, edge);
+
+            transformedEdges.add(te);
         }
         
         return transformedEdges;

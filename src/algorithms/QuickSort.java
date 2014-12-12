@@ -119,4 +119,47 @@ public class QuickSort {
         c[idxHi] = swap2;
         return store;
     }
+
+    public static void sort(float[] a, float[] b, float[] c, int idxLo, 
+        int idxHi) {
+        
+        if (idxLo < idxHi) {
+            int idxMid = partition(a, b, c, idxLo, idxHi);
+            sort(a, b, c, idxLo, idxMid - 1);
+            sort(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+
+    private static int partition(float[] a, float[] b, float[] c, int idxLo, 
+        int idxHi) {
+        
+        float x = a[idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            if (a[i] <= x) {
+                store++;
+                float swap = a[store];
+                a[store] = a[i];
+                a[i] = swap;
+                float swap2 = b[store];
+                b[store] = b[i];
+                b[i] = swap2;
+                swap2 = c[store];
+                c[store] = c[i];
+                c[i] = swap2;
+            }
+        }
+        store++;
+        float swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
+        float swap2 = b[store];
+        b[store] = b[idxHi];
+        b[idxHi] = swap2;
+        swap2 = c[store];
+        c[store] = c[idxHi];
+        c[idxHi] = swap2;
+        return store;
+    }
 }

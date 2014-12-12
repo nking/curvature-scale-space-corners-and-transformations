@@ -103,6 +103,10 @@ public class Histogram {
         
         int nBins = (int)(2*Math.pow(values.length, 0.3333));
         
+        if (values.length == 1) {
+            nBins = 1;
+        }
+        
         return createSimpleHistogram(nBins, values, valueErrors);
     }
     
@@ -229,8 +233,12 @@ public class Histogram {
     public static void calulateHistogramBinErrors(float[] xHist, int[] yHist,
         float[] values, float[] valueErrors, float[] xHistErrorsOutput, 
         float[] yHistErrorsOutput) {
+        
+        if ((xHist == null) || (xHist.length == 0)) {
+            return;
+        }
 
-        float xInterval = xHist[1] - xHist[0];
+        float xInterval = (xHist.length > 1) ? xHist[1] - xHist[0] : 0;
         float xmin = xHist[0] - (xInterval/2.0f);
 
         float[] sumErrorPerBin = new float[xHist.length];
@@ -374,7 +382,11 @@ public class Histogram {
                 "values and valueErrors cannot be null and must be the same length");
         }
         
-        if (values.length < 100) {
+        if (values.length < 15) {
+            float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
+            return calculateSturgesHistogram(minMax[0], minMax[1], values, 
+                valueErrors);
+        } else if (values.length < 100) {
             return createSimpleHistogram(values, valueErrors);
         }
         

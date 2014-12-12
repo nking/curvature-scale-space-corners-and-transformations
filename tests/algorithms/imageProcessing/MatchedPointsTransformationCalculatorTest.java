@@ -140,14 +140,14 @@ public class MatchedPointsTransformationCalculatorTest {
         int transY = 14;
         double transXTol = 10.3;
         double transYTol = 5.9;
-        double rotation = 25 * Math.PI/180.;
-        double scale = 4;
+        float rotation = (float)(25.f * Math.PI/180.f);
+        float scale = 4.f;
         int centroidX1 = 100;
         int centroidY1 = 100;
         
         TransformationParameters params = new TransformationParameters();
-        params.setRotationInRadians((float)rotation);
-        params.setScale((float)scale);
+        params.setRotationInRadians(rotation);
+        params.setScale(scale);
         params.setTranslationX(transX);
         params.setTranslationY(transY);
         
@@ -178,8 +178,8 @@ public class MatchedPointsTransformationCalculatorTest {
         
         int transX = 125;
         int transY = 14;
-        double rotation = 25 * Math.PI/180.;
-        double scale = 4;
+        float rotation = (float)(25.f * Math.PI/180.f);
+        float scale = 4.f;
         int centroidX1 = 100;
         int centroidY1 = 100;
         
@@ -187,8 +187,8 @@ public class MatchedPointsTransformationCalculatorTest {
         int centroidY2 = 400;
         
         TransformationParameters params = new TransformationParameters();
-        params.setRotationInRadians((float)rotation);
-        params.setScale((float)scale);
+        params.setRotationInRadians(rotation);
+        params.setScale(scale);
         params.setTranslationX(transX);
         params.setTranslationY(transY);
         

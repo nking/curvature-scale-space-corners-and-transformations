@@ -4,9 +4,7 @@ package algorithms.imageProcessing;
  * @author nichole
  */
 public class TransformationParameters {
-        
-    //NOTE:  these should be 0's as default
-    
+            
     private float rotationInRadians = 0;
     
     private float translationX = 0;

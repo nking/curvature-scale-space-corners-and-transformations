@@ -131,18 +131,64 @@ public aspect CurvatureAspect {
     }
 
     after() returning() 
-        : execution(public void algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper*.initialize() ) 
+        : execution(void algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapperForOpenCurves*.createMatchedPointArraysFromContourPeaks() ) 
         && args()
-        && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapper) {
+        && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapperForOpenCurves) {
     
         Object obj = thisJoinPoint.getThis();
 
-        if (!(obj instanceof CurvatureScaleSpaceInflectionMapper)) {
+        if (!(obj instanceof CurvatureScaleSpaceInflectionMapperForOpenCurves)) {
             return;
         }
 
-        CurvatureScaleSpaceInflectionMapper instance = 
-            (CurvatureScaleSpaceInflectionMapper)obj;
+        CurvatureScaleSpaceInflectionMapperForOpenCurves instance = 
+            (CurvatureScaleSpaceInflectionMapperForOpenCurves)obj;
+
+        if (instance.getMatchedXY1() == null) {
+             return;
+        }
+
+        // these are in the reference frame of the original image
+        PairIntArray xyc1 = instance.getMatchedXY1().copy();
+        PairIntArray xyc2 = instance.getMatchedXY2().copy();
+
+        log2.info("n matched contour points in image1 = " + xyc1.getN());
+        log2.info("n matched contour points in image2 = " + xyc2.getN());
+
+        try {
+
+            Image img1 = instance.getOriginalImage1().copyImageToGreen();
+            
+            ImageIOHelper.addCurveToImage(xyc1, img1, 2, 255, 0, 0);
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/matched_contour_peaks1.png", img1);
+
+            Image img2 = instance.getOriginalImage2().copyImageToGreen();
+            
+            ImageIOHelper.addCurveToImage(xyc2, img2, 2, 255, 0, 0);
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/matched_contour_peaks2.png", img2);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+
+    }
+
+    after() returning() 
+        : execution(public void algorithms.imageProcessing.AbstractCurvatureScaleSpaceInflectionMapper*.initialize() ) 
+        && args()
+        && target(algorithms.imageProcessing.AbstractCurvatureScaleSpaceInflectionMapper) {
+    
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof AbstractCurvatureScaleSpaceInflectionMapper)) {
+            return;
+        }
+
+        AbstractCurvatureScaleSpaceInflectionMapper instance = 
+            (AbstractCurvatureScaleSpaceInflectionMapper)obj;
 
         List<CurvatureScaleSpaceContour> c1 = instance.getContours1();
         List<CurvatureScaleSpaceContour> c2 = instance.getContours2();
@@ -184,7 +230,6 @@ public aspect CurvatureAspect {
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
         }
-
     }
 
     before(final PairIntArray edge, 

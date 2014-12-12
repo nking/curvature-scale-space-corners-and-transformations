@@ -13,10 +13,12 @@ public class TransformationPointFit {
     private double meanDistFromModel = Double.MAX_VALUE;
     
     private double stDevFromMean = Double.MAX_VALUE;
-            
+    
+    private double tolerance = Double.MAX_VALUE;
+    
     public TransformationPointFit(TransformationParameters theParameters, 
         int numberOfMatchedPoints, double theMeanDistFromModel, 
-        double theStDevFromMean) {
+        double theStDevFromMean, double theTolerance) {
         
         parameters = theParameters;
         
@@ -25,6 +27,8 @@ public class TransformationPointFit {
         meanDistFromModel = theMeanDistFromModel;
         
         stDevFromMean = theStDevFromMean;
+        
+        tolerance = theTolerance;
     }
 
     /**
@@ -70,6 +74,15 @@ public class TransformationPointFit {
         
         return parameters.getTranslationY();
     }
+    
+    /**
+     * tolerance used when including only residuals whose absolute value
+     * is less than tolerance.
+     * @return 
+     */
+    public double getTolerance() {
+        return tolerance;
+    }
 
     /**
      * @return the meanDistFromModel
@@ -95,9 +108,12 @@ public class TransformationPointFit {
             .append(Double.toString(meanDistFromModel))
             .append(" stDevFromMean=")
             .append(Double.toString(stDevFromMean))
+            .append(" tolerance=")
+            .append(Double.toString(tolerance))
+            .append(" ")
             .append(parameters.toString());
         
         return sb.toString();
     }
-    
+
 }

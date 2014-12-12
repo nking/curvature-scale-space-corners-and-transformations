@@ -1,6 +1,7 @@
 package algorithms.misc;
 
-import algorithms.misc.MiscMath;
+import algorithms.util.PolygonAndPointPlotter;
+import java.io.IOException;
 
 /**
  * @author nichole
@@ -30,6 +31,28 @@ public class HistogramHolder {
             }
         }
         return halfMaxIndex;
+    }
+    
+    public String plotHistogram(String label, 
+        int outputFileNumber) throws IOException {
+                
+        float[] xh = xHist;
+        float[] yh = yHistFloat;
+        
+        float yMin = MiscMath.findMin(yh);
+        int yMaxIdx = MiscMath.findYMaxIndex(yh);
+        float yMax = yh[yMaxIdx];
+        
+        float xMin = MiscMath.findMin(xh);
+        float xMax = MiscMath.findMax(xh);        
+                
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+
+        plotter.addPlot(
+            xMin, xMax, yMin, yMax,
+            xh, yh, xh, yh, label);
+
+        return plotter.writeFile(outputFileNumber);
     }
 
     /**

@@ -4,11 +4,9 @@ import algorithms.util.PairFloatArray;
 import Jama.*;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PairIntArray;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
@@ -960,6 +958,12 @@ public class StereoProjectionTransformer {
                 }
             }
 
+            boolean transposed = false;
+            if (nPoints1 > nPoints2) {
+                diffsAsCostCopy = MatrixUtil.transpose(diffsAsCostCopy);
+                transposed = true;
+            }
+            
             HungarianAlgorithm b = new HungarianAlgorithm();
             int[][] match = b.computeAssignments(diffsAsCostCopy);
 
@@ -974,6 +978,13 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
                 if (idx1 == -1 || idx2 == -1) {
                     continue;
                 }
+                
+                if (transposed) {
+                    int swap = idx1;
+                    idx1 = idx2;
+                    idx2 = swap;
+                }
+                
                 double diff = diffsAsCost[idx2][idx1];
                 if (diff < tolerance) {
                     diffs[nMatched] = diff;
@@ -1153,6 +1164,12 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
                     diffsAsCostCopy[i][j] = (float)dist;
                 }
             }
+            
+            boolean transposed = false;
+            if (diffsAsCostCopy.length > diffsAsCostCopy[0].length) {
+                diffsAsCostCopy = MatrixUtil.transpose(diffsAsCostCopy);
+                transposed = true;
+            }
 
             HungarianAlgorithm b = new HungarianAlgorithm();
             int[][] match = b.computeAssignments(diffsAsCostCopy);
@@ -1165,6 +1182,13 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
                 if (idxLeft == -1 || idxRight == -1) {
                     continue;
                 }
+                
+                if (transposed) {
+                    int swap = idxLeft;
+                    idxLeft = idxRight;
+                    idxRight = swap;
+                }
+                
                 double diff = diffsAsCost[idxLeft][idxRight];
                 if (diff < tolerance) {
                     diffs[nMatched] = diff;

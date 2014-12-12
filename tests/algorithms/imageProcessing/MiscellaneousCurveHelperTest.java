@@ -65,10 +65,10 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertFalse(isCW);
     }
    
-    public void testCrossCorrelation() {
+    public void testCorrelation() {
                 
         PairIntArray curve0, curve1;
-        int[] crossCorrelationOffset = new int[1];
+        int[] correlationOffset = new int[1];
         boolean isAdjacent;
         
         curve0 = new PairIntArray();
@@ -94,12 +94,12 @@ public class MiscellaneousCurveHelperTest extends TestCase {
                         
         MiscellaneousCurveHelper instance = new MiscellaneousCurveHelper();
         
-        isAdjacent = instance.crossCorrelation(curve0, curve1, 
-            crossCorrelationOffset);
+        isAdjacent = instance.correlation(curve0, curve1, 
+            correlationOffset);
         
         assertTrue(isAdjacent);
         
-        assertTrue(crossCorrelationOffset[0] == expectedOffset);
+        assertTrue(correlationOffset[0] == expectedOffset);
         
         
         // ====== test case for curve1 is shorter than curve0 but starts
@@ -121,12 +121,11 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
         instance = new MiscellaneousCurveHelper();
         
-        isAdjacent = instance.crossCorrelation(curve0, curve1, 
-            crossCorrelationOffset);
+        isAdjacent = instance.correlation(curve0, curve1, correlationOffset);
         
         assertTrue(isAdjacent);
         //1
-        assertTrue(crossCorrelationOffset[0] == expectedOffset);
+        assertTrue(correlationOffset[0] == expectedOffset);
 
         
         // ====== test case for curve0 and curve1 not overlapping
@@ -144,8 +143,8 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
         instance = new MiscellaneousCurveHelper();
         
-        isAdjacent = instance.crossCorrelation(curve0, curve1, 
-            crossCorrelationOffset);
+        isAdjacent = instance.correlation(curve0, curve1, 
+            correlationOffset);
         
         assertFalse(isAdjacent);
         
@@ -173,12 +172,12 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
         instance = new MiscellaneousCurveHelper();
         
-        isAdjacent = instance.crossCorrelation(curve0, curve1, 
-            crossCorrelationOffset);
+        isAdjacent = instance.correlation(curve0, curve1, 
+            correlationOffset);
         
         assertTrue(isAdjacent);
         
-        assertTrue(crossCorrelationOffset[0] == expectedOffset);
+        assertTrue(correlationOffset[0] == expectedOffset);
 
     }
    
@@ -385,6 +384,13 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         xyf.add(1, 5);
         
         cenXY = helper.calculateXYCentroids(xyf);
+        assertTrue(cenXY[0] == 5.0);
+        assertTrue(cenXY[1] == 3.0);
+        
+        
+        float[] x = new float[]{1, 9, 9, 1};
+        float[] y = new float[]{1, 1, 5, 5};
+        cenXY = helper.calculateXYCentroids(x, y);
         assertTrue(cenXY[0] == 5.0);
         assertTrue(cenXY[1] == 3.0);
     }

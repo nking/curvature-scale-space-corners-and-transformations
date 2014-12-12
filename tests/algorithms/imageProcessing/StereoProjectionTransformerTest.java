@@ -383,61 +383,101 @@ public class StereoProjectionTransformerTest {
     
     @Test
     public void testG() throws Exception {
-                
-        PairFloatArray corners1 = new PairFloatArray();
-        PairFloatArray corners2 = new PairFloatArray();
-        DataForTests.readBrownAndLoweCorners(corners1, corners2);
         
-        PairIntArray corn1 = new PairIntArray();
-        PairIntArray corn2 = new PairIntArray();
+        // ===== learning steps to matching points between images with 
+        // projections such as epipolar projections.
+        // the epipolar projection is sensitive to precisely matched input
+        // points so this solves that stage and compares total to known
+        // total result
+        /*
+        Best results so far from these steps:
         
+        (1) extract corners in outdoor mode.
+        (2) get a rough euclidean transformation from the PointMatcher.
+        (3) use that to transform the image1 edges from outdoor mode 
+        (4) mark edges from both sets that are not completely internal              
+            to their union plus a buffer in skip lists
+        (5)
+        */
         
-        DataForTests.readBrownAndLoweCorners(corn1, corn2);
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String fileName2 = "brown_lowe_2003_image2.jpg";
+        /*
+        PairIntArray corners1Int = new PairIntArray();
+        PairIntArray corners2Int = new PairIntArray();        
+        DataForTests.readBrownAndLoweCorners(corners1Int, corners2Int);
+        */
         /*
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
         DataForTests.readUnmatchedMerton1CornersFromThisCode(corn1, corn2);
         */
         
-        PointMatcher pointMatcher = new PointMatcher();
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+       
+        // temporary look at the edges that produced the corners:
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+       
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
         
-        PairIntArray outputMatched1 = new PairIntArray();
-        PairIntArray outputMatched2 = new PairIntArray();        
-        TransformationPointFit fit2 = pointMatcher.calculateTransformationAndMatch(
-            corn1, corn2, 517, 374, outputMatched1, outputMatched2);
         
-        log.info(fit2.toString());
+        CurvatureScaleSpaceInflectionMapperForOpenCurves inflMapper = new
+            CurvatureScaleSpaceInflectionMapperForOpenCurves(img1, img2);
         
-        double[] diffFromModel = new double[corn1.getN()];
+        TransformationParameters params = inflMapper.createEuclideanTransformation();
+     
+        
+        // === get rough euclidean projection ====
+        
+        /*
+        // ==== transform edges1 and corners1Int to image2 frame ====
+        Transformer transformer = new Transformer();
+        
+        PairIntArray corners1Transformed = transformer.applyTransformation(
+            fit2.getParameters(), corners1Int, 
+            image1Width >> 1, image1Height >> 1);
+           
+        List<PairIntArray> edges1Transformed = transformer.applyTransformation(
+            fit2.getParameters(), edges1,
+            image1Width >> 1, image1Height >> 1);
+
+        int buffer = 50;
+        
+        ExternalEdgeFinder extEF = new ExternalEdgeFinder();
+        Set<Integer> edges2SkipList = extEF.findExteriorEdges(edges2, 
+            edges1Transformed, buffer);
+        
+        Set<Integer> edges1SkipList = extEF.findExteriorEdges(edges1Transformed,
+            image2Width, image2Height);
+       */
+        
+        // edges are now roughly in same reference frame but there may be
+        // position dependent increasing differences in 
+        // translation and rotation due to projection effects
+        // so registration:
+        //     -- calc centroid of each edge not in a skip list
+        //
+        //
+        
+        /*
+        double[] diffFromModel = new double[corners1Int.getN()];
         double[] avgDiffModel = new double[1];
         
         int centroidX1 = 517 >> 1;
         int centroidY1 = 374 >> 1;
         double transXTol = 517 * 0.02;
         double transYTol = 374 * 0.02;
-        double tolerance = fit2.getMeanDistFromModel();
-        //7.5 is mean dist from model;  10 is mean dist + stdev;
+        double tolerance = avgDiffModel[0] + 0.5*fit2.getStDevFromMean();
         
-        pointMatcher.populateDiffFromModelWithMatchedPoints(
-            outputMatched1, outputMatched2, 
-            fit2.getParameters(), centroidX1, centroidY1, 
-            diffFromModel, avgDiffModel);
-        
-        tolerance = avgDiffModel[0] + 0.5*fit2.getStDevFromMean();
-        
-        for (int i = (outputMatched1.getN() - 1); i > -1; i --) {
-            double diff = diffFromModel[i];
-            if (diff > tolerance) {
-                outputMatched1.removeRange(i, i);
-                outputMatched2.removeRange(i, i);
-            }
-        }
         int nIterMax = 15;
         int nIter = 0;
         
-        log.info("Point matcher matched " + corn1.getN() + " from " 
+        log.info("Point matcher matched " + corners1Int.getN() + " from " 
             + outputMatched1.getN());
         
         PairFloatArray matched1 = new PairFloatArray();
@@ -495,7 +535,7 @@ public class StereoProjectionTransformerTest {
             int nPoints = matched1.getN();
         
             Set<String> chosen = new HashSet<String>();
-        /*
+        
             for (int i = 0; i < 100; i++) {
 
                 chooseRandomly(sr, selected, chosen, nPoints);
@@ -552,7 +592,7 @@ public class StereoProjectionTransformerTest {
             while (best.size() > nKeep) {
                 best.remove(best.size() - 1);
             }
-         */
+         
             // ====== plot the best fitting projections =====
             
             for (FitHolder fh : best) {
@@ -613,6 +653,7 @@ public class StereoProjectionTransformerTest {
                 
             nIter++;
         }
+        */
     }
     
     private void chooseRandomly(SecureRandom sr, int[] selected, 

@@ -261,7 +261,7 @@ public class MiscellaneousCurveHelper {
         }
         
         // used to return the offset w.r.t. the longest edge.
-        int[] crossCorrelationOffset = new int[1];
+        int[] correlationOffset = new int[1];
           
         /*
          returns whether the curve 'check' is adjacent to the curve 'node0',
@@ -269,8 +269,8 @@ public class MiscellaneousCurveHelper {
          the offset represents where the first point in the shorter curve
          matches in the larger curve.                
          */
-        boolean isAdjacent = crossCorrelation(longer, shorter,
-            crossCorrelationOffset);
+        boolean isAdjacent = correlation(longer, shorter,
+            correlationOffset);
 
         if (isAdjacent) {
 
@@ -278,9 +278,9 @@ public class MiscellaneousCurveHelper {
                 -- find any points in check outside of the overlap
                    and add those to the larger node.
             */
-            if (crossCorrelationOffset[0] < 0) {
+            if (correlationOffset[0] < 0) {
                 // add from the beginning of shorter if any are unmatched
-                int nInsert = -1*crossCorrelationOffset[0];
+                int nInsert = -1*correlationOffset[0];
                 longer.insertSpaceAtTopOfArrays(nInsert);
 
                 for (int ii = 0; ii < nInsert; ii++) {
@@ -288,7 +288,7 @@ public class MiscellaneousCurveHelper {
                 }
             } else {
                 //add from end of shorter if any are unmatched
-                int n0 = longer.getN() - crossCorrelationOffset[0];
+                int n0 = longer.getN() - correlationOffset[0];
                 if (n0 < shorter.getN()) {
                     for (int ii = n0; ii < shorter.getN(); ii++) {
                         longer.add(shorter.getX(ii), shorter.getY(ii));
@@ -307,7 +307,7 @@ public class MiscellaneousCurveHelper {
     }
 
     /**
-     * return true if cross-correlation shows that the 2 curves are adjacent
+     * return true if correlation shows that the 2 curves are adjacent
      * to one another.  Note that the method needs the points within the
      * curves to be ordered in a similar manner and for the endpoints of the
      * curves to be accurate.  If a point in the middle of the curve is 
@@ -316,7 +316,7 @@ public class MiscellaneousCurveHelper {
      * 
      * @param curve0
      * @param curve1
-     * @param crossCorrelationOffset offset of where the shorter curve starts
+     * @param correlationOffset offset of where the shorter curve starts
      *  with respect to the longer.  For example, an offset of -2 means that
      * the first 2 points in the shorter curve are outside of the longer curve,
      * but the next point in the longer curve is adjacent to the shorter.
@@ -325,13 +325,13 @@ public class MiscellaneousCurveHelper {
      * is only useful if this method returns true;
      * @return 
      */
-    protected boolean crossCorrelation(PairIntArray curve0, PairIntArray curve1, 
-        int[] crossCorrelationOffset) {
+    protected boolean correlation(PairIntArray curve0, PairIntArray curve1, 
+        int[] correlationOffset) {
         
-        crossCorrelationOffset[0] = Integer.MAX_VALUE;
+        correlationOffset[0] = Integer.MAX_VALUE;
         
         //TODO: look at string matching algorithms to explore improvements here
-                
+        
         PairIntArray shorter, longer;
         if (curve0.getN() <= curve1.getN()) {
             shorter = curve0;
@@ -366,9 +366,9 @@ public class MiscellaneousCurveHelper {
             store as a possible adjacent curve
         }
         compare possible adjacent curves for the smallest css, and store that 
-        offset in crossCorrelationOffset and return true, else false        
+        offset in correlationOffset and return true, else false        
         */
-                
+
         double cSSMin = Double.MAX_VALUE;
         int cSSMinOffset = Integer.MAX_VALUE;
         int cSSMinNOverlapping = 0;
@@ -499,7 +499,7 @@ public class MiscellaneousCurveHelper {
              
         if (cSSMin < Double.MAX_VALUE) {
 
-            crossCorrelationOffset[0] = cSSMinOffset;
+            correlationOffset[0] = cSSMinOffset;
 
             return true;
         }
@@ -625,6 +625,35 @@ public class MiscellaneousCurveHelper {
         xc /= (double)xy.getN();
         
         yc /= (double)xy.getN();
+        
+        return new double[]{xc, yc};
+    }
+    
+    public double[] calculateXYCentroids(float[] x, float[] y) {
+        
+        if (x == null) {
+            throw new IllegalArgumentException("x cannot be null");
+        }
+        if (y == null) {
+            throw new IllegalArgumentException("y cannot be null");
+        }
+        if (x.length != y.length) {
+            throw new IllegalArgumentException("x and y must be same length");
+        }
+        
+        double xc = 0;
+        double yc = 0;
+        
+        for (int i = 0; i < x.length; i++) {
+            
+            xc += x[i];
+            
+            yc += y[i];
+        }
+        
+        xc /= (double)(x.length);
+        
+        yc /= (double)(x.length);
         
         return new double[]{xc, yc};
     }
@@ -1075,6 +1104,30 @@ public class MiscellaneousCurveHelper {
         }
         
         return -1;
+    }
+    
+    public int debugFindEdgeContainingPoint(List<PairIntArray> edges, int x, int y) {
+        for (int i = 0; i < edges.size(); i++) {
+            PairIntArray edge = edges.get(i);
+            if (debugEdgeContainsPoint(edge, x, y)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    public boolean debugEdgeContainsPoint(PairIntArray edge, int x, int y) {
+        for (int i = 0; i < edge.getN(); i++) {
+            int xc = edge.getX(i);
+            if (xc != x) {
+                continue;
+            }
+            int yc = edge.getY(i);
+            if (yc != x) {
+                continue;
+            }
+            return true;
+        }
+        return false;
     }
     
     private boolean debugIsSection1(PairIntArray edge, int idx) {

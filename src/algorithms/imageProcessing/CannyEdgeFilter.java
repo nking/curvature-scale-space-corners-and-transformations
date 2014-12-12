@@ -49,6 +49,8 @@ public class CannyEdgeFilter {
     private boolean useLineDrawingMode = false;
     
     private GreyscaleImage gXY = null;
+    
+    private GreyscaleImage gTheta = null;
         
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -124,6 +126,8 @@ public class CannyEdgeFilter {
         GreyscaleImage[] gradientProducts = createGradientProducts(input);
         
         gXY = gradientProducts[2].copyImage();
+        
+        gTheta = gradientProducts[3].copyImage();
                 
         input.resetTo(gradientProducts[2]);
            
@@ -683,4 +687,7 @@ public class CannyEdgeFilter {
         return gXY;
     }
     
+    public GreyscaleImage getTheta() {
+        return gTheta;
+    }
 }

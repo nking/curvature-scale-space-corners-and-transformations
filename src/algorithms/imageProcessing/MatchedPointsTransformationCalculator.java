@@ -294,18 +294,18 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         int centroidX1, int centroidY1,
         double x1, double y1) {
         
-        float rot = params.getRotationInRadians();
-        float scl = params.getScale();
+        double rot = params.getRotationInRadians();
+        double scl = params.getScale();
                 
         double mc = Math.cos(rot);
         double ms = Math.sin(rot);
                 
-        double x2 = (double) centroidX1 * scl
+        double x2 = centroidX1 * scl
             + (((x1 - centroidX1) * scl * mc)
             + ((y1 - centroidY1) * scl * ms));
         x2 += params.getTranslationX();
 
-        double y2 = (double) centroidY1 * scl
+        double y2 = centroidY1 * scl
             + ((-(x1 - centroidX1) * scl * ms)
             + ((y1 - centroidY1) * scl * mc));
         y2 += params.getTranslationY();
@@ -352,29 +352,29 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         yt_0 = yr_0 + transY = y1
         */
      
-        float revRot = -1 * params.getRotationInRadians();
+        double revRot = -1 * params.getRotationInRadians();
         if (revRot < 0) {
             revRot += 2. * Math.PI;
         }
-        float revScale = 1.f / params.getScale();
+        double revScale = 1. / params.getScale();
 
         double rmc = Math.cos(revRot);
         double rms = Math.sin(revRot);
 
-        double x1_ = revScale * ((double) centroidX2 
+        double x1_ = revScale * (centroidX2 
             + (((x2 - centroidX2) * rmc) + ((y2 - centroidY2) * rms)));
         // (x1,y1) transformed to image 1 needs translation to equal (x0, y0)
-        float revTransX = (float) (x1 - x1_);
+        double revTransX = (x1 - x1_);
 
-        double y1_ = revScale * ((double) centroidY2
+        double y1_ = revScale * (centroidY2
             + ((-(x2 - centroidX2) * rms) + ((y2 - centroidY2) * rmc)));
-        float revTransY = (float) (y1 - y1_);
+        double revTransY = (y1 - y1_);
 
         TransformationParameters paramsRev = new TransformationParameters();
-        paramsRev.setScale(revScale);
-        paramsRev.setRotationInRadians(revRot);
-        paramsRev.setTranslationX(revTransX);
-        paramsRev.setTranslationY(revTransY);
+        paramsRev.setScale((float)revScale);
+        paramsRev.setRotationInRadians((float)revRot);
+        paramsRev.setTranslationX((float)revTransX);
+        paramsRev.setTranslationY((float)revTransY);
         
         return paramsRev;
     }

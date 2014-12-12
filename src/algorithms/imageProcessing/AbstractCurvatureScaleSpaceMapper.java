@@ -55,6 +55,8 @@ public class AbstractCurvatureScaleSpaceMapper {
     protected boolean useOutdoorMode = false;
     
     protected GreyscaleImage gradientXY = null;
+    
+    protected GreyscaleImage theta = null;
      
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -207,6 +209,8 @@ public class AbstractCurvatureScaleSpaceMapper {
         filter.applyFilter(img);
         
         gradientXY = filter.getGradientXY();
+        
+        theta = filter.getTheta();
                         
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
@@ -311,6 +315,10 @@ public class AbstractCurvatureScaleSpaceMapper {
         return trimmedYOffset;
     }
    
+    GreyscaleImage getTheta() {
+        return theta;
+    }
+    
     /*
     The making of a curvature scale space image is in
     "Scale-Based Description and Recognition of Planar Curves and Two-Dimensional

@@ -180,7 +180,7 @@ public class CurvatureScaleSpaceCornerDetector extends
 /*if (edgeNumber != 118) {
     return xy;
 }*/
-        if (correctForJaggedLines) {
+        if (correctForJaggedLines && !useOutdoorMode) {
            
             PairIntArray jaggedLines = removeFalseCorners(
                 scaleSpace.getXYCurve(), maxCandidateCornerIndexes, 
@@ -504,6 +504,10 @@ public class CurvatureScaleSpaceCornerDetector extends
 
         float factorAboveMin = 3.5f;// 10 misses some corners
 
+if (useOutdoorMode) {
+    factorAboveMin = 10.f;
+}
+        
         List<Integer> cornerCandidates = new ArrayList<Integer>();
 
         // choose candidates from minMaxIndexes that are 

@@ -8,7 +8,7 @@ package algorithms.util;
 public class Errors {
 
     /**
-     * make assumption that errors are dominated by shot noise and so the noise is sqrt(y[i]).
+     * make assumption that errors are dominated by shot noise and return sqrt(y[i]).
      *
      * @param y
      * @return
@@ -22,6 +22,35 @@ public class Errors {
         for (int i = 0; i < dy.length; i++) {
             if (y[i] > 0) {
                 dy[i] =(float)(Math.sqrt(y[i]));
+                if (dy[i] > maxError) {
+                    maxError = dy[i];
+                }
+            }
+        }
+        for (int i = 0; i < dy.length; i++) {
+            if (y[i] == 0) {
+                dy[i] = maxError;
+            }
+        }
+
+        return dy;
+    }
+
+    /**
+     * make assumption that errors are dominated by shot noise and return sqrt(y[i]).
+     *
+     * @param y
+     * @return
+     */
+    public static double[] populateYErrorsBySqrt(double[] y) {
+
+        double[] dy = new double[y.length];
+
+        double maxError = 0.;
+
+        for (int i = 0; i < dy.length; i++) {
+            if (y[i] > 0) {
+                dy[i] = (Math.sqrt(y[i]));
                 if (dy[i] > maxError) {
                     maxError = dy[i];
                 }

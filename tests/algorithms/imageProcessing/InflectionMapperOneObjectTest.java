@@ -81,9 +81,9 @@ public class InflectionMapperOneObjectTest {
 
                 assertNotNull(transformationParams);
 
-                float rotDeg = transformationParams.getRotationInDegrees();
+                double rotDeg = transformationParams.getRotationInDegrees();
 
-                float scale = transformationParams.getScale();
+                double scale = transformationParams.getScale();
 
                 int nEdges1 = mapper.getEdges1InOriginalReferenceFrame().size();
                 PairIntArray[] edges1 = 

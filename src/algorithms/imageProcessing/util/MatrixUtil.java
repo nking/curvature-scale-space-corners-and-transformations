@@ -97,4 +97,27 @@ public class MatrixUtil {
         return m;
     }
     
+    public static float[][] transpose(float[][] m) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        
+        int mRows = m.length;
+        int mCols = m[0].length;
+        
+        float[][] t = new float[mCols][];
+        for (int i = 0; i < mCols; i++) {
+            t[i] = new float[mRows];
+        }
+        
+        for (int i = 0; i < mRows; i++) {
+            for (int j = 0; j < mCols; j++) {
+                t[j][i] = m[i][j];
+            }
+        }
+        
+        return t;
+    }
+    
 }
