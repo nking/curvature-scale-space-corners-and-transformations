@@ -5,8 +5,10 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -480,7 +482,7 @@ public class DataForTests {
         BufferedReader br = null;
         FileReader reader = null;
         
-         String[] fileNames = new String[]{"brown_lowe_2003_image1.tsv", 
+        String[] fileNames = new String[]{"brown_lowe_2003_image1.tsv", 
             "brown_lowe_2003_image2.tsv"};
         
         for (String fileName : fileNames) {
@@ -604,5 +606,107 @@ public class DataForTests {
         
         ImageDisplayer.displayImage("corners for image 1", image1);
         ImageDisplayer.displayImage("corners for image 2", image2);
+    }
+    
+    public static void writePointsToTestResources(PairIntArray xy, 
+        String fileName) throws IOException {
+        
+        String eol = System.getProperty("line.separator");
+        
+        String sep = System.getProperty("file.separator");
+    
+        String dir = ResourceFinder.findTestResourcesDirectory();
+        
+        String outFilePath = dir + sep + fileName;
+        
+        FileWriter fw = null;
+        BufferedWriter writer = null;
+        
+        try {
+            File file = new File(outFilePath);
+            file.delete();
+            file.createNewFile();
+
+            fw = new FileWriter(file);
+            writer = new BufferedWriter(fw);
+                        
+            for (int i = 0; i < xy.getN(); i++) {
+                
+                String line = String.format("%d\t%d", xy.getX(i), xy.getY(i));
+                
+                writer.write(line);
+                
+                writer.write(eol);
+                
+                if ((i % 10) == 0) {
+                    writer.flush();
+                }
+            }
+
+            writer.flush();
+
+        } finally {
+
+            if (writer != null) {
+                writer.close();
+            }
+            if (fw != null) {
+                fw.close();
+            }
+            
+            System.out.println(eol + "wrote: " + outFilePath);
+        }
+    }
+
+    public static void readBrownAndLoweInflectionPointsImage1(PairIntArray output) 
+        throws IOException {
+        
+        String fileName = "brown_lowe_2003_image1_infl_pts.tsv";
+        
+        read2ColumnTSV(fileName, output);
+    }
+    
+    public static void readBrownAndLoweInflectionPointsImage2(PairIntArray output) 
+        throws IOException {
+        
+        String fileName = "brown_lowe_2003_image2_infl_pts.tsv";
+        
+        read2ColumnTSV(fileName, output);
+    }
+    
+    private static void read2ColumnTSV(String fileName, PairIntArray output) 
+        throws IOException {
+        
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        BufferedReader br = null;
+        FileReader reader = null;
+        
+        try {
+            
+            reader = new FileReader(new File(filePath));
+            
+            br = new BufferedReader(reader);
+            
+            String line = br.readLine();
+            while (line != null) {
+                // \\s+ should handle tabs too
+                String[] items = line.split("\\s+");
+                if ((items != null) && (items.length == 2)) {
+                    Integer x1 = Integer.valueOf(items[0]);
+                    Integer y1 = Integer.valueOf(items[1]);
+                    
+                    output.add(x1.intValue(), y1.intValue());
+                }
+                line = br.readLine();
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+            if (br != null) {
+                br.close();
+            }
+        }
     }
 }

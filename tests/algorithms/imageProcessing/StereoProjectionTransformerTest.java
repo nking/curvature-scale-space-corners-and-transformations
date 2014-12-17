@@ -6,17 +6,9 @@ import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.awt.Color;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -297,21 +289,6 @@ public class StereoProjectionTransformerTest {
         StereoProjectionTransformer spTransformer = 
             new StereoProjectionTransformer();
         
-        StereoProjectionTransformer.NormalizedXY normXY1 = 
-            spTransformer.normalize(unnormXY1);
-        
-        StereoProjectionTransformer.NormalizedXY normXY2 = 
-            spTransformer.normalize(unnormXY2);
-
-        
-        Matrix fundMatrix = spTransformer.calculateFundamentalMatrix(
-            normXY1, normXY2);
-        fundMatrix = fundMatrix.times(1./fundMatrix.get(2, 2));
-        
-        double[][] leftRightEpipoles = 
-            spTransformer.calculateEpipoles(fundMatrix);
-                
-       
         PairFloatArray matched1 = DataForTests.readMerton1UnnormalizedXY1Data();
         
         PairFloatArray matched2 = DataForTests.readMerton1UnnormalizedXY2Data();
@@ -319,9 +296,8 @@ public class StereoProjectionTransformerTest {
         spTransformer = 
             new StereoProjectionTransformer();
         
-        //spTransformer.calculateEpipolarProjection(matched1, matched2);
-        spTransformer.calculateEpipolarProjectionWithoutNormalization(
-            matched1, matched2);
+        spTransformer.calculateEpipolarProjection(matched1, matched2);
+        //spTransformer.calculateEpipolarProjectionWithoutNormalization(matched1, matched2);
         
         double[] leftEpipole = spTransformer.getLeftEpipole();
         
@@ -336,7 +312,7 @@ public class StereoProjectionTransformerTest {
         Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
         Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
         
-        int nLimitTo = 10;//nPoints;
+        int nLimitTo = nPoints;
         
         Color clr = null;
         PairIntArray subsetLeft = new PairIntArray();
@@ -381,8 +357,8 @@ public class StereoProjectionTransformerTest {
         assertTrue(fit.getNMatches() == unnormXY1.getColumnDimension());
     }
     
-    @Test
-    public void testG() throws Exception {
+    //@Test
+    public void estG() throws Exception {
         
         // ===== learning steps to matching points between images with 
         // projections such as epipolar projections.
@@ -425,13 +401,37 @@ public class StereoProjectionTransformerTest {
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         
-        
+        /*
         CurvatureScaleSpaceInflectionMapperForOpenCurves inflMapper = new
             CurvatureScaleSpaceInflectionMapperForOpenCurves(img1, img2);
-        
+        PairIntArray[] xyPeaks = inflMapper.createUnmatchedXYFromContourPeaks();        
+        PairIntArray points1 = xyPeaks[0];
+        PairIntArray points2 = xyPeaks[1];
+        // there may be a couple redundant points per set
+        DataForTests.writePointsToTestResources(points1, 
+            "brown_lowe_2003_image1_infl_pts.tsv");        
+        DataForTests.writePointsToTestResources(points2, 
+            "brown_lowe_2003_image2_infl_pts.tsv");
         TransformationParameters params = inflMapper.createEuclideanTransformation();
-     
+        */
         
+        PairIntArray points1 = new PairIntArray();
+        PairIntArray points2 = new PairIntArray();
+        DataForTests.readBrownAndLoweInflectionPointsImage1(points1);        
+        DataForTests.readBrownAndLoweInflectionPointsImage2(points2);
+        
+        PointMatcher pointMatcher = new PointMatcher();
+        
+        TransformationPointFit fit = 
+            pointMatcher.calculateRoughTransformationForUnmatched(
+            points1, points2, image1Width, image1Height);
+        
+        log.info("FIT: " + fit.toString());
+        
+        if (true) {
+            return;
+        }
+     
         // === get rough euclidean projection ====
         
         /*
@@ -656,6 +656,108 @@ public class StereoProjectionTransformerTest {
         */
     }
     
+    @Test
+    public void testH() throws Exception {
+        
+        PairFloatArray xy1 = new PairFloatArray();
+        PairFloatArray xy2 = new PairFloatArray();
+        xy1.add(97.263000f, 466.206000f);
+        xy2.add(75.142000f, 519.539000f);
+        xy1.add(47.343000f, 33.856000f);
+        xy2.add(18.089000f, 19.859000f);
+        xy1.add(421.285000f, 44.954000f);
+        xy2.add(395.439000f, 45.559000f);
+        xy1.add(521.201000f, 493.853000f);
+        xy2.add(534.457000f, 538.037000f);
+        xy1.add(604.038000f, 239.050000f);
+        xy2.add(609.635000f, 260.938000f);
+        xy1.add(816.107000f, 33.034000f);
+        xy2.add(848.550000f, 50.388000f);
+        xy1.add(948.143000f, 344.338000f);
+        xy2.add(1000.549000f, 383.014000f);
+                
+        //8th point and 9th to check these w/ existing method
+        //xy1.add(271.139000f, 266.206000f);
+        //xy2.add(261.143000f, 288.323000f);
+        //xy1.add(101.204000f, 235.161000f);  
+        //xy2.add(78.059000f, 253.928000f);
+        
+        // mRows = 3;  nCols = 484
+        Matrix unnormXY1 = DataForTests.readMerton1UnnormalizedX1Data();
+        // mRows = 3;  nCols = 484
+        Matrix unnormXY2 = DataForTests.readMerton1UnnormalizedX2Data();
+        
+        
+        StereoProjectionTransformer spTransformer = 
+            new StereoProjectionTransformer();
+        
+        
+        Matrix[] solutions = spTransformer.calculateEpipolarProjectionFor7Points(
+            xy1, xy2);
+        Matrix fm = solutions[0];
+        
+        
+        unnormXY1 = spTransformer.rewriteInto3ColumnMatrix(xy1);
+        unnormXY2 = spTransformer.rewriteInto3ColumnMatrix(xy2);
+        //Matrix fm = spTransformer.calculateEpipolarProjection(unnormXY1, unnormXY2);
+        
+            
+        String fileName1 = "merton_college_I_001.jpg";
+        String fileName2 = "merton_college_I_002.jpg";
+        
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+       
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        
+        for (int i = 0; i < unnormXY1.getColumnDimension(); i++) {
+            double x = unnormXY1.get(0, i);
+            double y = unnormXY1.get(1, i);            
+            ImageIOHelper.addPointToImage((float)x, (float)y, img1, 3, 255, 0, 0);
+            double x2 = unnormXY2.get(0, i);
+            double y2 = unnormXY2.get(1, i);            
+            ImageIOHelper.addPointToImage((float)x2, (float)y2, img2, 3, 255, 0, 0);
+            //System.out.println(String.format("%f, %f  %f, %f", x, y, x2, y2));
+        }
+                
+        Color clr = null;
+        for (int i = 0; i < unnormXY2.getColumnDimension(); i++) {
+            
+            clr = getColor(clr);
+
+            Matrix epipolarLinesInLeft = fm.transpose().times(unnormXY2);
+        
+            PairIntArray leftLine = spTransformer.getEpipolarLine(
+                epipolarLinesInLeft, image1Width, image1Height, i);
+            
+            ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
+                clr.getRed(), clr.getGreen(), clr.getBlue());            
+        }
+        
+        clr = null;
+        for (int i = 0; i < unnormXY1.getColumnDimension(); i++) {
+            
+            clr = getColor(clr);
+                        
+            Matrix epipolarLinesInRight = fm.times(unnormXY1);
+        
+            PairIntArray rightLine = spTransformer.getEpipolarLine(
+                epipolarLinesInRight, img2.getWidth(), img2.getHeight(), i);
+                                
+            ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
+                clr.getRed(), clr.getGreen(), clr.getBlue());  
+        }
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        
+        ImageIOHelper.writeOutputImage(dirPath + "/tmp_m" + "_1.png", img1);
+        
+        ImageIOHelper.writeOutputImage(dirPath + "/tmp_m" + "_2.png", img2);
+    }
+    
     private void chooseRandomly(SecureRandom sr, int[] selected, 
         Set<String> chosen, int nPoints) {
         
@@ -855,7 +957,9 @@ public class StereoProjectionTransformerTest {
             
             //test.testF();
             
-            test.testG();
+            //test.testG();
+            
+            test.testH();
             
         } catch(Exception e) {
             e.printStackTrace();

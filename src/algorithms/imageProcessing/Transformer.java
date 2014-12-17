@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.List;
@@ -314,6 +315,41 @@ public class Transformer {
                     output.setRGB(x2, y2, r, g, b);
                 }
             }
+        }
+        
+        return output;
+    }
+    
+    public PairFloatArray applyTransformation(TransformationParameters params,
+        int centroidX1, int centroidY1, PairIntArray input) {
+        
+        PairFloatArray output = new PairFloatArray();
+        
+        float rotation = params.getRotationInRadians();
+        float scale = params.getScale();
+        float scaleTimesCosine = (float)(scale * Math.cos(rotation));
+        float scaleTimesSine = (float)(scale * Math.sin(rotation));
+        float transX = params.getTranslationX();
+        float transY = params.getTranslationY();
+                        
+        for (int i = 0; i < input.getN(); i++) {
+            
+            int x = input.getX(i);
+            int y = input.getY(i);
+            
+            double transformedX = (centroidX1*scale + ( 
+                ((x - centroidX1) * scaleTimesCosine) +
+                ((y - centroidY1) * scaleTimesSine))) + transX;
+            
+            double transformedY = (centroidY1*scale + ( 
+                (-(x - centroidX1) * scaleTimesSine) +
+                ((y - centroidY1) * scaleTimesCosine))) + transY;
+          
+            int xt = (int)Math.round(transformedX);
+            
+            int yt = (int)Math.round(transformedY);
+            
+            output.add(xt, yt);
         }
         
         return output;

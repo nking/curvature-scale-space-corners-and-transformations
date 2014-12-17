@@ -32,6 +32,11 @@ public class ResourceFinder {
 
         return findDirectory("resources");
     }
+    
+    public static String findTestResourcesDirectory() throws IOException {
+
+        return findDirectory("testresources");
+    }
 
     public static String findDirectory(String dirName) throws IOException {
 

@@ -114,7 +114,14 @@ import thirdparty.HungarianAlgorithm;
      lines for points in image 1 and find their nearest points in image 2 
      and measure the perpendicular distance from the epipolar line for
      those nearest points.
-     
+ 
+ The 7-point algorithm is also implemented below and is similar to the 
+ 8-point solution except that is solves for the null space of the fundamental
+ matrix and results in one or 3 solutions which can for some geometries
+ be reduced to a single solution.
+ The normalization and denormalization steps before and following the solution, 
+ are the same as in the 8-point solution.
+ * 
  * @author nichole
  */
 public class StereoProjectionTransformer {
@@ -139,13 +146,16 @@ public class StereoProjectionTransformer {
     private Matrix epipolarLinesInRight = null;
     
     /**
+     * calculate the epipolar projection for a set of matched points that are
+     * at least 9 points in length.
+     * 
      * each row is an epipolar line in the left image.
      * Each column corresponds to a point in leftXY and rightXY which are
      * in the same column.
      */
     private Matrix epipolarLinesInLeft = null;
    
-    public void calculateEpipolarProjection(PairFloatArray pointsLeftXY, 
+    public Matrix calculateEpipolarProjection(PairFloatArray pointsLeftXY, 
         PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
@@ -169,10 +179,50 @@ public class StereoProjectionTransformer {
         /*
         note that the Jama matrix convention is new Matrix(mRows, nCols)
         */
+    
+        return calculateEpipolarProjection(
+            rewriteInto3ColumnMatrix(pointsLeftXY), 
+            rewriteInto3ColumnMatrix(pointsRightXY));
+    }
+    
+    /**
+     * calculate the epipolar projection for a set of matched points that are
+     * at least 9 points in length.
+     * 
+     * @param theLeftXY
+     * @param theRightXY
+     * @return 
+     */
+    public Matrix calculateEpipolarProjection(Matrix theLeftXY, 
+        Matrix theRightXY) {
         
-        leftXY = rewriteInto3ColumnMatrix(pointsLeftXY);
+        //TODO: follow up on 8 points
+            
+        if (theLeftXY == null) {
+            throw new IllegalArgumentException("theLeftXY cannot be null");
+        }
+        if (theRightXY == null) {
+            throw new IllegalArgumentException("refactorRightXY cannot be null");
+        }
+        if (theLeftXY.getColumnDimension()!= theRightXY.getColumnDimension()) {
+            throw new IllegalArgumentException(
+                "theLeftXY and theRightXY must be same size");
+        }
         
-        rightXY = rewriteInto3ColumnMatrix(pointsRightXY);
+        if (theLeftXY.getColumnDimension() < 8) {
+            // cannot use this algorithm.
+            throw new IllegalArgumentException(
+                "the 8-point problem requires 8 or more points." 
+                + " refactorLeftXY.n=" +theLeftXY.getColumnDimension());
+        }
+        
+        /*
+        note that the Jama matrix convention is new Matrix(mRows, nCols)
+        */
+        
+        leftXY = theLeftXY;
+        
+        rightXY = theRightXY;
         
         fundamentalMatrix = calculateFundamentalMatrix(leftXY, rightXY)
             .transpose();
@@ -207,8 +257,9 @@ public class StereoProjectionTransformer {
         use iterative method of choosing 8 or 8-best and error inspection to
         create a better solution (terminate when set of inliers does not 
         change).
-        
         */
+        
+        return fundamentalMatrix;
     }
     
     /**
@@ -218,7 +269,7 @@ public class StereoProjectionTransformer {
      * @param pointsLeftXY
      * @param pointsRightXY 
      */
-    public void calculateEpipolarProjectionWithoutNormalization(
+    public Matrix calculateEpipolarProjectionWithoutNormalization(
         PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
@@ -263,27 +314,7 @@ public class StereoProjectionTransformer {
         
         epipolarLinesInLeft = calculateLeftEpipolarLines();
        
-        /*
-        compute the perpendicular errors:
-        
-        transform points from the first image to get the equipolar lines
-           in the second image.
-        
-        find the closest points in the 2nd image to the epipolar lines 
-           store the difference
-        
-        do the same for the othe image
-        
-        equipolar lines:
-           aVector = F^T * u_1
-           then aVector^T*u_2 = aVector_1*x_2 + aVector_2*y_2 + aVector_3 = 0
-        
-        plot the differences, calc stats, determine inliers.
-        use iterative method of choosing 8 or 8-best and error inspection to
-        create a better solution (terminate when set of inliers does not 
-        change).
-        
-        */
+        return fundamentalMatrix;
     }
     
     protected Matrix calculateFundamentalMatrix(Matrix leftXY, 
@@ -295,6 +326,651 @@ public class StereoProjectionTransformer {
         NormalizedXY normalizedXY2 = normalize(rightXY);        
         
         return calculateFundamentalMatrix(normalizedXY1, normalizedXY2);
+    }
+    
+    /*
+    for 7-point algorithm:
+    
+    (1) SVD of matrix A (as is done in 8-point algorithm)
+        giving a matrix of rank 7
+    (2) The homogeneous system AX = 0 is called the null space of matrix A.
+        The system is nullable because rank 7 < number of columns, 9.
+    
+        The nullable system must have a solution other than trivial where
+        |A| = 0.
+    
+        There should be 9-7=2 linearly independent vectors u1, u2, ... , un-r 
+        that span the null space of A.
+    
+        The right null space of A reduced by SVD is then 2D and the last
+        2 columns of V can be extracted and reshaped to [3x3] as F1 and F2.
+        
+        A linear convex combination of F1 and F2 form the estimate of F.
+    
+        F = α*F1 + (1 − α)*F2  where α is between 0 and 1
+    
+        The eigenvalues of F are possible only if the determinant of F is 0.
+        The determinant of F is a polynomial function, the characteristic
+        polynomial whose degree is the order of the matrix, which is 3 in this 
+        case. Therefore, the answer(s) to determinant(F) = 0 requires the cubic 
+        roots of the equation.
+        
+        det A = 0 ==> det(α*F1 + (1 − α)*F2) = 0
+    
+        because det(F1 + F2) != det(F1) + det(F2), have to step through the
+        determinant of the sums, and group the terms by a^3, a^2, a^1, and a^0
+        and then solve for the cubic roots.
+                
+        // then solving for the cubic roots and back substitution of the 
+        // polynomial variables gives 1 or 3 matrices as solution
+        
+    
+   The matrices multiplied:
+    
+    a*ff1[0][0] + (1-a)*ff2[0][0]   a*ff1[0][1] + (1-a)*ff2[0][1]   a*ff1[0][2] + (1-a)*ff2[0][2]
+    a*ff1[1][0] + (1-a)*ff2[1][0]   a*ff1[1][1] + (1-a)*ff2[1][1]   a*ff1[1][2] + (1-a)*ff2[1][2]
+    a*ff1[2][0] + (1-a)*ff2[2][0]   a*ff1[2][1] + (1-a)*ff2[2][1]   a*ff1[2][2] + (1-a)*ff2[2][2]
+        
+   Determinant of the sums:
+
+    (a*ff1[0][0] + (1-a)*ff2[0][0]) *
+        ((a*ff1[1][1] + (1-a)*ff2[1][1])*(a*ff1[2][2] + (1-a)*ff2[2][2])
+         - (a*ff1[2][1] + (1-a)*ff2[2][1])*(a*ff1[1][2] + (1-a)*ff2[1][2]))
+    - (a*ff1[1][0] + (1-a)*ff2[1][0]) *
+        ((a*ff1[0][1] + (1-a)*ff2[0][1])*(a*ff1[2][2] + (1-a)*ff2[2][2]))
+        - (a*ff1[2][1] + (1-a)*ff2[2][1])*(a*ff1[0][2] + (1-a)*ff2[0][2]))
+    + (a*ff1[2][0] + (1-a)*ff2[2][0]) *
+        ((a*ff1[0][1] + (1-a)*ff2[0][1])*(a*ff1[1][2] + (1-a)*ff2[1][2])
+        - (a*ff1[1][1] + (1-a)*ff2[1][1])*(a*ff1[0][2] + (1-a)*ff2[0][2]))
+    
+    = (a*ff1[0][0] + (1-a)*ff2[0][0]) *
+        (a*ff1[1][1] + ff2[1][1] - a*ff2[1][1]) * (a*ff1[2][2] + ff2[2][2] - a*ff2[2][2])
+       -(a*ff1[2][1] + ff2[2][1] -a*ff2[2][1]) * (a*ff1[1][2] + ff2[1][2] - a*ff2[1][2])
+    -(a*ff1[1][0] + (1-a)*ff2[1][0]) *
+        (a*ff1[0][1] + ff2[0][1] - a*ff2[0][1]) * (a*ff1[2][2] + ff2[2][2] - a*ff2[2][2])
+       -(a*ff1[2][1] + ff2[2][1] - a*ff2[2][1]) * (a*ff1[0][2] + ff2[0][2] - a*ff2[0][2])
+    +(a*ff1[2][0] + (1-a)*ff2[2][0]) *
+        (a*ff1[0][1] + ff2[0][1] - a*ff2[0][1]) * (a*ff1[1][2] + ff2[1][2] - a*ff2[1][2])
+       -(a*ff1[1][1] + ff2[1][1] - a*ff2[1][1]) * (*ff1[0][2] + ff2[0][2] - a*ff2[0][2])
+    
+    The terms are further grouped below in methods
+       calculateCubicRoot...OrderCoefficientFor7Point(ff1, ff2)
+    
+    After the cubic root(s) are solved, they are back substituted into :
+        Fi = a(i) * FF{1} + (1-a(i)) * FF{2};
+    to get the solutions Fi which may be one or 3 solutions.
+    */
+    
+    /**
+     * calculate the epipolar projection for a set of matched points that are
+     * at 7 points in length.
+     * 
+     * @param pointsLeftXY
+     * @param pointsRightXY 
+     * @return  
+     */
+    public Matrix[] calculateEpipolarProjectionFor7Points(
+        PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
+        
+        if (pointsLeftXY == null) {
+            throw new IllegalArgumentException("refactorLeftXY cannot be null");
+        }
+        if (pointsRightXY == null) {
+            throw new IllegalArgumentException("refactorRightXY cannot be null");
+        }
+        if (pointsLeftXY.getN() != pointsRightXY.getN()) {
+            throw new IllegalArgumentException(
+                "refactorLeftXY and refactorRightXY must be same size");
+        }
+        
+        if (pointsLeftXY.getN() != 7) {
+            // cannot use this algorithm.
+            throw new IllegalArgumentException(
+                "the 7-point problem requires 7points." 
+                + " refactorLeftXY.n=" + pointsLeftXY.getN());
+        }
+        
+        /*
+        note that the Jama matrix convention is new Matrix(mRows, nCols)
+        */
+        
+        leftXY = rewriteInto3ColumnMatrix(pointsLeftXY);
+        
+        rightXY = rewriteInto3ColumnMatrix(pointsRightXY);
+        
+        return calculateEpipolarProjectionFor7Points(leftXY, rightXY);
+    }
+    
+    /**
+     * calculate the epipolar projection for a set of matched points that are
+     * at 7 points in length.
+     * 
+     * @param theLeftXY
+     * @param theRightXY 
+     * @return  
+     */
+    public Matrix[] calculateEpipolarProjectionFor7Points(
+        Matrix theLeftXY, Matrix theRightXY) {
+        
+        if (theLeftXY == null) {
+            throw new IllegalArgumentException("refactorLeftXY cannot be null");
+        }
+        if (theRightXY == null) {
+            throw new IllegalArgumentException("refactorRightXY cannot be null");
+        }
+        if (theLeftXY.getRowDimension() != theRightXY.getRowDimension()) {
+            throw new IllegalArgumentException(
+                "theLeftXY and theRightXY must be same size");
+        }
+        
+        if (theRightXY.getRowDimension() == 7) {
+            // cannot use this algorithm.
+            throw new IllegalArgumentException(
+                "the 7-point problem requires 7 points." 
+                + " theLeftXY.n=" + theLeftXY.getRowDimension());
+        }
+        
+        /*
+        note that the Jama matrix convention is new Matrix(mRows, nCols)
+        */
+        
+        leftXY = theLeftXY;
+        
+        rightXY = theRightXY;
+        
+        //x is xy[0], y is xy[1], xy[2] is all 1's
+        NormalizedXY normalizedXY1 = normalize(leftXY);
+        
+        NormalizedXY normalizedXY2 = normalize(rightXY);      
+        
+        //build the fundamental matrix
+        Matrix aMatrix = new Matrix(createFundamentalMatrix(
+            normalizedXY1.getXy(), normalizedXY2.getXy()));
+        
+        /*
+        calculate [U,D,V] from svd(A):
+           result has mRows = number of data points
+                      nCols = 9
+        */
+        SingularValueDecomposition svd = aMatrix.svd();
+
+        // creates U as 9 x nXY1 matrix
+        //         D as length 9 array
+        //         V as 9 x 9 matrix
+        
+        // mRows = 9; nCols = 9
+        Matrix V = svd.getV();
+                
+        // reshape V to 3x3 for both of the last columns of V to 
+        // =====> solve for the null space of the matrix <=====
+        
+        int vNCols = V.getColumnDimension();
+        
+        double[][] ff1 = new double[3][3];
+        double[][] ff2 = new double[3][3];
+        for (int i = 0; i < 3; i++) {
+            ff1[i] = new double[3];
+            ff1[i][0] = V.get((i * 3) + 0, vNCols - 2);
+            ff1[i][1] = V.get((i * 3) + 1, vNCols - 2);
+            ff1[i][2] = V.get((i * 3) + 2, vNCols - 2);
+            ff2[i] = new double[3];
+            ff2[i][0] = V.get((i * 3) + 0, vNCols - 1);
+            ff2[i][1] = V.get((i * 3) + 1, vNCols - 1);
+            ff2[i][2] = V.get((i * 3) + 2, vNCols - 1);
+        }
+        
+        //The two-dimensional solution space is a*F1 + (1 − a)F2, where 'a' is a
+        //scalar value
+        //    det A = 0 ==> det(a*F1 + (1 − a)*F2) = 0
+        
+        Matrix[] solutions = solveFor7Point(ff1, ff2);
+        
+        // ======== denormalize the solutions ========
+        /*
+        denormalize
+            F = (T_1)^T * F * T_2  
+            where T_1 is normalizedXY1.getNormalizationMatrix();
+            and T2 is normalizedXY2.getNormalizationMatrix();
+        */
+        
+        Matrix[] denormalizedSolutions = new Matrix[solutions.length];
+        
+        // 3x3
+        Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
+        Matrix t2 = normalizedXY2.getNormalizationMatrix();        
+        for (int ii = 0; ii < solutions.length; ii++) {
+              
+            Matrix solution = solutions[ii];
+            
+            Matrix denormFundamentalMatrix = t1Transpose.times(
+                solution.times(t2));
+        
+            denormFundamentalMatrix = denormFundamentalMatrix.times(
+                1./denormFundamentalMatrix.get(2, 2));
+            
+            denormalizedSolutions[ii] = denormFundamentalMatrix;
+        }
+                
+        // ======== validate the solutions ========
+        
+        Matrix[] validatedSolutions = validateSolutions(denormalizedSolutions);
+                
+        return validatedSolutions;
+     }
+    
+    /*
+     * the validation of the 7-point algorithm follows source code adapted 
+     * from this site and license:
+     * 
+     * Note that internally, the method uses validation of the solution 
+     * based upon code within  www.robots.ox.ac.uk/~vgg/hzbook/code/
+        MIT License
+        License for
+        "MATLAB Functions for Multiple View Geometry"
+
+        Copyright (c) 1995-2005 Visual Geometry Group
+        Department of Engineering Science
+        University of Oxford
+        http://www.robots.ox.ac.uk/~vgg/
+        Permission is hereby granted, free of charge, to any person obtaining a 
+        * copy of this software and associated documentation files 
+        * (the "Software"), to deal in the Software without restriction, 
+        * including without limitation the rights to use, copy, modify, merge, 
+        * publish, distribute, sublicense, and/or sell copies of the Software, 
+        * and to permit persons to whom the Software is furnished to do so, 
+        * subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included 
+        * in all copies or substantial portions of the Software.
+
+        The software is provided "as is", without warranty of any kind, express 
+        * or implied, including but not limited to the warranties of 
+        * merchantability, fitness for a particular purpose and noninfringement. 
+        * In no event shall the authors or copyright holders be liable for any 
+        * claim, damages or other liability, whether in an action of contract, 
+        * tort or otherwise, arising from, out of or in connection with the 
+        * software or the use or other dealings in the software.
+
+       The method "signs_OK" validates the solution matrices:
+    
+        for i = 1:length(a)
+          Fi = a(i)*FF{1} + (1-a(i))*FF{2};
+          %for n = 1:7, disp(norm(x(:,n,1)'*Fi*x(:,n,2))), end  % test code
+          if signs_OK(Fi,x1,x2)
+            F = cat(3, F, Fi);
+          end
+        end
+
+        return
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        % Checks sign consistence of F and x
+        function OK = signs_OK(F,x1,x2)
+        [u,s,v] = svd(F');
+        e1 = v(:,3);
+        l1 = vgg_contreps(e1)*x1;
+        s = sum( (F*x2) .* l1 );
+        OK = all(s>0) | all(s<0);
+        return
+        
+    More on the subject is present in "Cheirality in Epipolar Geometry" by
+    Werner & Pajdla, 2000 regarding realizability of two images.
+    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.32.9013&rep=rep1&type=pdf
+        
+    */
+    private Matrix[] validateSolutions(Matrix[] solutions) {
+        
+        Matrix[] validated = new Matrix[solutions.length];
+        
+        int count = 0;
+        for (Matrix solution : solutions) {
+            
+            boolean valid = true;
+
+            // === find epipoles ===
+            double[][] leftRightEpipoles = calculateEpipoles(solution);
+            
+            double[] testE1 = leftRightEpipoles[0];
+            double[] testE2 = leftRightEpipoles[1];
+                        
+            Matrix testRightEpipolarLines = solution.times(leftXY);
+            Matrix testLeftEpipolarLines = solution.transpose().times(rightXY);
+            
+            //(F*x2) .* l1 ==>  (solution * rightXY) .* (testE1 * leftXY)
+            // '.*' is mattlab notation to operate on each field
+
+            /* leftXY:
+            // column 0 is x
+            // column 1 is y
+            // column 2 is all 1's
+            */
+            Matrix t1 = solution.times(rightXY);
+            
+            //(a*x1 +b*y1 + c)  (a*x2 + b*y2 + c)  (a*x3 + b*y3 + c)
+            double[] t2 = MatrixUtil.multiply(leftXY.getArray(), testE1);
+            
+            double sum = 0;
+            
+            //TODO: finish this
+            
+            if (valid) {
+                validated[count] = solution;
+                count++;
+            }
+        }
+        
+        return validated;
+    }
+     
+    private Matrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
+     
+        double a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);
+        double a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);
+        double a2 = calculateCubicRoot1stOrderCoefficientFor7Point(ff1, ff2);
+        double a3 = calculateCubicRoot0thOrderCoefficientFor7Point(ff1, ff2);
+        
+        double[] roots = solveCubicRoots(a0, a1, a2, a3);
+        
+        Matrix[] solutions = new Matrix[roots.length];
+        
+        Matrix f1 = new Matrix(ff1);
+        
+        Matrix f2 = new Matrix(ff2);
+
+        for (int i = 0; i < roots.length; i++) {
+            
+            //Fi = a(i)*FF{1} + (1-a(i))*FF{2};
+            
+            double a = roots[i];
+            
+            Matrix t0 = f1.times(a);
+            
+            Matrix t1 = f2.times(1. - a);
+
+            solutions[i] = t0.plus(t1);
+
+            return solutions;
+        }
+        
+        return solutions;
+    }
+
+    
+     /**
+      * solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a4 = 0;
+      * 
+      * most of the method is adapted from 
+      * http://www.csse.uwa.edu.au/~pk/research/matlabfns/Misc/cubicroots.m
+
+        Copyright (c) 2008 Peter Kovesi
+        School of Computer Science & Software Engineering
+        The University of Western Australia
+        pk at csse uwa edu au
+        http://www.csse.uwa.edu.au/
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in 
+        all copies or substantial portions of the Software.
+
+        The Software is provided "as is", without warranty of any kind.
+
+        Nov 2008
+         
+      * @param a0
+      * @param a1
+      * @param a2
+      * @param a3
+      * @return 
+      */
+    private double[] solveCubicRoots(double a0, double a1, double a2, double a3) {
+        a1 /= a0;
+        a2 /= a0;
+        a3 /= a0;
+        
+        double q = (3.*a2 - (a1*a1))/9.;
+        
+        double r = (9.*a1*a2 - 27.*a3 - 2.*(a1*a1*a1))/54.;
+        
+        double discriminant = q*q*q + r*r;
+            
+        double s = Math.pow((r + Math.sqrt(discriminant)), 3./2.);
+        
+        double t = Math.pow((r - Math.sqrt(discriminant)), 3./2.);
+        
+        double a1d3 = a1/3.;
+        
+        double [] roots;
+        if (discriminant >= 0) {
+            
+            // discriminant > 0: one root is real and two complex conjugate
+            
+            // discriminant == 0 : all roots are real and at least two are equal
+            
+            double root = s + t - a1d3;
+            
+            roots = new double[]{root};
+            
+        } else {
+            
+            //  all roots are real and unequal
+            
+            double rho = Math.sqrt(r*r - discriminant);
+            
+            double cubeRootrho = realcuberoot(rho);
+        
+            double thetaOn3 = Math.acos(r/rho)/3.;
+        
+            double crRhoCosThetaOn3 = cubeRootrho * Math.cos(thetaOn3);
+        
+            double crRhoSinThetaOn3 = cubeRootrho * Math.sin(thetaOn3);   
+            
+            roots = new double[3];
+            roots[0] = 2.*crRhoCosThetaOn3 - a1d3;
+            roots[1] =  -crRhoCosThetaOn3 - a1d3 - Math.sqrt(3.) * crRhoSinThetaOn3;
+            roots[2] =  -crRhoCosThetaOn3 - a1d3 + Math.sqrt(3.) * crRhoSinThetaOn3;
+        }
+        
+        return roots;
+    }
+   
+    private double realcuberoot(double x) {
+        double sign = (x < 0.) ? -1 : 1;
+        double y = sign * Math.pow(Math.abs(x), 1./3.);
+        return y;
+    }
+    
+    private double calculateCubicRoot3rdOrderCoefficientFor7Point(
+        double[][] ff1, double[][] ff2) {
+        
+        double a = ff1[0][0] * ff1[1][1] * ff1[2][2]
+            - ff1[0][0] * ff1[1][1] * ff2[2][2]
+            - ff1[0][0] * ff2[1][1] * ff1[2][2]
+            + ff1[0][0] * ff2[1][1] * ff2[2][2]
+            - ff1[0][0] * ff1[2][1] * ff1[1][2]
+            + ff1[0][0] * ff1[2][1] * ff2[1][2]
+            + ff1[0][0] * ff2[2][1] * ff1[1][2]
+            - ff1[0][0] * ff2[2][1] * ff2[1][2]
+            - ff2[0][0] * ff1[1][1] * ff1[2][2]
+            + ff2[0][0] * ff1[1][1] * ff2[2][2]
+            + ff2[0][0] * ff2[1][1] * ff1[2][2]
+            - ff2[0][0] * ff2[1][1] * ff2[2][2]
+            + ff2[0][0] * ff1[2][1] * ff1[1][2]
+            - ff2[0][0] * ff1[2][1] * ff2[1][2]
+            - ff2[0][0] * ff2[2][1] * ff1[1][2]
+            + ff2[0][0] * ff2[2][1] * ff2[1][2]
+            - ff1[1][0] * ff1[0][1] * ff1[2][2]
+            + ff1[1][0] * ff1[0][1] * ff2[2][2]
+            + ff1[1][0] * ff2[0][1] * ff1[2][2]
+            - ff1[1][0] * ff2[0][1] * ff2[2][2]
+            + ff1[1][0] * ff1[2][1] * ff1[0][2]
+            - ff1[1][0] * ff1[2][1] * ff2[0][2]
+            - ff1[1][0] * ff2[2][1] * ff1[0][2]
+            + ff1[1][0] * ff2[2][1] * ff2[0][2]
+            - ff2[1][0] * ff2[0][1] * ff1[2][2]
+            - ff2[1][0] * ff1[0][1] * ff2[2][2]
+            + ff2[1][0] * ff1[0][1] * ff1[2][2]
+            + ff2[1][0] * ff2[0][1] * ff2[2][2]
+            - ff2[1][0] * ff1[2][1] * ff1[0][2]
+            + ff2[1][0] * ff1[2][1] * ff2[0][2]
+            + ff2[1][0] * ff2[2][1] * ff1[0][2]
+            - ff2[1][0] * ff2[2][1] * ff2[0][2]
+            + ff1[2][0] * ff1[0][1] * ff1[1][2]
+            - ff1[2][0] * ff1[0][1] * ff2[1][2]
+            - ff1[2][0] * ff2[0][1] * ff1[1][2]
+            + ff1[2][0] * ff2[0][1] * ff2[1][2]
+            + ff1[2][0] * ff1[1][1] * ff2[0][2]
+            - ff1[2][0] * ff2[1][1] * ff2[0][2]
+            - ff2[2][0] * ff1[0][1] * ff1[1][2]
+            + ff2[2][0] * ff1[0][1] * ff2[1][2]
+            + ff2[2][0] * ff2[0][1] * ff1[1][2]
+            - ff2[2][0] * ff2[0][1] * ff2[1][2]
+            - ff2[2][0] * ff1[1][1] * ff2[0][2]
+            + ff2[2][0] * ff2[1][1] * ff2[0][2];
+
+        return a;
+    }
+    
+    private double calculateCubicRoot2ndOrderCoefficientFor7Point(double[][] ff1, 
+        double[][] ff2) {
+        
+        double a = ff1[0][0] * ff2[2][1] * ff1[1][2]
+            + ff1[0][0] * ff1[1][1] * ff2[2][2]
+            + ff1[0][0] * ff2[1][1] * ff1[2][2]
+            - ff1[0][0] * ff2[1][1] * ff2[2][2]
+            - ff1[0][0] * ff2[1][1] * ff2[2][2]
+            - ff1[0][0] * ff1[2][1] * ff2[1][2]
+            + ff1[0][0] * ff2[2][1] * ff2[1][2]
+            + ff1[0][0] * ff2[2][1] * ff2[1][2]
+            + ff2[0][0] * ff1[1][1] * ff1[2][2]
+            - ff2[0][0] * ff1[1][1] * ff2[2][2]
+            - ff2[0][0] * ff2[1][1] * ff1[2][2]
+            + ff2[0][0] * ff2[1][1] * ff2[2][2]
+            - ff2[0][0] * ff1[2][1] * ff1[1][2]
+            + ff2[0][0] * ff1[2][1] * ff2[1][2]
+            + ff2[0][0] * ff2[2][1] * ff1[1][2]
+            - ff2[0][0] * ff2[2][1] * ff2[1][2]
+            - ff2[0][0] * ff1[1][1] * ff2[2][2]
+            - ff2[0][0] * ff2[1][1] * ff1[2][2]
+            + ff2[0][0] * ff2[1][1] * ff2[2][2]
+            + ff2[0][0] * ff1[2][1] * ff2[1][2]
+            + ff2[0][0] * ff2[1][1] * ff2[2][2]
+            + ff2[0][0] * ff2[2][1] * ff1[1][2]
+            - ff2[0][0] * ff2[2][1] * ff2[1][2]
+            - ff2[0][0] * ff2[2][1] * ff2[1][2]
+            - ff1[1][0] * ff1[0][1] * ff2[2][2]
+            - ff1[1][0] * ff2[0][1] * ff1[2][2]
+            + ff1[1][0] * ff2[0][1] * ff2[2][2]
+            - ff1[1][0] * ff2[2][1] * ff2[0][2]
+            + ff1[1][0] * ff2[0][1] * ff2[2][2]
+            + ff1[1][0] * ff1[2][1] * ff2[0][2]
+            + ff1[1][0] * ff2[2][1] * ff1[0][2]
+            - ff1[1][0] * ff2[2][1] * ff2[0][2]
+            - ff2[1][0] * ff1[0][1] * ff1[2][2]
+            + ff2[1][0] * ff1[0][1] * ff2[2][2]
+            + ff2[1][0] * ff2[0][1] * ff1[2][2]
+            - ff2[1][0] * ff1[2][1] * ff2[0][2]
+            - ff2[1][0] * ff2[0][1] * ff2[2][2]
+            + ff2[1][0] * ff1[2][1] * ff1[0][2]
+            - ff2[1][0] * ff2[2][1] * ff1[0][2]
+            + ff2[1][0] * ff2[2][1] * ff2[0][2]
+            + ff2[1][0] * ff1[0][1] * ff2[2][2]
+            + ff2[1][0] * ff2[0][1] * ff1[2][2]
+            - ff2[1][0] * ff2[0][1] * ff2[2][2]
+            - ff2[1][0] * ff2[0][1] * ff2[2][2]
+            - ff2[1][0] * ff1[2][1] * ff2[0][2]
+            - ff2[1][0] * ff2[2][1] * ff1[0][2]
+            + ff2[1][0] * ff2[2][1] * ff2[0][2]
+            + ff2[1][0] * ff2[2][1] * ff2[0][2]
+            + ff1[2][0] * ff1[0][1] * ff2[1][2]
+            + ff1[2][0] * ff2[0][1] * ff1[1][2]
+            - ff1[2][0] * ff2[0][1] * ff2[1][2]
+            - ff1[2][0] * ff2[0][1] * ff2[1][2]
+            - ff1[2][0] * ff1[1][1] * ff1[0][2]
+            - ff1[2][0] * ff1[1][1] * ff2[0][2]
+            + ff1[2][0] * ff2[1][1] * ff2[0][2]
+            + ff1[2][0] * ff2[1][1] * ff1[0][2]
+            + ff1[2][0] * ff2[1][1] * ff2[0][2]
+            + ff2[2][0] * ff1[0][1] * ff1[1][2]
+            - ff2[2][0] * ff1[0][1] * ff2[1][2]
+            - ff2[2][0] * ff2[0][1] * ff1[1][2]
+            + ff2[2][0] * ff2[0][1] * ff2[1][2]
+            + ff2[2][0] * ff1[1][1] * ff2[0][2]
+            - ff2[2][0] * ff2[1][1] * ff2[0][2]
+            - ff2[2][0] * ff1[0][1] * ff2[1][2]
+            - ff2[2][0] * ff2[0][1] * ff1[1][2]
+            + ff2[2][0] * ff2[0][1] * ff2[1][2]
+            + ff2[2][0] * ff2[0][1] * ff2[1][2]
+            + ff2[2][0] * ff1[1][1] * ff1[0][2]
+            + ff2[2][0] * ff1[1][1] * ff2[0][2]
+            - ff2[2][0] * ff2[1][1] * ff2[0][2]
+            - ff2[2][0] * ff2[1][1] * ff1[0][2]
+            - ff2[2][0] * ff2[1][1] * ff2[0][2];
+
+        return a;
+    }
+    
+    private double calculateCubicRoot1stOrderCoefficientFor7Point(double[][] ff1, 
+        double[][] ff2) {
+        
+        double a = ff1[0][0] * ff2[1][1] * ff2[2][2]
+            - ff1[0][0] * ff2[2][1] * ff2[1][2]
+            + ff2[0][0] * ff1[1][1] * ff2[2][2]
+            + ff2[0][0] * ff2[1][1] * ff1[2][2]
+            - ff2[0][0] * ff2[1][1] * ff2[2][2]
+            - ff2[0][0] * ff2[1][1] * ff2[2][2]
+            - ff2[0][0] * ff1[2][1] * ff2[1][2]
+            - ff2[0][0] * ff2[2][1] * ff1[1][2]
+            + ff2[0][0] * ff2[2][1] * ff2[1][2]
+            + ff2[0][0] * ff2[2][1] * ff2[1][2]
+            - ff1[1][0] * ff2[0][1] * ff2[2][2]
+            - ff2[0][0] * ff2[1][1] * ff2[2][2]
+            + ff2[0][0] * ff2[2][1] * ff2[1][2]
+            + ff1[1][0] * ff2[2][1] * ff2[0][2]
+            - ff2[1][0] * ff1[0][1] * ff2[2][2]
+            - ff2[1][0] * ff2[0][1] * ff1[2][2]
+            + ff2[1][0] * ff2[0][1] * ff2[2][2]
+            + ff2[1][0] * ff2[0][1] * ff2[2][2]
+            + ff2[1][0] * ff1[2][1] * ff2[0][2]
+            + ff2[1][0] * ff2[2][1] * ff1[0][2]
+            - ff2[1][0] * ff2[2][1] * ff2[0][2]
+            - ff2[1][0] * ff2[2][1] * ff2[0][2]
+            - ff2[1][0] * ff2[2][1] * ff2[0][2]
+            + ff2[1][0] * ff2[0][1] * ff2[2][2]
+            + ff1[2][0] * ff2[0][1] * ff2[1][2]
+            - ff1[2][0] * ff2[1][1] * ff1[0][2]
+            - ff1[2][0] * ff2[1][1] * ff2[0][2]
+            + ff2[2][0] * ff1[0][1] * ff2[1][2]
+            + ff2[2][0] * ff2[0][1] * ff1[1][2]
+            - ff2[2][0] * ff2[0][1] * ff2[1][2]
+            - ff2[2][0] * ff2[0][1] * ff2[1][2]
+            - ff2[2][0] * ff1[1][1] * ff1[0][2]
+            - ff2[2][0] * ff1[1][1] * ff2[0][2]
+            + ff2[2][0] * ff2[1][1] * ff2[0][2]
+            + ff2[2][0] * ff2[1][1] * ff1[0][2]
+            + ff2[2][0] * ff2[1][1] * ff2[0][2]
+            - ff2[2][0] * ff2[0][1] * ff2[1][2]
+            + ff2[2][0] * ff2[1][1] * ff1[0][2]
+            + ff2[2][0] * ff2[1][1] * ff2[0][2];
+
+        return a;
+    }
+    
+    private double calculateCubicRoot0thOrderCoefficientFor7Point(
+        double[][] ff1, double[][] ff2) {
+        
+        double a = ff2[0][0] * ff2[1][1] * ff2[2][2]
+            - ff2[0][0] * ff2[2][1] * ff2[1][2]
+            + ff2[1][0] * ff2[2][1] * ff2[0][2]
+            - ff2[1][0] * ff2[0][1] * ff2[2][2]
+            + ff2[2][0] * ff2[0][1] * ff2[1][2]
+            - ff2[2][0] * ff2[1][1] * ff1[0][2]
+            - ff2[2][0] * ff2[1][1] * ff2[0][2];
+
+        return a;
     }
     
     Matrix calculateFundamentalMatrix(NormalizedXY normalizedXY1, 
@@ -657,14 +1333,10 @@ public class StereoProjectionTransformer {
         
         From u_2^T * F * u_1 = 0 
         
-        The right epipole, 
-            e_right = 
-        
-        
         epipoles: 
              [U,D,V] = svd(denormalized FundamentalMatrix);
-             e1 = last column of V divided by it's last item
-             e2 = last column of U divided by it's last item
+             e1 = last column of V divided by it's last item 
+             e2 = last column of U divided by it's last item 
                 
         */
         SingularValueDecomposition svdE = fundamentalMatrix.svd();
@@ -680,18 +1352,6 @@ public class StereoProjectionTransformer {
         for (int i = 0; i < e2.length; i++) {
             e2[i] /= e2Div;
         }
-        
-        StringBuilder sb = new StringBuilder("e1=");
-        for (int i = 0; i < e1.length; i++) {
-            sb.append(e1[i]).append(" ");
-        }
-        log.fine(sb.toString());
-        
-        sb = new StringBuilder("e2=");
-        for (int i = 0; i < e2.length; i++) {
-            sb.append(e2[i]).append(" ");
-        }
-        log.fine(sb.toString());
         
         double[][] e = new double[2][];
         e[0] = e1;

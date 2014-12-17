@@ -89,12 +89,12 @@ public class TransformationParameters {
         StringBuilder sb = new StringBuilder();
         
         sb.append("rotationInRadians=").append(rotationInRadians)
-            .append("\nrotationInDegrees=").append(rotationInRadians*180./Math.PI)
-            .append("\nscale=").append(scale)
-            .append("\ntranslationX=").append(translationX)
-            .append("\ntranslationY=").append(translationY);
+            .append(" rotationInDegrees=").append(rotationInRadians*180./Math.PI)
+            .append(" scale=").append(scale)
+            .append(" translationX=").append(translationX)
+            .append(" translationY=").append(translationY);
         
         return sb.toString();
     }
-    
+
 }
