@@ -273,6 +273,40 @@ public class MiscMathTest extends TestCase {
         //No test. looking for pattern to calculate bitstring for
         // ith iteration without iterating...
     }
+    
+    public void testCubicRoots() throws Exception {
+        
+        double a0 = 1;
+        double a1 = 6;
+        double a2 = -4;
+        double a3 = -24;
+        
+        double[] roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
+        assertTrue(roots.length == 3);
+        assertTrue(Math.abs(roots[0] - 2) < 0.1);
+        assertTrue(Math.abs(roots[1] - -6) < 0.1);
+        assertTrue(Math.abs(roots[2] - -2) < 0.1);
+        
+        a0 = 2;
+        a1 = 3;
+        a2 = -11;
+        a3 = -6;
+        roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
+        assertTrue(roots.length == 3);
+        assertTrue(Math.abs(roots[0] - 2) < 0.1);
+        assertTrue(Math.abs(roots[1] - -3) < 0.1);
+        assertTrue(Math.abs(roots[2] - -0.5) < 0.1);
+        
+        a0 = 1;
+        a1 = -7;
+        a2 = 4;
+        a3 = 12;
+        roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
+        assertTrue(roots.length == 3);
+        assertTrue(Math.abs(roots[0] - 6) < 0.1);
+        assertTrue(Math.abs(roots[1] - -1) < 0.1);
+        assertTrue(Math.abs(roots[2] - 2) < 0.1);
+    }
 
     /**
      * Test of findMax method, of class MiscMath.

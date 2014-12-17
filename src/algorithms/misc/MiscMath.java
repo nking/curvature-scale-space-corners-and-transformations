@@ -476,4 +476,84 @@ public class MiscMath {
         
         return Long.valueOf(t);
     }
+    
+     /**
+      * solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a4 = 0;
+      * 
+      * most of the method is adapted from 
+      * http://www.csse.uwa.edu.au/~pk/research/matlabfns/Misc/cubicroots.m
+
+        Copyright (c) 2008 Peter Kovesi
+        School of Computer Science & Software Engineering
+        The University of Western Australia
+        pk at csse uwa edu au
+        http://www.csse.uwa.edu.au/
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in 
+        all copies or substantial portions of the Software.
+
+        The Software is provided "as is", without warranty of any kind.
+
+        Nov 2008
+         
+      * @param a
+      * @param b
+      * @param c
+      * @param d
+      * @return 
+      */
+    public static double[] solveCubicRoots(double a, double b, double c, 
+        double d) {
+        
+        b /= a; 
+        c /= a; 
+        d /= a;
+        double bOn3 = b/3.;
+    
+        double q = (3.*c - b*b)/9.;
+        double r = (9.*b*c - 27.*d - 2.*b*b*b)/54.;
+        double discriminant = q*q*q + r*r;
+            
+        if (discriminant >= 0) {
+            
+            // discriminant > 0: one root is real and two complex conjugate
+            // discriminant == 0 : all roots are real and at least two are equal
+            
+            double s = realcuberoot(r + Math.sqrt(discriminant));   
+            double t = realcuberoot(r - Math.sqrt(discriminant));
+    
+            double root = s + t - bOn3;
+        
+            return new double[]{root};
+            
+        } else {
+
+            //  all roots are real and unequal
+            
+            double rho = Math.sqrt(r*r - discriminant); 
+            double cubeRootrho = realcuberoot(rho);
+            double thetaOn3 = Math.acos(r/rho)/3.;
+        
+            double crRhoCosThetaOn3 = cubeRootrho * Math.cos(thetaOn3);
+            double crRhoSinThetaOn3 = cubeRootrho * Math.sin(thetaOn3);   
+
+            double[] root = new double[3];
+            root[0] = 2. * crRhoCosThetaOn3 - bOn3;
+            root[1] = -crRhoCosThetaOn3 - bOn3 - Math.sqrt(3.)*crRhoSinThetaOn3;
+            root[2] = -crRhoCosThetaOn3 - bOn3 + Math.sqrt(3.)*crRhoSinThetaOn3;
+            
+            return root;
+        }   
+    }
+   
+    public static double realcuberoot(double x) {
+        double sign = (x < 0.) ? -1 : 1;
+        double y = sign * Math.pow(Math.abs(x), 1./3.);
+        return y;
+    }
+    
 }

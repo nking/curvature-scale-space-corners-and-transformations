@@ -3,10 +3,13 @@ package algorithms.imageProcessing;
 import algorithms.util.PairFloatArray;
 import Jama.*;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
@@ -209,10 +212,10 @@ public class StereoProjectionTransformer {
                 "theLeftXY and theRightXY must be same size");
         }
         
-        if (theLeftXY.getColumnDimension() < 8) {
+        if (theLeftXY.getColumnDimension() < 9) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
-                "the 8-point problem requires 8 or more points." 
+                "requires more than 8 points." 
                 + " refactorLeftXY.n=" +theLeftXY.getColumnDimension());
         }
         
@@ -359,13 +362,9 @@ public class StereoProjectionTransformer {
     
         because det(F1 + F2) != det(F1) + det(F2), have to step through the
         determinant of the sums, and group the terms by a^3, a^2, a^1, and a^0
-        and then solve for the cubic roots.
-                
-        // then solving for the cubic roots and back substitution of the 
-        // polynomial variables gives 1 or 3 matrices as solution
-        
+        and then solve for the cubic roots as the values of 'a'.
     
-   The matrices multiplied:
+   The matrices multiplied and summed:
     
     a*ff1[0][0] + (1-a)*ff2[0][0]   a*ff1[0][1] + (1-a)*ff2[0][1]   a*ff1[0][2] + (1-a)*ff2[0][2]
     a*ff1[1][0] + (1-a)*ff2[1][0]   a*ff1[1][1] + (1-a)*ff2[1][1]   a*ff1[1][2] + (1-a)*ff2[1][2]
@@ -434,11 +433,9 @@ public class StereoProjectionTransformer {
         note that the Jama matrix convention is new Matrix(mRows, nCols)
         */
         
-        leftXY = rewriteInto3ColumnMatrix(pointsLeftXY);
-        
-        rightXY = rewriteInto3ColumnMatrix(pointsRightXY);
-        
-        return calculateEpipolarProjectionFor7Points(leftXY, rightXY);
+        return calculateEpipolarProjectionFor7Points(
+            rewriteInto3ColumnMatrix(pointsLeftXY), 
+            rewriteInto3ColumnMatrix(pointsRightXY));
     }
     
     /**
@@ -470,10 +467,6 @@ public class StereoProjectionTransformer {
                 + " theLeftXY.n=" + theLeftXY.getRowDimension());
         }
         
-        /*
-        note that the Jama matrix convention is new Matrix(mRows, nCols)
-        */
-        
         leftXY = theLeftXY;
         
         rightXY = theRightXY;
@@ -487,18 +480,9 @@ public class StereoProjectionTransformer {
         Matrix aMatrix = new Matrix(createFundamentalMatrix(
             normalizedXY1.getXy(), normalizedXY2.getXy()));
         
-        /*
-        calculate [U,D,V] from svd(A):
-           result has mRows = number of data points
-                      nCols = 9
-        */
-        SingularValueDecomposition svd = aMatrix.svd();
-
-        // creates U as 9 x nXY1 matrix
-        //         D as length 9 array
-        //         V as 9 x 9 matrix
+        //calculate [U,D,V] from svd(A):
+        SingularValueDecomposition svd = aMatrix.svd();      
         
-        // mRows = 9; nCols = 9
         Matrix V = svd.getV();
                 
         // reshape V to 3x3 for both of the last columns of V to 
@@ -518,11 +502,7 @@ public class StereoProjectionTransformer {
             ff2[i][1] = V.get((i * 3) + 1, vNCols - 1);
             ff2[i][2] = V.get((i * 3) + 2, vNCols - 1);
         }
-        
-        //The two-dimensional solution space is a*F1 + (1 − a)F2, where 'a' is a
-        //scalar value
-        //    det A = 0 ==> det(a*F1 + (1 − a)*F2) = 0
-        
+       
         Matrix[] solutions = solveFor7Point(ff1, ff2);
         
         // ======== denormalize the solutions ========
@@ -535,6 +515,8 @@ public class StereoProjectionTransformer {
         
         Matrix[] denormalizedSolutions = new Matrix[solutions.length];
         
+        int count = 0;
+        
         // 3x3
         Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
         Matrix t2 = normalizedXY2.getNormalizationMatrix();        
@@ -542,27 +524,32 @@ public class StereoProjectionTransformer {
               
             Matrix solution = solutions[ii];
             
+            if (solution == null) {
+                continue;
+            }
+            
             Matrix denormFundamentalMatrix = t1Transpose.times(
                 solution.times(t2));
         
             denormFundamentalMatrix = denormFundamentalMatrix.times(
                 1./denormFundamentalMatrix.get(2, 2));
+                            
+            denormalizedSolutions[count] = denormFundamentalMatrix.transpose();
             
-            denormalizedSolutions[ii] = denormFundamentalMatrix;
+            count++;
         }
-                
+
         // ======== validate the solutions ========
-        
-        Matrix[] validatedSolutions = validateSolutions(denormalizedSolutions);
-                
+        Matrix[] validatedSolutions = validateSolutions(
+            Arrays.copyOf(denormalizedSolutions, count));
+
         return validatedSolutions;
-     }
+    }
     
     /*
      * the validation of the 7-point algorithm follows source code adapted 
      * from this site and license:
      * 
-     * Note that internally, the method uses validation of the solution 
      * based upon code within  www.robots.ox.ac.uk/~vgg/hzbook/code/
         MIT License
         License for
@@ -670,8 +657,8 @@ public class StereoProjectionTransformer {
         double a2 = calculateCubicRoot1stOrderCoefficientFor7Point(ff1, ff2);
         double a3 = calculateCubicRoot0thOrderCoefficientFor7Point(ff1, ff2);
         
-        double[] roots = solveCubicRoots(a0, a1, a2, a3);
-        
+        double[] roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
+       
         Matrix[] solutions = new Matrix[roots.length];
         
         Matrix f1 = new Matrix(ff1);
@@ -696,281 +683,153 @@ public class StereoProjectionTransformer {
         return solutions;
     }
 
-    
-     /**
-      * solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a4 = 0;
-      * 
-      * most of the method is adapted from 
-      * http://www.csse.uwa.edu.au/~pk/research/matlabfns/Misc/cubicroots.m
-
-        Copyright (c) 2008 Peter Kovesi
-        School of Computer Science & Software Engineering
-        The University of Western Australia
-        pk at csse uwa edu au
-        http://www.csse.uwa.edu.au/
-
-        Permission is hereby granted, free of charge, to any person obtaining a copy
-        of this software and associated documentation files (the "Software"), to deal
-        in the Software without restriction, subject to the following conditions:
-
-        The above copyright notice and this permission notice shall be included in 
-        all copies or substantial portions of the Software.
-
-        The Software is provided "as is", without warranty of any kind.
-
-        Nov 2008
-         
-      * @param a0
-      * @param a1
-      * @param a2
-      * @param a3
-      * @return 
-      */
-    private double[] solveCubicRoots(double a0, double a1, double a2, double a3) {
-        a1 /= a0;
-        a2 /= a0;
-        a3 /= a0;
-        
-        double q = (3.*a2 - (a1*a1))/9.;
-        
-        double r = (9.*a1*a2 - 27.*a3 - 2.*(a1*a1*a1))/54.;
-        
-        double discriminant = q*q*q + r*r;
-            
-        double s = Math.pow((r + Math.sqrt(discriminant)), 3./2.);
-        
-        double t = Math.pow((r - Math.sqrt(discriminant)), 3./2.);
-        
-        double a1d3 = a1/3.;
-        
-        double [] roots;
-        if (discriminant >= 0) {
-            
-            // discriminant > 0: one root is real and two complex conjugate
-            
-            // discriminant == 0 : all roots are real and at least two are equal
-            
-            double root = s + t - a1d3;
-            
-            roots = new double[]{root};
-            
-        } else {
-            
-            //  all roots are real and unequal
-            
-            double rho = Math.sqrt(r*r - discriminant);
-            
-            double cubeRootrho = realcuberoot(rho);
-        
-            double thetaOn3 = Math.acos(r/rho)/3.;
-        
-            double crRhoCosThetaOn3 = cubeRootrho * Math.cos(thetaOn3);
-        
-            double crRhoSinThetaOn3 = cubeRootrho * Math.sin(thetaOn3);   
-            
-            roots = new double[3];
-            roots[0] = 2.*crRhoCosThetaOn3 - a1d3;
-            roots[1] =  -crRhoCosThetaOn3 - a1d3 - Math.sqrt(3.) * crRhoSinThetaOn3;
-            roots[2] =  -crRhoCosThetaOn3 - a1d3 + Math.sqrt(3.) * crRhoSinThetaOn3;
-        }
-        
-        return roots;
-    }
-   
-    private double realcuberoot(double x) {
-        double sign = (x < 0.) ? -1 : 1;
-        double y = sign * Math.pow(Math.abs(x), 1./3.);
-        return y;
-    }
-    
     private double calculateCubicRoot3rdOrderCoefficientFor7Point(
         double[][] ff1, double[][] ff2) {
         
-        double a = ff1[0][0] * ff1[1][1] * ff1[2][2]
-            - ff1[0][0] * ff1[1][1] * ff2[2][2]
-            - ff1[0][0] * ff2[1][1] * ff1[2][2]
-            + ff1[0][0] * ff2[1][1] * ff2[2][2]
-            - ff1[0][0] * ff1[2][1] * ff1[1][2]
-            + ff1[0][0] * ff1[2][1] * ff2[1][2]
-            + ff1[0][0] * ff2[2][1] * ff1[1][2]
-            - ff1[0][0] * ff2[2][1] * ff2[1][2]
-            - ff2[0][0] * ff1[1][1] * ff1[2][2]
-            + ff2[0][0] * ff1[1][1] * ff2[2][2]
-            + ff2[0][0] * ff2[1][1] * ff1[2][2]
-            - ff2[0][0] * ff2[1][1] * ff2[2][2]
-            + ff2[0][0] * ff1[2][1] * ff1[1][2]
-            - ff2[0][0] * ff1[2][1] * ff2[1][2]
-            - ff2[0][0] * ff2[2][1] * ff1[1][2]
-            + ff2[0][0] * ff2[2][1] * ff2[1][2]
-            - ff1[1][0] * ff1[0][1] * ff1[2][2]
-            + ff1[1][0] * ff1[0][1] * ff2[2][2]
-            + ff1[1][0] * ff2[0][1] * ff1[2][2]
-            - ff1[1][0] * ff2[0][1] * ff2[2][2]
-            + ff1[1][0] * ff1[2][1] * ff1[0][2]
-            - ff1[1][0] * ff1[2][1] * ff2[0][2]
-            - ff1[1][0] * ff2[2][1] * ff1[0][2]
-            + ff1[1][0] * ff2[2][1] * ff2[0][2]
-            - ff2[1][0] * ff2[0][1] * ff1[2][2]
-            - ff2[1][0] * ff1[0][1] * ff2[2][2]
-            + ff2[1][0] * ff1[0][1] * ff1[2][2]
-            + ff2[1][0] * ff2[0][1] * ff2[2][2]
-            - ff2[1][0] * ff1[2][1] * ff1[0][2]
-            + ff2[1][0] * ff1[2][1] * ff2[0][2]
-            + ff2[1][0] * ff2[2][1] * ff1[0][2]
-            - ff2[1][0] * ff2[2][1] * ff2[0][2]
-            + ff1[2][0] * ff1[0][1] * ff1[1][2]
-            - ff1[2][0] * ff1[0][1] * ff2[1][2]
-            - ff1[2][0] * ff2[0][1] * ff1[1][2]
-            + ff1[2][0] * ff2[0][1] * ff2[1][2]
-            + ff1[2][0] * ff1[1][1] * ff2[0][2]
-            - ff1[2][0] * ff2[1][1] * ff2[0][2]
-            - ff2[2][0] * ff1[0][1] * ff1[1][2]
-            + ff2[2][0] * ff1[0][1] * ff2[1][2]
-            + ff2[2][0] * ff2[0][1] * ff1[1][2]
-            - ff2[2][0] * ff2[0][1] * ff2[1][2]
-            - ff2[2][0] * ff1[1][1] * ff2[0][2]
-            + ff2[2][0] * ff2[1][1] * ff2[0][2];
-
-        return a;
+        double b = ff1[0][0];
+        double e = ff1[1][0];
+        double h = ff1[2][0];
+        double c = ff1[0][1];
+        double f = ff1[1][1];
+        double i = ff1[2][1];
+        double d = ff1[0][2];
+        double g = ff1[1][2];
+        double j = ff1[2][2];
+        
+        double k = ff2[0][0];
+        double n = ff2[1][0];
+        double q = ff2[2][0];
+        double l = ff2[0][1];
+        double o = ff2[1][1];
+        double r = ff2[2][1];
+        double m = ff2[0][2];
+        double p = ff2[1][2];
+        double s = ff2[2][2];
+        
+        double sum = h*g*c + h*o*d + h*o*m + h*p*l + i*e*d + i*g*k
+            + i*n*m + i*p*b + j*e*l + j*k*o + j*n*c + q*f*d
+            + q*f*m + q*g*l + q*p*c + r*e*m + r*g*b + r*n*d
+            + r*p*k + s*b*o + s*e*c + s*k*f + s*n*l + b*j*f
+            - h*f*d - h*f*m - h*g*l - h*p*c - i*e*m - i*g*b
+            - i*n*d - i*p*k - j*b*o - j*e*c - j*k*f - j*n*l
+            - q*g*c - q*o*d - q*o*m - q*p*l - r*e*d - r*g*k
+            - r*n*m - r*p*b - s*b*f - s*e*l - s*k*o - s*n*c;
+        
+        return sum;
     }
     
     private double calculateCubicRoot2ndOrderCoefficientFor7Point(double[][] ff1, 
         double[][] ff2) {
         
-        double a = ff1[0][0] * ff2[2][1] * ff1[1][2]
-            + ff1[0][0] * ff1[1][1] * ff2[2][2]
-            + ff1[0][0] * ff2[1][1] * ff1[2][2]
-            - ff1[0][0] * ff2[1][1] * ff2[2][2]
-            - ff1[0][0] * ff2[1][1] * ff2[2][2]
-            - ff1[0][0] * ff1[2][1] * ff2[1][2]
-            + ff1[0][0] * ff2[2][1] * ff2[1][2]
-            + ff1[0][0] * ff2[2][1] * ff2[1][2]
-            + ff2[0][0] * ff1[1][1] * ff1[2][2]
-            - ff2[0][0] * ff1[1][1] * ff2[2][2]
-            - ff2[0][0] * ff2[1][1] * ff1[2][2]
-            + ff2[0][0] * ff2[1][1] * ff2[2][2]
-            - ff2[0][0] * ff1[2][1] * ff1[1][2]
-            + ff2[0][0] * ff1[2][1] * ff2[1][2]
-            + ff2[0][0] * ff2[2][1] * ff1[1][2]
-            - ff2[0][0] * ff2[2][1] * ff2[1][2]
-            - ff2[0][0] * ff1[1][1] * ff2[2][2]
-            - ff2[0][0] * ff2[1][1] * ff1[2][2]
-            + ff2[0][0] * ff2[1][1] * ff2[2][2]
-            + ff2[0][0] * ff1[2][1] * ff2[1][2]
-            + ff2[0][0] * ff2[1][1] * ff2[2][2]
-            + ff2[0][0] * ff2[2][1] * ff1[1][2]
-            - ff2[0][0] * ff2[2][1] * ff2[1][2]
-            - ff2[0][0] * ff2[2][1] * ff2[1][2]
-            - ff1[1][0] * ff1[0][1] * ff2[2][2]
-            - ff1[1][0] * ff2[0][1] * ff1[2][2]
-            + ff1[1][0] * ff2[0][1] * ff2[2][2]
-            - ff1[1][0] * ff2[2][1] * ff2[0][2]
-            + ff1[1][0] * ff2[0][1] * ff2[2][2]
-            + ff1[1][0] * ff1[2][1] * ff2[0][2]
-            + ff1[1][0] * ff2[2][1] * ff1[0][2]
-            - ff1[1][0] * ff2[2][1] * ff2[0][2]
-            - ff2[1][0] * ff1[0][1] * ff1[2][2]
-            + ff2[1][0] * ff1[0][1] * ff2[2][2]
-            + ff2[1][0] * ff2[0][1] * ff1[2][2]
-            - ff2[1][0] * ff1[2][1] * ff2[0][2]
-            - ff2[1][0] * ff2[0][1] * ff2[2][2]
-            + ff2[1][0] * ff1[2][1] * ff1[0][2]
-            - ff2[1][0] * ff2[2][1] * ff1[0][2]
-            + ff2[1][0] * ff2[2][1] * ff2[0][2]
-            + ff2[1][0] * ff1[0][1] * ff2[2][2]
-            + ff2[1][0] * ff2[0][1] * ff1[2][2]
-            - ff2[1][0] * ff2[0][1] * ff2[2][2]
-            - ff2[1][0] * ff2[0][1] * ff2[2][2]
-            - ff2[1][0] * ff1[2][1] * ff2[0][2]
-            - ff2[1][0] * ff2[2][1] * ff1[0][2]
-            + ff2[1][0] * ff2[2][1] * ff2[0][2]
-            + ff2[1][0] * ff2[2][1] * ff2[0][2]
-            + ff1[2][0] * ff1[0][1] * ff2[1][2]
-            + ff1[2][0] * ff2[0][1] * ff1[1][2]
-            - ff1[2][0] * ff2[0][1] * ff2[1][2]
-            - ff1[2][0] * ff2[0][1] * ff2[1][2]
-            - ff1[2][0] * ff1[1][1] * ff1[0][2]
-            - ff1[2][0] * ff1[1][1] * ff2[0][2]
-            + ff1[2][0] * ff2[1][1] * ff2[0][2]
-            + ff1[2][0] * ff2[1][1] * ff1[0][2]
-            + ff1[2][0] * ff2[1][1] * ff2[0][2]
-            + ff2[2][0] * ff1[0][1] * ff1[1][2]
-            - ff2[2][0] * ff1[0][1] * ff2[1][2]
-            - ff2[2][0] * ff2[0][1] * ff1[1][2]
-            + ff2[2][0] * ff2[0][1] * ff2[1][2]
-            + ff2[2][0] * ff1[1][1] * ff2[0][2]
-            - ff2[2][0] * ff2[1][1] * ff2[0][2]
-            - ff2[2][0] * ff1[0][1] * ff2[1][2]
-            - ff2[2][0] * ff2[0][1] * ff1[1][2]
-            + ff2[2][0] * ff2[0][1] * ff2[1][2]
-            + ff2[2][0] * ff2[0][1] * ff2[1][2]
-            + ff2[2][0] * ff1[1][1] * ff1[0][2]
-            + ff2[2][0] * ff1[1][1] * ff2[0][2]
-            - ff2[2][0] * ff2[1][1] * ff2[0][2]
-            - ff2[2][0] * ff2[1][1] * ff1[0][2]
-            - ff2[2][0] * ff2[1][1] * ff2[0][2];
-
-        return a;
+        double b = ff1[0][0];
+        double e = ff1[1][0];
+        double h = ff1[2][0];
+        double c = ff1[0][1];
+        double f = ff1[1][1];
+        double i = ff1[2][1];
+        double d = ff1[0][2];
+        double g = ff1[1][2];
+        double j = ff1[2][2];
+        
+        double k = ff2[0][0];
+        double n = ff2[1][0];
+        double q = ff2[2][0];
+        double l = ff2[0][1];
+        double o = ff2[1][1];
+        double r = ff2[2][1];
+        double m = ff2[0][2];
+        double p = ff2[1][2];
+        double s = ff2[2][2];
+        
+        double sum = h*f*m + h*g*l + h*p*c + i*e*m + i*n*d + i*p*k
+            + i*p*k + j*b*o + j*k*f + j*n*l + j*n*l + q*g*c
+            + q*o*d + q*o*d + q*o*m + q*o*m + q*o*m + q*p*l
+            + q*p*l + q*p*l + r*e*d + r*g*k + r*g*k + r*n*m
+            + r*n*m + r*n*m + r*p*b + r*p*b + s*o*k + s*b*f
+            + s*e*l + s*e*l + s*k*o + s*k*o + s*n*c + s*n*c
+            - h*o*d - h*o*m - h*o*m - h*p*l - h*p*l - i*g*k
+            - i*n*m - i*n*m - i*p*b - j*e*l - j*k*o - j*n*c
+            - j*o*k - q*f*d - q*f*m - q*f*m - q*g*l - q*g*l
+            - q*p*c - q*p*c - r*e*m - r*e*m - r*g*b - r*n*d
+            - r*n*d - r*p*k - r*p*k - r*p*k - s*b*o - s*b*o
+            - s*e*c - s*k*f - s*k*f - s*n*l - s*n*l - s*n*l;
+        
+        return sum;
     }
     
     private double calculateCubicRoot1stOrderCoefficientFor7Point(double[][] ff1, 
         double[][] ff2) {
         
-        double a = ff1[0][0] * ff2[1][1] * ff2[2][2]
-            - ff1[0][0] * ff2[2][1] * ff2[1][2]
-            + ff2[0][0] * ff1[1][1] * ff2[2][2]
-            + ff2[0][0] * ff2[1][1] * ff1[2][2]
-            - ff2[0][0] * ff2[1][1] * ff2[2][2]
-            - ff2[0][0] * ff2[1][1] * ff2[2][2]
-            - ff2[0][0] * ff1[2][1] * ff2[1][2]
-            - ff2[0][0] * ff2[2][1] * ff1[1][2]
-            + ff2[0][0] * ff2[2][1] * ff2[1][2]
-            + ff2[0][0] * ff2[2][1] * ff2[1][2]
-            - ff1[1][0] * ff2[0][1] * ff2[2][2]
-            - ff2[0][0] * ff2[1][1] * ff2[2][2]
-            + ff2[0][0] * ff2[2][1] * ff2[1][2]
-            + ff1[1][0] * ff2[2][1] * ff2[0][2]
-            - ff2[1][0] * ff1[0][1] * ff2[2][2]
-            - ff2[1][0] * ff2[0][1] * ff1[2][2]
-            + ff2[1][0] * ff2[0][1] * ff2[2][2]
-            + ff2[1][0] * ff2[0][1] * ff2[2][2]
-            + ff2[1][0] * ff1[2][1] * ff2[0][2]
-            + ff2[1][0] * ff2[2][1] * ff1[0][2]
-            - ff2[1][0] * ff2[2][1] * ff2[0][2]
-            - ff2[1][0] * ff2[2][1] * ff2[0][2]
-            - ff2[1][0] * ff2[2][1] * ff2[0][2]
-            + ff2[1][0] * ff2[0][1] * ff2[2][2]
-            + ff1[2][0] * ff2[0][1] * ff2[1][2]
-            - ff1[2][0] * ff2[1][1] * ff1[0][2]
-            - ff1[2][0] * ff2[1][1] * ff2[0][2]
-            + ff2[2][0] * ff1[0][1] * ff2[1][2]
-            + ff2[2][0] * ff2[0][1] * ff1[1][2]
-            - ff2[2][0] * ff2[0][1] * ff2[1][2]
-            - ff2[2][0] * ff2[0][1] * ff2[1][2]
-            - ff2[2][0] * ff1[1][1] * ff1[0][2]
-            - ff2[2][0] * ff1[1][1] * ff2[0][2]
-            + ff2[2][0] * ff2[1][1] * ff2[0][2]
-            + ff2[2][0] * ff2[1][1] * ff1[0][2]
-            + ff2[2][0] * ff2[1][1] * ff2[0][2]
-            - ff2[2][0] * ff2[0][1] * ff2[1][2]
-            + ff2[2][0] * ff2[1][1] * ff1[0][2]
-            + ff2[2][0] * ff2[1][1] * ff2[0][2];
+        /*
+        f1 =
+         b c d
+         e f g
+         h i j
+        f2 =
+         k l m
+         n o p
+         q r s
+        */
+        
+        double b = ff1[0][0];
+        double e = ff1[1][0];
+        double h = ff1[2][0];
+        double c = ff1[0][1];
+        double f = ff1[1][1];
+        double i = ff1[2][1];
+        double d = ff1[0][2];
+        double g = ff1[1][2];
+        double j = ff1[2][2];
+        
+        double k = ff2[0][0];
+        double n = ff2[1][0];
+        double q = ff2[2][0];
+        double l = ff2[0][1];
+        double o = ff2[1][1];
+        double r = ff2[2][1];
+        double m = ff2[0][2];
+        double p = ff2[1][2];
+        double s = ff2[2][2];
+        
+        double sum = h*o*m + h*p*l + i*n*m + j*o*k + q*f*m + q*g*l + q*p*c 
+            + r*e*m + r*n*d + r*p*k + r*p*k + r*p*k + s*b*o + s*k*f 
+            + s*n*l + s*n*l + s*n*l
+            - i*p*k - j*n*l - q*o*d - q*o*m - q*o*m - q*o*m
+            - q*p*l - q*p*l - q*p*l - r*g*k - r*n*m - r*n*m
+            - r*n*m - r*p*b - s*e*l - s*k*o - s*n*c - s*o*k
+            - s*o*k;
 
-        return a;
+        return sum;
     }
     
     private double calculateCubicRoot0thOrderCoefficientFor7Point(
         double[][] ff1, double[][] ff2) {
         
-        double a = ff2[0][0] * ff2[1][1] * ff2[2][2]
-            - ff2[0][0] * ff2[2][1] * ff2[1][2]
-            + ff2[1][0] * ff2[2][1] * ff2[0][2]
-            - ff2[1][0] * ff2[0][1] * ff2[2][2]
-            + ff2[2][0] * ff2[0][1] * ff2[1][2]
-            - ff2[2][0] * ff2[1][1] * ff1[0][2]
-            - ff2[2][0] * ff2[1][1] * ff2[0][2];
-
-        return a;
+        /*
+        f1 =
+         b c d
+         e f g
+         h i j
+        f2 =
+         k l m
+         n o p
+         q r s
+        */
+        
+        double k = ff2[0][0];
+        double n = ff2[1][0];
+        double q = ff2[2][0];
+        double l = ff2[0][1];
+        double o = ff2[1][1];
+        double r = ff2[2][1];
+        double m = ff2[0][2];
+        double p = ff2[1][2];
+        double s = ff2[2][2];
+        
+        double sum = q * o * m + q * p * l + r * n * m + s * o * k - r*p*k
+            - s*n*l;
+        
+        return sum;
     }
     
     Matrix calculateFundamentalMatrix(NormalizedXY normalizedXY1, 
