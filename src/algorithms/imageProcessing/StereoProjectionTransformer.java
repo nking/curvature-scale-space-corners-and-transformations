@@ -14,6 +14,8 @@ import java.util.Set;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 
+import org.ejml.simple.*;
+
 /**
  * class to solve for the epipoles for two images with stereo projection
  * and apply the solution.
@@ -408,7 +410,7 @@ public class StereoProjectionTransformer {
      * @param pointsRightXY 
      * @return  
      */
-    public Matrix[] calculateEpipolarProjectionFor7Points(
+    public Matrix calculateEpipolarProjectionFor7Points(
         PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
@@ -446,7 +448,7 @@ public class StereoProjectionTransformer {
      * @param theRightXY 
      * @return  
      */
-    public Matrix[] calculateEpipolarProjectionFor7Points(
+    public Matrix calculateEpipolarProjectionFor7Points(
         Matrix theLeftXY, Matrix theRightXY) {
         
         if (theLeftXY == null) {
@@ -476,58 +478,46 @@ public class StereoProjectionTransformer {
         
         NormalizedXY normalizedXY2 = normalize(rightXY);      
         
-        //build the fundamental matrix
-        Matrix aMatrix = new Matrix(createFundamentalMatrix(
-            normalizedXY1.getXy(), normalizedXY2.getXy()));
+        double[][] m = createFundamentalMatrix(
+            normalizedXY1.getXy(), normalizedXY2.getXy());
         
-        //calculate [U,D,V] from svd(A):
-        SingularValueDecomposition svd = aMatrix.svd();      
-        
-        Matrix V = svd.getV();
-                
-        // reshape V to 3x3 for both of the last columns of V to 
-        // =====> solve for the null space of the matrix <=====
-        
-        int vNCols = V.getColumnDimension();
+        SimpleMatrix aMatrix = new SimpleMatrix(m);
+        SimpleSVD svd = aMatrix.svd();
+        SimpleMatrix nullSpace = svd.nullSpace();
         
         double[][] ff1 = new double[3][3];
         double[][] ff2 = new double[3][3];
         for (int i = 0; i < 3; i++) {
+            
             ff1[i] = new double[3];
-            ff1[i][0] = V.get((i * 3) + 0, vNCols - 2);
-            ff1[i][1] = V.get((i * 3) + 1, vNCols - 2);
-            ff1[i][2] = V.get((i * 3) + 2, vNCols - 2);
+            ff1[i][0] = nullSpace.get((i * 3) + 0, 0);
+            ff1[i][1] = nullSpace.get((i * 3) + 1, 0);
+            ff1[i][2] = nullSpace.get((i * 3) + 2, 0);
+            
             ff2[i] = new double[3];
-            ff2[i][0] = V.get((i * 3) + 0, vNCols - 1);
-            ff2[i][1] = V.get((i * 3) + 1, vNCols - 1);
-            ff2[i][2] = V.get((i * 3) + 2, vNCols - 1);
+            ff2[i][0] = nullSpace.get((i * 3) + 0, 1);
+            ff2[i][1] = nullSpace.get((i * 3) + 1, 1);
+            ff2[i][2] = nullSpace.get((i * 3) + 2, 1);
         }
        
         Matrix[] solutions = solveFor7Point(ff1, ff2);
         
-        // ======== denormalize the solutions ========
-        /*
-        denormalize
-            F = (T_1)^T * F * T_2  
-            where T_1 is normalizedXY1.getNormalizationMatrix();
-            and T2 is normalizedXY2.getNormalizationMatrix();
-        */
+        //denormalize:  F = (T_1)^T * F * T_2  
+        //    T_1 is normalizedXY1.getNormalizationMatrix();
+        //    T2 is normalizedXY2.getNormalizationMatrix();
         
         Matrix[] denormalizedSolutions = new Matrix[solutions.length];
+                
+        Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
+        Matrix t2 = normalizedXY2.getNormalizationMatrix(); 
         
         int count = 0;
-        
-        // 3x3
-        Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
-        Matrix t2 = normalizedXY2.getNormalizationMatrix();        
-        for (int ii = 0; ii < solutions.length; ii++) {
-              
-            Matrix solution = solutions[ii];
-            
+        for (Matrix solution : solutions) {
+                        
             if (solution == null) {
                 continue;
             }
-            
+                        
             Matrix denormFundamentalMatrix = t1Transpose.times(
                 solution.times(t2));
         
@@ -543,7 +533,8 @@ public class StereoProjectionTransformer {
         Matrix[] validatedSolutions = validateSolutions(
             Arrays.copyOf(denormalizedSolutions, count));
 
-        return validatedSolutions;
+        return (validatedSolutions != null && validatedSolutions.length > 0) ?
+            validatedSolutions[0] : null;
     }
     
     /*
@@ -658,26 +649,32 @@ public class StereoProjectionTransformer {
         double a3 = calculateCubicRoot0thOrderCoefficientFor7Point(ff1, ff2);
         
         double[] roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
+        
+        /*
+        compare to http://www.csse.uwa.edu.au/~pk/research/matlabfns
+        vgg_multiview/private/vgg_singF_from_FF.m
+        */
+        
+        double[][] m = new double[3][];
+        for (int i = 0; i < 3; i++) {
+            m[i] = new double[3];
+        }
        
         Matrix[] solutions = new Matrix[roots.length];
         
-        Matrix f1 = new Matrix(ff1);
-        
-        Matrix f2 = new Matrix(ff2);
-
         for (int i = 0; i < roots.length; i++) {
             
             //Fi = a(i)*FF{1} + (1-a(i))*FF{2};
             
             double a = roots[i];
             
-            Matrix t0 = f1.times(a);
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 3; col++) {
+                    m[row][col] = a*ff1[row][col] + (1. - a)*ff2[row][col];
+                }
+            }
             
-            Matrix t1 = f2.times(1. - a);
-
-            solutions[i] = t0.plus(t1);
-
-            return solutions;
+            solutions[i] = new Matrix(m);
         }
         
         return solutions;

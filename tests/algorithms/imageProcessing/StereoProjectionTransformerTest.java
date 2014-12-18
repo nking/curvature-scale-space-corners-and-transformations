@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -658,6 +659,11 @@ public class StereoProjectionTransformerTest {
     
     @Test
     public void testH() throws Exception {
+                    
+        String fileName1 = "merton_college_I_001.jpg";
+        String fileName2 = "merton_college_I_002.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         
         PairFloatArray xy1 = new PairFloatArray();
         PairFloatArray xy2 = new PairFloatArray();
@@ -686,76 +692,80 @@ public class StereoProjectionTransformerTest {
         Matrix unnormXY1 = DataForTests.readMerton1UnnormalizedX1Data();
         // mRows = 3;  nCols = 484
         Matrix unnormXY2 = DataForTests.readMerton1UnnormalizedX2Data();
-        
-        
-        StereoProjectionTransformer spTransformer = 
-            new StereoProjectionTransformer();
-        
-        
-        Matrix[] solutions = spTransformer.calculateEpipolarProjectionFor7Points(
-            xy1, xy2);
-        Matrix fm = solutions[0];
-        
-        
-        unnormXY1 = spTransformer.rewriteInto3ColumnMatrix(xy1);
-        unnormXY2 = spTransformer.rewriteInto3ColumnMatrix(xy2);
-        //Matrix fm = spTransformer.calculateEpipolarProjection(unnormXY1, unnormXY2);
-        
+        /*
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        sr.setSeed(System.currentTimeMillis());
+        Set<String> chosen = new HashSet<String>();
+        int[] selected = new int[7];
+        */
+        for (int i = 0; i < 1; i++) {
             
-        String fileName1 = "merton_college_I_001.jpg";
-        String fileName2 = "merton_college_I_002.jpg";
-        
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        int image1Width = img1.getWidth();
-        int image1Height = img1.getHeight();
-       
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        
-        for (int i = 0; i < unnormXY1.getColumnDimension(); i++) {
-            double x = unnormXY1.get(0, i);
-            double y = unnormXY1.get(1, i);            
-            ImageIOHelper.addPointToImage((float)x, (float)y, img1, 3, 255, 0, 0);
-            double x2 = unnormXY2.get(0, i);
-            double y2 = unnormXY2.get(1, i);            
-            ImageIOHelper.addPointToImage((float)x2, (float)y2, img2, 3, 255, 0, 0);
-            //System.out.println(String.format("%f, %f  %f, %f", x, y, x2, y2));
-        }
-                
-        Color clr = null;
-        for (int i = 0; i < unnormXY2.getColumnDimension(); i++) {
-            
-            clr = getColor(clr);
+            StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
+/*
+            chooseRandomly(sr, selected, chosen, 484);
+            xy1 = new PairFloatArray();
+            xy2 = new PairFloatArray();
+            for (int j = 0; j < selected.length; j++) {
+                int idx = selected[j];
+                xy1.add((float)unnormXY1.get(0, idx), (float)unnormXY1.get(1, idx));
+                xy2.add((float)unnormXY2.get(0, idx), (float)unnormXY2.get(1, idx));
+            }
+ */           
+            Matrix fm = spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);
+            //Matrix fm = spTransformer.calculateEpipolarProjection(xy1, xy2);
+                           
+            Matrix input1 = spTransformer.rewriteInto3ColumnMatrix(xy1);
+            Matrix input2 = spTransformer.rewriteInto3ColumnMatrix(xy2);
 
-            Matrix epipolarLinesInLeft = fm.transpose().times(unnormXY2);
-        
-            PairIntArray leftLine = spTransformer.getEpipolarLine(
-                epipolarLinesInLeft, image1Width, image1Height, i);
+            for (int row = 0; row < fm.getRowDimension(); row++) {
+                StringBuilder sb = new StringBuilder();
+                for (int col = 0; col < fm.getColumnDimension(); col++) {
+                    sb.append(fm.get(row, col)).append(", ");
+                }
+                System.out.println(row + ") " + sb.toString());
+            }
             
-            ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
-                clr.getRed(), clr.getGreen(), clr.getBlue());            
+            Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+            int image1Width = img1.getWidth();
+            int image1Height = img1.getHeight();
+            Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+
+            for (int ii = 0; ii < input1.getColumnDimension(); ii++) {
+                double x = input1.get(0, ii);
+                double y = input1.get(1, ii);            
+                ImageIOHelper.addPointToImage((float)x, (float)y, img1, 3, 255, 0, 0);
+                double x2 = input2.get(0, ii);
+                double y2 = input2.get(1, ii);            
+                ImageIOHelper.addPointToImage((float)x2, (float)y2, img2, 3, 255, 0, 0);
+                //System.out.println(String.format("%f, %f  %f, %f", x, y, x2, y2));
+            }
+
+            Color clr = null;
+            for (int ii = 0; ii < input2.getColumnDimension(); ii++) {
+                clr = getColor(clr);
+                Matrix epipolarLinesInLeft = fm.transpose().times(input2);
+                PairIntArray leftLine = spTransformer.getEpipolarLine(
+                    epipolarLinesInLeft, image1Width, image1Height, ii);            
+                ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
+                    clr.getRed(), clr.getGreen(), clr.getBlue());            
+            }
+
+            clr = null;
+            for (int ii = 0; ii < input1.getColumnDimension(); ii++) {
+                clr = getColor(clr);                        
+                Matrix epipolarLinesInRight = fm.times(input1);
+                PairIntArray rightLine = spTransformer.getEpipolarLine(
+                    epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);                                
+                ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
+                    clr.getRed(), clr.getGreen(), clr.getBlue());  
+            }
+
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/tmp_m_1_" + i + ".png", img1);
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/tmp_m_2_" + i + ".png", img2);
         }
-        
-        clr = null;
-        for (int i = 0; i < unnormXY1.getColumnDimension(); i++) {
-            
-            clr = getColor(clr);
-                        
-            Matrix epipolarLinesInRight = fm.times(unnormXY1);
-        
-            PairIntArray rightLine = spTransformer.getEpipolarLine(
-                epipolarLinesInRight, img2.getWidth(), img2.getHeight(), i);
-                                
-            ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
-                clr.getRed(), clr.getGreen(), clr.getBlue());  
-        }
-        
-        String dirPath = ResourceFinder.findDirectory("bin");
-        
-        ImageIOHelper.writeOutputImage(dirPath + "/tmp_m" + "_1.png", img1);
-        
-        ImageIOHelper.writeOutputImage(dirPath + "/tmp_m" + "_2.png", img2);
     }
     
     private void chooseRandomly(SecureRandom sr, int[] selected, 
@@ -960,7 +970,7 @@ public class StereoProjectionTransformerTest {
             //test.testG();
             
             test.testH();
-            
+                        
         } catch(Exception e) {
             e.printStackTrace();
             System.out.println(e.getMessage());

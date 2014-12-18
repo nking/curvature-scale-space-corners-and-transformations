@@ -494,6 +494,7 @@
         
         <mkdir dir="${classes.dir}/tmp" />
         <unjar src="${lib.dir}/Jama-1.0.3.jar" dest="${classes.dir}/tmp"/>
+        <unjar src="${lib.dir}/ejml-0.25.jar" dest="${classes.dir}/tmp"/>
         
         <jar destfile="${classes.dir}/scalespace_${TS}.jar" manifest="${jar.mf}">
             <fileset dir="${src.out.dir}" includes="**"/>
