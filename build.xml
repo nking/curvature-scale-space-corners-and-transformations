@@ -493,7 +493,6 @@
         </tstamp>
         
         <mkdir dir="${classes.dir}/tmp" />
-        <unjar src="${lib.dir}/Jama-1.0.3.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/ejml-0.25.jar" dest="${classes.dir}/tmp"/>
         
         <jar destfile="${classes.dir}/scalespace_${TS}.jar" manifest="${jar.mf}">
@@ -501,7 +500,7 @@
             <fileset dir="${resources.dir}" includes="*.html"/>
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
-            <fileset dir="${lib.dir}" includes="Jama_LICENSE.txt"/>
+            <fileset dir="${lib.dir}" includes="EJML_LICENSE.txt"/>
             <fileset dir="${classes.dir}/tmp" includes="**"/>
         </jar>
         

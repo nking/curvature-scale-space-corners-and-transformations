@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import Jama.Matrix;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
@@ -13,6 +12,7 @@ import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 import org.junit.Test;
+import org.ejml.simple.*;
 
 /**
  *
@@ -371,7 +371,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         double[][] xyM = new double[3][4];
         xyM[0] = new double[]{1, 9, 9, 1};
         xyM[1] = new double[]{1, 1, 5, 5};
-        Matrix xyMatrix = new Matrix(xyM);
+        SimpleMatrix xyMatrix = new SimpleMatrix(xyM);
         
         cenXY = helper.calculateXYCentroids(xyMatrix);
         assertTrue(cenXY[0] == 5.0);

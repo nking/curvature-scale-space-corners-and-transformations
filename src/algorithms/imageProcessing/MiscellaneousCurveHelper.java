@@ -4,12 +4,12 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayComparator;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArrayWithColor;
-import Jama.Matrix;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
 import java.util.logging.Logger;
+import org.ejml.simple.*;
 
 /**
  * 
@@ -589,12 +589,12 @@ public class MiscellaneousCurveHelper {
      * @param xy a 3 x N matrix with column 0 being x and column 1 being y.
      * @return 
      */
-    public double[] calculateXYCentroids(Matrix xy) {
+    public double[] calculateXYCentroids(SimpleMatrix xy) {
         
         double xc = 0;
         double yc = 0;
         
-        int n = xy.getColumnDimension();
+        int n = xy.numCols();
         
         for (int i = 0; i < n; i++) {
             

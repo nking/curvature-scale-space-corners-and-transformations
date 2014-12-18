@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import Jama.Matrix;
 import algorithms.util.ResourceFinder;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
@@ -17,6 +16,7 @@ import org.junit.After;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
+import org.ejml.simple.*;
 
 /**
  *
@@ -282,10 +282,10 @@ public class StereoProjectionTransformerTest {
         */
         
         // mRows = 3;  nCols = 484
-        Matrix unnormXY1 = DataForTests.readMerton1UnnormalizedX1Data();
+        SimpleMatrix unnormXY1 = DataForTests.readMerton1UnnormalizedX1Data();
         
         // mRows = 3;  nCols = 484
-        Matrix unnormXY2 = DataForTests.readMerton1UnnormalizedX2Data();
+        SimpleMatrix unnormXY2 = DataForTests.readMerton1UnnormalizedX2Data();
         
         StereoProjectionTransformer spTransformer = 
             new StereoProjectionTransformer();
@@ -304,7 +304,7 @@ public class StereoProjectionTransformerTest {
         
         double[] rightEpipole = spTransformer.getRightEpipole();
     
-        int nPoints = spTransformer.getEpipolarLinesInLeft().getColumnDimension();
+        int nPoints = spTransformer.getEpipolarLinesInLeft().numCols();
         
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
@@ -355,7 +355,7 @@ public class StereoProjectionTransformerTest {
         StereoProjectionTransformerFit fit = spTransformer.evaluateFitForRight(
             3);
         
-        assertTrue(fit.getNMatches() == unnormXY1.getColumnDimension());
+        assertTrue(fit.getNMatches() == unnormXY1.numCols());
     }
     
     //@Test
@@ -689,9 +689,15 @@ public class StereoProjectionTransformerTest {
         //xy2.add(78.059000f, 253.928000f);
         
         // mRows = 3;  nCols = 484
-        Matrix unnormXY1 = DataForTests.readMerton1UnnormalizedX1Data();
+        SimpleMatrix unnormXY1 = DataForTests.readMerton1UnnormalizedX1Data();
         // mRows = 3;  nCols = 484
-        Matrix unnormXY2 = DataForTests.readMerton1UnnormalizedX2Data();
+        SimpleMatrix unnormXY2 = DataForTests.readMerton1UnnormalizedX2Data();
+        xy1 = new PairFloatArray();
+        xy2 = new PairFloatArray();
+        for (int j = 0; j < unnormXY1.numCols(); j++) {
+            xy1.add((float) unnormXY1.get(0, j), (float) unnormXY1.get(1, j));
+            xy2.add((float) unnormXY2.get(0, j), (float) unnormXY2.get(1, j));
+        }
         /*
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(System.currentTimeMillis());
@@ -711,15 +717,15 @@ public class StereoProjectionTransformerTest {
                 xy2.add((float)unnormXY2.get(0, idx), (float)unnormXY2.get(1, idx));
             }
  */           
-            Matrix fm = spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);
-            //Matrix fm = spTransformer.calculateEpipolarProjection(xy1, xy2);
-                           
-            Matrix input1 = spTransformer.rewriteInto3ColumnMatrix(xy1);
-            Matrix input2 = spTransformer.rewriteInto3ColumnMatrix(xy2);
+            //SimpleMatrix fm = spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);
+            SimpleMatrix fm = spTransformer.calculateEpipolarProjection(xy1, xy2);
+            
+            SimpleMatrix input1 = spTransformer.rewriteInto3ColumnMatrix(xy1);
+            SimpleMatrix input2 = spTransformer.rewriteInto3ColumnMatrix(xy2);
 
-            for (int row = 0; row < fm.getRowDimension(); row++) {
+            for (int row = 0; row < fm.numRows(); row++) {
                 StringBuilder sb = new StringBuilder();
-                for (int col = 0; col < fm.getColumnDimension(); col++) {
+                for (int col = 0; col < fm.numCols(); col++) {
                     sb.append(fm.get(row, col)).append(", ");
                 }
                 System.out.println(row + ") " + sb.toString());
@@ -730,7 +736,7 @@ public class StereoProjectionTransformerTest {
             int image1Height = img1.getHeight();
             Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
 
-            for (int ii = 0; ii < input1.getColumnDimension(); ii++) {
+            for (int ii = 0; ii < input1.numCols(); ii++) {
                 double x = input1.get(0, ii);
                 double y = input1.get(1, ii);            
                 ImageIOHelper.addPointToImage((float)x, (float)y, img1, 3, 255, 0, 0);
@@ -741,9 +747,9 @@ public class StereoProjectionTransformerTest {
             }
 
             Color clr = null;
-            for (int ii = 0; ii < input2.getColumnDimension(); ii++) {
+            for (int ii = 0; ii < input2.numCols(); ii++) {
                 clr = getColor(clr);
-                Matrix epipolarLinesInLeft = fm.transpose().times(input2);
+                SimpleMatrix epipolarLinesInLeft = fm.transpose().mult(input2);
                 PairIntArray leftLine = spTransformer.getEpipolarLine(
                     epipolarLinesInLeft, image1Width, image1Height, ii);            
                 ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
@@ -751,9 +757,9 @@ public class StereoProjectionTransformerTest {
             }
 
             clr = null;
-            for (int ii = 0; ii < input1.getColumnDimension(); ii++) {
+            for (int ii = 0; ii < input1.numCols(); ii++) {
                 clr = getColor(clr);                        
-                Matrix epipolarLinesInRight = fm.times(input1);
+                SimpleMatrix epipolarLinesInRight = fm.mult(input1);
                 PairIntArray rightLine = spTransformer.getEpipolarLine(
                     epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);                                
                 ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
@@ -806,16 +812,16 @@ public class StereoProjectionTransformerTest {
         Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
         Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
                     
-        Matrix theLeftPoints = spTransformer.rewriteInto3ColumnMatrix(matched1);
-        Matrix theRightEpipolarLines = spTransformer.calculateEpipolarRightLines(
+        SimpleMatrix theLeftPoints = spTransformer.rewriteInto3ColumnMatrix(matched1);
+        SimpleMatrix theRightEpipolarLines = spTransformer.calculateEpipolarRightLines(
             theLeftPoints);
         
-        Matrix theRightPoints = spTransformer.rewriteInto3ColumnMatrix(matched2);
-        Matrix theLeftEpipolarLines = spTransformer.calculateEpipolarLeftLines(
+        SimpleMatrix theRightPoints = spTransformer.rewriteInto3ColumnMatrix(matched2);
+        SimpleMatrix theLeftEpipolarLines = spTransformer.calculateEpipolarLeftLines(
             theRightPoints);
         
         Color clr = null;
-        for (int i = 0; i < theLeftEpipolarLines.getColumnDimension(); i++) {
+        for (int i = 0; i < theLeftEpipolarLines.numCols(); i++) {
             
             clr = getColor(clr);
             
@@ -835,7 +841,7 @@ public class StereoProjectionTransformerTest {
         
         clr = null;
         
-        for (int i = 0; i < theRightEpipolarLines.getColumnDimension(); i++) {
+        for (int i = 0; i < theRightEpipolarLines.numCols(); i++) {
             
             clr = getColor(clr);
             

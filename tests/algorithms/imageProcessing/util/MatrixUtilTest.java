@@ -1,11 +1,11 @@
 package algorithms.imageProcessing.util;
 
-import Jama.Matrix;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
-
+import org.ejml.simple.*;
+    
 /**
  *
  * @author nichole
@@ -44,7 +44,8 @@ public class MatrixUtilTest {
         1000*2 + 100*3 + 10*4    1000*1 +  100*0 + 10*0
         */
        
-        double[][] m = MatrixUtil.dot(new Matrix(m1), new Matrix(m2));
+        double[][] m = MatrixUtil.dot(new SimpleMatrix(m1), 
+            new SimpleMatrix(m2));
         
         assertTrue(m.length == 2);
         assertTrue(m[0].length == 2);

@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.util;
 
-import Jama.Matrix;
+import org.ejml.simple.*;
 
 /**
  *
@@ -45,7 +45,7 @@ public class MatrixUtil {
         return c;
     }
     
-    public static double[][] dot(Matrix m1, Matrix m2) {
+    public static double[][] dot(SimpleMatrix m1, SimpleMatrix m2) {
         
         if (m1 == null) {
             throw new IllegalArgumentException("m1 cannot be null");
@@ -53,13 +53,13 @@ public class MatrixUtil {
         if (m2 == null) {
             throw new IllegalArgumentException("m2 cannot be null");
         }
-        if (m1.getColumnDimension() != m2.getRowDimension()) {
+        if (m1.numCols() != m2.numRows()) {
             throw new IllegalArgumentException(
                 "the number of columns in m1 != number of rows in m2");
         }
         
-        int cCols = m2.getColumnDimension();
-        int cRows = m1.getRowDimension();
+        int cCols = m2.numCols();
+        int cRows = m1.numRows();
         
         // m1 dot m2
         double[][] m = new double[cRows][cCols];
@@ -75,9 +75,9 @@ public class MatrixUtil {
         1000*2 + 100*3 + 10*4    1000*1 +  100*0 + 10*0
         */
                 
-        for (int colAdd = 0; colAdd < m2.getColumnDimension(); colAdd++) {
+        for (int colAdd = 0; colAdd < m2.numCols(); colAdd++) {
             for (int cRow = 0; cRow < cRows; cRow++) {
-                for (int col = 0; col < m1.getColumnDimension(); col++) {
+                for (int col = 0; col < m1.numCols(); col++) {
                 
                     // a[0][0]  b[0][0]
                     // a[0][1]  b[1][0]

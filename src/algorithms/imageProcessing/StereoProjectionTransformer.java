@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairFloatArray;
-import Jama.*;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
@@ -13,7 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
-
 import org.ejml.simple.*;
 
 /**
@@ -133,11 +131,11 @@ public class StereoProjectionTransformer {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    private Matrix leftXY = null;
+    private SimpleMatrix leftXY = null;
         
-    private Matrix rightXY = null;
+    private SimpleMatrix rightXY = null;
         
-    private Matrix fundamentalMatrix = null;
+    private SimpleMatrix fundamentalMatrix = null;
     
     private double[] leftEpipole = null;
     
@@ -148,19 +146,18 @@ public class StereoProjectionTransformer {
      * Each column corresponds to a point in leftXY and rightXY which are
      * in the same column.
      */
-    private Matrix epipolarLinesInRight = null;
+    private SimpleMatrix epipolarLinesInRight = null;
     
     /**
-     * calculate the epipolar projection for a set of matched points that are
-     * at least 9 points in length.
+     * calculate the epipolar projection for a set of 8 or more matched points.
      * 
      * each row is an epipolar line in the left image.
      * Each column corresponds to a point in leftXY and rightXY which are
      * in the same column.
      */
-    private Matrix epipolarLinesInLeft = null;
+    private SimpleMatrix epipolarLinesInLeft = null;
    
-    public Matrix calculateEpipolarProjection(PairFloatArray pointsLeftXY, 
+    public SimpleMatrix calculateEpipolarProjection(PairFloatArray pointsLeftXY, 
         PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
@@ -174,56 +171,56 @@ public class StereoProjectionTransformer {
                 "refactorLeftXY and refactorRightXY must be same size");
         }
         
-        if (pointsLeftXY.getN() < 8) {
+        if (pointsLeftXY.getN() == 7) {
+            return calculateEpipolarProjectionFor7Points(pointsLeftXY, 
+                pointsRightXY);
+        }
+        
+        if (pointsLeftXY.getN() < 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
-                "the 8-point problem requires 8 or more points." 
+                "the algorithms require 7 or more points." 
                 + " refactorLeftXY.n=" + pointsLeftXY.getN());
         }
         
-        /*
-        note that the Jama matrix convention is new Matrix(mRows, nCols)
-        */
-    
         return calculateEpipolarProjection(
             rewriteInto3ColumnMatrix(pointsLeftXY), 
             rewriteInto3ColumnMatrix(pointsRightXY));
     }
     
     /**
-     * calculate the epipolar projection for a set of matched points that are
-     * at least 9 points in length.
+     * calculate the epipolar projection for a set of 8 or more matched points.
      * 
      * @param theLeftXY
      * @param theRightXY
      * @return 
      */
-    public Matrix calculateEpipolarProjection(Matrix theLeftXY, 
-        Matrix theRightXY) {
-        
-        //TODO: follow up on 8 points
-            
+    public SimpleMatrix calculateEpipolarProjection(SimpleMatrix theLeftXY, 
+        SimpleMatrix theRightXY) {
+                    
         if (theLeftXY == null) {
             throw new IllegalArgumentException("theLeftXY cannot be null");
         }
         if (theRightXY == null) {
             throw new IllegalArgumentException("refactorRightXY cannot be null");
         }
-        if (theLeftXY.getColumnDimension()!= theRightXY.getColumnDimension()) {
+        if (theLeftXY.numCols()!= theRightXY.numCols()) {
             throw new IllegalArgumentException(
                 "theLeftXY and theRightXY must be same size");
         }
         
-        if (theLeftXY.getColumnDimension() < 9) {
-            // cannot use this algorithm.
-            throw new IllegalArgumentException(
-                "requires more than 8 points." 
-                + " refactorLeftXY.n=" +theLeftXY.getColumnDimension());
+        if (theLeftXY.numCols() == 7) {
+            return calculateEpipolarProjectionFor7Points(theLeftXY, theRightXY);
         }
         
-        /*
-        note that the Jama matrix convention is new Matrix(mRows, nCols)
-        */
+        if (theLeftXY.numCols() < 7) {
+            // cannot use this algorithm.
+            throw new IllegalArgumentException(
+                "the algorithms require 7 or more points." 
+                + " refactorLeftXY.n=" +theLeftXY.numCols());
+        }
+        
+        //the matrix convention is [mRows][nCols]
         
         leftXY = theLeftXY;
         
@@ -274,7 +271,7 @@ public class StereoProjectionTransformer {
      * @param pointsLeftXY
      * @param pointsRightXY 
      */
-    public Matrix calculateEpipolarProjectionWithoutNormalization(
+    public SimpleMatrix calculateEpipolarProjectionWithoutNormalization(
         PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
@@ -297,9 +294,7 @@ public class StereoProjectionTransformer {
                 + " refactorLeftXY.n=" + pointsLeftXY.getN());
         }
         
-        /*
-        note that the Jama matrix convention is new Matrix(mRows, nCols)
-        */
+        //the matrix convention is [mRows][nCols]
         
         leftXY = rewriteInto3ColumnMatrix(pointsLeftXY);
         
@@ -322,8 +317,8 @@ public class StereoProjectionTransformer {
         return fundamentalMatrix;
     }
     
-    protected Matrix calculateFundamentalMatrix(Matrix leftXY, 
-        Matrix rightXY) {
+    protected SimpleMatrix calculateFundamentalMatrix(SimpleMatrix leftXY, 
+        SimpleMatrix rightXY) {
         
         //x is xy[0], y is xy[1], xy[2] is all 1's
         NormalizedXY normalizedXY1 = normalize(leftXY);
@@ -372,28 +367,6 @@ public class StereoProjectionTransformer {
     a*ff1[1][0] + (1-a)*ff2[1][0]   a*ff1[1][1] + (1-a)*ff2[1][1]   a*ff1[1][2] + (1-a)*ff2[1][2]
     a*ff1[2][0] + (1-a)*ff2[2][0]   a*ff1[2][1] + (1-a)*ff2[2][1]   a*ff1[2][2] + (1-a)*ff2[2][2]
         
-   Determinant of the sums:
-
-    (a*ff1[0][0] + (1-a)*ff2[0][0]) *
-        ((a*ff1[1][1] + (1-a)*ff2[1][1])*(a*ff1[2][2] + (1-a)*ff2[2][2])
-         - (a*ff1[2][1] + (1-a)*ff2[2][1])*(a*ff1[1][2] + (1-a)*ff2[1][2]))
-    - (a*ff1[1][0] + (1-a)*ff2[1][0]) *
-        ((a*ff1[0][1] + (1-a)*ff2[0][1])*(a*ff1[2][2] + (1-a)*ff2[2][2]))
-        - (a*ff1[2][1] + (1-a)*ff2[2][1])*(a*ff1[0][2] + (1-a)*ff2[0][2]))
-    + (a*ff1[2][0] + (1-a)*ff2[2][0]) *
-        ((a*ff1[0][1] + (1-a)*ff2[0][1])*(a*ff1[1][2] + (1-a)*ff2[1][2])
-        - (a*ff1[1][1] + (1-a)*ff2[1][1])*(a*ff1[0][2] + (1-a)*ff2[0][2]))
-    
-    = (a*ff1[0][0] + (1-a)*ff2[0][0]) *
-        (a*ff1[1][1] + ff2[1][1] - a*ff2[1][1]) * (a*ff1[2][2] + ff2[2][2] - a*ff2[2][2])
-       -(a*ff1[2][1] + ff2[2][1] -a*ff2[2][1]) * (a*ff1[1][2] + ff2[1][2] - a*ff2[1][2])
-    -(a*ff1[1][0] + (1-a)*ff2[1][0]) *
-        (a*ff1[0][1] + ff2[0][1] - a*ff2[0][1]) * (a*ff1[2][2] + ff2[2][2] - a*ff2[2][2])
-       -(a*ff1[2][1] + ff2[2][1] - a*ff2[2][1]) * (a*ff1[0][2] + ff2[0][2] - a*ff2[0][2])
-    +(a*ff1[2][0] + (1-a)*ff2[2][0]) *
-        (a*ff1[0][1] + ff2[0][1] - a*ff2[0][1]) * (a*ff1[1][2] + ff2[1][2] - a*ff2[1][2])
-       -(a*ff1[1][1] + ff2[1][1] - a*ff2[1][1]) * (*ff1[0][2] + ff2[0][2] - a*ff2[0][2])
-    
     The terms are further grouped below in methods
        calculateCubicRoot...OrderCoefficientFor7Point(ff1, ff2)
     
@@ -410,7 +383,7 @@ public class StereoProjectionTransformer {
      * @param pointsRightXY 
      * @return  
      */
-    public Matrix calculateEpipolarProjectionFor7Points(
+    public SimpleMatrix calculateEpipolarProjectionFor7Points(
         PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
@@ -431,10 +404,6 @@ public class StereoProjectionTransformer {
                 + " refactorLeftXY.n=" + pointsLeftXY.getN());
         }
         
-        /*
-        note that the Jama matrix convention is new Matrix(mRows, nCols)
-        */
-        
         return calculateEpipolarProjectionFor7Points(
             rewriteInto3ColumnMatrix(pointsLeftXY), 
             rewriteInto3ColumnMatrix(pointsRightXY));
@@ -448,8 +417,8 @@ public class StereoProjectionTransformer {
      * @param theRightXY 
      * @return  
      */
-    public Matrix calculateEpipolarProjectionFor7Points(
-        Matrix theLeftXY, Matrix theRightXY) {
+    public SimpleMatrix calculateEpipolarProjectionFor7Points(
+        SimpleMatrix theLeftXY, SimpleMatrix theRightXY) {
         
         if (theLeftXY == null) {
             throw new IllegalArgumentException("refactorLeftXY cannot be null");
@@ -457,16 +426,16 @@ public class StereoProjectionTransformer {
         if (theRightXY == null) {
             throw new IllegalArgumentException("refactorRightXY cannot be null");
         }
-        if (theLeftXY.getRowDimension() != theRightXY.getRowDimension()) {
+        if (theLeftXY.numRows() != theRightXY.numRows()) {
             throw new IllegalArgumentException(
                 "theLeftXY and theRightXY must be same size");
         }
         
-        if (theRightXY.getRowDimension() == 7) {
+        if (theRightXY.numRows() == 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the 7-point problem requires 7 points." 
-                + " theLeftXY.n=" + theLeftXY.getRowDimension());
+                + " theLeftXY.n=" + theLeftXY.numRows());
         }
         
         leftXY = theLeftXY;
@@ -482,7 +451,7 @@ public class StereoProjectionTransformer {
             normalizedXY1.getXy(), normalizedXY2.getXy());
         
         SimpleMatrix aMatrix = new SimpleMatrix(m);
-        SimpleSVD svd = aMatrix.svd();
+        SimpleSVD<SimpleMatrix> svd = aMatrix.svd();
         SimpleMatrix nullSpace = svd.nullSpace();
         
         double[][] ff1 = new double[3][3];
@@ -500,37 +469,37 @@ public class StereoProjectionTransformer {
             ff2[i][2] = nullSpace.get((i * 3) + 2, 1);
         }
        
-        Matrix[] solutions = solveFor7Point(ff1, ff2);
+        SimpleMatrix[] solutions = solveFor7Point(ff1, ff2);
         
         //denormalize:  F = (T_1)^T * F * T_2  
         //    T_1 is normalizedXY1.getNormalizationMatrix();
         //    T2 is normalizedXY2.getNormalizationMatrix();
         
-        Matrix[] denormalizedSolutions = new Matrix[solutions.length];
-                
-        Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
-        Matrix t2 = normalizedXY2.getNormalizationMatrix(); 
+        SimpleMatrix[] denormalizedSolutions = new SimpleMatrix[solutions.length];
+
+        SimpleMatrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
+        SimpleMatrix t2 = normalizedXY2.getNormalizationMatrix(); 
         
         int count = 0;
-        for (Matrix solution : solutions) {
+        for (SimpleMatrix solution : solutions) {
                         
             if (solution == null) {
                 continue;
             }
-                        
-            Matrix denormFundamentalMatrix = t1Transpose.times(
-                solution.times(t2));
+            
+            SimpleMatrix denormFundamentalMatrix = t1Transpose.mult(
+                solution.mult(t2));
         
-            denormFundamentalMatrix = denormFundamentalMatrix.times(
+            denormFundamentalMatrix = denormFundamentalMatrix.scale(
                 1./denormFundamentalMatrix.get(2, 2));
-                            
+            
             denormalizedSolutions[count] = denormFundamentalMatrix.transpose();
             
             count++;
         }
 
         // ======== validate the solutions ========
-        Matrix[] validatedSolutions = validateSolutions(
+        SimpleMatrix[] validatedSolutions = validateSolutions(
             Arrays.copyOf(denormalizedSolutions, count));
 
         return (validatedSolutions != null && validatedSolutions.length > 0) ?
@@ -597,12 +566,12 @@ public class StereoProjectionTransformer {
     http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.32.9013&rep=rep1&type=pdf
         
     */
-    private Matrix[] validateSolutions(Matrix[] solutions) {
+    private SimpleMatrix[] validateSolutions(SimpleMatrix[] solutions) {
         
-        Matrix[] validated = new Matrix[solutions.length];
+        SimpleMatrix[] validated = new SimpleMatrix[solutions.length];
         
         int count = 0;
-        for (Matrix solution : solutions) {
+        for (SimpleMatrix solution : solutions) {
             
             boolean valid = true;
 
@@ -612,8 +581,8 @@ public class StereoProjectionTransformer {
             double[] testE1 = leftRightEpipoles[0];
             double[] testE2 = leftRightEpipoles[1];
                         
-            Matrix testRightEpipolarLines = solution.times(leftXY);
-            Matrix testLeftEpipolarLines = solution.transpose().times(rightXY);
+            SimpleMatrix testRightEpipolarLines = solution.mult(leftXY);
+            SimpleMatrix testLeftEpipolarLines = solution.transpose().mult(rightXY);
             
             //(F*x2) .* l1 ==>  (solution * rightXY) .* (testE1 * leftXY)
             // '.*' is mattlab notation to operate on each field
@@ -623,10 +592,10 @@ public class StereoProjectionTransformer {
             // column 1 is y
             // column 2 is all 1's
             */
-            Matrix t1 = solution.times(rightXY);
+            SimpleMatrix t1 = solution.mult(rightXY);
             
             //(a*x1 +b*y1 + c)  (a*x2 + b*y2 + c)  (a*x3 + b*y3 + c)
-            double[] t2 = MatrixUtil.multiply(leftXY.getArray(), testE1);
+            //double[] t2 = MatrixUtil.multiply(leftXY.getArray(), testE1);
             
             double sum = 0;
             
@@ -641,7 +610,7 @@ public class StereoProjectionTransformer {
         return validated;
     }
      
-    private Matrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
+    private SimpleMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
      
         double a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);
         double a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);
@@ -650,17 +619,12 @@ public class StereoProjectionTransformer {
         
         double[] roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
         
-        /*
-        compare to http://www.csse.uwa.edu.au/~pk/research/matlabfns
-        vgg_multiview/private/vgg_singF_from_FF.m
-        */
-        
         double[][] m = new double[3][];
         for (int i = 0; i < 3; i++) {
             m[i] = new double[3];
         }
        
-        Matrix[] solutions = new Matrix[roots.length];
+        SimpleMatrix[] solutions = new SimpleMatrix[roots.length];
         
         for (int i = 0; i < roots.length; i++) {
             
@@ -674,7 +638,7 @@ public class StereoProjectionTransformer {
                 }
             }
             
-            solutions[i] = new Matrix(m);
+            solutions[i] = new SimpleMatrix(m);
         }
         
         return solutions;
@@ -829,12 +793,12 @@ public class StereoProjectionTransformer {
         return sum;
     }
     
-    Matrix calculateFundamentalMatrix(NormalizedXY normalizedXY1, 
+    SimpleMatrix calculateFundamentalMatrix(NormalizedXY normalizedXY1, 
         NormalizedXY normalizedXY2) {
         
         //build the fundamental matrix
-        Matrix aMatrix = new Matrix(createFundamentalMatrix(
-            normalizedXY1.getXy(), normalizedXY2.getXy()));
+        double[][] m = createFundamentalMatrix(normalizedXY1.getXy(), 
+            normalizedXY2.getXy());
 
         /*
         compute linear least square solution:
@@ -845,21 +809,19 @@ public class StereoProjectionTransformer {
            result has mRows = number of data points
                       nCols = 9
         */
-        SingularValueDecomposition svd = aMatrix.svd();
+        SimpleMatrix aMatrix = new SimpleMatrix(m);
+        SimpleSVD<SimpleMatrix> svd = aMatrix.svd();
+        SimpleMatrix V = svd.getV();
 
         // creates U as 9 x nXY1 matrix
         //         D as length 9 array
         //         V as 9 x 9 matrix
         
         // mRows = 9; nCols = 9
-        Matrix V = svd.getV();
-        
-        assert(V.getColumnDimension() == 9);
-        assert(V.getRowDimension() == 9);
         
         // reshape V to 3x3
         
-        int vNCols = V.getColumnDimension();
+        int vNCols = V.numCols();
         
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
@@ -868,7 +830,7 @@ public class StereoProjectionTransformer {
             ff[i][1] = V.get((i * 3) + 1, vNCols - 1);
             ff[i][2] = V.get((i * 3) + 2, vNCols - 1);
         }
-        Matrix fMatrix = new Matrix(ff);
+        SimpleMatrix fMatrix = new SimpleMatrix(ff);
         
         /* make the fundamental matrix have a rank of 2
         by performing a svd and then reconstructing with the two largest 
@@ -884,7 +846,7 @@ public class StereoProjectionTransformer {
         //         D as length 3 array
         //         V as 3 x 3 matrix
         
-        Matrix d = svd.getS();
+        SimpleMatrix d = svd.getW();
         
         // remove the smallest singular value from D, making it rank 2
         double[] keep = new double[]{d.get(0, 0), d.get(1, 1), d.get(2, 2)};
@@ -897,10 +859,10 @@ public class StereoProjectionTransformer {
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */               
-        Matrix dDotV = d.times(svd.getV().transpose());
+        SimpleMatrix dDotV = d.mult(svd.getV().transpose());
         
         // 3x3        
-        Matrix theFundamentalMatrix = svd.getU().times(dDotV);
+        SimpleMatrix theFundamentalMatrix = svd.getU().mult(dDotV);
         
         /*
         denormalize
@@ -910,17 +872,17 @@ public class StereoProjectionTransformer {
         */
         
         // 3x3
-        Matrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
-        Matrix t2 = normalizedXY2.getNormalizationMatrix();
+        SimpleMatrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
+        SimpleMatrix t2 = normalizedXY2.getNormalizationMatrix();
         
-        Matrix denormFundamentalMatrix = t1Transpose.times(
-            theFundamentalMatrix.times(t2));
+        SimpleMatrix denormFundamentalMatrix = t1Transpose.mult(
+            theFundamentalMatrix.mult(t2));
         
-        denormFundamentalMatrix = denormFundamentalMatrix.times(
+        denormFundamentalMatrix = denormFundamentalMatrix.scale(
             1./denormFundamentalMatrix.get(2, 2));
         
         return denormFundamentalMatrix;
-    }   
+    }
     
     /**
      * calculate the fundamental matrix without normalization.  Note, this
@@ -930,11 +892,11 @@ public class StereoProjectionTransformer {
      * @param matchedXY2
      * @return 
      */
-    Matrix calculateFundamentalMatrixWithoutNormalization(Matrix matchedXY1, 
-        Matrix matchedXY2) {
+    SimpleMatrix calculateFundamentalMatrixWithoutNormalization(
+        SimpleMatrix matchedXY1, SimpleMatrix matchedXY2) {
         
         //build the fundamental matrix
-        Matrix aMatrix = new Matrix(createFundamentalMatrix(
+        SimpleMatrix aMatrix = new SimpleMatrix(createFundamentalMatrix(
             matchedXY1, matchedXY2));
 
         /*
@@ -946,17 +908,16 @@ public class StereoProjectionTransformer {
            result has mRows = number of data points
                       nCols = 9
         */
-        SingularValueDecomposition svd = aMatrix.svd();
+        SimpleSVD<SimpleMatrix> svd = aMatrix.svd();
 
         // creates U as 9 x nXY1 matrix
         //         D as length 9 array
         //         V as 9 x 9 matrix
         
         // mRows = 9; nCols = 9
-        Matrix V = svd.getV();
-        int vNCols = V.getColumnDimension();
-        assert(V.getColumnDimension() == 9);
-        assert(V.getRowDimension() == 9);
+        SimpleMatrix V = svd.getV();
+        int vNCols = V.numCols();
+        
         // reshape it to 3x3
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
@@ -965,7 +926,7 @@ public class StereoProjectionTransformer {
             ff[i][1] = V.get((i * 3) + 1, vNCols - 1);
             ff[i][2] = V.get((i * 3) + 2, vNCols - 1);
         }
-        Matrix fMatrix = new Matrix(ff);
+        SimpleMatrix fMatrix = new SimpleMatrix(ff);
         
         /* make the fundamental matrix have a rank of 2
            by performing a svd and then reconstructing with the two largest 
@@ -981,7 +942,7 @@ public class StereoProjectionTransformer {
         //         D as length 3 array
         //         V as 3 x 3 matrix
         
-        Matrix d = svd.getS();
+        SimpleMatrix d = svd.getW();
         
         // remove the smallest singular value from D, making it rank 2
         double[] keep = new double[]{d.get(0, 0), d.get(1, 1), d.get(2, 2)};
@@ -994,12 +955,12 @@ public class StereoProjectionTransformer {
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-        Matrix dDotV = d.times(svd.getV().transpose());
+        SimpleMatrix dDotV = d.mult(svd.getV().transpose());
         
         // 3x3        
-        Matrix theFundamentalMatrix = svd.getU().times(dDotV);  
+        SimpleMatrix theFundamentalMatrix = svd.getU().mult(dDotV);  
         
-        theFundamentalMatrix = theFundamentalMatrix.times(
+        theFundamentalMatrix = theFundamentalMatrix.scale(
             1./theFundamentalMatrix.get(2, 2));
         
         return theFundamentalMatrix;
@@ -1012,7 +973,7 @@ public class StereoProjectionTransformer {
      * @param xyPair
      * @return 
      */
-    NormalizedXY normalize(Matrix xy) {
+    NormalizedXY normalize(SimpleMatrix xy) {
         
         /*
         uTransposed = T * u 
@@ -1034,7 +995,7 @@ public class StereoProjectionTransformer {
         double[] centroidXY = curveHelper.calculateXYCentroids(xy);
         
         double mean = 0;
-        int n = xy.getArray()[0].length;
+        int n = xy.numCols();
         for (int i = 0; i < n; i++) {
             double diffX = xy.get(0, i) - centroidXY[0];
             double diffY = xy.get(1, i) - centroidXY[1];
@@ -1075,9 +1036,9 @@ public class StereoProjectionTransformer {
         t[0] = new double[]{scaleFactor, 0,           -scaleFactor * centroidXY[0]};
         t[1] = new double[]{0,           scaleFactor, -scaleFactor * centroidXY[1]};
         t[2] = new double[]{0,           0,           1};
-        Matrix tMatrix = new Matrix(t);
+        SimpleMatrix tMatrix = new SimpleMatrix(t);
                 
-        Matrix normXY = new Matrix(MatrixUtil.dot(tMatrix, xy));
+        SimpleMatrix normXY = new SimpleMatrix(MatrixUtil.dot(tMatrix, xy));
               
         NormalizedXY normalizedXY = new NormalizedXY();
         normalizedXY.setCentroidXY(centroidXY);
@@ -1092,7 +1053,7 @@ public class StereoProjectionTransformer {
      * @param xyPairs
      * @return 
      */
-    public Matrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
+    public SimpleMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
         
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
         // column 0 is x
@@ -1110,7 +1071,7 @@ public class StereoProjectionTransformer {
         
         // matrix of size mRows x nCols
         
-        Matrix xy = new Matrix(xyPoints);
+        SimpleMatrix xy = new SimpleMatrix(xyPoints);
         
         return xy;
     }
@@ -1122,7 +1083,8 @@ public class StereoProjectionTransformer {
      * second is y.
      * @return 
      */
-    double[][] createFundamentalMatrix(Matrix normXY1, Matrix normXY2) {
+    double[][] createFundamentalMatrix(SimpleMatrix normXY1, 
+        SimpleMatrix normXY2) {
         
         if (normXY1 == null) {
             throw new IllegalArgumentException("normXY1 cannot be null");
@@ -1130,12 +1092,12 @@ public class StereoProjectionTransformer {
         if (normXY2 == null) {
             throw new IllegalArgumentException("normXY2 cannot be null");
         }
-        if (normXY1.getArray()[0].length != normXY2.getArray()[0].length) {
+        if (normXY1.numCols() != normXY2.numCols()) {
             throw new IllegalArgumentException(
-            "the number of columns in normXY1 != number of rows in normXY2");
+            "the number of columns in normXY1 != number of cols in normXY2");
         }
         
-        int nXY1 = normXY1.getArray()[0].length;
+        int nXY1 = normXY1.numCols();
         
         // mRows = 484;  nCols = 9
         
@@ -1170,7 +1132,7 @@ public class StereoProjectionTransformer {
      * @param fundamentalMatrix
      * @return 
      */
-    double[][] calculateEpipoles(Matrix fundamentalMatrix) {
+    double[][] calculateEpipoles(SimpleMatrix fundamentalMatrix) {
         
         /*
         The representation of lines in homogeneous projective coordinates
@@ -1195,18 +1157,18 @@ public class StereoProjectionTransformer {
              e2 = last column of U divided by it's last item 
                 
         */
-        SingularValueDecomposition svdE = fundamentalMatrix.svd();
-        Matrix V = svdE.getV().transpose();
-        double[] e1 = V.getArray()[2];
-        double e1Div = e1[2];
+        SimpleSVD<SimpleMatrix> svdE = fundamentalMatrix.svd();
+        SimpleMatrix V = svdE.getV().transpose();
+        double[] e1 = new double[V.numCols()];
+        double e1Div = V.get(2, 2);
         for (int i = 0; i < e1.length; i++) {
-            e1[i] /= e1Div;
+            e1[i] = V.get(i, 2)/e1Div;
         }
-        Matrix U = svdE.getU();
-        double[] e2 = U.getArray()[2];
-        double e2Div = e2[2];
+        SimpleMatrix U = svdE.getU();
+        double[] e2 = new double[U.numCols()];
+        double e2Div = U.get(2, 2);
         for (int i = 0; i < e2.length; i++) {
-            e2[i] /= e2Div;
+            e2[i] = U.get(i, 2)/e2Div;
         }
         
         double[][] e = new double[2][];
@@ -1216,26 +1178,24 @@ public class StereoProjectionTransformer {
         return e;
     }
 
-    private Matrix calculateRightEpipolarLines() {
+    private SimpleMatrix calculateRightEpipolarLines() {
         
         /* calculate right epipolar lines
         F * leftPoint
         */
         
-        Matrix m = fundamentalMatrix.times(leftXY);
+        SimpleMatrix m = fundamentalMatrix.mult(leftXY);
         
         return m;
     }
     
-    private Matrix calculateLeftEpipolarLines() {
+    private SimpleMatrix calculateLeftEpipolarLines() {
         
-        /* calculate left epipolar lines
-        F^T * rightPoint
-        */
+        //calculate left epipolar lines:  F^T * rightPoint
         
-        Matrix fundamentalMatrixTranspose = fundamentalMatrix.transpose();
+        SimpleMatrix fundamentalMatrixTranspose = fundamentalMatrix.transpose();
         
-        Matrix m = fundamentalMatrixTranspose.times(rightXY);
+        SimpleMatrix m = fundamentalMatrixTranspose.mult(rightXY);
         
         return m;
     }
@@ -1260,11 +1220,11 @@ public class StereoProjectionTransformer {
          * 3 dimensional matrix, with column 0 being x, column 1 being y,
          * and the last column is place holder 1's
          */
-        private Matrix xy = null;
+        private SimpleMatrix xy = null;
         
         private double[] centroidXY = null;
         
-        private Matrix normalizationMatrix = null;
+        private SimpleMatrix normalizationMatrix = null;
 
         /**
          * @return the centroidXY
@@ -1283,28 +1243,28 @@ public class StereoProjectionTransformer {
         /**
          * @return the factor
          */
-        public Matrix getNormalizationMatrix() {
+        public SimpleMatrix getNormalizationMatrix() {
             return normalizationMatrix;
         }
 
         /**
          * @param normMatrix holding the scale and offsets to apply to x, y
          */
-        public void setNormMatrix(Matrix normMatrix) {
+        public void setNormMatrix(SimpleMatrix normMatrix) {
             this.normalizationMatrix = normMatrix;
         }
 
         /**
          * @return the xy
          */
-        public Matrix getXy() {
+        public SimpleMatrix getXy() {
             return xy;
         }
 
         /**
          * @param xy the xy to set
          */
-        public void setXy(Matrix xy) {
+        public void setXy(SimpleMatrix xy) {
             this.xy = xy;
         }
     }
@@ -1315,10 +1275,10 @@ public class StereoProjectionTransformer {
     public double[] getRightEpipole() {
         return rightEpipole;
     }
-    public Matrix getEpipolarLinesInRight() {
+    public SimpleMatrix getEpipolarLinesInRight() {
         return epipolarLinesInRight;
     }
-    public Matrix getEpipolarLinesInLeft() {
+    public SimpleMatrix getEpipolarLinesInLeft() {
         return epipolarLinesInLeft;
     }
     
@@ -1336,7 +1296,7 @@ public class StereoProjectionTransformer {
             pointNumber);
     }
      
-    PairIntArray getEpipolarLine(Matrix epipolarLines, int imgWidth, 
+    PairIntArray getEpipolarLine(SimpleMatrix epipolarLines, int imgWidth, 
         int imgHeight, int pointNumber) {
         
         int n = imgWidth/10;
@@ -1366,8 +1326,8 @@ public class StereoProjectionTransformer {
         return line;
     }
     
-    private double[] getEpipolarLineYEndpoints(Matrix epipolarLines, int xBegin,
-        int xEnd, int pointNumber) {
+    private double[] getEpipolarLineYEndpoints(SimpleMatrix epipolarLines, 
+        int xBegin, int xEnd, int pointNumber) {
         
         double a = epipolarLines.get(0, pointNumber);
         double b = epipolarLines.get(1, pointNumber);
@@ -1381,8 +1341,8 @@ public class StereoProjectionTransformer {
         return new double[]{yBegin, yEnd};
     }
     
-    private double[] getEpipolarLineYEndpoints(Matrix epipolarLines, float xBegin,
-        float xEnd, int pointNumber) {
+    private double[] getEpipolarLineYEndpoints(SimpleMatrix epipolarLines, 
+        float xBegin, float xEnd, int pointNumber) {
         
         double a = epipolarLines.get(0, pointNumber);
         double b = epipolarLines.get(1, pointNumber);
@@ -1396,12 +1356,12 @@ public class StereoProjectionTransformer {
         return new double[]{yBegin, yEnd};
     }
     
-    Matrix calculateEpipolarRightLines(Matrix points) {
-        return fundamentalMatrix.times(points);
+    SimpleMatrix calculateEpipolarRightLines(SimpleMatrix points) {
+        return fundamentalMatrix.mult(points);
     }
     
-     Matrix calculateEpipolarLeftLines(Matrix points) {
-        return fundamentalMatrix.transpose().times(points);
+    SimpleMatrix calculateEpipolarLeftLines(SimpleMatrix points) {
+        return fundamentalMatrix.transpose().mult(points);
     }
     
      /**
@@ -1424,9 +1384,9 @@ public class StereoProjectionTransformer {
         from the right image points.
         */
         
-        Matrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
+        SimpleMatrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
         
-        Matrix theLeftEpipolarLines = calculateEpipolarLeftLines(theRightPoints);
+        SimpleMatrix theLeftEpipolarLines = calculateEpipolarLeftLines(theRightPoints);
         
         int[] minMaxLineXEndpoints = getMinMaxX(leftImagePoints);
         float lineX0 = minMaxLineXEndpoints[0];
@@ -1484,9 +1444,6 @@ public class StereoProjectionTransformer {
             int[][] match = b.computeAssignments(diffsAsCostCopy);
 
             assert(match.length == nPoints2);
-            
-log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
-
             
             for (int i = 0; i < match.length; i++) {
                 int idx2 = match[i][0];
@@ -1572,9 +1529,9 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
         PairFloatArray leftImagePoints, PairFloatArray rightImagePoints, 
         double tolerance) {
         
-        Matrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
+        SimpleMatrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
         
-        Matrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
+        SimpleMatrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
        
         return evaluateFitInRightImage(theLeftPoints, theRightPoints, tolerance);
     }
@@ -1596,9 +1553,9 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
         PairFloatArray leftImagePoints, PairFloatArray rightImagePoints,
         double tolerance) {
         
-        Matrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
+        SimpleMatrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
         
-        Matrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
+        SimpleMatrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
        
         return evaluateFitInRightImageForMatchedPoints(theLeftPoints, 
             theRightPoints, tolerance);
@@ -1608,9 +1565,9 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
         PairFloatArray leftImagePoints, PairFloatArray rightImagePoints,
         float factor, double minRemoval, LinkedHashSet<Integer> skipIndexes) {
         
-        Matrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
+        SimpleMatrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
         
-        Matrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
+        SimpleMatrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
        
         return evaluateRightForMatchedAndStoreOutliers(theLeftPoints, 
             theRightPoints, factor, minRemoval, skipIndexes);
@@ -1629,17 +1586,18 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
       * @return 
       */
     public StereoProjectionTransformerFit evaluateFitInRightImage(
-        Matrix leftPoints, Matrix rightPoints, 
+        SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
         double tolerance) {
        
-        Matrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
+        SimpleMatrix theRightEpipolarLines = calculateEpipolarRightLines(
+            leftPoints);
       
         int[] minMaxLineXEndpoints = getMinMaxX(rightPoints);
         float lineX0 = minMaxLineXEndpoints[0];
         float lineX1 = minMaxLineXEndpoints[1];
         
-        int nPointsLeft = leftPoints.getColumnDimension();
-        int nPointsRight = rightPoints.getColumnDimension();
+        int nPointsLeft = leftPoints.numCols();
+        int nPointsRight = rightPoints.numCols();
       
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
@@ -1777,7 +1735,7 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
       * @return 
       */
     public StereoProjectionTransformerFit evaluateFitInRightImageForMatchedPoints(
-        Matrix leftPoints, Matrix rightPoints, 
+        SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
         double tolerance) {
                
         if (leftPoints == null) {
@@ -1788,8 +1746,8 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
             throw new IllegalArgumentException("rightPoints cannot be null");
         }
          
-        int nPointsLeft = leftPoints.getColumnDimension();
-        int nPointsRight = rightPoints.getColumnDimension();
+        int nPointsLeft = leftPoints.numCols();
+        int nPointsRight = rightPoints.numCols();
         
         if (nPointsLeft != nPointsRight) {
             throw new IllegalArgumentException("point lists must have same "
@@ -1797,7 +1755,7 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
                 " For unmatched lists, use evaluateFitInRightImage()");
         }
       
-        Matrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
+        SimpleMatrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
       
         int[] minMaxLineXEndpoints = getMinMaxX(rightPoints);
         float lineX0 = minMaxLineXEndpoints[0];
@@ -1864,7 +1822,7 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
      * @return 
      */
     public StereoProjectionTransformerFit evaluateRightForMatchedAndStoreOutliers(
-        Matrix leftPoints, Matrix rightPoints, 
+        SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
         float factor, double minRemoval, LinkedHashSet<Integer> skipIndexes) {
                
         if (leftPoints == null) {
@@ -1879,8 +1837,8 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
             throw new IllegalArgumentException("skipIndexes cannot be null");
         }
          
-        int nPointsLeft = leftPoints.getColumnDimension();
-        int nPointsRight = rightPoints.getColumnDimension();
+        int nPointsLeft = leftPoints.numCols();
+        int nPointsRight = rightPoints.numCols();
         
         if (nPointsLeft != nPointsRight) {
             throw new IllegalArgumentException("point lists must have same "
@@ -1888,7 +1846,7 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
                 " For unmatched lists, use evaluateFitInRightImage()");
         }
       
-        Matrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
+        SimpleMatrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
       
         int[] minMaxLineXEndpoints = getMinMaxX(rightPoints);
         float lineX0 = minMaxLineXEndpoints[0];
@@ -1963,7 +1921,7 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
     }
     
     public int getNumberOfMatches() {
-        return leftXY.getColumnDimension();
+        return leftXY.numCols();
     }
     
     public PairFloatArray getRightXYFloat() {                         
@@ -1974,9 +1932,9 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
         return getXYFloat(leftXY);
     }
     
-    private PairIntArray getXYInt(Matrix leftOrRightXY) {
+    private PairIntArray getXYInt(SimpleMatrix leftOrRightXY) {
                 
-        int nPoints = leftOrRightXY.getColumnDimension();
+        int nPoints = leftOrRightXY.numCols();
          
         PairIntArray out = new PairIntArray();
         
@@ -1991,9 +1949,9 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
         return out;
     }
     
-    private PairFloatArray getXYFloat(Matrix leftOrRightXY) {
+    private PairFloatArray getXYFloat(SimpleMatrix leftOrRightXY) {
                 
-        int nPoints = leftOrRightXY.getColumnDimension();
+        int nPoints = leftOrRightXY.numCols();
          
         PairFloatArray out = new PairFloatArray();
         
@@ -2029,9 +1987,9 @@ log.info("set1 n=" + nPoints1 + " set2 n=" + nPoints2);
         return new int[]{xBegin, xEnd};
     }
     
-    private int[] getMinMaxX(Matrix points) {
+    private int[] getMinMaxX(SimpleMatrix points) {
         
-        int nPoints = points.getColumnDimension();
+        int nPoints = points.numCols();
          
         // estimate endpoints of the epipolar line as the min and max x of right
         int xBegin = Integer.MAX_VALUE;

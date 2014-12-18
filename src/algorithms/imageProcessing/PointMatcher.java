@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import Jama.Matrix;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.PointPartitioner;
 import algorithms.imageProcessing.util.MatrixUtil;
@@ -25,6 +24,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
+import org.ejml.simple.*;
 
 /**
  * class to match the points extracted from two images.

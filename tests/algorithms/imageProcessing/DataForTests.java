@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import Jama.Matrix;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -12,7 +11,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-
+import org.ejml.simple.*;
+    
 /**
  *
  * @author nichole
@@ -25,7 +25,7 @@ public class DataForTests {
      * 
      * @return 
      */
-    public static Matrix readMerton1UnnormalizedX1Data() {
+    public static SimpleMatrix readMerton1UnnormalizedX1Data() {
         
         double[][] x1 = new double[3][];
         
@@ -179,7 +179,7 @@ public class DataForTests {
         1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
         1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
         
-        return new Matrix(x1);
+        return new SimpleMatrix(x1);
     }
 
     /**
@@ -188,7 +188,7 @@ public class DataForTests {
      * 
      * @return 
      */
-    public static Matrix readMerton1UnnormalizedX2Data() {
+    public static SimpleMatrix readMerton1UnnormalizedX2Data() {
         
         double[][] x2 = new double[3][];
                 
@@ -351,15 +351,15 @@ public class DataForTests {
         1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
         1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
         
-        return new Matrix(x2);
+        return new SimpleMatrix(x2);
     }
    
     public static PairFloatArray readMerton1UnnormalizedXY1Data() {
         
-        Matrix m1 = readMerton1UnnormalizedX1Data();
+        SimpleMatrix m1 = readMerton1UnnormalizedX1Data();
         
-        PairFloatArray xy = new PairFloatArray(m1.getColumnDimension());
-        for (int i = 0; i < m1.getColumnDimension(); i++) {
+        PairFloatArray xy = new PairFloatArray(m1.numCols());
+        for (int i = 0; i < m1.numCols(); i++) {
             xy.add((float)m1.get(0, i), (float)m1.get(1, i));
         }
         
@@ -374,10 +374,10 @@ public class DataForTests {
      */
     public static PairFloatArray readMerton1UnnormalizedXY2Data() {
         
-        Matrix m2 = readMerton1UnnormalizedX2Data();
+        SimpleMatrix m2 = readMerton1UnnormalizedX2Data();
         
-        PairFloatArray xy = new PairFloatArray(m2.getColumnDimension());
-        for (int i = 0; i < m2.getColumnDimension(); i++) {
+        PairFloatArray xy = new PairFloatArray(m2.numCols());
+        for (int i = 0; i < m2.numCols(); i++) {
             xy.add((float)m2.get(0, i), (float)m2.get(1, i));
         }
         
