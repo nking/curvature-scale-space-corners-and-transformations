@@ -1,6 +1,8 @@
 package algorithms.misc;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Set;
 
 /**
  *
@@ -76,7 +78,8 @@ public class MiscMath {
     public static float findMax(float[] a) {
         float max = Float.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
-            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) && (a[i] < Float.MAX_VALUE)) {
+            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
+                && (a[i] < Float.MAX_VALUE)) {
                 max = a[i];
             }
         }
@@ -91,7 +94,8 @@ public class MiscMath {
     public static int findMax(int[] a) {
         int max = Integer.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
-            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) && (a[i] < Float.MAX_VALUE)) {
+            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
+                && (a[i] < Float.MAX_VALUE)) {
                 max = a[i];
             }
         }
@@ -130,7 +134,8 @@ public class MiscMath {
         float max = Float.MIN_VALUE;
         int index = 0;
         for (int i = 0; i < a.length; i++) {
-            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) && (a[i] < Float.MAX_VALUE)) {
+            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
+                && (a[i] < Float.MAX_VALUE)) {
                 max = a[i];
                 index = i;
             }
@@ -344,15 +349,41 @@ public class MiscMath {
      * @param x
      * @return 
      */
-    public static double[] getAvgAndStDev(double[] x) {
+    public static float[] getAvgAndStDev(float[] x) {
         
         int n = x.length;
-        long sumX = 0;
+        double sumX = 0;
         for (int i = 0; i < n; i++) {
             sumX += x[i];
         }
         
-        double avgX = (double)sumX/(double)n;
+        float avgX = (float)(sumX/(float)n);
+        
+        sumX = 0;
+        for (int i = 0; i < n; i++) {
+            double diffX = x[i] - avgX;
+            sumX += (diffX * diffX);
+        }
+        float stdDevX = (float)(Math.sqrt(sumX/(n - 1.0f)));
+        
+        return new float[]{avgX, stdDevX};
+    }
+    
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @param x
+     * @return 
+     */
+    public static double[] getAvgAndStDev(double[] x) {
+        
+        int n = x.length;
+        double sumX = 0;
+        for (int i = 0; i < n; i++) {
+            sumX += x[i];
+        }
+        
+        double avgX = sumX/(double)n;
         
         sumX = 0;
         for (int i = 0; i < n; i++) {
@@ -554,6 +585,35 @@ public class MiscMath {
         double sign = (x < 0.) ? -1 : 1;
         double y = sign * Math.pow(Math.abs(x), 1./3.);
         return y;
+    }
+    
+    public static void chooseRandomly(SecureRandom sr, int[] selected, 
+        Set<String> chosen, int nMax) {
+        
+        while (true) {
+            for (int i = 0; i < selected.length; i++) {
+                int sel = sr.nextInt(nMax);
+                while (contains(selected, i, sel)) {
+                    sel = sr.nextInt(nMax);
+                }
+                selected[i] = sel;
+            }
+            Arrays.sort(selected);
+            String str = Arrays.toString(selected);
+            if (!chosen.contains(str)) {
+                chosen.add(str);
+                break;
+            }
+        }
+    }
+    
+    private static boolean contains(int[] values, int lastIdx, int valueToCheck) {
+        for (int i = 0; i < lastIdx; i++) {
+            if (values[i] == valueToCheck) {
+                return true;
+            }
+        }
+        return false;
     }
     
 }

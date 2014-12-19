@@ -22,14 +22,14 @@ public class StereoProjectionTransformerFit {
     /**
      * the average distance of the points from their epipolar lines
      */
-    private final double avgDistance;
+    private final double meanDistance;
     
     /**
      * the standard deviation of the points from the average distance
      */
-    private final double stDevFromAvg;
+    private final double stDevFromMean;
     
-    private List<Integer> outlierIndexes = new ArrayList<Integer>();
+    private List<Integer> inlierIndexes = new ArrayList<Integer>();
 
     public StereoProjectionTransformerFit(long theNumberOfMatches, 
         double theTolerance, double theAverageDistance, 
@@ -37,8 +37,8 @@ public class StereoProjectionTransformerFit {
         
         nMatches = theNumberOfMatches;
         tolerance = theTolerance;
-        avgDistance = theAverageDistance;
-        stDevFromAvg = theStandardDeviationFromAverage;
+        meanDistance = theAverageDistance;
+        stDevFromMean = theStandardDeviationFromAverage;
     }
     
     /**
@@ -58,15 +58,15 @@ public class StereoProjectionTransformerFit {
     /**
      * @return the avgDistance
      */
-    public double getAvgDistance() {
-        return avgDistance;
+    public double getMeanDistance() {
+        return meanDistance;
     }
 
     /**
      * @return the stDevFromAvg
      */
-    public double getStDevFromAvg() {
-        return stDevFromAvg;
+    public double getStDevFromMean() {
+        return stDevFromMean;
     }
 
     /**
@@ -92,34 +92,34 @@ public class StereoProjectionTransformerFit {
         
         // else nMatches are equal
         
-        if (bestFit.getAvgDistance() != avgDistance) {
-            return (bestFit.getAvgDistance() > avgDistance);
+        if (bestFit.getMeanDistance() != meanDistance) {
+            return (bestFit.getMeanDistance() > meanDistance);
         }
         
         // else avgDistances are equal
         
-        if (bestFit.getStDevFromAvg() != stDevFromAvg) {
-            return (bestFit.getStDevFromAvg() > stDevFromAvg);
+        if (bestFit.getStDevFromMean() != stDevFromMean) {
+            return (bestFit.getStDevFromMean() > stDevFromMean);
         }
         
         // else, all params being equal, prefer current
         return false;
     }
 
-    public void setOutlierIndexes(List<Integer> theOutlierIndexes) {
+    public void setInlierIndexes(List<Integer> theInlierIndexes) {
         
-        if (theOutlierIndexes == null) {
-            if (!outlierIndexes.isEmpty()) {
-                outlierIndexes.clear();
+        if (theInlierIndexes == null) {
+            if (!inlierIndexes.isEmpty()) {
+                inlierIndexes.clear();
             }
             return;
         }
-        outlierIndexes = theOutlierIndexes;
+        inlierIndexes = theInlierIndexes;
     }
 
-    public List<Integer> getOutlierIndexes() {
+    public List<Integer> getInlierIndexes() {
         
-        return outlierIndexes;
+        return inlierIndexes;
     }
     
     @Override
@@ -129,8 +129,8 @@ public class StereoProjectionTransformerFit {
         
         sb.append("nMatchedPoints=").append(Long.toString(nMatches))
             .append(" tolerance=").append(Double.toString(tolerance))
-            .append(" meanDistFromModel=").append(Double.toString(avgDistance))
-            .append(" stDevFromMean=").append(Double.toString(stDevFromAvg))
+            .append(" meanDistFromModel=").append(Double.toString(meanDistance))
+            .append(" stDevFromMean=").append(Double.toString(stDevFromMean))
             ;
         
         return sb.toString();

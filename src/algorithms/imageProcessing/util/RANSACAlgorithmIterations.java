@@ -32,7 +32,8 @@ public class RANSACAlgorithmIterations {
      * @param nMatchedPoints
      * @return 
      */
-    public int estimateNIterForTwentyFivePercentOutliersFor8Points(int nMatchedPoints) {
+    public int estimateNIterForTwentyFivePercentOutliersFor8Points(
+        int nMatchedPoints) {
         
         double p;
         if (nMatchedPoints <= 30) {
@@ -134,10 +135,41 @@ public class RANSACAlgorithmIterations {
         
         return nIter;
     }
+    
+    /**
+    using estimates for the number of iterations required to
+    lower the probability that a set of nSet inliers is not found to 
+    1-0.95=0.05 from:
+    http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf
+
+    Note: this assumes that the user's nPoints >> nIter.
+
+    g = probability of inliers in pairs of (unmatchedLeftXY, unmatchedRightXY)
+
+    p = nSet
+
+    0.05 = (1 - g^p)^nIter
+
+    log(0.05) = nIter * log(1 - g^p) ==> nIter = log(0.05) / log(1 - g^p)
+
+    for g=0.5 and p=7, nIter = 382.
+    int nIter = (int)Math.ceil(Math.log(0.05)/Math.log(1 - Math.pow(g, nSet)));
+        
+     * @return 
+     */
+    public int estimateNIterUsingStandardRANSACApproximation(
+        double probabilityOfInliers, int nSubset) {
+        
+        int nIter = (int)Math.ceil(Math.log(0.05)/
+            Math.log(1 - Math.pow(probabilityOfInliers, nSubset)));
+        
+        return nIter;
+    }
 
 }
 
 /*
+<pre>
 There are nTotal matches, that is nTotal sets of points thought to be matched.
 
 nInliers is the number of points within nTotal that are within tolerance
@@ -254,4 +286,5 @@ The same logic as above, used for finding 2 truly matchable points within set1:
       500   | 0.022  | 0.062  | 0.25   |  0.56
      1000   | 0.022  | 0.062  | 0.25   |  0.56
 
+</pre>
 */

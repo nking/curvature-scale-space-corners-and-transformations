@@ -4,10 +4,13 @@ import algorithms.util.PairFloatArray;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -149,7 +152,8 @@ public class StereoProjectionTransformer {
     private SimpleMatrix epipolarLinesInRight = null;
     
     /**
-     * calculate the epipolar projection for a set of 8 or more matched points.
+     * calculate the epipolar projection for a set of 8 or more perfectly
+     * matched points.
      * 
      * each row is an epipolar line in the left image.
      * Each column corresponds to a point in leftXY and rightXY which are
@@ -157,8 +161,49 @@ public class StereoProjectionTransformer {
      */
     private SimpleMatrix epipolarLinesInLeft = null;
    
-    public SimpleMatrix calculateEpipolarProjection(PairFloatArray pointsLeftXY, 
-        PairFloatArray pointsRightXY) {
+    
+    public StereoProjectionTransformer calculateEpipolarProjectionForUnmatched(
+        PairFloatArray unmatchedLeftXY, PairFloatArray unmatchedRightXY) 
+        throws NoSuchAlgorithmException {
+        
+        /*
+        need to match the points, but the sets may require a projection
+        transformation rather than a simpler euclidean scale, rotation and
+        translation transformation.
+        
+        trying every combination of point pairs isn't feasible:
+            n_1!/(2*(n_1 - 2)!) X n_2!/(2*(n_2 - 2)!)
+        
+        and it ignores the location of points among others.
+        
+        one could apply epipolar transformations to set1 and use a modified
+        distance function to estimate the residuals and fit the best
+        overall fit.
+        for a distance function, one could use the distance from a point
+        to the epipolar line which is standard, but the distance along that
+        epipolar line should probably be used too as is done with 
+        going from fundamental matrix to camera coordinates.
+        
+        for matches to the epipolar lines, optimal matching would be needed.
+        
+        what is the range of possible transformation parameters in a
+        fundamental matrix?
+        
+        presumably large steps thru possible patterns in a grid search
+        followed by a downhill simplex search could find the best
+        fundamental matrix solution and hence the point matches.
+        
+        regarding the set of points tried, all points should be tried because
+        any subsets may be missing possible matches in set2.
+        
+        
+        */
+               
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+    
+    public SimpleMatrix calculateEpipolarProjectionForPerfectlyMatched(
+        PairFloatArray pointsLeftXY,  PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
             throw new IllegalArgumentException("refactorLeftXY cannot be null");
@@ -183,7 +228,7 @@ public class StereoProjectionTransformer {
                 + " refactorLeftXY.n=" + pointsLeftXY.getN());
         }
         
-        return calculateEpipolarProjection(
+        return calculateEpipolarProjectionForPerfectlyMatched(
             rewriteInto3ColumnMatrix(pointsLeftXY), 
             rewriteInto3ColumnMatrix(pointsRightXY));
     }
@@ -195,8 +240,8 @@ public class StereoProjectionTransformer {
      * @param theRightXY
      * @return 
      */
-    public SimpleMatrix calculateEpipolarProjection(SimpleMatrix theLeftXY, 
-        SimpleMatrix theRightXY) {
+    public SimpleMatrix calculateEpipolarProjectionForPerfectlyMatched(
+        SimpleMatrix theLeftXY, SimpleMatrix theRightXY) {
                     
         if (theLeftXY == null) {
             throw new IllegalArgumentException("theLeftXY cannot be null");
@@ -1053,7 +1098,7 @@ public class StereoProjectionTransformer {
      * @param xyPairs
      * @return 
      */
-    public SimpleMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
+    public static SimpleMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
         
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
         // column 0 is x
@@ -1363,155 +1408,6 @@ public class StereoProjectionTransformer {
     SimpleMatrix calculateEpipolarLeftLines(SimpleMatrix points) {
         return fundamentalMatrix.transpose().mult(points);
     }
-    
-     /**
-      * evaluate the fit as the distance of points in the left image from the
-      * projected right epipolar lines if the distance is within tolerance.
-      * Note that to include all points regardless of tolerance, set tolerance
-      * to a very high number such as Double.MAX_VALUE.
-      * 
-      * @param leftImagePoints
-      * @param rightImagePoints
-      * @param tolerance
-      * @return 
-      */
-    public StereoProjectionTransformerFit evaluateFit(
-        PairFloatArray leftImagePoints, PairFloatArray rightImagePoints, 
-        double tolerance) {
-        
-        /*
-        comparing the points in left image with the epipolar lines projected
-        from the right image points.
-        */
-        
-        SimpleMatrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
-        
-        SimpleMatrix theLeftEpipolarLines = calculateEpipolarLeftLines(theRightPoints);
-        
-        int[] minMaxLineXEndpoints = getMinMaxX(leftImagePoints);
-        float lineX0 = minMaxLineXEndpoints[0];
-        float lineX1 = minMaxLineXEndpoints[1];
-        
-        int nPoints1 = leftImagePoints.getN();
-        int nPoints2 = rightImagePoints.getN();
-               
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        double[] diffs = new double[nPoints1];
-        int nMatched = 0;
-        long diffSum = 0;
-            
-        boolean useBipartiteMinCost = true;
-        
-        if (useBipartiteMinCost) {
-            
-            // === using an optimal bipartite min cost matching ~O(N^4) ====
-            // make the cost matrix
-            float[][] diffsAsCost = new float[nPoints2][nPoints1];
-            
-            // the algorithm modifies diffsAsCost, so make a copy
-            float[][] diffsAsCostCopy = new float[nPoints2][nPoints1];
-
-            for (int i = 0; i < nPoints2; i++) {
-
-                diffsAsCost[i] = new float[nPoints1];
-                diffsAsCostCopy[i] = new float[nPoints1];
-
-                double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
-                    theLeftEpipolarLines, lineX0, lineX1, i);
-
-                float lineY0 = (float)epipolarLineYEndPoints[0];
-                float lineY1 = (float)epipolarLineYEndPoints[1];
-
-                for (int j = 0; j < leftImagePoints.getN(); j++) {
-
-                    double dist = curveHelper.distanceFromPointToALine(
-                        lineX0, lineY0, lineX1, lineY1, 
-                        leftImagePoints.getX(j), leftImagePoints.getY(j));
-
-                    diffsAsCost[i][j] = (float)dist;
-                    diffsAsCostCopy[i][j] = (float)dist;
-                }
-            }
-
-            boolean transposed = false;
-            if (nPoints1 > nPoints2) {
-                diffsAsCostCopy = MatrixUtil.transpose(diffsAsCostCopy);
-                transposed = true;
-            }
-            
-            HungarianAlgorithm b = new HungarianAlgorithm();
-            int[][] match = b.computeAssignments(diffsAsCostCopy);
-
-            assert(match.length == nPoints2);
-            
-            for (int i = 0; i < match.length; i++) {
-                int idx2 = match[i][0];
-                int idx1 = match[i][1];
-                if (idx1 == -1 || idx2 == -1) {
-                    continue;
-                }
-                
-                if (transposed) {
-                    int swap = idx1;
-                    idx1 = idx2;
-                    idx2 = swap;
-                }
-                
-                double diff = diffsAsCost[idx2][idx1];
-                if (diff < tolerance) {
-                    diffs[nMatched] = diff;
-                    diffSum += diff;
-                    nMatched++;
-                }
-            }
-            
-        } else {
-        
-            // ==== using a greedy non-optimal min cost matching ~O(N^2) ======
-            Set<Integer> chosen = new HashSet<Integer>();
-            for (int i = 0; i < nPoints2; i++) {
-                double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
-                    theLeftEpipolarLines, lineX0, lineX1, i);
-                float lineY0 = (float)epipolarLineYEndPoints[0];
-                float lineY1 = (float)epipolarLineYEndPoints[1];
-                double minDiff = Double.MAX_VALUE;
-                int minIdx = -1;
-                for (int j = 0; j < leftImagePoints.getN(); j++) {
-                    if (chosen.contains(Integer.valueOf(j))) {
-                        continue;
-                    }
-                    double dist = curveHelper.distanceFromPointToALine(
-                        lineX0, lineY0, lineX1, lineY1, 
-                        leftImagePoints.getX(j), leftImagePoints.getY(j));
-                    if (dist < minDiff) {
-                        minDiff = dist;
-                        minIdx = j;
-                    }
-                }
-                if ((minDiff < Double.MAX_VALUE) && (minDiff < tolerance)) {
-                    diffs[nMatched] = minDiff;
-                    diffSum += minDiff;
-                    nMatched++;
-                    chosen.add(Integer.valueOf(minIdx));
-                }
-            }
-        }
-        
-        double avgDist = diffSum/(double)nMatched;
-        
-        diffSum = 0;
-        for (int i = 0; i < nMatched; i++) {
-            double d = diffs[i] - avgDist;
-            diffSum += (d * d);
-        }
-        double stdDevDist = Math.sqrt(diffSum/((double)nMatched - 1));
-        
-        StereoProjectionTransformerFit fit = new StereoProjectionTransformerFit(
-            nMatched, tolerance, avgDist, stdDevDist);
-        
-        return fit;
-    }
 
     /**
       * evaluate the fit in the right image as the distance of points there
@@ -1724,7 +1620,7 @@ public class StereoProjectionTransformer {
     
     /**
       * evaluate the fit in the right image as the distance of points there
-      * from the projected epipolar lines (created from the left points).
+      * from the projected epipolar lines created from the left points.
       * The distances are only added if they are within tolerance.
       * Note that to include all points regardless of tolerance, set tolerance
       * to a very high number such as Double.MAX_VALUE.
@@ -1802,6 +1698,373 @@ public class StereoProjectionTransformer {
         return fit;
     }
     
+    public StereoProjectionTransformerFit evaluateFitForUnmatched(
+        SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
+        double tolerance) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        
+        SimpleMatrix theRightEpipolarLines = fm.mult(leftPoints);
+       
+        SimpleMatrix theLeftEpipolarLines = fm.transpose().mult(rightPoints);
+        
+        //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
+        
+        /*
+        for each left point, it's match in the right must be one of the closest
+        to the right epipolar line and vice versa.
+        
+        one needs a bipartite matching (optimal matching) for each right
+        epipolar line to the best reciprocating point within a certain distance,
+        else no match.
+        
+        leftxy[0] has re[0] which finds rightxy[10],rightxy[12], rightxy[51]
+           within tolerance.
+           rightxy[10] has le[10] which > tolerance from leftxy[0].
+           rightxy[12] has le[12] which < tolerance from leftxy[0].
+           rightxy[51] has le[51] which > tolerance from leftxy[0].
+           ==> so leftxy[0] would be matched with rightxy[12]
+           and put into a left skip list to avoid repeating and
+           put into a right skip list.
+        
+        this approach is however, a greedy match.  a point visited after 
+        leftxy[0] might be the correct match to rightxy[12] and leftxy[0]
+        might be noise.
+        
+        so an optimal match is possibly needed for some datasets.  the runtime
+        complexity for an optimal match is large, so it should be avoided
+        when possible (~O(N^4)).
+       
+        so, the distance stored for the match leftxy[i] to rightxy[j] would
+        be the 2 added and this
+        */
+        
+        return evaluateFitForUnmatchedOptimal(fm, theRightEpipolarLines,
+            theLeftEpipolarLines, leftPoints, rightPoints, tolerance);
+    }
+        
+    StereoProjectionTransformerFit evaluateFitForUnmatchedOptimal(
+        SimpleMatrix fm, 
+        SimpleMatrix rightEpipolarLines, SimpleMatrix leftEpipolarLines,
+        SimpleMatrix leftPoints, SimpleMatrix rightPoints, double tolerance) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (rightEpipolarLines == null) {
+            throw new IllegalArgumentException(
+            "rightEpipolarLines cannot be null");
+        }
+        if (leftEpipolarLines == null) {
+            throw new IllegalArgumentException(
+            "leftEpipolarLines cannot be null");
+        }
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        
+        // x is index from leftPoints.  y is index from rightPoints.
+        PairIntArray matchedIndexes = new PairIntArray();
+              
+        float[] diffs = matchOptimallyAndCalcResiduals(fm, 
+            rightEpipolarLines, leftEpipolarLines,
+            leftPoints, rightPoints, tolerance, matchedIndexes);
+        
+        float[] avgAndStdDev = MiscMath.getAvgAndStDev(diffs);
+        
+        StereoProjectionTransformerFit fit = 
+            new StereoProjectionTransformerFit(diffs.length, tolerance, 
+                avgAndStdDev[0], avgAndStdDev[1]);
+        
+        return fit;
+    }
+    
+    float[] matchOptimallyAndCalcResiduals(
+        SimpleMatrix fm, 
+        SimpleMatrix rightEpipolarLines, SimpleMatrix leftEpipolarLines,
+        SimpleMatrix leftPoints, SimpleMatrix rightPoints, double tolerance,
+        PairIntArray outputMatchedIndexes) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (rightEpipolarLines == null) {
+            throw new IllegalArgumentException(
+            "rightEpipolarLines cannot be null");
+        }
+        if (leftEpipolarLines == null) {
+            throw new IllegalArgumentException(
+            "leftEpipolarLines cannot be null");
+        }
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        
+        //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
+        
+        /*
+        for each left point, it's match in the right must be one of the closest
+        to the right epipolar line and vice versa.
+        
+        one needs a bipartite matching (optimal matching) for each right
+        epipolar line to the best reciprocating point within a certain distance,
+        else no match.
+        
+        leftxy[0] has re[0] which finds rightxy[10],rightxy[12], rightxy[51]
+           within tolerance.
+           rightxy[10] has le[10] which > tolerance from leftxy[0].
+           rightxy[12] has le[12] which < tolerance from leftxy[0].
+           rightxy[51] has le[51] which > tolerance from leftxy[0].
+           ==> so leftxy[0] would be matched with rightxy[12]
+           and put into a left skip list to avoid repeating and
+           put into a right skip list.
+        
+        this approach is however, a greedy match.  a point visited after 
+        leftxy[0] might be the correct match to rightxy[12] and leftxy[0]
+        might be noise.
+        
+        so an optimal match is possibly needed for some datasets.  the runtime
+        complexity for an optimal match is large, so it should be avoided
+        when possible (~O(N^4)).
+       
+        so, the distance stored for the match leftxy[i] to rightxy[j] would
+        be the 2 added and this
+        */
+        
+        int nPoints1 = rightEpipolarLines.numCols();
+        int nPoints2 = leftEpipolarLines.numCols();
+        
+        float[][] diffsAsCost = new float[nPoints1][nPoints2];
+        // the algorithm modifies diffsAsCost, so make a copy
+        float[][] diffsAsCostCopy = new float[nPoints1][nPoints2];
+        
+        for (int i = 0; i < leftPoints.numCols(); i++) {
+
+            diffsAsCost[i] = new float[nPoints2];
+            diffsAsCostCopy[i] = new float[nPoints2];
+        
+            double a = rightEpipolarLines.get(0, i);
+            double b = rightEpipolarLines.get(1, i);
+            double c = rightEpipolarLines.get(2, i);
+            
+            double aplusb = Math.sqrt((a*a) + (b*b));
+            
+            double xL = leftPoints.get(0, i);
+            double yL = leftPoints.get(1, i);
+        
+            //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
+            
+            for (int j = 0; j < rightPoints.numCols(); j++) {
+                
+                double x = rightPoints.get(0, j);
+                double y = rightPoints.get(1, j);
+                
+                double d = (a*x + b*y + c)/aplusb;
+                
+                // find the reverse distance by projection:
+                double aRev = leftEpipolarLines.get(0, j);
+                double bRev = leftEpipolarLines.get(1, j);
+                double cRev = leftEpipolarLines.get(2, j);
+                
+                double dRev = (aRev*xL + bRev*yL + cRev)/
+                    Math.sqrt((aRev*aRev + bRev*bRev));
+                
+                float dist = (float)Math.sqrt(d*d + dRev*dRev);
+                
+                diffsAsCost[i][j] = dist;
+                diffsAsCostCopy[i][j] = dist;
+            }
+        }
+        
+        boolean transposed = false;
+        if (nPoints1 > nPoints2) {
+            diffsAsCostCopy = MatrixUtil.transpose(diffsAsCostCopy);
+            transposed = true;
+        }
+        
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        int[][] match = b.computeAssignments(diffsAsCostCopy);
+        
+        // count the number of matches before tolerance filter
+        int count = 0;
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            count++;
+        }
+        
+        // at this point, have matches between 1 --> 2 and a tolerance.
+        // could return a tolerance filtered
+        // reduced match list and the diffs for use with other methods
+        // (for example, an invoker with mathing goals could use the
+        // match list
+        
+        // x is index from leftPoints.  y is index from rightPoints.                
+        float[] diffs = new float[count];
+        
+        int nMatched = 0;
+        
+        for (int i = 0; i < match.length; i++) {
+           
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+                        
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            
+            float dist = diffsAsCost[idx1][idx2];
+            
+            if (dist > tolerance) {
+                continue;
+            }
+            
+            diffs[nMatched] = dist;
+            
+            outputMatchedIndexes.add(idx1, idx2);
+            
+            nMatched++;
+        }
+        
+        diffs = Arrays.copyOf(diffs, nMatched);
+        
+        return diffs;
+    }
+    
+    public StereoProjectionTransformerFit evaluateFit(
+        SimpleMatrix fm, SimpleMatrix matchedLeftPoints, 
+        SimpleMatrix matchedRightPoints, double tolerance) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        
+        if (matchedLeftPoints == null) {
+            throw new IllegalArgumentException(
+            "matchedLeftPoints cannot be null");
+        }
+        
+        if (matchedRightPoints == null) {
+            throw new IllegalArgumentException(
+            "matchedRightPoints cannot be null");
+        }
+        
+        SimpleMatrix theRightEpipolarLines = fm.mult(matchedLeftPoints);
+       
+        SimpleMatrix theLeftEpipolarLines = fm.transpose().mult(matchedRightPoints);
+        
+        //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
+      
+        return evaluateFit(fm, theRightEpipolarLines,
+            theLeftEpipolarLines, matchedLeftPoints, matchedRightPoints, 
+            tolerance);
+    }
+    
+    StereoProjectionTransformerFit evaluateFit(
+        SimpleMatrix fm, 
+        SimpleMatrix rightEpipolarLines, SimpleMatrix leftEpipolarLines,
+        SimpleMatrix leftPoints, SimpleMatrix rightPoints, double tolerance) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (rightEpipolarLines == null) {
+            throw new IllegalArgumentException(
+            "rightEpipolarLines cannot be null");
+        }
+        if (leftEpipolarLines == null) {
+            throw new IllegalArgumentException(
+            "leftEpipolarLines cannot be null");
+        }
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        
+        float[] diffs = new float[leftPoints.numCols()];
+        
+        int nMatched = 0;
+        
+        List<Integer> inlierIndexes = new ArrayList<Integer>();
+        
+        for (int i = 0; i < leftPoints.numCols(); i++) {
+
+            double a = rightEpipolarLines.get(0, i);
+            double b = rightEpipolarLines.get(1, i);
+            double c = rightEpipolarLines.get(2, i);
+            
+            double aplusb = Math.sqrt((a*a) + (b*b));
+            
+            double xL = leftPoints.get(0, i);
+            double yL = leftPoints.get(1, i);
+        
+            //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
+            
+            double x = rightPoints.get(0, i);
+            double y = rightPoints.get(1, i);
+                
+            double d = (a*x + b*y + c)/aplusb;
+                
+            // find the reverse distance by projection:
+            double aRev = leftEpipolarLines.get(0, i);
+            double bRev = leftEpipolarLines.get(1, i);
+            double cRev = leftEpipolarLines.get(2, i);
+
+            double dRev = (aRev*xL + bRev*yL + cRev)/
+                Math.sqrt((aRev*aRev + bRev*bRev));
+
+            float dist = (float)Math.sqrt(d*d + dRev*dRev);
+            
+            if (dist > tolerance) {
+                continue;
+            }
+            
+            inlierIndexes.add(Integer.valueOf(i));
+            
+            diffs[nMatched] = dist;
+            
+            nMatched++;
+        }
+        
+        diffs = Arrays.copyOf(diffs, nMatched);
+        
+        float[] avgAndStdDev = MiscMath.getAvgAndStDev(diffs);
+        
+        StereoProjectionTransformerFit fit = 
+            new StereoProjectionTransformerFit(diffs.length, tolerance, 
+                avgAndStdDev[0], avgAndStdDev[1]);
+        
+        fit.setInlierIndexes(inlierIndexes);
+        
+        return fit;
+    }
+        
     /**
      * evaluate the fit of projection by calculating the difference between
      * the right points and the epipolar lines that are calculated from the
@@ -2006,5 +2269,29 @@ public class StereoProjectionTransformer {
         }
         
         return new int[]{xBegin, xEnd};
+    }
+    
+    /**
+     * calculate the epipolar projection among the given points with the
+     * assumption that some of the matches are not true matches.  It uses
+     * a RANSAC approach and subsets to find inliers (true, low error matches)
+     * and the calculates the fundamental matrix from those.
+     * 
+     * @param matchedLeftXY
+     * @param matchedRightXY
+     * @param outputLeftXY
+     * @param outputRightXY
+     * @return
+     * @throws NoSuchAlgorithmException 
+     */
+    public SimpleMatrix calculateEpipolarProjection(
+        PairFloatArray matchedLeftXY, PairFloatArray matchedRightXY,
+        PairFloatArray outputLeftXY, PairFloatArray outputRightXY) 
+        throws NoSuchAlgorithmException {
+        
+        RANSACSolver ransacSolver = new RANSACSolver();
+        
+        return ransacSolver.calculateEpipolarProjection(matchedLeftXY, 
+            matchedRightXY, outputLeftXY, outputRightXY);
     }
 }

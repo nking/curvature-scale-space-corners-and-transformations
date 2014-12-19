@@ -194,7 +194,8 @@ public class StereoProjectionTransformerTest {
         StereoProjectionTransformer spTransformer = 
             new StereoProjectionTransformer();
         
-        spTransformer.calculateEpipolarProjection(matched1, matched2);
+        spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
+            matched1, matched2);
         
         double[] leftEpipole = spTransformer.getLeftEpipole();
         
@@ -297,7 +298,7 @@ public class StereoProjectionTransformerTest {
         spTransformer = 
             new StereoProjectionTransformer();
         
-        spTransformer.calculateEpipolarProjection(matched1, matched2);
+        spTransformer.calculateEpipolarProjectionForPerfectlyMatched(matched1, matched2);
         //spTransformer.calculateEpipolarProjectionWithoutNormalization(matched1, matched2);
         
         double[] leftEpipole = spTransformer.getLeftEpipole();
@@ -518,11 +519,10 @@ public class StereoProjectionTransformerTest {
 
             log.info("stereo projection FIT to all remaining corners) " 
                 + fitOfAllMatches.toString());
-            
+           
  if (true) {
      break;
  }
- 
  
             // keep the top fits and look at the image projections
             List<FitHolder> best = new ArrayList<FitHolder>();
@@ -551,7 +551,7 @@ public class StereoProjectionTransformerTest {
                 StereoProjectionTransformer spTransformer2 = new 
                     StereoProjectionTransformer();
 
-                spTransformer2.calculateEpipolarProjection(subset1, subset2);
+                spTransformer2.calculateEpipolarProjectionForPerfectlyMatched(subset1, subset2);
 
                 StereoProjectionTransformerFit fit = 
                     spTransformer2.evaluateFitInRightImageForMatchedPoints(
@@ -568,8 +568,8 @@ public class StereoProjectionTransformerTest {
 
                 log.fine(i + ") " + fit.toString());
 
-                if (!Double.isNaN(fit.getAvgDistance()) &&
-                    fit.getAvgDistance() >= tolerance) {
+                if (!Double.isNaN(fit.getMeanDistance()) &&
+                    fit.getMeanDistance() >= tolerance) {
                     continue;
                 }
 
@@ -630,7 +630,7 @@ public class StereoProjectionTransformerTest {
             StereoProjectionTransformer spTransformer2 = new 
                 StereoProjectionTransformer();
 
-            spTransformer2.calculateEpipolarProjection(subset1, subset2);
+            spTransformer2.calculateEpipolarProjectionForPerfectlyMatched(subset1, subset2);
                         
             float factor = 2.f;
 
@@ -659,91 +659,125 @@ public class StereoProjectionTransformerTest {
     
     @Test
     public void testH() throws Exception {
+        
+        /*
+        compare these calculated with the merton college I dataset:
+            (0) epipolar projection solution with all points already matched.
+                -- log the solution and plot the final 2 figures.
+            (1) epipolar projection solution with 7 points already matched.
+                -- log the solution and plot the final 2 figures.
+            (2) epipolar projection solution with RANSAC on the already matched
+                lists of points.
+                -- log the solution and plot the final 2 figures.
+            (3) epipolar projection solution for the stereo projection point
+                matcher and solver.
+                (not yet implemented).
+                -- log the solution and plot the final 2 figures.
+        */
                     
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         
-        PairFloatArray xy1 = new PairFloatArray();
-        PairFloatArray xy2 = new PairFloatArray();
-        xy1.add(97.263000f, 466.206000f);
-        xy2.add(75.142000f, 519.539000f);
-        xy1.add(47.343000f, 33.856000f);
-        xy2.add(18.089000f, 19.859000f);
-        xy1.add(421.285000f, 44.954000f);
-        xy2.add(395.439000f, 45.559000f);
-        xy1.add(521.201000f, 493.853000f);
-        xy2.add(534.457000f, 538.037000f);
-        xy1.add(604.038000f, 239.050000f);
-        xy2.add(609.635000f, 260.938000f);
-        xy1.add(816.107000f, 33.034000f);
-        xy2.add(848.550000f, 50.388000f);
-        xy1.add(948.143000f, 344.338000f);
-        xy2.add(1000.549000f, 383.014000f);
-                
-        //8th point and 9th to check these w/ existing method
-        //xy1.add(271.139000f, 266.206000f);
-        //xy2.add(261.143000f, 288.323000f);
-        //xy1.add(101.204000f, 235.161000f);  
-        //xy2.add(78.059000f, 253.928000f);
-        
         // mRows = 3;  nCols = 484
         SimpleMatrix unnormXY1 = DataForTests.readMerton1UnnormalizedX1Data();
         // mRows = 3;  nCols = 484
         SimpleMatrix unnormXY2 = DataForTests.readMerton1UnnormalizedX2Data();
-        xy1 = new PairFloatArray();
-        xy2 = new PairFloatArray();
-        for (int j = 0; j < unnormXY1.numCols(); j++) {
-            xy1.add((float) unnormXY1.get(0, j), (float) unnormXY1.get(1, j));
-            xy2.add((float) unnormXY2.get(0, j), (float) unnormXY2.get(1, j));
-        }
-        /*
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
-        Set<String> chosen = new HashSet<String>();
-        int[] selected = new int[7];
-        */
-        for (int i = 0; i < 1; i++) {
+        
+        for (int methodType = 0; methodType < 4; methodType++) {
+        
+            SimpleMatrix fm = null;
+            SimpleMatrix input1 = null;
+            SimpleMatrix input2 = null;
+        
+            StereoProjectionTransformer spTransformer = 
+                new StereoProjectionTransformer();
             
-            StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
-/*
-            chooseRandomly(sr, selected, chosen, 484);
-            xy1 = new PairFloatArray();
-            xy2 = new PairFloatArray();
-            for (int j = 0; j < selected.length; j++) {
-                int idx = selected[j];
-                xy1.add((float)unnormXY1.get(0, idx), (float)unnormXY1.get(1, idx));
-                xy2.add((float)unnormXY2.get(0, idx), (float)unnormXY2.get(1, idx));
-            }
- */           
-            //SimpleMatrix fm = spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);
-            SimpleMatrix fm = spTransformer.calculateEpipolarProjection(xy1, xy2);
+            switch(methodType) {
+                
+                case 0:
+                    // solution with all already matched points:
+                    
+                    fm = spTransformer
+                        .calculateEpipolarProjectionForPerfectlyMatched(
+                            unnormXY1, unnormXY2);
             
-            SimpleMatrix input1 = spTransformer.rewriteInto3ColumnMatrix(xy1);
-            SimpleMatrix input2 = spTransformer.rewriteInto3ColumnMatrix(xy2);
-
-            for (int row = 0; row < fm.numRows(); row++) {
-                StringBuilder sb = new StringBuilder();
-                for (int col = 0; col < fm.numCols(); col++) {
-                    sb.append(fm.get(row, col)).append(", ");
-                }
-                System.out.println(row + ") " + sb.toString());
+                    input1 = unnormXY1;
+                    input2 = unnormXY2;
+                    
+                    break;
+                    
+                case 1:
+                    // solution with 7 of the already matched points:
+                    PairFloatArray xy1 = new PairFloatArray();
+                    PairFloatArray xy2 = new PairFloatArray();
+                    xy1.add(97.263000f, 466.206000f);
+                    xy2.add(75.142000f, 519.539000f);
+                    xy1.add(47.343000f, 33.856000f);
+                    xy2.add(18.089000f, 19.859000f);
+                    xy1.add(421.285000f, 44.954000f);
+                    xy2.add(395.439000f, 45.559000f);
+                    xy1.add(521.201000f, 493.853000f);
+                    xy2.add(534.457000f, 538.037000f);
+                    xy1.add(604.038000f, 239.050000f);
+                    xy2.add(609.635000f, 260.938000f);
+                    xy1.add(816.107000f, 33.034000f);
+                    xy2.add(848.550000f, 50.388000f);
+                    xy1.add(948.143000f, 344.338000f);
+                    xy2.add(1000.549000f, 383.014000f);
+                    
+                    input1 = StereoProjectionTransformer
+                        .rewriteInto3ColumnMatrix(xy1);
+                    input2 = StereoProjectionTransformer
+                        .rewriteInto3ColumnMatrix(xy2);
+            
+                    fm = spTransformer
+                        .calculateEpipolarProjectionFor7Points(xy1, xy2);
+                    
+                    break;
+                    
+                case 2:
+                    // use RANSAC on all points
+                    
+                    RANSACSolver solver = new RANSACSolver();
+                    
+                    PairFloatArray outputLeftXY = new PairFloatArray();
+                    PairFloatArray outputRightXY = new PairFloatArray();
+                    
+                    input1 = unnormXY1;
+                    input2 = unnormXY2;
+                    
+                    fm = solver.calculateEpipolarProjection(
+                        input1, input2, outputLeftXY, outputRightXY);
+                    
+                    break;
+                    
+                case 3:
+                    // scramble the points and use the matching
+                    // method that solves for the epipolar projection
+                    
+                    if (true) {
+                        continue;
+                    }
+                    
+                    break;
             }
             
             Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
             int image1Width = img1.getWidth();
             int image1Height = img1.getHeight();
             Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-
+            
             for (int ii = 0; ii < input1.numCols(); ii++) {
                 double x = input1.get(0, ii);
-                double y = input1.get(1, ii);            
-                ImageIOHelper.addPointToImage((float)x, (float)y, img1, 3, 255, 0, 0);
+                double y = input1.get(1, ii);
+                ImageIOHelper.addPointToImage((float) x, (float) y, img1, 3, 
+                    255, 0, 0);
                 double x2 = input2.get(0, ii);
-                double y2 = input2.get(1, ii);            
-                ImageIOHelper.addPointToImage((float)x2, (float)y2, img2, 3, 255, 0, 0);
-                //System.out.println(String.format("%f, %f  %f, %f", x, y, x2, y2));
+                double y2 = input2.get(1, ii);
+                ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3, 
+                    255, 0, 0);
             }
 
             Color clr = null;
@@ -751,27 +785,28 @@ public class StereoProjectionTransformerTest {
                 clr = getColor(clr);
                 SimpleMatrix epipolarLinesInLeft = fm.transpose().mult(input2);
                 PairIntArray leftLine = spTransformer.getEpipolarLine(
-                    epipolarLinesInLeft, image1Width, image1Height, ii);            
-                ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
-                    clr.getRed(), clr.getGreen(), clr.getBlue());            
+                    epipolarLinesInLeft, image1Width, image1Height, ii);
+                ImageIOHelper.addCurveToImage(leftLine, img1, 0,
+                    clr.getRed(), clr.getGreen(), clr.getBlue());
             }
 
             clr = null;
             for (int ii = 0; ii < input1.numCols(); ii++) {
-                clr = getColor(clr);                        
+                clr = getColor(clr);
                 SimpleMatrix epipolarLinesInRight = fm.mult(input1);
                 PairIntArray rightLine = spTransformer.getEpipolarLine(
-                    epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);                                
-                ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
-                    clr.getRed(), clr.getGreen(), clr.getBlue());  
+                    epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);
+                ImageIOHelper.addCurveToImage(rightLine, img2, 0,
+                    clr.getRed(), clr.getGreen(), clr.getBlue());
             }
 
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
-                dirPath + "/tmp_m_1_" + i + ".png", img1);
+                dirPath + "/tmp_m_1_" + methodType + ".png", img1);
             ImageIOHelper.writeOutputImage(
-                dirPath + "/tmp_m_2_" + i + ".png", img2);
+                dirPath + "/tmp_m_2_" + methodType + ".png", img2);
         }
+    
     }
     
     private void chooseRandomly(SecureRandom sr, int[] selected, 
@@ -803,7 +838,7 @@ public class StereoProjectionTransformerTest {
         StereoProjectionTransformer spTransformer 
             = new StereoProjectionTransformer();
         
-        spTransformer.calculateEpipolarProjection(matchedSubset1, matchedSubset2);
+        spTransformer.calculateEpipolarProjectionForPerfectlyMatched(matchedSubset1, matchedSubset2);
                 
         String fileName1 = imageFileName1;
         String fileName2 = imageFileName2;
@@ -935,22 +970,22 @@ public class StereoProjectionTransformerTest {
                 return 1;
             }
             
-            if (Double.isNaN(o2.fit.getAvgDistance()) && 
-                !Double.isNaN(o1.fit.getAvgDistance())) {
+            if (Double.isNaN(o2.fit.getMeanDistance()) && 
+                !Double.isNaN(o1.fit.getMeanDistance())) {
                 return -1;
-            } else if (Double.isNaN(o1.fit.getAvgDistance()) && 
-                !Double.isNaN(o2.fit.getAvgDistance())) {
+            } else if (Double.isNaN(o1.fit.getMeanDistance()) && 
+                !Double.isNaN(o2.fit.getMeanDistance())) {
                 return 1;
             }
             
-            if (o1.fit.getAvgDistance() < o2.fit.getAvgDistance()) {
+            if (o1.fit.getMeanDistance() < o2.fit.getMeanDistance()) {
                 return -1;
-            } else if (o1.fit.getAvgDistance() > o2.fit.getAvgDistance()) {
+            } else if (o1.fit.getMeanDistance() > o2.fit.getMeanDistance()) {
                 return 1;
             } else {
-                if (o1.fit.getStDevFromAvg() < o2.fit.getStDevFromAvg()) {
+                if (o1.fit.getStDevFromMean() < o2.fit.getStDevFromMean()) {
                     return -1;
-                } else if (o1.fit.getStDevFromAvg() > o2.fit.getStDevFromAvg()) {
+                } else if (o1.fit.getStDevFromMean() > o2.fit.getStDevFromMean()) {
                     return 1;
                 }
             }
