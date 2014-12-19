@@ -194,7 +194,8 @@ public class StereoProjectionTransformer {
         fundamental matrix solution and hence the point matches.
         
         regarding the set of points tried, all points should be tried because
-        any subsets may be missing possible matches in set2.
+        any subsets may be missing possible matches in set2
+        (so not using RANSAC for unmatched points).
         
         
         */
@@ -1456,19 +1457,7 @@ public class StereoProjectionTransformer {
         return evaluateFitInRightImageForMatchedPoints(theLeftPoints, 
             theRightPoints, tolerance);
     }
-        
-    public StereoProjectionTransformerFit evaluateRightForMatchedAndStoreOutliers(
-        PairFloatArray leftImagePoints, PairFloatArray rightImagePoints,
-        float factor, double minRemoval, LinkedHashSet<Integer> skipIndexes) {
-        
-        SimpleMatrix theLeftPoints = rewriteInto3ColumnMatrix(leftImagePoints);
-        
-        SimpleMatrix theRightPoints = rewriteInto3ColumnMatrix(rightImagePoints);
-       
-        return evaluateRightForMatchedAndStoreOutliers(theLeftPoints, 
-            theRightPoints, factor, minRemoval, skipIndexes);
-    }
-
+    
     /**
       * evaluate the fit in the right image as the distance of points there
       * from the projected epipolar lines (created from the left points).
@@ -2058,119 +2047,9 @@ public class StereoProjectionTransformer {
         
         StereoProjectionTransformerFit fit = 
             new StereoProjectionTransformerFit(diffs.length, tolerance, 
-                avgAndStdDev[0], avgAndStdDev[1]);
+            avgAndStdDev[0], avgAndStdDev[1]);
         
         fit.setInlierIndexes(inlierIndexes);
-        
-        return fit;
-    }
-        
-    /**
-     * evaluate the fit of projection by calculating the difference between
-     * the right points and the epipolar lines that are calculated from the
-     * left points.  After the average distance and standard deviation are
-     * learned for the right points, those that are greater than 
-     * average distance + factor * standard deviation are added to the list
-     * skipIndexes.  Note that any points already in skipIndexes are
-     * skipped during the evaluation.
-     * @param leftPoints input matched points from left image, excepting those
-     * with indexes in skipIndexes.
-     * @param rightPoints input matched points from right image, excepting those
-     * with indexes in skipIndexes.
-     * @param factor
-     * @param minRemoval minimum distance above which an outlier distance
-     * can be applied
-     * @param skipIndexes existing indexes to skip in evaluation and to append 
-     * to with outliers from this evaluation.
-     * @return 
-     */
-    public StereoProjectionTransformerFit evaluateRightForMatchedAndStoreOutliers(
-        SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
-        float factor, double minRemoval, LinkedHashSet<Integer> skipIndexes) {
-               
-        if (leftPoints == null) {
-            throw new IllegalArgumentException("leftPoints cannot be null");
-        }
-        
-        if (rightPoints == null) {
-            throw new IllegalArgumentException("rightPoints cannot be null");
-        }
-        
-        if (skipIndexes == null) {
-            throw new IllegalArgumentException("skipIndexes cannot be null");
-        }
-         
-        int nPointsLeft = leftPoints.numCols();
-        int nPointsRight = rightPoints.numCols();
-        
-        if (nPointsLeft != nPointsRight) {
-            throw new IllegalArgumentException("point lists must have same "
-                + " length since these are matched. " +
-                " For unmatched lists, use evaluateFitInRightImage()");
-        }
-      
-        SimpleMatrix theRightEpipolarLines = calculateEpipolarRightLines(leftPoints);
-      
-        int[] minMaxLineXEndpoints = getMinMaxX(rightPoints);
-        float lineX0 = minMaxLineXEndpoints[0];
-        float lineX1 = minMaxLineXEndpoints[1];
-       
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        double[] diffs = new double[nPointsLeft];
-        int nMatched = 0;
-        long diffSum = 0;
-                    
-        for (int i = 0; i < nPointsLeft; i++) {
-
-            double[] epipolarLineYEndPoints = getEpipolarLineYEndpoints(
-                theRightEpipolarLines, lineX0, lineX1, i);
-
-            float lineY0 = (float)epipolarLineYEndPoints[0];
-            float lineY1 = (float)epipolarLineYEndPoints[1];
-
-            double dist = curveHelper.distanceFromPointToALine(
-                lineX0, lineY0, lineX1, lineY1, 
-                (float)rightPoints.get(0, i), 
-                (float)rightPoints.get(1, i));
-
-            diffs[i] = dist;
-            
-            if (!skipIndexes.contains(Integer.valueOf(i))) {
-                diffSum += dist;
-                nMatched++;
-            }
-        }
-        
-        double avgDist = diffSum/(double)nMatched;
-        
-        diffSum = 0;
-        for (int i = 0; i < nPointsLeft; i++) {
-            if (!skipIndexes.contains(Integer.valueOf(i))) {
-                double d = diffs[i] - avgDist;
-                diffSum += (d * d);
-            }
-        }
-        
-        double stdDevDist = Math.sqrt(diffSum/((double)nMatched - 1));
-        
-        double comp = avgDist + factor * stdDevDist;
-        
-        if (comp > minRemoval) {
-                    
-            for (int i = 0; i < nPointsLeft; i++) {
-                Integer idx = Integer.valueOf(i);
-                if (!skipIndexes.contains(idx)) {
-                    if (diffs[i] > comp) {
-                        skipIndexes.add(idx);
-                    }
-                }
-            }
-            
-        }
-        
-        StereoProjectionTransformerFit fit = new StereoProjectionTransformerFit(
-            nMatched, comp, avgDist, stdDevDist);
         
         return fit;
     }

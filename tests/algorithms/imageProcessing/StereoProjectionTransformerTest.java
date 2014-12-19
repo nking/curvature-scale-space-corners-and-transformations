@@ -5,15 +5,9 @@ import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.awt.Color;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 import org.junit.After;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 import org.ejml.simple.*;
@@ -184,210 +178,10 @@ public class StereoProjectionTransformerTest {
         int z = 1;
     }
     
-    public void estE() throws Exception {
-        
-        PairFloatArray matched1 = new PairFloatArray();
-        PairFloatArray matched2 = new PairFloatArray();
-        
-        DataForTests.readBrownAndLoweMatches(matched1, matched2);
-        
-        StereoProjectionTransformer spTransformer = 
-            new StereoProjectionTransformer();
-        
-        spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
-            matched1, matched2);
-        
-        double[] leftEpipole = spTransformer.getLeftEpipole();
-        
-        double[] rightEpipole = spTransformer.getRightEpipole();
-      
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        
-        double rightEpipoleX = rightEpipole[0] / rightEpipole[2];
-        double rightEpipoleY = rightEpipole[1] / rightEpipole[2];
-        double leftEpipoleX = leftEpipole[0] / leftEpipole[2];
-        double leftEpipoleY = leftEpipole[1] / leftEpipole[2];
-        log.info("leftEpipole=" + Arrays.toString(leftEpipole));
-        log.info("rightEpipole=" + Arrays.toString(rightEpipole));
-        log.info("leftEpipole(X,Y) = ("  + leftEpipoleX + ", " + leftEpipoleY + ")");
-        log.info("rightEpipole(X,Y) = ("  + rightEpipoleX + ", " + rightEpipoleY + ")");
-        PairIntArray leftMatches = new PairIntArray();
-        PairIntArray rightMatches = new PairIntArray();
-        
-        int nLimitTo = matched1.getN();
-        
-        for (int i = 0; i < nLimitTo; i++) {
-            leftMatches.add(Math.round(matched1.getX(i)),
-                Math.round(matched1.getY(i)));
-            rightMatches.add(Math.round(matched2.getX(i)),
-                Math.round(matched2.getY(i)));
-        }
-        
-        Color clr = null;
-        PairIntArray subsetLeft = new PairIntArray();
-        for (int i = 0; i < nLimitTo; i++) {
-            
-            clr = getColor(clr);
-            
-            PairIntArray leftLine = spTransformer.getEpipolarLineInLeft(
-                img1.getWidth(), img1.getHeight(), i);
-            
-            ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
-                clr.getRed(), clr.getGreen(), clr.getBlue());
-            
-            subsetLeft.add(Math.round(matched1.getX(i)), Math.round(matched1.getY(i)));
-        }
-        ImageIOHelper.addCurveToImage(subsetLeft, img1, 2, 255, 0, 0);
-        
-        clr = null;
-        PairIntArray subsetRight = new PairIntArray();
-        for (int i = 0; i < nLimitTo; i++) {
-            clr = getColor(clr);
-            
-            PairIntArray rightLine = spTransformer.getEpipolarLineInRight(
-                img2.getWidth(), img2.getHeight(), i);
-            
-            ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
-                clr.getRed(), clr.getGreen(), clr.getBlue()); 
-            
-            subsetRight.add(Math.round(matched2.getX(i)), Math.round(matched2.getY(i)));
-        }
-        ImageIOHelper.addCurveToImage(subsetRight, img2, 2, 255, 0, 0);
-        
-        
-        String dirPath = ResourceFinder.findDirectory("bin");
-        
-        ImageIOHelper.writeOutputImage(
-            dirPath + "/image1_matched_corners.png", img1);
-       
-        ImageIOHelper.writeOutputImage(
-            dirPath + "/image2_epipolar_and_matches.png", img2);
-        
-    }
-    
-    //@Test
-    public void estF() throws Exception {
-        
-        /*
-        test the fundamental matrix using the Merton I College set from
-        http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
-        
-        Note that this set was chosen to compare initial results with those from
-        the "Programming Computer Vision with Python" by Jan Solem.
-        */
-        
-        // mRows = 3;  nCols = 484
-        SimpleMatrix unnormXY1 = DataForTests.readMerton1UnnormalizedX1Data();
-        
-        // mRows = 3;  nCols = 484
-        SimpleMatrix unnormXY2 = DataForTests.readMerton1UnnormalizedX2Data();
-        
-        StereoProjectionTransformer spTransformer = 
-            new StereoProjectionTransformer();
-        
-        PairFloatArray matched1 = DataForTests.readMerton1UnnormalizedXY1Data();
-        
-        PairFloatArray matched2 = DataForTests.readMerton1UnnormalizedXY2Data();
-       
-        spTransformer = 
-            new StereoProjectionTransformer();
-        
-        spTransformer.calculateEpipolarProjectionForPerfectlyMatched(matched1, matched2);
-        //spTransformer.calculateEpipolarProjectionWithoutNormalization(matched1, matched2);
-        
-        double[] leftEpipole = spTransformer.getLeftEpipole();
-        
-        double[] rightEpipole = spTransformer.getRightEpipole();
-    
-        int nPoints = spTransformer.getEpipolarLinesInLeft().numCols();
-        
-        String fileName1 = "merton_college_I_001.jpg";
-        String fileName2 = "merton_college_I_002.jpg";
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        
-        int nLimitTo = nPoints;
-        
-        Color clr = null;
-        PairIntArray subsetLeft = new PairIntArray();
-        for (int i = 0; i < nLimitTo; i++) {
-            
-            clr = getColor(clr);
-            
-            PairIntArray leftLine = spTransformer.getEpipolarLineInLeft(
-                img1.getWidth(), img1.getHeight(), i);
-            
-            ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
-                clr.getRed(), clr.getGreen(), clr.getBlue());
-            
-            subsetLeft.add(Math.round(matched1.getX(i)), Math.round(matched1.getY(i)));
-        }
-        ImageIOHelper.addCurveToImage(subsetLeft, img1, 2, 255, 0, 0);
-        
-        clr = null;
-        PairIntArray subsetRight = new PairIntArray();
-        for (int i = 0; i < nLimitTo; i++) {
-            clr = getColor(clr);
-            
-            PairIntArray rightLine = spTransformer.getEpipolarLineInRight(
-                img2.getWidth(), img2.getHeight(), i);
-            
-            ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
-                clr.getRed(), clr.getGreen(), clr.getBlue()); 
-            
-            subsetRight.add(Math.round(matched2.getX(i)), Math.round(matched2.getY(i)));
-        }
-        ImageIOHelper.addCurveToImage(subsetRight, img2, 2, 255, 0, 0);
-    
-        String dirPath = ResourceFinder.findDirectory("bin");
-        
-        ImageIOHelper.writeOutputImage(dirPath + "/tmp1.png", img1);
-       
-        ImageIOHelper.writeOutputImage(dirPath + "/tmp2.png", img2);
-        
-        StereoProjectionTransformerFit fit = spTransformer.evaluateFitForRight(
-            3);
-        
-        assertTrue(fit.getNMatches() == unnormXY1.numCols());
-    }
-    
-    //@Test
-    public void estG() throws Exception {
-        
-        // ===== learning steps to matching points between images with 
-        // projections such as epipolar projections.
-        // the epipolar projection is sensitive to precisely matched input
-        // points so this solves that stage and compares total to known
-        // total result
-        /*
-        Best results so far from these steps:
-        
-        (1) extract corners in outdoor mode.
-        (2) get a rough euclidean transformation from the PointMatcher.
-        (3) use that to transform the image1 edges from outdoor mode 
-        (4) mark edges from both sets that are not completely internal              
-            to their union plus a buffer in skip lists
-        (5)
-        */
-        
-        /*
+    /* {        
         PairIntArray corners1Int = new PairIntArray();
         PairIntArray corners2Int = new PairIntArray();        
         DataForTests.readBrownAndLoweCorners(corners1Int, corners2Int);
-        */
-        /*
-        String fileName1 = "merton_college_I_001.jpg";
-        String fileName2 = "merton_college_I_002.jpg";
-        DataForTests.readUnmatchedMerton1CornersFromThisCode(corn1, corn2);
-        */
         
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String fileName2 = "brown_lowe_2003_image2.jpg";
@@ -403,7 +197,6 @@ public class StereoProjectionTransformerTest {
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         
-        /*
         CurvatureScaleSpaceInflectionMapperForOpenCurves inflMapper = new
             CurvatureScaleSpaceInflectionMapperForOpenCurves(img1, img2);
         PairIntArray[] xyPeaks = inflMapper.createUnmatchedXYFromContourPeaks();        
@@ -415,247 +208,8 @@ public class StereoProjectionTransformerTest {
         DataForTests.writePointsToTestResources(points2, 
             "brown_lowe_2003_image2_infl_pts.tsv");
         TransformationParameters params = inflMapper.createEuclideanTransformation();
-        */
-        
-        PairIntArray points1 = new PairIntArray();
-        PairIntArray points2 = new PairIntArray();
-        DataForTests.readBrownAndLoweInflectionPointsImage1(points1);        
-        DataForTests.readBrownAndLoweInflectionPointsImage2(points2);
-        
-        PointMatcher pointMatcher = new PointMatcher();
-        
-        TransformationPointFit fit = 
-            pointMatcher.calculateRoughTransformationForUnmatched(
-            points1, points2, image1Width, image1Height);
-        
-        log.info("FIT: " + fit.toString());
-        
-        if (true) {
-            return;
-        }
-     
-        // === get rough euclidean projection ====
-        
-        /*
-        // ==== transform edges1 and corners1Int to image2 frame ====
-        Transformer transformer = new Transformer();
-        
-        PairIntArray corners1Transformed = transformer.applyTransformation(
-            fit2.getParameters(), corners1Int, 
-            image1Width >> 1, image1Height >> 1);
-           
-        List<PairIntArray> edges1Transformed = transformer.applyTransformation(
-            fit2.getParameters(), edges1,
-            image1Width >> 1, image1Height >> 1);
-
-        int buffer = 50;
-        
-        ExternalEdgeFinder extEF = new ExternalEdgeFinder();
-        Set<Integer> edges2SkipList = extEF.findExteriorEdges(edges2, 
-            edges1Transformed, buffer);
-        
-        Set<Integer> edges1SkipList = extEF.findExteriorEdges(edges1Transformed,
-            image2Width, image2Height);
-       */
-        
-        // edges are now roughly in same reference frame but there may be
-        // position dependent increasing differences in 
-        // translation and rotation due to projection effects
-        // so registration:
-        //     -- calc centroid of each edge not in a skip list
-        //
-        //
-        
-        /*
-        double[] diffFromModel = new double[corners1Int.getN()];
-        double[] avgDiffModel = new double[1];
-        
-        int centroidX1 = 517 >> 1;
-        int centroidY1 = 374 >> 1;
-        double transXTol = 517 * 0.02;
-        double transYTol = 374 * 0.02;
-        double tolerance = avgDiffModel[0] + 0.5*fit2.getStDevFromMean();
-        
-        int nIterMax = 15;
-        int nIter = 0;
-        
-        log.info("Point matcher matched " + corners1Int.getN() + " from " 
-            + outputMatched1.getN());
-        
-        PairFloatArray matched1 = new PairFloatArray();
-        PairFloatArray matched2 = new PairFloatArray();
-        for (int i = 0; i < outputMatched1.getN(); i++) {
-            matched1.add(outputMatched1.getX(i), outputMatched1.getY(i));
-            matched2.add(outputMatched2.getX(i), outputMatched2.getY(i));
-        }
-        
-        // need the same number of corners, so truncating one without
-        // using criteria for which to remove
-                
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
-                
-        int nSubset = 16;
-        int[] selected = new int[nSubset];
-       
-        int nKeep = 20;
-        
-        tolerance = Double.MAX_VALUE;
-        
-        nIterMax = 5;
-        nIter = 0;
-        
-        double minRemoval = 5;
-                                
-        while (nIter < nIterMax) {
-            
-            StereoProjectionTransformer spTransformer = solveAndPlot(
-                matched1, matched2, fileName1, fileName2, "ALL",
-                matched1, matched2);
-
-            StereoProjectionTransformerFit fitOfAllMatches = 
-                spTransformer.evaluateFitInRightImageForMatchedPoints(
-                matched1, matched2, tolerance);
-
-            log.info("stereo projection FIT to all remaining corners) " 
-                + fitOfAllMatches.toString());
-           
- if (true) {
-     break;
- }
- 
-            // keep the top fits and look at the image projections
-            List<FitHolder> best = new ArrayList<FitHolder>();
-            FitHolder ph = new FitHolder();
-            ph.fit = fitOfAllMatches;
-            ph.label = Long.MIN_VALUE; // not a subset bitstring, but used for label
-            ph.setSelected(selected);
-
-            best.add(ph);
-            
-            int nPoints = matched1.getN();
-        
-            Set<String> chosen = new HashSet<String>();
-        
-            for (int i = 0; i < 100; i++) {
-
-                chooseRandomly(sr, selected, chosen, nPoints);
-
-                PairFloatArray subset1 = new PairFloatArray();
-                PairFloatArray subset2 = new PairFloatArray();
-                for (int idx : selected) {
-                    subset1.add(matched1.getX(idx), matched1.getY(idx));
-                    subset2.add(matched2.getX(idx), matched2.getY(idx));
-                }
-
-                StereoProjectionTransformer spTransformer2 = new 
-                    StereoProjectionTransformer();
-
-                spTransformer2.calculateEpipolarProjectionForPerfectlyMatched(subset1, subset2);
-
-                StereoProjectionTransformerFit fit = 
-                    spTransformer2.evaluateFitInRightImageForMatchedPoints(
-                    matched1, matched2, tolerance);
-
-                // look for idx=33 (471,156) and idx=36 (484,165)
-                if ((Arrays.binarySearch(selected, 33) > -1) && 
-                    (Arrays.binarySearch(selected, 36) > -1)) {
-
-                    log.info("i=" + i + " " + Arrays.toString(selected));
-
-                    log.info(i + ") " + fit.toString());
-                }
-
-                log.fine(i + ") " + fit.toString());
-
-                if (!Double.isNaN(fit.getMeanDistance()) &&
-                    fit.getMeanDistance() >= tolerance) {
-                    continue;
-                }
-
-                ph = new FitHolder();
-                ph.fit = fit;
-                ph.label = (long)i; // not a subset bitstring, but used for label
-                ph.setSelected(selected);
-
-                best.add(ph);
-
-                // trim best to size nKeep
-                if ((i > 0) && ((i % 50) == 0) && (best.size() > nKeep)) {
-                    Collections.sort(best, new FitComparator());
-                    while (best.size() > nKeep) {
-                        best.remove(best.size() - 1);
-                    }
-                }
-            }
-
-            Collections.sort(best, new FitComparator());
-            while (best.size() > nKeep) {
-                best.remove(best.size() - 1);
-            }
-         
-            // ====== plot the best fitting projections =====
-            
-            for (FitHolder fh : best) {
-
-                StereoProjectionTransformerFit fit = fh.fit;
-
-                PairFloatArray subset1 = new PairFloatArray();
-                PairFloatArray subset2 = new PairFloatArray();
-                for (int idx : fh.getSelected()) {
-                    subset1.add(matched1.getX(idx), matched1.getY(idx));
-                    subset2.add(matched2.getX(idx), matched2.getY(idx));
-                }
-
-                spTransformer = solveAndPlot(
-                   subset1, subset2, fileName1, fileName2, 
-                    "_" + fh.label + "_", matched1, matched2);
-
-                log.info(fh.label + ") " +  fit.toString());
-            }
-
-            // ==== remove outliers using best fit and iterate if any were removed =====
-            
-            FitHolder bestFitHolder = best.get(0);
-        
-            PairFloatArray subset1 = new PairFloatArray();
-            PairFloatArray subset2 = new PairFloatArray();
-            for (int idx : bestFitHolder.getSelected()) {
-                subset1.add(matched1.getX(idx), matched1.getY(idx));
-                subset2.add(matched2.getX(idx), matched2.getY(idx));
-            }            
-            
-            LinkedHashSet<Integer> skipIndexes = new LinkedHashSet<Integer>();
-            
-            StereoProjectionTransformer spTransformer2 = new 
-                StereoProjectionTransformer();
-
-            spTransformer2.calculateEpipolarProjectionForPerfectlyMatched(subset1, subset2);
-                        
-            float factor = 2.f;
-
-            StereoProjectionTransformerFit fit = 
-                spTransformer2.evaluateRightForMatchedAndStoreOutliers(
-                matched1, matched2, factor, minRemoval, skipIndexes);
-            
-            if (skipIndexes.isEmpty()) {
-                break;
-            }
-            
-            log.info("removing " + skipIndexes + " points");
-            
-            List<Integer> rm = new ArrayList<Integer>(skipIndexes);
-            
-            for (int i = (rm.size() - 1); i > -1; i--) {
-                int idx = rm.get(i).intValue();
-                matched1.removeRange(idx, idx);
-                matched2.removeRange(idx, idx);
-            }
-                
-            nIter++;
-        }
-        */
     }
+    */
     
     @Test
     public void testH() throws Exception {
@@ -673,6 +227,12 @@ public class StereoProjectionTransformerTest {
                 matcher and solver.
                 (not yet implemented).
                 -- log the solution and plot the final 2 figures.
+        
+        Merton I College set is from
+        http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+        
+        Note that this set was chosen to compare initial results with those from
+        the "Programming Computer Vision with Python" by Jan Solem.
         */
                     
         String fileName1 = "merton_college_I_001.jpg";
@@ -808,102 +368,7 @@ public class StereoProjectionTransformerTest {
         }
     
     }
-    
-    private void chooseRandomly(SecureRandom sr, int[] selected, 
-        Set<String> chosen, int nPoints) {
-        
-        while (true) {
-            for (int i = 0; i < selected.length; i++) {
-                int sel = sr.nextInt(nPoints);
-                while (contains(selected, i, sel)) {
-                    sel = sr.nextInt(nPoints);
-                }
-                selected[i] = sel;
-            }
-            Arrays.sort(selected);
-            String str = Arrays.toString(selected);
-            if (!chosen.contains(str)) {
-                chosen.add(str);
-                break;
-            }
-        }
-    }
-
-    private StereoProjectionTransformer solveAndPlot(
-        PairFloatArray matchedSubset1, PairFloatArray matchedSubset2, 
-        String imageFileName1, 
-        String imageFileName2, String fileNumber,
-        PairFloatArray matched1, PairFloatArray matched2) throws Exception {
-        
-        StereoProjectionTransformer spTransformer 
-            = new StereoProjectionTransformer();
-        
-        spTransformer.calculateEpipolarProjectionForPerfectlyMatched(matchedSubset1, matchedSubset2);
-                
-        String fileName1 = imageFileName1;
-        String fileName2 = imageFileName2;
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-                    
-        SimpleMatrix theLeftPoints = spTransformer.rewriteInto3ColumnMatrix(matched1);
-        SimpleMatrix theRightEpipolarLines = spTransformer.calculateEpipolarRightLines(
-            theLeftPoints);
-        
-        SimpleMatrix theRightPoints = spTransformer.rewriteInto3ColumnMatrix(matched2);
-        SimpleMatrix theLeftEpipolarLines = spTransformer.calculateEpipolarLeftLines(
-            theRightPoints);
-        
-        Color clr = null;
-        for (int i = 0; i < theLeftEpipolarLines.numCols(); i++) {
-            
-            clr = getColor(clr);
-            
-            PairIntArray leftLine = spTransformer.getEpipolarLine(
-                theLeftEpipolarLines, img1.getWidth(), img1.getHeight(), i);
-            
-            ImageIOHelper.addCurveToImage(leftLine, img1, 0, 
-                clr.getRed(), clr.getGreen(), clr.getBlue());
-            
-            ImageIOHelper.addPointToImage(matched2.getX(i), matched2.getY(i), 
-                img2, 3, 255, 0, 0);
-            
-            ImageIOHelper.addPointToImage(matched2.getX(i), matched2.getY(i), 
-                img2, 2, 
-                clr.getRed(), clr.getGreen(), clr.getBlue());
-        }
-        
-        clr = null;
-        
-        for (int i = 0; i < theRightEpipolarLines.numCols(); i++) {
-            
-            clr = getColor(clr);
-            
-            PairIntArray rightLine = spTransformer.getEpipolarLine(
-                theRightEpipolarLines, img1.getWidth(), img1.getHeight(), i);
-            
-            ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
-                clr.getRed(), clr.getGreen(), clr.getBlue()); 
-            
-            ImageIOHelper.addPointToImage(matched1.getX(i), matched1.getY(i), 
-                img1, 3, 255, 0, 0);
-            
-            ImageIOHelper.addPointToImage(matched1.getX(i), matched1.getY(i), 
-                img1, 2, clr.getRed(), clr.getGreen(), clr.getBlue());
-        }
-    
-        String dirPath = ResourceFinder.findDirectory("bin");
-        
-        ImageIOHelper.writeOutputImage(
-            dirPath + "/tmp_" + fileNumber + "_1.png", img1);
-       
-        ImageIOHelper.writeOutputImage(
-            dirPath + "/tmp_" + fileNumber + "_2.png", img2);
-        
-        return spTransformer;
-    }
-    
+   
     private Color getColor(Color clr) {
         if ((clr == null) || clr.equals(Color.MAGENTA)) {
             return Color.BLUE;
@@ -925,75 +390,6 @@ public class StereoProjectionTransformerTest {
         }
     }
     
-    private boolean contains(int[] values, int lastIdx, int valueToCheck) {
-        for (int i = 0; i < lastIdx; i++) {
-            if (values[i] == valueToCheck) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    public static class FitHolder {
-        public StereoProjectionTransformerFit fit;
-        public Long label;
-        private int[] selected = null;
-        public void setSelected(int[] theSelectedIndexes) {
-            selected = Arrays.copyOf(theSelectedIndexes, theSelectedIndexes.length);
-        }
-        public int[] getSelected() { return selected;}
-    }
-    public class FitComparator implements Comparator<FitHolder> {
-
-        @Override
-        public int compare(FitHolder o1, FitHolder o2) {
-            
-            if (o2 == null && o1 != null) {
-                return -1;
-            } else if (o1 == null && o2 != null) {
-                return 1;
-            } else if (o1 == null && o2 == null) {
-                return 0;
-            }
-            
-            if (o2.fit == null && o1.fit != null) {
-                return -1;
-            } else if (o1.fit == null && o2.fit != null) {
-                return 1;
-            } else if (o1.fit == null && o2.fit == null) {
-                return 0;
-            }
-            
-            if (o1.fit.getNMatches() > o2.fit.getNMatches()) {
-                return -1;
-            } else if (o1.fit.getNMatches() < o2.fit.getNMatches()) {
-                return 1;
-            }
-            
-            if (Double.isNaN(o2.fit.getMeanDistance()) && 
-                !Double.isNaN(o1.fit.getMeanDistance())) {
-                return -1;
-            } else if (Double.isNaN(o1.fit.getMeanDistance()) && 
-                !Double.isNaN(o2.fit.getMeanDistance())) {
-                return 1;
-            }
-            
-            if (o1.fit.getMeanDistance() < o2.fit.getMeanDistance()) {
-                return -1;
-            } else if (o1.fit.getMeanDistance() > o2.fit.getMeanDistance()) {
-                return 1;
-            } else {
-                if (o1.fit.getStDevFromMean() < o2.fit.getStDevFromMean()) {
-                    return -1;
-                } else if (o1.fit.getStDevFromMean() > o2.fit.getStDevFromMean()) {
-                    return 1;
-                }
-            }
-            
-            return Long.compare(o1.fit.getNMatches(), o2.fit.getNMatches());
-        }
-    }
-    
     public static void main(String[] args) {
         
         try {
@@ -1007,9 +403,7 @@ public class StereoProjectionTransformerTest {
             //test.testE();
             
             //test.testF();
-            
-            //test.testG();
-            
+                        
             test.testH();
                         
         } catch(Exception e) {
