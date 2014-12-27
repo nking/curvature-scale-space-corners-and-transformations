@@ -115,7 +115,7 @@ public class RANSACSolver {
         StereoProjectionTransformerFit bestFit = null;
         List<Integer> inlierIndexes = null;
         SimpleMatrix bestFundamentalMatrix = null;
-        
+                
         for (int i = 0; i < nIter; i++) {
             
             MiscMath.chooseRandomly(sr, selected, chosen, nPoints);
@@ -138,10 +138,7 @@ public class RANSACSolver {
             // determine matrix from 7 points.
             SimpleMatrix fm = 
                 spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);
-            
-            // TODO: is this necessary or will fit always be perfect for these 7?
-            // if all 7 points are "inliers" for their fit, continue 
-            // evaluation.
+         
             StereoProjectionTransformerFit sevenPointFit = 
                 spTransformer.evaluateFit(fm, 
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(xy1),
@@ -150,7 +147,7 @@ public class RANSACSolver {
             if ((sevenPointFit == null) || 
                 (sevenPointFit.getInlierIndexes() == null) ||
                 (sevenPointFit.getInlierIndexes().size() != 7)) {
-System.out.println("The 7-point fit is not always a perfect fit");
+                // TODO: when does this happen?
                 continue;
             }
             
@@ -188,23 +185,37 @@ System.out.println("The 7-point fit is not always a perfect fit");
                 (float)matchedRightXY.get(0, idxInt), 
                 (float)matchedRightXY.get(1, idxInt));
         }
-            
+        
         SimpleMatrix finalFM = 
             spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
             outputLeftXY, outputRightXY);
         
         if (debug) {
             
-            // TODO: evaluate against only outputLeftXY, outputRightXY?
+            //TODO: evaluateFit needs to be improved
             StereoProjectionTransformerFit finalFit = 
                 spTransformer.evaluateFit(finalFM, 
                 matchedLeftXY, matchedRightXY, threshold);
 
             Logger log = Logger.getLogger(this.getClass().getName());
 
+            log.info("nIter=" + nIter);
+            
             log.info("best fit from 7-point: " + bestFit.toString());
 
             log.info("final fit: " + finalFit.toString());
+            
+            if (finalFM != null) {
+                for (int row = 0; row < finalFM.numRows(); row++) {
+                    StringBuffer sb = new StringBuffer("row ")
+                        .append(Integer.toString(row)).append(") ");
+                    for (int col = 0; col < finalFM.numCols(); col++) {
+                        sb.append(String.format("%7e", finalFM.get(row, col)))
+                            .append(" ");
+                    }
+                    log.info(sb.toString());
+                }
+            }
         }
         
         return finalFM;

@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -242,84 +243,257 @@ public final class PointMatcher {
  
     /**
      * 
-     * calculate the rotation, scale, and translation that can be applied
-     * to set1 to match points to set2 where the matches are not already known.  
-     * The image1Width and imageHeight are used to create a tolerance in 
-     * translation for matches.
-     * 
+     * calculate a projective transformation that results in the best match
+     * between the unmatched points in set1 and set2.
+     * Note that output1 and output2 have mismatches in them due to projection
+     * effects, so one should probably follow this with the use of RANSAC
+     * to further remove outliers.
      * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
      * be the first set given in arguments.
+     * 
+     * NOTE: this method is not ready for use yet.
+     * 
      * @param set1 set of points such as corners from an image
      * @param set2 set of points such as corners from another image.
      * @param image1Width
      * @param image1Height
+     * @param output1
+     * @param output2
      * @return 
      */
-    public TransformationPointFit calculateTransformation(PairIntArray set1, 
-        PairIntArray set2, int image1Width, int image1Height) {
+    public StereoProjectionTransformerFit 
+        matchPointsUsingProjectiveTransformation(PairIntArray set1, 
+        PairIntArray set2, int image1Width, int image1Height,
+        PairIntArray output1, PairIntArray output2) {
+                
+        //TODO:  this method is changing.  needs alot of improvement!
+            
+        int rotDelta = 10;
+        int rotStart = 0;
+        int rotStop = 360; 
+        int scaleStart = 1;
+        int scaleStop = 10;
+        int scaleDelta = 1;
         
-        boolean setsAreMatched = false;
+        int centroidX1 = image1Width >> 1;
+        int centroidY1 = image1Height >> 1;
         
-        int rotDelta = 90;
+        double tolTransX = 2.0f * image1Width * 0.02f;
+        double tolTransY = 2.0f * image1Height * 0.02f;
+        //TODO: improve this estimate because the result is sensitive to it
+        double tolerance = Math.sqrt(tolTransX*tolTransX + tolTransY*tolTransY);
+        tolerance *= 2;
         
-        TransformationPointFit fit = calculateTransformationWithGridSearch(
-            set1, set2, image1Width, image1Height,
-            0, 360, rotDelta,
-            1, 10, 1, setsAreMatched, set1, set2
-            );
-        
-        if (fit == null) {
-            return null;
-        }
-       
-        int scale = (int)Math.round(fit.getScale());
-        int rot = (int)Math.round(fit.getRotationInRadians());
-        
-        int rotStart = rot - (rotDelta/2);
-        if (rotStart < 0) {
-            rotStart += 360;
-        }
-        int rotStop = rot + (rotDelta/2);
-        if (rotStop > 360) {
-            rotStop -= 360;
-        }
-        if (rotStop < rotStart) {
-            rotStop += 360;
-        }
-        
-        int scaleStart = scale - 1;
-        if (scaleStart < 1) {
-            scaleStart = 1;
-        }
-
-        fit = calculateTransformationWithGridSearch(
-            set1, set2, image1Width, image1Height,
-            rotStart, rotStop, 10,
-            scaleStart, scale + 1, 1, 
-            setsAreMatched, set1, set2
-            );
-        
-        if (fit == null) {
-            return null;
-        }
-                  
         int convergence = (set1.getN() < set2.getN()) ? set1.getN() 
             : set2.getN();
+      
+        StereoProjectionTransformerFit bestFit = null;
+        PairIntArray bestFitMatches1 = new PairIntArray();
+        PairIntArray bestFitMatches2 = new PairIntArray();
+        TransformationParameters bestParams = null;
         
-        if ((fit.getNumberOfMatchedPoints() == convergence)
-            && (fit.getMeanDistFromModel() == 0)) {
-            return fit;
+        //TODO: once this is correct, find a faster approach to the local search area
+        // for example, if bestFit for a scale worsens as scale increases,
+        // one should be able to break from the scale
+        
+        StereoProjectionTransformerFit bestFitForScale = null;
+        
+        for (int scale = scaleStart; scale < scaleStop; scale += scaleDelta) {
+                        
+            for (int rot = rotStart; rot < rotStop; rot += rotDelta) {
+            
+                // requires estimation of translation x and y
+                
+                TransformationParameters params = 
+                    calculateTranslationForUnmatched(set1, set2, 
+                        rot*Math.PI/180., scale, centroidX1, centroidY1);
+               
+                // the optimal match is necessary
+                float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
+                    set1, set2, 
+                    params.getScale(), params.getRotationInRadians(), 
+                    params.getTranslationX(), params.getTranslationY(),
+                    tolerance, image1Width >> 1, image1Height >> 1);
+                
+                /*float[][] matchIndexesAndDiffs = calculateMatchUsingGreedy(
+                    set1, set2, 
+                    params.getScale(), params.getRotationInRadians(), 
+                    params.getTranslationX(), params.getTranslationY(), 
+                    tolerance, image1Width >> 1, image1Height >> 1);
+                */
+                
+                if ((matchIndexesAndDiffs == null) || 
+                    (matchIndexesAndDiffs.length < 8)) {
+                    continue;
+                }
+                
+                PairFloatArray subset1 = new PairFloatArray();
+                PairFloatArray subset2 = new PairFloatArray();
+                LinkedHashSet<Integer> matchedSet1 = new LinkedHashSet<Integer>();
+                LinkedHashSet<Integer> matchedSet2 = new LinkedHashSet<Integer>();
+                for (int ii = 0; ii < matchIndexesAndDiffs.length; ii++) {
+                    int idx1 = (int)matchIndexesAndDiffs[ii][0];
+                    int idx2 = (int)matchIndexesAndDiffs[ii][1];
+                    subset1.add(set1.getX(idx1), set1.getY(idx1));
+                    subset2.add(set2.getX(idx2), set2.getY(idx2));
+                    matchedSet1.add(Integer.valueOf(idx1));
+                    matchedSet2.add(Integer.valueOf(idx2));
+                }
+               
+                PairFloatArray unmatched1 = new PairFloatArray();
+                for (int ii = 0; ii < set1.getN(); ii++) {
+                    if (matchedSet1.contains(Integer.valueOf(ii))) {
+                        continue;
+                    }
+                    unmatched1.add(set1.getX(ii), set1.getY(ii));
+                }
+                PairFloatArray unmatched2 = new PairFloatArray();
+                for (int ii = 0; ii < set2.getN(); ii++) {
+                    if (matchedSet2.contains(Integer.valueOf(ii))) {
+                        continue;
+                    }
+                    unmatched2.add(set2.getX(ii), set2.getY(ii));
+                }
+                
+                // evaluate the fit of the epipolar solution with all points
+                // and keep the best solution.
+                StereoProjectionTransformer sTransformer = 
+                    new StereoProjectionTransformer();
+                
+                SimpleMatrix fm = 
+                    sTransformer.calculateEpipolarProjectionForPerfectlyMatched(
+                    subset1, subset2);
+                  
+                SimpleMatrix leftPoints = 
+                    StereoProjectionTransformer.rewriteInto3ColumnMatrix(unmatched1);
+                
+                SimpleMatrix rightPoints = 
+                    StereoProjectionTransformer.rewriteInto3ColumnMatrix(unmatched2);
+        
+                // x is index from leftPoints.  y is index from rightPoints.
+                PairIntArray matchedIndexes = new PairIntArray();
+            
+//TODO: problem here w/ eval using only perp dist to epipolar
+                /*
+                evaluation of the fit using only the perpendicular distance does
+                not produce the best matches because it does not use the depth
+                into the image to match the location of the point in image2
+                parallel to the epipolar line and not using that means that
+                the distance from the predicted location is only partially known.
+                False matches happen more often because of it.
+                
+                So adopting the strategy of: rough euclidean match to get an
+                initial set of matched points, then calculating a fundamental
+                matrix from those.  Then using the fm to match the remaining
+                unmatched.
+                --> if the later does not work as well as needed, will try to
+                change the method of matching the remaining unmatched to use
+                a proximity to the matched in both images if within an
+                association radius.
+                
+                */
+                
+                // have matches for subset1, subset2.
+                // match the remaining unmatched1, unmatched2.
+                // first try only matching the remaining unmatched.
+                // if the results are not very good, consider
+                // a method to determine best match for remaining by 
+                // proximity to a known match in both images.
+                
+                StereoProjectionTransformerFit fit = 
+                    sTransformer.evaluateFitForUnmatched(fm, 
+                    leftPoints, rightPoints, 1.0/*tolerance*/, matchedIndexes);
+                
+                PairIntArray finalMatched1 = new PairIntArray();
+                PairIntArray finalMatched2 = new PairIntArray();
+                for (int ii = 0; ii < subset1.getN(); ii++) {
+                    finalMatched1.add(
+                        Math.round(subset1.getX(ii)), 
+                        Math.round(subset1.getY(ii)));
+                    finalMatched2.add(
+                        Math.round(subset2.getX(ii)), 
+                        Math.round(subset2.getY(ii)));
+                }
+                for (int ii = 0; ii < matchedIndexes.getN(); ii++) {
+                    int idx1 = matchedIndexes.getX(ii);
+                    int idx2 = matchedIndexes.getY(ii);
+                    finalMatched1.add(leftPoints.getIndex(0, idx1),
+                        leftPoints.getIndex(1, idx1));
+                    finalMatched2.add(rightPoints.getIndex(0, idx2),
+                        rightPoints.getIndex(1, idx2));
+                }
+                
+                leftPoints = 
+                    StereoProjectionTransformer.rewriteInto3ColumnMatrix(
+                    finalMatched1);
+                
+                rightPoints = 
+                    StereoProjectionTransformer.rewriteInto3ColumnMatrix(
+                    finalMatched2);
+                
+                fit = sTransformer.evaluateFit(fm, leftPoints, rightPoints, 
+                    tolerance);
+                
+                if (spFitIsBetter(bestFit, fit)) {
+                    bestFit = fit;
+                    bestParams = params;                    
+                    bestFitMatches1 = finalMatched1;
+                    bestFitMatches2 = finalMatched2;
+                }
+            }
+            
+            if (spFitIsBetter(bestFitForScale, bestFit)) {
+                bestFitForScale = bestFit;
+            } else {
+                break;
+            }
+        } 
+        
+        if (bestFitMatches1 != null) {
+            System.out.println(bestParams.toString());
+            System.out.println(bestFit.toString());
+            output1.swapContents(bestFitMatches1);
+            output2.swapContents(bestFitMatches2);
         }
-
-        TransformationPointFit fit2 = refineTransformationWithDownhillSimplex(
-            fit.getParameters(),
-            set1, set2, image1Width, image1Height, setsAreMatched);
+         
+        return bestFit;
+    }
+    
+    boolean spFitIsBetter(StereoProjectionTransformerFit bestFit, 
+        StereoProjectionTransformerFit compareFit) {
         
-        if (fitIsBetter(fit, fit2)) {
-            return fit2;
+        if (compareFit == null) {
+            return false;
+        }
+        if (bestFit == null) {
+            return true;
+        }
+       
+        long nMatches = compareFit.getNMatches();
+        
+        if (nMatches > bestFit.getNMatches()) {
+            
+            return true;
+            
+        } else if (nMatches == bestFit.getNMatches()) {
+            
+            if (!Double.isNaN(compareFit.getMeanDistance()) && (
+                compareFit.getMeanDistance()
+                < bestFit.getMeanDistance())) {
+                
+                return true;
+                
+            } else if (compareFit.getMeanDistance()
+                == bestFit.getMeanDistance()) {
+                
+                if (compareFit.getStDevFromMean()< bestFit.getStDevFromMean()) {
+                    
+                    return true;
+                }
+            }
         }
         
-        return fit;
+        return false;
     }
     
     /**
@@ -2734,7 +2908,9 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * nearest matching in set2 within tolerance and return the 
      * matched information as a two dimensional array of 
      * {index from set1, index from set2, diff of point in set2 from
-     * model generation by point in set1}
+     * model generation by point in set1} using an algorithm to optimally match
+     * them.  The current optimal match is implemented by a min-cost
+     * bipartite algorithm with a runtime cost of 
      * 
      * @param set1
      * @param set2
@@ -2752,7 +2928,40 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         double scale = fit.getParameters().getScale();
         double rotation = fit.getParameters().getRotationInRadians();
+        float transX = fit.getParameters().getTranslationX();
+        float transY = fit.getParameters().getTranslationY();
 
+        return calculateMatchUsingOptimal(
+            set1, set2, scale, rotation, transX, transY,
+            tolerance, centroidX1, centroidY1);
+    }
+    
+    /**
+     * given unordered unmatched points set1 and set2 from image1 and image2
+     * respectively, apply the transformation to set 1 and then find the
+     * nearest matching in set2 within tolerance and return the 
+     * matched information as a two dimensional array of 
+     * {index from set1, index from set2, diff of point in set2 from
+     * model generation by point in set1}
+     * 
+     * @param set1
+     * @param set2
+     * @param scale
+     * @param rotation
+     * @param transX
+     * @param tolerance
+     * @param centroidX1
+     * @param transY
+     * @param centroidY1
+     * @return a two dimensional array holding the matched indexes and
+     * the distances between the model and the point for that pair.
+     * each row holds float[]{idx1, idx2, diff}
+     */
+    public float[][] calculateMatchUsingOptimal(
+        PairIntArray set1, PairIntArray set2, double scale, double rotation,
+        float transX, float transY, double tolerance, 
+        int centroidX1, int centroidY1) {
+        
         if (scale < 1) {
             // numerical errors in rounding to integer can give wrong solutions
             //throw new IllegalStateException("scale cannot be smaller than 1");
@@ -2762,8 +2971,6 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
 
         double scaleTimesCosine = scale * Math.cos(rotation);
         double scaleTimesSine = scale * Math.sin(rotation);
-        float transX = fit.getParameters().getTranslationX();
-        float transY = fit.getParameters().getTranslationY();
 
         int nPoints1 = set1.getN();
         int nPoints2 = set2.getN();
@@ -2824,7 +3031,15 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             if (idx1 == -1 || idx2 == -1) {
                 continue;
             }
-            count++;
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+                        
+            if (diffsAsCost[idx1][idx2] < tolerance) {
+                count++;
+            }
         }
         
         float[][] output = new float[count][];
@@ -2848,13 +3063,132 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             }
             
             diff = diffsAsCost[idx1][idx2];
-
-            output[count] = new float[3];
-            output[count][0] = idx1;
-            output[count][1] = idx2;
-            output[count][2] = (float)diff;
             
-            count++;
+            if (diff < tolerance) {
+                output[count] = new float[3];
+                output[count][0] = idx1;
+                output[count][1] = idx2;
+                output[count][2] = (float)diff;            
+                count++;
+            }
+        }
+
+        return output;
+    }
+    
+    /**
+     * given unordered unmatched points set1 and set2 from image1 and image2
+     * respectively, apply the transformation to set 1 and then find the
+     * nearest matching in set2 within tolerance and return the 
+     * matched information as a two dimensional array of 
+     * {index from set1, index from set2, diff of point in set2 from
+     * model generation by point in set1} using an algorithm to greedily match
+     * the first best match which then becomes unavailable for a better
+     * later match.
+     * 
+     * @param set1
+     * @param set2
+     * @param fit
+     * @param tolerance
+     * @param centroidX1
+     * @param centroidY1
+     * @return a two dimensional array holding the matched indexes and
+     * the distances between the model and the point for that pair.
+     * each row holds float[]{idx1, idx2, diff}
+     */
+    public float[][] calculateMatchUsingGreedy(
+        PairIntArray set1, PairIntArray set2, TransformationPointFit fit,
+        double tolerance, int centroidX1, int centroidY1) {
+        
+        double scale = fit.getParameters().getScale();
+        double rotation = fit.getParameters().getRotationInRadians();
+        float transX = fit.getParameters().getTranslationX();
+        float transY = fit.getParameters().getTranslationY();
+
+        return calculateMatchUsingGreedy(
+            set1, set2, scale, rotation, transX, transY,
+            tolerance, centroidX1, centroidY1);
+    }
+    
+    public float[][] calculateMatchUsingGreedy(
+        PairIntArray set1, PairIntArray set2, double scale, double rotation,
+        float transX, float transY, double tolerance, 
+        int centroidX1, int centroidY1) {
+        
+        if (scale < 1) {
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+
+            log.severe("scale should not be smaller than 1");
+        }
+
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+
+        int nPoints1 = set1.getN();
+        int nPoints2 = set2.getN();
+        if ((nPoints1 == 0) || (nPoints2 == 0)) {
+            return new float[0][];
+        }
+        
+        Set<Integer> chosen = new HashSet<Integer>();        
+        List<Integer> indexes1 = new ArrayList<Integer>();
+        List<Integer> indexes2 = new ArrayList<Integer>();
+        List<Double> diffs = new ArrayList<Double>();
+            
+        for (int i = 0; i < set1.getN(); i++) {
+
+            int x = set1.getX(i);
+            int y = set1.getY(i);
+
+            double xmcx1 = x - centroidX1;
+            double ymcy1 = y - centroidY1;
+
+            double xr = centroidX1 * scale
+                + ((xmcx1 * scaleTimesCosine) + (ymcy1 * scaleTimesSine));
+
+            double yr = centroidY1 * scale
+                + ((-xmcx1 * scaleTimesSine) + (ymcy1 * scaleTimesCosine));
+
+            int xt = (int) Math.round(xr + transX);
+            int yt = (int) Math.round(yr + transY);
+
+            double bestDiff = Double.MAX_VALUE;
+            int best2Idx = -1;
+            
+            for (int j = 0; j < set2.getN(); j++) {
+
+                if (chosen.contains(Integer.valueOf(j))) {
+                    continue;
+                }
+                
+                int x2 = set2.getX(j);
+                int y2 = set2.getY(j);
+
+                double dist = Math.sqrt(Math.pow(xt - x2, 2) 
+                    + Math.pow(yt - y2, 2));
+
+                if (dist < bestDiff) {
+                    bestDiff = dist;
+                    best2Idx = j;
+                }
+            }
+            
+            if ((bestDiff < Double.MAX_VALUE) && (bestDiff < tolerance)) {
+                chosen.add(Integer.valueOf(best2Idx));
+                indexes1.add(Integer.valueOf(i));
+                indexes2.add(Integer.valueOf(best2Idx));
+                diffs.add(Double.valueOf(bestDiff));                
+            }            
+        }
+
+        float[][] output = new float[indexes1.size()][];
+
+        for (int i = 0; i < indexes1.size(); i++) {
+            output[i] = new float[3];
+            output[i][0] = indexes1.get(i).intValue();
+            output[i][1] = indexes2.get(i).intValue();
+            output[i][2] = diffs.get(i).intValue();
         }
 
         return output;
@@ -3295,7 +3629,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             }
             
             sum += diff;
-            nMatched++;
+           nMatched++;
         }
         
         double avgDiff = sum/(double)nMatched;
@@ -3423,7 +3757,6 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             double diff = diffsAsCost[idx1][idx2];
             
             if (diff > tolerance) {
-                
                 continue;
             }
             
@@ -4409,6 +4742,52 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         }
 
         return fits[bestFitIdx];
+    }
+
+    private void performGreedyMatch(PairFloatArray set1, 
+        PairIntArray set2, double tolTransX, double tolTransY, 
+        PairFloatArray output1, PairFloatArray output2) {
+        
+        Set<Integer> chosen = new HashSet<Integer>();
+        
+        for (int i = 0; i < set1.getN(); i++) {
+
+            float x1 = set1.getX(i);
+            float y1 = set1.getY(i);
+
+            double minDiffSq = Double.MAX_VALUE;
+            int bestIdx2 = -1;
+            
+            for (int j = 0; j < set2.getN(); j++) {
+
+                if (chosen.contains(Integer.valueOf(j))) {
+                    continue;
+                }
+                
+                int x2 = set2.getX(j);
+                int y2 = set2.getY(j);
+                
+                float xDiff = Math.abs(x2 - x1);
+                float yDiff = Math.abs(y2 - y1);
+
+                if ((xDiff > tolTransX) || (yDiff > tolTransY)) {
+                    continue;
+                }
+                
+                double diffSq = (xDiff*xDiff) + (yDiff*yDiff);
+
+                if (diffSq < minDiffSq) {
+                    minDiffSq = diffSq;
+                    bestIdx2 = j;
+                }
+            }
+            
+            if (bestIdx2 > -1) {
+                output1.add(x1, y1);
+                output2.add(set2.getX(bestIdx2), set2.getY(bestIdx2));                
+                chosen.add(Integer.valueOf(bestIdx2));
+            }            
+        }
     }
 
 }

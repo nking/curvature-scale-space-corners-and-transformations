@@ -160,11 +160,12 @@ public class StereoProjectionTransformer {
      * in the same column.
      */
     private SimpleMatrix epipolarLinesInLeft = null;
-   
     
-    public StereoProjectionTransformer calculateEpipolarProjectionForUnmatched(
-        PairFloatArray unmatchedLeftXY, PairFloatArray unmatchedRightXY) 
-        throws NoSuchAlgorithmException {
+    public SimpleMatrix calculateEpipolarProjectionForUnmatched(
+        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
+        int imageWidth1, int imageHeight1, 
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY
+        ) throws NoSuchAlgorithmException {
         
         /*
         need to match the points, but the sets may require a projection
@@ -174,33 +175,66 @@ public class StereoProjectionTransformer {
         trying every combination of point pairs isn't feasible:
             n_1!/(2*(n_1 - 2)!) X n_2!/(2*(n_2 - 2)!)
         
-        and it ignores the location of points among others.
+        and it ignores the location of points among other points and pixel
+        features.
         
-        one could apply epipolar transformations to set1 and use a modified
-        distance function to estimate the residuals and fit the best
-        overall fit.
-        for a distance function, one could use the distance from a point
-        to the epipolar line which is standard, but the distance along that
-        epipolar line should probably be used too as is done with 
-        going from fundamental matrix to camera coordinates.
+        searching the fundamental matrix after getting an initial calculation
+        isn't feasible either.  For example, if used a randomly paired set of 
+        points to provide the first estimate of a fundamental matrix only for 
+        matching points, and then used
+        intervals of factor of 10 from 20 to 1./200, then number of
+        permutation is 22^8 = 54875873536.0 and thats
+        not including negative factors yet.
         
-        for matches to the epipolar lines, optimal matching would be needed.
+        one solution is:
+            -- grid search over euclidean transformation space.
+               apply transformation to point set 1 and evaluate the best fit
+               by number of matches to set2 within tolerance.
+               this gives a subset of points as the first matching set.
+            -- then calculating an epipolar projection from the first matched
+               points to find further matches.
+            -- now have a set of matched points that contain false matches.
+            -- use RANSAC to choose inliers among the matched and then
+               calculate a fundamental matrix from those.
         
-        what is the range of possible transformation parameters in a
-        fundamental matrix?
-        
-        presumably large steps thru possible patterns in a grid search
-        followed by a downhill simplex search could find the best
-        fundamental matrix solution and hence the point matches.
-        
-        regarding the set of points tried, all points should be tried because
-        any subsets may be missing possible matches in set2
-        (so not using RANSAC for unmatched points).
-        
+        TODO: the evaluation of the points needs more than perpendicular
+        distance from epipolar line.  should consider as much possible
+        without camera characteristics regarding pixel similarity, 
+        uniqueness, point ordering and a disparity gradient
         
         */
-               
-        throw new UnsupportedOperationException("not yet implemented");
+        
+        PairIntArray output1 = new PairIntArray();
+        PairIntArray output2 = new PairIntArray();
+        
+        PointMatcher pointMatcher = new PointMatcher();
+        
+        StereoProjectionTransformerFit fit = 
+            pointMatcher.matchPointsUsingProjectiveTransformation(
+            unmatchedLeftXY, unmatchedRightXY, 
+            imageWidth1, imageHeight1, output1, output2);
+       
+        PairFloatArray in1 = new PairFloatArray();
+        PairFloatArray in2 = new PairFloatArray();
+        for (int i = 0; i < output1.getN(); i++) {
+            in1.add(output1.getX(i), output1.getY(i));
+            in2.add(output2.getX(i), output2.getY(i));
+        }
+        
+        PairFloatArray outputLeft = new PairFloatArray();
+        PairFloatArray outputRight = new PairFloatArray();
+        RANSACSolver ransacSolver = new RANSACSolver();
+        SimpleMatrix fm = ransacSolver.calculateEpipolarProjection(
+            in1, in2, outputLeft, outputRight);
+        
+        for (int i = 0; i < outputLeft.getN(); i++) { 
+            outputMatchedLeftXY.add(
+                Math.round(outputLeft.getX(i)), Math.round(outputLeft.getY(i)));
+            outputMatchedRightXY.add(
+                Math.round(outputRight.getX(i)), Math.round(outputRight.getY(i)));
+        }
+        
+        return fm;
     }
     
     public SimpleMatrix calculateEpipolarProjectionForPerfectlyMatched(
@@ -497,7 +531,7 @@ public class StereoProjectionTransformer {
             normalizedXY1.getXy(), normalizedXY2.getXy());
         
         SimpleMatrix aMatrix = new SimpleMatrix(m);
-        SimpleSVD<SimpleMatrix> svd = aMatrix.svd();
+        SimpleSVD svd = aMatrix.svd();
         SimpleMatrix nullSpace = svd.nullSpace();
         
         double[][] ff1 = new double[3][3];
@@ -656,7 +690,7 @@ public class StereoProjectionTransformer {
         return validated;
     }
      
-    private SimpleMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
+    SimpleMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
      
         double a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);
         double a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);
@@ -1015,7 +1049,7 @@ public class StereoProjectionTransformer {
     /**
      normalize the x,y coordinates as recommended by Hartley 1997 and return
      the matrix and coordinates.
-       
+     does not modify the state of this transformer instance.
      * @param xyPair
      * @return 
      */
@@ -1100,6 +1134,34 @@ public class StereoProjectionTransformer {
      * @return 
      */
     public static SimpleMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
+        
+        // rewrite xyPairs into a matrix of size 3 X xy.getN();
+        // column 0 is x
+        // column 1 is y
+        // column 2 is all 1's
+        double[][] xyPoints = new double[3][xyPairs.getN()];
+        for (int i = 0; i < 3; i++) {
+            xyPoints[i] = new double[xyPairs.getN()];
+        }
+        for (int i = 0; i < xyPairs.getN(); i++) {
+            xyPoints[0][i] = xyPairs.getX(i);
+            xyPoints[1][i] = xyPairs.getY(i);
+            xyPoints[2][i] = 1;
+        }
+        
+        // matrix of size mRows x nCols
+        
+        SimpleMatrix xy = new SimpleMatrix(xyPoints);
+        
+        return xy;
+    }
+    
+    /**
+     * write a matrix of size mRows = 3, nCols = xyPairs.getN()
+     * @param xyPairs
+     * @return 
+     */
+    public static SimpleMatrix rewriteInto3ColumnMatrix(PairIntArray xyPairs) {
         
         // rewrite xyPairs into a matrix of size 3 X xy.getN();
         // column 0 is x
@@ -1686,10 +1748,10 @@ public class StereoProjectionTransformer {
         
         return fit;
     }
-    
+
     public StereoProjectionTransformerFit evaluateFitForUnmatched(
         SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
-        double tolerance) {
+        double tolerance, PairIntArray matchedIndexes) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1739,13 +1801,27 @@ public class StereoProjectionTransformer {
         */
         
         return evaluateFitForUnmatchedOptimal(fm, theRightEpipolarLines,
-            theLeftEpipolarLines, leftPoints, rightPoints, tolerance);
+            theLeftEpipolarLines, leftPoints, rightPoints, tolerance,
+            matchedIndexes);
     }
-        
+  
+    /**
+     * 
+     * @param fm
+     * @param rightEpipolarLines
+     * @param leftEpipolarLines
+     * @param leftPoints
+     * @param rightPoints
+     * @param tolerance
+     * @param matchedIndexes x is index from leftPoints.  y is index from 
+     * rightPoints.
+     * @return 
+     */
     StereoProjectionTransformerFit evaluateFitForUnmatchedOptimal(
         SimpleMatrix fm, 
         SimpleMatrix rightEpipolarLines, SimpleMatrix leftEpipolarLines,
-        SimpleMatrix leftPoints, SimpleMatrix rightPoints, double tolerance) {
+        SimpleMatrix leftPoints, SimpleMatrix rightPoints, double tolerance,
+        PairIntArray matchedIndexes) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1765,13 +1841,10 @@ public class StereoProjectionTransformer {
             throw new IllegalArgumentException("rightPoints cannot be null");
         }
         
-        // x is index from leftPoints.  y is index from rightPoints.
-        PairIntArray matchedIndexes = new PairIntArray();
-              
         float[] diffs = matchOptimallyAndCalcResiduals(fm, 
             rightEpipolarLines, leftEpipolarLines,
             leftPoints, rightPoints, tolerance, matchedIndexes);
-        
+                    
         float[] avgAndStdDev = MiscMath.getAvgAndStDev(diffs);
         
         StereoProjectionTransformerFit fit = 
@@ -1835,9 +1908,13 @@ public class StereoProjectionTransformer {
         so, the distance stored for the match leftxy[i] to rightxy[j] would
         be the 2 added and this
         */
-        
+                
         int nPoints1 = rightEpipolarLines.numCols();
         int nPoints2 = leftEpipolarLines.numCols();
+        
+        if ((nPoints1 == 0) || (nPoints2 == 0)) {
+            return new float[0];
+        }
         
         float[][] diffsAsCost = new float[nPoints1][nPoints2];
         // the algorithm modifies diffsAsCost, so make a copy
@@ -1875,7 +1952,10 @@ public class StereoProjectionTransformer {
                     Math.sqrt((aRev*aRev + bRev*bRev));
                 
                 float dist = (float)Math.sqrt(d*d + dRev*dRev);
-                
+
+                if (dist > 1.414*tolerance) {
+                    dist = Float.MAX_VALUE;
+                }
                 diffsAsCost[i][j] = dist;
                 diffsAsCostCopy[i][j] = dist;
             }

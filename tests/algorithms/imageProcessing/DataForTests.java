@@ -533,6 +533,25 @@ public class DataForTests {
             matched2.add(x, y);
         }
     }
+    
+    public static void readMerton1Matched(PairFloatArray matched1, 
+        PairFloatArray matched2) {
+        
+        PairFloatArray xy1 = readMerton1UnnormalizedXY1Data();
+        PairFloatArray xy2 = readMerton1UnnormalizedXY2Data();
+        
+        for (int i = 0; i <  xy1.getN(); i++) {
+            int x = Math.round(xy1.getX(i));
+            int y = Math.round(xy1.getY(i));
+            matched1.add(x, y);
+        }
+        
+        for (int i = 0; i <  xy1.getN(); i++) {
+            int x = Math.round(xy2.getX(i));
+            int y = Math.round(xy2.getY(i));
+            matched2.add(x, y);
+        }
+    }
 
     public static void readMerton1RandomlyScrambled(PairIntArray matched1, 
         PairIntArray matched2) throws NoSuchAlgorithmException {
