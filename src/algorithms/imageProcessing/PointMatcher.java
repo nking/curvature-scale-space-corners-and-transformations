@@ -8,6 +8,7 @@ import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
+import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
@@ -380,7 +381,7 @@ public final class PointMatcher {
                 into the image to match the location of the point in image2
                 parallel to the epipolar line and not using that means that
                 the distance from the predicted location is only partially known.
-                False matches happen more often because of it.
+                False matches happen often because of it.
                 
                 So adopting the strategy of: rough euclidean match to get an
                 initial set of matched points, then calculating a fundamental
@@ -1521,6 +1522,172 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         */ 
         
         return bestFit;
+    }
+    
+    /**
+     * 
+     * @param set1 two dimensional array holding x and y points with
+     * first dimension being the point number and the 2nd being x and y
+     * for example set1[row][0] is x and set1[row][1] is y for point in row.
+     * @param set2 two dimensional array holding x and y points with
+     * first dimension being the point number and the 2nd being x and y
+     * for example set2[row][0] is x and set2[row][1] is y for point in row.
+     * @return 
+     */
+    public float[] calculateTranslation(double[][] set1, 
+        double[][] set2) {
+        
+        if (set1 == null) {
+            throw new IllegalArgumentException("set1 cannot be null");
+        }
+        if (set2 == null) {
+            throw new IllegalArgumentException("set2 cannot be null");
+        }
+        
+        int nTrans = set1.length * set2.length;
+        int count = 0;
+        float[] transX = new float[nTrans];
+        float[] transY = new float[nTrans];
+                
+        for (int i = 0; i < set1.length; i++) {
+            
+            double x = set1[i][0];
+            double y = set1[i][1];
+            
+            for (int j = 0; j < set2.length; j++) {
+                
+                double x2 = set2[j][0];
+                double y2 = set2[j][1];
+                
+                transX[count] = (float)(x2 - x);
+                transY[count] = (float)(y2 - y);
+                
+                count++;
+            }
+        }
+        
+        float peakTransX;
+        float peakTransY;
+        
+        // when there aren't enough points for useful histogram,
+        // will make a frequency map of round to integer,
+        // and take the peak if its larger than next peak,
+        // else, take the average of largest frequencies.
+        
+        if ((set1.length > 5) && (set2.length > 5)) {
+            
+            /*LinearRegression lr = new LinearRegression();
+            //lr.plotTheLinearRegression(transX, transY);
+            float[] xyPeaks = lr.calculateTheilSenEstimatorMedian(transX, transY);
+            
+            peakTransX = xyPeaks[0];
+            peakTransY = xyPeaks[1];
+            log.info("thiel sen estimator: " + peakTransX + ", " + peakTransY);
+            */
+            
+            int nBins = 15;
+            
+            HistogramHolder hX = Histogram
+                .createSimpleHistogram(nBins,
+                //.defaultHistogramCreator(
+                transX, Errors.populateYErrorsBySqrt(transX));
+        
+            HistogramHolder hY = Histogram
+                .createSimpleHistogram(nBins,
+                //.defaultHistogramCreator(
+                transY, Errors.populateYErrorsBySqrt(transY));
+
+            try {
+                hX.plotHistogram("transX", 1);
+                hY.plotHistogram("transY", 2);
+            } catch (IOException e) {
+                log.severe(e.getMessage());
+            }
+
+            int idxX =  MiscMath.findYMaxIndex(hX.getYHist());
+            int idxY =  MiscMath.findYMaxIndex(hY.getYHist());
+            peakTransX = hX.getXHist()[idxX];
+            peakTransY = hY.getXHist()[idxY];
+            
+            log.info("histogram: " + peakTransX + ", " + peakTransY);
+            
+            /*looks like histogram is a good start, but the value should be 
+            refined w/ matching and outlier removal.
+            */
+            float[] tolerances = new float[]{30, 5};
+            for (float tolerance : tolerances) {
+                
+                float[] peakXY = refineCalculateTranslation(set1, set2,
+                    peakTransX, peakTransY, tolerance);
+            
+                peakTransX = peakXY[0];
+                peakTransY = peakXY[1];
+            
+                log.info("refined: " + peakTransX + ", " + peakTransY);
+            }
+            
+            peakTransX = (int)peakTransX;
+            peakTransY = (int)peakTransY;
+            
+        } else {
+            // keep unique x, y pairs
+            List<Integer> freq = new ArrayList<Integer>();
+            List<String> xy = new ArrayList<String>();
+            for (int i = 0; i < transX.length; i++) {
+                int tx = Math.round(transX[i]);
+                int ty = Math.round(transY[i]);
+                String key = String.format("%d:%d", tx, ty);
+                int idx = xy.indexOf(key);
+                if (idx > -1) {
+                    Integer c = freq.get(idx);
+                    freq.set(idx, Integer.valueOf(c.intValue() + 1));
+                } else {
+                    Integer c = Integer.valueOf(1);
+                    freq.add(c);
+                    xy.add(key);
+                }
+            }
+            int n0Idx = -1;
+            int maxN0 = Integer.MIN_VALUE;
+            for (int i = 0; i < freq.size(); i++) {
+                int v = freq.get(i).intValue();
+                if (v > maxN0) {
+                    maxN0 = v;
+                    n0Idx = i;
+                }
+            }
+            int n1Idx = -1;
+            int maxN1 = Integer.MIN_VALUE;
+            for (int i = 0; i < freq.size(); i++) {
+                int v = freq.get(i).intValue();
+                if (v < maxN0) {
+                    if (v > maxN1) {
+                        maxN1 = v;
+                        n1Idx = i;
+                    }
+                }
+            }
+            if ((n1Idx > -1) && ((maxN0 - maxN1) > 1)) {
+                //TODO: consider whether (maxN0 - maxN1) should == set1.getN()
+                String[] xyItems = xy.get(n0Idx).split(":");
+                peakTransX = Float.valueOf(xyItems[0]);
+                peakTransY = Float.valueOf(xyItems[1]);
+            } else {
+                //take average of all points
+                peakTransX = 0;
+                peakTransY = 0;
+                for (int i = 0; i < transX.length; i++) {
+                    peakTransX += transX[i];
+                    peakTransY += transY[i];
+                }
+                peakTransX /= (float)transX.length;
+                peakTransY /= (float)transY.length;
+            }
+        }
+        
+        log.fine("peakTransX=" + peakTransX + "  peakTransY=" + peakTransY);
+        
+        return new float[]{peakTransX, peakTransY};
     }
     
     /**
@@ -3476,11 +3643,11 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         for (int i = 0; i < set2.getN(); i++) {
             
-            float modelX = scaledRotatedX[i] + transX;
-            float modelY = scaledRotatedY[i] + transY;
+            float transformedX = scaledRotatedX[i] + transX;
+            float transformedY = scaledRotatedY[i] + transY;
             
-            double dx = set2.getX(i) - modelX;
-            double dy = set2.getY(i) - modelY;
+            double dx = transformedX - set2.getX(i);
+            double dy = transformedY - set2.getY(i);
             
             diff[i] = Math.sqrt(dx*dx + dy+dy);
             
@@ -3576,16 +3743,16 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         for (int i = 0; i < n1; i++) {
             
-            float modelX = unmatched1Transformed.getX(i);
-            float modelY = unmatched1Transformed.getY(i);
+            float transformedX = unmatched1Transformed.getX(i);
+            float transformedY = unmatched1Transformed.getY(i);
             
             diffsAsCost[i] = new float[n2];
             diffsAsCostCopy[i] = new float[n2];
             
             for (int j = 0; j < n2; j++) {
                 
-                float dx = unmatched2.getX(j) - modelX;
-                float dy = unmatched2.getY(j) - modelY;
+                float dx = transformedX - unmatched2.getX(j);
+                float dy = transformedY - unmatched2.getY(j);
                 
                 float diff = (float)Math.sqrt(dx*dx + dy*dy);
                 
@@ -3667,7 +3834,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         return fit;
     }
-    
+        
     /**
      * given the model x y that have already been scaled and rotated, add the
      * transX and transY, respectively and calculated the average residual
@@ -3708,16 +3875,16 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         for (int i = 0; i < scaledRotatedX.length; i++) {
             
-            float modelX = scaledRotatedX[i] + transX;
-            float modelY = scaledRotatedY[i] + transY;
+            float transformedX = scaledRotatedX[i] + transX;
+            float transformedY = scaledRotatedY[i] + transY;
             
             diffsAsCost[i] = new float[set2.getN()];
             diffsAsCostCopy[i] = new float[set2.getN()];
             
             for (int j = 0; j < set2.getN(); j++) {
                 
-                float dx = set2.getX(j) - modelX;
-                float dy = set2.getY(j) - modelY;
+                float dx = transformedX - set2.getX(j);
+                float dy = transformedY - set2.getY(j);
                 
                 float diff = (float)Math.sqrt(dx*dx + dy*dy);
                 
@@ -3829,8 +3996,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         for (int i = 0; i < n; i++) {
             
-            float modelX = unmatched1Transformed.getX(i);
-            float modelY = unmatched1Transformed.getY(i);
+            float transformedX = unmatched1Transformed.getX(i);
+            float transformedY = unmatched1Transformed.getY(i);
             
             double minDiff = Double.MAX_VALUE;
             int min2Idx = -1;
@@ -3841,8 +4008,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     continue;
                 }
                 
-                float dx = unmatched2.getX(j) - modelX;
-                float dy = unmatched2.getY(j) - modelY;
+                float dx = transformedX - unmatched2.getX(j);
+                float dy = transformedY - unmatched2.getY(j);
                 
                 float diff = (float)Math.sqrt(dx*dx + dy*dy);
                 
@@ -3885,7 +4052,206 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
     }
     
     /**
-     * given the model x y that have already been scaled and rotated, add the
+     * given set1 which has already been transformed, calculate the average residual
+     * between that and set2 and the standard deviation from the average.
+     */
+    public ProjectiveFit evaluateFitForUnMatchedOptimal(double[][] set1,
+        double[][] set2,
+        double tolTransX, double tolTransY) {
+        
+        if (set2 == null) {
+            throw new IllegalArgumentException(
+            "set2 cannot be null");
+        }
+        if (set1 == null) {
+            throw new IllegalArgumentException(
+            "set1 cannot be null");
+        }
+        
+        int nPoints1 = set1.length;
+        int nPoints2 = set2.length;
+        
+        float[][] diffsAsCost = new float[nPoints1][];
+        float[][] diffsAsCostCopy = new float[nPoints1][];
+        
+        for (int i = 0; i < nPoints1; i++) {
+            
+            double transformedX = set1[i][0];
+            double transformedY = set1[i][1];
+            
+            diffsAsCost[i] = new float[nPoints2];
+            diffsAsCostCopy[i] = new float[nPoints2];
+            
+            for (int j = 0; j < nPoints2; j++) {
+                
+                double dx = set2[j][0] - transformedX;
+                double dy = set2[j][1] - transformedY;
+                
+                float diff = (float)Math.sqrt(dx*dx + dy*dy);
+                
+                diffsAsCost[i][j] = diff;
+                diffsAsCostCopy[i][j] = diff;
+            }
+        }
+        
+        double tolerance = Math.sqrt(tolTransX*tolTransX + tolTransY*tolTransY);
+
+        boolean transposed = false;
+        if (diffsAsCostCopy.length > diffsAsCostCopy[0].length) {
+            diffsAsCostCopy = MatrixUtil.transpose(diffsAsCostCopy);
+            transposed = true;
+        }
+        
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        
+        // modifies diffsAsCostCopy:
+        int[][] match = b.computeAssignments(diffsAsCostCopy);
+        
+        double sum = 0;
+        int nMatched = 0;
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            
+            double diff = diffsAsCost[idx1][idx2];
+            
+            if (diff > tolerance) {
+                continue;
+            }
+            
+            sum += diff;
+            nMatched++;
+        }
+        
+        double avgDiff = sum/(double)nMatched;
+        
+        sum = 0;
+        for (int i = 0; i < match.length; i++) {
+            
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            
+            double dist = diffsAsCost[idx1][idx2];
+            
+            if (dist > tolerance) {
+                continue;
+            }
+            
+            double diff = dist - avgDiff;
+            
+            sum += (diff * diff);
+        }
+        
+        double stDev = Math.sqrt(sum/((double)nMatched - 1));
+        
+        ProjectiveFit fit = new ProjectiveFit();
+        fit.setMeanDistFromModel(avgDiff);
+        fit.setStdDevOfMean(stDev);
+        fit.setTolerance(tolerance);
+        fit.setNumberOfPoints(nMatched);
+        
+        return fit;
+    }
+    
+    public ProjectiveFit evaluateFitForUnMatchedTransformedGreedy(
+        double[][] set1, double[][] set2, float tolTransX, float tolTransY) {
+        
+        if (set1 == null) {
+            throw new IllegalArgumentException("set1 cannot be null");
+        }
+        if (set2 == null) {
+            throw new IllegalArgumentException("set2 cannot be null");
+        }
+        
+        int nPoints1 = set1.length;
+        int nPoints2 = set2.length;
+        
+        Set<Integer> chosen = new HashSet<Integer>();
+        
+        double[] diffs = new double[nPoints1];
+        int nMatched = 0;
+        double avg = 0;
+        
+        for (int i = 0; i < nPoints1; i++) {
+            
+            double transformedX = set1[i][0];
+            double transformedY = set1[i][1];
+            
+            double minDiff = Double.MAX_VALUE;
+            int min2Idx = -1;
+
+            for (int j = 0; j < nPoints2; j++) {
+
+                if (chosen.contains(Integer.valueOf(j))) {
+                    continue;
+                }
+                
+                double dx = set2[j][0] - transformedX;
+                double dy = set2[j][1] - transformedY;
+                
+                float diff = (float)Math.sqrt(dx*dx + dy*dy);
+                
+                if ((Math.abs(dx) > tolTransX) || (Math.abs(dy) > tolTransY)) {                    
+                    continue;
+                } 
+                
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    min2Idx = j;
+                }
+            }
+            
+            if (minDiff < Double.MAX_VALUE) {
+                diffs[nMatched] = minDiff;
+                nMatched++;
+                chosen.add(Integer.valueOf(min2Idx));
+                avg += minDiff;
+            }
+        }
+        
+        avg = (nMatched == 0) ? Double.MAX_VALUE :
+            avg / (double)nMatched;
+        
+        double stDev = 0;
+        for (int i = 0; i < nMatched; i++) {
+            double d = diffs[i] - avg;
+            stDev += (d * d);
+        }
+        
+        stDev = (nMatched == 0) ? Double.MAX_VALUE :
+            Math.sqrt(stDev/((double)nMatched - 1.));
+        
+        double tolerance = Math.sqrt(tolTransX*tolTransX + tolTransY*tolTransY);
+        
+        ProjectiveFit fit = new ProjectiveFit();
+        fit.setMeanDistFromModel(avg);
+        fit.setStdDevOfMean(stDev);
+        fit.setTolerance(tolerance);
+        fit.setNumberOfPoints(nMatched);
+        
+        return fit;
+    }
+    
+    /**
+     * given the transformed x y that have already been scaled and rotated, add the
      * transX and transY, respectively and calculated the average residual
      * between that and set2 and the standard deviation from the average.
      * Note that set2 and (scaledRotatedX, scaledRotatedY) are NOT known to be
@@ -3928,8 +4294,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         for (int i = 0; i < scaledRotatedX.length; i++) {
             
-            float modelX = scaledRotatedX[i] + transX;
-            float modelY = scaledRotatedY[i] + transY;
+            float transformedX = scaledRotatedX[i] + transX;
+            float transformedY = scaledRotatedY[i] + transY;
             
             double minDiff = Double.MAX_VALUE;
             int min2Idx = -1;
@@ -3940,8 +4306,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     continue;
                 }
                 
-                float dx = set2.getX(j) - modelX;
-                float dy = set2.getY(j) - modelY;
+                float dx = set2.getX(j) - transformedX;
+                float dy = set2.getY(j) - transformedY;
                 
                 float diff = (float)Math.sqrt(dx*dx + dy*dy);
                 
@@ -4012,8 +4378,6 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @param matched1Transformed
      * @param matched2 set of points from image 2 that are matched to points in
      * matched1 with same indexes
-     * @param centroidX1 the x coordinate of the center of image 1
-     * @param centroidY1 the y coordinate of the center of image 1
      * @return 
      */
     public TransformationPointFit evaluateFitForMatchedTransformed(
@@ -4038,14 +4402,14 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 
         for (int i = 0; i < matched1Transformed.getN(); i++) {
             
-            float modelX = matched1Transformed.getX(i);
-            float modelY = matched1Transformed.getY(i);
+            float transformedX = matched1Transformed.getX(i);
+            float transformedY = matched1Transformed.getY(i);
             
             int x2 = matched2.getX(i);
             int y2 = matched2.getY(i);
             
-            double dx = x2 - modelX;
-            double dy = y2 - modelY;
+            double dx = x2 - transformedX;
+            double dy = y2 - transformedY;
                             
             diff[i] = Math.sqrt(dx*dx + dy*dy);
             
@@ -4162,11 +4526,11 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             int x1 = edge1.getX(i);
             int y1 = edge1.getY(i);
             
-            float modelX = (centroidX1*scale + ( 
+            float transformedX = (centroidX1*scale + ( 
                 ((x1 - centroidX1) * scaleTimesCosine) +
                 ((y1 - centroidY1) * scaleTimesSine))) + transX;
             
-            float modelY = (centroidY1*scale + ( 
+            float transformedY = (centroidY1*scale + ( 
                 (-(x1 - centroidX1) * scaleTimesSine) +
                 ((y1 - centroidY1) * scaleTimesCosine))) + transY;
             
@@ -4177,8 +4541,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 int x2 = edge2.getX(j);
                 int y2 = edge2.getY(j);
                 
-                float dx = x2 - modelX;
-                float dy = y2 - modelY;
+                float dx = x2 - transformedX;
+                float dy = y2 - transformedY;
                 
                 float diff = (float)Math.sqrt(dx*dx + dy*dy);
                 
@@ -4206,7 +4570,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         boolean setsAreMatched) {
                     
         //TODO: set this empirically from tests
-        double convergence = 0;
+        double convergence = scaledRotatedX.length;
 
         float txMin = transX - plusMinusTransX;
         float txMax = transX + plusMinusTransX;
@@ -4790,4 +5154,779 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         }
     }
 
+    /**
+     * using downhill simplex, calculate the projective transformation to apply
+     * to scene to make best match to model.  the projection is calculated
+     * with scene and model, but the fit is evaluated with allScene and allModel.
+     * 
+     * @param scene
+     * @param model
+     * @param projectiveParams
+     * @param allScene
+     * @param allModel
+     * @return 
+     */
+    public ProjectiveFit calculateProjectiveTransformationUsingDownhillSimplex(
+        double[][] scene, double[][] model, double[][] projectiveParams, 
+        double[][] allScene, double[][] allModel) {
+        
+        //TODO: improve this method's run time!
+        //  consider changes to use primitives for projectiveParams
+        //  instead of an array to reduce cost of creating arrays
+        
+        float reflectionCoeff = 1;   // > 0
+        float expansionCoeff = 2;   // > 1
+        float contractionCoeff = -0.5f;
+        float reductionCoeff = 0.5f;
+        
+        double convergence = 0;
+        
+        ProjectiveFit[] fits = createStarterPoints(scene, model, 
+            projectiveParams, allScene, allModel);
+        
+        boolean go = true;
+
+        int nMaxIter = 5000;
+        int nIter = 0;
+        
+        int bestFitIdx = 0;
+        int secondWorstFitIdx = fits.length - 2;
+        int worstFitIdx = fits.length - 1;
+
+        double lastAvgDistModel = Double.MAX_VALUE;
+        double lastStDev = Double.MAX_VALUE;
+        int lastNMatches = 0;
+        
+        int nIterSameMin = 0;
+        
+        /*
+        p[0] = new double[]{1,    0., transX};
+        p[1] = new double[]{0.0,    1, transY};
+        p[2] = new double[]{0,       0, noeffect};
+            points being changed are:
+            p[0][0], p[0][1], p[1][0], p[1][1], p[2][0], p[2][1]*/
+        PairIntArray pChangeIndexes = new PairIntArray();
+        pChangeIndexes.add(0, 0);
+        pChangeIndexes.add(0, 1);
+        pChangeIndexes.add(1, 0);
+        pChangeIndexes.add(1, 1);
+        pChangeIndexes.add(2, 0);
+        pChangeIndexes.add(2, 1);
+        
+        double[][] sumPForEachFit = new double[3][];
+        for (int row = 0; row < 3; row++) {
+            sumPForEachFit[row] = new double[3];
+        }
+        
+        while (go && (nIter < nMaxIter)) {
+
+            sortByDescendingMatches(fits);
+            
+            if ((lastNMatches == fits[bestFitIdx].getNumberOfPoints())
+                && (Math.abs(lastAvgDistModel
+                - fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
+                
+                nIterSameMin++;
+                if (nIterSameMin >= 5) {
+                    break;
+                }
+            } else {
+                nIterSameMin = 0;
+            }
+            lastNMatches = fits[0].getNumberOfPoints();
+            lastAvgDistModel = fits[0].getMeanDistFromModel();
+            lastStDev = fits[0].getStdDevOfMean();
+            
+            /*
+            points being changed are:
+            p[0][0], p[0][1], p[1][0], p[1][1], p[2][0], p[2][1]
+            p[0] = new double[]{1,    0., transX};
+            p[1] = new double[]{0.0,   1, transY};
+            p[2] = new double[]{0,     0, noeffect};*/
+
+            // determine center for all points excepting the worse fit
+            for (int i = 0; i < sumPForEachFit.length; i++) {
+                Arrays.fill(sumPForEachFit[i], 0.);
+            }
+            Set<Integer> isNull = new HashSet<Integer>();
+            for (int i = 0; i < (fits.length - 1); i++) {
+                for (int row = 0; row < 3; row++) {
+                    for (int col = 0; col < 3; col++) {
+                        if (fits[i].getProjection() == null) {
+                            isNull.add(Integer.valueOf(i));
+                        } else {
+                            sumPForEachFit[row][col] 
+                                += fits[i].getProjection()[row][col];
+                        }
+                    }
+                }
+            }
+            int nDiv = fits.length - 1 - isNull.size();
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 3; col++) {
+                    sumPForEachFit[row][col] /= (double)nDiv;
+                }
+            }
+
+            // "Reflection"
+            double[][] pReflect = new double[3][3];
+            for (int row = 0; row < 3; row++) {
+                pReflect[row] = new double[3];
+                for (int col = 0; col < 3; col++) {
+                    pReflect[row][col] =
+                        sumPForEachFit[row][col] + (reflectionCoeff * 
+                        (sumPForEachFit[row][col] 
+                        - fits[worstFitIdx].getProjection()[row][col]));
+                }
+            }
+            
+            ProjectiveFit fitReflected = evalFit(scene, model, pReflect, 
+                allScene, allModel);
+
+            boolean relectIsWithinBounds = true;
+                //(rReflect >= rMin) && (rReflect <= rMax) 
+                //&& (sReflect >= sMin) && (sReflect <= sMax);
+
+            if (fitIsBetter(fits[secondWorstFitIdx], fitReflected)
+                && relectIsWithinBounds
+                && !fitIsBetter(fits[bestFitIdx], fitReflected) ) {
+                
+                fits[worstFitIdx] = fitReflected;
+                
+            } else {
+                
+                if (fitIsBetter(fits[bestFitIdx], fitReflected)
+                    && relectIsWithinBounds) {
+                    
+                    // "Expansion"
+                    double[][] pExpansion = new double[3][3];
+                    for (int row = 0; row < 3; row++) {
+                        
+                        pExpansion[row] = new double[3];
+                        
+                        for (int col = 0; col < 3; col++) {
+                            
+                            pExpansion[row][col]
+                                = sumPForEachFit[row][col] + (expansionCoeff
+                                * (sumPForEachFit[row][col]
+                                - fits[worstFitIdx].getProjection()[row][col]));
+                        }
+                    }
+                    
+                    ProjectiveFit fitExpansion = evalFit(scene, model, 
+                        pExpansion, allScene, allModel);
+                    
+                    if (fitIsBetter(fitReflected, fitExpansion)) {
+
+                        fits[worstFitIdx] = fitExpansion;
+                        
+                    } else {
+                        
+                        fits[worstFitIdx] = fitReflected;
+                    }
+                    
+                } else {
+                
+                    // we know that the reflection fit is worse than the 2nd worse
+
+                    // "Contraction"
+                    double[][] pContraction = new double[3][3];
+                    for (int row = 0; row < 3; row++) {
+                        pContraction[row] = new double[3];
+                        for (int col = 0; col < 3; col++) {
+                            pContraction[row][col] =
+                                sumPForEachFit[row][col] + (contractionCoeff * 
+                                (sumPForEachFit[row][col]
+                                - fits[worstFitIdx].getProjection()[row][col]));
+                        }
+                    }
+
+                    ProjectiveFit fitContraction = evalFit(scene, model,
+                        pContraction, allScene, allModel);
+                    
+                    if (fitIsBetter(fits[worstFitIdx], fitContraction)
+                    ) {
+
+                        fits[worstFitIdx] = fitContraction;
+                        
+                    } else {
+                                                
+                        // "Reduction"
+                        for (int i = 1; i < fits.length; i++) {
+                            
+                            double[][] pReduction = new double[3][3];
+                            for (int row = 0; row < 3; row++) {
+                                pReduction[row] = new double[3];
+                                for (int col = 0; col < 3; col++) {
+                                    pReduction[row][col] =
+                                        fits[bestFitIdx].getProjection()[row][col]
+                                        + (reductionCoeff * fits[i].getProjection()[row][col])
+                                        - fits[bestFitIdx].getProjection()[row][col];
+                                }
+                            }
+                                                        
+                            //NOTE: there's a possibility of a null fit.
+                            //  instead of re-writing the fits array, will 
+                            //  assign a fake infinitely bad fit which will 
+                            //  fall to the bottom of the list after the next 
+                            //  sort.
+                            ProjectiveFit fit = evalFit(scene, model,
+                                pReduction, allScene, allModel);
+                            
+                            if (fit != null) {
+                                fits[i] = fit;
+                            } else {
+                                fits[i] = new ProjectiveFit();
+                            }
+                        }
+                    }
+                }
+            }
+
+            log.finest("best fit so far: " + 
+                fits[bestFitIdx].getMeanDistFromModel());
+            
+            nIter++;
+
+            if ((fits[bestFitIdx].getNumberOfPoints() == model.length) 
+                && (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
+                
+                go = false;
+            }
+        }
+        
+        return fits[bestFitIdx];
+    }
+    
+    private void sortByDescendingMatches(ProjectiveFit[] fits) {
+        sortByDescendingMatches(fits, 0, fits.length - 1);
+    }
+
+    void sortByDescendingMatches(ProjectiveFit[] fits, int idxLo, 
+        int idxHi) {
+        
+        if (idxLo < idxHi) {
+
+            int idxMid = partition(fits, idxLo, idxHi);
+
+            sortByDescendingMatches(fits, idxLo, idxMid - 1);
+
+            sortByDescendingMatches(fits, idxMid + 1, idxHi);
+        }
+    }
+    
+    public boolean fitIsBetter(ProjectiveFit bestFit, ProjectiveFit compareFit) {
+        
+        if (compareFit == null) {
+            return false;
+        }
+        if (bestFit == null) {
+            return true;
+        }
+               
+        int nMatches = compareFit.getNumberOfPoints();
+        
+        if (nMatches > bestFit.getNumberOfPoints()) {
+            return true;
+        } else if (nMatches == bestFit.getNumberOfPoints()) {
+            if (!Double.isNaN(compareFit.getMeanDistFromModel()) && (
+                compareFit.getMeanDistFromModel()
+                < bestFit.getMeanDistFromModel())) {
+                return true;
+            } else if (compareFit.getMeanDistFromModel()
+                == bestFit.getMeanDistFromModel()) {
+                if (compareFit.getStdDevOfMean() < bestFit.getStdDevOfMean()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private int partition(ProjectiveFit[] fits, int idxLo, int idxHi) {
+        
+        ProjectiveFit x = fits[idxHi];
+        
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            if (fitIsBetter(x, fits[i])) {
+                store++;
+                ProjectiveFit swap = fits[store];
+                fits[store] = fits[i];
+                fits[i] = swap;
+            }
+        }
+        
+        store++;
+        ProjectiveFit swap = fits[store];
+        fits[store] = fits[idxHi];
+        fits[idxHi] = swap;
+        
+        return store;
+    }
+     
+    private ProjectiveFit evalFit(double[][] scene, double[][] model,
+        double[][] projTransformParams, 
+        double[][] allScene, double[][] allModel) {
+        
+        double[][] transformed = transformUsingProjection(
+            projTransformParams, scene);
+        
+        /*
+        solve for transX and transY and add those to transformed
+        */
+        float[] transXY = calculateTranslation(transformed, model);
+        projTransformParams[0][2] = transXY[0];
+        projTransformParams[1][2] = transXY[1];
+        
+        transformed = transformUsingProjection(projTransformParams, allScene);
+        
+        //TODO: calculate these:
+        double tolX = 10;
+        double tolY = 10;
+        
+        ProjectiveFit fit = evaluateFitForUnMatchedOptimal(
+            transformed, allModel, tolX, tolY);
+        fit.setProjection(projTransformParams);
+        
+        return fit;
+    }
+    
+    private ProjectiveFit evalFit(double translationX, double translationY,
+        double[][] allScene, double[][] allModel) {
+        
+        double[][] transformed = transformUsingProjection(
+            translationX, translationY, allScene);
+        
+        //TODO: calculate these:
+        double tolX = 10;
+        double tolY = 10;
+        
+        ProjectiveFit fit = evaluateFitForUnMatchedOptimal(
+            transformed, allModel, tolX, tolY);
+        fit.setData(new Double[]{Double.valueOf(translationX),
+            Double.valueOf(translationY)});
+        
+        return fit;
+    }
+    
+    public double[][] transformUsingProjection(double[][] projTransformParams,
+        double[][] matrix) {
+        /*      
+        //=========
+        int nPoints1 = matrix.length;
+        double[][] output0 = new double[nPoints1][3];
+        for (int i = 0; i < nPoints1; i++) {
+            output0[i] = new double[3];
+            output0[i][0] = matrix[i][0];
+            output0[i][1] = matrix[i][1];
+            output0[i][2] = 1;
+        }
+        SimpleMatrix m = new SimpleMatrix(output0);
+        double[][] result = transformUsingProjection(projTransformParams, m);
+        double[][] compare = MatrixUtil.multiplyByTranspose(projTransformParams, 
+            output0);
+        //=========
+        */
+        
+        // the multiplication altered to remove last column of '1's from matrix
+        int prows = projTransformParams.length;
+        int pcols = projTransformParams[0].length;
+        int mrows = matrix.length;
+        int mcols = matrix[0].length;
+        
+        double[][] output = new double[mrows][];
+        for (int nrow = 0; nrow < mrows; nrow++) {
+            output[nrow] = new double[mcols];
+            for (int row = 0; row < prows; row++) {
+                double sum = 0;         
+                for (int mcol = 0; mcol < mcols; mcol++) {
+                    sum += (projTransformParams[row][mcol] * matrix[nrow][mcol]);                    
+                }
+                sum += projTransformParams[row][2];
+                if (row < mcols) {
+                    output[nrow][row] = sum;
+                }
+            }       
+        }
+        /*                        m[0][0],m[0][1]
+                   1  0  -19      274.99
+                                  244.888
+                                   1
+        | x2 |   | 1  0  t_x |   | x |   | x + t_x |
+        | y2 | = | 0  1  t_y | * | y | = | x + t_x |
+        | 1  |   | 0  0  1   |   | 1 |   | 1       |
+        */
+        
+        return output;
+    }
+    
+    public double[][] transformUsingProjection(
+        double translationX, double translationY, double[][] matrix) {
+        
+        int nPoints1 = matrix.length;
+        double[][] output = new double[nPoints1][matrix[0].length];
+        for (int i = 0; i < nPoints1; i++) {
+            output[i] = new double[matrix[0].length];
+            output[i][0] = matrix[i][0] + translationX;
+            output[i][1] = matrix[i][1] + translationY;
+        }
+       
+        return output;
+    }
+    
+    private ProjectiveFit[] createStarterPoints(
+        double[][] scene, double[][] model, double[][] projectiveParams,
+        double[][] allScene, double[][] allModel) {
+        
+        /*p[0] = new double[]{1,    0., transX};
+        p[1] = new double[]{0.0,    1, transY};
+        p[2] = new double[]{0,       0, noeffect};*/
+                
+        // start with simplex for at least 10 points (fitting 9 parameters)
+        int n = 10;
+        ProjectiveFit[] fits = new ProjectiveFit[n];
+        
+        // evalFits solves for translation X and Y
+        
+        fits[0] = evalFit(scene, model, projectiveParams, allScene, allModel);
+
+        /*p[0] = new double[]{1,    0., transX};
+        p[1] = new double[]{0.0,    1, transY};
+        p[2] = new double[]{0,       0, noeffect};*/
+        
+        for (int i = 1; i < n; i++) {
+            double[][] p = new double[3][];
+            for (int row = 0; row < 3; row++) {
+                p[row] = new double[3];
+                for (int col = 0; col < 3; col++) {
+                    p[row][col] = projectiveParams[row][col];
+                }
+            }
+            switch(i) {
+                case 1:
+                    p[0][1] += 0.05;
+                    break;
+                case 2:
+                    p[1][0] += 0.05;
+                    break;
+                case 3:
+                    p[2][0] += 0.05;
+                    break;
+                case 4:
+                    p[2][1] += 0.05;
+                    break;
+                case 5:
+                    if (p[0][0] >= 1) {
+                        p[0][0] += 0.5;
+                        p[1][1] += 0.5;
+                    } else {
+                        p[0][0] += 1.0;
+                        p[1][1] += 1.0;
+                    }
+                    break;
+                case 6:
+                    p[0][1] += 0.05;
+                    p[1][0] += 0.05;
+                    p[2][0] += 0.05;
+                    p[2][1] += 0.05;
+                    break;
+                case 7:
+                    p[0][1] -= 0.05;
+                    p[1][0] -= 0.05;
+                    p[2][0] -= 0.05;
+                    p[2][1] -= 0.05;
+                    break;
+                case 8:
+                    p[0][1] -= 0.05;
+                    break;
+                case 9:
+                    p[1][0] -= 0.05;
+                    break;
+            }
+            
+            fits[i] = evalFit(scene, model, p, allScene, allModel);
+        }
+        
+        return fits;
+    }
+
+    private boolean isASinglePeak(HistogramHolder h) {
+        
+        int idx =  MiscMath.findYMaxIndex(h.getYHist());
+        
+        int lastY = Integer.MIN_VALUE;
+        
+        for (int i = 0; i <= idx; i++) {
+            int y = h.getYHist()[i];
+            if (y <= lastY) {
+                return false;
+            }
+            lastY = y;
+        }
+        //lastY = h.getYHist()[idx];
+        for (int i = (idx + 1); i < h.getYHist().length; i++) {
+            int y = h.getYHist()[i];
+            if (y >= lastY) {
+                return false;
+            }
+            lastY = y;
+        }
+        
+        return true;
+    }
+
+    private float[] refineCalculateTranslation(double[][] set1, double[][] set2, 
+        float peakTransX, float peakTransY, float tolerance) {
+        
+        return refineCalculateTranslationWithDownhillSimplex(set1, set2,
+            peakTransX, peakTransY, tolerance);
+    }
+
+    private float[] refineCalculateTranslationWithDownhillSimplex(
+        double[][] set1, double[][] set2, float peakTransX, float peakTransY, 
+        float range) {
+        
+        float reflectionCoeff = 1;   // > 0
+        float expansionCoeff = 2;   // > 1
+        float contractionCoeff = -0.5f;
+        float reductionCoeff = 0.5f;
+        
+        double convergence = 0;
+        
+        float transX = peakTransX;
+        float transY = peakTransY;
+        float txMin = peakTransX - range;
+        float txMax = peakTransX + range;
+        float tyMin = peakTransY - range;
+        float tyMax = peakTransY + range;
+        
+        float[] txs = new float[]{
+            (peakTransX - range),
+            (peakTransX - 0.75f*range),
+            (peakTransX - 0.5f*range),
+            (peakTransX - 0.25f*range),
+            peakTransX,
+            (peakTransX + 0.25f*range),
+            (peakTransX + 0.5f*range),
+            (peakTransX + 0.75f*range)
+        };
+        float[] tys = new float[]{
+            (peakTransY - range),
+            (peakTransY - 0.75f*range),
+            (peakTransY - 0.5f*range),
+            (peakTransY - 0.25f*range),
+            peakTransY,
+            (peakTransY + 0.25f*range),
+            (peakTransY + 0.5f*range),
+            (peakTransY + 0.75f*range)
+        };
+        // fitting for 2 parameters so need at least 3 starter points.
+        int n = txs.length * tys.length;
+        ProjectiveFit[] fits = new ProjectiveFit[n];
+        int count = 0;
+        for (float tx : txs) {
+            for (float ty : tys) {
+                fits[count] = evalFit(tx, ty, set1, set2);
+                count++;
+            }
+        }
+        
+        boolean go = true;
+
+        int nMaxIter = 5000;
+        int nIter = 0;
+        
+        int bestFitIdx = 0;
+        int secondWorstFitIdx = fits.length - 2;
+        int worstFitIdx = fits.length - 1;
+
+        double lastAvgDistModel = Double.MAX_VALUE;
+        double lastStDev = Double.MAX_VALUE;
+        int lastNMatches = 0;
+        
+        int nIterSameMin = 0;
+       
+        while (go && (nIter < nMaxIter)) {
+
+            sortByDescendingMatches(fits);
+            
+            if ((lastNMatches == fits[bestFitIdx].getNumberOfPoints())
+                && (Math.abs(lastAvgDistModel
+                - fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
+                
+                nIterSameMin++;
+                if (nIterSameMin >= 4) {
+                    break;
+                }
+            } else {
+                nIterSameMin = 0;
+            }
+            lastNMatches = fits[0].getNumberOfPoints();
+            lastAvgDistModel = fits[0].getMeanDistFromModel();
+            lastStDev = fits[0].getStdDevOfMean();
+            
+            // determine center for all points excepting the worse fit
+            float txSum = 0.0f;
+            float tySum = 0.0f;
+            int nt = 0;
+            for (int i = 0; i < (fits.length - 1); i++) {
+                if (fits[i].getData() == null) {
+                    continue;
+                }
+                Double[] txy = (Double[])fits[i].getData();
+                txSum += txy[0].doubleValue();
+                tySum += txy[1].doubleValue();
+                nt++;
+            }
+            transX = txSum/(float)(nt - 1);
+            transY = tySum/(float)(nt - 1);
+
+            // "Reflection"
+            Double[] txy = (Double[])fits[worstFitIdx].getData();
+            float txReflect = transX + (reflectionCoeff
+                * (transX - txy[0].floatValue()));
+            float tyReflect = transY + (reflectionCoeff
+                * (transY - txy[1].floatValue()));
+
+            ProjectiveFit fitReflected
+                = evalFit(txReflect, tyReflect, set1, set2);
+            
+            boolean relectIsWithinBounds
+                = (txReflect >= txMin) && (txReflect <= txMax)
+                && (tyReflect >= tyMin) && (tyReflect <= tyMax);
+
+            if (fitIsBetter(fits[secondWorstFitIdx], fitReflected)
+                && relectIsWithinBounds
+                && !fitIsBetter(fits[bestFitIdx], fitReflected)) {
+
+                fits[worstFitIdx] = fitReflected;
+
+            } else {
+
+                if (fitIsBetter(fits[bestFitIdx], fitReflected)
+                    && relectIsWithinBounds) {
+
+                    // "Expansion"
+                    float txExpansion = transX + (expansionCoeff
+                        * (transX - txy[0].floatValue()));
+                    float tyExpansion = transY + (expansionCoeff
+                        * (transY - txy[1].floatValue()));
+                    
+                    ProjectiveFit fitExpansion
+                         = evalFit(txExpansion, tyExpansion, set1, set2);
+
+                    if (fitIsBetter(fitReflected, fitExpansion)
+                        && (txExpansion >= txMin) && (txExpansion <= txMax)
+                        && (tyExpansion >= tyMin) && (tyExpansion <= tyMax)) {
+
+                        fits[worstFitIdx] = fitExpansion;
+
+                    } else {
+
+                        fits[worstFitIdx] = fitReflected;
+                    }
+
+                } else {
+
+                    // the reflection fit is worse than the 2nd worse
+                    // "Contraction"
+                    float txContraction = transX + (contractionCoeff
+                        * (transX - txy[0].floatValue()));
+                    float tyContraction = transY + (contractionCoeff
+                        * (transY - txy[1].floatValue()));
+
+                    ProjectiveFit fitContraction
+                        = evalFit(txContraction, tyContraction, set1, set2);
+
+                    if (fitIsBetter(fits[worstFitIdx], fitContraction)
+                        && (txContraction >= txMin) && (txContraction <= txMax)
+                        && (tyContraction >= tyMin) && (tyContraction <= tyMax)) {
+
+                        fits[worstFitIdx] = fitContraction;
+
+                    } else {
+
+                        if (fits[bestFitIdx].getData() == null) {
+                            break;
+                        }
+                        
+                        Double[] txybf = (Double[])fits[bestFitIdx].getData();
+                        
+                        // "Reduction"
+                        for (int i = 1; i < fits.length; i++) {
+
+                            Object txyiObj = fits[i].getData();
+                            
+                            if (txyiObj == null) {
+                                fits[i] = new ProjectiveFit();
+                                fits[i].setMeanDistFromModel(Double.MAX_VALUE);
+                                fits[i].setNumberOfPoints(0);
+                                fits[i].setStdDevOfMean(Double.MAX_VALUE);
+                                fits[i].setTolerance(Double.MAX_VALUE);
+                                continue;
+                            }
+                            
+                            Double[] txyi = (Double[])txyiObj;
+                            
+                            float txReduction
+                                = (txybf[0].floatValue()
+                                + (reductionCoeff
+                                * (txyi[0].floatValue()
+                                - txybf[0].floatValue())));
+
+                            float tyReduction
+                                = (txybf[1].floatValue()
+                                + (reductionCoeff
+                                * (txyi[1].floatValue()
+                                - txybf[1].floatValue())));
+
+                            //NOTE: there's a possibility of a null fit.
+                            //  instead of re-writing the fits array, will 
+                            //  assign a fake infinitely bad fit which will 
+                            //  fall to the bottom of the list after the next 
+                            //  sort.
+                            ProjectiveFit fit
+                                = evalFit(txReduction, tyReduction, set1, set2);
+                                    
+                            if (fit != null) {
+                                fits[i] = fit;
+                            } else {
+                                fits[i] = new ProjectiveFit();
+                                fits[i].setMeanDistFromModel(Double.MAX_VALUE);
+                                fits[i].setNumberOfPoints(0);
+                                fits[i].setStdDevOfMean(Double.MAX_VALUE);
+                                fits[i].setTolerance(Double.MAX_VALUE);
+                            }
+                        }
+                    }
+                }
+            }
+
+            log.finest("best fit so far: nMatches="
+                + fits[bestFitIdx].getNumberOfPoints()
+                + " diff from model=" + fits[bestFitIdx].getMeanDistFromModel()
+            );
+
+            nIter++;
+
+            if ((fits[bestFitIdx].getNumberOfPoints() == convergence)
+                && (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
+                go = false;
+            } else if ((transX > txMax) || (transX < txMin)) {
+                go = false;
+            } else if ((transY > tyMax) || (transY < tyMin)) {
+                go = false;
+            }
+        }
+
+        if (fits[bestFitIdx].getData() == null) {
+            return null;
+        }
+        
+        Double[] txy = (Double[])fits[bestFitIdx].getData();
+        
+        return new float[]{txy[0].floatValue(), txy[1].floatValue()};
+    }
 }

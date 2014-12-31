@@ -291,6 +291,88 @@ public class LinearRegression {
         return new float[]{yIntercept, median};
     }
     
+    /**
+     * calculate the theil sen estimator for the set of points and return
+     * the yIntercept and slope that can be used to plot a line that is the
+     * linear regression of the x and y points.
+     * NOTE: a side effect of the method is that x and y become partially
+     * sorted.
+     * @param x
+     * @param y
+     * @return 
+     */
+    public float[] calculateTheilSenEstimatorMedian(float[] x, float[] y) {
+        
+        int n = x.length;
+        
+        /*      
+        for 1000 points, for each possible pair w/ image 2 points,
+        the real solution would be looking for a match within 
+        2.5*stdev or 3 * stdev      
+        */
+        
+        /* linear regression w/ theil sen estimator:
+        http://en.wikipedia.org/wiki/Theil%E2%80%93Sen_estimator
+        
+        median m of the slopes (yj − yi)/(xj − xi) determined by all pairs of 
+        sample points. 
+        */
+        int count = 0;
+        float[] s = new float[n*n];
+        for (int i = 0; i < n; i++) {
+            for (int j = (i + 1); j < n; j++) {
+                if ((i == j) || (x[j] - x[i]) == 0) {
+                    continue;
+                }
+                s[count] = (y[j] - y[i])/(x[j] - x[i]);
+                count++;
+            }
+        }
+        
+        s = Arrays.copyOf(s, count);
+        Arrays.sort(s);
+        int idx = s.length/2;
+        float median;
+        if ((idx & 1) == 0) {
+            median = (s[idx] + s[idx - 1])/2.f;
+        } else {
+            median = s[idx];
+        }
+        
+        log.info("thiel sen beta=" + median);
+       
+        // find the y-intercept as the median of the values y[i] − median * x[i]
+        float[] s2 = new float[x.length];
+        for (int i = 0; i < x.length; i++) {
+            s2[i] = y[i] - median * x[i];
+        }
+        QuickSort.sort(s2, x, y, 0, s2.length - 1);
+        int medianIdx = s2.length/2;
+       
+        float xMedian = x[medianIdx];
+        float yMedian = y[medianIdx];
+        // improve the vlue over several points
+        int np = 10;
+        while (((medianIdx - np) < 0) || ((medianIdx + np) > (x.length - 1))) {
+            np--;
+            if (np < 0 || np == 0) {
+                break;
+            }
+        }
+        if (np > 0) {
+            float sumX = 0;
+            float sumY = 0;
+            for (int j = (medianIdx - np); j <= (medianIdx + np); j++) {
+                sumX += x[j];
+                sumY += y[j];
+            }
+            xMedian = sumX/((float)(2*np + 1));
+            yMedian = sumY/((float)(2*np + 1));
+        }
+        
+        return new float[]{xMedian, yMedian};
+    }
+    
     public float[] calculateParamsForLinearRegression(PairFloatArray xy1, 
         PairFloatArray xy2) {
         

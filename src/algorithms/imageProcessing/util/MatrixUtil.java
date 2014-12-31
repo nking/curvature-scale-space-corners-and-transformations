@@ -45,6 +45,52 @@ public class MatrixUtil {
         return c;
     }
     
+    public static double[][] multiply(double[][] m, double[][] n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        
+        int mrows = m.length;
+
+        int mcols = m[0].length;
+
+        int nrows = n.length;
+        
+        int ncols = n[0].length;
+        
+        if (mcols != nrows) {
+            throw new IllegalArgumentException(
+                "the number of columns in m must equal the number of rows in n");
+        }
+        
+        /*
+        a b c      p0 p1 p2
+        d e f      p3 p4 p5
+                   p6 p7 p8        
+        a*p0+... a*p a*p
+        d*p0+... d*p d*p
+        */
+        
+        double[][] c = new double[mrows][];
+        
+        for (int row = 0; row < mrows; row++) {
+            c[row] = new double[mcols];
+            for (int ncol = 0; ncol < ncols; ncol++) {
+                double sum = 0;                
+                for (int mcol = 0; mcol < mcols; mcol++) {
+                    sum += (m[row][mcol] * n[mcol][ncol]);                    
+                }
+                c[row][ncol] = sum;
+            }            
+        }
+
+        return c;
+    }
+    
     public static double[][] dot(SimpleMatrix m1, SimpleMatrix m2) {
         
         if (m1 == null) {
@@ -118,6 +164,70 @@ public class MatrixUtil {
         }
         
         return t;
+    }
+    
+    /**
+     * multiply matrix m by the transpose of n
+     * @param p
+     * @param n
+     * @return 
+     */
+    public static double[][] multiplyByTranspose(double[][] p, double[][] n) {
+
+        if (p == null || p.length == 0) {
+            throw new IllegalArgumentException("p cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        
+        int prows = p.length;
+
+        int pcols = p[0].length;
+
+        int nrows = n.length;
+        
+        int ncols = n[0].length;
+        
+        if (pcols != ncols) {
+            throw new IllegalArgumentException(
+                "the number of columns in p must equal the number of cols in n "
+                + "for multiplication of m by transpose of n");
+        }
+        
+        /*
+        example:  m is p0 p1 p2
+                       p3 p4 p5
+                       p6 p7 p8
+        
+                  n is x1  y1  1
+                       x2  y2  1
+        
+        multiply m by transpose of n:
+        
+        p0 p1 p2     x1  y2
+        p3 p4 p5     y1  y2
+        p6 p7 p8      1   1
+        
+        (p0*x1 + p1*y1 + p2*1)  (p0*x2 + p1*y2 + p2*1)
+        (p3*x1 + p4*y1 + p5*1)  (p3*x2 + p4*y2 + p5*1)
+        (p6*x1 + p7*y1 + p8*1)  (p6*x2 + p7*y2 + p8*1)
+        */
+        
+        double[][] c = new double[prows][];
+       
+        for (int row = 0; row < prows; row++) {
+            c[row] = new double[nrows];
+            for (int nrow = 0; nrow < nrows; nrow++) {
+                double sum = 0;                
+                for (int mcol = 0; mcol < pcols; mcol++) {
+                    sum += (p[row][mcol] * n[nrow][mcol]);                    
+                }
+                c[row][nrow] = sum;
+            }            
+        }
+
+        return c;
     }
     
 }
