@@ -5360,13 +5360,16 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
             setsAreMatched, scene, model);
         
+        if (fit != null) {
+            log.info("fit: " + fit.toString());
+        }
         int nMaxMatchable = (scene.getN() < model.getN()) ? scene.getN() 
             : model.getN();
         
         // ==== TODO: improve decision for continue searching =====
         
         if ((nMaxMatchable == fit.getNumberOfMatchedPoints()) && 
-            (fit.getMeanDistFromModel() < 1)) {
+            (fit.getMeanDistFromModel() < 5)) {
                         
             return fit;
         }
