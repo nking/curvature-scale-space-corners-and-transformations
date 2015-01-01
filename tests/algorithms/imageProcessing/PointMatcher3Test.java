@@ -485,7 +485,7 @@ public class PointMatcher3Test {
         PairIntArray transformed = transformer.applyTransformation(
             fit.getParameters(), scene, centroidX1, centroidY1);
         
-        overplotTransformed(transformed, model, xRange, yRange, 7);
+        overplotTransformed(transformed, model, xRange, yRange, 8);
         
         assertTrue(Math.abs(fit.getRotationInRadians() - rotation)
             < 1.0);
@@ -498,11 +498,12 @@ public class PointMatcher3Test {
     @Test
     public void test9() throws Exception {
 
-        // test for rotation plus random points
+        // test for scale plus random points
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         sr.setSeed(seed);
+        System.out.println("SEED=" + seed);
         
         int nPoints1 = 70;
         
@@ -519,37 +520,43 @@ public class PointMatcher3Test {
         
         PairIntArray model = scene.copy();
         
-        double rotation = 0;
-        double scale = 3;
+        double rotation = 0.;
+        double scale = 4.;
         int translateX = 0;
         int translateY = 0;
         int x2Min = translateX;
         int y2Min = translateY;
         
+        int centroidX1 = (x1Min + xRange) >> 1;
+        int centroidY1 = (y1Min + yRange) >> 1;
+        int centroidX2 = (x2Min + xRange) >> 1;
+        int centroidY2 = (y2Min + yRange) >> 1;
+        
         populateWithRandomPoints(sr, model, nPoints1, nPoints2, x2Min, y2Min,
             xRange, yRange);
-    
-        scaleAndRotate(scene, scale, -1*rotation, xRange, yRange);        
+        
+        scaleAndRotate(scene, 1./scale, -1*rotation, centroidX1, centroidY1);
         
         PointMatcher pointMatcher = new PointMatcher();
         
         TransformationPointFit fit = 
             pointMatcher.calculateProjectiveTransformation(
             scene, model, xRange, yRange);
-        
+
         System.out.println("=> " + fit.toString());
         
         Transformer transformer = new Transformer();
+        
         PairIntArray transformed = transformer.applyTransformation(
-            fit.getParameters(), scene, xRange, yRange);
+            fit.getParameters(), scene, centroidX1, centroidY1);
         
-        overplotTransformed(transformed, model, xRange, yRange, 8);
+        overplotTransformed(transformed, model, xRange, yRange, 9);
         
-        assertTrue(Math.abs(fit.getScale() - 1) < scale);
         assertTrue(Math.abs(fit.getRotationInRadians() - rotation) <= 1.0);
+        assertTrue(Math.abs(fit.getScale() - fit.getScale()) < 1.0);
         assertTrue(Math.abs(fit.getTranslationX() - translateX) <= 1.0);
         assertTrue(Math.abs(fit.getTranslationY() - translateY) <= 1.0);
-        
+        assertTrue(fit.getNumberOfMatchedPoints() == nPoints1);
     }
     
     private void overplotTransformed(double[][] transformed, double[][] model,
@@ -747,7 +754,7 @@ public class PointMatcher3Test {
             test.test6();
             test.test7();      
             test.test8();
-            
+            test.test9();
             
             /*
             tests for :
@@ -757,6 +764,9 @@ public class PointMatcher3Test {
             -- for same set w/ projection
             -- for same set w/ projection and noise
             
+            --> implement logic to reverse order of sets for reason of
+                scale if the best fit does not produce a good match
+            --> add tests for scale=4 (which would mean transform scale=0.25)
             */
                         
         } catch(Exception e) {

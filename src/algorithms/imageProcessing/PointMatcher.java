@@ -915,14 +915,16 @@ public final class PointMatcher {
         
         Transformer transformer = new Transformer();
         
-        int convergence = (set1.getN() < set2.getN()) ? set1.getN() 
+        int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN() 
             : set2.getN();
+        
+        int convergence = nMaxMatchable;
         
         TransformationPointFit bestFit = null;
                 
         TransformationPointFit bestFitForScale = null;
         
-        for (int scale = scaleStart; scale < scaleStop; scale += scaleDelta) {
+        for (int scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
             for (int rot = rotStart; rot < rotStop; rot += rotDelta) {
             
                 TransformationParameters params;
@@ -973,7 +975,26 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             
             if (fitIsBetter(bestFitForScale, bestFit)) {
                 bestFitForScale = bestFit;
+            } else if ((bestFitForScale != null) && (bestFit != null)) {
+                if ((bestFitForScale.getNumberOfMatchedPoints() 
+                    == bestFit.getNumberOfMatchedPoints())
+                    && ((bestFit.getMeanDistFromModel()/
+                    bestFitForScale.getMeanDistFromModel()) < 1.2)) {
+                    
+                    // fit is essentially the same, so scale might be larger
+                                
+                    continue;
+                } else if (
+                    ((double)bestFit.getNumberOfMatchedPoints()
+                    /(double)nMaxMatchable) < 0.3
+                ) {
+                    // TODO: improve this
+                    // the number of points matched is very low, so keep trying
+                    // a larger scale
+                    continue;
+                }
             } else {
+                // scale was probably smaller so return best solution
                 break;
             }
         }
@@ -5352,7 +5373,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         int rotStop = 360; 
         int rotDelta = 10;
         int scaleStart = 1;
-        int scaleStop = 4;
+        int scaleStop = 5;
         int scaleDelta = 1;
         boolean setsAreMatched = false;
         TransformationPointFit fit = calculateTransformationWithGridSearch(
@@ -5367,37 +5388,39 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             : model.getN();
         
         // ==== TODO: improve decision for continue searching =====
-        
-        if ((nMaxMatchable == fit.getNumberOfMatchedPoints()) && 
-            (fit.getMeanDistFromModel() < 5)) {
-                        
-            return fit;
-        }
+  
+        boolean refineEuclideanParams = 
+            !((nMaxMatchable == fit.getNumberOfMatchedPoints()) && 
+            (fit.getMeanDistFromModel() < 5));
         
         // TODO: follow the results here for the stereo projective set
         // Brown & Lowe 2003.  small projective coeffs should be needed.
         
-        double frac = 0.7;
-        if ((nMaxMatchable - fit.getNumberOfMatchedPoints()) 
-            >= frac * nMaxMatchable) {
-            
-            // refine the euclidean solution, centered on current values
-                        
-            TransformationPointFit fit2 = 
-                refineTransformationWithDownhillSimplex(fit.getParameters(),
-                scene, model, image1Width, image1Height, setsAreMatched);
-            
-            if (fitIsBetter(fit, fit2)) {
-                fit = fit2;
+        if (!refineEuclideanParams) {
+            double frac = 0.7;
+            if ((nMaxMatchable - fit.getNumberOfMatchedPoints()) 
+                >= frac * nMaxMatchable) {
+
+                // refine the euclidean solution, centered on current values
+
+                TransformationPointFit fit2 = 
+                    refineTransformationWithDownhillSimplex(fit.getParameters(),
+                    scene, model, image1Width, image1Height, setsAreMatched);
+
+                if (fitIsBetter(fit, fit2)) {
+                    fit = fit2;
+                }
             }
         }
         
-        // === need criteria for which to try for a projective solution.
-        //     -- a plot of x vs diffX and y vs diffY ?
-        boolean doProjectiveSearch = false;
-        
-        if (doProjectiveSearch) {
-            throw new UnsupportedOperationException("not yet implemented");
+        if (!refineEuclideanParams) {
+            // === need criteria for which to try for a projective solution.
+            //     -- a plot of x vs diffX and y vs diffY ?
+            boolean doProjectiveSearch = false;
+
+            if (doProjectiveSearch) {
+                throw new UnsupportedOperationException("not yet implemented");
+            }
         }
         
         boolean refineTranslation = true;
