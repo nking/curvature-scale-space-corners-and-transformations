@@ -1542,7 +1542,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * for example set2[row][0] is x and set2[row][1] is y for point in row.
      * @return 
      */
-    public float[] calculateTranslation(double[][] set1, 
+    public float[] calculateTranslationAndRefine(double[][] set1, 
         double[][] set2) {
         
         if (set1 == null) {
@@ -1639,6 +1639,177 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             
             peakTransX = (int)peakTransX;
             peakTransY = (int)peakTransY;
+            
+        } else {
+            // keep unique x, y pairs
+            List<Integer> freq = new ArrayList<Integer>();
+            List<String> xy = new ArrayList<String>();
+            for (int i = 0; i < transX.length; i++) {
+                int tx = Math.round(transX[i]);
+                int ty = Math.round(transY[i]);
+                String key = String.format("%d:%d", tx, ty);
+                int idx = xy.indexOf(key);
+                if (idx > -1) {
+                    Integer c = freq.get(idx);
+                    freq.set(idx, Integer.valueOf(c.intValue() + 1));
+                } else {
+                    Integer c = Integer.valueOf(1);
+                    freq.add(c);
+                    xy.add(key);
+                }
+            }
+            int n0Idx = -1;
+            int maxN0 = Integer.MIN_VALUE;
+            for (int i = 0; i < freq.size(); i++) {
+                int v = freq.get(i).intValue();
+                if (v > maxN0) {
+                    maxN0 = v;
+                    n0Idx = i;
+                }
+            }
+            int n1Idx = -1;
+            int maxN1 = Integer.MIN_VALUE;
+            for (int i = 0; i < freq.size(); i++) {
+                int v = freq.get(i).intValue();
+                if (v < maxN0) {
+                    if (v > maxN1) {
+                        maxN1 = v;
+                        n1Idx = i;
+                    }
+                }
+            }
+            if ((n1Idx > -1) && ((maxN0 - maxN1) > 1)) {
+                //TODO: consider whether (maxN0 - maxN1) should == set1.getN()
+                String[] xyItems = xy.get(n0Idx).split(":");
+                peakTransX = Float.valueOf(xyItems[0]);
+                peakTransY = Float.valueOf(xyItems[1]);
+            } else {
+                //take average of all points
+                peakTransX = 0;
+                peakTransY = 0;
+                for (int i = 0; i < transX.length; i++) {
+                    peakTransX += transX[i];
+                    peakTransY += transY[i];
+                }
+                peakTransX /= (float)transX.length;
+                peakTransY /= (float)transY.length;
+            }
+        }
+        
+        log.fine("peakTransX=" + peakTransX + "  peakTransY=" + peakTransY);
+        
+        return new float[]{(int)peakTransX, (int)peakTransY};
+    }
+    
+    /**
+     * 
+     * @param set1 two dimensional array holding x and y points with
+     * first dimension being the point number and the 2nd being x and y
+     * for example set1[row][0] is x and set1[row][1] is y for point in row.
+     * @param set2 two dimensional array holding x and y points with
+     * first dimension being the point number and the 2nd being x and y
+     * for example set2[row][0] is x and set2[row][1] is y for point in row.
+     * @return 
+     */
+    public float[] calculateTranslation(double[][] set1, 
+        double[][] set2) {
+        
+        if (set1 == null) {
+            throw new IllegalArgumentException("set1 cannot be null");
+        }
+        if (set2 == null) {
+            throw new IllegalArgumentException("set2 cannot be null");
+        }
+        
+        int nTrans = set1.length * set2.length;
+        int count = 0;
+        float[] transX = new float[nTrans];
+        float[] transY = new float[nTrans];
+                
+        for (int i = 0; i < set1.length; i++) {
+            
+            double x = set1[i][0];
+            double y = set1[i][1];
+            
+            for (int j = 0; j < set2.length; j++) {
+                
+                double x2 = set2[j][0];
+                double y2 = set2[j][1];
+                
+                transX[count] = (float)(x2 - x);
+                transY[count] = (float)(y2 - y);
+                
+                count++;
+            }
+        }
+        
+        float peakTransX;
+        float peakTransY;
+        
+        // when there aren't enough points for useful histogram,
+        // will make a frequency map of round to integer,
+        // and take the peak if its larger than next peak,
+        // else, take the average of largest frequencies.
+        
+        if ((set1.length > 5) && (set2.length > 5)) {
+            
+            /*LinearRegression lr = new LinearRegression();
+            //lr.plotTheLinearRegression(transX, transY);
+            float[] xyPeaks = lr.calculateTheilSenEstimatorMedian(transX, transY);
+            
+            peakTransX = xyPeaks[0];
+            peakTransY = xyPeaks[1];
+            log.info("thiel sen estimator: " + peakTransX + ", " + peakTransY);
+            */
+            
+            int nBins = 15;
+            
+            HistogramHolder hX = Histogram
+                .createSimpleHistogram(nBins,
+                //.defaultHistogramCreator(
+                transX, Errors.populateYErrorsBySqrt(transX));
+        
+            HistogramHolder hY = Histogram
+                .createSimpleHistogram(nBins,
+                //.defaultHistogramCreator(
+                transY, Errors.populateYErrorsBySqrt(transY));
+
+            try {
+                hX.plotHistogram("transX", 1);
+                hY.plotHistogram("transY", 2);
+            } catch (IOException e) {
+                log.severe(e.getMessage());
+            }
+
+            int idxX =  MiscMath.findYMaxIndex(hX.getYHist());
+            int idxY =  MiscMath.findYMaxIndex(hY.getYHist());
+            peakTransX = hX.getXHist()[idxX];
+            peakTransY = hY.getXHist()[idxY];
+            
+            log.info("histogram: " + peakTransX + ", " + peakTransY);
+            
+            /*
+            float frac = 0.5f;
+
+            ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(
+                hX.getXHist(), hX.getYHistFloat(), null, null, frac);
+            
+            //area, x, y
+            float[] areaAndCentroid = 
+                LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(
+                    xy.getX(), xy.getY());
+            
+            peakTransX = areaAndCentroid[1];
+            
+            xy = LinesAndAngles.createPolygonOfTopFWFractionMax(
+                hY.getXHist(), hY.getYHistFloat(), null, null, frac);
+            
+            areaAndCentroid = 
+                LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(
+                    xy.getX(), xy.getY());
+            
+            peakTransY = areaAndCentroid[1];
+            */
             
         } else {
             // keep unique x, y pairs
@@ -5166,6 +5337,122 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
     }
 
     /**
+     * calculate for unmatched points
+     * @param scene
+     * @param model
+     * @param image1Width
+     * @param image1Height
+     * @return 
+     */
+    public TransformationPointFit calculateProjectiveTransformation(
+        PairIntArray scene, PairIntArray model, int image1Width, 
+        int image1Height) {
+        
+        int rotStart = 0; 
+        int rotStop = 360; 
+        int rotDelta = 10;
+        int scaleStart = 1;
+        int scaleStop = 4;
+        int scaleDelta = 1;
+        boolean setsAreMatched = false;
+        TransformationPointFit fit = calculateTransformationWithGridSearch(
+            scene, model, image1Width, image1Height,
+            rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
+            setsAreMatched, scene, model);
+        
+        int nMaxMatchable = (scene.getN() < model.getN()) ? scene.getN() 
+            : model.getN();
+        
+        // ==== TODO: improve decision for continue searching =====
+        
+        if ((nMaxMatchable == fit.getNumberOfMatchedPoints()) && 
+            (fit.getMeanDistFromModel() < 1)) {
+                        
+            return fit;
+        }
+        
+        // TODO: follow the results here for the stereo projective set
+        // Brown & Lowe 2003.  small projective coeffs should be needed.
+        
+        double frac = 0.7;
+        if ((nMaxMatchable - fit.getNumberOfMatchedPoints()) 
+            >= frac * nMaxMatchable) {
+            
+            // refine the euclidean solution, centered on current values
+                        
+            TransformationPointFit fit2 = 
+                refineTransformationWithDownhillSimplex(fit.getParameters(),
+                scene, model, image1Width, image1Height, setsAreMatched);
+            
+            if (fitIsBetter(fit, fit2)) {
+                fit = fit2;
+            }
+        }
+        
+        // === need criteria for which to try for a projective solution.
+        //     -- a plot of x vs diffX and y vs diffY ?
+        boolean doProjectiveSearch = false;
+        
+        if (doProjectiveSearch) {
+            throw new UnsupportedOperationException("not yet implemented");
+        }
+        
+        boolean refineTranslation = true;
+        
+        if (refineTranslation) {
+            
+            double translationX = fit.getTranslationX();
+            double translationY = fit.getTranslationY();
+            double centroidX1 = image1Width >> 1;
+            double centroidY1 = image1Height >> 1;
+            double scale = fit.getScale();
+            double rotation = fit.getRotationInRadians();
+            double scaleTimesCosine = scale * Math.cos(rotation);
+            double scaleTimesSine = scale * Math.sin(rotation);
+            double[][] transformed = new double[scene.getN()][];
+            for (int i = 0; i < scene.getN(); i++) {
+                transformed[i] = new double[2];
+                int x = scene.getX(i);
+                int y = scene.getY(i);
+                transformed[i][0] = centroidX1*scale + (
+                    ((x - centroidX1) * scaleTimesCosine) +
+                    ((y - centroidY1) * scaleTimesSine));
+                transformed[i][1] = centroidY1*scale + (
+                    (-(x - centroidX1) * scaleTimesSine) +
+                    ((y - centroidY1) * scaleTimesCosine));
+            }
+            
+            double[][] compare = new double[model.getN()][];
+            for (int i = 0; i < model.getN(); i++) {
+                compare[i] = new double[2];
+                compare[i][0] = model.getX(i);
+                compare[i][1] = model.getY(i);
+            }
+            
+            float[] tolerances = new float[]{30, 5};
+            for (float tolerance : tolerances) {
+
+                float[] peakXY = refineCalculateTranslation(
+                    transformed, compare,
+                    (float)translationX, (float)translationY, tolerance);
+
+                if (peakXY != null) {
+
+                    translationX = (int)peakXY[0];
+                    translationY = (int)peakXY[1];
+
+                    log.info("refined: " + translationX + ", " + translationY);
+                }
+            }
+            
+            fit.getParameters().setTranslationX((float)translationX);
+            fit.getParameters().setTranslationY((float)translationY);
+        }
+
+        return fit;
+    }
+    
+    /**
      * using downhill simplex, calculate the projective transformation to apply
      * to scene to make best match to model.  the projection is calculated
      * with scene and model, but the fit is evaluated with allScene and allModel.
@@ -5640,7 +5927,9 @@ System.out.println("nIter=" + nIter);
         double[] p01s;
         if (projectiveParams[0][1] == 0) {
             p01s = new double[] {
-                projectiveParams[0][1], projectiveParams[0][1] - 1.0};
+                projectiveParams[0][1], projectiveParams[0][1] - 1.0,
+                projectiveParams[0][1] - 0.5, projectiveParams[0][1] + 0.5,
+                projectiveParams[0][1] + 1.0};
         } else {
             p01s = new double[] {
                 projectiveParams[0][1], projectiveParams[0][1] - 0.1};
@@ -5648,7 +5937,9 @@ System.out.println("nIter=" + nIter);
         double[] p10s;
         if (projectiveParams[1][0] == 0) {
             p10s = new double[] {
-                projectiveParams[1][0], projectiveParams[1][0] - 1.0};
+                projectiveParams[1][0], projectiveParams[1][0] - 1.0,
+                projectiveParams[1][0] - 0.5, projectiveParams[1][0] + 0.5,
+                projectiveParams[1][0] + 1.0};
         } else {
             p10s = new double[] {
                 projectiveParams[1][0], projectiveParams[1][0] - 0.1};
@@ -5656,7 +5947,9 @@ System.out.println("nIter=" + nIter);
         double[] p11s;
         if (projectiveParams[1][1] == 0) {
             p11s = new double[] {
-                projectiveParams[1][1], projectiveParams[1][1] - 1.0};
+                projectiveParams[1][1], projectiveParams[1][1] - 1.0,
+                projectiveParams[1][1] - 0.5, projectiveParams[1][1] + 0.5,
+                projectiveParams[1][1] + 1.0};
         } else {
             p11s = new double[] {
                 projectiveParams[1][1], projectiveParams[1][1] - 0.1};
@@ -5664,7 +5957,8 @@ System.out.println("nIter=" + nIter);
         double[] p20s;
         if (projectiveParams[2][0] == 0) {
             p20s = new double[] {
-                projectiveParams[2][0], projectiveParams[2][0] - 1.0};
+                projectiveParams[2][0], projectiveParams[2][0] - 1.0, 
+                projectiveParams[2][0] + 1.0};
         } else {
             p20s = new double[] {
                 projectiveParams[2][0], projectiveParams[2][0] - 0.1};
@@ -5672,7 +5966,8 @@ System.out.println("nIter=" + nIter);
         double[] p21s;
         if (projectiveParams[2][1] == 0) {
             p21s = new double[] {
-                projectiveParams[2][1], projectiveParams[2][1] - 1.0};
+                projectiveParams[2][1], projectiveParams[2][1] - 1.0, 
+                projectiveParams[2][1] + 1.0};
         } else {
             p21s = new double[] {
                 projectiveParams[2][1], projectiveParams[2][1] - 0.1};
@@ -5680,7 +5975,8 @@ System.out.println("nIter=" + nIter);
         double[] p22s;
         if (projectiveParams[2][2] == 0) {
             p22s = new double[] {
-                projectiveParams[2][2], projectiveParams[2][2] - 1.0};
+                projectiveParams[2][2], projectiveParams[2][2] - 1.0, 
+                projectiveParams[2][2] + 1.0};
         } else {
             p22s = new double[] {
                 projectiveParams[2][2], projectiveParams[2][2] - 0.1};
@@ -6057,4 +6353,5 @@ System.out.println("nIter=" + nIter);
         
         return lastNonNull;
     }
+
 }

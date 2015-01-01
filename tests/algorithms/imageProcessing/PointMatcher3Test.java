@@ -60,53 +60,36 @@ public class PointMatcher3Test {
         
         int nPoints1 = 70;
         
-        double xRange = 400;
-        double yRange = 300;
+        int xRange = 400;
+        int yRange = 300;
         
         int x1Min = 0;
         int y1Min = 0;
         int x2Min = 0;
         int y2Min = 0;
         
-        double[][] sMatrix = createRandomPoints(sr, nPoints1,
-            x1Min, y1Min, xRange, yRange);
-                
-        double[][] mMatrix = createCopyOfSize(sMatrix, nPoints1);
+        PairIntArray scene = createRandomPoints(sr, nPoints1, x1Min, y1Min, 
+            xRange, yRange);
+        
+        PairIntArray model = scene.copy();
         
         PointMatcher pointMatcher = new PointMatcher();
         
-        double[][] p = new double[3][];
-        /*p[0] = new double[]{1,    0., transX};
-        p[1] = new double[]{0.0,    1, transY};
-        p[2] = new double[]{0,       0, noeffect};*/
-        p[0] = new double[]{1,    0., 0};
-        p[1] = new double[]{0.0,   1, 0};
-        p[2] = new double[]{0,     0, 1};
+        TransformationPointFit fit = 
+            pointMatcher.calculateProjectiveTransformation(
+            scene, model, xRange, yRange);
         
-        ProjectiveFit fit = 
-            pointMatcher.calculateProjectiveTransformationUsingDownhillSimplex(
-            sMatrix, mMatrix, p, sMatrix, mMatrix);
+        Transformer transformer = new Transformer();
+        PairIntArray transformed = transformer.applyTransformation(
+            fit.getParameters(), scene, xRange, yRange);
         
-        double[][] params = fit.getProjection();
+        overplotTransformed(transformed, model, (x2Min + xRange),
+           (y2Min + yRange), 1);
         
-        assertNotNull(params);
-        
-        double[][] transformed = pointMatcher.transformUsingProjection(params, 
-            sMatrix);
-        overplotTransformed(transformed, mMatrix, (int)(x2Min + xRange),
-           (int) (y2Min + yRange), 1);
-        
-        assertTrue(params[0][0] == 1);
-        assertTrue(params[0][1] == 0);
-        assertTrue(params[0][2] == 0);
-        
-        assertTrue(params[1][0] == 0);
-        assertTrue(params[1][1] == 1);
-        assertTrue(params[1][2] == 0);
-        
-        assertTrue(params[2][0] == 0);
-        assertTrue(params[2][1] == 0);
-        assertTrue(params[2][2] == 1);
+        assertTrue(Math.abs(fit.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(fit.getRotationInRadians() - 0) < 0.1);
+        assertTrue(Math.abs(fit.getTranslationX() - 0) < 1.0);
+        assertTrue(Math.abs(fit.getTranslationY() - 0) < 1.0);
         
     }
     
@@ -121,71 +104,44 @@ public class PointMatcher3Test {
         
         int nPoints1 = 70;
         
-        double xRange = 400;
-        double yRange = 300;
+        int xRange = 400;
+        int yRange = 300;
         
         int x1Min = 0;
         int y1Min = 0;
         int x2Min = 0;
         int y2Min = 0;
         
-        double[][] sMatrix = createRandomPoints(sr, nPoints1,
+        PairIntArray scene = createRandomPoints(sr, nPoints1,
             x1Min, y1Min, xRange, yRange);
         
         int nPoints2 = (int)(1.3f * nPoints1);
         
-        double[][] mMatrix = createCopyOfSize(sMatrix, nPoints2);
+        PairIntArray model = scene.copy();
         
         double translateX = 0;
         double translateY = 0;
         
-        populateWithRandomPoints(sr, mMatrix, nPoints1, nPoints2, x2Min, y2Min,
+        populateWithRandomPoints(sr, model, nPoints1, nPoints2, x2Min, y2Min,
             xRange, yRange);
         
         PointMatcher pointMatcher = new PointMatcher();
         
-        double[][] p = new double[3][];
-        /*p[0] = new double[]{1,    0., transX};
-        p[1] = new double[]{0.0,    1, transY};
-        p[2] = new double[]{0,       0, noeffect};*/
-        p[0] = new double[]{1,    0., 0};
-        p[1] = new double[]{0.0,   1, 0};
-        p[2] = new double[]{0,     0, 1};
+        TransformationPointFit fit = 
+            pointMatcher.calculateProjectiveTransformation(
+            scene, model, xRange, yRange);
         
-        ProjectiveFit fit = 
-            pointMatcher.calculateProjectiveTransformationUsingDownhillSimplex(
-            sMatrix, mMatrix, p, sMatrix, mMatrix);
+        Transformer transformer = new Transformer();
+        PairIntArray transformed = transformer.applyTransformation(
+            fit.getParameters(), scene, xRange, yRange);
         
-        double[][] params = fit.getProjection();
+        overplotTransformed(transformed, model, (x2Min + xRange),
+           (y2Min + yRange), 2);
         
-        assertNotNull(params);
-        
-        double[][] transformed = pointMatcher.transformUsingProjection(params, 
-            sMatrix);
-        overplotTransformed(transformed, mMatrix, (int)(x2Min + xRange),
-           (int) (y2Min + yRange), 1);
-        
-        assertTrue(params[0][0] == 1);
-        assertTrue(params[0][1] == 0);
-        double diff = Math.abs(params[0][2] - translateX);
-        if (!(diff < 0.1)) {
-            System.out.println("params[0][2]=" + params[0][2] 
-                + " translateX=" + translateX);
-        }
-        assertTrue(diff < 0.1);
-        
-        assertTrue(params[1][0] == 0);
-        assertTrue(params[1][1] == 1);
-        diff = Math.abs(params[1][2] - translateY);
-        if (!(diff < 0.1)) {
-            System.out.println("params[1][2]=" + params[1][2] 
-                + " translateY=" + translateY);
-        }
-        assertTrue(diff < 0.1);
-        
-        assertTrue(params[2][0] == 0);
-        assertTrue(params[2][1] == 0);
-        assertTrue(params[2][2] == 1);
+        assertTrue(Math.abs(fit.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(fit.getRotationInRadians() - 0) < 0.1);
+        assertTrue(Math.abs(fit.getTranslationX() - 0) < 1.0);
+        assertTrue(Math.abs(fit.getTranslationY() - 0) < 1.0);
         
     }
     
@@ -202,62 +158,43 @@ public class PointMatcher3Test {
         
         int nPoints1 = 70;
         
-        double xRange = 400;
-        double yRange = 300;
+        int xRange = 400;
+        int yRange = 300;
         
         int x1Min = 0;
         int y1Min = 0;
         
-        double[][] sMatrix = createRandomPoints(sr, nPoints1,
+        PairIntArray scene = createRandomPoints(sr, nPoints1,
             x1Min, y1Min, xRange, yRange);
         
         int nPoints2 = nPoints1;
         
-        double[][] mMatrix = createCopyOfSize(sMatrix, nPoints2);
+        PairIntArray model = scene.copy();
         
-        double translateX = 200;
-        double translateY = 0;
-        int x2Min = (int)translateX;
-        int y2Min = (int)translateY;
+        int translateX = 200;
+        int translateY = 0;
+        int x2Min = translateX;
+        int y2Min = translateY;
         
-        translateX(mMatrix, translateX);
-        
+        translateX(model, translateX);
+
         PointMatcher pointMatcher = new PointMatcher();
         
-        double[][] p = new double[3][];
-        /*p[0] = new double[]{1,    0., transX};
-        p[1] = new double[]{0.0,    1, transY};
-        p[2] = new double[]{0,       0, noeffect};*/
-        p[0] = new double[]{1,    0., 0};
-        p[1] = new double[]{0.0,   1, 0};
-        p[2] = new double[]{0,     0, 1};
+        TransformationPointFit fit = 
+            pointMatcher.calculateProjectiveTransformation(
+            scene, model, xRange, yRange);
         
-        ProjectiveFit fit = 
-            pointMatcher.calculateProjectiveTransformationUsingDownhillSimplex(
-            sMatrix, mMatrix, p, sMatrix, mMatrix);
+        Transformer transformer = new Transformer();
+        PairIntArray transformed = transformer.applyTransformation(
+            fit.getParameters(), scene, xRange, yRange);
         
-        double[][] params = fit.getProjection();
+        overplotTransformed(transformed, model, (x2Min + xRange),
+           (y2Min + yRange), 3);
         
-        assertNotNull(params);
-        
-        int x0 = (int)(x2Min + x1Min + xRange);
-        int y0 = (int)(y2Min + y1Min + yRange);
-        
-        double[][] transformed = pointMatcher.transformUsingProjection(params, 
-            sMatrix);
-        overplotTransformed(transformed, mMatrix, x0, y0, 1);
-        
-        assertTrue(params[0][0] == 1);
-        assertTrue(params[0][1] == 0);
-        assertTrue(Math.abs(params[0][2] - translateX) < 0.1);
-        
-        assertTrue(params[1][0] == 0);
-        assertTrue(params[1][1] == 1);
-        assertTrue(Math.abs(params[1][2] - translateY) < 0.1);
-        
-        assertTrue(params[2][0] == 0);
-        assertTrue(params[2][1] == 0);
-        assertTrue(params[2][2] == 1);
+        assertTrue(Math.abs(fit.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(fit.getRotationInRadians() - 0) < 0.1);
+        assertTrue(Math.abs(fit.getTranslationX() - translateX) < 1.0);
+        assertTrue(Math.abs(fit.getTranslationY() - translateY) < 1.0);
         
     }
     
@@ -272,66 +209,48 @@ public class PointMatcher3Test {
         
         int nPoints1 = 70;
         
-        double xRange = 400;
-        double yRange = 300;
+        int xRange = 400;
+        int yRange = 300;
         
         int x1Min = 0;
         int y1Min = 0;
         
-        double[][] sMatrix = createRandomPoints(sr, nPoints1,
+        PairIntArray scene = createRandomPoints(sr, nPoints1,
             x1Min, y1Min, xRange, yRange);
         
         int nPoints2 = (int)(1.3f * nPoints1);
         
-        double[][] mMatrix = createCopyOfSize(sMatrix, nPoints2);
+        PairIntArray model = scene.copy();
         
-        double translateX = 200;
-        double translateY = 0;
-        int x2Min = (int)translateX;
-        int y2Min = (int)translateY;
+        int translateX = 200;
+        int translateY = 0;
+        int x2Min = translateX;
+        int y2Min = translateY;
         
-        translateX(mMatrix, translateX);
+        translateX(model, translateX);
         
-        populateWithRandomPoints(sr, mMatrix, nPoints1, nPoints2, x2Min, y2Min,
+        populateWithRandomPoints(sr, model, nPoints1, nPoints2, x2Min, y2Min,
             xRange, yRange);
         
         PointMatcher pointMatcher = new PointMatcher();
+                
+        TransformationPointFit fit = 
+            pointMatcher.calculateProjectiveTransformation(
+            scene, model, xRange, yRange);
         
-        double[][] p = new double[3][];
-        /*p[0] = new double[]{1,    0., transX};
-        p[1] = new double[]{0.0,    1, transY};
-        p[2] = new double[]{0,       0, noeffect};*/
-        p[0] = new double[]{1,    0., 0};
-        p[1] = new double[]{0.0,   1, 0};
-        p[2] = new double[]{0,     0, 1};
+        System.out.println("=> " + fit.toString());
         
-        ProjectiveFit fit = 
-            pointMatcher.calculateProjectiveTransformationUsingDownhillSimplex(
-            sMatrix, mMatrix, p, sMatrix, mMatrix);
+        Transformer transformer = new Transformer();
+        PairIntArray transformed = transformer.applyTransformation(
+            fit.getParameters(), scene, xRange, yRange);
         
-        double[][] params = fit.getProjection();
+        overplotTransformed(transformed, model, (x2Min + xRange),
+           (y2Min + yRange), 4);
         
-        assertNotNull(params);
-        
-        double[][] transformed = pointMatcher.transformUsingProjection(params, 
-            sMatrix);
-        overplotTransformed(transformed, mMatrix, (int)(x2Min + xRange),
-           (int) (y2Min + yRange), 1);
-        
-        String str = MatrixUtil.printMatrix(params);
-        System.out.println(str);
-        
-        assertTrue(params[0][0] == 1);
-        assertTrue(params[0][1] == 0);
-        assertTrue(Math.abs(params[0][2] - translateX) <= 1.0);
-        
-        assertTrue(params[1][0] == 0);
-        assertTrue(params[1][1] == 1);
-        assertTrue( Math.abs(params[1][2] - translateY) <= 1.0);
-        
-        assertTrue(params[2][0] == 0);
-        assertTrue(params[2][1] == 0);
-        assertTrue(params[2][2] == 1);
+        assertTrue(Math.abs(fit.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(fit.getRotationInRadians() - 0) <= 1.0);
+        assertTrue(Math.abs(fit.getTranslationX() - translateX) <= 1.0);
+        assertTrue(Math.abs(fit.getTranslationY() - translateY) <= 1.0);
         
     }
     
@@ -348,66 +267,46 @@ public class PointMatcher3Test {
         
         int nPoints1 = 70;
         
-        double xRange = 400;
-        double yRange = 300;
+        int xRange = 400;
+        int yRange = 300;
         
         int x1Min = 0;
         int y1Min = 0;
         
-        double[][] sMatrix = createRandomPoints(sr, nPoints1,
+        PairIntArray scene = createRandomPoints(sr, nPoints1,
             x1Min, y1Min, xRange, yRange);
         
         int nPoints2 = nPoints1;
         
-        double[][] mMatrix = createCopyOfSize(sMatrix, nPoints2);
+        PairIntArray model = scene.copy();
         
-        double translateX = 200;
-        double translateY = 110;
-        int x2Min = (int)translateX;
-        int y2Min = (int)translateY;
+        int translateX = 200;
+        int translateY = 110;
+        int x2Min = translateX;
+        int y2Min = translateY;
         
-        translateX(mMatrix, translateX);
-        translateY(mMatrix, translateY);
+        translateX(model, translateX);
+        translateY(model, translateY);
         
         PointMatcher pointMatcher = new PointMatcher();
         
-        double[][] p = new double[3][];
-        /*p[0] = new double[]{1,    0., transX};
-        p[1] = new double[]{0.0,    1, transY};
-        p[2] = new double[]{0,       0, noeffect};*/
-        p[0] = new double[]{1,    0., 0};
-        p[1] = new double[]{0.0,   1, 0};
-        p[2] = new double[]{0,     0, 1};
+        TransformationPointFit fit = 
+            pointMatcher.calculateProjectiveTransformation(
+            scene, model, xRange, yRange);
         
-        ProjectiveFit fit = 
-            pointMatcher.calculateProjectiveTransformationUsingDownhillSimplex(
-            sMatrix, mMatrix, p, sMatrix, mMatrix);
+        System.out.println("=> " + fit.toString());
         
-        double[][] params = fit.getProjection();
+        Transformer transformer = new Transformer();
+        PairIntArray transformed = transformer.applyTransformation(
+            fit.getParameters(), scene, xRange, yRange);
         
-        assertNotNull(params);
+        overplotTransformed(transformed, model, (x2Min + xRange),
+           (y2Min + yRange), 5);
         
-        int x0 = (int)(x2Min + x1Min + xRange);
-        int y0 = (int)(y2Min + y1Min + yRange);
-        
-        double[][] transformed = pointMatcher.transformUsingProjection(params, 
-            sMatrix);
-        overplotTransformed(transformed, mMatrix, x0, y0, 1);
-        
-        String str = MatrixUtil.printMatrix(params);
-        System.out.println(str);
-        
-        assertTrue(params[0][0] == 1);
-        assertTrue(params[0][1] == 0);        
-        assertTrue(Math.abs(params[0][2] - translateX) < 0.1);
-        
-        assertTrue(params[1][0] == 0);
-        assertTrue(params[1][1] == 1);
-        assertTrue(Math.abs(params[1][2] - translateY) < 0.1);
-        
-        assertTrue(params[2][0] == 0);
-        assertTrue(params[2][1] == 0);
-        assertTrue(params[2][2] == 1);
+        assertTrue(Math.abs(fit.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(fit.getRotationInRadians() - 0) <= 1.0);
+        assertTrue(Math.abs(fit.getTranslationX() - translateX) <= 1.0);
+        assertTrue(Math.abs(fit.getTranslationY() - translateY) <= 1.0);
         
     }
     
@@ -422,67 +321,49 @@ public class PointMatcher3Test {
         
         int nPoints1 = 70;
         
-        double xRange = 400;
-        double yRange = 300;
+        int xRange = 400;
+        int yRange = 300;
         
         int x1Min = 0;
         int y1Min = 0;
         
-        double[][] sMatrix = createRandomPoints(sr, nPoints1,
+        PairIntArray scene = createRandomPoints(sr, nPoints1,
             x1Min, y1Min, xRange, yRange);
         
         int nPoints2 = (int)(1.3f * nPoints1);
         
-        double[][] mMatrix = createCopyOfSize(sMatrix, nPoints2);
+        PairIntArray model = scene.copy();
         
-        double translateX = 200;
-        double translateY = 110;
-        int x2Min = (int)translateX;
-        int y2Min = (int)translateY;
+        int translateX = 200;
+        int translateY = 110;
+        int x2Min = translateX;
+        int y2Min = translateY;
         
-        translateX(mMatrix, translateX);
-        translateY(mMatrix, translateY);
+        translateX(model, translateX);
+        translateY(model, translateY);
         
-        populateWithRandomPoints(sr, mMatrix, nPoints1, nPoints2, x2Min, y2Min,
+        populateWithRandomPoints(sr, model, nPoints1, nPoints2, x2Min, y2Min,
             xRange, yRange);
         
         PointMatcher pointMatcher = new PointMatcher();
         
-        double[][] p = new double[3][];
-        /*p[0] = new double[]{1,    0., transX};
-        p[1] = new double[]{0.0,    1, transY};
-        p[2] = new double[]{0,       0, noeffect};*/
-        p[0] = new double[]{1,    0., 0};
-        p[1] = new double[]{0.0,   1, 0};
-        p[2] = new double[]{0,     0, 1};
+        TransformationPointFit fit = 
+            pointMatcher.calculateProjectiveTransformation(
+            scene, model, xRange, yRange);
         
-        ProjectiveFit fit = 
-            pointMatcher.calculateProjectiveTransformationUsingDownhillSimplex(
-            sMatrix, mMatrix, p, sMatrix, mMatrix);
+        System.out.println("=> " + fit.toString());
         
-        double[][] params = fit.getProjection();
+        Transformer transformer = new Transformer();
+        PairIntArray transformed = transformer.applyTransformation(
+            fit.getParameters(), scene, xRange, yRange);
         
-        assertNotNull(params);
+        overplotTransformed(transformed, model, (x2Min + xRange),
+           (y2Min + yRange), 6);
         
-        double[][] transformed = pointMatcher.transformUsingProjection(params, 
-            sMatrix);
-        overplotTransformed(transformed, mMatrix, (int)(x2Min + xRange),
-           (int) (y2Min + yRange), 1);
-        
-        String str = MatrixUtil.printMatrix(params);
-        System.out.println(str);
-        
-        assertTrue(params[0][0] == 1);
-        assertTrue(params[0][1] == 0);
-        assertTrue(Math.abs(params[0][2] - translateX) <= 1.0);
-        
-        assertTrue(params[1][0] == 0);
-        assertTrue(params[1][1] == 1);
-        assertTrue(Math.abs(params[1][2] - translateY) <= 1.0);
-        
-        assertTrue(params[2][0] == 0);
-        assertTrue(params[2][1] == 0);
-        assertTrue(params[2][2] == 1);
+        assertTrue(Math.abs(fit.getScale() - 1) < 0.1);
+        assertTrue(Math.abs(fit.getRotationInRadians() - 0) <= 1.0);
+        assertTrue(Math.abs(fit.getTranslationX() - translateX) <= 1.0);
+        assertTrue(Math.abs(fit.getTranslationY() - translateY) <= 1.0);
         
     }
     
@@ -522,11 +403,6 @@ public class PointMatcher3Test {
         scaleAndRotate(mMatrix, scale, rotation, (x2Min + xRange)*0.5,
             (y2Min + yRange)*0.5);
         
-        double expectedP00 = Math.cos(rotation);
-        double expectedP01 = -Math.sin(rotation);
-        double expectedP10 = Math.sin(rotation);
-        double expectedP11 = Math.cos(rotation);
-        
         // use stereo projection solver  for comparison
         PairIntArray set1 = new PairIntArray();
         PairIntArray set2 = new PairIntArray();
@@ -543,23 +419,12 @@ public class PointMatcher3Test {
             set2.add((int)Math.round(x), (int)Math.round(y));
         }
         
-        PairIntArray output1 = new PairIntArray();
-        PairIntArray output2 = new PairIntArray();
-        
         PointMatcher pointMatcher = new PointMatcher();
         
-        int rotStart = 0; 
-        int rotStop = 360; 
-        int rotDelta = 10;
-        int scaleStart = 1;
-        int scaleStop = 4; 
-        int scaleDelta = 1;
-        boolean setsAreMatched = false;
         TransformationPointFit fit = 
-            pointMatcher.calculateTransformationWithGridSearch(
-            set1, set2,(int)xRange, (int)yRange,
-            rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            setsAreMatched, set1, set2);
+            pointMatcher.calculateProjectiveTransformation(
+            set1, set2, (int)xRange, (int)yRange);
+        
         
         log.info("FINAL Solution: " + fit.toString());
         
@@ -567,6 +432,23 @@ public class PointMatcher3Test {
         // needs to start with a euclidean solver like this, then if fit
         // is not good enough, continue with the more expensive projective
         // solution
+        
+        assertTrue(Math.abs(fit.getRotationInRadians() - (30.*Math.PI/180.))
+            < 1.0);
+        assertTrue(Math.abs(fit.getScale() - 1.0) < 1.0);
+        assertTrue(Math.abs(fit.getTranslationX() - 1.0) < 1.0);
+        assertTrue(Math.abs(fit.getTranslationY() - 1.0) < 1.0);
+        assertTrue(fit.getNumberOfMatchedPoints() == 70);
+        
+        System.out.println("=> " + fit.toString());
+        
+        Transformer transformer = new Transformer();
+        PairIntArray transformed = transformer.applyTransformation(
+            fit.getParameters(), set1, xRange, yRange);
+        
+        overplotTransformed(transformed, set2, (int)(x2Min + xRange),
+           (int)(y2Min + yRange), 70);
+        
     }
     
     @Test
@@ -634,7 +516,7 @@ public class PointMatcher3Test {
         
         double[][] transformed = pointMatcher.transformUsingProjection(params, 
             sMatrix);
-        overplotTransformed(transformed, mMatrix, x0, y0, 1);
+        overplotTransformed(transformed, mMatrix, x0, y0, 7);
         
         System.out.println("expectedP00 = " + expectedP00);
         System.out.println("expectedP01 = " + expectedP01);
@@ -680,7 +562,8 @@ public class PointMatcher3Test {
             dirPath + "/tmp_t2_" + testNumber + ".png", image);
         
     }
-     private void populateWithRandomPoints( SecureRandom sr, double[][] m, 
+    
+    private void populateWithRandomPoints( SecureRandom sr, double[][] m, 
         int nPoints1, int nPoints2, int xMin, int yMin,
         double xRange, double yRange) {
         
@@ -690,6 +573,17 @@ public class PointMatcher3Test {
             double y = yMin + (sr.nextDouble() * yRange);
             m[i][0] = x;
             m[i][1] = y;
+        }
+    }
+    
+    private void populateWithRandomPoints(SecureRandom sr, PairIntArray m, 
+        int nPoints1, int nPoints2, int xMin, int yMin,
+        int xRange, int yRange) {
+        
+        for (int i = nPoints1; i < nPoints2; i++) {
+            int x = xMin + sr.nextInt(xRange);
+            int y = yMin + sr.nextInt(yRange);
+            m.add(x, y);
         }
     }
     
@@ -705,6 +599,22 @@ public class PointMatcher3Test {
         for (int i = 0; i < m.length; i++) {
             double y = m[i][1];
             m[i][1] = y + translateY;
+        }
+    }
+    
+    private void translateX(PairIntArray m, int translateX) {
+        for (int i = 0; i < m.getN(); i++) {
+            int x = m.getX(i);
+            int y = m.getY(i);
+            m.set(i, (x + translateX), y);
+        }
+    }
+    
+    private void translateY(PairIntArray m, int translateY) {
+        for (int i = 0; i < m.getN(); i++) {
+            int x = m.getX(i);
+            int y = m.getY(i);
+            m.set(i, x, (y + translateY));
         }
     }
     
@@ -735,6 +645,33 @@ public class PointMatcher3Test {
             m[i][1] = ry;
         }
     }
+    
+    private void scaleAndRotate(PairIntArray m, 
+        double scale, double rotationInRadians, 
+        double centroidX, double centroidY) {
+        /*
+        xr[i] = centroidX1*s + ( 
+                ((x - centroidX1) * scaleTimesCosine) +
+                ((y - centroidY1) * scaleTimesSine));
+        yr[i] = centroidY1*s + ( 
+                (-(x - centroidX1) * scaleTimesSine) +
+                ((y - centroidY1) * scaleTimesCosine));
+        */
+        double scaleTimesCosine = scale * Math.cos(rotationInRadians);
+        double scaleTimesSine = scale * Math.sin(rotationInRadians);
+        
+        for (int i = 0; i < m.getN(); i++) {
+            double x = m.getX(i);
+            double y = m.getY(i);
+            double rx = centroidX*scale + ( 
+                ((x - centroidX) * scaleTimesCosine) +
+                ((y - centroidY) * scaleTimesSine));
+            double ry = centroidY*scale + ( 
+                (-(x - centroidX) * scaleTimesSine) +
+                ((y - centroidY) * scaleTimesCosine));
+            m.set(i, (int)Math.round(rx), (int)Math.round(ry));
+        }
+    }
       
     private double[][] createRandomPoints(SecureRandom sr, int nPoints,
         int xMin, int yMin, double xRange, double yRange) {
@@ -749,6 +686,19 @@ public class PointMatcher3Test {
         }
         
         return sMatrix;
+    }
+    
+    private PairIntArray createRandomPoints(SecureRandom sr, int nPoints,
+        int xMin, int yMin, int xRange, int yRange) {
+     
+        PairIntArray output = new PairIntArray(nPoints);
+        for (int i = 0; i < nPoints; i++) {
+            int x = xMin + sr.nextInt(xRange);
+            int y = yMin + sr.nextInt(yRange);
+            output.add(x, y);
+        }
+        
+        return output;
     }
     
     private double[][] createCopyOfSize(double[][] m, int sizeToCreate) {
@@ -772,16 +722,15 @@ public class PointMatcher3Test {
         
         try {
             PointMatcher3Test test = new PointMatcher3Test();
-            
-            /*test.test1();
+                       
+            test.test1();
             test.test2();
             test.test3();
             test.test4();
             test.test5();
             test.test6();
             
-            test.test7();
-            */
+            //test.test7();
             test.test7_0();
             
             /*
@@ -803,6 +752,29 @@ public class PointMatcher3Test {
             System.out.println(e.getMessage());
             fail(e.getMessage());
         }
+    }
+
+    private void overplotTransformed(PairIntArray transformed, 
+        PairIntArray model, int width, int height, int testNumber) 
+        throws IOException {
+        
+        Image image = new Image(width, height);
+        
+        for (int ii = 0; ii < transformed.getN(); ii++) {
+            double x2 = transformed.getX(ii);
+            double y2 = transformed.getY(ii);
+            ImageIOHelper.addPointToImage((float) x2, (float) y2, image, 3, 
+                0, 0, 255);
+        }
+        for (int ii = 0; ii < model.getN(); ii++) {
+            double x = model.getX(ii);
+            double y = model.getY(ii);
+            ImageIOHelper.addPointToImage((float) x, (float) y, image, 2, 
+                255, 0, 0);
+        }
+        String dirPath = ResourceFinder.findDirectory("bin");
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/tmp_t2_" + testNumber + ".png", image);
     }
 
 }
