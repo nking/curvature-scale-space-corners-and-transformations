@@ -230,4 +230,21 @@ public class MatrixUtil {
         return c;
     }
     
+    public static String printMatrix(double[][] params) {
+        
+        if (params == null) {
+            return "";
+        }
+        
+        StringBuffer sb = new StringBuffer();
+        for (int row = 0; row < params.length; row++) {
+            sb.append("row ").append(Integer.toString(row)).append(":");
+            for (int col = 0; col < params[0].length; col++) {
+                sb.append(" ").append(Double.toString(params[row][col]));
+            }
+            sb.append("\n");
+        }
+        
+        return sb.toString();
+    }
 }
