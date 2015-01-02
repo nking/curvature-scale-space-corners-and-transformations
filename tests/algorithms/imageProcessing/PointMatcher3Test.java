@@ -394,11 +394,6 @@ public class PointMatcher3Test {
 
         overplotTransformed(transformed, model, xRange, yRange, testNumber);
 
-        assertTrue(Math.abs(params.getRotationInRadians() - rotation) <= 1.0);
-        assertTrue(Math.abs(params.getScale() - scale) < 1.0);
-        assertTrue(Math.abs(params.getTranslationX() - translationX) <= 1.0);
-        assertTrue(Math.abs(params.getTranslationY() - translationY) <= 1.0);
-        
         int count = 0;
         for (int i = 0; i < transformed.getN(); i++) {
             int x = transformed.getX(i);
@@ -413,14 +408,19 @@ public class PointMatcher3Test {
             count++;
         }
         
-        System.out.println("Number of transformed scene points within bounds = " 
+        System.out.println("=> Number of transformed scene points within bounds = " 
             + count);
         
         int nExpected = (nScenePoints > count) ? count : nScenePoints; 
         
         assertTrue(Math.abs(nExpected - fit.getNumberOfMatchedPoints()) 
             < 0.1*nScenePoints);
-
+        
+        assertTrue(Math.abs(params.getRotationInRadians() - rotation) <= 1.0);
+        assertTrue(Math.abs(params.getScale() - scale) < 1.0);
+        assertTrue(Math.abs(params.getTranslationX() - translationX) <= 1.0);
+        assertTrue(Math.abs(params.getTranslationY() - translationY) <= 1.0);
+        
     }
     
     private void overplotTransformed(double[][] transformed, double[][] model,
@@ -609,7 +609,7 @@ public class PointMatcher3Test {
         
         try {
             PointMatcher3Test test = new PointMatcher3Test();
-            
+          
             test.test1();
             test.test2();
             test.test3();
@@ -619,9 +619,8 @@ public class PointMatcher3Test {
             test.test7();      
             test.test8();
             test.test9();
-            test.test10();
-            
-            //test.test11();
+            test.test10();            
+            test.test11();
             
             /*
             tests for :

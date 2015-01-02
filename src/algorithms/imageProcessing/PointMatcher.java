@@ -952,7 +952,7 @@ public final class PointMatcher {
                 if (fitIsBetter(bestFit, fit)) {
                     
 log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY()
-+ " rot=" + rot + " scale=" + scale + " fit=" + fit.toString());
++ " rot=" + rot + " scale=" + scale + "\nfit=" + fit.toString());
 
                     bestFit = fit;
                     
@@ -2024,7 +2024,9 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             peakTransX = hX.getXHist()[idxX];
             peakTransY = hY.getXHist()[idxY];
             
-            /*
+            //TODO: consider using refine translation here for rot between certain values?
+            // so far, not necessary
+            
             float frac = 0.5f;
 
             ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(
@@ -2045,8 +2047,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     xy.getX(), xy.getY());
             
             peakTransY = areaAndCentroid[1];
-            */
-            
+                        
         } else {
             // keep unique x, y pairs
             List<Integer> freq = new ArrayList<Integer>();
@@ -5453,7 +5454,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         // TODO: follow the results here for the stereo projective set
         // Brown & Lowe 2003.  small projective coeffs should be needed.
         
-        if (!refineEuclideanParams) {
+        if (refineEuclideanParams) {
             double frac = 0.7;
             if ((nMaxMatchable - fit.getNumberOfMatchedPoints()) 
                 >= frac * nMaxMatchable) {
@@ -5471,7 +5472,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             }
         }
         
-        if (!refineEuclideanParams) {
+        if (refineEuclideanParams) {
             // === need criteria for which to try for a projective solution.
             //     -- a plot of x vs diffX and y vs diffY ?
             boolean doProjectiveSearch = false;
