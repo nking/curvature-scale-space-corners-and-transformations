@@ -5356,6 +5356,69 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             }            
         }
     }
+    
+    /**
+     * calculate for unmatched points and if best match is not good,
+     * reverse the order of sets and try again in order to solve for
+     * possible scale transformation smaller than 1.
+     * 
+     * @param scene
+     * @param model
+     * @param image1Width
+     * @param image1Height
+     * @param image2Width
+     * @param image2Height
+     * @return 
+     */
+    public TransformationPointFit calculateProjectiveTransformationWrapper(
+        PairIntArray scene, PairIntArray model, int image1Width, 
+        int image1Height, int image2Width, int image2Height) {
+        
+        TransformationPointFit fit = calculateProjectiveTransformation(
+            scene, model, image1Width, image1Height);
+        
+        int nMaxMatchable = (scene.getN() < model.getN()) ? scene.getN() 
+            : model.getN();
+        
+        if ((fit == null) || 
+            (((double)fit.getNumberOfMatchedPoints()/(double)nMaxMatchable))
+            < 0.3*nMaxMatchable) {
+            
+            // reverse the order to solve for possible scale < 1.
+            
+            TransformationPointFit revFit = calculateProjectiveTransformation(
+                model, scene, image2Width, image2Height);
+            
+            if (fitIsBetter(fit, revFit)) {
+                
+                TransformationParameters params = revFit.getParameters();
+                
+                // reverse the parameters.
+                // needs a reference point in both datasets for direct calculation
+                
+                MatchedPointsTransformationCalculator tc = new 
+                    MatchedPointsTransformationCalculator();
+                
+                double x2 = image2Width >> 1;
+                double y2 = image2Height >> 1;
+                
+                double[] x1y1 = tc.applyTransformation(params, (int)x2, (int)y2, 
+                    x2, y2);
+                
+                TransformationParameters revParams = tc.swapReferenceFrames(
+                    params, (image1Width >> 1), (image1Height >> 1), x2, y2, 
+                    x1y1[0], x1y1[1]);       
+                
+                fit = new TransformationPointFit(revParams, 
+                    revFit.getNumberOfMatchedPoints(),
+                    revFit.getMeanDistFromModel(),
+                    revFit.getStDevFromMean(),
+                    revFit.getTolerance());
+            }
+        }
+        
+        return fit;
+    }
 
     /**
      * calculate for unmatched points
