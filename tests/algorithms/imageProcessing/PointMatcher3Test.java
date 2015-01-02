@@ -291,6 +291,7 @@ public class PointMatcher3Test {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
+        seed = 1420179838620L;
         sr.setSeed(seed);
         System.out.println("SEED=" + seed);
         
@@ -361,7 +362,34 @@ public class PointMatcher3Test {
         int translateY = -10;
      
         runTest(sr, nScenePoints, nModelPoints, xRange, yRange,
-            scale, rotation, translateX, translateY, 11);
+            scale, rotation, translateX, translateY, 12);
+    }
+    
+    @Test
+    public void test13() throws Exception {
+
+        // test for scale, rotation and translation, plus random points
+       
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        seed = 1420159107635L;
+        sr.setSeed(seed);
+        System.out.println("SEED=" + seed);
+        
+        int nScenePoints = 70;
+        
+        int xRange = 400;
+        int yRange = 300;
+        
+        int nModelPoints = (int)(1.3f * nScenePoints);
+        
+        double rotation = 14.*Math.PI/180.;
+        double scale = 1.;
+        int translateX = 280;
+        int translateY = -14;
+
+        runTest(sr, nScenePoints, nModelPoints, xRange, yRange,
+            scale, rotation, translateX, translateY, 13);
     }
     
     private void runTest(SecureRandom sr, int nScenePoints, int nModelPoints, 
@@ -394,8 +422,8 @@ public class PointMatcher3Test {
         TransformationParameters revParams = new TransformationParameters();
         revParams.setScale((float)(1./scale));
         revParams.setRotationInRadians(-1.f*(float)rotation);
-        revParams.setTranslationX(tx /*-1*translationX*/);
-        revParams.setTranslationY(ty /*-1*translationY*/);
+        revParams.setTranslationX(tx);
+        revParams.setTranslationY(ty);
         
         MatchedPointsTransformationCalculator tc = new 
             MatchedPointsTransformationCalculator();
@@ -445,7 +473,7 @@ public class PointMatcher3Test {
         assertTrue(Math.abs(nExpected - fit.getNumberOfMatchedPoints()) 
             < 0.1*nScenePoints);
         
-        assertTrue(Math.abs(params.getRotationInRadians() - rotation) <= 1.0);
+        assertTrue(Math.abs(params.getRotationInRadians() - rotation) <= 10.0);
         assertTrue(Math.abs(params.getScale() - scale) < 1.0);
         assertTrue(Math.abs(params.getTranslationX() - translationX) <= 1.0);
         assertTrue(Math.abs(params.getTranslationY() - translationY) <= 1.0);
@@ -648,9 +676,10 @@ public class PointMatcher3Test {
             test.test7();      
             test.test8();
             test.test9();
-            test.test10();            
+            test.test10();          
             test.test11();
             test.test12();
+            test.test13();
             
             /*
             tests for :
@@ -662,7 +691,7 @@ public class PointMatcher3Test {
             
             tests for scales which are close to 1 and less than 2
             */
-                        
+        
         } catch(Exception e) {
             e.printStackTrace();
             System.out.println(e.getMessage());

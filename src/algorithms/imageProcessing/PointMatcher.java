@@ -242,6 +242,8 @@ public final class PointMatcher {
      
     private final Logger log = Logger.getLogger(this.getClass().getName());
  
+    protected static int minTolerance = 5;
+    
     /**
      * 
      * calculate a projective transformation that results in the best match
@@ -278,6 +280,13 @@ public final class PointMatcher {
         
         double tolTransX = image1CentroidX * 0.02f;
         double tolTransY = image1CentroidY * 0.02f;
+        if (tolTransX < minTolerance) {
+            tolTransX = minTolerance;
+        }
+        if (tolTransY < minTolerance) {
+            tolTransY = minTolerance;
+        }
+        
         //TODO: improve this estimate because the result is sensitive to it
         double tolerance = Math.sqrt(tolTransX*tolTransX + tolTransY*tolTransY);
         tolerance *= 2;
@@ -909,6 +918,19 @@ public final class PointMatcher {
         
         double tolTransX = 4.0f * image1CentroidX * 0.02f;
         double tolTransY = 4.0f * image1CentroidY * 0.02f;
+        if (tolTransX < minTolerance) {
+            tolTransX = minTolerance;
+        }
+        if (tolTransY < minTolerance) {
+            tolTransY = minTolerance;
+        }
+        
+        int[] largeScaleRotRefines = new int[]{
+            rotStart, 
+            (int)(rotStart + 0.25*(rotStop - rotStart)),
+            (int)(rotStart + 0.5*(rotStop - rotStart)),
+            (int)(rotStart + 0.75*(rotStop - rotStart))
+        };
         
         Transformer transformer = new Transformer();
         
@@ -945,6 +967,36 @@ public final class PointMatcher {
                 } else {
                     fit = evaluateFitForUnmatchedTransformed(params, 
                         allPoints1Tr, allPoints2, tolTransX, tolTransY);
+                    
+                    if ((scale >= 4) && ((fit == null) || 
+                        (((float)fit.getNumberOfMatchedPoints()
+                        /(float)nMaxMatchable)) < 0.1*nMaxMatchable) ) {
+                        
+                        // need to limit the use of this...
+                        int idx = Arrays.binarySearch(largeScaleRotRefines,
+                            rot);
+                        
+                        if (idx > -1) {
+                        
+                            float tx = params.getTranslationX();
+                            float ty = params.getTranslationY();
+
+                            // refine the translation and try fit again
+                            refineTranslation(params, set1, set2, 
+                                image1CentroidX, image1CentroidY);
+
+                            if ((Math.abs(params.getTranslationX() - tx) > 1) ||
+                                Math.abs(params.getTranslationY() - ty) > 1) {
+
+                                allPoints1Tr = transformer.applyTransformation(
+                                    params, image1CentroidX, image1CentroidY, 
+                                    allPoints1);
+
+                                fit = evaluateFitForUnmatchedTransformed(params, 
+                                    allPoints1Tr, allPoints2, tolTransX, tolTransY);
+                            }
+                        }
+                    }
                 }
         
                 // correction for intersection area?
@@ -971,15 +1023,17 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             }
             
             if (fitIsBetter(bestFitForScale, bestFit)) {
+               
                 bestFitForScale = bestFit;
-            } else if ((bestFitForScale != null) && (bestFit != null)) {
+                
+            /*} else if ((bestFitForScale != null) && (bestFit != null)) {
                 if ((bestFitForScale.getNumberOfMatchedPoints() 
                     == bestFit.getNumberOfMatchedPoints())
-                    && ((bestFit.getMeanDistFromModel()/
-                    bestFitForScale.getMeanDistFromModel()) < 1.2)) {
+                    && ((bestFit.getMeanDistFromModel() -
+                    bestFitForScale.getMeanDistFromModel() > 5))) {
                     
                     // fit is essentially the same, so scale might be larger
-                                
+                    int z = 1;           
                     continue;
                 } else if (
                     ((double)bestFit.getNumberOfMatchedPoints()
@@ -988,8 +1042,9 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     // TODO: improve this
                     // the number of points matched is very low, so keep trying
                     // a larger scale
+                    int z = 1;
                     continue;
-                }
+                }*/
             } else {
                 // scale was probably smaller so return best solution
                 break;
@@ -1003,6 +1058,27 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 rot -= 2*Math.PI;
             }
             bestFit.getParameters().setRotationInRadians(rot);
+        }
+        
+        // ==== refine translation and evalFit ====
+        
+        if (bestFit != null) {
+                        
+            refineTranslation(bestFit.getParameters(), allPoints1, allPoints2, 
+                image1CentroidX, image1CentroidY);
+            
+            PairFloatArray allPoints1Tr = transformer.applyTransformation(
+                bestFit.getParameters(), image1CentroidX, image1CentroidY, 
+                allPoints1);
+            
+            if (setsAreMatched) {
+                bestFit = evaluateFitForMatchedTransformed(
+                    bestFit.getParameters(), allPoints1Tr, allPoints2);                    
+            } else {
+                bestFit = evaluateFitForUnmatchedTransformed(
+                    bestFit.getParameters(), allPoints1Tr, allPoints2, 
+                    tolTransX, tolTransY);
+            }
         }
         
         return bestFit;
@@ -1330,15 +1406,12 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         }
         
         float tolTransX = 4.f * centroidX1 * 0.02f;
-        float tolTransY = 4.f * centroidY1 * 0.02f;
-        
-        //float tolTransX = Float.MAX_VALUE;
-        //float tolTransY = Float.MAX_VALUE;
-        if (tolTransX < 1) {
-            tolTransX = 1;
+        float tolTransY = 4.f * centroidY1 * 0.02f;        
+        if (tolTransX < minTolerance) {
+            tolTransX = minTolerance;
         }
-        if (tolTransY < 1) {
-            tolTransY = 1;
+        if (tolTransY < minTolerance) {
+            tolTransY = minTolerance;
         }
         
         float s = (float)scale;
@@ -1419,7 +1492,6 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             peakTransX = hX.getXHist()[idxX];
             peakTransY = hY.getXHist()[idxY];
             
-            /*
             float frac = 0.5f;
             
             ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(
@@ -1440,7 +1512,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     xy.getX(), xy.getY());
             
             peakTransY = areaAndCentroid[1];
-            */
+            
         } else {
             // keep unique x, y pairs
             List<Integer> freq = new ArrayList<Integer>();
@@ -1526,6 +1598,12 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         // for refinement, need a smaller than infinite translation tolerance
         tolTransX = 2.f * centroidX1 * 0.02f;
         tolTransY = 2.f * centroidY1 * 0.02f;
+        if (tolTransX < minTolerance) {
+            tolTransX = minTolerance;
+        }
+        if (tolTransY < minTolerance) {
+            tolTransY = minTolerance;
+        }
         
         TransformationPointFit bestFit = refineTranslationWithDownhillSimplex(
             xr, yr, peakTransX, peakTransY, tolTransX, tolTransY,
@@ -1548,175 +1626,6 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         */ 
         
         return bestFit;
-    }
-    
-    /**
-     * 
-     * @param set1 two dimensional array holding x and y points with
-     * first dimension being the point number and the 2nd being x and y
-     * for example set1[row][0] is x and set1[row][1] is y for point in row.
-     * @param set2 two dimensional array holding x and y points with
-     * first dimension being the point number and the 2nd being x and y
-     * for example set2[row][0] is x and set2[row][1] is y for point in row.
-     * @return 
-     */
-    public float[] calculateTranslationAndRefine(double[][] set1, 
-        double[][] set2) {
-        
-        if (set1 == null) {
-            throw new IllegalArgumentException("set1 cannot be null");
-        }
-        if (set2 == null) {
-            throw new IllegalArgumentException("set2 cannot be null");
-        }
-        
-        int nTrans = set1.length * set2.length;
-        int count = 0;
-        float[] transX = new float[nTrans];
-        float[] transY = new float[nTrans];
-                
-        for (int i = 0; i < set1.length; i++) {
-            
-            double x = set1[i][0];
-            double y = set1[i][1];
-            
-            for (int j = 0; j < set2.length; j++) {
-                
-                double x2 = set2[j][0];
-                double y2 = set2[j][1];
-                
-                transX[count] = (float)(x2 - x);
-                transY[count] = (float)(y2 - y);
-                
-                count++;
-            }
-        }
-        
-        float peakTransX;
-        float peakTransY;
-        
-        // when there aren't enough points for useful histogram,
-        // will make a frequency map of round to integer,
-        // and take the peak if its larger than next peak,
-        // else, take the average of largest frequencies.
-        
-        if ((set1.length > 5) && (set2.length > 5)) {
-            
-            /*LinearRegression lr = new LinearRegression();
-            //lr.plotTheLinearRegression(transX, transY);
-            float[] xyPeaks = lr.calculateTheilSenEstimatorMedian(transX, transY);
-            
-            peakTransX = xyPeaks[0];
-            peakTransY = xyPeaks[1];
-            log.info("thiel sen estimator: " + peakTransX + ", " + peakTransY);
-            */
-            
-            int nBins = 15;
-            
-            HistogramHolder hX = Histogram
-                .createSimpleHistogram(nBins,
-                //.defaultHistogramCreator(
-                transX, Errors.populateYErrorsBySqrt(transX));
-        
-            HistogramHolder hY = Histogram
-                .createSimpleHistogram(nBins,
-                //.defaultHistogramCreator(
-                transY, Errors.populateYErrorsBySqrt(transY));
-
-            try {
-                hX.plotHistogram("transX", 1);
-                hY.plotHistogram("transY", 2);
-            } catch (IOException e) {
-                log.severe(e.getMessage());
-            }
-
-            int idxX =  MiscMath.findYMaxIndex(hX.getYHist());
-            int idxY =  MiscMath.findYMaxIndex(hY.getYHist());
-            peakTransX = hX.getXHist()[idxX];
-            peakTransY = hY.getXHist()[idxY];
-            
-            log.info("histogram: " + peakTransX + ", " + peakTransY);
-            
-            /*looks like histogram is a good start, but the value should be 
-            refined w/ matching and outlier removal.
-            */
-            float[] tolerances = new float[]{30, 5};
-            for (float tolerance : tolerances) {
-                
-                float[] peakXY = refineCalculateTranslation(set1, set2,
-                    peakTransX, peakTransY, tolerance);
-            
-                if (peakXY != null) {
-                    
-                    peakTransX = peakXY[0];
-                    peakTransY = peakXY[1];
-            
-                    log.info("refined: " + peakTransX + ", " + peakTransY);
-                }
-            }
-            
-            peakTransX = (int)peakTransX;
-            peakTransY = (int)peakTransY;
-            
-        } else {
-            // keep unique x, y pairs
-            List<Integer> freq = new ArrayList<Integer>();
-            List<String> xy = new ArrayList<String>();
-            for (int i = 0; i < transX.length; i++) {
-                int tx = Math.round(transX[i]);
-                int ty = Math.round(transY[i]);
-                String key = String.format("%d:%d", tx, ty);
-                int idx = xy.indexOf(key);
-                if (idx > -1) {
-                    Integer c = freq.get(idx);
-                    freq.set(idx, Integer.valueOf(c.intValue() + 1));
-                } else {
-                    Integer c = Integer.valueOf(1);
-                    freq.add(c);
-                    xy.add(key);
-                }
-            }
-            int n0Idx = -1;
-            int maxN0 = Integer.MIN_VALUE;
-            for (int i = 0; i < freq.size(); i++) {
-                int v = freq.get(i).intValue();
-                if (v > maxN0) {
-                    maxN0 = v;
-                    n0Idx = i;
-                }
-            }
-            int n1Idx = -1;
-            int maxN1 = Integer.MIN_VALUE;
-            for (int i = 0; i < freq.size(); i++) {
-                int v = freq.get(i).intValue();
-                if (v < maxN0) {
-                    if (v > maxN1) {
-                        maxN1 = v;
-                        n1Idx = i;
-                    }
-                }
-            }
-            if ((n1Idx > -1) && ((maxN0 - maxN1) > 1)) {
-                //TODO: consider whether (maxN0 - maxN1) should == set1.getN()
-                String[] xyItems = xy.get(n0Idx).split(":");
-                peakTransX = Float.valueOf(xyItems[0]);
-                peakTransY = Float.valueOf(xyItems[1]);
-            } else {
-                //take average of all points
-                peakTransX = 0;
-                peakTransY = 0;
-                for (int i = 0; i < transX.length; i++) {
-                    peakTransX += transX[i];
-                    peakTransY += transY[i];
-                }
-                peakTransX /= (float)transX.length;
-                peakTransY /= (float)transY.length;
-            }
-        }
-        
-        log.fine("peakTransX=" + peakTransX + "  peakTransY=" + peakTransY);
-        
-        return new float[]{(int)peakTransX, (int)peakTransY};
     }
     
     /**
@@ -1946,6 +1855,9 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             return null;
         }
         
+        int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN() 
+            : set2.getN();
+        
         float s = (float)scale;
         float scaleTimesCosine = (float)(s * Math.cos(rotation));
         float scaleTimesSine = (float)(s * Math.sin(rotation));
@@ -2023,32 +1935,28 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             int idxY =  MiscMath.findYMaxIndex(hY.getYHist());
             peakTransX = hX.getXHist()[idxX];
             peakTransY = hY.getXHist()[idxY];
-            
-            //TODO: consider using refine translation here for rot between certain values?
-            // so far, not necessary
-            // or for scale > 1 and rot > 20?
-            
+           
             float frac = 0.5f;
 
             ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(
                 hX.getXHist(), hX.getYHistFloat(), null, null, frac);
-            
+
             //area, x, y
             float[] areaAndCentroid = 
                 LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(
                     xy.getX(), xy.getY());
-            
+
             peakTransX = areaAndCentroid[1];
-            
+
             xy = LinesAndAngles.createPolygonOfTopFWFractionMax(
                 hY.getXHist(), hY.getYHistFloat(), null, null, frac);
-            
+
             areaAndCentroid = 
                 LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(
                     xy.getX(), xy.getY());
-            
+
             peakTransY = areaAndCentroid[1];
-                        
+
         } else {
             // keep unique x, y pairs
             List<Integer> freq = new ArrayList<Integer>();
@@ -2344,6 +2252,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             5.0 * Math.PI/180.
         };
         if (r == 0) {
+            //TODO: reconsider this:
              drs = new double[]{0};
         }
 
@@ -2356,10 +2265,10 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             0.1
             //-1.0, -0.1, -0.05, 0.05
         };
-        if (s == 1) {
+        /*if (s == 1) {
             dss = new double[]{0};
             sMin = 1;
-        }
+        }*/
         if (rMin < 0) {
             rMin = 0;
         }
@@ -2377,7 +2286,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             for (int j = 0; j <= drs.length; j++) {
                 
                 double rotation = (j == 0) ? r : r + drs[j - 1];
-                
+               
                 fits[count] = calculateTranslation(set1, set2, 
                     rotation, scale, image1CentroidX, image1CentroidY, 
                     setsAreMatched);
@@ -3015,7 +2924,13 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         //TODO: revisit this:
         float tolTransX = 2.f * centroidX1 * 0.02f;
         float tolTransY = 2.f * centroidY1 * 0.02f;
-       
+        if (tolTransX < minTolerance) {
+            tolTransX = minTolerance;
+        }
+        if (tolTransY < minTolerance) {
+            tolTransY = minTolerance;
+        }
+        
         int nTotal = 0;
         float[] weights = new float[edges1.length];
         for (int i = 0; i < edges1.length; i++) {
@@ -3910,10 +3825,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         TransformationParameters params, PairFloatArray unmatched1Transformed, 
         PairIntArray unmatched2, double tolTransX, double tolTransY) {
         
-        
         return evaluateFitForUnMatchedTransformedOptimal(params, 
-            unmatched1Transformed, unmatched2, tolTransX, tolTransY);
-        
+            unmatched1Transformed, unmatched2, tolTransX, tolTransY);        
         
         /*
         return evaluateFitForUnMatchedTransformedGreedy(params, 
@@ -5458,7 +5371,11 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         if (refineEuclideanParams) {
             
-            float frac = 0.7f;
+            //TODO: improve this:  
+            // frac=0.7 can be safely used for matches and avoid refinement here?
+            //
+            
+            float frac = 0.95f;
             
             float fracMatched = (float)fit.getNumberOfMatchedPoints()/
                 (float)nMaxMatchable;
@@ -5472,8 +5389,44 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     scene, model, sceneImageCentroidX, sceneImageCentroidY, 
                     setsAreMatched);
 
+                boolean refineTranslation = false;
+                
                 if (fitIsBetter(fit, fit2)) {
+                    
                     fit = fit2;
+                    
+                    refineTranslation = true;
+                    
+                } else if ((fit2 != null) && (fit != null)) {
+                    
+                    // consider the case when avg diff is better and stdev too
+                    double diffMean = 
+                        fit.getMeanDistFromModel() - fit2.getMeanDistFromModel();
+                    
+                    //TODO: improve this
+                    if ((diffMean > 5) && ((fit.getStDevFromMean() 
+                        - fit2.getStDevFromMean()) > 0.)) {
+                        
+                        float fracMatched2 = (float)fit2.getNumberOfMatchedPoints()/
+                            (float)nMaxMatchable; 
+                        
+                        if (fracMatched2 > 0.25) {
+                            
+                            log.info("choosing fit2 over fit1 even though" +
+                                " nMatched is smaller");
+                            log.info("fit=" + fit.toString());
+                            log.info("fit2=" + fit2.toString());
+                            
+                            fit = fit2;
+                            
+                            refineTranslation = true;
+                        }    
+                    }
+                }
+                
+                if (refineTranslation) {
+                    refineTranslation(fit.getParameters(), scene, model, 
+                        sceneImageCentroidX, sceneImageCentroidY);
                 }
             }
         }
@@ -5488,57 +5441,58 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             }
         }
         
-        boolean refineTranslation = true;
-        
-        if (refineTranslation) {
-            
-            double translationX = fit.getTranslationX();
-            double translationY = fit.getTranslationY();
-            double scale = fit.getScale();
-            double rotation = fit.getRotationInRadians();
-            double scaleTimesCosine = scale * Math.cos(rotation);
-            double scaleTimesSine = scale * Math.sin(rotation);
-            double[][] transformed = new double[scene.getN()][];
-            for (int i = 0; i < scene.getN(); i++) {
-                transformed[i] = new double[2];
-                int x = scene.getX(i);
-                int y = scene.getY(i);
-                transformed[i][0] = sceneImageCentroidX*scale + (
-                    ((x - sceneImageCentroidX) * scaleTimesCosine) +
-                    ((y - sceneImageCentroidY) * scaleTimesSine));
-                transformed[i][1] = sceneImageCentroidY*scale + (
-                    (-(x - sceneImageCentroidX) * scaleTimesSine) +
-                    ((y - sceneImageCentroidY) * scaleTimesCosine));
-            }
-            
-            double[][] compare = new double[model.getN()][];
-            for (int i = 0; i < model.getN(); i++) {
-                compare[i] = new double[2];
-                compare[i][0] = model.getX(i);
-                compare[i][1] = model.getY(i);
-            }
-            
-            float[] tolerances = new float[]{30, 5};
-            for (float tolerance : tolerances) {
-
-                float[] peakXY = refineCalculateTranslation(
-                    transformed, compare,
-                    (float)translationX, (float)translationY, tolerance);
-
-                if (peakXY != null) {
-
-                    translationX = (int)peakXY[0];
-                    translationY = (int)peakXY[1];
-
-                    log.info("refined: " + translationX + ", " + translationY);
-                }
-            }
-            
-            fit.getParameters().setTranslationX((float)translationX);
-            fit.getParameters().setTranslationY((float)translationY);
+        return fit;
+    }
+    
+    private void refineTranslation(TransformationParameters params, 
+        PairIntArray scene, PairIntArray model, 
+        int sceneImageCentroidX, int sceneImageCentroidY) {
+                    
+        double translationX = params.getTranslationX();
+        double translationY = params.getTranslationY();
+        double scale = params.getScale();
+        double rotation = params.getRotationInRadians();
+        double scaleTimesCosine = scale * Math.cos(rotation);
+        double scaleTimesSine = scale * Math.sin(rotation);
+        double[][] transformed = new double[scene.getN()][];
+        for (int i = 0; i < scene.getN(); i++) {
+            transformed[i] = new double[2];
+            int x = scene.getX(i);
+            int y = scene.getY(i);
+            transformed[i][0] = sceneImageCentroidX*scale + (
+                ((x - sceneImageCentroidX) * scaleTimesCosine) +
+                ((y - sceneImageCentroidY) * scaleTimesSine));
+            transformed[i][1] = sceneImageCentroidY*scale + (
+                (-(x - sceneImageCentroidX) * scaleTimesSine) +
+                ((y - sceneImageCentroidY) * scaleTimesCosine));
         }
 
-        return fit;
+        double[][] compare = new double[model.getN()][];
+        for (int i = 0; i < model.getN(); i++) {
+            compare[i] = new double[2];
+            compare[i][0] = model.getX(i);
+            compare[i][1] = model.getY(i);
+        }
+
+        float[] tolerances = new float[]{30, 5};
+        for (float tolerance : tolerances) {
+
+            float[] peakXY = refineCalculateTranslation(
+                transformed, compare,
+                (float)translationX, (float)translationY, tolerance);
+
+            if (peakXY != null) {
+
+                translationX = (int)peakXY[0];
+                translationY = (int)peakXY[1];
+
+                log.info("refined: " + translationX + ", " + translationY);
+            }
+        }
+
+        params.setTranslationX((float)translationX);
+        params.setTranslationY((float)translationY);
+ 
     }
     
     /**
