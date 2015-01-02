@@ -336,6 +336,33 @@ public class PointMatcher3Test {
         runTest(sr, nScenePoints, nModelPoints, xRange, yRange,
             scale, rotation, translateX, translateY, 11);
     }
+
+    @Test
+    public void test12() throws Exception {
+
+        // test for scale, rotation and translation, plus random points
+       
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        seed = 1420159107635L;
+        sr.setSeed(seed);
+        System.out.println("SEED=" + seed);
+        
+        int nScenePoints = 70;
+        
+        int xRange = 400;
+        int yRange = 300;
+        
+        int nModelPoints = (int)(1.3f * nScenePoints);
+        
+        double rotation = 30.*Math.PI/180.;
+        double scale = 2.;
+        int translateX = 200;
+        int translateY = -10;
+     
+        runTest(sr, nScenePoints, nModelPoints, xRange, yRange,
+            scale, rotation, translateX, translateY, 11);
+    }
     
     private void runTest(SecureRandom sr, int nScenePoints, int nModelPoints, 
         int xRange, int yRange,
@@ -358,15 +385,17 @@ public class PointMatcher3Test {
         
         scaleAndRotate(scene, 1./scale, -1*rotation, xModelCentroid, 
             yModelCentroid);
-        translateX(scene, -1*translationX);
-        translateY(scene, -1*translationY);
-             
+        int tx = (translationX == 0) ? 0 : (int)(-1*translationX/scale);
+        int ty = (translationY == 0) ? 0 : (int)(-1*translationY/scale);
+        translateX(scene, tx);
+        translateY(scene, ty);
+        
         // transform the centroid point from model to use for calculations
         TransformationParameters revParams = new TransformationParameters();
         revParams.setScale((float)(1./scale));
         revParams.setRotationInRadians(-1.f*(float)rotation);
-        revParams.setTranslationX(-1*translationX);
-        revParams.setTranslationY(-1*translationY);
+        revParams.setTranslationX(tx /*-1*translationX*/);
+        revParams.setTranslationY(ty /*-1*translationY*/);
         
         MatchedPointsTransformationCalculator tc = new 
             MatchedPointsTransformationCalculator();
@@ -609,7 +638,7 @@ public class PointMatcher3Test {
         
         try {
             PointMatcher3Test test = new PointMatcher3Test();
-          
+            
             test.test1();
             test.test2();
             test.test3();
@@ -621,15 +650,17 @@ public class PointMatcher3Test {
             test.test9();
             test.test10();            
             test.test11();
+            test.test12();
             
             /*
             tests for :
-            -- for same set w/ rotation and translation and noise
             -- for same set w/ scale and rotation and translation and noise
             -- for same set w/ projection
             -- for same set w/ projection and noise
             
             tests for rotation in degrees which are not factors of 10.
+            
+            tests for scales which are close to 1 and less than 2
             */
                         
         } catch(Exception e) {

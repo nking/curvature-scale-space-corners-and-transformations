@@ -1329,11 +1329,11 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             return null;
         }
         
-        //float tolTransX = 4.f * centroidX1 * 0.02f;
-        //float tolTransY = 4.f * centroidY1 * 0.02f;
+        float tolTransX = 4.f * centroidX1 * 0.02f;
+        float tolTransY = 4.f * centroidY1 * 0.02f;
         
-        float tolTransX = Float.MAX_VALUE;
-        float tolTransY = Float.MAX_VALUE;
+        //float tolTransX = Float.MAX_VALUE;
+        //float tolTransY = Float.MAX_VALUE;
         if (tolTransX < 1) {
             tolTransX = 1;
         }
@@ -2026,6 +2026,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             
             //TODO: consider using refine translation here for rot between certain values?
             // so far, not necessary
+            // or for scale > 1 and rot > 20?
             
             float frac = 0.5f;
 
@@ -5376,9 +5377,10 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         int nMaxMatchable = (scene.getN() < model.getN()) ? scene.getN() 
             : model.getN();
         
-        if ((fit == null) || 
-            (((double)fit.getNumberOfMatchedPoints()/(double)nMaxMatchable))
-            < 0.3*nMaxMatchable) {
+        float fracMatched = (fit == null) ? 0 :
+            (float)fit.getNumberOfMatchedPoints()/(float)nMaxMatchable;
+        
+        if (fracMatched < 0.3) {
             
             // reverse the order to solve for possible scale < 1.
             
@@ -5455,9 +5457,13 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         // Brown & Lowe 2003.  small projective coeffs should be needed.
         
         if (refineEuclideanParams) {
-            double frac = 0.7;
-            if ((nMaxMatchable - fit.getNumberOfMatchedPoints()) 
-                >= frac * nMaxMatchable) {
+            
+            float frac = 0.7f;
+            
+            float fracMatched = (float)fit.getNumberOfMatchedPoints()/
+                (float)nMaxMatchable;
+            
+            if (fracMatched <= frac) {
 
                 // refine the euclidean solution, centered on current values
 
