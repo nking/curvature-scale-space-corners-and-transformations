@@ -78,6 +78,8 @@ public class PointMatcher2Test {
         Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
         int image1Width = img1.getWidth();
         int image1Height = img1.getHeight();
+        int image1CentroidX = image1Width >> 1;
+        int image1CentroidY = image1Height >> 1;
         String fileName2 = "merton_college_I_002.jpg";
         fileName2 = "brown_lowe_2003_image2.jpg";
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
@@ -90,7 +92,7 @@ public class PointMatcher2Test {
         
         SimpleMatrix fm = 
             spTransformer.calculateEpipolarProjectionForUnmatched(
-            matched1, matched2, image1Width, image1Height,
+            matched1, matched2, image1CentroidX, image1CentroidY,
             outputLeft, outputRight);
         
         PairFloatArray finalMatched1 = new PairFloatArray();

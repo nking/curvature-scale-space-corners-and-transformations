@@ -163,7 +163,7 @@ public class StereoProjectionTransformer {
     
     public SimpleMatrix calculateEpipolarProjectionForUnmatched(
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        int imageWidth1, int imageHeight1, 
+        int image1CentroidX, int image1CentroidY, 
         PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY
         ) throws NoSuchAlgorithmException {
         
@@ -212,7 +212,7 @@ public class StereoProjectionTransformer {
         StereoProjectionTransformerFit fit = 
             pointMatcher.matchPointsUsingProjectiveTransformation(
             unmatchedLeftXY, unmatchedRightXY, 
-            imageWidth1, imageHeight1, output1, output2);
+            image1CentroidX, image1CentroidY, output1, output2);
        
         PairFloatArray in1 = new PairFloatArray();
         PairFloatArray in2 = new PairFloatArray();

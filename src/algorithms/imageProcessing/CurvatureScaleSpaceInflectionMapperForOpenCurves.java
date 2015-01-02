@@ -113,7 +113,9 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
         
         TransformationPointFit fit = 
             pointMatcher.calculateRoughTransformationForUnmatched(
-                xyPeaks1, xyPeaks2, image1OriginalWidth, image1OriginalHeight);
+                xyPeaks1, xyPeaks2, 
+                (image1OriginalWidth >> 1), 
+                (image1OriginalHeight >> 1));
         
         log.info("FIT: " + fit.toString());
         

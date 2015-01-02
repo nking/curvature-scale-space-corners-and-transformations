@@ -256,15 +256,15 @@ public final class PointMatcher {
      * 
      * @param set1 set of points such as corners from an image
      * @param set2 set of points such as corners from another image.
-     * @param image1Width
-     * @param image1Height
+     * @param image1CentroidX
+     * @param image1CentroidY
      * @param output1
      * @param output2
      * @return 
      */
     public StereoProjectionTransformerFit 
         matchPointsUsingProjectiveTransformation(PairIntArray set1, 
-        PairIntArray set2, int image1Width, int image1Height,
+        PairIntArray set2, int image1CentroidX, int image1CentroidY,
         PairIntArray output1, PairIntArray output2) {
                 
         //TODO:  this method is changing.  needs alot of improvement!
@@ -276,11 +276,8 @@ public final class PointMatcher {
         int scaleStop = 10;
         int scaleDelta = 1;
         
-        int centroidX1 = image1Width >> 1;
-        int centroidY1 = image1Height >> 1;
-        
-        double tolTransX = 2.0f * image1Width * 0.02f;
-        double tolTransY = 2.0f * image1Height * 0.02f;
+        double tolTransX = image1CentroidX * 0.02f;
+        double tolTransY = image1CentroidY * 0.02f;
         //TODO: improve this estimate because the result is sensitive to it
         double tolerance = Math.sqrt(tolTransX*tolTransX + tolTransY*tolTransY);
         tolerance *= 2;
@@ -307,14 +304,15 @@ public final class PointMatcher {
                 
                 TransformationParameters params = 
                     calculateTranslationForUnmatched(set1, set2, 
-                        rot*Math.PI/180., scale, centroidX1, centroidY1);
+                        rot*Math.PI/180., scale, 
+                        image1CentroidX, image1CentroidY);
                
                 // the optimal match is necessary
                 float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
                     set1, set2, 
                     params.getScale(), params.getRotationInRadians(), 
                     params.getTranslationX(), params.getTranslationY(),
-                    tolerance, image1Width >> 1, image1Height >> 1);
+                    tolerance, image1CentroidX, image1CentroidY);
                 
                 /*float[][] matchIndexesAndDiffs = calculateMatchUsingGreedy(
                     set1, set2, 
@@ -498,7 +496,6 @@ public final class PointMatcher {
     }
     
     /**
-     * 
      * calculate the rotation, scale, and translation that can be applied
      * to set1 to match points to set2 for unmatched points.  The method
      * is useful for points which may be part of stereo projections or other
@@ -513,13 +510,13 @@ public final class PointMatcher {
      * be the first set given in arguments.
      * @param set1 set of points such as corners from an image
      * @param set2 set of points such as corners from another image.
-     * @param image1Width
-     * @param image1Height
+     * @param image1CentroidX
+     * @param image1CentroidY
      * @return 
      */
     public TransformationPointFit calculateRoughTransformationForUnmatched(
-        PairIntArray set1, PairIntArray set2, int image1Width, 
-        int image1Height) {
+        PairIntArray set1, PairIntArray set2, int image1CentroidX, 
+        int image1CentroidY) {
         
         /*
         divides the points into partitions for each set.
@@ -570,7 +567,7 @@ public final class PointMatcher {
                     // because sets have different number of points
                     
                     fits[count] = calculateTransformationWithGridSearch(
-                        edge1, edge2, image1Width, image1Height,
+                        edge1, edge2, image1CentroidX, image1CentroidY,
                         0, 360, rotDelta,
                         1, scaleStop, 1, setsAreMatched, set1, set2
                     );
@@ -629,11 +626,11 @@ public final class PointMatcher {
             
             float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
                 input1, input2, bestFit, tolerance,
-                image1Width >> 1, image1Height >> 1);
+                image1CentroidX, image1CentroidY);
 
             tolerance = findToleranceForOutliers(
                 bestFit, matchIndexesAndDiffs,
-                image1Width >> 1, image1Height >> 1);
+                image1CentroidX, image1CentroidY);
 
             PairIntArray outputMatched1 = new PairIntArray();
             PairIntArray outputMatched2 = new PairIntArray();
@@ -659,7 +656,8 @@ public final class PointMatcher {
         }
 
         bestFit = refineTransformationWithDownhillSimplex(
-            bestFit.getParameters(), input1, input2, image1Width, image1Height, 
+            bestFit.getParameters(), input1, input2, 
+            image1CentroidX, image1CentroidY, 
             setsAreMatched);
         
         return bestFit;
@@ -676,14 +674,15 @@ public final class PointMatcher {
      * be the first set given in arguments.
      * @param set1 set of points such as corners from an image
      * @param set2 set of points such as corners from another image.
-     * @param image1Width
-     * @param image1Height
+     * @param image1CentroidX
+     * @param image1CentroidY
      * @param outputMatched1
      * @param outputMatched2
      * @return 
      */
     public TransformationPointFit calculateTransformationAndMatch(
-        PairIntArray set1, PairIntArray set2, int image1Width, int image1Height,
+        PairIntArray set1, PairIntArray set2, 
+        int image1CentroidX, int image1CentroidY,
         PairIntArray outputMatched1, PairIntArray outputMatched2) {
         
         /*
@@ -696,7 +695,7 @@ public final class PointMatcher {
         int rotDelta = 90;
         
         TransformationPointFit fit = calculateTransformationWithGridSearch(
-            set1, set2, image1Width, image1Height,
+            set1, set2, image1CentroidX, image1CentroidY,
             0, 360, rotDelta,
             1, 11, 2, setsAreMatched, set1, set2
             );
@@ -733,11 +732,11 @@ public final class PointMatcher {
                 
                 float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
                     input1, input2, fit, tolerance,
-                    image1Width >> 1, image1Height >> 1);
+                    image1CentroidX, image1CentroidY);
                     
                 tolerance = findToleranceForOutliers(
                     fit, matchIndexesAndDiffs,
-                    image1Width >> 1, image1Height >> 1);
+                    image1CentroidX, image1CentroidY);
                 
                 matchPoints(input1, input2, tolerance, matchIndexesAndDiffs,
                     outputMatched1, outputMatched2);
@@ -748,7 +747,7 @@ public final class PointMatcher {
                 // rematch remaining points
                 float[][] matchIndexesAndDiffs2 = calculateMatchUsingOptimal(
                     input1, input2, fit, tolerance,
-                    image1Width >> 1, image1Height >> 1);
+                    image1CentroidX, image1CentroidY);
                 
                 // clear out outputMatched1 and 2
                 PairIntArray tmp = new PairIntArray();
@@ -776,7 +775,7 @@ public final class PointMatcher {
             }
         
             fit = calculateTransformationWithGridSearch(
-                input1, input2, image1Width, image1Height,
+                input1, input2, image1CentroidX, image1CentroidY,
                 rotStart, rotStop, 10,
                 scaleStart, scale + 1, 1, 
                 setsAreMatched, input1, input2
@@ -796,7 +795,7 @@ public final class PointMatcher {
             }
         
             fit = refineTransformationWithDownhillSimplex(fit.getParameters(),
-                input1, input2, image1Width, image1Height, 
+                input1, input2, image1CentroidX, image1CentroidY,
                 setsAreMatched);
         
             if (!setsAreMatched) {
@@ -809,11 +808,11 @@ public final class PointMatcher {
                 
                 float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
                     input1, input2, fit, tolerance,
-                    image1Width >> 1, image1Height >> 1);
+                    image1CentroidX, image1CentroidY);
                     
                 tolerance = findToleranceForOutliers(
                     fit, matchIndexesAndDiffs,
-                    image1Width >> 1, image1Height >> 1);
+                    image1CentroidX, image1CentroidY);
                 
                 matchPoints(input1, input2, tolerance, matchIndexesAndDiffs,
                     outputMatched1, outputMatched2);
@@ -888,11 +887,12 @@ public final class PointMatcher {
      * 
      * @param set1
      * @param set2
-     * @param image1Width
-     * @param image1Height
+     * @param image1CentroidX
+     * @param image1CentroidY
      * @param rotStart start of rotation search in degrees
      * @param rotStop stop (exclusive) or rotations search in degrees
-     * @param rotDelta change in rotation to add to reach next step in rotation search in degrees
+     * @param rotDelta change in rotation to add to reach next step in rotation 
+     *     search in degrees
      * @param scaleStart
      * @param scaleStop
      * @param scaleDelta
@@ -901,17 +901,14 @@ public final class PointMatcher {
      */
     public TransformationPointFit calculateTransformationWithGridSearch(
         PairIntArray set1, PairIntArray set2, 
-        int image1Width, int image1Height,
+        int image1CentroidX, int image1CentroidY,
         int rotStart, int rotStop, int rotDelta,
         int scaleStart, int scaleStop, int scaleDelta,
         boolean setsAreMatched, PairIntArray allPoints1, PairIntArray allPoints2
         ) {
         
-        int centroidX1 = image1Width >> 1;
-        int centroidY1 = image1Height >> 1;
-        
-        double tolTransX = 2.0f * image1Width * 0.02f;
-        double tolTransY = 2.0f * image1Height * 0.02f;
+        double tolTransX = 4.0f * image1CentroidX * 0.02f;
+        double tolTransY = 4.0f * image1CentroidY * 0.02f;
         
         Transformer transformer = new Transformer();
         
@@ -931,14 +928,14 @@ public final class PointMatcher {
                 
                 if (setsAreMatched) {
                     params = calculateTranslationForMatched(set1, set2, 
-                        rot*Math.PI/180., scale, centroidX1, centroidY1);                    
+                        rot*Math.PI/180., scale, image1CentroidX, image1CentroidY);                    
                 } else {
                     params = calculateTranslationForUnmatched(set1, set2, 
-                        rot*Math.PI/180., scale, centroidX1, centroidY1);
+                        rot*Math.PI/180., scale, image1CentroidX, image1CentroidY);
                 }
                 
                 PairFloatArray allPoints1Tr = transformer.applyTransformation(
-                    params, centroidX1, centroidY1, allPoints1);
+                    params, image1CentroidX, image1CentroidY, allPoints1);
                 
                 TransformationPointFit fit;
                 
@@ -2308,19 +2305,15 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @param params
      * @param set1
      * @param set2
-     * @param image1Width
-     * @param image1Height
+     * @param image1CentroidX
+     * @param image1CentroidY
      * @param setsAreMatched
      * @return 
      */
     public TransformationPointFit refineTransformationWithDownhillSimplex(
         TransformationParameters params,
         PairIntArray set1, PairIntArray set2, 
-        int image1Width, int image1Height, boolean setsAreMatched) {
-        
-        int centroidX1 = image1Width >> 1;
-        
-        int centroidY1 = image1Height >> 1;
+        int image1CentroidX, int image1CentroidY, boolean setsAreMatched) {
         
         // projection effects from different camera positions or orientations
         // are not calculated in this point matcher, 
@@ -2333,9 +2326,9 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         // 0.016 per pix in Y
         
         //TODO: consider allowing these to be larger
-        double transXTol = image1Width * 0.02;
+        double transXTol = 2. * image1CentroidX * 0.02;
         
-        double transYTol = image1Height * 0.02;
+        double transYTol = 2 * image1CentroidY * 0.02;
         
         double r = params.getRotationInRadians();
         double s = params.getScale();
@@ -2384,7 +2377,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 double rotation = (j == 0) ? r : r + drs[j - 1];
                 
                 fits[count] = calculateTranslation(set1, set2, 
-                    rotation, scale, centroidX1, centroidY1, setsAreMatched);
+                    rotation, scale, image1CentroidX, image1CentroidY, 
+                    setsAreMatched);
                 
                 if (fits[count] != null) {
                     count++;
@@ -2403,7 +2397,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
 
         TransformationPointFit bestFit = fitWithDownhillSimplex(
             set1, set2, 
-            fits, centroidX1, centroidY1, transXTol, transYTol,
+            fits, image1CentroidX, image1CentroidY, transXTol, transYTol,
             r, s, rMin, rMax, sMin, sMax,
             reflectionCoeff, expansionCoeff, contractionCoeff, reductionCoeff,
             setsAreMatched
@@ -5364,18 +5358,19 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * 
      * @param scene
      * @param model
-     * @param image1Width
-     * @param image1Height
-     * @param image2Width
-     * @param image2Height
+     * @param sceneImageCentroidX
+     * @param sceneImageCentroidY
+     * @param modelImageCentroidX
+     * @param modelImageCentroidY
      * @return 
      */
     public TransformationPointFit calculateProjectiveTransformationWrapper(
-        PairIntArray scene, PairIntArray model, int image1Width, 
-        int image1Height, int image2Width, int image2Height) {
+        PairIntArray scene, PairIntArray model, 
+        int sceneImageCentroidX, int sceneImageCentroidY, 
+        int modelImageCentroidX, int modelImageCentroidY) {
         
         TransformationPointFit fit = calculateProjectiveTransformation(
-            scene, model, image1Width, image1Height);
+            scene, model, sceneImageCentroidX, sceneImageCentroidY);
         
         int nMaxMatchable = (scene.getN() < model.getN()) ? scene.getN() 
             : model.getN();
@@ -5387,7 +5382,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             // reverse the order to solve for possible scale < 1.
             
             TransformationPointFit revFit = calculateProjectiveTransformation(
-                model, scene, image2Width, image2Height);
+                model, scene, modelImageCentroidX, modelImageCentroidY);
             
             if (fitIsBetter(fit, revFit)) {
                 
@@ -5399,14 +5394,13 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 MatchedPointsTransformationCalculator tc = new 
                     MatchedPointsTransformationCalculator();
                 
-                double x2 = image2Width >> 1;
-                double y2 = image2Height >> 1;
-                
-                double[] x1y1 = tc.applyTransformation(params, (int)x2, (int)y2, 
-                    x2, y2);
+                double[] x1y1 = tc.applyTransformation(params, 
+                    modelImageCentroidX, modelImageCentroidY,
+                    modelImageCentroidX, modelImageCentroidY);
                 
                 TransformationParameters revParams = tc.swapReferenceFrames(
-                    params, (image1Width >> 1), (image1Height >> 1), x2, y2, 
+                    params, sceneImageCentroidX, sceneImageCentroidY, 
+                    modelImageCentroidX, modelImageCentroidY, 
                     x1y1[0], x1y1[1]);       
                 
                 fit = new TransformationPointFit(revParams, 
@@ -5424,13 +5418,13 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * calculate for unmatched points
      * @param scene
      * @param model
-     * @param image1Width
-     * @param image1Height
+     * @param sceneImageCentroidX
+     * @param sceneImageCentroidY
      * @return 
      */
     public TransformationPointFit calculateProjectiveTransformation(
-        PairIntArray scene, PairIntArray model, int image1Width, 
-        int image1Height) {
+        PairIntArray scene, PairIntArray model, int sceneImageCentroidX, 
+        int sceneImageCentroidY) {
         
         int rotStart = 0; 
         int rotStop = 360; 
@@ -5440,7 +5434,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         int scaleDelta = 1;
         boolean setsAreMatched = false;
         TransformationPointFit fit = calculateTransformationWithGridSearch(
-            scene, model, image1Width, image1Height,
+            scene, model, sceneImageCentroidX, sceneImageCentroidY,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
             setsAreMatched, scene, model);
         
@@ -5468,7 +5462,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
 
                 TransformationPointFit fit2 = 
                     refineTransformationWithDownhillSimplex(fit.getParameters(),
-                    scene, model, image1Width, image1Height, setsAreMatched);
+                    scene, model, sceneImageCentroidX, sceneImageCentroidY, 
+                    setsAreMatched);
 
                 if (fitIsBetter(fit, fit2)) {
                     fit = fit2;
@@ -5492,8 +5487,6 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             
             double translationX = fit.getTranslationX();
             double translationY = fit.getTranslationY();
-            double centroidX1 = image1Width >> 1;
-            double centroidY1 = image1Height >> 1;
             double scale = fit.getScale();
             double rotation = fit.getRotationInRadians();
             double scaleTimesCosine = scale * Math.cos(rotation);
@@ -5503,12 +5496,12 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 transformed[i] = new double[2];
                 int x = scene.getX(i);
                 int y = scene.getY(i);
-                transformed[i][0] = centroidX1*scale + (
-                    ((x - centroidX1) * scaleTimesCosine) +
-                    ((y - centroidY1) * scaleTimesSine));
-                transformed[i][1] = centroidY1*scale + (
-                    (-(x - centroidX1) * scaleTimesSine) +
-                    ((y - centroidY1) * scaleTimesCosine));
+                transformed[i][0] = sceneImageCentroidX*scale + (
+                    ((x - sceneImageCentroidX) * scaleTimesCosine) +
+                    ((y - sceneImageCentroidY) * scaleTimesSine));
+                transformed[i][1] = sceneImageCentroidY*scale + (
+                    (-(x - sceneImageCentroidX) * scaleTimesSine) +
+                    ((y - sceneImageCentroidY) * scaleTimesCosine));
             }
             
             double[][] compare = new double[model.getN()][];
