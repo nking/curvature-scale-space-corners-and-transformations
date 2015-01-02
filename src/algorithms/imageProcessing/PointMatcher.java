@@ -2262,7 +2262,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         double sMax = s + 0.5;
         
         double[] dss = new double[] {
-            0.1
+            0.1, 0.2, 0.4, 0.6, 0.8
             //-1.0, -0.1, -0.05, 0.05
         };
         /*if (s == 1) {
@@ -2386,6 +2386,10 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         int lastNMatches = Integer.MIN_VALUE;
         double lastAvgDistModel = Double.MAX_VALUE;
         int nIterSameMin = 0;
+        
+        // TODO: the correction for scale < 1 during "reflection"
+        //   can curtail the search, so consider
+        //   a replacement action instead of reflection for that case
         
         while (go && (nIter < nMaxIter)) {
 
@@ -5425,8 +5429,22 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 }
                 
                 if (refineTranslation) {
+                    
                     refineTranslation(fit.getParameters(), scene, model, 
                         sceneImageCentroidX, sceneImageCentroidY);
+                    
+                    Transformer transformer = new Transformer();
+                    
+                    PairFloatArray transformed = transformer.applyTransformation(
+                        fit.getParameters(), 
+                        sceneImageCentroidX, sceneImageCentroidY, scene);
+
+                    double transXTol = 2. * sceneImageCentroidX * 0.02;
+                    double transYTol = 2 * sceneImageCentroidY * 0.02;
+        
+                    fit = evaluateFitForUnmatchedTransformed(
+                        fit.getParameters(),
+                        transformed, model, transXTol, transYTol);
                 }
             }
         }
@@ -6350,7 +6368,32 @@ System.out.println("nIter=" + nIter);
         
         Double[] txy = (Double[])fits[bestFitIdx].getData();
         
-        return new float[]{txy[0].floatValue(), txy[1].floatValue()};
+        float tx = txy[0].floatValue();
+        float ty = txy[1].floatValue();
+        
+        ProjectiveFit bestFit = fits[bestFitIdx];
+        // one last set of +- 1 tries around solution
+        txs = new float[]{tx - 1, tx, tx + 1};
+        tys = new float[]{ty - 1, ty, ty + 1};
+        for (int i = 0; i < txs.length; i++) {
+            for (int j = 0; j < tys.length; j++) {
+                if (i == j) { 
+                    continue;
+                }
+                ProjectiveFit cFit = evalFit(txs[i], tys[j], set1, set2);
+                if (fitIsBetter(bestFit, cFit)) {
+                    bestFit = cFit;
+                }
+            }
+        }
+        
+        if (!bestFit.equals(fits[bestFitIdx])) {
+            txy = (Double[])bestFit.getData();
+            tx = txy[0].floatValue();
+            ty = txy[1].floatValue();
+        }
+        
+        return new float[]{Math.round(tx), Math.round(ty)};
     }
 
     private int moveUpForNulls(ProjectiveFit[] fits) {

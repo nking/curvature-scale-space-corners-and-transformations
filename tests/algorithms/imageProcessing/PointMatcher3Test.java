@@ -372,7 +372,7 @@ public class PointMatcher3Test {
        
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1420159107635L;
+        //seed = 1420159107635L;
         sr.setSeed(seed);
         System.out.println("SEED=" + seed);
         
@@ -386,6 +386,33 @@ public class PointMatcher3Test {
         double rotation = 14.*Math.PI/180.;
         double scale = 1.;
         int translateX = 280;
+        int translateY = -14;
+
+        runTest(sr, nScenePoints, nModelPoints, xRange, yRange,
+            scale, rotation, translateX, translateY, 13);
+    }
+    
+    @Test
+    public void test14() throws Exception {
+
+        // test for scale close to 1
+       
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        seed = 1420187783647L;
+        sr.setSeed(seed);
+        System.out.println("SEED=" + seed);
+        
+        int nScenePoints = 70;
+        
+        int xRange = 400;
+        int yRange = 300;
+        
+        int nModelPoints = (int)(1.3f * nScenePoints);
+        
+        double rotation = 0.;
+        double scale = 1.2;
+        int translateX = 100;
         int translateY = -14;
 
         runTest(sr, nScenePoints, nModelPoints, xRange, yRange,
@@ -680,15 +707,13 @@ public class PointMatcher3Test {
             test.test11();
             test.test12();
             test.test13();
+            test.test14();
             
             /*
             tests for :
-            -- for same set w/ scale and rotation and translation and noise
             -- for same set w/ projection
             -- for same set w/ projection and noise
-            
-            tests for rotation in degrees which are not factors of 10.
-            
+                        
             tests for scales which are close to 1 and less than 2
             */
         
