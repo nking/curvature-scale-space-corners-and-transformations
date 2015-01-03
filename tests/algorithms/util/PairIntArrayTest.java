@@ -248,4 +248,19 @@ public class PairIntArrayTest extends TestCase {
         assertTrue((xy.getX(2) == 34) && (xy.getY(2) == 84));
 
     }
+    
+    public void testToPairFloatArray() throws Exception {
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < 7; i++) {
+            xy.add(i, i);
+        }
+        
+        PairFloatArray xyF = xy.toPairFloatArray();
+        for (int i = 0; i < 7; i++) {
+            assertTrue(Math.abs(xy.getX(i) - xyF.getX(i)) < 0.001f);
+            assertTrue(Math.abs(xy.getY(i) - xyF.getY(i)) < 0.001f);
+        }
+    }
+
 }

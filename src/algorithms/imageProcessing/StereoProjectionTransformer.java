@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PointPartitioner;
 import algorithms.util.PairFloatArray;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
@@ -20,6 +21,16 @@ import org.ejml.simple.*;
 /**
  * class to solve for the epipoles for two images with stereo projection
  * and apply the solution.
+ * 
+ * <pre>
+ * The fundamental matrix is the projective solution for transformation
+ * between 2 images of the same objects.
+ * Present below is the solution for having 7 matched points between images
+ * and the solution for having 8 or more matched points between the images.
+ * Both use numerical conditioning and recipes suggested by Hartley 
+ * (see reference below).
+ * 
+ * Matching the points before using this can be done with PointMatcher.
  * 
  * Following:
  * 
@@ -127,6 +138,7 @@ import org.ejml.simple.*;
  be reduced to a single solution.
  The normalization and denormalization steps before and following the solution, 
  are the same as in the 8-point solution.
+ * </pre>
  * 
  * @author nichole
  */
@@ -152,18 +164,31 @@ public class StereoProjectionTransformer {
     private SimpleMatrix epipolarLinesInRight = null;
     
     /**
-     * calculate the epipolar projection for a set of 8 or more perfectly
-     * matched points.
-     * 
-     * each row is an epipolar line in the left image.
-     * Each column corresponds to a point in leftXY and rightXY which are
-     * in the same column.
+     * calculate the epipolar projection for a set of 8 or more unmatched
+     * points.  It uses PointMatcher, RANSACSolver and PointPartitioner
+     * to obtain a solution for part of the images that best fits all of
+     * the points.
      */
     private SimpleMatrix epipolarLinesInLeft = null;
     
+    /**
+     * not ready for use yet...
+     * 
+     * @param unmatchedLeftXY
+     * @param unmatchedRightXY
+     * @param image1CentroidX
+     * @param image1CentroidY
+     * @param image2CentroidX
+     * @param image2CentroidY
+     * @param outputMatchedLeftXY
+     * @param outputMatchedRightXY
+     * @return
+     * @throws NoSuchAlgorithmException 
+     */
     public SimpleMatrix calculateEpipolarProjectionForUnmatched(
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        int image1CentroidX, int image1CentroidY, 
+        int image1CentroidX, int image1CentroidY,
+        int image2CentroidX, int image2CentroidY,
         PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY
         ) throws NoSuchAlgorithmException {
         
@@ -172,69 +197,305 @@ public class StereoProjectionTransformer {
         transformation rather than a simpler euclidean scale, rotation and
         translation transformation.
         
-        trying every combination of point pairs isn't feasible:
+        trying every combination of point pairs isn't feasible for n > 12:
             n_1!/(2*(n_1 - 2)!) X n_2!/(2*(n_2 - 2)!)
         
         and it ignores the location of points among other points and pixel
-        features.
+        features.        
         
         searching the fundamental matrix after getting an initial calculation
         isn't feasible either.  For example, if used a randomly paired set of 
         points to provide the first estimate of a fundamental matrix only for 
         matching points, and then used
         intervals of factor of 10 from 20 to 1./200, then number of
-        permutation is 22^8 = 54875873536.0 and thats
+        permutations is 22^8 = 54875873536.0 and thats
         not including negative factors yet.
         
-        one solution is:
-            -- grid search over euclidean transformation space.
-               apply transformation to point set 1 and evaluate the best fit
-               by number of matches to set2 within tolerance.
-               this gives a subset of points as the first matching set.
-            -- then calculating an epipolar projection from the first matched
-               points to find further matches.
-            -- now have a set of matched points that contain false matches.
-            -- use RANSAC to choose inliers among the matched and then
-               calculate a fundamental matrix from those.
-        
-        TODO: the evaluation of the points needs more than perpendicular
-        distance from epipolar line.  should consider as much possible
-        without camera characteristics regarding pixel similarity, 
-        uniqueness, point ordering and a disparity gradient
+        Partitioning the image into a few sections and solving the combinations 
+        of partitions is an improvement to using the whole image if projection
+        is present, and that does not add too much more to the runtime.
+
+        The number of partitions should be kept low, so the partitions formed 
+        will be
+            (1) vertically halved for each image.
+            (2) horizontally halved for each image.
+            (3) quadrants for each image.
+
+        For each of the (1) thru (3) partition combinations:
+            — finding the best fitting euclidean transformation w/ a cost 
+              function that uses the residuals between transformed and model 
+              instead of using the number of matched points.
+            — the euclidean transformation and a large tolerance is used to make 
+              matched points lists.
+            — RANSAC w/ a threshold of 5 is used with the matched point sets to 
+              estimate the projective transformation.
+            — the sets of all points are filtered to the region of overlap for 
+              the image sets and the filtered points are used to evaluate the 
+              projective transformation.
+              — the statistic is number matched / max matchable in intersection 
+              region
+        The best projective solution of all partitions is kept.
         
         */
         
-        PairIntArray output1 = new PairIntArray();
-        PairIntArray output2 = new PairIntArray();
+        StereoProjectionTransformerFit bestFit = null;
+        PairIntArray bestFitOutLeft = null;
+        PairIntArray bestFitOutRight = null;
+        SimpleMatrix bestFitProj = null;
         
-        PointMatcher pointMatcher = new PointMatcher();
-        
-        StereoProjectionTransformerFit fit = 
-            pointMatcher.matchPointsUsingProjectiveTransformation(
-            unmatchedLeftXY, unmatchedRightXY, 
-            image1CentroidX, image1CentroidY, output1, output2);
+        for (int partitionType = 0; partitionType < 1/*3*/; partitionType++) {
+            
+            PointPartitioner partitioner = new PointPartitioner();
+            
+            PairIntArray[] parts1 = null;
+            PairIntArray[] parts2 = null;
+            
+            switch(partitionType) {
+                case 0: {
+                    parts1 = partitioner.partitionVerticalOnly(unmatchedLeftXY, 
+                        2);
+                    parts2 = partitioner.partitionVerticalOnly(unmatchedRightXY, 
+                        2);
+                    break;
+                }
+                case 1:
+                    break;
+                case 2:
+                    break;
+                default:
+                    break;
+            }
+            
+            PointMatcher pointMatcher = new PointMatcher();
+            pointMatcher.setToSolveForProjective();
        
-        PairFloatArray in1 = new PairFloatArray();
-        PairFloatArray in2 = new PairFloatArray();
-        for (int i = 0; i < output1.getN(); i++) {
-            in1.add(output1.getX(i), output1.getY(i));
-            in2.add(output2.getX(i), output2.getY(i));
+            for (int p1 = 0; p1 < parts1.length; p1++) {
+if (p1 != 1) {continue;}
+
+                for (int p2 = 0; p2 < parts2.length; p2++) {
+if (p2 != 0) {continue;}            
+                    // determine fit only with partitioned points
+                    
+                    TransformationPointFit fit = 
+                        pointMatcher.calculateProjectiveTransformationWrapper(
+                        parts1[p1], parts2[p2], 
+                        image1CentroidX, image1CentroidY,
+                        image2CentroidX, image2CentroidY);
+
+                    log.info("for partition type " + Integer.toString(partitionType) 
+                        + " fit=" + fit.toString());
+
+                    //TODO: improve this... comparison of x vs dx and y vs dy
+                    // showing projection pattern if enough points?
+                    double tolerance = 25;
+
+                    TransformationParameters params = fit.getParameters();
+
+                    // apply projection to all points in left list
+                                            
+                    Transformer transformer = new Transformer();
+
+                    PairFloatArray transformed2 = transformer.applyTransformation2(
+                        params, unmatchedLeftXY, image1CentroidX, image1CentroidY);
+
+                    // make an optimal matching of left to right (needs optimal,
+                    // greedy not successful sometimes).
+                    float[][] matchInfo = pointMatcher.calculateMatchUsingOptimal(
+                        transformed2, unmatchedRightXY, tolerance);
+
+                    PairIntArray matched1 = new PairIntArray();
+                    PairIntArray matched2 = new PairIntArray();
+
+                    pointMatcher.matchPoints(unmatchedLeftXY, unmatchedRightXY, 
+                        tolerance, matchInfo, matched1, matched2);
+
+                    RANSACSolver solver = new RANSACSolver();
+
+                    PairFloatArray outputLeftXY = new PairFloatArray();
+                    PairFloatArray outputRightXY = new PairFloatArray();
+
+                    SimpleMatrix homography = solver.calculateEpipolarProjection(
+                        matched1.toPairFloatArray(), matched2.toPairFloatArray(), 
+                        outputLeftXY, outputRightXY);
+
+                    // filter the entire input sets to only include the intersection
+                    // of the projected frame and reference frame
+                    
+                    double[] xy2LL = transform(homography, 0, 0);
+                    double[] xy2UR = transform(homography, 2*image1CentroidX, 
+                        2*image1CentroidY);
+
+                    SimpleMatrix homographyT = homography.transpose();
+                    double[] xy1LL = transform(homographyT, 0, 0);
+                    double[] xy1UR = transform(homographyT, 2*image2CentroidX, 
+                        2*image2CentroidY);
+
+                    // TODO: replace this with test for "inside polygon"
+                    // assuming a rectangle while in development...
+                    PairIntArray filteredAll1 = new PairIntArray();
+                    for (int i = 0; i < unmatchedLeftXY.getN(); i++) {
+                        int x = unmatchedLeftXY.getX(i);
+                        if ((x < xy1LL[0]) || (x > xy1UR[0])) {
+                            continue;
+                        }
+                        int y = unmatchedLeftXY.getY(i);
+                        if ((y < xy1LL[1]) || (y > xy1UR[1])) {
+                            continue;
+                        }
+                        filteredAll1.add(x, y);
+                    }
+                    PairIntArray filteredAll2 = new PairIntArray();
+                    for (int i = 0; i < unmatchedRightXY.getN(); i++) {
+                        int x = unmatchedRightXY.getX(i);
+                        if ((x < xy2LL[0]) || (x > xy2UR[0])) {
+                            continue;
+                        }
+                        int y = unmatchedRightXY.getY(i);
+                        if ((y < xy2LL[1]) || (y > xy2UR[1])) {
+                            continue;
+                        }
+                        filteredAll2.add(x, y);
+                    }
+
+                    // evaluate the fit of the projective coefficients over all 
+                    // points
+                    // evaluate fit against all points
+                    double threshold = 2;
+                    SimpleMatrix in1 = 
+                        StereoProjectionTransformer.rewriteInto3ColumnMatrix(
+                            filteredAll1);
+                    SimpleMatrix in2 = 
+                        StereoProjectionTransformer.rewriteInto3ColumnMatrix(
+                            filteredAll2);
+
+                    StereoProjectionTransformer st = new StereoProjectionTransformer();
+
+                    StereoProjectionTransformerFit allFit = st.evaluateFit(
+                        homography, in1, in2, threshold);
+
+                    int nMaxMatchable = (filteredAll1.getN() < filteredAll2.getN()) ?
+                        filteredAll1.getN() : filteredAll2.getN();
+
+                    if (fitIsBetter(bestFit, allFit, nMaxMatchable)) {
+                        bestFit = allFit;
+                        bestFitProj = homography;
+                        bestFitOutLeft = matched1;
+                        bestFitOutRight = matched2;
+                    }
+                }
+            }
+        } 
+       
+        if (bestFit == null) {
+            return null;
         }
         
-        PairFloatArray outputLeft = new PairFloatArray();
-        PairFloatArray outputRight = new PairFloatArray();
-        RANSACSolver ransacSolver = new RANSACSolver();
-        SimpleMatrix fm = ransacSolver.calculateEpipolarProjection(
-            in1, in2, outputLeft, outputRight);
+        // use bestFitProj to match the remaining points that are not
+        // already matched (bestFitOutLeft, bestFitOutRight)
+        PairIntArray remaining1 = removePoints(unmatchedLeftXY, bestFitOutLeft);
         
-        for (int i = 0; i < outputLeft.getN(); i++) { 
-            outputMatchedLeftXY.add(
-                Math.round(outputLeft.getX(i)), Math.round(outputLeft.getY(i)));
-            outputMatchedRightXY.add(
-                Math.round(outputRight.getX(i)), Math.round(outputRight.getY(i)));
+        PairIntArray remaining2 = removePoints(unmatchedRightXY, 
+            bestFitOutRight);
+        
+        double threshold = 2;
+        
+        StereoProjectionTransformerFit finalFit = matchPoints(bestFitProj, 
+        remaining1, remaining2, threshold, outputMatchedLeftXY, 
+        outputMatchedRightXY);
+            
+        for (int i = 0; i < bestFitOutLeft.getN(); i++) {
+            int x = bestFitOutLeft.getX(i);
+            int y = bestFitOutLeft.getY(i);
+            outputMatchedLeftXY.add(x, y);
+        }
+        for (int i = 0; i < bestFitOutRight.getN(); i++) {
+            int x = bestFitOutRight.getX(i);
+            int y = bestFitOutRight.getY(i);
+            outputMatchedRightXY.add(x, y);
         }
         
-        return fm;
+        log.info("final fit=" + finalFit.toString());
+        
+        return bestFitProj;
+    }
+    
+    private PairIntArray removePoints(PairIntArray set1, PairIntArray set2) {
+        
+        PairIntArray remaining = new PairIntArray();
+        
+        for (int i = 0; i < set1.getN(); i++) {
+            int x = set1.getX(i);
+            int y = set1.getY(i);
+            boolean contains = false;
+            for (int ii = 0; ii < set2.getN(); ii++) {
+                int xm = set2.getX(ii);
+                int ym = set2.getY(ii);
+                if ((x == xm) && (y == ym)) {
+                    contains = true;
+                    break;
+                }
+            }
+            if (!contains) {
+                remaining.add(x, y);
+            }
+        }
+        
+        return remaining;
+    }
+    
+    private double[] transform(SimpleMatrix fm, double x, double y) {
+        
+        double d = (fm.get(2, 0) * x) + (fm.get(2, 1) * y) 
+            + fm.get(2, 2);
+        
+        double x2 = (fm.get(0, 0) * x) + (fm.get(0, 1) * y) 
+            + fm.get(0, 2);
+        
+        x2 /= d;
+        
+        double y2 = (fm.get(1, 0) * x) + (fm.get(1, 1) * y) 
+            + fm.get(1, 2);
+        
+        y2 /= d;
+        
+        return new double[]{x2, y2};
+    }
+    
+    private boolean fitIsBetter(StereoProjectionTransformerFit bestFit, 
+        StereoProjectionTransformerFit compareFit, int nMaxMatchable) {
+        
+        if (compareFit == null) {
+            return false;
+        }
+        if (bestFit == null) {
+            return true;
+        }
+       
+        long nMatches = compareFit.getNMatches();
+        
+        if (nMatches > bestFit.getNMatches()) {
+            
+            return true;
+            
+        } else if (nMatches == bestFit.getNMatches()) {
+            
+            if (!Double.isNaN(compareFit.getMeanDistance()) && (
+                compareFit.getMeanDistance()
+                < bestFit.getMeanDistance())) {
+                
+                return true;
+                
+            } else if (compareFit.getMeanDistance()
+                == bestFit.getMeanDistance()) {
+                
+                if (compareFit.getStDevFromMean()< bestFit.getStDevFromMean()) {
+                    
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
     
     public SimpleMatrix calculateEpipolarProjectionForPerfectlyMatched(
@@ -1206,9 +1467,7 @@ public class StereoProjectionTransformer {
         }
         
         int nXY1 = normXY1.numCols();
-        
-        // mRows = 484;  nCols = 9
-        
+                
         /*
         (2) each row in matrix A:
             x_1*x_2,  x_1*y_2,  x_1,  y_1*x_2,  y_1*y_2,  y_1,  x_2,  y_2,  1
@@ -1320,6 +1579,66 @@ public class StereoProjectionTransformer {
         
         return evaluateFitInRightImageForMatchedPoints(leftXY, rightXY, 
             tolerance);
+    }
+
+    /**
+     * using the homography matrix bestFitProj, project the points in one set 
+     * to epipolar lines in the other set and find the closest match that
+     * works best in both frames.  The cost function for the match is the
+     * perpendicular distance of a point to the epipolar line.
+     * Currently, no information about the points position parallel to the
+     * line is used.
+     * 
+     * @param fm projective transformation coefficients between left and right
+     * @param unMatchedLeft
+     * @param unMatchedRight
+     * @param tolerance
+     * @param outputMatchedLeft the output matched points for the left image.
+     * the indexes for this are the same as the indexes for outputMatchedRight.
+     * @param outputMatchedRight the output matched points for the right
+     * image.  the indexes are the same as those in outputMatchedLeft.
+     * @return 
+     */
+    public StereoProjectionTransformerFit matchPoints(SimpleMatrix fm, 
+        PairIntArray unMatchedLeft, PairIntArray unMatchedRight, 
+        double tolerance,
+        PairIntArray outputMatchedLeft, PairIntArray outputMatchedRight) {
+        
+        SimpleMatrix in1 = rewriteInto3ColumnMatrix(unMatchedLeft);
+        SimpleMatrix in2 = rewriteInto3ColumnMatrix(unMatchedRight);
+        
+        return matchPoints(fm, in1, in2, tolerance, unMatchedLeft, 
+            unMatchedRight);
+    }
+    
+    private StereoProjectionTransformerFit matchPoints(SimpleMatrix fm, 
+        SimpleMatrix unMatchedLeft, SimpleMatrix unMatchedRight, 
+        double tolerance,
+        PairIntArray outputMatchedLeft, PairIntArray outputMatchedRight) {
+        
+        PairIntArray matchedIndexes = new PairIntArray();
+        
+        SimpleMatrix theRightEpipolarLines = fm.mult(unMatchedLeft);
+        
+        SimpleMatrix theLeftEpipolarLines = fm.transpose().mult(unMatchedRight);
+        
+        StereoProjectionTransformerFit fit =
+            evaluateFitForUnmatchedOptimal(fm, theRightEpipolarLines,
+            theLeftEpipolarLines, unMatchedLeft, unMatchedRight, tolerance,
+            matchedIndexes);
+        
+        for (int i = 0; i < matchedIndexes.getN(); i++) {
+            int idx1 = matchedIndexes.getX(i);
+            int idx2 = matchedIndexes.getY(i);
+            outputMatchedLeft.add(
+                (int)Math.round(unMatchedLeft.get(0, idx1)),
+                (int)Math.round(unMatchedLeft.get(1, idx1)));
+            outputMatchedRight.add(
+                (int)Math.round(unMatchedRight.get(0, idx2)),
+                (int)Math.round(unMatchedRight.get(1, idx2)));
+        }
+        
+        return fit;
     }
     
     public static class NormalizedXY {

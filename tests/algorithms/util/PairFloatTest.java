@@ -1,5 +1,6 @@
 package algorithms.util;
 
+import static junit.framework.Assert.assertTrue;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,4 +35,6 @@ public class PairFloatTest {
         assertTrue(instance.getX() == xPoint);
         assertTrue(instance.getY() == yPoint);
     }
+    
+   
 }

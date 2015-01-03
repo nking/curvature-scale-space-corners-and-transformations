@@ -13,31 +13,6 @@ public class TransformationParameters {
     
     private float scale = 1;
 
-    /* the projective parameters representation may change.
-    for now, using the denominator homography*/
-    private float p20 = 0;
-    private float p21 = 0;
-    private float p22 = 1;
-    
-    public void setP20(float h31) {
-        p20 = h31;
-    }
-    public void setP21(float h32) {
-        p21 = h32;
-    }
-    public void setP22(float h33) {
-        p22 = h33;
-    }
-    public float getP20() {
-        return p20;
-    }
-    public float getP21() {
-        return p21;
-    }
-    public float getP22() {
-        return p22;
-    }
-    
     /**
      * @return the rotation in units of degrees
      */

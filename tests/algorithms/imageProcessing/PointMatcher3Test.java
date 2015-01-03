@@ -418,6 +418,227 @@ public class PointMatcher3Test {
         runTest(sr, nScenePoints, nModelPoints, xRange, yRange,
             scale, rotation, translateX, translateY, 13);
     }
+    @Test
+    public void test155() throws Exception {
+
+        PairIntArray scene = new PairIntArray();
+        PairIntArray model = new PairIntArray();
+        DataForTests.readBrownAndLoweInflectionPointsImage1(scene);
+        DataForTests.readBrownAndLoweInflectionPointsImage2(model);
+        
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int xSceneCentroid = img1.getWidth() >> 1;
+        int ySceneCentroid = img1.getHeight() >> 1;
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        int xModelCentroid = img2.getWidth() >> 1;
+        int yModelCentroid = img2.getHeight() >> 1;
+        
+        StereoProjectionTransformer st = new StereoProjectionTransformer();
+       
+        SimpleMatrix left = st.rewriteInto3ColumnMatrix(scene);
+        SimpleMatrix right = st.rewriteInto3ColumnMatrix(model);
+        
+        SimpleMatrix homography = 
+            st.calculateEpipolarProjectionForPerfectlyMatched(left, right);
+        
+        overplotEpipolarLines(homography, scene.toPairFloatArray(),
+            model.toPairFloatArray(), img1, img2, img1.getWidth(), 
+            img1.getHeight(), img2.getWidth(), img2.getHeight());
+    }
+    
+    @Test
+    public void test156() throws Exception {
+
+        PairIntArray scene = new PairIntArray();
+        PairIntArray model = new PairIntArray();
+        DataForTests.readBrownAndLoweInflectionPointsImage1(scene);
+        DataForTests.readBrownAndLoweInflectionPointsImage2(model);
+        
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int xSceneCentroid = img1.getWidth() >> 1;
+        int ySceneCentroid = img1.getHeight() >> 1;
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        int xModelCentroid = img2.getWidth() >> 1;
+        int yModelCentroid = img2.getHeight() >> 1;
+        
+        StereoProjectionTransformer st = new StereoProjectionTransformer();
+       
+        PairIntArray outputMatchedScene = new PairIntArray();
+        PairIntArray outputMatchedModel = new PairIntArray();
+            
+        SimpleMatrix homography = 
+            st.calculateEpipolarProjectionForUnmatched(scene, model,
+            xSceneCentroid, ySceneCentroid,
+            xModelCentroid, yModelCentroid,
+            outputMatchedScene, outputMatchedModel);
+        
+        overplotEpipolarLines(homography, scene.toPairFloatArray(),
+            model.toPairFloatArray(), img1, img2, img1.getWidth(), 
+            img1.getHeight(), img2.getWidth(), img2.getHeight());
+    }
+    
+    @Test
+    public void test15() throws Exception {
+
+        PairIntArray scene = new PairIntArray();
+        PairIntArray model = new PairIntArray();
+        //DataForTests.readBrownAndLoweMatches(scene, model);
+        DataForTests.readBrownAndLoweInflectionPointsImage1(scene);
+        DataForTests.readBrownAndLoweInflectionPointsImage2(model);
+        
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int xSceneCentroid = img1.getWidth() >> 1;
+        int ySceneCentroid = img1.getHeight() >> 1;
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        int xModelCentroid = img2.getWidth() >> 1;
+        int yModelCentroid = img2.getHeight() >> 1;
+        
+        /*
+        First, trying what should produce the right answer for the brown & lowe
+        inflection points.
+        
+        -- partition both images vertically into 2 sets each and for each
+           combination of the 2:
+           -- solve for euclidean w/ cost function based on diffs rather than
+              number.
+           -- for each combinations best
+              -- use a large tolerance and greedy match to make a point list
+              -- use ransac to calculate the epipolar solution.
+              -- plot the epipolar solution on the 2 images.
+              -- determine the boundaries of each solutions images in the 
+                 using the bounds and homography matrix 
+                 -- use that to filter out points outside of that in the 
+                    all points sets.
+              -- evaluate the fit on the all points filtered sets
+                 and keep the best of the fits.
+==> first, only performing this on the partitions which should produce the
+    right result from matching thru epipolar solution.
+        */
+        
+        PointPartitioner partitioner = new PointPartitioner();
+        PairIntArray[] parts1 = partitioner.partitionVerticalOnly(scene, 2);
+        PairIntArray[] parts2 = partitioner.partitionVerticalOnly(model, 2);
+        
+        PairIntArray set1 = parts1[1];
+        PairIntArray set2 = parts2[0];
+        
+        PointMatcher pointMatcher = new PointMatcher();
+        pointMatcher.setToSolveForProjective();
+        
+        TransformationPointFit fit = 
+            pointMatcher.calculateProjectiveTransformationWrapper(
+            set1, set2, xSceneCentroid, ySceneCentroid, 
+            xModelCentroid, yModelCentroid);
+
+        System.out.println("=> " + fit.toString());
+        
+        // use this solution to make a matched point list with large tolerances
+        // (195, 157) --> 180, 144.  and least 20 or 25
+        
+        double tolerance = 25;
+        
+        TransformationParameters params = fit.getParameters();
+
+        Transformer transformer = new Transformer();
+
+        // apply euclidean transformation to all points
+        
+        PairFloatArray transformed2 = transformer.applyTransformation2(
+            params, scene, xSceneCentroid, ySceneCentroid);
+        PairIntArray transformed = transformer.applyTransformation(
+            params, scene, xSceneCentroid, ySceneCentroid);
+        
+        // needs optimal:
+        float[][] matchInfo = pointMatcher.calculateMatchUsingOptimal(
+            transformed2, model, tolerance);
+        
+        PairIntArray matched1 = new PairIntArray();
+        PairIntArray matched2 = new PairIntArray();
+            
+        pointMatcher.matchPoints(scene, model, tolerance, matchInfo,
+            matched1, matched2);
+                    
+        RANSACSolver solver = new RANSACSolver();
+        PairFloatArray outputLeftXY = new PairFloatArray();
+        PairFloatArray outputRightXY = new PairFloatArray();
+        
+        SimpleMatrix homography = solver.calculateEpipolarProjection(
+            matched1.toPairFloatArray(), matched2.toPairFloatArray(), 
+            outputLeftXY, outputRightXY);
+                
+        //overplotTransformed(matched1, matched1, img2.getWidth(), 
+        //    img2.getHeight(), 1500);
+        
+        overplotEpipolarLines(homography, outputLeftXY,
+            outputRightXY, img1, img2, img1.getWidth(), 
+            img1.getHeight(), img2.getWidth(), img2.getHeight());
+        
+    }
+    
+    private void overplotEpipolarLines(SimpleMatrix fm, PairFloatArray set1,
+        PairFloatArray set2, Image img1, Image img2, int image1Width, 
+        int image1Height, int image2Width, int image2Height) throws IOException {
+        
+        SimpleMatrix input1 = 
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(set1);
+        
+        SimpleMatrix input2 = 
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(set2);
+        
+        for (int ii = 0; ii < input1.numCols(); ii++) {
+            double x = input1.get(0, ii);
+            double y = input1.get(1, ii);
+            ImageIOHelper.addPointToImage((float) x, (float) y, img1, 3, 
+                255, 0, 0);
+        }
+        for (int ii = 0; ii < input2.numCols(); ii++) {
+            double x2 = input2.get(0, ii);
+            double y2 = input2.get(1, ii);
+            ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3, 
+                255, 0, 0);
+        }
+
+        StereoProjectionTransformer spTransformer = new
+            StereoProjectionTransformer();
+        
+        Color clr = null;
+        for (int ii = 0; ii < input2.numCols(); ii++) {
+            clr = getColor(clr);
+            SimpleMatrix epipolarLinesInLeft = fm.transpose().mult(input2);
+            PairIntArray leftLine = spTransformer.getEpipolarLine(
+                epipolarLinesInLeft, image1Width, image1Height, ii);
+            ImageIOHelper.addCurveToImage(leftLine, img1, 0,
+                clr.getRed(), clr.getGreen(), clr.getBlue());
+        }
+
+        clr = null;
+        for (int ii = 0; ii < input1.numCols(); ii++) {
+            clr = getColor(clr);
+            SimpleMatrix epipolarLinesInRight = fm.mult(input1);
+            PairIntArray rightLine = spTransformer.getEpipolarLine(
+                epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);
+            ImageIOHelper.addCurveToImage(rightLine, img2, 0,
+                clr.getRed(), clr.getGreen(), clr.getBlue());
+        }
+
+        String dirPath = ResourceFinder.findDirectory("bin");
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/tmp_m_1.png", img1);
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/tmp_m_2.png", img2);
+    }
     
     private void runTest(SecureRandom sr, int nScenePoints, int nModelPoints, 
         int xRange, int yRange,
@@ -504,6 +725,49 @@ public class PointMatcher3Test {
         assertTrue(Math.abs(params.getScale() - scale) < 1.0);
         assertTrue(Math.abs(params.getTranslationX() - translationX) <= 1.0);
         assertTrue(Math.abs(params.getTranslationY() - translationY) <= 1.0);
+        
+        //solveForProjective(fit, scene, model, xSceneCentroid, ySceneCentroid);
+    }
+    
+    private void solveForProjective(TransformationPointFit fit,
+        PairIntArray scene, PairIntArray model, int xSceneCentroid, int 
+            ySceneCentroid) {
+        
+        // or use params mean dist?
+        double tolerance = 2;
+        tolerance = fit.getMeanDistFromModel();
+                
+        Transformer transformer = new Transformer();
+        
+        PairFloatArray transformed = transformer.applyTransformation2(
+            fit.getParameters(), scene, xSceneCentroid, ySceneCentroid);
+        
+        PointMatcher pointMatcher = new PointMatcher();
+        
+        float[][] matched = pointMatcher.calculateMatchUsingOptimal(
+            transformed, model, tolerance);
+        
+        PairIntArray matched1 = new PairIntArray();
+        PairIntArray matched2 = new PairIntArray();
+        
+        pointMatcher.matchPoints(scene, model, tolerance, matched,
+            matched1, matched2);
+        
+        /*
+        from here, one could use RANSAC epipolar projection solver to
+        calculate the epipolar projection from the true matched points,
+        but the projection may have been large enough that there are few
+        matched points still.
+        
+        So, wanting to look at transformed and model points overplotted in
+        x vs y
+        and the differences as x vs dx and y vs dy to see if a projective trend
+        is visible.
+        presumably, the x vs dx should be compared to the same for a larger
+        tolerance to see the trend.
+        
+        the brown & lowe 2003 manually matched points should show this.
+        */
         
     }
     
@@ -689,11 +953,30 @@ public class PointMatcher3Test {
         return copy;
     }
     
+    private double[] transform(SimpleMatrix fm, double x, double y) {
+        
+        double d = (fm.get(2, 0) * x) + (fm.get(2, 1) * y) 
+            + fm.get(2, 2);
+        
+        double x2 = (fm.get(0, 0) * x) + (fm.get(0, 1) * y) 
+            + fm.get(0, 2);
+        
+        x2 /= d;
+        
+        double y2 = (fm.get(1, 0) * x) + (fm.get(1, 1) * y) 
+            + fm.get(1, 2);
+        
+        y2 /= d;
+        
+        return new double[]{x2, y2};
+    }
+    
     public static void main(String[] args) {
         
         try {
             PointMatcher3Test test = new PointMatcher3Test();
-            
+
+            /*
             test.test1();
             test.test2();
             test.test3();
@@ -708,6 +991,9 @@ public class PointMatcher3Test {
             test.test12();
             test.test13();
             test.test14();
+            */
+            //test.test15();
+            test.test156();
             
             /*
             tests for :
@@ -747,4 +1033,24 @@ public class PointMatcher3Test {
             dirPath + "/tmp_t2_" + testNumber + ".png", image);
     }
 
+    private Color getColor(Color clr) {
+        if ((clr == null) || clr.equals(Color.MAGENTA)) {
+            return Color.BLUE;
+        }
+        if (clr.equals(Color.BLUE)) {
+            return Color.PINK;
+        } else if (clr.equals(Color.PINK)) {
+            return Color.GREEN;
+        } else if (clr.equals(Color.GREEN)) {
+            return Color.RED;
+        } else if (clr.equals(Color.RED)) {
+            return Color.CYAN;
+        } else if (clr.equals(Color.CYAN)) {
+            return Color.MAGENTA;
+        } else if (clr.equals(Color.MAGENTA)) {
+            return Color.LIGHT_GRAY;
+        } else {
+            return Color.ORANGE;
+        }
+    }
 }

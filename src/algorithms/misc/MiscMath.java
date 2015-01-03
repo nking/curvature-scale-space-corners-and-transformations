@@ -1,7 +1,9 @@
 package algorithms.misc;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -616,4 +618,112 @@ public class MiscMath {
         return false;
     }
     
+     /**
+     * for the given histogram, returns the indexes of the primary peak and
+     * any peaks which are larger than frac*maxPeak above their neighboring
+     * values.
+     * @param h
+     * @param frac the fraction of the y value of the maximum peak that is used
+     * as a critical limit that any other peaks must have in excess of their
+     * neighboring points.  For example, 0.1.
+     * @return 
+     */
+    public static List<Integer> findStrongPeakIndexes(HistogramHolder h, float frac) {
+        
+        float[] x = h.getXHist();
+        int[] y = h.getYHist();
+        
+        if (x == null || y == null || x.length == 0 || y.length == 0) {
+            return null;
+        }
+        
+        int yPeakIdx = MiscMath.findYMaxIndex(y);
+        
+        if (yPeakIdx == -1) {
+            return null;
+        }
+        
+        int yMaxPeak = y[yPeakIdx];
+        
+        /*
+        storing the minima and maxima in the same array list.
+        the minima have -1*index within k
+        and the maxima keep their positive values of the index within k.
+        */
+        List<Integer> minMaxIndexes = new ArrayList<Integer>();
+        
+        float lastY = y[0];
+        boolean incr = true;
+        for (int ii = 1; ii < y.length; ii++) {
+            if ((y[ii] < lastY) && incr) {
+                minMaxIndexes.add(Integer.valueOf(ii - 1));
+                incr = false;
+            } else if ((y[ii] > lastY) && !incr) {
+                minMaxIndexes.add(Integer.valueOf(-1*(ii - 1)));
+                incr = true;
+            }
+            lastY = y[ii];
+        }
+        
+        // for the histograms of euclidean point combination differences,
+        // this should usually be singly peaked
+        if (minMaxIndexes.size() == 1) {
+            return minMaxIndexes;
+        }
+        
+        if (incr) {
+            // add the last point
+             minMaxIndexes.add(Integer.valueOf(y.length - 1));
+        }
+        
+        float limit = frac * yMaxPeak;
+        
+        // find peaks where y[ii] is > limit above adjacent local minima
+        
+        List<Integer> peaks = new ArrayList<Integer>();
+
+        for (int ii = 0; ii < minMaxIndexes.size(); ii++) {
+
+            int idx = minMaxIndexes.get(ii).intValue();
+
+            if (idx > -1) {
+                // this is maximum
+                
+                boolean found = false;
+                
+                // compare to preceding minimum
+                for (int iii = (ii - 1); iii > -1; iii--) {
+                    int idx2 = minMaxIndexes.get(iii).intValue();
+                    if (idx2 < 0) {
+                        float compare = y[-1*idx2];
+                        float diff = y[idx] - compare;
+                        if (diff >= limit) {
+                            peaks.add(Integer.valueOf(idx));
+                            found = true;
+                        }
+                        break;
+                    }
+                }
+                if (found) {
+                    continue;
+                }
+
+                //compare to proceeding minimum
+                for (int iii = (ii + 1); iii < minMaxIndexes.size(); iii++) {
+                    int idx2 = minMaxIndexes.get(iii).intValue();
+                    if (idx2 < 0) {
+                        float compare = y[-1*idx2];
+                        float diff = y[idx] - compare;
+                        if (diff >= limit) {
+                            peaks.add(Integer.valueOf(idx));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+       
+        return peaks;
+    }
+
 }

@@ -144,4 +144,18 @@ public class PairFloatArrayTest {
         assertTrue((xy.getX(2) == 34) && (xy.getY(2) == 84));
 
     }
+    
+    public void testToPairIntArray() throws Exception {
+        
+        PairFloatArray xy = new PairFloatArray();
+        for (int i = 0; i < 7; i++) {
+            xy.add(i, i);
+        }
+        
+        PairIntArray xyF = xy.toPairIntArray();
+        for (int i = 0; i < 7; i++) {
+            assertTrue(Math.abs(xy.getX(i) - xyF.getX(i)) < 0.001f);
+            assertTrue(Math.abs(xy.getY(i) - xyF.getY(i)) < 0.001f);
+        }
+    }
 }

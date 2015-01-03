@@ -142,6 +142,14 @@ public class PairFloatArray {
         n -= nRemove;
     }
     
+    public PairIntArray toPairIntArray() {
+        PairIntArray out = new PairIntArray();
+        for (int i = 0; i < n; i++) {
+            out.add(Math.round(x[i]), Math.round(y[i]));
+        }
+        return out;
+    }
+    
     public String toString() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) {

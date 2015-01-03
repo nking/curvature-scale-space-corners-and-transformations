@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 import algorithms.util.PolygonAndPointPlotter;
+import java.util.List;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
@@ -308,6 +309,51 @@ public class MiscMathTest extends TestCase {
         assertTrue(Math.abs(roots[2] - 2) < 0.1);
     }
 
+    public void testFindStrongestPeakIndexes() throws Exception {
+        
+        float[] xHist = new float[]{
+            -279.96667f, -239.90002f, -199.83334f, -159.76666f,
+            -119.700005f, -79.63334f, -39.566673f, 0.5000076f,
+            40.566658f, 80.63331f, 120.69999f, 160.76666f,
+            200.83331f, 240.89996f, 280.96667f};
+        
+        int[] yHist = new int[] {0, 24, 141, 259, 482, 894, 1110, 1239,
+            890, 608, 302, 151, 56, 0, 0};
+        
+        HistogramHolder h = new HistogramHolder();
+        h.setYHist(yHist);
+        h.setXHist(xHist);
+        
+        List<Integer> peakIndexes = MiscMath.findStrongPeakIndexes(h, 0.1f);
+        
+        assertNotNull(peakIndexes);
+        assertTrue(peakIndexes.size() == 1);
+        assertTrue(peakIndexes.get(0).intValue() == 7);
+        
+        // this should have 3 peaks
+        xHist = new float[]{
+            -466.63333f, -399.9f, -333.16666f, -266.43335f, -199.70001f, 
+            -132.96667f, -66.23337f, 0.49996567f, 67.23331f, 133.96664f,
+            200.69998f, 267.43332f, 334.1666f, 400.89993f, 467.63327f
+        };
+        
+        yHist = new int[] {
+            115, 265, 385, 560, 484, 581, 748, 809, 
+            661, 375, 371, 379, 304, 109, 10
+        };
+        
+        h = new HistogramHolder();
+        h.setYHist(yHist);
+        h.setXHist(xHist);
+        
+        peakIndexes = MiscMath.findStrongPeakIndexes(h, 0.09f);
+        
+        assertNotNull(peakIndexes);
+        assertTrue(peakIndexes.size() == 2);
+        assertTrue(peakIndexes.get(0).intValue() == 3);
+        assertTrue(peakIndexes.get(1).intValue() == 7);
+    }
+    
     /**
      * Test of findMax method, of class MiscMath.
      */

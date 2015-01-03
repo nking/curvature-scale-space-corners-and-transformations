@@ -108,7 +108,8 @@ public class RANSACSolver {
         PairFloatArray xy2 = null;
         
         //TODO: determine this using one of the several suggested ways.
-        double threshold = 1;
+        //TODO: also consider ability to change it +- 1 or so to find best?
+        double threshold = 5.;
         
         // ====== find matched pairs incremently, and best among only 7 point match ====
         

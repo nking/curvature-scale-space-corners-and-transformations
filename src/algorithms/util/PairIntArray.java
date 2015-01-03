@@ -202,6 +202,14 @@ public class PairIntArray {
         return clone;
     }
     
+    public PairFloatArray toPairFloatArray() {
+        PairFloatArray out = new PairFloatArray();
+        for (int i = 0; i < n; i++) {
+            out.add(x[i], y[i]);
+        }
+        return out;
+    }
+    
     public String toString() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) {
