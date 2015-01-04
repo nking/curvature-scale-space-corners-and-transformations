@@ -185,7 +185,8 @@ public final class CurvatureScaleSpaceImageMaker extends
     }
     
     public ScaleSpaceCurveImage convertScaleSpaceMapToSparseImage(
-        Map<Float, ScaleSpaceCurve> scaleSpaceMap, int edgeNumber) {
+        Map<Float, ScaleSpaceCurve> scaleSpaceMap, int edgeNumber,
+        int edgeLength) {
         
         initialize();
         
@@ -221,6 +222,8 @@ public final class CurvatureScaleSpaceImageMaker extends
             sortedMap.size());
         
         spaceImage.setEdgeNumber(edgeNumber);
+        
+        spaceImage.setEdgeSize(edgeLength);
         
         while (iter.hasNext()) {
             

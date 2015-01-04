@@ -142,7 +142,10 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
         for (int i = 0; i < edges1.size(); i++) {
             PairIntArray curve = edges1.get(i);
             Map<Float, ScaleSpaceCurve> scaleSpaceMap = imgMaker.createScaleSpaceMetricsForEdge2(curve);
-            ScaleSpaceCurveImage scaleSpaceImage = imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i);
+            ScaleSpaceCurveImage scaleSpaceImage = 
+                imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i,
+                curve.getN());
+            
             ContourFinder contourFinder = new ContourFinder();
             List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
             PairIntArray testContour = new PairIntArray();
@@ -215,7 +218,9 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
         for (int i = 0; i < edges2.size(); i++) {
             PairIntArray curve = edges2.get(i);
             Map<Float, ScaleSpaceCurve> scaleSpaceMap = imgMaker.createScaleSpaceMetricsForEdge2(curve);
-            ScaleSpaceCurveImage scaleSpaceImage = imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i);
+            ScaleSpaceCurveImage scaleSpaceImage = 
+                imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i,
+                curve.getN());
             ContourFinder contourFinder = new ContourFinder();
             List<CurvatureScaleSpaceContour> result = contourFinder.findContours(scaleSpaceImage, i);
             PairIntArray testContour = new PairIntArray();

@@ -118,7 +118,8 @@ public final class CurvatureScaleSpaceInflectionMapper extends AbstractCurvature
                     int xAvg = Math.round((p0.getXCoord() + p1.getXCoord()) / 2.f);
                     int yAvg = Math.round((p0.getYCoord() + p1.getYCoord()) / 2.f);
                     CurvatureScaleSpaceImagePoint pAvg = 
-                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg);
+                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg,
+                        p0.getCoordIdx());
                     CurvatureScaleSpaceImagePoint[] p =
                         new CurvatureScaleSpaceImagePoint[]{pAvg};
                     c2.setPeakDetails(p);
@@ -131,7 +132,8 @@ public final class CurvatureScaleSpaceInflectionMapper extends AbstractCurvature
                     int xAvg = Math.round((p0.getXCoord() + p1.getXCoord()) / 2.f);
                     int yAvg = Math.round((p0.getYCoord() + p1.getYCoord()) / 2.f);
                     CurvatureScaleSpaceImagePoint pAvg = 
-                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg);
+                        new CurvatureScaleSpaceImagePoint(s, t, xAvg, yAvg,
+                        p0.getCoordIdx());
                     CurvatureScaleSpaceImagePoint[] p = 
                         new CurvatureScaleSpaceImagePoint[]{pAvg};
                     c1.setPeakDetails(p);

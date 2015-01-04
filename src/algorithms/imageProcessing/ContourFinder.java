@@ -154,10 +154,14 @@ public class ContourFinder {
             
             contour.setEdgeNumber(scaleSpaceImage.getEdgeNumber());
                         
+            float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
+            int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());
+            
             CurvatureScaleSpaceImagePoint point0 = 
                 new CurvatureScaleSpaceImagePoint(sigma, t,
                     scaleSpaceImage.getXCoord(sigmaIndex, tIndex),
-                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex));
+                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex),
+                    idx0);
             
             CurvatureScaleSpaceImagePoint[] peakPoints = 
                 new CurvatureScaleSpaceImagePoint[]{point0};                
@@ -284,10 +288,14 @@ public class ContourFinder {
                         
             float t = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
             
+            float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
+            int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());
+            
             CurvatureScaleSpaceImagePoint point0 = 
                 new CurvatureScaleSpaceImagePoint(sigma, t,
                     scaleSpaceImage.getXCoord(sigmaIndex, tIndex),
-                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex));
+                    scaleSpaceImage.getYCoord(sigmaIndex, tIndex), 
+                    idx0);
             
             CurvatureScaleSpaceImagePoint[] peakPoints = 
                 new CurvatureScaleSpaceImagePoint[]{point0};                
@@ -314,18 +322,21 @@ public class ContourFinder {
             float t0 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex];
             float t1 = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];
             
+            int idx0 = Math.round(t0 * scaleSpaceImage.getEdgeSize());
+            int idx1 = Math.round(t1 * scaleSpaceImage.getEdgeSize());
+            
             CurvatureScaleSpaceImagePoint point0 = 
                 new CurvatureScaleSpaceImagePoint(sigma, t0,
                 scaleSpaceImage.getXCoord(sigmaIndex, tIndex),
-                scaleSpaceImage.getYCoord(sigmaIndex, tIndex));
+                scaleSpaceImage.getYCoord(sigmaIndex, tIndex), idx0);
             
             CurvatureScaleSpaceImagePoint point1 = 
                 new CurvatureScaleSpaceImagePoint(sigma, t1,
                 scaleSpaceImage.getXCoord(sigmaIndex, tIndex + 1),
-                scaleSpaceImage.getYCoord(sigmaIndex, tIndex + 1));
+                scaleSpaceImage.getYCoord(sigmaIndex, tIndex + 1), idx1);
             
             CurvatureScaleSpaceImagePoint[] peakPoints = 
-                new CurvatureScaleSpaceImagePoint[]{point0, point1};                
+                new CurvatureScaleSpaceImagePoint[]{point0, point1};       
             
             contour.setPeakDetails(peakPoints);
             

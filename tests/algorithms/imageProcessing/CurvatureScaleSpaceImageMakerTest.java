@@ -226,7 +226,8 @@ public class CurvatureScaleSpaceImageMakerTest {
                 instance.createScaleSpaceMetricsForEdge2(edge);
             
             ScaleSpaceCurveImage scaleSpaceCurveImage = 
-                instance.convertScaleSpaceMapToSparseImage(result, ii);
+                instance.convertScaleSpaceMapToSparseImage(result, ii, 
+                edge.getN());
             
             float[] imageSigmas = scaleSpaceCurveImage.getImageSigmas();
             float[][] scaleSpaceImage = scaleSpaceCurveImage.getScaleSpaceImage();
@@ -342,7 +343,8 @@ public class CurvatureScaleSpaceImageMakerTest {
                 instance.createScaleSpaceMetricsForEdge2(edge);
             
             ScaleSpaceCurveImage scaleSpaceCurveImage = 
-                instance.convertScaleSpaceMapToSparseImage(result, ii);
+                instance.convertScaleSpaceMapToSparseImage(result, ii, 
+                edge.getN());
             
             
             PairIntArray edge2 = curves2.get(ii);
@@ -351,7 +353,8 @@ public class CurvatureScaleSpaceImageMakerTest {
                 instance2.createScaleSpaceMetricsForEdge2(edge2);
             
             ScaleSpaceCurveImage scaleSpaceCurveImage2 = 
-                instance2.convertScaleSpaceMapToSparseImage(result2, ii);
+                instance2.convertScaleSpaceMapToSparseImage(result2, ii, 
+                edge2.getN());
             
             
             float[] sigmas = scaleSpaceCurveImage.getImageSigmas();

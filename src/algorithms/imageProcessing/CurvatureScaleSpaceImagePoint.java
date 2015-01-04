@@ -10,16 +10,22 @@ public class CurvatureScaleSpaceImagePoint {
     
     private int yCoord = -1;
     
+    /** index of coordinate w.r.t. its parent edge */
+    private int coordIdx = -1;
+    
     private float sigma = Float.MAX_VALUE;
     
     private float scaleFreeLength = Float.MAX_VALUE;
 
     public CurvatureScaleSpaceImagePoint(float theSigma, 
-        float theScaleFreeLength, int theXCoordinate, int theYCoordinate) {
+        float theScaleFreeLength, int theXCoordinate, int theYCoordinate, 
+        int theIndex) {
         
         xCoord = theXCoordinate;
         
         yCoord = theYCoordinate;
+        
+        coordIdx = theIndex;
         
         sigma = theSigma;
         
@@ -38,6 +44,13 @@ public class CurvatureScaleSpaceImagePoint {
      */
     public int getYCoord() {
         return yCoord;
+    }
+    
+    /**
+     * @return the yCoord
+     */
+    public int getCoordIdx() {
+        return coordIdx;
     }
 
     /**
@@ -68,7 +81,8 @@ public class CurvatureScaleSpaceImagePoint {
         
         sb.append("sigma=").append(sigma)
             .append(" scaleFreeLength=").append(scaleFreeLength)
-            .append(" (").append(xCoord).append(",").append(yCoord).append(")");
+            .append(" (").append(xCoord).append(",").append(yCoord)
+            .append("), idx=").append(coordIdx);
         
         return sb.toString();
     }

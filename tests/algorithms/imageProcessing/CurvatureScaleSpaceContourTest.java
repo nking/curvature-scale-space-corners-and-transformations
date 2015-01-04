@@ -30,17 +30,20 @@ public class CurvatureScaleSpaceContourTest {
         
         int x = 123;
         int y = 1290;
+        int idx = 10;
         
-        CurvatureScaleSpaceImagePoint point0 = new CurvatureScaleSpaceImagePoint(
-            sigma, t, x, y);
+        CurvatureScaleSpaceImagePoint point0 = 
+            new CurvatureScaleSpaceImagePoint(sigma, t, x, y, idx);
         
         assertTrue(point0.getSigma() == sigma);
         assertTrue(point0.getScaleFreeLength() == t);
         assertTrue(point0.getXCoord() == x);
         assertTrue(point0.getYCoord() == y);
+        assertTrue(point0.getCoordIdx() == idx);
         
-        CurvatureScaleSpaceImagePoint point1 = new CurvatureScaleSpaceImagePoint(
-            sigma, t + 0.25f, x + 20, y - 100);
+        CurvatureScaleSpaceImagePoint point1 = 
+            new CurvatureScaleSpaceImagePoint(sigma, t + 0.25f, x + 20, y - 100, 
+                15);
         
         CurvatureScaleSpaceImagePoint[] points = new 
             CurvatureScaleSpaceImagePoint[]{point0, point1};

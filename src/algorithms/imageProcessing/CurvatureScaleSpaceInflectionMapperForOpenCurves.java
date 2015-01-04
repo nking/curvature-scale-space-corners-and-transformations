@@ -38,7 +38,8 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
         */
         
         //TODO: find robust way to adjust this:        
-        int sigmaLimit = 10;
+        int sigmaLimit = 1;//10;
+        int boundsExclusion = 5;
         
         PairIntArray xyPeaks1 = new PairIntArray();
         
@@ -53,6 +54,7 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
             }
             
             int edgeNumber = c1.getEdgeNumber();
+            int n = edges1.get(edgeNumber).getN();
             
             CurvatureScaleSpaceImagePoint[] peakDetails = c1.getPeakDetails();
             
@@ -60,12 +62,15 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
                 
                 CurvatureScaleSpaceImagePoint p = peakDetails[j];
                 
+                int idx = p.getCoordIdx();
+                
                 log.info(String.format(
                     "1: (%d, %d) sigma=%f edgeLength=%d edgeNumber=%d", 
-                        p.getXCoord(), p.getYCoord(), p.getSigma(),
-                        edges1.get(edgeNumber).getN(), edgeNumber));
+                    p.getXCoord(), p.getYCoord(), p.getSigma(), n, edgeNumber));
                 
-                xyPeaks1.add(p.getXCoord(), p.getYCoord());
+                if ((idx > boundsExclusion) && (idx < (n - boundsExclusion - 1))) {
+                    xyPeaks1.add(p.getXCoord(), p.getYCoord());
+                }
             }
         }
         
@@ -78,6 +83,7 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
             }
             
             int edgeNumber = c2.getEdgeNumber();
+            int n = edges2.get(edgeNumber).getN();
             
             CurvatureScaleSpaceImagePoint[] peakDetails = c2.getPeakDetails();
             
@@ -88,9 +94,13 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
                 log.info(String.format(
                     "2: (%d, %d) sigma=%f edgeLength=%d edgeNumber=%d", 
                         p.getXCoord(), p.getYCoord(), p.getSigma(),
-                        edges2.get(edgeNumber).getN(), edgeNumber));
+                        n, edgeNumber));
                 
-                xyPeaks2.add(p.getXCoord(), p.getYCoord());
+                int idx = p.getCoordIdx();
+                
+                if ((idx > boundsExclusion) && (idx < (n - boundsExclusion - 1))) {
+                    xyPeaks2.add(p.getXCoord(), p.getYCoord());
+                }
             }
         }
         

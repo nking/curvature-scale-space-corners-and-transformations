@@ -264,7 +264,8 @@ public class CurvatureScaleSpaceCornerDetectorTest extends TestCase {
             = imgMaker.createScaleSpaceMetricsForEdge2(edge);
 
         ScaleSpaceCurveImage scaleSpaceImage
-            = imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, 0);
+            = imgMaker.convertScaleSpaceMapToSparseImage(scaleSpaceMap, 0,
+                edge.getN());
         
         float[] sigmas = scaleSpaceImage.getImageSigmas();
         

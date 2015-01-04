@@ -54,7 +54,8 @@ public class ContourFinderTest {
                 instance.createScaleSpaceMetricsForEdge2(curves.get(0));
          
         ScaleSpaceCurveImage scaleSpaceImage = 
-             instance.convertScaleSpaceMapToSparseImage(scaleSpaceMap, 0);
+             instance.convertScaleSpaceMapToSparseImage(scaleSpaceMap, 0,
+             curves.get(0).getN());
         
         ContourFinder contourFinder = new ContourFinder();
          
@@ -106,7 +107,8 @@ public class ContourFinderTest {
                 instance.createScaleSpaceMetricsForEdge2(curves.get(0));
          
          ScaleSpaceCurveImage scaleSpaceImage = 
-             instance.convertScaleSpaceMapToSparseImage(scaleSpaceMap, 0);
+             instance.convertScaleSpaceMapToSparseImage(scaleSpaceMap, 0,
+             curves.get(0).getN());
          
         ContourFinder contourFinder = new ContourFinder();
         List<CurvatureScaleSpaceContour> result = contourFinder.findContours(

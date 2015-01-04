@@ -25,6 +25,8 @@ public class ScaleSpaceCurveImage {
     
     private int edgeNumber = -1;
     
+    private int edgeSize = 0;
+    
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     public ScaleSpaceCurveImage(int nSigmaLevels) {
@@ -42,6 +44,14 @@ public class ScaleSpaceCurveImage {
     
     public void setEdgeNumber(int number) {
         edgeNumber = number;
+    }
+    
+    public void setEdgeSize(int size) {
+        edgeSize = size;
+    }
+    
+    public int getEdgeSize() {
+        return edgeSize;
     }
     
     public void setRow(int sigmaIndex, float[] scaleFreeZeroCrossings) {
@@ -108,6 +118,8 @@ public class ScaleSpaceCurveImage {
         ScaleSpaceCurveImage c = new ScaleSpaceCurveImage(nSigmaLevels);
         
         c.setEdgeNumber(edgeNumber);
+        
+        c.setEdgeSize(edgeSize);
         
         System.arraycopy(imageSigmas, 0, c.imageSigmas, 0, imageSigmas.length);
         

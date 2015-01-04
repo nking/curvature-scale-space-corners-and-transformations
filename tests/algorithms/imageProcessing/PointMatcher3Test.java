@@ -51,7 +51,7 @@ public class PointMatcher3Test {
         PairIntArray points1 = null;
         PairIntArray points2 = null;
         
-        boolean makeInflectionPoints = false;
+        boolean makeInflectionPoints = true;
         
         if (makeInflectionPoints) {
             
@@ -1096,9 +1096,9 @@ public class PointMatcher3Test {
             test.test14();
             */
             //test.test15();
-            test.test156();
+            //test.test156();
             
-            //test.adjustPointsOfInterest();
+            test.adjustPointsOfInterest();
             
             /*
             tests for :

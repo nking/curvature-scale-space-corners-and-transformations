@@ -322,7 +322,8 @@ public class NextContourTest {
                 = instance.createScaleSpaceMetricsForEdge2(curve);
 
             ScaleSpaceCurveImage scaleSpaceImage
-                = instance.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i);
+                = instance.convertScaleSpaceMapToSparseImage(scaleSpaceMap, i,
+                  curve.getN());
                  
             ContourFinder contourFinder = new ContourFinder();
 

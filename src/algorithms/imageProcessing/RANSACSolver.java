@@ -109,6 +109,7 @@ public class RANSACSolver {
         
         //TODO: determine this using one of the several suggested ways.
         //TODO: also consider ability to change it +- 1 or so to find best?
+        
         double threshold = 5.;
         
         // ====== find matched pairs incremently, and best among only 7 point match ====
