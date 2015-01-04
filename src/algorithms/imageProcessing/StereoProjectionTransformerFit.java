@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -13,6 +14,13 @@ public class StereoProjectionTransformerFit {
      * number of matches within tolerance
      */
     private final long nMatches;
+    
+    /**
+     * when value is not Long.MIN_VALUE, it holds the maximum number of points
+     * that were possible to match.  This may not always be populated, so 
+     * check value before using.
+     */
+    private long nMaxMatchable = Long.MIN_VALUE;
     
     /**
      * tolerance in distance of a point from the epipolar line it belongs to
@@ -29,16 +37,24 @@ public class StereoProjectionTransformerFit {
      */
     private final double stDevFromMean;
     
+    private final SimpleMatrix fundamentalMatrix;
+    
     private List<Integer> inlierIndexes = new ArrayList<Integer>();
 
-    public StereoProjectionTransformerFit(long theNumberOfMatches, 
+    public StereoProjectionTransformerFit(SimpleMatrix theFundamentalMatrix,
+        long theNumberOfMatches, 
         double theTolerance, double theAverageDistance, 
         double theStandardDeviationFromAverage) {
         
+        fundamentalMatrix = theFundamentalMatrix;
         nMatches = theNumberOfMatches;
         tolerance = theTolerance;
         meanDistance = theAverageDistance;
         stDevFromMean = theStandardDeviationFromAverage;
+    }
+    
+    public SimpleMatrix getFundamentalMatrix() {
+        return fundamentalMatrix;
     }
     
     /**
@@ -46,6 +62,20 @@ public class StereoProjectionTransformerFit {
      */
     public long getNMatches() {
         return nMatches;
+    }
+    
+    /**
+     * @param theNumberOfPossibleMatches
+     */
+    public void setNMaxMatchable(long theNumberOfPossibleMatches) {
+        nMaxMatchable = theNumberOfPossibleMatches;
+    }
+    
+    /**
+     * @return the nMaxMatchable
+     */
+    public long getNMaxMatchable() {
+        return nMaxMatchable;
     }
 
     /**
@@ -128,6 +158,7 @@ public class StereoProjectionTransformerFit {
         StringBuilder sb = new StringBuilder();
         
         sb.append("nMatchedPoints=").append(Long.toString(nMatches))
+            .append(" nMaxMatchable=").append(Long.toString(nMaxMatchable))
             .append(" tolerance=").append(Double.toString(tolerance))
             .append(" meanDistFromModel=").append(Double.toString(meanDistance))
             .append(" stDevFromMean=").append(Double.toString(stDevFromMean))

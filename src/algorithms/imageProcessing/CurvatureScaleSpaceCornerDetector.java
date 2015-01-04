@@ -177,9 +177,6 @@ public class CurvatureScaleSpaceCornerDetector extends
     
         PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
 
-/*if (edgeNumber != 118) {
-    return xy;
-}*/
         if (correctForJaggedLines && !useOutdoorMode) {
            
             PairIntArray jaggedLines = removeFalseCorners(
@@ -207,8 +204,19 @@ public class CurvatureScaleSpaceCornerDetector extends
             
         }
         
+        int minDistFromEnds = 5;
+        int nPoints = scaleSpace.getSize();
         for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
-            int idx = maxCandidateCornerIndexes.get(ii);                
+            
+            int idx = maxCandidateCornerIndexes.get(ii);
+            
+            if (useOutdoorMode && !scaleSpace.curveIsClosed()) {
+                if ((idx < minDistFromEnds)
+                    || (idx > (nPoints - minDistFromEnds))) {
+                    continue;
+                }
+            }
+            
             xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
         }
         

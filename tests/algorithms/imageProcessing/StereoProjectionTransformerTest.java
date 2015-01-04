@@ -308,8 +308,15 @@ public class StereoProjectionTransformerTest {
                     input1 = unnormXY1;
                     input2 = unnormXY2;
                     
-                    fm = solver.calculateEpipolarProjection(
+                    StereoProjectionTransformerFit fit = 
+                        solver.calculateEpipolarProjection(
                         input1, input2, outputLeftXY, outputRightXY);
+                    
+                    if (fit == null) {
+                        continue;
+                    }
+                    
+                    fm = fit.getFundamentalMatrix();
                     
                     break;
                     

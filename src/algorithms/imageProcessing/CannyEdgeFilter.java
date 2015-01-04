@@ -111,7 +111,7 @@ public class CannyEdgeFilter {
         if (input.getWidth() < 3 || input.getHeight() < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-                
+        
         ImageProcesser imageProcesser = new ImageProcesser();
         
         imageProcesser.shrinkImageToFirstNonZeros(input);
@@ -588,7 +588,7 @@ public class CannyEdgeFilter {
             HistogramHolder hist = createImageHistogram(input);
             
             imgHistogram = hist;            
-        }    
+        }
     }
     
     private HistogramHolder createImageHistogram(final GreyscaleImage input) {

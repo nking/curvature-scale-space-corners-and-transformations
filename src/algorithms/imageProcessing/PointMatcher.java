@@ -448,7 +448,7 @@ public final class PointMatcher {
                     StereoProjectionTransformer.rewriteInto3ColumnMatrix(
                     finalMatched2);
                 
-                fit = sTransformer.evaluateFit(fm, leftPoints, rightPoints, 
+                fit = sTransformer.evaluateFitForAlreadyMatched(fm, leftPoints, rightPoints, 
                     tolerance);
                 
                 if (spFitIsBetter(bestFit, fit)) {

@@ -299,6 +299,40 @@ public class Transformer {
         return te;
     }
     
+    /**
+      * transform the point using the given parameters. 
+      * 
+      * @param params euclidean transformation parameters
+      * @param centroidX the horizontal center of the reference frame for edges.  
+      * this should be the center of the image if edges points are in the
+      * original image reference frame.
+      * @param centroidY the vertical center of the reference frame for edges.  
+      * this should be the center of the image if edges points are in the
+      * original image reference frame.
+      * @param xPt
+      * @param yPt
+      * @return 
+      */
+    public double[] applyTransformation(TransformationParameters params,
+        double centroidX, double centroidY, double xPt, double yPt) {
+        
+        double scale = params.getScale();
+        double scaleTimesCosine = scale * Math.cos(params.getRotationInRadians());
+        double scaleTimesSine = scale * Math.sin(params.getRotationInRadians());
+                
+        double xr = centroidX * scale + (((xPt - centroidX) * scaleTimesCosine) 
+            + ((yPt - centroidY) * scaleTimesSine));
+
+        double yr = centroidY * scale 
+            + ((-(xPt - centroidX) * scaleTimesSine) 
+            + ((yPt - centroidY) * scaleTimesCosine));
+
+        double xt = xr + params.getTranslationX();
+        double yt = yr + params.getTranslationY();
+
+        return new double[]{xt, yt};
+    }
+    
     public GreyscaleImage applyTransformation(final GreyscaleImage input, 
         TransformationParameters params, int outputWidth, int outputHeight) {
         

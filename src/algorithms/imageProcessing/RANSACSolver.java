@@ -31,7 +31,7 @@ public class RANSACSolver {
      * @return
      * @throws NoSuchAlgorithmException 
      */
-    public SimpleMatrix calculateEpipolarProjection(
+    public StereoProjectionTransformerFit calculateEpipolarProjection(
         PairFloatArray matchedLeftXY, PairFloatArray matchedRightXY,
         PairFloatArray outputLeftXY, PairFloatArray outputRightXY) 
         throws NoSuchAlgorithmException {
@@ -71,7 +71,7 @@ public class RANSACSolver {
      * @return
      * @throws NoSuchAlgorithmException 
      */
-    public SimpleMatrix calculateEpipolarProjection(
+    public StereoProjectionTransformerFit calculateEpipolarProjection(
         SimpleMatrix matchedLeftXY, SimpleMatrix matchedRightXY,
         PairFloatArray outputLeftXY, PairFloatArray outputRightXY) 
         throws NoSuchAlgorithmException {
@@ -141,10 +141,11 @@ public class RANSACSolver {
                 spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);
          
             StereoProjectionTransformerFit sevenPointFit = 
-                spTransformer.evaluateFit(fm, 
+                spTransformer.evaluateFitForAlreadyMatched(fm, 
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(xy1),
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(xy2),
                 threshold);
+            
             if ((sevenPointFit == null) || 
                 (sevenPointFit.getInlierIndexes() == null) ||
                 (sevenPointFit.getInlierIndexes().size() != 7)) {
@@ -153,7 +154,8 @@ public class RANSACSolver {
             }
             
             // evaluate fit against all points
-            StereoProjectionTransformerFit fit = spTransformer.evaluateFit(
+            StereoProjectionTransformerFit fit = 
+                spTransformer.evaluateFitForAlreadyMatched(
                 fm, matchedLeftXY, matchedRightXY, threshold);
             
             if (fitIsBetter(bestFit, fit)) {
@@ -191,35 +193,19 @@ public class RANSACSolver {
             spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
             outputLeftXY, outputRightXY);
         
-        if (debug) {
-            
-            //TODO: evaluateFit needs to be improved
-            StereoProjectionTransformerFit finalFit = 
-                spTransformer.evaluateFit(finalFM, 
-                matchedLeftXY, matchedRightXY, threshold);
+        StereoProjectionTransformerFit finalFit = 
+            spTransformer.evaluateFitForAlreadyMatched(finalFM, 
+            matchedLeftXY, matchedRightXY, threshold);
 
-            Logger log = Logger.getLogger(this.getClass().getName());
+        Logger log = Logger.getLogger(this.getClass().getName());
 
-            log.info("nIter=" + nIter);
-            
-            log.info("best fit from 7-point: " + bestFit.toString());
+        log.info("nIter=" + nIter);
 
-            log.info("final fit: " + finalFit.toString());
-            
-            if (finalFM != null) {
-                for (int row = 0; row < finalFM.numRows(); row++) {
-                    StringBuffer sb = new StringBuffer("row ")
-                        .append(Integer.toString(row)).append(") ");
-                    for (int col = 0; col < finalFM.numCols(); col++) {
-                        sb.append(String.format("%7e", finalFM.get(row, col)))
-                            .append(" ");
-                    }
-                    log.info(sb.toString());
-                }
-            }
-        }
-        
-        return finalFM;
+        log.info("best fit from 7-point: " + bestFit.toString());
+
+        log.info("final fit: " + finalFit.toString());
+
+        return finalFit;
     }
     
     boolean fitIsBetter(StereoProjectionTransformerFit bestFit, 
