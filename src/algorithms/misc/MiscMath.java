@@ -595,16 +595,16 @@ public class MiscMath {
      * 
      * Note that the number of ways to make a subset of 7 distinct numbers
      * out of nMax numbers is nMax!/(nMax-7)!
-     * 
      * So the probability of selecting the same 7 randomly from nMax is very
      * low when nMax is much larger than selected.length, so this method does
      * not check that the same 7 were not drawn before, but the invoker 
      * should for small nMax.
      * 
      * @param sr class to generate semi random numbers
-     * @param selected the output array to populate with unique, ordered, random
-     * numbers
-     * @param nMax 
+     * @param selected the output array to populate with unique random numbers 
+     * valued 0 to nMax, exclusive.
+     * @param nMax the upper limit from which to choose numbers from for 
+     * 'selected', where the possible numbers are 0 through nMax-1.
      */
     public static void chooseRandomly(SecureRandom sr, int[] selected, int nMax) {
         
