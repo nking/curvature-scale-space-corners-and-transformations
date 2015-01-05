@@ -591,10 +591,10 @@ public class MiscMath {
     
     /**
      * choose selected.length unique random numbers between 0 and nMax and
-     * populated selected with them in numerical order.
+     * populate the array 'selected' with them.
      * 
      * Note that the number of ways to make a subset of 7 distinct numbers
-     * out of nMax numbers is n!/(n-k)!
+     * out of nMax numbers is nMax!/(nMax-7)!
      * 
      * So the probability of selecting the same 7 randomly from nMax is very
      * low when nMax is much larger than selected.length, so this method does
