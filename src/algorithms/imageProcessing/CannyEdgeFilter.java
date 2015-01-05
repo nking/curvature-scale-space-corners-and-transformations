@@ -183,6 +183,8 @@ public class CannyEdgeFilter {
         
         double lowThresh = stats.getLowThresholdApplied();
                 
+        log.info("2-layer filter: lowThresh=" + lowThresh);
+        
         double threshold2 = lowThresh * highThreshold;
         
         // count number of pixels between lowThresh and threshold2 and

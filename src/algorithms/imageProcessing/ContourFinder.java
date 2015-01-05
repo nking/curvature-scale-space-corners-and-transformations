@@ -495,7 +495,8 @@ public class ContourFinder {
             
             // TODO: improve correction for wrap around.
             // Also, this only includes peaks found at end, not beginning.
-            if (leftIndex == (t.length - 1) && (t[leftIndex] >= 0.9) &&
+            if ((leftIndex > -1) && (leftIndex == (t.length - 1)) 
+                && (t[leftIndex] >= 0.9) &&
                 (t[0] < 0.1)) {
                 rightIndex = 0;
             } 

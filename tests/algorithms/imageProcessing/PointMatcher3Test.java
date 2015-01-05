@@ -31,6 +31,225 @@ import static org.junit.Assert.fail;
  */
 public class PointMatcher3Test {
 
+    private void examineInvPointLists() throws Exception {
+        
+        //TODO: implement the code for this, including inverting the image.
+        
+        // not cheking in the images for the temporary change
+        
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String fileName1Inv = "brown_lowe_2003_image1_inv.jpg";
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+        String fileName2Inv = "brown_lowe_2003_image2_inv.jpg";
+        /*
+        String fileName1 = "venturi_mountain_j6_0001.png";
+        String fileName1Inv = "venturi_mountain_j6_0001_inv.png";
+        String fileName2 = "venturi_mountain_j6_0010.png";
+        String fileName2Inv = "venturi_mountain_j6_0010_inv.png";
+        */
+        // revisit infl points.  is there a threshold removing points?
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath1Inv = ResourceFinder.findFileInTestResources(fileName1Inv);
+        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        GreyscaleImage img1Inv = ImageIOHelper.readImageAsGrayScaleB(filePath1Inv);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+       
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        String filePath2Inv = ResourceFinder.findFileInTestResources(fileName2Inv);
+        GreyscaleImage img2Inv = ImageIOHelper.readImageAsGrayScaleB(filePath2Inv);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+        
+        List<PairIntArray> edges1 = null;
+        List<PairIntArray> edges2 = null;
+        PairIntArray points1 = null;
+        PairIntArray points2 = null;
+        
+        boolean makeInflectionPoints = false;
+        
+        int dist = 10;
+        
+        if (makeInflectionPoints) {
+            
+            CurvatureScaleSpaceInflectionMapperForOpenCurves inflMapper = new
+                CurvatureScaleSpaceInflectionMapperForOpenCurves(img1, img2);
+
+            PairIntArray[] xyPeaks = inflMapper.createUnmatchedXYFromContourPeaks();        
+            points1 = xyPeaks[0];
+            points2 = xyPeaks[1];
+
+            // there may be a couple redundant points per set that should be removed
+            /*
+            DataForTests.writePointsToTestResources(points1, 
+                "brown_lowe_2003_image1_infl_pts.tsv");        
+            DataForTests.writePointsToTestResources(points2, 
+                "brown_lowe_2003_image2_infl_pts.tsv");
+            */
+
+            edges1 = inflMapper.getEdges1InOriginalReferenceFrame();
+            
+            edges2 = inflMapper.getEdges2InOriginalReferenceFrame();
+
+            PairIntArray tmp1 = points1.copy();
+            PairIntArray tmp2 = points1.copy();
+            
+            inflMapper = new
+                CurvatureScaleSpaceInflectionMapperForOpenCurves(img1Inv, img2Inv);
+
+            xyPeaks = inflMapper.createUnmatchedXYFromContourPeaks();        
+            PairIntArray tmp1Inv = xyPeaks[0];
+            PairIntArray tmp2Inv = xyPeaks[1];
+            
+            // points similar within 2 pixels in both sets:
+            PairIntArray common1 = new PairIntArray();
+            for (int i = 0; i < tmp1.getN(); i++) {
+                int x = tmp1.getX(i);
+                int y = tmp1.getY(i);
+                for (int ii = 0; ii < tmp1Inv.getN(); ii++) {
+                    int xInv = tmp1Inv.getX(ii);
+                    int yInv = tmp1Inv.getY(ii);
+                    float dx = Math.abs(xInv - x);
+                    float dy = Math.abs(yInv - y);
+                    if ((dx <= dist) && (dy <= dist)) {
+                        common1.add(x, y);
+                        break;
+                    }
+                }
+            }
+            points1 = common1;
+
+            // points similar within 2 pixels in both sets:
+            PairIntArray common2 = new PairIntArray();
+            for (int i = 0; i < tmp2.getN(); i++) {
+                int x = tmp2.getX(i);
+                int y = tmp2.getY(i);
+                for (int ii = 0; ii < tmp2Inv.getN(); ii++) {
+                    int xInv = tmp2Inv.getX(ii);
+                    int yInv = tmp2Inv.getY(ii);
+                    float dx = Math.abs(xInv - x);
+                    float dy = Math.abs(yInv - y);
+                    if ((dx <= dist) && (dy <= dist)) {
+                        common2.add(x, y);
+                        break;
+                    }
+                }
+            }
+            points2 = common2;
+            
+        } else {
+            
+            CurvatureScaleSpaceCornerDetector detector = new
+                CurvatureScaleSpaceCornerDetector(img1);
+            detector.useOutdoorMode();            
+            detector.findCorners();
+            edges1 = detector.getEdgesInOriginalReferenceFrame();
+            points1 = detector.getCornersInOriginalReferenceFrame();
+            
+            PairIntArray tmp1 = points1.copy();
+            
+            detector = new CurvatureScaleSpaceCornerDetector(img1Inv);
+            detector.useOutdoorMode();            
+            detector.findCorners();
+            PairIntArray tmp1Inv = detector.getCornersInOriginalReferenceFrame();
+            
+            // points similar within 2 pixels in both sets:
+            PairIntArray common1 = new PairIntArray();
+            for (int i = 0; i < tmp1.getN(); i++) {
+                int x = tmp1.getX(i);
+                int y = tmp1.getY(i);
+                for (int ii = 0; ii < tmp1Inv.getN(); ii++) {
+                    int xInv = tmp1Inv.getX(ii);
+                    int yInv = tmp1Inv.getY(ii);
+                    float dx = Math.abs(xInv - x);
+                    float dy = Math.abs(yInv - y);
+                    if ((dx <= dist) && (dy <= dist)) {
+                        common1.add(x, y);
+                        break;
+                    }
+                }
+            }
+            points1 = common1;
+            
+            detector = new
+                CurvatureScaleSpaceCornerDetector(img2);
+            detector.useOutdoorMode();            
+            detector.findCorners();
+            edges2 = detector.getEdgesInOriginalReferenceFrame();
+            points2 = detector.getCornersInOriginalReferenceFrame();
+            
+            PairIntArray tmp2 = points2.copy();
+            
+            detector = new CurvatureScaleSpaceCornerDetector(img2Inv);
+            detector.useOutdoorMode();            
+            detector.findCorners();
+            PairIntArray tmp2Inv = detector.getCornersInOriginalReferenceFrame();
+            
+            // points similar within 2 pixels in both sets:
+            PairIntArray common2 = new PairIntArray();
+            for (int i = 0; i < tmp2.getN(); i++) {
+                int x = tmp2.getX(i);
+                int y = tmp2.getY(i);
+                for (int ii = 0; ii < tmp2Inv.getN(); ii++) {
+                    int xInv = tmp2Inv.getX(ii);
+                    int yInv = tmp2Inv.getY(ii);
+                    float dx = Math.abs(xInv - x);
+                    float dy = Math.abs(yInv - y);
+                    if ((dx <= dist) && (dy <= dist)) {
+                        common2.add(x, y);
+                        break;
+                    }
+                }
+            }
+            points2 = common2;
+        }
+        
+        Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+
+        for (PairIntArray edge : edges1) {
+            ImageIOHelper.addCurveToImage(edge, image1, 2, 
+                Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
+                Color.YELLOW.getBlue());
+        }
+
+        ImageIOHelper.addCurveToImage(points1, image1, 1, 255, 0, 0);
+
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String outFilePath = dirPath + "/tmp1_edges_infl.png";
+
+        ImageIOHelper.writeOutputImage(outFilePath, image1);
+
+        Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+
+        for (PairIntArray edge : edges2) {
+            ImageIOHelper.addCurveToImage(edge, image2, 2, 
+                Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
+                Color.YELLOW.getBlue());
+        }
+
+        ImageIOHelper.addCurveToImage(points2, image2, 1, 255, 0, 0);
+
+        outFilePath = dirPath + "/tmp2_edges_infl.png";
+
+        ImageIOHelper.writeOutputImage(outFilePath, image2);
+            
+        log.info("POINTS1: ");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < points1.getN(); i++) {
+            String str = String.format("%d %d\n", points1.getX(i), points1.getY(i));
+            sb.append(str);
+        }
+        log.info(sb.toString());
+        log.info("POINTS2: ");
+        sb = new StringBuilder();
+        for (int i = 0; i < points2.getN(); i++) {
+            String str = String.format("%d %d\n", points2.getX(i), points2.getY(i));
+            sb.append(str);
+        }
+        log.info(sb.toString());
+    }
+    
     private void adjustPointsOfInterest() throws Exception {
         
         String fileName1 = "brown_lowe_2003_image1.jpg";
@@ -51,7 +270,7 @@ public class PointMatcher3Test {
         PairIntArray points1 = null;
         PairIntArray points2 = null;
         
-        boolean makeInflectionPoints = true;
+        boolean makeInflectionPoints = false;
         
         if (makeInflectionPoints) {
             
@@ -100,6 +319,17 @@ public class PointMatcher3Test {
             points2 = detector.getCornersInOriginalReferenceFrame();
         }
         
+        int nPointsEdges1 = 0;
+        for (PairIntArray edge1 : edges1) {
+            nPointsEdges1 += edge1.getN();
+        }
+        int nPointsEdges2 = 0;
+        for (PairIntArray edge2 : edges2) {
+            nPointsEdges2 += edge2.getN();
+        }
+        log.info("total number of points in edges=" + nPointsEdges1 + " , " 
+            + nPointsEdges2);
+        
         Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
 
         for (PairIntArray edge : edges1) {
@@ -129,6 +359,20 @@ public class PointMatcher3Test {
 
         ImageIOHelper.writeOutputImage(outFilePath, image2);
             
+        log.info("POINTS1: ");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < points1.getN(); i++) {
+            String str = String.format("%d %d\n", points1.getX(i), points1.getY(i));
+            sb.append(str);
+        }
+        log.info(sb.toString());
+        log.info("POINTS2: ");
+        sb = new StringBuilder();
+        for (int i = 0; i < points2.getN(); i++) {
+            String str = String.format("%d %d\n", points2.getX(i), points2.getY(i));
+            sb.append(str);
+        }
+        log.info(sb.toString());
     }
     
     private Logger log = Logger.getLogger(this.getClass().getName());
@@ -1099,6 +1343,7 @@ public class PointMatcher3Test {
             //test.test156();
             
             test.adjustPointsOfInterest();
+            //test.examineInvPointLists();
             
             /*
             tests for :
