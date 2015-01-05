@@ -101,7 +101,6 @@ public class RANSACSolver {
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(System.currentTimeMillis());
         
-        Set<String> chosen = new HashSet<String>();
         int[] selected = new int[nSet];
         
         PairFloatArray xy1 = null;
@@ -120,7 +119,7 @@ public class RANSACSolver {
                 
         for (int i = 0; i < nIter; i++) {
             
-            MiscMath.chooseRandomly(sr, selected, chosen, nPoints);
+            MiscMath.chooseRandomly(sr, selected, nPoints);
             
             xy1 = new PairFloatArray();
             xy2 = new PairFloatArray();

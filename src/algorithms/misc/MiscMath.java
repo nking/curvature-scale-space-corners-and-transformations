@@ -589,23 +589,68 @@ public class MiscMath {
         return y;
     }
     
-    public static void chooseRandomly(SecureRandom sr, int[] selected, 
-        Set<String> chosen, int nMax) {
+    /**
+     * choose selected.length unique random numbers between 0 and nMax and
+     * populated selected with them in numerical order.
+     * 
+     * Note that the number of ways to make a subset of 7 distinct numbers
+     * out of nMax numbers is n!/(n-k)!
+     * 
+     * So the probability of selecting the same 7 randomly from nMax is very
+     * low when nMax is much larger than selected.length, so this method does
+     * not check that the same 7 were not drawn before, but the invoker 
+     * should for small nMax.
+     * 
+     * @param sr class to generate semi random numbers
+     * @param selected the output array to populate with unique, ordered, random
+     * numbers
+     * @param nMax 
+     */
+    public static void chooseRandomly(SecureRandom sr, int[] selected, int nMax) {
         
-        while (true) {
+        if (nMax < selected.length) {
+            throw new IllegalArgumentException("cannot draw " + 
+                Integer.toString(selected.length) + " distinct random numbers "
+                + " from only " + Integer.toString(nMax) + " numbers");
+        }
+        
+        // TODO: ideally, would like to be able to predict the ith iteration of 
+        // a subset chooser (@see getNextSubsetBitstring)
+      
+        if (selected.length == nMax) {
             for (int i = 0; i < selected.length; i++) {
-                int sel = sr.nextInt(nMax);
-                while (contains(selected, i, sel)) {
-                    sel = sr.nextInt(nMax);
-                }
-                selected[i] = sel;
+                selected[i] = i;
             }
-            Arrays.sort(selected);
-            String str = Arrays.toString(selected);
-            if (!chosen.contains(str)) {
-                chosen.add(str);
-                break;
+            return;
+        }
+        
+        int nLimit = selected.length * 3;
+        // when nMax is smaller than some limit, choose randomly from 
+        // unchosen numbers
+        if (nMax < nLimit) {
+            
+            // populate numbers to choose from:
+            List<Integer> numbers = new ArrayList<Integer>();
+            for (int i = 0; i < nMax; i++) {
+                numbers.add(Integer.valueOf(i));
             }
+            
+            for (int i = 0; i < selected.length; i++) {
+                int selIdx = sr.nextInt(numbers.size());
+                Integer sel = numbers.get(selIdx);
+                selected[i] = sel.intValue();
+                numbers.remove(sel);
+            }
+            
+            return;
+        }
+        
+        for (int i = 0; i < selected.length; i++) {
+            int sel = sr.nextInt(nMax);
+            while (contains(selected, i, sel)) {
+                sel = sr.nextInt(nMax);
+            }
+            selected[i] = sel;
         }
     }
     
