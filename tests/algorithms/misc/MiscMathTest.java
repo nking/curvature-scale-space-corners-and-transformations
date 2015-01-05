@@ -5,7 +5,9 @@ import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 import algorithms.util.PolygonAndPointPlotter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 
@@ -352,6 +354,62 @@ public class MiscMathTest extends TestCase {
         assertTrue(peakIndexes.size() == 2);
         assertTrue(peakIndexes.get(0).intValue() == 3);
         assertTrue(peakIndexes.get(1).intValue() == 7);
+    }
+    
+    public void testChooseRandomly() throws Exception {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        
+        long seed = System.currentTimeMillis();
+        //seed = 1386750505246l;
+
+        sr.setSeed(seed);
+        log.info("SEED=" + seed);
+        
+        int k = 7;
+        
+        int[] selected = new int[k];
+        
+        //----
+        int nMax = 7;
+       
+        MiscMath.chooseRandomly(sr, selected, nMax);
+        
+        Set<Integer> set = new HashSet<Integer>();
+        for (int i = 0; i < selected.length; i++) {
+            int s = selected[i];
+            Integer sel = Integer.valueOf(s);
+            assertFalse(set.contains(sel));
+            set.add(sel);
+        }
+        
+        //------
+        nMax = 2*k;
+        MiscMath.chooseRandomly(sr, selected, nMax);
+        
+        set = new HashSet<Integer>();
+        for (int i = 0; i < selected.length; i++) {
+            int s = selected[i];
+            Integer sel = Integer.valueOf(s);
+            assertFalse(set.contains(sel));
+            set.add(sel);
+        }
+        
+        //------
+        nMax = sr.nextInt(500);
+        while (nMax < 3*k) {
+            nMax = sr.nextInt(500);
+        }
+        
+        MiscMath.chooseRandomly(sr, selected, nMax);
+        
+        set = new HashSet<Integer>();
+        for (int i = 0; i < selected.length; i++) {
+            int s = selected[i];
+            Integer sel = Integer.valueOf(s);
+            assertFalse(set.contains(sel));
+            set.add(sel);
+        }
     }
     
     /**
