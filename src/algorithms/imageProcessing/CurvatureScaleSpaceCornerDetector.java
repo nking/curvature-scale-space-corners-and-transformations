@@ -513,7 +513,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         float factorAboveMin = 3.5f;// 10 misses some corners
 
 if (useOutdoorMode) {
-    factorAboveMin = 10.f;
+    factorAboveMin = 3.5f;//10.f;
 }
         
         List<Integer> cornerCandidates = new ArrayList<Integer>();

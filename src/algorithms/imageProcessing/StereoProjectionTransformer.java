@@ -230,7 +230,15 @@ public class StereoProjectionTransformer {
               projective transformation.
               — the statistic is number matched / max matchable in intersection 
               region
-        The best projective solution of all partitions is kept.
+        
+        Modifying the above to keep the best for each partition to consider
+        matching points in that partition each separately.
+            
+        The total matched will be passed to the epipolar solver.
+            
+        Note that if this is a good solution, all of the matching should
+        be placed in PointMatcher for reuse and testing.
+            
         */
         
         Transformer transformer = new Transformer();
@@ -238,6 +246,14 @@ public class StereoProjectionTransformer {
         StereoProjectionTransformerFit bestFit = null;
         PairIntArray bestFitOutLeft = null;
         PairIntArray bestFitOutRight = null;
+        
+        int n = 2 + 0*2 + 0*6;
+        
+        StereoProjectionTransformerFit[] bestFits = 
+            new StereoProjectionTransformerFit[n];
+        PairIntArray[] bestFitOutLefts = new PairIntArray[n];
+        PairIntArray[] bestFitOutRights = new PairIntArray[n];
+        int count = 0;
         
         for (int partitionType = 0; partitionType < 1/*3*/; partitionType++) {
             
@@ -263,13 +279,13 @@ public class StereoProjectionTransformer {
             }
             
             PointMatcher pointMatcher = new PointMatcher();
-            pointMatcher.setToSolveForProjective();
+//===>>>        //pointMatcher.setToSolveForProjective();
        
             for (int p1 = 0; p1 < parts1.length; p1++) {
-//if (p1 != 1) {continue;}
+if (p1 != 1) {continue;}
 
                 for (int p2 = 0; p2 < parts2.length; p2++) {
-//if (p2 != 0) {continue;}            
+if (p2 != 0) {continue;}            
                     // determine fit only with partitioned points
                     
                     TransformationPointFit transFit = 
@@ -281,8 +297,7 @@ public class StereoProjectionTransformer {
                     log.info("for partition type " + Integer.toString(partitionType) 
                         + " Euclidean fit=" + transFit.toString());
 
-                    //TODO: improve this... comparison of x vs dx and y vs dy
-                    // showing projection pattern if enough points?
+                    //TODO: improve this:
                     double tolerance = 25;
 
                     TransformationParameters params = transFit.getParameters();

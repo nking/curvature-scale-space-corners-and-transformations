@@ -771,4 +771,39 @@ public class MiscMath {
         return peaks;
     }
 
+    public static float[] extractAllXForYAboveHalfMax(HistogramHolder h) {
+        
+        if (h == null) {
+            return null;
+        }
+        
+        int peakIdx = MiscMath.findYMaxIndex(h.getYHist());
+        int peakY = h.getYHist()[peakIdx];
+        int crit = peakY/2;
+        
+        int i0 = -1;
+        int i1 = -1;
+        
+        for (int i = 0; i < h.getYHist().length; i++) {
+            int y = h.getYHist()[i];
+            if (y > crit) {
+                if (i0 == -1) {
+                    i0 = i;
+                }
+                i1 = i;
+            }
+        }
+        
+        int n = i1 - i0 + 1;
+        
+        float[] xs = new float[n];
+        int count = 0;
+        for (int i = i0; i <= i1; i++) {
+            xs[count] = h.getXHist()[i];
+            count++;
+        }
+        
+        return xs;
+    }
+
 }

@@ -116,4 +116,8 @@ public class TransformationPointFit {
         return sb.toString();
     }
 
+    public void setTolerance(double tol) {
+        tolerance = tol;
+    }
+
 }
