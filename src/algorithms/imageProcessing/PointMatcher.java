@@ -415,59 +415,6 @@ public final class PointMatcher {
                 matchedPart2[count] = part2Matched;
                 count++;
                 
-//=============== begin temporary addition for debugging
-int testNumber = count - 1;
-
-if (nMaxMatchable[testNumber] == 0) {
-    continue;
-}
-TransformationParameters params = transFit.getParameters();
-
-String fileName1 = "brown_lowe_2003_image1.jpg";
-String fileName2 = "brown_lowe_2003_image2.jpg";
-String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-Image img2 = ImageIOHelper.readImage(filePath2);
-
-for (int ii = 0; ii < part1MatchedTransformed.getN(); ii++) {
-    double x2 = part1MatchedTransformed.getX(ii);
-    double y2 = part1MatchedTransformed.getY(ii);
-    ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3,
-        0, 0, 255);
-}
-for (int ii = 0; ii < part2Matched.getN(); ii++) {
-    double x = part2Matched.getX(ii);
-    double y = part2Matched.getY(ii);
-    ImageIOHelper.addPointToImage((float) x, (float) y, img2, 2,
-        255, 0, 0);
-}
-String dirPath = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(
-    dirPath + "/tmp_tr_" + testNumber + ".png", img2);
-
-Image img1 = ImageIOHelper.readImage(filePath1);
-img2 = ImageIOHelper.readImage(filePath2);
-
-for (int ii = 0; ii < part1Matched.getN(); ii++) {
-    double x = part1Matched.getX(ii);
-    double y = part1Matched.getY(ii);
-    ImageIOHelper.addPointToImage((float) x, (float) y, img1, 3,
-        0, 0, 255);
-}
-for (int ii = 0; ii < part2Matched.getN(); ii++) {
-    double x = part2Matched.getX(ii);
-    double y = part2Matched.getY(ii);
-    ImageIOHelper.addPointToImage((float) x, (float) y, img2, 2,
-        255, 0, 0);
-}
-ImageIOHelper.writeOutputImage(
-    dirPath + "/tmp_1_" + testNumber + ".png", img1);
-ImageIOHelper.writeOutputImage(
-    dirPath + "/tmp_2_" + testNumber + ".png", img2);
-
-int z = 1;
-//================end temporary addition for debugging
-
             }
         }
         
@@ -475,24 +422,8 @@ int z = 1;
         
         // find which quadrant matches represent a consistent intersection:
         // (the highest number of matches per nMaxMatchable is not the answer)
-        
-        /*
-        brown & lowe 2003 dataset:
-        
-                                                                 nStat   nMatched
-        p1=0 p2=2    4.756  1.0    40.6    68.3           0.8      40
-        p1=0 p2=3    5.0    1.1   338.7    51.3           0.8      39
-        p1=1 p2=0  350.0    1.0  -280.0   -35.3  <---     0.53     26
-        p1=1 p2=1   19.9    1.1   -39.6    14.0           0.5       4
-        p1=1 p2=2  352.5    1.0  -240.0    70.0           0.83     35
-        p1=2 p2=0  345.0    1.4    49.7  -183.3           0.6      12
-        p1=2 p2=2  359.5    1.1     0.5   -55.0           0.65     60
-        p1=3 p2=0  355.0    1.0  -237.0  -180.0           0.75     37
-        p1=3 p2=2  355.0    1.0  -277.4   -24.3  <---     0.77     69
-        p1=3 p2=3  352.0    1.0    40.6   -45.0           0.59     53
-        */
-        
-        //TODO: this be done geometrically to find the
+    
+        //TODO: this should be done geometrically to find the
         //      largest consistent intersection.
         //      For example, placing p1=0 and p2=0 w/ transformation would
         //         imply that the remaining image should be matched
@@ -541,6 +472,15 @@ int z = 1;
         }
         
         // TODO: which geometries in lists are consistent and best coverage?
+        // these have roughly similar residuals and roughly same or better
+        // than others?
+        // can transform the points and find the unions of the convex hulls for
+        // those in a similarity list to look at coverage.
+        // 
+        // if there are none in the similarity hash, then the transformation
+        // with the smallest residuals is probably the correct answer.
+        //   might need to evaluate the solution over all points
+        //   or pass more than one possible solution back to the invoker
         
         throw new UnsupportedOperationException("not yet implemented");        
     }
