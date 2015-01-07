@@ -253,8 +253,8 @@ public final class PointMatcher {
     
     private boolean costIsNumAndDiff = false;
     
-    private float generalTolerance = 7;
-    
+    private float generalTolerance = 8;
+        
     public void setCostToDiffFromModel() {
         costIsDiff = true;
     }

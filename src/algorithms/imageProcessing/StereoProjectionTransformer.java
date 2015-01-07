@@ -468,8 +468,8 @@ if (p2 != 0) {continue;}
         }
         
         if (pointsLeftXY.getN() == 7) {
-            return calculateEpipolarProjectionFor7Points(pointsLeftXY, 
-                pointsRightXY);
+            throw new IllegalArgumentException(
+                "for 7 points, use calculateEpipolarProjectionFor7Points");
         }
         
         if (pointsLeftXY.getN() < 7) {
@@ -506,7 +506,8 @@ if (p2 != 0) {continue;}
         }
         
         if (theLeftXY.numCols() == 7) {
-            return calculateEpipolarProjectionFor7Points(theLeftXY, theRightXY);
+            throw new IllegalArgumentException(
+                "for 7 points, use calculateEpipolarProjectionFor7Points");
         }
         
         if (theLeftXY.numCols() < 7) {
@@ -679,7 +680,7 @@ if (p2 != 0) {continue;}
      * @param pointsRightXY 
      * @return  
      */
-    public SimpleMatrix calculateEpipolarProjectionFor7Points(
+    public SimpleMatrix[] calculateEpipolarProjectionFor7Points(
         PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
@@ -713,7 +714,7 @@ if (p2 != 0) {continue;}
      * @param theRightXY 
      * @return  
      */
-    public SimpleMatrix calculateEpipolarProjectionFor7Points(
+    public SimpleMatrix[] calculateEpipolarProjectionFor7Points(
         SimpleMatrix theLeftXY, SimpleMatrix theRightXY) {
         
         if (theLeftXY == null) {
@@ -798,8 +799,7 @@ if (p2 != 0) {continue;}
         SimpleMatrix[] validatedSolutions = validateSolutions(
             Arrays.copyOf(denormalizedSolutions, count));
 
-        return (validatedSolutions != null && validatedSolutions.length > 0) ?
-            validatedSolutions[0] : null;
+        return validatedSolutions;
     }
     
     /*

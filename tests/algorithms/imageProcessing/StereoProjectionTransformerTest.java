@@ -292,8 +292,11 @@ public class StereoProjectionTransformerTest {
                     input2 = StereoProjectionTransformer
                         .rewriteInto3ColumnMatrix(xy2);
             
-                    fm = spTransformer
+                    SimpleMatrix[] fms = spTransformer
                         .calculateEpipolarProjectionFor7Points(xy1, xy2);
+                    if (fms != null) {
+                        fm = fms[0];
+                    }
                     
                     break;
                     

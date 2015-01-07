@@ -269,21 +269,36 @@ public class PointMatcher3Test {
         PairFloatArray finalOutputMatchedScene = new PairFloatArray();
         PairFloatArray finalOutputMatchedModel = new PairFloatArray();
         
+        
         RANSACSolver ransacSolver = new RANSACSolver();
         
         StereoProjectionTransformerFit sFit = ransacSolver
-            .calculateEpipolarProjection(
+            .calculateEpipolarProjection2(
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
                 finalOutputMatchedScene, finalOutputMatchedModel);
         
-        overplotEpipolarLines(sFit.getFundamentalMatrix(), 
+          overplotEpipolarLines(sFit.getFundamentalMatrix(), 
             outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
             ImageIOHelper.readImage(filePath1),
             ImageIOHelper.readImage(filePath2), 
             image1Width, 
             img1.getHeight(), img2.getWidth(), img2.getHeight());
         
+        /*
+        StereoProjectionTransformer st = new StereoProjectionTransformer();
+        SimpleMatrix fm = 
+            st.calculateEpipolarProjectionForPerfectlyMatched(
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel));
+        
+        overplotEpipolarLines(fm, 
+            outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
+            ImageIOHelper.readImage(filePath1),
+            ImageIOHelper.readImage(filePath2), 
+            image1Width, 
+            img1.getHeight(), img2.getWidth(), img2.getHeight());
+        */
         System.out.println("test done");
     }
     
