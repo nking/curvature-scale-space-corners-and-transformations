@@ -253,6 +253,8 @@ public final class PointMatcher {
     
     private boolean costIsNumAndDiff = false;
     
+    private float generalTolerance = 7;
+    
     public void setCostToDiffFromModel() {
         costIsDiff = true;
     }
@@ -352,6 +354,7 @@ public final class PointMatcher {
                     image2CentroidX, image2CentroidY);
 
                 if (transFit == null) {
+                    count++;
                     continue;
                 }
               
@@ -368,6 +371,7 @@ public final class PointMatcher {
                     filtered1.getN() : filtered2.getN();
                 
                 if (nMaxMatchable[count] == 0) {
+                    count++;
                     continue;
                 }
                 
@@ -377,11 +381,11 @@ public final class PointMatcher {
                     transformer.applyTransformation2(transFit.getParameters(), 
                     filtered1, image1CentroidX, image1CentroidY);
                 
-                double tolerance = 15;
+                double tolerance = generalTolerance;
                 
                 //evaluate the fit and store a statistic nmatched/nmaxmatchable
-                
-                float[][] matchIndexesAndDiffs = calculateMatchUsingGreedy(
+        
+                float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
                     transformedFiltered1, filtered2, tolerance);
                 
                 PairFloatArray part1MatchedTransformed = new PairFloatArray();
@@ -423,13 +427,6 @@ public final class PointMatcher {
         // find which quadrant matches represent a consistent intersection:
         // (the highest number of matches per nMaxMatchable is not the answer)
     
-        //TODO: this should be done geometrically to find the
-        //      largest consistent intersection.
-        //      For example, placing p1=0 and p2=0 w/ transformation would
-        //         imply that the remaining image should be matched
-        //         for which other quadrants if any and do those match
-        //         within reasonably same transformation parameters?
-        
         // quick look at any having similar transformation parameters:
         double rotTolDegrees = 20;
         double transTol = 20;
@@ -458,7 +455,7 @@ public final class PointMatcher {
                 if ((Math.abs(params1.getScale() - params2.getScale()) <= scaleTol)
                     && (Math.abs(params1.getRotationInDegrees() - params2.getRotationInDegrees()) <= rotTolDegrees)
                     && (Math.abs(params1.getTranslationX() - params2.getTranslationX()) <= transTol)
-                    && (Math.abs(params1.getTranslationY()- params2.getTranslationY()) <= transTol)
+                    && (Math.abs(params1.getTranslationY() - params2.getTranslationY()) <= transTol)
                     ) {
                     
                     similar.add(Integer.valueOf(j));
@@ -471,18 +468,69 @@ public final class PointMatcher {
             }
         }
         
-        // TODO: which geometries in lists are consistent and best coverage?
-        // these have roughly similar residuals and roughly same or better
-        // than others?
-        // can transform the points and find the unions of the convex hulls for
-        // those in a similarity list to look at coverage.
-        // 
-        // if there are none in the similarity hash, then the transformation
-        // with the smallest residuals is probably the correct answer.
-        //   might need to evaluate the solution over all points
-        //   or pass more than one possible solution back to the invoker
+        List<Integer> keepIndexes = null;
+        if (similarTransformations.size() > 1) {
+            
+            // which similarity solution has smallest residuals?
+            double minAvg = Double.MAX_VALUE;
+            List<Integer> minInd = null;
+            Iterator<List<Integer> > iter = similarTransformations.iterator();
+            while (iter.hasNext()) {
+                List<Integer> countIndexes = iter.next();
+                double sumAvg = 0;
+                for (Integer countIndex : countIndexes) {
+                    int cIdx = countIndex.intValue();
+                    sumAvg += bestFits[cIdx].getMeanDistFromModel();
+                }
+                sumAvg /= (double)countIndexes.size();
+                if (sumAvg < minAvg) {
+                    sumAvg = minAvg;
+                    minInd = countIndexes;
+                }
+            }
+            keepIndexes = minInd;
+            
+        } else if (similarTransformations.size() == 1) {
+            
+            keepIndexes = similarTransformations.iterator().next();
+           
+        } else {
+            // choose quadrant with smallest residuals
+            double minAvg = Double.MAX_VALUE;
+            int minCIdx = -1;
+            for (int i = 0; i < bestFits.length; i++) {
+                if (bestFits[i] == null) {
+                    continue;
+                }
+                double avg = bestFits[i].getMeanDistFromModel();
+                if (avg < minAvg) {
+                    minAvg = avg;
+                    minCIdx = i;
+                }
+            }
+            if (minCIdx > -1) {
+                keepIndexes = new ArrayList<Integer>();
+                keepIndexes.add(Integer.valueOf(minCIdx));
+            }
+        }
         
-        throw new UnsupportedOperationException("not yet implemented");        
+        if (keepIndexes != null) {
+             // put the matched points into the output list
+            for (Integer countIndex : keepIndexes) {
+ 
+                log.info("--> using solution from count=" + countIndex.toString());               
+                
+                int cIdx = countIndex.intValue();
+                PairIntArray set1 = matchedPart1[cIdx];
+                PairIntArray set2 = matchedPart2[cIdx];
+                for (int ii = 0; ii < set1.getN(); ii++) {
+                    outputMatchedLeftXY.add(set1.getX(ii), set1.getY(ii));
+                }
+                for (int ii = 0; ii < set2.getN(); ii++) {
+                    outputMatchedRightXY.add(set2.getX(ii), set2.getY(ii));
+                }
+            }
+        }
     }
     
     /**
@@ -1232,8 +1280,8 @@ public final class PointMatcher {
         int scaleStart, int scaleStop, int scaleDelta,
         boolean setsAreMatched) {
         
-        double tolTransX = 15;//4.0f * image1CentroidX * 0.02f;
-        double tolTransY = 15;//4.0f * image1CentroidY * 0.02f;
+        double tolTransX = generalTolerance;//4.0f * image1CentroidX * 0.02f;
+        double tolTransY = generalTolerance;//4.0f * image1CentroidY * 0.02f;
         if (tolTransX < minTolerance) {
             tolTransX = minTolerance;
         }
@@ -1284,7 +1332,7 @@ public final class PointMatcher {
                         allPoints1Tr, set2);                    
                 } else {
                    
-                    fit = evaluateFitForUnMatchedTransformedGreedy(params, 
+                    fit = evaluateFitForUnMatchedTransformedGreedy(params,
                         allPoints1Tr, set2, tolTransX, tolTransY);
                     
                     //TODO: rerun tests. is this still necessary:

@@ -98,6 +98,8 @@ public class RANSACSolver {
         int nIter = nEstimator.estimateNIterUsingStandardRANSACApproximation(
             0.5, nSet);
         
+        //TODO: looks like the evaluation needs to be improved.
+        
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(System.currentTimeMillis());
         
@@ -109,7 +111,7 @@ public class RANSACSolver {
         //TODO: determine this using one of the several suggested ways.
         //TODO: also consider ability to change it +- 1 or so to find best?
         
-        double threshold = 5.;
+        double threshold = 5;//4
         
         // ====== find matched pairs incremently, and best among only 7 point match ====
         

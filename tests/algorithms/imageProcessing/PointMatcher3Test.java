@@ -255,31 +255,34 @@ public class PointMatcher3Test {
         PairIntArray outputMatchedModel = new PairIntArray();
             
         PointMatcher pointMatcher = new PointMatcher();
-        
-        //pointMatcher.setCostToDiffFromModel();
-        //pointMatcher.setCostToNumMatchedAndDiffFromModel();
-        
+                
         pointMatcher.performPartitionedMatching(tmp1, tmp2,
         image1Width >> 1, image1Height >> 1,
             image2Width >> 1, image2Height >> 1,
             outputMatchedScene, outputMatchedModel);
         
-        /*
-        StereoProjectionTransformer st = new StereoProjectionTransformer();
+        if (outputMatchedScene.getN() < 7) {
+            // no solution
+            return;
+        }
         
-        StereoProjectionTransformerFit fit = 
-            st.calculateEpipolarProjectionForUnmatched(tmp1, tmp2,
-            image1Width >> 1, image1Height >> 1,
-            image2Width >> 1, image2Height >> 1,
-            outputMatchedScene, outputMatchedModel);
+        PairFloatArray finalOutputMatchedScene = new PairFloatArray();
+        PairFloatArray finalOutputMatchedModel = new PairFloatArray();
         
-        overplotEpipolarLines(fit.getFundamentalMatrix(), 
-            tmp1.toPairFloatArray(), tmp2.toPairFloatArray(), 
+        RANSACSolver ransacSolver = new RANSACSolver();
+        
+        StereoProjectionTransformerFit sFit = ransacSolver
+            .calculateEpipolarProjection(
+                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
+                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
+                finalOutputMatchedScene, finalOutputMatchedModel);
+        
+        overplotEpipolarLines(sFit.getFundamentalMatrix(), 
+            outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
             ImageIOHelper.readImage(filePath1),
             ImageIOHelper.readImage(filePath2), 
             image1Width, 
             img1.getHeight(), img2.getWidth(), img2.getHeight());
-        */
         
         System.out.println("test done");
     }
