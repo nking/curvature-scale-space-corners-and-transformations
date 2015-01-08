@@ -17,7 +17,18 @@ import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
 /**
- *
+ * given matched point lists, determine the best epipolar solution using a
+ * 7-point epipolar calculation and random draws of 7 points from the
+ * matched point lists under the assumption that some of the matched points
+ * are not true (correct) matches.
+ * 
+ * <pre>
+ * useful reading:
+ * http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf
+ * and
+ * http://www.dtic.mil/dtic/tr/fulltext/u2/a460585.pdf
+ * </pre>
+ * 
  * @author nichole
  */
 public class RANSACSolver {
@@ -354,7 +365,7 @@ public class RANSACSolver {
                  
         int n = (int)Math.round(limitFrac*nMaxMatchable);
         
-        if ((inlierIndexes.size() >= n) || (frequencyOfIndexes.size() < n)) {
+        if (false && (inlierIndexes.size() >= n) || (frequencyOfIndexes.size() < n)) {
             for (Integer idx : inlierIndexes) {
                 int idxInt = idx.intValue();
                 outputLeftXY.add(
@@ -383,6 +394,11 @@ public class RANSACSolver {
                 c++;
                
             }
+            
+            if (frequencyOfIndexes.size() < n) {
+                n = frequencyOfIndexes.size();
+            }
+            
             MultiArrayMergeSort.sortByDecr(a1, a2);
             for (int ii = 0; ii < n; ii++) {
                 int idx = a1[ii];

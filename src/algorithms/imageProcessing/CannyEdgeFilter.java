@@ -171,10 +171,13 @@ public class CannyEdgeFilter {
         if (input.getWidth() < 3 || input.getHeight() < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-                  
+        
         LowIntensityRemovalFilter filter2 = new LowIntensityRemovalFilter();
         
         if (useOutdoorMode) {
+            //TODO: this needs a separate setter with name that implies it's
+            //       a modification of useOutdoorMode
+            //filter2.overrideLowThresholdFactor(5.0f);
             filter2.overrideLowThresholdFactor(3.5f);
         }
                 

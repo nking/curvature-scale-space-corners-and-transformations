@@ -697,8 +697,8 @@ if (p2 != 0) {continue;}
         if (pointsLeftXY.getN() != 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
-                "the 7-point problem requires 7points." 
-                + " refactorLeftXY.n=" + pointsLeftXY.getN());
+                "the 7-point problem requires 7 points." 
+                + " pointsLeftXY.n=" + pointsLeftXY.getN());
         }
         
         return calculateEpipolarProjectionFor7Points(
@@ -727,12 +727,16 @@ if (p2 != 0) {continue;}
             throw new IllegalArgumentException(
                 "theLeftXY and theRightXY must be same size");
         }
+        if (theLeftXY.numCols() != theRightXY.numCols()) {
+            throw new IllegalArgumentException(
+                "theLeftXY and theRightXY must be same size");
+        }
         
-        if (theRightXY.numRows() == 7) {
+        if (theLeftXY.numCols() != 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the 7-point problem requires 7 points." 
-                + " theLeftXY.n=" + theLeftXY.numRows());
+                + " theLeftXY.n=" + theLeftXY.numCols());
         }
         
         leftXY = theLeftXY;

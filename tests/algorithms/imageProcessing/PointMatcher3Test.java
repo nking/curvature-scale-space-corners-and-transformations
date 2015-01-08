@@ -33,22 +33,121 @@ import static org.junit.Assert.fail;
  */
 public class PointMatcher3Test {
 
+    private void smallestSubsets() throws Exception {
+        
+        //String fileName1 = "brown_lowe_2003_image1.jpg";
+        //String fileName2 = "brown_lowe_2003_image2.jpg";
+       
+        String fileName1 = "venturi_mountain_j6_0001.png";
+        String fileName2 = "venturi_mountain_j6_0010.png";
+        
+        // revisit infl points.  is there a threshold removing points?
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+       
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+        /*
+        PairIntArray bl2003points1 = new PairIntArray();
+        PairIntArray bl2003points2 = new PairIntArray();
+        bl2003points1.add(471, 156); bl2003points2.add(194, 156);
+        bl2003points1.add(411, 185); bl2003points2.add(138, 175);
+        bl2003points1.add(331, 185); bl2003points2.add(54, 159);
+        bl2003points1.add(353, 265); bl2003points2.add(63, 246);
+        bl2003points1.add(352, 306); bl2003points2.add(52, 288);
+        bl2003points1.add(502, 360); bl2003points2.add(188, 348);
+        bl2003points1.add(384, 357); bl2003points2.add(77, 341);
+        PairIntArray points1 = bl2003points1;
+        PairIntArray points2 = bl2003points2;
+        */
+        
+        PairIntArray venturipoints1 = new PairIntArray();
+        PairIntArray venturipoints2 = new PairIntArray();
+        venturipoints1.add(142, 240);  venturipoints2.add(106, 243);
+        venturipoints1.add(285, 254);  venturipoints2.add(252, 257);
+        //venturipoints1.add(221, 350);  venturipoints2.add(184, 355);
+        venturipoints1.add(277, 356);  venturipoints2.add(244, 358);
+        venturipoints1.add(589, 329);  venturipoints2.add(550, 326);
+        venturipoints1.add(545, 325);  venturipoints2.add(509, 321);
+        venturipoints1.add(589, 188);  venturipoints2.add(550, 188);
+        //venturipoints1.add(588, 201);  venturipoints2.add(551, 201);
+        venturipoints1.add(264, 201);  venturipoints2.add(230, 202);
+        
+        PairIntArray points1 = venturipoints1;
+        PairIntArray points2 = venturipoints2;
+        
+        Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+
+        ImageIOHelper.addCurveToImage(points1, image1, 1, 255, 0, 0);
+
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String outFilePath = dirPath + "/tmp1_edges_infl.png";
+
+        ImageIOHelper.writeOutputImage(outFilePath, image1);
+
+        Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+
+        ImageIOHelper.addCurveToImage(points2, image2, 1, 255, 0, 0);
+
+        outFilePath = dirPath + "/tmp2_edges_infl.png";
+
+        ImageIOHelper.writeOutputImage(outFilePath, image2);
+            
+        log.info("POINTS1: ");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < points1.getN(); i++) {
+            String str = String.format("%d %d\n", points1.getX(i), points1.getY(i));
+            sb.append(str);
+        }
+        log.info(sb.toString());
+        log.info("POINTS2: ");
+        sb = new StringBuilder();
+        for (int i = 0; i < points2.getN(); i++) {
+            String str = String.format("%d %d\n", points2.getX(i), points2.getY(i));
+            sb.append(str);
+        }
+        log.info(sb.toString());
+       
+        StereoProjectionTransformer st = new StereoProjectionTransformer();
+        
+        SimpleMatrix[] fms = 
+            st.calculateEpipolarProjectionFor7Points(
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(points1),
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(points2));
+        
+        for (SimpleMatrix fm : fms) {
+            
+            overplotEpipolarLines(fm,
+                points1.toPairFloatArray(), points2.toPairFloatArray(), 
+                ImageIOHelper.readImage(filePath1),
+                ImageIOHelper.readImage(filePath2), 
+                image1Width, 
+                img1.getHeight(), img2.getWidth(), img2.getHeight());
+        }
+        
+        System.out.println("test done");
+    }
+    
     private void examineInvPointLists() throws Exception {
         
         //TODO: implement the code for this, including inverting the image.
         
         // not cheking in the images for the temporary change
-        
+        /*
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String fileName1Inv = "brown_lowe_2003_image1_inv.jpg";
         String fileName2 = "brown_lowe_2003_image2.jpg";
         String fileName2Inv = "brown_lowe_2003_image2_inv.jpg";
-        /*
+        */
         String fileName1 = "venturi_mountain_j6_0001.png";
         String fileName1Inv = "venturi_mountain_j6_0001_inv.png";
         String fileName2 = "venturi_mountain_j6_0010.png";
         String fileName2Inv = "venturi_mountain_j6_0010_inv.png";
-        */
+        
         // revisit infl points.  is there a threshold removing points?
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath1Inv = ResourceFinder.findFileInTestResources(fileName1Inv);
@@ -273,7 +372,7 @@ public class PointMatcher3Test {
         RANSACSolver ransacSolver = new RANSACSolver();
         
         StereoProjectionTransformerFit sFit = ransacSolver
-            .calculateEpipolarProjection2(
+            .calculateEpipolarProjection(
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
                 finalOutputMatchedScene, finalOutputMatchedModel);
@@ -983,6 +1082,17 @@ public class PointMatcher3Test {
         PairFloatArray set2, Image img1, Image img2, int image1Width, 
         int image1Height, int image2Width, int image2Height) throws IOException {
         
+        String flNum = "";
+        
+        overplotEpipolarLines(fm, set1, set2, img1, img2, image1Width, 
+            image1Height, image2Width, image2Height, flNum); 
+    }
+    
+    private void overplotEpipolarLines(SimpleMatrix fm, PairFloatArray set1,
+        PairFloatArray set2, Image img1, Image img2, int image1Width, 
+        int image1Height, int image2Width, int image2Height, String outfileNumber) 
+        throws IOException {
+        
         SimpleMatrix input1 = 
             StereoProjectionTransformer.rewriteInto3ColumnMatrix(set1);
         
@@ -1027,9 +1137,9 @@ public class PointMatcher3Test {
 
         String dirPath = ResourceFinder.findDirectory("bin");
         ImageIOHelper.writeOutputImage(
-            dirPath + "/tmp_m_1.png", img1);
+            dirPath + "/tmp_m_1_" + outfileNumber + ".png", img1);
         ImageIOHelper.writeOutputImage(
-            dirPath + "/tmp_m_2.png", img2);
+            dirPath + "/tmp_m_2_" + outfileNumber + ".png", img2);
     }
     
     private void runTest(SecureRandom sr, int nScenePoints, int nModelPoints, 
@@ -1391,6 +1501,7 @@ public class PointMatcher3Test {
             
             //test.adjustPointsOfInterest();
             test.examineInvPointLists();
+            //test.smallestSubsets();
             
             /*
             tests for :

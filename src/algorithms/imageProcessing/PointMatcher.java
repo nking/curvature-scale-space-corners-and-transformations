@@ -518,7 +518,8 @@ public final class PointMatcher {
              // put the matched points into the output list
             for (Integer countIndex : keepIndexes) {
  
-                log.info("--> using solution from count=" + countIndex.toString());               
+                log.info("--> using solution from count=" + countIndex.toString()
+                    + " :" + bestFits[countIndex.intValue()]);               
                 
                 int cIdx = countIndex.intValue();
                 PairIntArray set1 = matchedPart1[cIdx];
@@ -1757,14 +1758,14 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             return null;
         }
         
-        float tolTransX = 4.f * centroidX1 * 0.02f;
-        float tolTransY = 4.f * centroidY1 * 0.02f;        
-        if (tolTransX < minTolerance) {
+        float tolTransX = generalTolerance;//4.f * centroidX1 * 0.02f;
+        float tolTransY = generalTolerance;//4.f * centroidY1 * 0.02f;        
+        /*if (tolTransX < minTolerance) {
             tolTransX = minTolerance;
         }
         if (tolTransY < minTolerance) {
             tolTransY = minTolerance;
-        }
+        }*/
         
         float s = (float)scale;
         float scaleTimesCosine = (float)(s * Math.cos(rotation));
@@ -1820,13 +1821,15 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         if ((set1.getN() > 5) && (set2.getN() > 5)) {
             
-            int nBins = 15;
+            int nBins = (int)((float)centroidX1*4.f/30.f);
             
             HistogramHolder hX = Histogram
                 .createSimpleHistogram(nBins,
                 //.defaultHistogramCreator(
                 transX, Errors.populateYErrorsBySqrt(transX));
         
+            nBins = (int)((float)centroidY1*4.f/30.f);
+            
             HistogramHolder hY = Histogram
                 .createSimpleHistogram(nBins,
                 //.defaultHistogramCreator(
@@ -1971,7 +1974,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @return 
      */
     public float[] calculateTranslation(double[][] set1, 
-        double[][] set2) {
+        double[][] set2, int centroidX1, int centroidY1) {
         
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
@@ -2021,13 +2024,15 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             log.info("thiel sen estimator: " + peakTransX + ", " + peakTransY);
             */
             
-            int nBins = 15;
+            int nBins = (int)((float)centroidX1*4.f/30.f);
             
             HistogramHolder hX = Histogram
                 .createSimpleHistogram(nBins,
                 //.defaultHistogramCreator(
                 transX, Errors.populateYErrorsBySqrt(transX));
         
+            nBins = (int)((float)centroidY1*4.f/30.f);
+            
             HistogramHolder hY = Histogram
                 .createSimpleHistogram(nBins,
                 //.defaultHistogramCreator(
@@ -2247,12 +2252,14 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             strong peaks.
             */
 
-            int nBins = 15;
+            int nBins = (int)((float)centroidX1*4.f/30.f);
 
             HistogramHolder hX = Histogram
                 .createSimpleHistogram(nBins,
                 transX, Errors.populateYErrorsBySqrt(transX));
 
+            nBins = (int)((float)centroidY1*4.f/30.f);
+            
             HistogramHolder hY = Histogram
                 .createSimpleHistogram(nBins,
                 transY, Errors.populateYErrorsBySqrt(transY));
@@ -2557,9 +2564,9 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         // 0.016 per pix in Y
         
         //TODO: revise how these are determined
-        double transXTol = 4. * image1CentroidX * 0.02;
+        double transXTol = generalTolerance;//4. * image1CentroidX * 0.02;
         
-        double transYTol = 4 * image1CentroidY * 0.02;
+        double transYTol = generalTolerance;//4 * image1CentroidY * 0.02;
         
         double r = params.getRotationInRadians();
         double s = params.getScale();
@@ -5757,6 +5764,10 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         TransformationPointFit fit = calculateProjectiveTransformation(
             scene, model, sceneImageCentroidX, sceneImageCentroidY);
         
+        if (fit == null) {
+            return null;
+        }
+        
         int nMaxMatchable = (scene.getN() < model.getN()) ? scene.getN() 
             : model.getN();
         
@@ -5811,6 +5822,13 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
     public TransformationPointFit calculateProjectiveTransformation(
         PairIntArray scene, PairIntArray model, int sceneImageCentroidX, 
         int sceneImageCentroidY) {
+        
+        if ((scene == null) || (model == null)) {
+            return null;
+        }
+        if ((scene.getN() < 3) || (model.getN() < 3)) {
+            return null;
+        }
         
         int rotStart = 0; 
         int rotStop = 360; 
@@ -5996,7 +6014,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      */
     public ProjectiveFit calculateProjectiveTransformationUsingDownhillSimplex(
         double[][] scene, double[][] model, double[][] projectiveParams, 
-        double[][] allScene, double[][] allModel) {
+        double[][] allScene, double[][] allModel, int centroidX1, int centroidY1) {
         
         //TODO: improve this method's run time!
         //  consider changes to use primitives for projectiveParams
@@ -6012,7 +6030,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         // to try to find local min, using large number of starter points to
         // replace a grid search.
         ProjectiveFit[] fits = createStarterPoints(scene, model, 
-            projectiveParams, allScene, allModel);
+            projectiveParams, allScene, allModel, centroidX1, centroidY1);
         
         //TODO: consider reducing the number of starter points after a few
         // visits to reduction
@@ -6048,7 +6066,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         int worstFitIdx = fits.length - 1;
 
         while (go && (nIter < nMaxIter)) {
-System.out.println("nIter=" + nIter);
+
             sortByDescendingMatches(fits, 0, worstFitIdx);
             
             int lastNonNullIdx = moveUpForNulls(fits);
@@ -6126,7 +6144,7 @@ System.out.println("nIter=" + nIter);
             }
             
             ProjectiveFit fitReflected = evalFit(scene, model, pReflect, 
-                allScene, allModel);
+                allScene, allModel, centroidX1, centroidY1);
 
             boolean relectIsWithinBounds = true;
                 //(rReflect >= rMin) && (rReflect <= rMax) 
@@ -6159,7 +6177,7 @@ System.out.println("nIter=" + nIter);
                     }
                     
                     ProjectiveFit fitExpansion = evalFit(scene, model, 
-                        pExpansion, allScene, allModel);
+                        pExpansion, allScene, allModel, centroidX1, centroidY1);
                     
                     if (fitIsBetter(fitReflected, fitExpansion)) {
 
@@ -6187,7 +6205,7 @@ System.out.println("nIter=" + nIter);
                     }
 
                     ProjectiveFit fitContraction = evalFit(scene, model,
-                        pContraction, allScene, allModel);
+                        pContraction, allScene, allModel, centroidX1, centroidY1);
                     
                     if (fitIsBetter(fits[worstFitIdx], fitContraction)
                     ) {
@@ -6218,7 +6236,8 @@ System.out.println("nIter=" + nIter);
                             //  fall to the bottom of the list after the next 
                             //  sort.
                             ProjectiveFit fit = evalFit(scene, model,
-                                pReduction, allScene, allModel);
+                                pReduction, allScene, allModel, centroidX1,
+                                centroidY1);
                             
                             if (fit != null) {
                                 fits[i] = fit;
@@ -6317,7 +6336,8 @@ System.out.println("nIter=" + nIter);
      
     private ProjectiveFit evalFit(double[][] scene, double[][] model,
         double[][] projTransformParams, 
-        double[][] allScene, double[][] allModel) {
+        double[][] allScene, double[][] allModel,
+        int centroidX1, int centroidY1) {
         
         double[][] transformed = transformUsingProjection(
             projTransformParams, scene);
@@ -6325,7 +6345,8 @@ System.out.println("nIter=" + nIter);
         /*
         solve for transX and transY and add those to transformed
         */
-        float[] transXY = calculateTranslation(transformed, model);
+        float[] transXY = calculateTranslation(transformed, model,
+            centroidX1, centroidY1);
         projTransformParams[0][2] = transXY[0];
         projTransformParams[1][2] = transXY[1];
         
@@ -6427,7 +6448,7 @@ System.out.println("nIter=" + nIter);
     
     private ProjectiveFit[] createStarterPoints(
         double[][] scene, double[][] model, double[][] projectiveParams,
-        double[][] allScene, double[][] allModel) {
+        double[][] allScene, double[][] allModel, int centroidX1, int centroidY1) {
         
         // TODO: consider a quick attempt for stereo first,
         // that is scale = 1, rotation = 0, and solve for translation.
@@ -6546,7 +6567,8 @@ System.out.println("nIter=" + nIter);
                                     p[2][2] = p22;
 
                                     fits[count] = evalFit(scene, model, p, 
-                                        allScene, allModel);
+                                        allScene, allModel, centroidX1,
+                                        centroidY1);
 
                                     fits[count].setProjection(p);
                                     
@@ -6971,7 +6993,7 @@ System.out.println("nIter=" + nIter);
         List<Integer> yPeakIndexes = MiscMath.findStrongPeakIndexes(hY, 0.09f);
         
         //if either indexes sizes != 1, try combinations of each peak above half max 
-        
+                
         if (false /*(xPeakIndexes.size() == 1) && (yPeakIndexes.size() == 1)*/) {
         
             int peakIdx = xPeakIndexes.get(0);
@@ -6992,11 +7014,12 @@ System.out.println("nIter=" + nIter);
                 ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(
                     hX.getXHist(), hX.getYHistFloat(), null, null, 0.5f);
 
-                float[] areaAndCentroid = 
-                    LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(
-                    xy.getX(), xy.getY());
-
-                peakTransX = areaAndCentroid[1];
+                //[1] is peakTransX
+                float[] xAreaAndCentroid
+                    = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xy.getX(),
+                        xy.getY());
+        
+                peakTransX = xAreaAndCentroid[1];
             }
         
             peakIdx = yPeakIndexes.get(0);
@@ -7017,19 +7040,23 @@ System.out.println("nIter=" + nIter);
                 ArrayPair xy = LinesAndAngles.createPolygonOfTopFWFractionMax(
                     hY.getXHist(), hY.getYHistFloat(), null, null, 0.5f);
 
-                float[] areaAndCentroid = 
-                    LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(
-                    xy.getX(), xy.getY());
-
-                peakTransY = areaAndCentroid[1];
+                //[1] is peakTransY
+                float[] yAreaAndCentroid
+                    = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(
+                        xy.getX(), xy.getY());
+                
+                peakTransY = yAreaAndCentroid[1];
             }
             
         } else {
             
             // for each point above half max, try combination
             float[] txs = MiscMath.extractAllXForYAboveHalfMax(hX);
+            Arrays.copyOf(txs, txs.length + 1);
+            txs[txs.length - 1] = 0;
             
             float[] tys = MiscMath.extractAllXForYAboveHalfMax(hY);
+            tys[tys.length - 1] = 0;
             
             TransformationPointFit fitForTranslation = 
                 evaluateForBestTranslation(
