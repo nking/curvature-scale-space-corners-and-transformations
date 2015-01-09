@@ -71,6 +71,64 @@ public class CurvatureScaleSpaceCornerDetector extends
             findCornersInScaleSpaceMaps();
         
     }
+    
+    @Override
+    protected void reinitializeSpecialization() {
+        corners = new PairIntArray();
+    }
+   
+    /**
+     * find corners iteratively until approximately the number desired are 
+     * found.  This method is useful for creating corners in stereo projection
+     * images - it helps to adjust the image intensity levels so that 
+     * similar edges can be formed in both images.
+     * Presumably, if calibration of the images were possible, findCorners()
+     * should alone provide a stable result (where calibration of the images
+     * are steps such as bias removal, flat field corrections, intensity
+     * corrections using standard candles, and corrections to make the
+     * point spread functions similar for the images).
+     * 
+     * @param approxNumberOfCornersDesired 
+     */
+    public void findCornersIteratively(int approxNumberOfCornersDesired) {
+                    
+        float lowerThresholdStepSize = 1.0f;
+        
+        int nCorners = corners.getN();
+                
+        float lowThreshold = (useOutdoorMode) ? 
+            CannyEdgeFilter.defaultOutdoorLowThreshold :
+            CannyEdgeFilter.defaultLowThreshold;
+        
+        if ((nCorners > 0) && (nCorners < approxNumberOfCornersDesired)) {
+            return;            
+        } else if (state.ordinal() < CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {            
+            findCorners();
+        }
+       
+        List<PairIntArray> prevEdges = copy(this.edges);
+        PairIntArray prevCorners = this.corners.copy();
+        
+        nCorners = corners.getN();
+        while ((nCorners > 0) && (nCorners > approxNumberOfCornersDesired)) {
+            
+            log.info("nCorners=" + nCorners);
+            
+            prevEdges = copy(this.edges);
+            prevCorners = this.corners.copy();
+            
+            lowThreshold += lowerThresholdStepSize;
+            
+            reinitialize(lowThreshold);
+            
+            findCornersInScaleSpaceMaps();
+            
+            nCorners = corners.getN();
+        }
+        
+        this.edges = prevEdges;
+        this.corners = prevCorners;
+    }
 
     /**
      * maxSigma is defined by the ECSS algorithm in:
@@ -945,6 +1003,14 @@ if (useOutdoorMode) {
         }
         
         return subList;
+    }
+
+    private List<PairIntArray> copy(List<PairIntArray> edges) {
+        List<PairIntArray> copied = new ArrayList<PairIntArray>();
+        for (PairIntArray edge : edges) {
+            copied.add(edge);
+        }
+        return copied;
     }
 
 }

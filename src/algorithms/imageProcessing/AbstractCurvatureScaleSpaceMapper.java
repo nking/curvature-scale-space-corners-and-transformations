@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.HistogramHolder;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -11,7 +12,7 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public class AbstractCurvatureScaleSpaceMapper {
+public abstract class AbstractCurvatureScaleSpaceMapper {
 
     protected CurvatureScaleSpaceMapperState state = 
         CurvatureScaleSpaceMapperState.UNINITIALIZED;
@@ -53,6 +54,8 @@ public class AbstractCurvatureScaleSpaceMapper {
     protected final int trimmedYOffset;
     
     protected boolean useOutdoorMode = false;
+    
+    protected HistogramHolder imgHistogram = null;
     
     protected GreyscaleImage gradientXY = null;
     
@@ -171,10 +174,69 @@ public class AbstractCurvatureScaleSpaceMapper {
             state = CurvatureScaleSpaceMapperState.INITIALIZED;
         }
     }
+    
+    protected abstract void reinitializeSpecialization();
+    
+    protected void reinitialize(float cannyLowThreshold) {
+        
+        if (state.ordinal() < 
+            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {
+            
+            throw new IllegalStateException(
+                "initialize() should have been invoked before reinitialize(...)");
+            
+        } else {
+            
+            GreyscaleImage input = gradientXY.copyImage();
+            GreyscaleImage gTheta = theta;
+            HistogramHolder hist = imgHistogram;
+        
+            reinitializeSpecialization();
+            
+            edges.clear();
+            
+            // (1) apply an edge filter
+            
+            CannyEdgeFilter filter = new CannyEdgeFilter();
+            setCannyEdgeFilterSettings(filter);
+            filter.overrideLowThreshold(cannyLowThreshold);
+                        
+            filter.reApply2LayerFilter(input, gTheta, hist);
+            
+            img = input;
+            
+            // (2) extract edges
+            extractEdges();
+            
+            //TODO: note that there may be a need to search for closed
+            //      curves in the EdgeContourExtractor instead of here
+            //      in order to create shapes instead of creating
+            //      lines preferentially.
+            // (3) look for t-junctions and closed curves
+            markTheClosedCurvesAndTCorners();
+            
+            state = CurvatureScaleSpaceMapperState.INITIALIZED;
+        }
+    }
 
     protected void applyEdgeFilter() {
         
         CannyEdgeFilter filter = new CannyEdgeFilter();
+        
+        setCannyEdgeFilterSettings(filter);
+        
+        filter.applyFilter(img);
+        
+        gradientXY = filter.getGradientXY();
+        
+        theta = filter.getTheta();
+        
+        imgHistogram = filter.getImgHistogram();
+                        
+        state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
+    }
+    
+    protected void setCannyEdgeFilterSettings(CannyEdgeFilter filter) {
         
         if (useOutdoorMode) {
             filter.useOutdoorMode();
@@ -205,14 +267,6 @@ public class AbstractCurvatureScaleSpaceMapper {
         } else if (useLowHighIntensityCutoff) {
             filter.overrideHighThreshold(2.0f);
         }
-        
-        filter.applyFilter(img);
-        
-        gradientXY = filter.getGradientXY();
-        
-        theta = filter.getTheta();
-                        
-        state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
 
     protected void extractEdges() {

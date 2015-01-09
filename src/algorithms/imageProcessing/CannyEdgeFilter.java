@@ -38,7 +38,7 @@ public class CannyEdgeFilter {
      * not performed, else, represents the image histogram just after
      * histogram equalization
      */
-    protected HistogramHolder imgHistogram = null;
+    private HistogramHolder imgHistogram = null;
         
     protected boolean histogramEqualizationCheckFinished = false;
         
@@ -46,6 +46,13 @@ public class CannyEdgeFilter {
     
     protected float highThreshold = 5.0f;
     
+    public static float defaultLowThreshold = 
+        LowIntensityRemovalFilter.defaultLowThreshFactor;
+    
+    public static float defaultOutdoorLowThreshold = 3.5f;
+    
+    protected float lowThreshold = defaultLowThreshold;
+        
     private boolean useLineDrawingMode = false;
     
     private GreyscaleImage gXY = null;
@@ -71,6 +78,10 @@ public class CannyEdgeFilter {
     
     public void overrideHighThreshold(float thresh) {
         highThreshold = thresh;
+    }
+    
+    public void overrideLowThreshold(float thresh) {
+        lowThreshold = thresh;
     }
     
     /**
@@ -104,6 +115,8 @@ public class CannyEdgeFilter {
         useOutdoorMode = true;
         
         highThreshold = 50.0f;
+        
+        lowThreshold = defaultOutdoorLowThreshold;
     }
     
     public void applyFilter(final GreyscaleImage input) {
@@ -141,6 +154,36 @@ public class CannyEdgeFilter {
         
         curveHelper.additionalThinning45DegreeEdges(gradientProducts[3], input);
     }
+    
+    /**
+     * after applyFilter has already been used, this method can be used after
+     * changing the settings such as overrideLowThreshold to re-process the
+     * image products with the changed settings.  Note that gradientXYImage
+     * is modified in the process, but gradientThetaImage and imgHistogram
+     * are not.
+     * 
+     * @param gradientXYImage
+     * @param gradientThetaImage
+     * @param imgHistogram 
+     */
+    public void reApply2LayerFilter(final GreyscaleImage gradientXYImage, 
+        final GreyscaleImage gradientThetaImage, HistogramHolder imgHistogram) {
+        
+        if (gradientXYImage.getWidth() < 3 || gradientXYImage.getHeight() < 3) {
+            throw new IllegalArgumentException("images should be >= 3x3 in size");
+        }
+        
+        if (!useLineDrawingMode) {
+            apply2LayerFilter(gradientXYImage);
+        }
+        
+        applyLineThinnerFilter(gradientXYImage);
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        curveHelper.additionalThinning45DegreeEdges(gradientThetaImage.copyImage(), 
+            gradientXYImage);
+    }
    
     /*
     Tracing edges through the image and hysteresis thresholding
@@ -175,10 +218,8 @@ public class CannyEdgeFilter {
         LowIntensityRemovalFilter filter2 = new LowIntensityRemovalFilter();
         
         if (useOutdoorMode) {
-            //TODO: this needs a separate setter with name that implies it's
-            //       a modification of useOutdoorMode
-            //filter2.overrideLowThresholdFactor(5.0f);
-            filter2.overrideLowThresholdFactor(3.5f);
+            // expecting values 3.5 to 5.0
+            filter2.overrideLowThresholdFactor(lowThreshold);
         }
                 
         ImageStatistics stats = filter2.removeLowIntensityPixels(input,
@@ -694,5 +735,12 @@ public class CannyEdgeFilter {
     
     public GreyscaleImage getTheta() {
         return gTheta;
+    }
+
+    /**
+     * @return the imgHistogram
+     */
+    public HistogramHolder getImgHistogram() {
+        return imgHistogram;
     }
 }

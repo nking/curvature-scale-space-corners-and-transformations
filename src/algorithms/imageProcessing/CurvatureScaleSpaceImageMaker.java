@@ -54,7 +54,11 @@ public final class CurvatureScaleSpaceImageMaker extends
         super.initialize();
         
         createListOfClosedCurves();
-    }    
+    } 
+    
+    @Override
+    protected void reinitializeSpecialization() {
+    }
 
     /**
      * Create for each edge in the instance variable edges, 

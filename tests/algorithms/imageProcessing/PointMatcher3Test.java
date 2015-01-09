@@ -401,6 +401,139 @@ public class PointMatcher3Test {
         System.out.println("test done");
     }
     
+    private void examineIterativeCorners() throws Exception {
+        
+        /*
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+        */
+        String fileName1 = "venturi_mountain_j6_0001.png";
+        String fileName2 = "venturi_mountain_j6_0010.png";
+        
+        // revisit infl points.  is there a threshold removing points?
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+       
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+        
+        List<PairIntArray> edges1 = null;
+        List<PairIntArray> edges2 = null;
+        PairIntArray points1 = null;
+        PairIntArray points2 = null;
+        
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(img1);
+        detector.useOutdoorMode();            
+        detector.findCornersIteratively(100);
+        edges1 = detector.getEdgesInOriginalReferenceFrame();
+        points1 = detector.getCornersInOriginalReferenceFrame();
+        
+        detector = new CurvatureScaleSpaceCornerDetector(img2);
+        detector.useOutdoorMode();            
+        detector.findCornersIteratively(100);
+        edges2 = detector.getEdgesInOriginalReferenceFrame();
+        points2 = detector.getCornersInOriginalReferenceFrame();
+            
+        Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+
+        for (PairIntArray edge : edges1) {
+            ImageIOHelper.addCurveToImage(edge, image1, 2, 
+                Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
+                Color.YELLOW.getBlue());
+        }
+
+        ImageIOHelper.addCurveToImage(points1, image1, 1, 255, 0, 0);
+
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String outFilePath = dirPath + "/tmp1_edges_infl.png";
+
+        ImageIOHelper.writeOutputImage(outFilePath, image1);
+
+        Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+
+        for (PairIntArray edge : edges2) {
+            ImageIOHelper.addCurveToImage(edge, image2, 2, 
+                Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
+                Color.YELLOW.getBlue());
+        }
+
+        ImageIOHelper.addCurveToImage(points2, image2, 1, 255, 0, 0);
+
+        outFilePath = dirPath + "/tmp2_edges_infl.png";
+
+        ImageIOHelper.writeOutputImage(outFilePath, image2);
+            
+        log.info("POINTS1: ");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < points1.getN(); i++) {
+            String str = String.format("%d %d\n", points1.getX(i), points1.getY(i));
+            sb.append(str);
+        }
+        log.info(sb.toString());
+        log.info("POINTS2: ");
+        sb = new StringBuilder();
+        for (int i = 0; i < points2.getN(); i++) {
+            String str = String.format("%d %d\n", points2.getX(i), points2.getY(i));
+            sb.append(str);
+        }
+        log.info(sb.toString());
+                
+        PairIntArray outputMatchedScene = new PairIntArray();
+        PairIntArray outputMatchedModel = new PairIntArray();
+            
+        PointMatcher pointMatcher = new PointMatcher();
+                
+        pointMatcher.performPartitionedMatching(points1, points2,
+        image1Width >> 1, image1Height >> 1,
+            image2Width >> 1, image2Height >> 1,
+            outputMatchedScene, outputMatchedModel);
+        
+        if (outputMatchedScene.getN() < 7) {
+            // no solution
+            return;
+        }
+        
+        PairFloatArray finalOutputMatchedScene = new PairFloatArray();
+        PairFloatArray finalOutputMatchedModel = new PairFloatArray();
+        
+        
+        RANSACSolver ransacSolver = new RANSACSolver();
+        
+        StereoProjectionTransformerFit sFit = ransacSolver
+            .calculateEpipolarProjection(
+                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
+                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
+                finalOutputMatchedScene, finalOutputMatchedModel);
+        
+          overplotEpipolarLines(sFit.getFundamentalMatrix(), 
+            outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
+            ImageIOHelper.readImage(filePath1),
+            ImageIOHelper.readImage(filePath2), 
+            image1Width, 
+            img1.getHeight(), img2.getWidth(), img2.getHeight());
+        
+        /*
+        StereoProjectionTransformer st = new StereoProjectionTransformer();
+        SimpleMatrix fm = 
+            st.calculateEpipolarProjectionForPerfectlyMatched(
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel));
+        
+        overplotEpipolarLines(fm, 
+            outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
+            ImageIOHelper.readImage(filePath1),
+            ImageIOHelper.readImage(filePath2), 
+            image1Width, 
+            img1.getHeight(), img2.getWidth(), img2.getHeight());
+        */
+        System.out.println("test done");
+    }
+    
     private void adjustPointsOfInterest() throws Exception {
         
         String fileName1 = "brown_lowe_2003_image1.jpg";
@@ -1500,8 +1633,9 @@ public class PointMatcher3Test {
             //test.test156();
             
             //test.adjustPointsOfInterest();
-            test.examineInvPointLists();
+            //test.examineInvPointLists();
             //test.smallestSubsets();
+            test.examineIterativeCorners();
             
             /*
             tests for :
