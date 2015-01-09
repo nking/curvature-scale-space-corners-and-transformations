@@ -10,6 +10,8 @@ public class TransformationPointFit {
     
     private int nMatchedPoints = 0;
     
+    private int nMaxMatchable = 0;
+    
     private double meanDistFromModel = Double.MAX_VALUE;
     
     private double stDevFromMean = Double.MAX_VALUE;
@@ -97,13 +99,33 @@ public class TransformationPointFit {
     public double getStDevFromMean() {
         return stDevFromMean;
     }
-   
+    
+    public void setTolerance(double tol) {
+        tolerance = tol;
+    }
+
+    /**
+     * @return the nMaxMatchable
+     */
+    public int getNMaxMatchable() {
+        return nMaxMatchable;
+    }
+
+    /**
+     * @param maximumNumberMatchable the nMaxMatchable to set
+     */
+    public void setMaximumNumberMatchable(int maximumNumberMatchable) {
+        this.nMaxMatchable = maximumNumberMatchable;
+    }
+
     @Override
     public String toString() {
         
         StringBuilder sb = new StringBuilder();
         
         sb.append("nMatchedPoints=").append(Integer.toString(nMatchedPoints))
+            .append(" nMaxMatchable=")
+            .append(Double.toString(nMaxMatchable))
             .append(" meanDistFromModel=")
             .append(Double.toString(meanDistFromModel))
             .append(" stDevFromMean=")
@@ -114,10 +136,6 @@ public class TransformationPointFit {
             .append(parameters.toString());
         
         return sb.toString();
-    }
-
-    public void setTolerance(double tol) {
-        tolerance = tol;
     }
 
 }

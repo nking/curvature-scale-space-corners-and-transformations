@@ -105,6 +105,11 @@ public class CurvatureScaleSpaceCornerDetector extends
         } else if (state.ordinal() < CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {            
             findCorners();
         }
+        
+        //TODO: this could be improved to assert a minimum presence of corners
+        // at boundaries and throughout the image compared to the first round.
+        // In other words, would not want to remove all corners for an important  
+        // part of the image intersection with another image.
        
         List<PairIntArray> prevEdges = copy(this.edges);
         PairIntArray prevCorners = this.corners.copy();
@@ -116,6 +121,13 @@ public class CurvatureScaleSpaceCornerDetector extends
             
             prevEdges = copy(this.edges);
             prevCorners = this.corners.copy();
+            
+            //TODO: needs adjustments:
+            if (nCorners > 500) {
+                lowerThresholdStepSize  = 3.0f;
+            } else {
+                lowerThresholdStepSize = 1.0f;
+            }
             
             lowThreshold += lowerThresholdStepSize;
             

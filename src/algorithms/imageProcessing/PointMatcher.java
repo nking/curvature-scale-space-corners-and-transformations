@@ -274,14 +274,12 @@ public final class PointMatcher {
      * @param image2CentroidY
      * @param outputMatchedLeftXY
      * @param outputMatchedRightXY
-     * @throws NoSuchAlgorithmException 
      */
     public void performPartitionedMatching(
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
         int image1CentroidX, int image1CentroidY,
         int image2CentroidX, int image2CentroidY,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY)
-        throws NoSuchAlgorithmException, Exception {
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY) {
         
         /*
         need to match the points, but the sets may require a projection
@@ -318,15 +316,12 @@ public final class PointMatcher {
         To learn which partitions are the correct matches,
         
         */
-        
-        Transformer transformer = new Transformer();
-        
+                
         int n = 16;
         
         TransformationPointFit[] bestFits = new TransformationPointFit[n];
         PairIntArray[] matchedPart1 = new PairIntArray[n];
         PairIntArray[] matchedPart2 = new PairIntArray[n];
-        int[] nMaxMatchable = new int[n];
         
         int count = 0;
                     
@@ -347,80 +342,34 @@ public final class PointMatcher {
                 PairIntArray part1 = parts1[p1];
                 PairIntArray part2 = parts2[p2];
 
-                TransformationPointFit transFit = 
-                    calculateProjectiveTransformationWrapper(
-                    part1, part2, 
-                    image1CentroidX, image1CentroidY,
-                    image2CentroidX, image2CentroidY);
-
-                if (transFit == null) {
-                    count++;
-                    continue;
-                }
-              
-                // -- filter part1 and part2 to keep only intersection region
-                
-                PairIntArray filtered1 = new PairIntArray();
-                PairIntArray filtered2 = new PairIntArray();
-                populateIntersectionOfRegions(transFit.getParameters(),
-                    part1, part2, image1CentroidX, image1CentroidY,
-                    image2CentroidX, image2CentroidY,
-                    filtered1, filtered2);
-                
-                nMaxMatchable[count] = (filtered1.getN() < filtered2.getN()) ?
-                    filtered1.getN() : filtered2.getN();
-                
-                if (nMaxMatchable[count] == 0) {
-                    count++;
-                    continue;
-                }
-                
-                // -- transform filtered1 for matching and evaluation
-                
-                PairFloatArray transformedFiltered1 = 
-                    transformer.applyTransformation2(transFit.getParameters(), 
-                    filtered1, image1CentroidX, image1CentroidY);
-                
-                double tolerance = generalTolerance;
-                
-                //evaluate the fit and store a statistic nmatched/nmaxmatchable
-        
-                float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-                    transformedFiltered1, filtered2, tolerance);
-                
-                PairFloatArray part1MatchedTransformed = new PairFloatArray();
+                PairIntArray part1Matched = new PairIntArray();
                 PairIntArray part2Matched = new PairIntArray();
                 
-                matchPoints(transformedFiltered1, filtered2, 
-                    tolerance, matchIndexesAndDiffs, 
-                    part1MatchedTransformed, part2Matched);
+                TransformationPointFit  fit = performMatching(part1, part2,
+                    image1CentroidX, image1CentroidY, 
+                    image2CentroidX, image2CentroidY,
+                    part1Matched, part2Matched);
                 
-                PairIntArray part1Matched = new PairIntArray();
-                part2Matched = new PairIntArray();
-
-                matchPoints(filtered1, filtered2, 
-                    tolerance, matchIndexesAndDiffs, part1Matched, part2Matched);
+                if (fit == null) {
+                    count++;
+                    continue;
+                }
                 
-                TransformationPointFit fit2 = evaluateFitForMatchedTransformed(
-                    transFit.getParameters(), 
-                    part1MatchedTransformed, part2Matched);
-                fit2.setTolerance(tolerance);
-                  
-                float nStat = (nMaxMatchable[count] == 0) ? 0.0f : 
-                    (float)part1Matched.getN()/(float)nMaxMatchable[count];
+                float nStat = (float)fit.getNumberOfMatchedPoints()/
+                    (float)fit.getNMaxMatchable();
                 
                 log.info(Integer.toString(count) 
-                    + ", p1=" + p1 + " p2=" + p2 + ") nStat=" + nStat
-                    + " nMaxMatchable=" + nMaxMatchable[count] +
-                    " Euclidean fit=" + fit2.toString());
+                    + ", p1=" + p1 + " p2=" + p2 + ") nStat=" + nStat +
+                    " Euclidean fit=" + fit.toString());
                 
-                bestFits[count] = fit2;
+                bestFits[count] = fit;
                 matchedPart1[count] = part1Matched;
                 matchedPart2[count] = part2Matched;
                 count++;
-                
             }
         }
+        
+        log.info("examine partition transformations");
         
         //TODO:  this may need alot of changes
         
@@ -437,7 +386,7 @@ public final class PointMatcher {
         
         for (int i = 0; i < count; i++) {
             
-            if ((bestFits[i] == null) || (nMaxMatchable[i] == 0)) {
+            if ((bestFits[i] == null) || (bestFits[i].getNMaxMatchable() == 0)) {
                 continue;
             }
             
@@ -446,7 +395,7 @@ public final class PointMatcher {
             
             for (int j = (i + 1); j < count; j++) {
             
-                if ((bestFits[j] == null) || (nMaxMatchable[j] == 0)) {
+                if ((bestFits[j] == null) || (bestFits[j].getNMaxMatchable() == 0)) {
                     continue;
                 }
                 
@@ -467,6 +416,8 @@ public final class PointMatcher {
                 similarTransformations.add(similar);
             }
         }
+        
+        log.info("similarTransformations.size()=" + similarTransformations.size());
         
         List<Integer> keepIndexes = null;
         if (similarTransformations.size() > 1) {
@@ -532,6 +483,107 @@ public final class PointMatcher {
                 }
             }
         }
+    }
+    
+    /**
+     * NOT READY FOR USE
+     * 
+     * @param unmatchedLeftXY
+     * @param unmatchedRightXY
+     * @param image1CentroidX
+     * @param image1CentroidY
+     * @param image2CentroidX
+     * @param image2CentroidY
+     * @param outputMatchedLeftXY
+     * @param outputMatchedRightXY
+     * @return 
+     */
+    public TransformationPointFit performMatching(
+        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
+        int image1CentroidX, int image1CentroidY,
+        int image2CentroidX, int image2CentroidY,
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY) {
+        
+        Transformer transformer = new Transformer();
+        
+        PairIntArray part1 = unmatchedLeftXY;
+        PairIntArray part2 = unmatchedRightXY;
+
+        TransformationPointFit transFit = 
+            calculateProjectiveTransformationWrapper(
+            part1, part2, 
+            image1CentroidX, image1CentroidY,
+            image2CentroidX, image2CentroidY);
+
+        if (transFit == null) {
+            return null;
+        }
+              
+        // -- filter part1 and part2 to keep only intersection region
+
+        PairIntArray filtered1 = new PairIntArray();
+        PairIntArray filtered2 = new PairIntArray();
+        populateIntersectionOfRegions(transFit.getParameters(),
+            part1, part2, image1CentroidX, image1CentroidY,
+            image2CentroidX, image2CentroidY,
+            filtered1, filtered2);
+
+        int nMaxMatchable = (filtered1.getN() < filtered2.getN()) ?
+            filtered1.getN() : filtered2.getN();
+                
+        transFit.setMaximumNumberMatchable(nMaxMatchable);
+        
+        if (nMaxMatchable == 0) {
+            return transFit;
+        }
+                
+        // -- transform filtered1 for matching and evaluation
+
+        PairFloatArray transformedFiltered1 = 
+            transformer.applyTransformation2(transFit.getParameters(), 
+            filtered1, image1CentroidX, image1CentroidY);
+
+        double tolerance = generalTolerance;
+
+        //evaluate the fit and store a statistic nmatched/nmaxmatchable
+
+        float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
+            transformedFiltered1, filtered2, tolerance);
+
+        PairFloatArray part1MatchedTransformed = new PairFloatArray();
+        PairIntArray part2Matched = new PairIntArray();
+                
+        matchPoints(transformedFiltered1, filtered2, tolerance, 
+            matchIndexesAndDiffs, part1MatchedTransformed, part2Matched);
+
+        PairIntArray part1Matched = new PairIntArray();
+        part2Matched = new PairIntArray();
+
+        matchPoints(filtered1, filtered2, tolerance, matchIndexesAndDiffs, 
+            part1Matched, part2Matched);
+
+//TODO: this should not be different than transFit excepting due to rounding, so consider
+// removing it after looking in detail
+        
+        TransformationPointFit fit2 = evaluateFitForMatchedTransformed(
+            transFit.getParameters(), part1MatchedTransformed, part2Matched);
+        
+        fit2.setTolerance(tolerance);
+                          
+        fit2.setMaximumNumberMatchable(nMaxMatchable);
+        
+        float nStat = (nMaxMatchable == 0) ? 0.0f : 
+            (float)part1Matched.getN()/(float)nMaxMatchable;
+
+        log.info("nStat=" + nStat + " nMaxMatchable=" + nMaxMatchable +
+            " Euclidean fit=" + fit2.toString()
+            + " original fit=" + transFit.toString());
+           
+        outputMatchedLeftXY.swapContents(part1Matched);
+        
+        outputMatchedRightXY.swapContents(part2Matched);
+        
+        return fit2;
     }
     
     /**
