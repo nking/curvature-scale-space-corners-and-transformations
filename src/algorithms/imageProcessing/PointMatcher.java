@@ -327,9 +327,13 @@ public final class PointMatcher {
                     
         PointPartitioner partitioner = new PointPartitioner();
 
-        PairIntArray[] parts1 = partitioner.partition(unmatchedLeftXY, 2);
-        PairIntArray[] parts2 = partitioner.partition(unmatchedRightXY, 2);
+        int nDiv = 2;
+        
+        PairIntArray[] parts1 = partitioner.partition(unmatchedLeftXY, nDiv);
+        PairIntArray[] parts2 = partitioner.partition(unmatchedRightXY, nDiv);
 
+        float setsFractionOfImage = 1.f/(float)(nDiv*nDiv);
+        
         for (int p1 = 0; p1 < parts1.length; p1++) {
 //if (p1 != 1) {continue;}
 //if (p1 != 3) {continue;}
@@ -348,7 +352,7 @@ public final class PointMatcher {
                 TransformationPointFit  fit = performMatching(part1, part2,
                     image1CentroidX, image1CentroidY, 
                     image2CentroidX, image2CentroidY,
-                    part1Matched, part2Matched);
+                    part1Matched, part2Matched, setsFractionOfImage);
                 
                 if (fit == null) {
                     count++;
@@ -369,13 +373,13 @@ public final class PointMatcher {
             }
         }
         
+        // ====== examine partition best fits and transformations ====
+        
         log.info("examine partition transformations");
         
         //TODO:  this may need alot of changes
         
         // find which quadrant matches represent a consistent intersection:
-        // (the highest number of matches per nMaxMatchable is not the answer)
-    
         // quick look at any having similar transformation parameters:
         double rotTolDegrees = 20;
         double transTol = 20;
@@ -389,8 +393,18 @@ public final class PointMatcher {
             if ((bestFits[i] == null) || (bestFits[i].getNMaxMatchable() == 0)) {
                 continue;
             }
+        
+            log.info(String.format("%6f %6.2f %7.1f %7.1f   %d %d", 
+                bestFits[i].getParameters().getScale(),
+                bestFits[i].getParameters().getRotationInDegrees(),
+                bestFits[i].getParameters().getTranslationX(),
+                bestFits[i].getParameters().getTranslationY(),
+                bestFits[i].getNumberOfMatchedPoints(),
+                bestFits[i].getNMaxMatchable()
+            ));
             
             TransformationParameters params1 = bestFits[i].getParameters();
+            
             List<Integer> similar = new ArrayList<Integer>();
             
             for (int j = (i + 1); j < count; j++) {
@@ -422,7 +436,6 @@ public final class PointMatcher {
         List<Integer> keepIndexes = null;
         if (similarTransformations.size() > 1) {
             
-            // which similarity solution has smallest residuals?
             double minAvg = Double.MAX_VALUE;
             List<Integer> minInd = null;
             Iterator<List<Integer> > iter = similarTransformations.iterator();
@@ -446,22 +459,146 @@ public final class PointMatcher {
             keepIndexes = similarTransformations.iterator().next();
            
         } else {
-            // choose quadrant with smallest residuals
-            double minAvg = Double.MAX_VALUE;
-            int minCIdx = -1;
-            for (int i = 0; i < bestFits.length; i++) {
-                if (bestFits[i] == null) {
+        
+            /*
+            since only one of the bestFits is correct,
+            find it as the largest nMatched/nMaxMatchable.
+            if there's more than one with same value and it's > 0,
+            then 
+            (best meanDistFromModel - best stDevMean) > (next best meanDistFromModel)
+            else those are considered same 
+            and should be re-evaluated against all points.
+            In the later case, the new matches should be made for the
+            final solution too.
+            */
+            
+            float bestNStatistic = Float.MIN_VALUE;
+            
+            List<Integer> indexesWithBestNStat = new ArrayList<Integer>();
+            
+            for (int ii = 0; ii < bestFits.length; ii++) {
+                
+                if ((bestFits[ii] == null) || 
+                    (bestFits[ii].getNMaxMatchable() == 0) ||
+                    (bestFits[ii].getNumberOfMatchedPoints() == 0)) {
                     continue;
                 }
-                double avg = bestFits[i].getMeanDistFromModel();
-                if (avg < minAvg) {
-                    minAvg = avg;
-                    minCIdx = i;
+        
+                float stat = (float)bestFits[ii].getNumberOfMatchedPoints()/
+                    (float)bestFits[ii].getNMaxMatchable();
+                
+                if (stat > bestNStatistic) {
+                    bestNStatistic = stat;
+                    if (!indexesWithBestNStat.isEmpty()) {
+                        indexesWithBestNStat.clear();
+                    }
+                    indexesWithBestNStat.add(Integer.valueOf(ii));
+                } else if (Math.abs(stat - bestNStatistic) < 0.001f) {
+                    indexesWithBestNStat.add(Integer.valueOf(ii));
                 }
             }
-            if (minCIdx > -1) {
-                keepIndexes = new ArrayList<Integer>();
-                keepIndexes.add(Integer.valueOf(minCIdx));
+            
+            if (indexesWithBestNStat.size() == 1) {
+                
+                // TODO: this is a small number of matched points.  consider
+                // re-evaluating the fit for this solution but on all points,
+                // and then re-matching the points from it.
+                
+                keepIndexes = new ArrayList<Integer>(indexesWithBestNStat);
+                
+            } else {
+                
+                // compare mean-stdev > next best mean
+                
+                int bestIdx = -1;
+                double bestMD = Double.MIN_VALUE;
+                
+                for (int ii = 0; ii < indexesWithBestNStat.size(); ii++) {
+                    
+                    int idx0 = indexesWithBestNStat.get(ii);
+                    double md0 = bestFits[idx0].getMeanDistFromModel();
+                    double sd0 = bestFits[idx0].getStDevFromMean();
+                
+                    boolean best = true;
+                    for (int j = 0; j < indexesWithBestNStat.size(); j++) {
+                        if (ii == j) {
+                            continue;
+                        }
+                        int idx1 = indexesWithBestNStat.get(j);
+                        double md1 = bestFits[idx1].getMeanDistFromModel();
+                        if ((md0 + sd0) >= md1) {
+                            best = false;
+                            break;
+                        }
+                    }
+                    if (best) {
+                        if ((bestIdx == -1) || ((md0 + sd0) < bestMD)) {
+                            bestIdx = idx0;
+                            bestMD = md0;
+                        }
+                    }                                   
+                }
+                
+                if (bestIdx > -1) {
+                    
+                    // TODO: this is a small number of matched points.  consider
+                    // re-evaluating the fit for this solution but on all points,
+                    // and then re-matching the points from it.
+                    
+                    keepIndexes = new ArrayList<Integer>();
+                    keepIndexes.add(Integer.valueOf(bestIdx));
+                    
+                } else {
+                    
+                    // there was no best.  either evaluate all best against
+                    // all points, or consider this no solution.
+                    
+                    Transformer transformer = new Transformer();
+                    
+                    TransformationPointFit bestFit2 = null;
+                    PairFloatArray bestFit2Transformed = null;
+                    
+                    for (int ii = 0; ii < bestFits.length; ii++) {
+                        if ((bestFits[ii] == null) || 
+                            (bestFits[ii].getNMaxMatchable() == 0)) {
+                            continue;
+                        }                        
+
+                        PairFloatArray transformed = 
+                            transformer.applyTransformation2(
+                            bestFits[ii].getParameters(), unmatchedLeftXY, 
+                            image1CentroidX, image1CentroidY);
+                                
+                        TransformationPointFit fit =
+                            evaluateFitForUnMatchedTransformedOptimal(
+                            bestFits[ii].getParameters(), 
+                            transformed, unmatchedRightXY, 
+                            generalTolerance, generalTolerance);
+                        
+                        if (fitIsBetter(bestFit2, fit)) {
+                            bestFit2 = fit;
+                            bestFit2Transformed = transformed;
+                        }
+                    }
+                    
+                    if (bestFit2 != null) {
+                    
+                        double tolerance = generalTolerance;
+                        
+                        float[][] matchIndexesAndDiffs = 
+                            calculateMatchUsingOptimal(bestFit2Transformed, 
+                            unmatchedRightXY, tolerance);
+                
+                        matchPoints(unmatchedLeftXY, unmatchedRightXY, 
+                            tolerance, matchIndexesAndDiffs, 
+                            outputMatchedLeftXY, outputMatchedRightXY);
+                    
+                        log.info("final best fit=" + bestFit2Transformed.toString());
+                        
+                    } else {
+                        keepIndexes = null;
+                    }
+                }
             }
         }
         
@@ -496,13 +633,20 @@ public final class PointMatcher {
      * @param image2CentroidY
      * @param outputMatchedLeftXY
      * @param outputMatchedRightXY
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     * 
      * @return 
      */
     public TransformationPointFit performMatching(
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
         int image1CentroidX, int image1CentroidY,
         int image2CentroidX, int image2CentroidY,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY) {
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
+        float setsFractionOfImage) {
         
         Transformer transformer = new Transformer();
         
@@ -513,7 +657,7 @@ public final class PointMatcher {
             calculateProjectiveTransformationWrapper(
             part1, part2, 
             image1CentroidX, image1CentroidY,
-            image2CentroidX, image2CentroidY);
+            image2CentroidX, image2CentroidY, setsFractionOfImage);
 
         if (transFit == null) {
             return null;
@@ -545,7 +689,7 @@ public final class PointMatcher {
 
         double tolerance = generalTolerance;
 
-        //evaluate the fit and store a statistic nmatched/nmaxmatchable
+        //evaluate the fit and store a statistical var: nmatched/nmaxmatchable
 
         float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
             transformedFiltered1, filtered2, tolerance);
@@ -562,16 +706,13 @@ public final class PointMatcher {
         matchPoints(filtered1, filtered2, tolerance, matchIndexesAndDiffs, 
             part1Matched, part2Matched);
 
-//TODO: this should not be different than transFit excepting due to rounding, so consider
-// removing it after looking in detail
-        
         TransformationPointFit fit2 = evaluateFitForMatchedTransformed(
             transFit.getParameters(), part1MatchedTransformed, part2Matched);
         
         fit2.setTolerance(tolerance);
                           
         fit2.setMaximumNumberMatchable(nMaxMatchable);
-        
+
         float nStat = (nMaxMatchable == 0) ? 0.0f : 
             (float)part1Matched.getN()/(float)nMaxMatchable;
 
@@ -581,11 +722,14 @@ public final class PointMatcher {
            
         outputMatchedLeftXY.swapContents(part1Matched);
         
-        outputMatchedRightXY.swapContents(part2Matched);
+        outputMatchedRightXY.swapContents(part2Matched);        
         
+
+
         return fit2;
     }
-    
+ private int debugCount = 0; 
+ 
     /**
      * 
      * calculate a projective transformation that results in the best match
@@ -604,12 +748,19 @@ public final class PointMatcher {
      * @param image1CentroidY
      * @param output1
      * @param output2
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     * 
      * @return 
      */
     public StereoProjectionTransformerFit 
         matchPointsUsingProjectiveTransformation(PairIntArray set1, 
         PairIntArray set2, int image1CentroidX, int image1CentroidY,
-        PairIntArray output1, PairIntArray output2) {
+        PairIntArray output1, PairIntArray output2, 
+        float setsFractionOfImage) {
                 
         //TODO:  this method is changing.  needs alot of improvement!
             
@@ -656,7 +807,7 @@ public final class PointMatcher {
                 TransformationParameters params = 
                     calculateTranslationForUnmatched(set1, set2, 
                         rot*Math.PI/180., scale, 
-                        image1CentroidX, image1CentroidY);
+                        image1CentroidX, image1CentroidY, setsFractionOfImage);
                
                 // the optimal match is necessary
                 float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
@@ -863,11 +1014,17 @@ public final class PointMatcher {
      * @param set2 set of points such as corners from another image.
      * @param image1CentroidX
      * @param image1CentroidY
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     * 
      * @return 
      */
     public TransformationPointFit calculateRoughTransformationForUnmatched(
         PairIntArray set1, PairIntArray set2, int image1CentroidX, 
-        int image1CentroidY) {
+        int image1CentroidY, float setsFractionOfImage) {
         
         /*
         divides the points into partitions for each set.
@@ -920,7 +1077,7 @@ public final class PointMatcher {
                     fits[count] = calculateTransformationWithGridSearch(
                         edge1, edge2, image1CentroidX, image1CentroidY,
                         0, 360, rotDelta,
-                        1, scaleStop, 1, setsAreMatched);
+                        1, scaleStop, 1, setsAreMatched, setsFractionOfImage);
 
                     if (fitIsBetter(bestFit, fits[count])) {
                         bestFit = fits[count];
@@ -1008,7 +1165,7 @@ public final class PointMatcher {
         bestFit = refineTransformationWithDownhillSimplex(
             bestFit.getParameters(), input1, input2, 
             image1CentroidX, image1CentroidY, 
-            setsAreMatched);
+            setsAreMatched, setsFractionOfImage);
         
         return bestFit;
     }
@@ -1028,12 +1185,19 @@ public final class PointMatcher {
      * @param image1CentroidY
      * @param outputMatched1
      * @param outputMatched2
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     * 
      * @return 
      */
     public TransformationPointFit calculateTransformationAndMatch(
         PairIntArray set1, PairIntArray set2, 
         int image1CentroidX, int image1CentroidY,
-        PairIntArray outputMatched1, PairIntArray outputMatched2) {
+        PairIntArray outputMatched1, PairIntArray outputMatched2,
+        float setsFractionOfImage) {
         
         /*
         attempts rough euclidean transformation and uses that to match
@@ -1047,7 +1211,7 @@ public final class PointMatcher {
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             set1, set2, image1CentroidX, image1CentroidY,
             0, 360, rotDelta,
-            1, 11, 2, setsAreMatched);
+            1, 11, 2, setsAreMatched, setsFractionOfImage);
         
         if (fit == null) {
             return null;
@@ -1127,7 +1291,7 @@ public final class PointMatcher {
                 input1, input2, image1CentroidX, image1CentroidY,
                 rotStart, rotStop, 10,
                 scaleStart, scale + 1, 1, 
-                setsAreMatched);
+                setsAreMatched, setsFractionOfImage);
 
             if (fit == null) {
                 return null;
@@ -1144,7 +1308,7 @@ public final class PointMatcher {
         
             fit = refineTransformationWithDownhillSimplex(fit.getParameters(),
                 input1, input2, image1CentroidX, image1CentroidY,
-                setsAreMatched);
+                setsAreMatched, setsFractionOfImage);
         
             if (!setsAreMatched) {
                 
@@ -1324,6 +1488,12 @@ public final class PointMatcher {
      * @param scaleStop
      * @param scaleDelta
      * @param setsAreMatched
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     * 
      * @return 
      */
     public TransformationPointFit calculateTransformationWithGridSearch(
@@ -1331,7 +1501,7 @@ public final class PointMatcher {
         int image1CentroidX, int image1CentroidY,
         int rotStart, int rotStop, int rotDelta,
         int scaleStart, int scaleStop, int scaleDelta,
-        boolean setsAreMatched) {
+        boolean setsAreMatched, float setsFractionOfImage) {
         
         double tolTransX = generalTolerance;//4.0f * image1CentroidX * 0.02f;
         double tolTransY = generalTolerance;//4.0f * image1CentroidY * 0.02f;
@@ -1372,7 +1542,8 @@ public final class PointMatcher {
                     //TODO: when refactor, this method already determines
                     //   fit for one branch so reduce redundant code
                     params = calculateTranslationForUnmatched(set1, set2, 
-                        rot*Math.PI/180., scale, image1CentroidX, image1CentroidY);
+                        rot*Math.PI/180., scale, image1CentroidX, 
+                        image1CentroidY, setsFractionOfImage);
                 }
                 
                 PairFloatArray allPoints1Tr = transformer.applyTransformation(
@@ -1773,11 +1944,17 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @param centroidY1 the y coordinate of the center of image 1 from which
      * set 1 point are from.
      * @param setsAreMatched indicates whether set1 and set2 are already matched
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
      * @return 
      */
     public TransformationPointFit calculateTranslation(PairIntArray set1, 
         PairIntArray set2, double rotation, 
-        double scale, int centroidX1, int centroidY1, boolean setsAreMatched) {
+        double scale, int centroidX1, int centroidY1, boolean setsAreMatched,
+        float setsFractionOfImage) {
         
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
@@ -1873,14 +2050,14 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         if ((set1.getN() > 5) && (set2.getN() > 5)) {
             
-            int nBins = (int)((float)centroidX1*4.f/30.f);
+            int nBins = (int)(setsFractionOfImage*(float)centroidX1*4.f/30.f);
             
             HistogramHolder hX = Histogram
                 .createSimpleHistogram(nBins,
                 //.defaultHistogramCreator(
                 transX, Errors.populateYErrorsBySqrt(transX));
         
-            nBins = (int)((float)centroidY1*4.f/30.f);
+            nBins = (int)(setsFractionOfImage*(float)centroidY1*4.f/30.f);
             
             HistogramHolder hY = Histogram
                 .createSimpleHistogram(nBins,
@@ -2023,10 +2200,16 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @param set2 two dimensional array holding x and y points with
      * first dimension being the point number and the 2nd being x and y
      * for example set2[row][0] is x and set2[row][1] is y for point in row.
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
      * @return 
      */
     public float[] calculateTranslation(double[][] set1, 
-        double[][] set2, int centroidX1, int centroidY1) {
+        double[][] set2, int centroidX1, int centroidY1,
+        float setsFractionOfImage) {
         
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
@@ -2076,14 +2259,14 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             log.info("thiel sen estimator: " + peakTransX + ", " + peakTransY);
             */
             
-            int nBins = (int)((float)centroidX1*4.f/30.f);
+            int nBins = (int)(setsFractionOfImage*(float)centroidX1*4.f/30.f);
             
             HistogramHolder hX = Histogram
                 .createSimpleHistogram(nBins,
                 //.defaultHistogramCreator(
                 transX, Errors.populateYErrorsBySqrt(transX));
         
-            nBins = (int)((float)centroidY1*4.f/30.f);
+            nBins = (int)(setsFractionOfImage*(float)centroidY1*4.f/30.f);
             
             HistogramHolder hY = Histogram
                 .createSimpleHistogram(nBins,
@@ -2216,11 +2399,16 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * set 1 point are from.
      * @param centroidY1 the y coordinate of the center of image 1 from which
      * set 1 point are from.
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
      * @return 
      */
     public TransformationParameters calculateTranslationForUnmatched(
         PairIntArray set1, PairIntArray set2, double rotation, double scale, 
-        int centroidX1, int centroidY1) {
+        int centroidX1, int centroidY1, float setsFractionOfImage) {
         
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
@@ -2303,14 +2491,14 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             else, evaluate the fit for the translations of each of the
             strong peaks.
             */
-
-            int nBins = (int)((float)centroidX1*4.f/30.f);
+            
+            int nBins = (int)(setsFractionOfImage*(float)centroidX1*4.f/30.f);
 
             HistogramHolder hX = Histogram
                 .createSimpleHistogram(nBins,
                 transX, Errors.populateYErrorsBySqrt(transX));
 
-            nBins = (int)((float)centroidY1*4.f/30.f);
+            nBins = (int)(setsFractionOfImage*(float)centroidY1*4.f/30.f);
             
             HistogramHolder hY = Histogram
                 .createSimpleHistogram(nBins,
@@ -2323,8 +2511,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 log.severe(e.getMessage());
             }
             
-            float tolTransX = 10;//4.f * centroidX1 * 0.02f;
-            float tolTransY = 10;//4.f * centroidY1 * 0.02f;
+            float tolTransX = generalTolerance;//4.f * centroidX1 * 0.02f;
+            float tolTransY = generalTolerance;//4.f * centroidY1 * 0.02f;
             if (tolTransX < minTolerance) {
                 tolTransX = minTolerance;
             }
@@ -2598,12 +2786,18 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @param image1CentroidX
      * @param image1CentroidY
      * @param setsAreMatched
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
      * @return 
      */
     public TransformationPointFit refineTransformationWithDownhillSimplex(
         TransformationParameters params,
         PairIntArray set1, PairIntArray set2, 
-        int image1CentroidX, int image1CentroidY, boolean setsAreMatched) {
+        int image1CentroidX, int image1CentroidY, boolean setsAreMatched,
+        float setsFractionOfImage) {
         
         // projection effects from different camera positions or orientations
         // are not calculated in this point matcher, 
@@ -2669,7 +2863,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                
                 fits[count] = calculateTranslation(set1, set2, 
                     rotation, scale, image1CentroidX, image1CentroidY, 
-                    setsAreMatched);
+                    setsAreMatched, setsFractionOfImage);
                 
                 if (fits[count] != null) {
                     count++;
@@ -2691,7 +2885,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             fits, image1CentroidX, image1CentroidY, transXTol, transYTol,
             r, s, rMin, rMax, sMin, sMax,
             reflectionCoeff, expansionCoeff, contractionCoeff, reductionCoeff,
-            setsAreMatched
+            setsAreMatched, setsFractionOfImage
         );
         
         if ((bestFit != null) && 
@@ -2725,6 +2919,11 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @param gamma parameter used to adjust size of changes for "expansion"
      * @param beta parameter used to adjust size of changes for "contraction"
      * @param tau parameter used to adjust size of changes for "reduction"
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
      * 
      * @return 
      */
@@ -2734,8 +2933,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         double transXTol, double transYTol,
         double r, double s,
         double rMin, double rMax, double sMin, double sMax,
-        float alpha, float gamma, float beta, float tau, boolean setsAreMatched
-        ) {
+        float alpha, float gamma, float beta, float tau, boolean setsAreMatched,
+        float setsFractionOfImage) {
         
         if (alpha < 0) {
             throw new IllegalArgumentException("alpha must be > 0");
@@ -2814,7 +3013,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             TransformationPointFit fitReflected = 
                 calculateTranslation(set1, set2, 
                     rReflect, sReflect,
-                    centroidX1, centroidY1, setsAreMatched);
+                    centroidX1, centroidY1, setsAreMatched, setsFractionOfImage);
             
             boolean relectIsWithinBounds = 
                 (rReflect >= rMin) && (rReflect <= rMax) 
@@ -2844,7 +3043,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     TransformationPointFit fitExpansion = 
                         calculateTranslation(set1, set2, 
                             rExpansion, sExpansion,
-                            centroidX1, centroidY1, setsAreMatched);
+                            centroidX1, centroidY1, setsAreMatched, 
+                            setsFractionOfImage);
                     
                     if (fitIsBetter(fitReflected, fitExpansion)
                         && ((rExpansion >= rMin) && (rExpansion <= rMax)
@@ -2870,7 +3070,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     TransformationPointFit fitContraction = 
                         calculateTranslation(set1, set2, 
                             rContraction, sContraction,
-                            centroidX1, centroidY1, setsAreMatched);
+                            centroidX1, centroidY1, setsAreMatched, 
+                            setsFractionOfImage);
                 
                     if (sContraction < 1) {
                         sContraction = 1;
@@ -2912,7 +3113,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                             TransformationPointFit fit = calculateTranslation(
                                 set1, set2, 
                                 rReduction, sReduction, centroidX1, centroidY1,
-                                setsAreMatched);
+                                setsAreMatched, setsFractionOfImage);
                             
                             if (fit != null) {
                                 fits[i] = fit;
@@ -5806,15 +6007,23 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @param sceneImageCentroidY
      * @param modelImageCentroidX
      * @param modelImageCentroidY
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     * 
      * @return 
      */
     public TransformationPointFit calculateProjectiveTransformationWrapper(
         PairIntArray scene, PairIntArray model, 
         int sceneImageCentroidX, int sceneImageCentroidY, 
-        int modelImageCentroidX, int modelImageCentroidY) {
+        int modelImageCentroidX, int modelImageCentroidY,
+        float setsFractionOfImage) {
         
         TransformationPointFit fit = calculateProjectiveTransformation(
-            scene, model, sceneImageCentroidX, sceneImageCentroidY);
+            scene, model, sceneImageCentroidX, sceneImageCentroidY,
+            setsFractionOfImage);
         
         if (fit == null) {
             return null;
@@ -5831,7 +6040,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             // reverse the order to solve for possible scale < 1.
             
             TransformationPointFit revFit = calculateProjectiveTransformation(
-                model, scene, modelImageCentroidX, modelImageCentroidY);
+                model, scene, modelImageCentroidX, modelImageCentroidY,
+                setsFractionOfImage);
             
             if (fitIsBetter(fit, revFit)) {
                 
@@ -5869,11 +6079,17 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @param model
      * @param sceneImageCentroidX
      * @param sceneImageCentroidY
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     * 
      * @return 
      */
     public TransformationPointFit calculateProjectiveTransformation(
         PairIntArray scene, PairIntArray model, int sceneImageCentroidX, 
-        int sceneImageCentroidY) {
+        int sceneImageCentroidY, float setsFractionOfImage) {
         
         if ((scene == null) || (model == null)) {
             return null;
@@ -5893,7 +6109,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             scene, model, sceneImageCentroidX, sceneImageCentroidY,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            setsAreMatched);
+            setsAreMatched, setsFractionOfImage);
         
         if (fit != null) {
             log.info("fit: " + fit.toString());
@@ -5928,7 +6144,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                 TransformationPointFit fit2 = 
                     refineTransformationWithDownhillSimplex(fit.getParameters(),
                     scene, model, sceneImageCentroidX, sceneImageCentroidY, 
-                    setsAreMatched);
+                    setsAreMatched, setsFractionOfImage);
 
                 boolean refineTranslation = false;
                 
@@ -6051,277 +6267,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         params.setTranslationY((float)translationY);
  
     }
-    
-    /**
-     * using downhill simplex, calculate the projective transformation to apply
-     * to scene to make best match to model.  the projection is calculated
-     * with scene and model, but the fit is evaluated with allScene and allModel.
-     * 
-     * @param scene
-     * @param model
-     * @param projectiveParams
-     * @param allScene
-     * @param allModel
-     * @return 
-     */
-    public ProjectiveFit calculateProjectiveTransformationUsingDownhillSimplex(
-        double[][] scene, double[][] model, double[][] projectiveParams, 
-        double[][] allScene, double[][] allModel, int centroidX1, int centroidY1) {
-        
-        //TODO: improve this method's run time!
-        //  consider changes to use primitives for projectiveParams
-        //  instead of an array to reduce cost of creating arrays
-        
-        float reflectionCoeff = 1;   // > 0
-        float expansionCoeff = 2;   // > 1
-        float contractionCoeff = -0.5f;
-        float reductionCoeff = 0.5f;
-        
-        double convergence = 0;
-        
-        // to try to find local min, using large number of starter points to
-        // replace a grid search.
-        ProjectiveFit[] fits = createStarterPoints(scene, model, 
-            projectiveParams, allScene, allModel, centroidX1, centroidY1);
-        
-        //TODO: consider reducing the number of starter points after a few
-        // visits to reduction
-        int nReductionVisits = 0;
-        
-        boolean go = true;
-
-        int nMaxIter = 100;
-        int nIter = 0;
-        
-        double lastAvgDistModel = Double.MAX_VALUE;
-        double lastStDev = Double.MAX_VALUE;
-        int lastNMatches = 0;
-        
-        int nIterSameMin = 0;
-        
-        /*
-        p[0] = new double[]{1,  0, transX};
-        p[1] = new double[]{0,  1, transY};
-        p[2] = new double[]{0,  0, 1};
-        points not being changed are transX and transY as those are solved in
-        the evalFit. does no harm to cal them, but it will be overriden in
-        evalFit.
-        */
-        
-        double[][] sumPForEachFit = new double[3][];
-        for (int row = 0; row < 3; row++) {
-            sumPForEachFit[row] = new double[3];
-        }
-        
-        int bestFitIdx = 0;
-        int secondWorstFitIdx = fits.length - 2;
-        int worstFitIdx = fits.length - 1;
-
-        while (go && (nIter < nMaxIter)) {
-
-            sortByDescendingMatches(fits, 0, worstFitIdx);
-            
-            int lastNonNullIdx = moveUpForNulls(fits);
-            if (lastNonNullIdx < (fits.length - 1)) {
-                if (lastNonNullIdx < 8) {
-                    break;
-                }
-                worstFitIdx = lastNonNullIdx;
-                secondWorstFitIdx = worstFitIdx - 1;
-            }
-            
-            //TODO: revise this...
-            if ((nReductionVisits == 0) && (worstFitIdx > 10)) {
-                worstFitIdx = 10;
-                for (int i = (worstFitIdx + 1); i < fits.length; i++) {
-                    fits[i] = null;
-                }
-                secondWorstFitIdx = worstFitIdx - 1;
-            }
-            if (worstFitIdx < 2) {
-                break;
-            }
-            
-            if ((lastNMatches == fits[bestFitIdx].getNumberOfPoints())
-                && (Math.abs(lastAvgDistModel
-                - fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
-                
-                nIterSameMin++;
-                if (nIterSameMin >= 3) {
-                    break;
-                }
-            } else {
-                nIterSameMin = 0;
-            }
-            lastNMatches = fits[bestFitIdx].getNumberOfPoints();
-            lastAvgDistModel = fits[bestFitIdx].getMeanDistFromModel();
-            lastStDev = fits[bestFitIdx].getStdDevOfMean();
-            
-            // determine center for all points excepting the worse fit.
-            // TODO: remove the null solutions?
-            for (int i = 0; i < sumPForEachFit.length; i++) {
-                Arrays.fill(sumPForEachFit[i], 0.);
-            }
-            Set<Integer> isNull = new HashSet<Integer>();
-            for (int i = 0; i <= worstFitIdx; i++) {
-                for (int row = 0; row < 3; row++) {
-                    for (int col = 0; col < 3; col++) {
-                        if ((fits[i] == null) || 
-                            (fits[i].getProjection() == null)) {
-                            isNull.add(Integer.valueOf(i));
-                        } else {
-                            sumPForEachFit[row][col] 
-                                += fits[i].getProjection()[row][col];
-                        }
-                    }
-                }
-            }
-            int nDiv = worstFitIdx - 1 - isNull.size();
-            for (int row = 0; row < 3; row++) {
-                for (int col = 0; col < 3; col++) {
-                    sumPForEachFit[row][col] /= (double)nDiv;
-                }
-            }
-
-            // "Reflection"
-            double[][] pReflect = new double[3][3];
-            for (int row = 0; row < 3; row++) {
-                pReflect[row] = new double[3];
-                for (int col = 0; col < 3; col++) {
-                    pReflect[row][col] =
-                        sumPForEachFit[row][col] + (reflectionCoeff * 
-                        (sumPForEachFit[row][col] 
-                        - fits[worstFitIdx].getProjection()[row][col]));
-                }                
-            }
-            
-            ProjectiveFit fitReflected = evalFit(scene, model, pReflect, 
-                allScene, allModel, centroidX1, centroidY1);
-
-            boolean relectIsWithinBounds = true;
-                //(rReflect >= rMin) && (rReflect <= rMax) 
-                //&& (sReflect >= sMin) && (sReflect <= sMax);
-
-            if (fitIsBetter(fits[secondWorstFitIdx], fitReflected)
-                && relectIsWithinBounds
-                && !fitIsBetter(fits[bestFitIdx], fitReflected) ) {
-                
-                fits[worstFitIdx] = fitReflected;
-                
-            } else {
-                
-                if (fitIsBetter(fits[bestFitIdx], fitReflected)
-                    && relectIsWithinBounds) {
-                    
-                    // "Expansion"
-                    double[][] pExpansion = new double[3][3];
-                    for (int row = 0; row < 3; row++) {
-                        
-                        pExpansion[row] = new double[3];
-                        
-                        for (int col = 0; col < 3; col++) {
-                            
-                            pExpansion[row][col]
-                                = sumPForEachFit[row][col] + (expansionCoeff
-                                * (sumPForEachFit[row][col]
-                                - fits[worstFitIdx].getProjection()[row][col]));
-                        }
-                    }
-                    
-                    ProjectiveFit fitExpansion = evalFit(scene, model, 
-                        pExpansion, allScene, allModel, centroidX1, centroidY1);
-                    
-                    if (fitIsBetter(fitReflected, fitExpansion)) {
-
-                        fits[worstFitIdx] = fitExpansion;
-                        
-                    } else {
-                        
-                        fits[worstFitIdx] = fitReflected;
-                    }
-                    
-                } else {
-                
-                    // we know that the reflection fit is worse than the 2nd worse
-
-                    // "Contraction"
-                    double[][] pContraction = new double[3][3];
-                    for (int row = 0; row < 3; row++) {
-                        pContraction[row] = new double[3];
-                        for (int col = 0; col < 3; col++) {
-                            pContraction[row][col] =
-                                sumPForEachFit[row][col] + (contractionCoeff * 
-                                (sumPForEachFit[row][col]
-                                - fits[worstFitIdx].getProjection()[row][col]));
-                        }
-                    }
-
-                    ProjectiveFit fitContraction = evalFit(scene, model,
-                        pContraction, allScene, allModel, centroidX1, centroidY1);
-                    
-                    if (fitIsBetter(fits[worstFitIdx], fitContraction)
-                    ) {
-
-                        fits[worstFitIdx] = fitContraction;
-                        
-                    } else {
-                                
-                        nReductionVisits++;
-                       
-                        // "Reduction"
-                        for (int i = 1; i <= worstFitIdx; i++) {
-                            
-                            double[][] pReduction = new double[3][3];
-                            for (int row = 0; row < 3; row++) {
-                                pReduction[row] = new double[3];
-                                for (int col = 0; col < 3; col++) {
-                                    pReduction[row][col] =
-                                        fits[bestFitIdx].getProjection()[row][col]
-                                        + (reductionCoeff * fits[i].getProjection()[row][col])
-                                        - fits[bestFitIdx].getProjection()[row][col];
-                                }
-                            }
-                                                        
-                            //NOTE: there's a possibility of a null fit.
-                            //  instead of re-writing the fits array, will 
-                            //  assign a fake infinitely bad fit which will 
-                            //  fall to the bottom of the list after the next 
-                            //  sort.
-                            ProjectiveFit fit = evalFit(scene, model,
-                                pReduction, allScene, allModel, centroidX1,
-                                centroidY1);
-                            
-                            if (fit != null) {
-                                fits[i] = fit;
-                            } else {
-                                fits[i] = new ProjectiveFit();
-                            }
-                        }
-                    }
-                }
-            }
-
-            log.finest("best fit so far: " + 
-                fits[bestFitIdx].getMeanDistFromModel());
-            
-            nIter++;
-
-            if ((fits[bestFitIdx].getNumberOfPoints() == model.length) 
-                && (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
-                
-                go = false;
-            }
-        }
-        
-        if (fits[bestFitIdx] != null) {
-            log.info("best fit: " + fits[bestFitIdx]);
-        }
-        
-        log.info("nReductionVisits=" + nReductionVisits);
-        
-        return fits[bestFitIdx];
-    }
-    
+   
     void sortByDescendingMatches(ProjectiveFit[] fits, int idxLo, 
         int idxHi) {
         
@@ -6389,7 +6335,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
     private ProjectiveFit evalFit(double[][] scene, double[][] model,
         double[][] projTransformParams, 
         double[][] allScene, double[][] allModel,
-        int centroidX1, int centroidY1) {
+        int centroidX1, int centroidY1, float setsFractionOfImage) {
         
         double[][] transformed = transformUsingProjection(
             projTransformParams, scene);
@@ -6398,7 +6344,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         solve for transX and transY and add those to transformed
         */
         float[] transXY = calculateTranslation(transformed, model,
-            centroidX1, centroidY1);
+            centroidX1, centroidY1, setsFractionOfImage);
         projTransformParams[0][2] = transXY[0];
         projTransformParams[1][2] = transXY[1];
         
@@ -6498,144 +6444,6 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         return output;
     }
     
-    private ProjectiveFit[] createStarterPoints(
-        double[][] scene, double[][] model, double[][] projectiveParams,
-        double[][] allScene, double[][] allModel, int centroidX1, int centroidY1) {
-        
-        // TODO: consider a quick attempt for stereo first,
-        // that is scale = 1, rotation = 0, and solve for translation.
-        //     how to solve for projective efficiently?
-        //     requires shapes? or horizon lines?
-        // and if that fit is reasonable, return quickly with that,
-        // else attempt the 2^7 projective starter points
-        
-        /*p[0] = new double[]{1,    0., transX};
-        p[1] = new double[]{0.0,    1, transY};
-        p[2] = new double[]{0,       0, 1};
-        
-        exclude transX and transY, so have 7 parameters, tht is degrees of freedom.
-        so need a minimum of 8 starter points.
-        */
-        
-        // evalFits solves for translation X and Y
-        
-        double[] p00s;
-        if (projectiveParams[0][0] == 0) {
-            p00s = new double[] {
-                projectiveParams[0][0], projectiveParams[0][0] - 1.0};
-        } else {
-            p00s = new double[] {
-                projectiveParams[0][0], projectiveParams[0][0] - 0.1};
-        }
-        double[] p01s;
-        if (projectiveParams[0][1] == 0) {
-            p01s = new double[] {
-                projectiveParams[0][1], projectiveParams[0][1] - 1.0,
-                projectiveParams[0][1] - 0.5, projectiveParams[0][1] + 0.5,
-                projectiveParams[0][1] + 1.0};
-        } else {
-            p01s = new double[] {
-                projectiveParams[0][1], projectiveParams[0][1] - 0.1};
-        }
-        double[] p10s;
-        if (projectiveParams[1][0] == 0) {
-            p10s = new double[] {
-                projectiveParams[1][0], projectiveParams[1][0] - 1.0,
-                projectiveParams[1][0] - 0.5, projectiveParams[1][0] + 0.5,
-                projectiveParams[1][0] + 1.0};
-        } else {
-            p10s = new double[] {
-                projectiveParams[1][0], projectiveParams[1][0] - 0.1};
-        }
-        double[] p11s;
-        if (projectiveParams[1][1] == 0) {
-            p11s = new double[] {
-                projectiveParams[1][1], projectiveParams[1][1] - 1.0,
-                projectiveParams[1][1] - 0.5, projectiveParams[1][1] + 0.5,
-                projectiveParams[1][1] + 1.0};
-        } else {
-            p11s = new double[] {
-                projectiveParams[1][1], projectiveParams[1][1] - 0.1};
-        }
-        double[] p20s;
-        if (projectiveParams[2][0] == 0) {
-            p20s = new double[] {
-                projectiveParams[2][0], projectiveParams[2][0] - 1.0, 
-                projectiveParams[2][0] + 1.0};
-        } else {
-            p20s = new double[] {
-                projectiveParams[2][0], projectiveParams[2][0] - 0.1};
-        }
-        double[] p21s;
-        if (projectiveParams[2][1] == 0) {
-            p21s = new double[] {
-                projectiveParams[2][1], projectiveParams[2][1] - 1.0, 
-                projectiveParams[2][1] + 1.0};
-        } else {
-            p21s = new double[] {
-                projectiveParams[2][1], projectiveParams[2][1] - 0.1};
-        }
-        double[] p22s;
-        if (projectiveParams[2][2] == 0) {
-            p22s = new double[] {
-                projectiveParams[2][2], projectiveParams[2][2] - 1.0, 
-                projectiveParams[2][2] + 1.0};
-        } else {
-            p22s = new double[] {
-                projectiveParams[2][2], projectiveParams[2][2] - 0.1};
-        }
-                
-        int n = p00s.length * p01s.length * p10s.length * p11s.length
-            * p20s.length * p21s.length * p22s.length;
-        
-        ProjectiveFit[] fits = new ProjectiveFit[n];
-        
-        int count = 0;
-        
-        for (double p00 : p00s) {
-            for (double p01 : p01s) {
-                for (double p10 : p10s) {
-                    for (double p11 : p11s) {
-                        for (double p20 : p20s) {
-                            for (double p21 : p21s) {
-                                for (double p22 : p22s) {
-                                    
-                                    double[][] p = new double[3][];
-                                    p[0] = new double[3];
-                                    p[1] = new double[3];
-                                    p[2] = new double[3];
-                                    System.arraycopy(projectiveParams[0], 0, 
-                                        p[0], 0, 3);
-                                    System.arraycopy(projectiveParams[1], 0, 
-                                        p[1], 0, 3);
-                                    System.arraycopy(projectiveParams[2], 0, 
-                                        p[2], 0, 3);
-                                    p[0][0] = p00;
-                                    p[0][1] = p01;
-                                    p[1][0] = p10;
-                                    p[1][1] = p11;
-                                    p[2][0] = p20;
-                                    p[2][1] = p21;
-                                    p[2][2] = p22;
-
-                                    fits[count] = evalFit(scene, model, p, 
-                                        allScene, allModel, centroidX1,
-                                        centroidY1);
-
-                                    fits[count].setProjection(p);
-                                    
-                                    count++;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        return fits;
-    }
-
     private boolean isASinglePeak(HistogramHolder h) {
         
         int idx =  MiscMath.findYMaxIndex(h.getYHist());

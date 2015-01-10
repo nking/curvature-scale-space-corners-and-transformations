@@ -140,7 +140,7 @@ public class RANSACSolver {
         PairFloatArray xy1 = null;
         PairFloatArray xy2 = null;
         
-        double tolerance = 3;//2;//4
+        double tolerance = 3; //2;//4
         //double freqFractionToAddBackIn = 0.3;
         
         // ====== find matched pairs incremently, and best among only 7 point match ====

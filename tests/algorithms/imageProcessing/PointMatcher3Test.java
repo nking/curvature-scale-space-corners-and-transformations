@@ -69,13 +69,17 @@ public class PointMatcher3Test {
         PairIntArray venturipoints2 = new PairIntArray();
         venturipoints1.add(142, 240);  venturipoints2.add(106, 243);
         venturipoints1.add(285, 254);  venturipoints2.add(252, 257);
-        //venturipoints1.add(221, 350);  venturipoints2.add(184, 355);
-        venturipoints1.add(277, 356);  venturipoints2.add(244, 358);
+        venturipoints1.add(221, 350);  venturipoints2.add(184, 355);
+        //venturipoints1.add(277, 356);  venturipoints2.add(244, 358);
         venturipoints1.add(589, 329);  venturipoints2.add(550, 326);
-        venturipoints1.add(545, 325);  venturipoints2.add(509, 321);
-        venturipoints1.add(589, 188);  venturipoints2.add(550, 188);
+        //venturipoints1.add(589, 188);  venturipoints2.add(550, 188);
         //venturipoints1.add(588, 201);  venturipoints2.add(551, 201);
         venturipoints1.add(264, 201);  venturipoints2.add(230, 202);
+        
+        //venturipoints1.add(545, 325);  venturipoints2.add(509, 321);
+        venturipoints1.add(83, 411); venturipoints2.add(42, 419);
+        
+        venturipoints1.add(456, 206); venturipoints2.add(422, 205);
         
         PairIntArray points1 = venturipoints1;
         PairIntArray points2 = venturipoints2;
@@ -114,7 +118,7 @@ public class PointMatcher3Test {
        
         StereoProjectionTransformer st = new StereoProjectionTransformer();
         
-        SimpleMatrix[] fms = 
+        SimpleMatrix[] fms =
             st.calculateEpipolarProjectionFor7Points(
             StereoProjectionTransformer.rewriteInto3ColumnMatrix(points1),
             StereoProjectionTransformer.rewriteInto3ColumnMatrix(points2));
@@ -489,6 +493,7 @@ public class PointMatcher3Test {
         PointMatcher pointMatcher = new PointMatcher();
                 
         pointMatcher.performPartitionedMatching(points1, points2,
+        //pointMatcher.performMatching(points1, points2,
         image1Width >> 1, image1Height >> 1,
             image2Width >> 1, image2Height >> 1,
             outputMatchedScene, outputMatchedModel);
@@ -501,7 +506,6 @@ public class PointMatcher3Test {
         PairFloatArray finalOutputMatchedScene = new PairFloatArray();
         PairFloatArray finalOutputMatchedModel = new PairFloatArray();
         
-        
         RANSACSolver ransacSolver = new RANSACSolver();
         
         StereoProjectionTransformerFit sFit = ransacSolver
@@ -509,8 +513,8 @@ public class PointMatcher3Test {
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
                 finalOutputMatchedScene, finalOutputMatchedModel);
-        
-          overplotEpipolarLines(sFit.getFundamentalMatrix(), 
+            
+        overplotEpipolarLines(sFit.getFundamentalMatrix(), 
             outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
             ImageIOHelper.readImage(filePath1),
             ImageIOHelper.readImage(filePath2), 
@@ -1078,6 +1082,7 @@ public class PointMatcher3Test {
         overplotEpipolarLines(fm, scene.toPairFloatArray(),
             model.toPairFloatArray(), img1, img2, img1.getWidth(), 
             img1.getHeight(), img2.getWidth(), img2.getHeight());
+        
     }
     
     @Test
@@ -1114,103 +1119,7 @@ public class PointMatcher3Test {
             img1, img2, img1.getWidth(), 
             img1.getHeight(), img2.getWidth(), img2.getHeight());
     }
-    
-    @Test
-    public void test15() throws Exception {
-
-        PairIntArray scene = new PairIntArray();
-        PairIntArray model = new PairIntArray();
-        //DataForTests.readBrownAndLoweMatches(scene, model);
-        DataForTests.readBrownAndLoweCorners(scene, model);
-        
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        int xSceneCentroid = img1.getWidth() >> 1;
-        int ySceneCentroid = img1.getHeight() >> 1;
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        int xModelCentroid = img2.getWidth() >> 1;
-        int yModelCentroid = img2.getHeight() >> 1;
-        
-        //plot(scene, img1.getWidth(), img1.getHeight(), 151);
-        
-        //plot(model, img2.getWidth(), img2.getHeight(), 152);
-       
-        PointPartitioner partitioner = new PointPartitioner();
-        PairIntArray[] parts1 = partitioner.partitionVerticalOnly(scene, 2);
-        PairIntArray[] parts2 = partitioner.partitionVerticalOnly(model, 2);
-        
-        PairIntArray set1 = parts1[1];
-        PairIntArray set2 = parts2[0];
-        
-        PointMatcher pointMatcher = new PointMatcher();
-        pointMatcher.setCostToDiffFromModel();
-        
-        TransformationPointFit fit = 
-            pointMatcher.calculateProjectiveTransformationWrapper(
-            set1, set2, xSceneCentroid, ySceneCentroid, 
-            xModelCentroid, yModelCentroid);
-
-        System.out.println("=> " + fit.toString());
-        
-        // use this solution to make a matched point list with large tolerances
-        // (195, 157) --> 180, 144.  and least 20 or 25
-                
-        TransformationParameters params = fit.getParameters();
-
-        Transformer transformer = new Transformer();
-
-        // apply euclidean transformation to all points
-        
-        PairFloatArray transformed2 = transformer.applyTransformation2(
-            params, scene, xSceneCentroid, ySceneCentroid);
-        PairIntArray transformed = transformer.applyTransformation(
-            params, scene, xSceneCentroid, ySceneCentroid);
-
-        overplotTransformed(transformed, model, img2.getWidth(), 
-            img2.getHeight(), 1500);
-        
-        double tolerance = 25;
-        
-        // needs optimal:
-        float[][] matchInfo = pointMatcher.calculateMatchUsingOptimal(
-            transformed2, model, tolerance);
-        
-        PairIntArray matched1 = new PairIntArray();
-        PairIntArray matched2 = new PairIntArray();
-
-        pointMatcher.matchPoints(scene, model, tolerance, matchInfo,
-            matched1, matched2);
-         
-        PairIntArray transformedMatched1 = transformer.applyTransformation(
-            params, matched1, xSceneCentroid, ySceneCentroid);
-        
-        overplotTransformed(transformedMatched1, matched2, img2.getWidth(), 
-            img2.getHeight(), 154);
-        
-        overplotTransformed(matched1, matched2, img2.getWidth(), 
-            img2.getHeight(), 153);
-        
-        RANSACSolver solver = new RANSACSolver();
-        PairFloatArray outputLeftXY = new PairFloatArray();
-        PairFloatArray outputRightXY = new PairFloatArray();
-        
-        StereoProjectionTransformerFit 
-            fit2 = solver.calculateEpipolarProjection(
-            matched1.toPairFloatArray(), matched2.toPairFloatArray(), 
-            outputLeftXY, outputRightXY);
-                
-        overplotTransformed(matched1, matched2, img2.getWidth(), 
-            img2.getHeight(), 1502);
-        
-        overplotEpipolarLines(fit2.getFundamentalMatrix(), outputLeftXY,
-            outputRightXY, img1, img2, img1.getWidth(), 
-            img1.getHeight(), img2.getWidth(), img2.getHeight());
-        
-    }
-    
+  
     private void overplotEpipolarLines(SimpleMatrix fm, PairFloatArray set1,
         PairFloatArray set2, Image img1, Image img2, int image1Width, 
         int image1Height, int image2Width, int image2Height) throws IOException {
@@ -1321,7 +1230,7 @@ public class PointMatcher3Test {
         TransformationPointFit fit = 
             pointMatcher.calculateProjectiveTransformationWrapper(
             scene, model, xSceneCentroid, ySceneCentroid, 
-            xModelCentroid, yModelCentroid);
+            xModelCentroid, yModelCentroid, 1.0f);
 
         System.out.println("=> " + fit.toString());
         
@@ -1634,8 +1543,8 @@ public class PointMatcher3Test {
             
             //test.adjustPointsOfInterest();
             //test.examineInvPointLists();
-            //test.smallestSubsets();
-            test.examineIterativeCorners();
+            test.smallestSubsets();
+            //test.examineIterativeCorners();
             
             /*
             tests for :

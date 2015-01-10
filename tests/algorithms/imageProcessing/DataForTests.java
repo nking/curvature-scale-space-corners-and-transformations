@@ -728,4 +728,70 @@ public class DataForTests {
             }
         }
     }
+    
+    /*
+    https://venturi.fbk.eu/results/public-datasets/mountain-dataset/
+    
+    Image size: 640×480
+    Focal length expressed in horizontal pixels: 578.439
+    Focal length expressed in vertical pixels: 571.025
+    Displacement of the optical center with respect to the central pixel of the image: (Δr,Δc) = (-2.59964,-3.75566)
+    Radial distortion parameters: a=-0.0171494, b=0.0643652, c=-0.0594286.
+    
+    camera details:
+    
+        Sony Ericsson XPERIA Arc S
+
+    --------------------------------
+    Are these the camera sensor details?  http://www.sony.net/SonyInfo/News/Press/201010/10-137E/
+    
+        the detector is CMOS instead of a CCD:
+
+        F2.4 aperture, 8.5(W)×8.5(D)× 5.67(H)mm,
+        Sony’s Exmor™ R 
+        IMX105PQ
+        number of effective pixels:
+           3288(H)×2472(V)
+           pixel size is 1.4μm
+    
+        Lens module:
+         IU105F2, 8.5(W)×8.5(D)× 5.67(H)mm, F2.4
+         
+    F2.4 and 8.5mm x 8.5mm ==> focal distance of 20.4 mm
+    (20.4e-3)/(1.4e-6) = 14571 in pixels 
+    
+    Did they bin their pixels?  
+        3288/640 = 5.14, 2472/480 = 5.15
+    
+    still a factor of 5 off... doesn't look like the sensor information for their data
+    
+    ------------------------------------------------
+    camera calibration matrix:
+        | f/s_x  f/s_x*cot(theta)  o_x |
+    K = | 0      f/s_y             o_y |
+        | 0      0                 1   |
+
+    f is focal distance in mm
+    o_x,o_y is the principal point, image center coordinates in pixels
+    s_x, s_y are the pixel sizes in the camera in mm
+    theta is the angle between the axes and is usually pi/2
+    
+        | 578.439  578.439*cot(theta)  -2.59964 |
+    K = | 0        571.025             -3.75566 |
+        | 0        0                   1        |
+    
+    */
+    
+    public static SimpleMatrix getVenturiCameraIntrinsics() {
+        
+        SimpleMatrix k = new SimpleMatrix(3, 3);
+        
+        k.set(0, 0, 578.439);
+        k.set(1, 1, 571.025);
+        k.set(2, 2, 1);
+        k.set(0, 2, -2.59964);
+        k.set(0, 2, -3.75566);
+        
+        return k;
+    }
 }

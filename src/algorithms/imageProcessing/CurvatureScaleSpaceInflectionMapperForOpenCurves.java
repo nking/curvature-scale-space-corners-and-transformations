@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.List;
@@ -125,7 +124,7 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
             pointMatcher.calculateRoughTransformationForUnmatched(
                 xyPeaks1, xyPeaks2, 
                 (image1OriginalWidth >> 1), 
-                (image1OriginalHeight >> 1));
+                (image1OriginalHeight >> 1), 1.0f);
         
         log.info("FIT: " + fit.toString());
         

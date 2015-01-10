@@ -113,7 +113,7 @@ public class PointMatcherTest {
         TransformationPointFit fit = 
             matcher.calculateTranslation(set1, set2,
             rotation, scale, 
-            centroidX1, centroidY1, true);
+            centroidX1, centroidY1, true, 1.0f);
         
         assertNotNull(fit);
         assertNotNull(fit.getParameters());
