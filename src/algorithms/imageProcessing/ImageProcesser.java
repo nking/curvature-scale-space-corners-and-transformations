@@ -522,7 +522,7 @@ public class ImageProcesser {
         the theta image, determine bounds of the region, and set all pixels
         within the bounds to '0's too.
         
-        for the DFS portion I wrote group finding code in another project:
+        for the DFS portion, I wrote group finding code in another project:
         https://two-point-correlation.googlecode.com/git/docs/dfs.png
        
         https://code.google.com/p/two-point-correlation/source/browse/src/main/java/algorithms/compGeometry/clustering/twopointcorrelation/DFSGroupFinder.java
@@ -541,6 +541,7 @@ public class ImageProcesser {
             sky.)
         
         rough design:
+        
             N is the number of pixels in input. 
             N_groups is the number of groups of contiguous pixels of values '0'. 
             N_0 is number of pixels within largest '0' group.  
@@ -552,7 +553,7 @@ public class ImageProcesser {
                DFSGroupFinder mentioned above.
                The data structures for the 'group' and the index information
                will be re-written here for use with GreyScaleImage.
-            -- O(N_groups) or O(N_groups * lg(N_groups).
+            -- O(N_groups) or O(N_groups * lg(N_groups)).
                given groups of contiguous '0' value pixels,
                choose the largest group or largest groups if the sizes of the
                top are very close.
@@ -578,12 +579,12 @@ public class ImageProcesser {
                    help exclude copying the positive features under the sky
                    (those would subsequently be eroded away)
 
-                -- O(estimate the runtime for ErosionFilter.java...).
+                -- 8 * O(N) * (?)
                    then can apply the erosion filter to the new image.
                    --> assert that the result is a binary image of sky as '0's 
                        and all else is '1's
 
-                   this is now a mask for the sky.
+            this is now a mask for the sky.
 
             -- O(N)
                one can multiply the input image by the new mask.  subsequent
@@ -591,14 +592,14 @@ public class ImageProcesser {
                features more easily afterwards.
         
         data structures:
-            need to decide whether to use the smaller memory data structures of 
-            the code in the other project or use java structures here.
-            The number of pixels in images may be very large, so it's worth the
-            effort to use small memory structures here.
-            
-            the dfs zero pixel finder:
-                 
         
+            re-using the small memory data structures in the code referenced 
+            above.
+            
+           -- SimpleLinkedListNode a lightweight linked list implementation
+           -- primitive arrays
+           -- GreyScaleImage
+                         
         */
        
         throw new UnsupportedOperationException("not implemented yet");
