@@ -35,6 +35,8 @@ public class RANSACSolver {
     
     private boolean debug = true;
     
+    private double generalTolerance = 3;
+    
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     /**
@@ -140,7 +142,7 @@ public class RANSACSolver {
         PairFloatArray xy1 = null;
         PairFloatArray xy2 = null;
         
-        double tolerance = 3; //2;//4
+        double tolerance = generalTolerance;
         //double freqFractionToAddBackIn = 0.3;
         
         // ====== find matched pairs incremently, and best among only 7 point match ====
@@ -280,7 +282,7 @@ public class RANSACSolver {
         PairFloatArray xy1 = null;
         PairFloatArray xy2 = null;
         
-        double tolerance = 3;//2;//4
+        double tolerance = generalTolerance;
         double limitFrac = 0.6;
         
         // ====== find matched pairs incremently, and best among only 7 point match ====

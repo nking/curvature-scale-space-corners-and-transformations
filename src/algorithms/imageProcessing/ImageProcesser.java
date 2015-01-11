@@ -514,6 +514,95 @@ public class ImageProcesser {
         }
     }
     
+    public void applyImageSegmentationForSky(GreyscaleImage input, 
+        GreyscaleImage theta) throws IOException, NoSuchAlgorithmException {
+                
+        /*
+        this needs a dfs type algorithm to find contiguous '0' pixels in
+        the theta image, determine bounds of the region, and set all pixels
+        within the bounds to '0's too.
+        
+        for the DFS portion I wrote group finding code in another project:
+        https://two-point-correlation.googlecode.com/git/docs/dfs.png
+       
+        https://code.google.com/p/two-point-correlation/source/browse/src/main/java/algorithms/compGeometry/clustering/twopointcorrelation/DFSGroupFinder.java
+        
+        ----------------------------------------------------------------
+        the algorithm:
+        
+        responsibilities:
+        
+            the algorithm should determine sky and turn all pixels within the sky
+            to zero in the input image.  the input theta image should be the 
+            gradient theta image created by the canny edge filter used in 
+            'outdoorMode' for best results.
+            (when a blur is not used, the gradient theta image has alot of structure
+            in sky, but too much blur will move the boundary of the sky.)
+        
+        rough design:
+            N is the number of pixels in input. N_0 is number of pixels within
+            largest '0' group.  N_H is the number of points in the group '0' hull.
+            -- O(N)
+               copy the image theta to theta2
+            -- ~O(N^2)
+               on theta2, return all groups of contiguous regions
+               that have value 0. (might change that to allow a given value).
+               This is a DFS style algorithm that should be similar to the
+               DFSGroupFinder mentioned above.
+               The data structures for the 'group' and the index information
+               will be re-written here for use with GreyScaleImage.
+            -- given groups of contiguous '0' value pixels,
+               choose the largest group or largest groups if the sizes of the
+               top are very close.
+        
+            for all points within the boundaries of the largest '0' group(s)
+            we want to set those to '0's too.
+            (this is easily done by the erosion filter I have, except
+            that it's setup to only work on an entire image).
+        
+            so to make the image to apply the erosion filter to:
+                -- convex hull is fast approx of the '0' group(s) boundaries, 
+                   but the convexity
+                   means that it may include positive pixels from non-sky areas
+                   between hull points.
+               
+                -- O(N) + O(N_0 lg(N_0)) + O(N)*O(N_H)
+                   so to make an image that is the input to an erosion filter
+                   would need to create an empty image and turn all points outside
+                   of the convex hull to '1's.
+                   then copy all pixels from within the bounds of
+                   the convex hull into the new image. 
+                   (keep the values as binary, anything > 0 gets a '1')
+                ** for points that are within the hull between 2 points 
+                   bounds specifically, do not copy those points.  that should
+                   help exclude copying the positive features under the sky
+                   (those would subsequently be eroded away)
+
+                -- then can apply the erosion filter to the image.
+                   --> assert that the result is a binary image of sky as '0's 
+                       and all else is '1's
+
+                -- this is now a mask for the sky.
+
+            -- O(N)
+               one can multiply the input image by the new mask.  subsequent
+               operations such as an edge detector should find horizon
+               features more easily afterwards.
+        
+        data structures:
+            need to decide whether to use the smaller memory data structures of the
+            code in the other project, or use java structures here.
+            The number of pixels in images may be very large, so it's worth the
+            effort to use small memory structures here.
+            
+            the dfs zero pixel finder:
+                 
+        
+        */
+       
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+    
     public void multiply(GreyscaleImage input, float m) throws IOException,
         NoSuchAlgorithmException {
         

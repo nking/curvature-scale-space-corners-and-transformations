@@ -4,6 +4,9 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.Errors;
 import algorithms.misc.MiscMath;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -780,6 +781,17 @@ public class DataForTests {
     K = | 0        571.025             -3.75566 |
         | 0        0                   1        |
     
+    for extrinsic matrix, apply any rotation and translation of the camera
+    to the intrinsic matrix.
+    
+    C, the calibration matrix, is the intrinsic matrix operated on by
+    rotation and or translation of the camera, if any rotation or translation.
+    
+    P_C is point (u,v,w) in the image plane where P is point (x, y, z) is 3D coordinate
+    of an object in real world reference frame.
+    
+    P_C = K * P
+   
     */
     
     public static SimpleMatrix getVenturiCameraIntrinsics() {
@@ -794,4 +806,41 @@ public class DataForTests {
         
         return k;
     }
+    
+    /**
+     <pre>
+        <id>00000001.jpg</id>
+             <extrinsic manual="yes">
+             <yaw_0>334.84299</yaw_0>
+             <pitch_0>-2.7474477</pitch_0>
+             <roll_0>0.24977571</roll_0>
+             </extrinsic>
+      </pre>
+     * @return 
+     */
+    public static SimpleMatrix getVenturiRotationMatrixForImage001() {
+        
+        SimpleMatrix rot = MatrixUtil.calculateRotationMatrix(334.84299, -2.7474477, 
+            0.24977571);
+        
+        return rot;
+    }
+    
+    /**
+        <id>00000010.jpg</id>
+             <extrinsic>
+             <yaw_0>335.0196462</yaw_0>
+             <pitch_0>-2.677034873</pitch_0>
+             <roll_0>-0.00302316582</roll_0>
+             </extrinsic>
+     * @return 
+     */
+    public static SimpleMatrix getVenturiRotationMatrixForImage010() {
+        
+        SimpleMatrix rot = MatrixUtil.calculateRotationMatrix(335.0196462, -2.677034873, 
+            -0.00302316582);
+        
+        return rot;
+    }
+    
 }

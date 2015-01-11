@@ -55,6 +55,42 @@ public class GreyscaleImage {
        
         a[idx] = value;
     }
+    
+    public void setValue(int internalIndex, int value) {
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
+        a[internalIndex] = value;
+    }
+    
+    public int getValue(int internalIndex) {
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
+        return a[internalIndex];
+    }
+    
+    public int getIndex(int col, int row) {
+        
+        if ((col < 0) || (col > (width - 1))) {
+            throw new IllegalArgumentException("col is out of bounds: col=" 
+                + col + " width=" + width);
+        }
+        if ((row < 0) || (row > (height - 1))) {
+            throw new IllegalArgumentException("row is out of bounds: row=" 
+                + row + " height=" + height);
+        }
+        
+        int idx = (row * width) + col;
+        
+        return idx;
+    }
         
     public int getValue(int col, int row) {
         
@@ -77,21 +113,6 @@ public class GreyscaleImage {
             | ((g[idx] & 0x0ff) << 8) | (b[idx] & 0x0ff));
         */
         return a[idx];
-    }
-    
-    /**
-     * get pixel using the internal index of 0 through width x height pixels.
-     * 
-     * @param internalIndex
-     * @return 
-     */
-    public int getValue(int internalIndex) {
-        
-        if (internalIndex > a.length) {
-            throw new IllegalArgumentException("internalIndex is out of bounds");
-        }
-        
-        return a[internalIndex];
     }
     
     public int[] getValues() {

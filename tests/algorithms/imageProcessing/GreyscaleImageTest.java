@@ -92,4 +92,17 @@ public class GreyscaleImageTest {
         }
     }
 
+    public void testInternalIndexUse() throws Exception {
+        
+        GreyscaleImage img = new GreyscaleImage(10, 19);
+        
+        for (int i = 0; i < img.getNPixels(); i++) {
+            img.setValue(i, i);
+        }
+        
+        for (int i = 0; i < img.getNPixels(); i++) {
+            int v = img.getValue(i);
+            assertTrue(v == i);
+        }
+    }
 }

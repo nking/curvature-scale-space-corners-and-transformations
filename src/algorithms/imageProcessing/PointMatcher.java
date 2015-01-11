@@ -2493,12 +2493,18 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             */
             
             int nBins = (int)(setsFractionOfImage*(float)centroidX1*4.f/30.f);
+            if (nBins < 15) {
+                nBins = 15;
+            }
 
             HistogramHolder hX = Histogram
                 .createSimpleHistogram(nBins,
                 transX, Errors.populateYErrorsBySqrt(transX));
 
             nBins = (int)(setsFractionOfImage*(float)centroidY1*4.f/30.f);
+            if (nBins < 15) {
+                nBins = 15;
+            }
             
             HistogramHolder hY = Histogram
                 .createSimpleHistogram(nBins,

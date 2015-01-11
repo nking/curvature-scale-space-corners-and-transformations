@@ -19,7 +19,7 @@ import org.ejml.simple.*;
  * 
  * <pre>
  * The fundamental matrix is the projective solution for transformation
- * between 2 images of the same objects.
+ * between 2 images of the same objects in pixel coordinates.
  * Present below is the solution for having 7 matched points between images
  * and the solution for having 8 or more matched points between the images.
  * Both use numerical conditioning and recipes suggested by Hartley 
@@ -2176,4 +2176,61 @@ public class StereoProjectionTransformer {
         return ransacSolver.calculateEpipolarProjection(matchedLeftXY, 
             matchedRightXY, outputLeftXY, outputRightXY);
     }
+    
+    /**
+    calculate the 4 possible projection matrices from the essential matrix.
+    * Note that the essential matrix is the transformation matrix between points
+    * that are in camera coordinates rather than in pixel coordinates.
+    the method is adapted from: https://github.com/jesolem/PCV
+    Their code is licensed under  BSD license (2-clause "Simplified BSD License").
+    */
+    /*
+    public SimpleMatrix[] calculatePFromEssential(SimpleMatrix essentialMatrix) {
+        
+        SimpleSVD svd = essentialMatrix.svd();
+        
+        SimpleMatrix v = svd.getV();
+        double val = svd.getU().dot(v);
+        if (val < 0) {
+            v = v.scale(-1);
+        }
+       
+        SimpleMatrix diag = new SimpleMatrix();
+        diag.set(0, 0, 1);
+        diag.set(1, 1, 1);
+        double[][] dDotV = MatrixUtil.dot(diag, v);
+        SimpleMatrix d = new SimpleMatrix(dDotV);
+        
+        SimpleMatrix essentialMatrix2 = svd.getU().mult(d);
+        
+        SimpleMatrix w = new SimpleMatrix(3, 3);
+        w.set(0, 1, -1);
+        w.set(1, 0, 1);
+        w.set(2, 2, 1);
+        
+        SimpleMatrix u = svd.getU();
+        
+        SimpleMatrix uwv = w.mult(v);
+        uwv = u.mult(uwv);
+        
+        SimpleMatrix uwTransposev = u.mult(w.transpose().mult(v));
+        
+        SimpleMatrix uLastCol = u.extractVector(false, 2);
+        
+        SimpleMatrix pt1 = u.mult(uwv).transpose();
+        SimpleMatrix pt2 = u.mult(uwTransposev).transpose();
+        
+        //dot(U,dot(W,V)).T,U[:,2])
+        SimpleMatrix p1;//pt1,  uLastCol
+        
+        //(dot(U,dot(W,V)).T,-U[:,2])
+        SimpleMatrix p2;//pt1, -uLastCol
+        
+        //(dot(U,dot(W.T,V)).T,U[:,2])
+        SimpleMatrix p3;//pt2, uLastCol
+        
+        //(dot(U,dot(W.T,V)).T,-U[:,2])
+        SimpleMatrix p4;//pt2, -uLastCol
+        
+    }*/
 }

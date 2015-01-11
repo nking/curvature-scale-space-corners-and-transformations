@@ -398,4 +398,27 @@ public class ImageProcesserTest extends TestCase {
         assertTrue(image.getHeight() == (h - 2*border + 2));
     }
 
+    public void estSegmentationForSky() throws Exception {
+
+        String fileName1 = "brown_lowe_2003_image2.jpg";
+        String fileName2 = "brown_lowe_2003_image2_theta.jpg";
+
+        /*
+         String fileName1 = "venturi_mountain_j6_0001.png";
+         */
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        GreyscaleImage input = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        GreyscaleImage theta = ImageIOHelper.readImageAsGrayScaleB(
+            ResourceFinder.findFileInTestResources(fileName2));
+        int image1Width = input.getWidth();
+        int image1Height = input.getHeight();
+
+        ImageProcesser imageProcesser = new ImageProcesser();
+
+        imageProcesser.applyImageSegmentationForSky(input, theta);
+
+        ImageDisplayer.displayImage("segmented for sky", input);
+        
+        int z = 1;
+    }
 }

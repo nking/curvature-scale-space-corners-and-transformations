@@ -230,6 +230,54 @@ public class MatrixUtil {
         return c;
     }
     
+    
+    public static double[] extractRawPitchRollFromRotation(SimpleMatrix rotMatrix) {
+        
+        double yaw = Math.atan(rotMatrix.get(1, 0)/ rotMatrix.get(0, 0));
+        
+        double pitch = Math.atan(-rotMatrix.get(2, 0)/
+            Math.sqrt(rotMatrix.get(2, 1)*rotMatrix.get(2, 1) +
+                rotMatrix.get(2, 2)*rotMatrix.get(2, 2)));
+         
+        double roll = Math.atan(rotMatrix.get(2, 1)/ rotMatrix.get(2, 2));
+        
+        return new double[]{yaw, pitch, roll};
+    }
+    
+    public static SimpleMatrix calculateRotationMatrix(double yaw,
+        double pitch, double roll) {
+                
+        SimpleMatrix rot = new SimpleMatrix(3, 3);
+        
+        return calculateRotationMatrix(rot, yaw, pitch, roll);
+    }
+    
+    protected static SimpleMatrix calculateRotationMatrix(
+        SimpleMatrix m, double yaw, double pitch, double roll) {
+                        
+        m.set(0, 0, Math.cos(yaw) * Math.cos(pitch));
+        m.set(0, 1, 
+            (Math.cos(yaw)*Math.sin(pitch)*Math.sin(roll) - 
+            Math.sin(yaw)*Math.cos(roll)));
+        m.set(0, 2, 
+            (Math.cos(yaw)*Math.sin(pitch)*Math.cos(roll) + 
+            Math.sin(yaw)*Math.sin(roll)));
+        
+        m.set(1, 0, Math.sin(yaw) * Math.cos(pitch));
+        m.set(1, 1, 
+            (Math.sin(yaw)*Math.sin(pitch)*Math.sin(roll) + 
+            Math.cos(yaw)*Math.cos(roll)));
+        m.set(1, 2, 
+            (Math.sin(yaw)*Math.sin(pitch)*Math.cos(roll) - 
+            Math.cos(yaw)*Math.sin(roll)));
+        
+        m.set(2, 0, -Math.sin(pitch));
+        m.set(0, 0, Math.cos(pitch) * Math.sin(roll));
+        m.set(0, 0, Math.cos(pitch) * Math.cos(roll));
+        
+        return m;
+    }
+    
     public static String printMatrix(double[][] params) {
         
         if (params == null) {

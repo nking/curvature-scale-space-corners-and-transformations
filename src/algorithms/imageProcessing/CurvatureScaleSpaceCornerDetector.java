@@ -89,8 +89,15 @@ public class CurvatureScaleSpaceCornerDetector extends
      * point spread functions similar for the images).
      * 
      * @param approxNumberOfCornersDesired 
+     * @param filterOnlyAboveThisNumberOfCorners if the default number of corners
+     * produced is this larger or larger, the method will iteratively 
+     * increase the lower intensity filter until approxNumberOfCornersDesired 
+     * are produced, else if the default number of corners is less
+     * than useOnlyAboveThisNumberOfCorners, the method will not filter
+     * the image further.
      */
-    public void findCornersIteratively(int approxNumberOfCornersDesired) {
+    public void findCornersIteratively(int approxNumberOfCornersDesired, 
+        int filterOnlyAboveThisNumberOfCorners) {
                     
         float lowerThresholdStepSize = 1.0f;
         
@@ -100,10 +107,18 @@ public class CurvatureScaleSpaceCornerDetector extends
             CannyEdgeFilter.defaultOutdoorLowThreshold :
             CannyEdgeFilter.defaultLowThreshold;
         
-        if ((nCorners > 0) && (nCorners < approxNumberOfCornersDesired)) {
+        if ((nCorners > 0) && (nCorners < filterOnlyAboveThisNumberOfCorners)) {
+            return;
+        } else if ((nCorners > 0) && (nCorners < approxNumberOfCornersDesired)) {
             return;            
         } else if (state.ordinal() < CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {            
             findCorners();
+        }
+
+        nCorners = corners.getN();
+        
+        if (nCorners < filterOnlyAboveThisNumberOfCorners) {
+            return;
         }
         
         //TODO: this could be improved to assert a minimum presence of corners
@@ -114,7 +129,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         List<PairIntArray> prevEdges = copy(this.edges);
         PairIntArray prevCorners = this.corners.copy();
         
-        nCorners = corners.getN();
         while ((nCorners > 0) && (nCorners > approxNumberOfCornersDesired)) {
             
             log.info("nCorners=" + nCorners);
