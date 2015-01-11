@@ -615,7 +615,7 @@ public class ImageProcesser {
             pointToGroupIndex : int[]
             minimumNumberInGroup : int
             -----------------------------------------------------------
-            +findGroups
+            +findGroups(int value)
             +getGroupMembershipList : SimpleLinkedListNode[]
             +getNumberOfGroups : int
             +getPointToGroupIndexes : int[]
@@ -658,9 +658,9 @@ public class ImageProcesser {
             +peekTop : int
             +peekNextToTop : int
             +pop : int
-            +isEmpty : boolen
+            +isEmpty : boolean
             +compressArrays
-            +getNPoints : int
+            +getN : int
             +compressArrays
             ===========================================================
         
@@ -671,6 +671,32 @@ public class ImageProcesser {
             +createSkyMask(GreyscaleImage input, GreyscaleImage theta)::GreyscaleImage
             +applyImageSegmentationForSky(GreyscaleImage input, GreyscaleImage theta)
             ===========================================================
+        
+        
+        collboration as sequence diagram:
+        
+             O
+            /|\
+            / \ ---------->ImageProcesser  
+             |                 |
+             |--createSkyMask  |
+             |  (img, theta)-->|
+             |                 |---------> DFSContiguousValueFinder
+             |                 |                    |
+             |                 |---findGroups(0)--->|
+             |                 |---getGroup...----->|
+             |                 |
+             |                 |---sort--> (TBD)
+             |                 |----------------------> GrahamScan
+             |                 |                            |
+             |                 |---computeHull(x,y)-------->|
+             |                 |---get..Hull()------------->|
+             |                 |
+             |                 |---------------------------------->ErosionFilter
+             |                 |---applyFilter(GreyscaleImage)--------->|
+             .                 
+             .
+             .
         */
        
         throw new UnsupportedOperationException("not implemented yet");
