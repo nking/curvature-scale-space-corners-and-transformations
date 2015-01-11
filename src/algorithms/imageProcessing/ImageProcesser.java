@@ -532,26 +532,28 @@ public class ImageProcesser {
         
         responsibilities:
         
-            the algorithm should determine sky and turn all pixels within the sky
-            to zero in the input image.  the input theta image should be the 
-            gradient theta image created by the canny edge filter used in 
-            'outdoorMode' for best results.
-            (when a blur is not used, the gradient theta image has alot of structure
-            in sky, but too much blur will move the boundary of the sky.)
+            the algorithm should determine sky in the input image and turn all 
+            pixels within the sky to zero in the input image.  the theta image 
+            should be the gradient theta image created by the canny edge filter 
+            used in 'outdoorMode' for best results.
+            (when a blur is not used, the gradient theta image has alot of 
+            structure in sky, but too much blur will move the boundary of the 
+            sky.)
         
         rough design:
-            N is the number of pixels in input. N_0 is number of pixels within
-            largest '0' group.  N_H is the number of points in the group '0' hull.
-            -- O(N)
-               copy the image theta to theta2
+            N is the number of pixels in input. 
+            N_groups is the number of groups of contiguous pixels of values '0'. 
+            N_0 is number of pixels within largest '0' group.  
+            N_H is the number of points in the largest group '0' hull.
             -- ~O(N^2)
-               on theta2, return all groups of contiguous regions
+               from theta, return all groups of contiguous regions
                that have value 0. (might change that to allow a given value).
                This is a DFS style algorithm that should be similar to the
                DFSGroupFinder mentioned above.
                The data structures for the 'group' and the index information
                will be re-written here for use with GreyScaleImage.
-            -- given groups of contiguous '0' value pixels,
+            -- O(N_groups) or O(N_groups * lg(N_groups).
+               given groups of contiguous '0' value pixels,
                choose the largest group or largest groups if the sizes of the
                top are very close.
         
@@ -561,37 +563,36 @@ public class ImageProcesser {
             that it's setup to only work on an entire image).
         
             so to make the image to apply the erosion filter to:
-                -- convex hull is fast approx of the '0' group(s) boundaries, 
-                   but the convexity
-                   means that it may include positive pixels from non-sky areas
-                   between hull points.
+                convex hull is fast approx of the '0' group(s) boundaries, 
+                but the convexity means that it may include positive pixels 
+                from non-sky areas between hull points.
                
                 -- O(N) + O(N_0 lg(N_0)) + O(N)*O(N_H)
-                   so to make an image that is the input to an erosion filter
-                   would need to create an empty image and turn all points outside
+                   create an empty image and turn all points outside
                    of the convex hull to '1's.
-                   then copy all pixels from within the bounds of
-                   the convex hull into the new image. 
-                   (keep the values as binary, anything > 0 gets a '1')
-                ** for points that are within the hull between 2 points 
+                   then copy all pixels of input image from within the bounds of
+                   the convex hull into the new image.
+                   (making the values binary, that is, anything > 0 gets a '1')
+                ** for points that are within the hull between 2 points'
                    bounds specifically, do not copy those points.  that should
                    help exclude copying the positive features under the sky
                    (those would subsequently be eroded away)
 
-                -- then can apply the erosion filter to the image.
+                -- O(estimate the runtime for ErosionFilter.java...).
+                   then can apply the erosion filter to the new image.
                    --> assert that the result is a binary image of sky as '0's 
                        and all else is '1's
 
-                -- this is now a mask for the sky.
+                   this is now a mask for the sky.
 
             -- O(N)
                one can multiply the input image by the new mask.  subsequent
-               operations such as an edge detector should find horizon
+               operations such as an edge detection should find horizon
                features more easily afterwards.
         
         data structures:
-            need to decide whether to use the smaller memory data structures of the
-            code in the other project, or use java structures here.
+            need to decide whether to use the smaller memory data structures of 
+            the code in the other project or use java structures here.
             The number of pixels in images may be very large, so it's worth the
             effort to use small memory structures here.
             
