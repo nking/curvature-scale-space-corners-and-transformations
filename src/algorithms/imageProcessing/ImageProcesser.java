@@ -647,21 +647,18 @@ public class ImageProcesser {
             +getKeys : int[]
             +getNumberOfKeys : int
             ===========================================================
-        
+                       ^
+                      /|\
+                       |
+                       |
             ===========================================================
             Stack
             -----------------------------------------------------------
-            a : int[]
-            n : int
             -----------------------------------------------------------
-            +push(int idx)
-            +peekTop : int
-            +peekNextToTop : int
-            +pop : int
+            +insert(int idx) : SimpleLinkedListNode
+            +peek : SimpleLinkedListNode
+            +pop : SimpleLinkedListNode
             +isEmpty : boolean
-            +compressArrays
-            +getN : int
-            +compressArrays
             ===========================================================
         
             ===========================================================
@@ -673,7 +670,7 @@ public class ImageProcesser {
             ===========================================================
         
         
-        collboration as sequence diagram:
+        collaboration as sequence diagram:
         
              O
             /|\
