@@ -5,7 +5,8 @@ import junit.framework.TestCase;
 /**
   adapted from 
   http://code.google.com/p/two-point-correlation/source/browse/src/test/java/algorithms/util/StackTest.java
-  under MIT License (MIT), Nichole King 2013 
+  under MIT License (MIT), Nichole King 2013
+  
  * @author nichole
  */
 public class StackIntTest extends TestCase {

@@ -398,7 +398,7 @@ public class ImageProcesserTest extends TestCase {
         assertTrue(image.getHeight() == (h - 2*border + 2));
     }
 
-    public void estSegmentationForSky() throws Exception {
+    public void testSegmentationForSky() throws Exception {
 
         String fileName1 = "brown_lowe_2003_image2.jpg";
         String fileName2 = "brown_lowe_2003_image2_theta.jpg";
@@ -417,8 +417,12 @@ public class ImageProcesserTest extends TestCase {
 
         imageProcesser.applyImageSegmentationForSky(input, theta);
 
+        //imageProcesser.divideByBlurredSelf(input, 5);
+        
         ImageDisplayer.displayImage("segmented for sky", input);
         
+        String outFilePath = ResourceFinder.findDirectory("bin") + "/del.png";
+        ImageIOHelper.writeOutputImage(outFilePath, input);
         int z = 1;
     }
 }

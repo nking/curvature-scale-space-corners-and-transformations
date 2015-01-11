@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
 import java.security.SecureRandom;
 import org.junit.After;
 import org.junit.Before;
@@ -104,5 +105,49 @@ public class GreyscaleImageTest {
             int v = img.getValue(i);
             assertTrue(v == i);
         }
+    }
+    
+    public void testGetXY() throws Exception {
+        
+        GreyscaleImage img = new GreyscaleImage(2, 3);
+
+        PairIntArray xy = new PairIntArray();
+        
+        img.getXY(xy, 0);
+        assertTrue(xy.getN() == 1);
+        assertTrue(xy.getX(0) == 0 && xy.getY(0) == 0);
+        
+        img.getXY(xy, 1);
+        assertTrue(xy.getN() == 2);
+        assertTrue(xy.getX(1) == 1 && xy.getY(1) == 0);
+        
+        img.getXY(xy, 2);
+        assertTrue(xy.getN() == 3);
+        assertTrue(xy.getX(2) == 0 && xy.getY(2) == 1);
+        
+        img.getXY(xy, 3);
+        assertTrue(xy.getN() == 4);
+        assertTrue(xy.getX(3) == 1 && xy.getY(3) == 1);
+        
+        img.getXY(xy, 4);
+        assertTrue(xy.getN() == 5);
+        assertTrue(xy.getX(4) == 0 && xy.getY(4) == 2);
+        
+        img.getXY(xy, 5);
+        assertTrue(xy.getN() == 6);
+        assertTrue(xy.getX(5) == 1 && xy.getY(5) == 2);
+        
+        /*
+        w   h
+        2 x 3 image
+        
+        idx  col  row
+        0     0    0
+        1     1    0
+        2     0    1
+        3     1    1
+        4     0    2
+        5     1    2
+        */
     }
 }

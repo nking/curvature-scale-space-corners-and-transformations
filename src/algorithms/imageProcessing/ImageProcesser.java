@@ -622,8 +622,8 @@ public class ImageProcesser {
             -prune
             -checkAndExpandGroupMembershipArray
             -expandIfNeeded(int[] a, int nTotal) : int[]
-            +getY(int groupId) : int[]
-            +getX(int groupId) : int[]
+            +getNumberofGroupMembers : int
+            +PairIntArray(int groupId) : PairIntArray
             +getIndexes(int groupId) : int[]
             -findClustersIterative
             -processPair(int uIndex, int vIndex)

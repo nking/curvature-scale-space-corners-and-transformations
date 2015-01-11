@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairIntArray;
+
 /**
  *
  * @author nichole
@@ -54,6 +56,52 @@ public class GreyscaleImage {
         */
        
         a[idx] = value;
+    }
+    
+    public void getXY(PairIntArray array, int internalIndex) {
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+   
+        // int idx = (row * width) + col;
+        //     idx/w = row  + 0;
+        int row = internalIndex/width;
+        
+        int col = internalIndex - (row * width);
+        
+        array.add(col, row);
+    }
+    
+    public int getRow(int internalIndex) {
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+   
+        // int idx = (row * width) + col;
+        //     idx/w = row  + 0;
+        int row = internalIndex/width;
+        
+        return row;
+    }
+    
+    public int getCol(int internalIndex) {
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+   
+        // int idx = (row * width) + col;
+        //     idx/w = row  + 0;
+        int row = internalIndex/width;
+        
+        int col = internalIndex - (row * width);
+        
+        return col;
     }
     
     public void setValue(int internalIndex, int value) {
