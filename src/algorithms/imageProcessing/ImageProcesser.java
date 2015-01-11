@@ -585,21 +585,92 @@ public class ImageProcesser {
                        and all else is '1's
 
             this is now a mask for the sky.
+            It can be used alone to create edges that are only the skyline,
+            or it can be used to multiply by the input image to remove
+            all sky pixels.
 
             -- O(N)
                one can multiply the input image by the new mask.  subsequent
                operations such as an edge detection should find horizon
                features more easily afterwards.
-        
+            
         data structures:
         
             re-using the small memory data structures in the code referenced 
             above.
             
            -- SimpleLinkedListNode a lightweight linked list implementation
+           -- Stack a lightweight stack implementation
            -- primitive arrays
            -- GreyScaleImage
                          
+        classes:
+            ===========================================================
+            DFSContiguousValueFinder
+            -----------------------------------------------------------
+            color : int[]
+            indexes : int[]
+            GreyScaleImage : img
+            groupMembership : SimpleLinkedListNode[]
+            pointToGroupIndex : int[]
+            minimumNumberInGroup : int
+            -----------------------------------------------------------
+            +findGroups
+            +getGroupMembershipList : SimpleLinkedListNode[]
+            +getNumberOfGroups : int
+            +getPointToGroupIndexes : int[]
+            -prune
+            -checkAndExpandGroupMembershipArray
+            -expandIfNeeded(int[] a, int nTotal) : int[]
+            +getY(int groupId) : int[]
+            +getX(int groupId) : int[]
+            +getIndexes(int groupId) : int[]
+            -findClustersIterative
+            -processPair(int uIndex, int vIndex)
+            ===========================================================
+        
+            ===========================================================
+            SimpleLinkedListNode
+            -----------------------------------------------------------
+            key : int
+            next : SimpleLinkedListNode
+            -----------------------------------------------------------
+            +getKey : int
+            +getNext : SimpleLinkedListNode
+            +setNext(SimpleLinkedListNode next)
+            +insert(int insertKey) : SimpleLinkedListNode
+            +insertIfDoesNotAlreadyExist(int insertKey) : SimpleLinkedListNode
+            +delete(SimpleLinkedListNode node)
+            +delete(int deleteKey)
+            +search(int searchKey) : SimpleLinkedListNode
+            +contains(int searchKey) : boolean
+            +getKeys : int[]
+            +getNumberOfKeys : int
+            ===========================================================
+        
+            ===========================================================
+            Stack
+            -----------------------------------------------------------
+            a : int[]
+            n : int
+            -----------------------------------------------------------
+            +push(int idx)
+            +peekTop : int
+            +peekNextToTop : int
+            +pop : int
+            +isEmpty : boolen
+            +compressArrays
+            +getNPoints : int
+            +compressArrays
+            ===========================================================
+        
+            ===========================================================
+            ImageProcesser
+            -----------------------------------------------------------
+            -----------------------------------------------------------
+            +createSkyMask(GreyscaleImage input, GreyscaleImage theta)::GreyscaleImage
+            +applyImageSegmentationForSky(GreyscaleImage input, GreyscaleImage theta)
+            ===========================================================
         */
        
         throw new UnsupportedOperationException("not implemented yet");
