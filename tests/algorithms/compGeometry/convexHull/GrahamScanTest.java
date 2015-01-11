@@ -1,5 +1,6 @@
 package algorithms.compGeometry.convexHull;
 
+import algorithms.util.PairIntArray;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
@@ -68,6 +69,27 @@ public class GrahamScanTest extends TestCase {
             assertTrue(Math.abs(expectedyy[i] - chy[i]) < 0.01);
         }
 
+        //--------------------
+        x = new float[]{0, 2, 7, 2, 2, 3};
+        y = new float[]{2, 2, 1, 6, 0, 2};
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < x.length; i++) {
+            xy.add(Math.round(x[i]), Math.round(y[i]));
+        }
+        
+        GrahamScanInt scanInt = new GrahamScanInt();
+        scanInt.computeHull(xy);
+        int[] chxint = scanInt.xHull;
+        int[] chyint = scanInt.yHull;
+
+        assertTrue(chxint.length == 5);
+        assertTrue(chyint.length == 5);
+        
+        for (int i = 0; i < expectedxx.length; i++) {
+            assertTrue(Math.abs(expectedxx[i] - chxint[i]) < 0.01);
+            assertTrue(Math.abs(expectedyy[i] - chyint[i]) < 0.01);
+        }
     }
     
     public void testScanExceptions() throws Exception {
@@ -135,14 +157,17 @@ public class GrahamScanTest extends TestCase {
 
         int ntries = 1;
 
+        float xMin = 10;
+        float yMin = 10;
+        float xMax = 1000;
+        float yMax = 1000;
+            
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xMin, xMax, yMin, yMax);
+        
         for (int i = 0; i < ntries; i++) {
             int n = 1000;
             float[] x = new float[n];
             float[] y = new float[n];
-            float xMin = 10;
-            float yMin = 10;
-            float xMax = 1000;
-            float yMax = 1000;
 
             float maxRadius = 200;
 
@@ -152,12 +177,28 @@ public class GrahamScanTest extends TestCase {
             scan.computeHull(x, y);
             float[] xHull = scan.xHull;
             float[] yHull = scan.yHull;
-
-            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xMin, xMax, yMin, yMax);
-            plotter.addPlot(x, y, xHull, yHull, null);
+            
+            plotter.addPlot(x, y, xHull, yHull, "gs");
             plotter.writeFile();
         }
 
+        for (int i = 0; i < ntries; i++) {
+            int n = 1000;
+            PairIntArray xy = new PairIntArray(n);
+            
+            int maxRadius = 200;
+
+            createRandomPointsAroundCenter(maxRadius, n, 600, 400, xy);
+
+            GrahamScanInt scanInt = new GrahamScanInt();
+            scanInt.computeHull(xy);
+            int[] xHull = scanInt.xHull;
+            int[] yHull = scanInt.yHull;
+
+            plotter.addPlot(xy.getX(), xy.getY(), xHull, yHull, "gs int");
+            plotter.writeFile();
+        }
+        
     }
 
     public void testCalculateConvexHull7() throws Exception {
@@ -228,7 +269,8 @@ public class GrahamScanTest extends TestCase {
     }
 
     protected void createRandomPointsAroundCenter(float maxRadius,
-        int numberOfPoints, float xc, float yc, double[] x, double[] y, int xyStartOffset) throws NoSuchAlgorithmException {
+        int numberOfPoints, float xc, float yc, double[] x, double[] y, 
+        int xyStartOffset) throws NoSuchAlgorithmException {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(System.nanoTime());
@@ -246,7 +288,8 @@ public class GrahamScanTest extends TestCase {
     }
 
     protected void createRandomPointsAroundCenter(float maxRadius,
-        int numberOfPoints, float xc, float yc, float[] x, float[] y, int xyStartOffset) throws NoSuchAlgorithmException {
+        int numberOfPoints, float xc, float yc, float[] x, float[] y, 
+        int xyStartOffset) throws NoSuchAlgorithmException {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(System.nanoTime());
@@ -260,6 +303,25 @@ public class GrahamScanTest extends TestCase {
 
             x[xyStartOffset + i] = xy[0];
             y[xyStartOffset + i] = xy[1];
+        }
+    }
+    
+    protected void createRandomPointsAroundCenter(int maxRadius,
+        int numberOfPoints, int xc, int yc, PairIntArray xyPoints) throws 
+        NoSuchAlgorithmException {
+
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        sr.setSeed(System.nanoTime());
+
+        for (int i = 0; i < numberOfPoints; i++) {
+
+            float radius = maxRadius * sr.nextFloat();
+            double angle = 360. * sr.nextDouble();
+
+            float[] xy = calculateXAndYFromXcYcAndRadius((float)xc, (float)yc, 
+                radius, angle);
+
+            xyPoints.add(Math.round(xy[0]), Math.round(xy[1]));
         }
     }
 

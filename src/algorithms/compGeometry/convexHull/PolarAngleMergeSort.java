@@ -1,6 +1,7 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.util.PairIntArray;
 import java.util.Arrays;
 
 /**
@@ -47,6 +48,27 @@ public class PolarAngleMergeSort {
         return nUsable;
     }
 
+    public static int sort(int xP0, int yP0, PairIntArray xy) {
+
+        if (xy == null) {
+        	throw new IllegalArgumentException("xy cannot be null");
+        }
+
+        if (xy.getN() == 1) {
+            return 1;
+        }
+
+        // for angles which are same, a delete operation is needed after all processing
+        //    and ability to ignore the point to be deleted.
+        double[] polarAngle = new double[xy.getN()];
+
+        sort(xP0, yP0, xy, 1, xy.getN() - 1, polarAngle);
+        
+        int nUsable = reduceToUniquePolarAngles(xP0, yP0, xy, polarAngle);
+        
+        return nUsable;
+    }
+    
     static int reduceToUniquePolarAngles(double xP0, double yP0, double[] x, double[] y, double[] polarAngle) {
 
         int lastKeptIndex = 0;
@@ -119,6 +141,47 @@ public class PolarAngleMergeSort {
         return lastKeptIndex + 1;
     }
 
+    static int reduceToUniquePolarAngles(int xP0, int yP0, PairIntArray xy, 
+        double[] polarAngle) {
+
+        int lastKeptIndex = 0;
+
+        for (int i = 1; i < xy.getN(); i++) {
+
+            // store
+            xy.set(lastKeptIndex + 1, xy.getX(i), xy.getY(i));
+
+            // look ahead
+            int nSkip = 0;
+            int nextI = i + 1;
+            double maxDistance = relativeLengthOfLine(xP0, yP0, 
+                xy.getX(i), xy.getY(i));
+            int indexMaxDistance = i;
+
+            while ( (nextI < xy.getN()) && (Math.abs( polarAngle[i] - polarAngle[nextI] ) < eps) ) {
+                double dist = relativeLengthOfLine(xP0, yP0, 
+                    xy.getX(nextI), xy.getY(nextI));
+                if (maxDistance < dist) {
+                    maxDistance = dist;
+                    indexMaxDistance = nextI;
+                }
+                nSkip++;
+                nextI++;
+            }
+            
+            if (nSkip > 0) {
+                
+                xy.set(lastKeptIndex + 1, xy.getX(indexMaxDistance), 
+                    xy.getY(indexMaxDistance));
+                
+                i = nextI - 1;
+            }
+
+            lastKeptIndex++;
+        }
+        return lastKeptIndex + 1;
+    }
+    
     protected static void sort(float xP0, float yP0, float[] x, float[] y, int indexLo, int indexHi, double[] polarAngle) {
 
         int indexMid = -1;
@@ -132,8 +195,21 @@ public class PolarAngleMergeSort {
             merge(xP0, yP0, x, y, indexLo, indexMid, indexHi, polarAngle);
         }
     }
+    
+    static void sort(int xP0, int yP0, PairIntArray xy, 
+        int indexLo, int indexHi, double[] polarAngle) {
 
-    private static void merge( float xP0, float yP0, float[] x, float[] y, int indexLo, int indexMid, int indexHi, double[] polarAngle) {
+        if (indexLo < indexHi) {
+
+            int indexMid = (indexLo + indexHi) >> 1;
+
+            sort(xP0, yP0, xy, indexLo, indexMid, polarAngle);
+            sort(xP0, yP0, xy, indexMid + 1, indexHi, polarAngle);
+            merge(xP0, yP0, xy, indexLo, indexMid, indexHi, polarAngle);
+        }
+    }
+
+    private static void merge(float xP0, float yP0, float[] x, float[] y, int indexLo, int indexMid, int indexHi, double[] polarAngle) {
 
         int nLeft = indexMid - indexLo + 1;
         int nRight = indexHi - indexMid;
@@ -190,6 +266,62 @@ public class PolarAngleMergeSort {
         }
     }
 
+    private static void merge(int xP0, int yP0, PairIntArray xy, 
+        int indexLo, int indexMid, int indexHi, double[] polarAngle) {
+
+        int nLeft = indexMid - indexLo + 1;
+        int nRight = indexHi - indexMid;
+
+        int[] xLeft = Arrays.copyOfRange(xy.getX(), indexLo, indexMid + 2);       // add 1 for sentinel
+        int[] yLeft = Arrays.copyOfRange(xy.getY(), indexLo, indexMid + 2);
+        double[] angleLeft = new double[nLeft + 1];
+
+        int[] xRight = Arrays.copyOfRange(xy.getX(), indexMid + 1, indexHi + 2);  // add 1 for sentinel
+        int[] yRight = Arrays.copyOfRange(xy.getY(), indexMid + 1, indexHi + 2);
+        double[] angleRight = new double[nRight + 1];
+
+        int i, j, index;
+
+        for (i = 0; i < nLeft; i++) {
+            index = indexLo + i;
+            angleLeft[i] = LinesAndAngles.calculatePolarSineTheta(xP0, yP0, 
+                xy.getX(index), xy.getY(index));
+        }
+
+        for (j = 0; j < nRight; j++) {
+            index = indexMid + j + 1;
+            angleRight[j] = LinesAndAngles.calculatePolarSineTheta(xP0, yP0, 
+                xy.getX(index), xy.getY(index));
+        }
+
+        xLeft[nLeft] = Integer.MAX_VALUE;
+        yLeft[nLeft] = Integer.MAX_VALUE;
+        angleLeft[nLeft] = Double.MAX_VALUE;
+        xRight[nRight] = Integer.MAX_VALUE;
+        yRight[nRight] = Integer.MAX_VALUE;
+        angleRight[nRight] = Double.MAX_VALUE;
+
+        i = 0;
+        j = 0;
+
+        for (int k = indexLo; k <= indexHi; k++) {
+
+            double angDiff = angleLeft[i] - angleRight[j];
+            if (angDiff < 0) {
+                angDiff *= -1.;
+            }
+            if ( (angDiff < eps ) || (angleLeft[i] < angleRight[j] ) ) {
+
+                xy.set(k, xLeft[i], yLeft[i]);
+                polarAngle[k] = angleLeft[i];
+                i++;
+            } else {
+                xy.set(k, xRight[j], yRight[j]);
+                polarAngle[k] = angleRight[j];
+                j++;
+            }
+        }
+    }
     static double relativeLengthOfLine(double x1, double y1, double x2, double y2) {
         double dx2 = (x2 - x1);
         dx2 *= dx2;

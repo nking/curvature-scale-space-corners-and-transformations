@@ -32,57 +32,64 @@ public class DFSContiguousValueFinderTest extends TestCase {
         img.setValue(2, 1, 1);
         img.setValue(2, 2, 1);
         
-        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);
-        
-        finder.findGroups(0);
-        
-        SimpleLinkedListNode[] groups = finder.getGroupMembershipList();
-        
-        assertNotNull(groups);
-        
-        assertTrue(finder.getNumberOfGroups() == 1);
-                        
-        PairIntArray xy = finder.getXY(0);
-        
-        assertNotNull(xy);
-        
-        assertTrue(xy.getN() == 4);
-        
-        List<String> expected = new ArrayList<String>();
-        expected.add(String.format("%d:%d", 0, 0));
-        expected.add(String.format("%d:%d", 1, 0));
-        expected.add(String.format("%d:%d", 2, 0));
-        expected.add(String.format("%d:%d", 1, 1));
-        
-        for (int i = 0; i < xy.getN(); i++) {
-            String v = String.format("%d:%d", xy.getX(i), xy.getY(i));
-            int eIdx = expected.indexOf(v);
-            assertTrue(eIdx > -1);
-            expected.remove(eIdx);
-        }
-        
-        assertTrue(expected.isEmpty());
-        
-        expected = new ArrayList<String>();
-        expected.add(String.format("%d:%d", 0, 0));
-        expected.add(String.format("%d:%d", 1, 0));
-        expected.add(String.format("%d:%d", 2, 0));
-        expected.add(String.format("%d:%d", 1, 1));
-        
-        SimpleLinkedListNode indexList = groups[0];
-        while (indexList != null) {
-            int idx = indexList.getKey();
-            int x = img.getCol(idx);
-            int y = img.getRow(idx);
+        for (int s = 0; s < 2; s++) {
             
-            String v = String.format("%d:%d", x, y);
-            int eIdx = expected.indexOf(v);
-            assertTrue(eIdx > -1);
-            expected.remove(eIdx);
-            
-            indexList = indexList.getNext();
+            DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);
+
+            if (s == 0) {
+                finder.findGroups(0);
+            } else {
+                finder.findGroupsNotThisValue(1);
+            }
+
+            SimpleLinkedListNode[] groups = finder.getGroupMembershipList();
+
+            assertNotNull(groups);
+
+            assertTrue(finder.getNumberOfGroups() == 1);
+
+            PairIntArray xy = finder.getXY(0);
+
+            assertNotNull(xy);
+
+            assertTrue(xy.getN() == 4);
+
+            List<String> expected = new ArrayList<String>();
+            expected.add(String.format("%d:%d", 0, 0));
+            expected.add(String.format("%d:%d", 1, 0));
+            expected.add(String.format("%d:%d", 2, 0));
+            expected.add(String.format("%d:%d", 1, 1));
+
+            for (int i = 0; i < xy.getN(); i++) {
+                String v = String.format("%d:%d", xy.getX(i), xy.getY(i));
+                int eIdx = expected.indexOf(v);
+                assertTrue(eIdx > -1);
+                expected.remove(eIdx);
+            }
+
+            assertTrue(expected.isEmpty());
+
+            expected = new ArrayList<String>();
+            expected.add(String.format("%d:%d", 0, 0));
+            expected.add(String.format("%d:%d", 1, 0));
+            expected.add(String.format("%d:%d", 2, 0));
+            expected.add(String.format("%d:%d", 1, 1));
+
+            SimpleLinkedListNode indexList = groups[0];
+            while (indexList != null) {
+                int idx = indexList.getKey();
+                int x = img.getCol(idx);
+                int y = img.getRow(idx);
+
+                String v = String.format("%d:%d", x, y);
+                int eIdx = expected.indexOf(v);
+                assertTrue(eIdx > -1);
+                expected.remove(eIdx);
+
+                indexList = indexList.getNext();
+            }
+
+            assertTrue(expected.isEmpty());
         }
-        
-        assertTrue(expected.isEmpty());
     }
 }

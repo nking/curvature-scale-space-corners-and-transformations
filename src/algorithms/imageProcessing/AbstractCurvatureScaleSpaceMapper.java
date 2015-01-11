@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -232,6 +233,17 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         theta = filter.getTheta();
         
         imgHistogram = filter.getImgHistogram();
+        
+        if (useOutdoorMode) {
+            ImageProcesser imageProcesser = new ImageProcesser();
+            try {
+                imageProcesser.applyImageSegmentationForSky(img, theta);
+            } catch (IOException ex) {
+                log.severe(ex.getMessage());
+            } catch (NoSuchAlgorithmException ex) {
+                log.severe(ex.getMessage());
+            }
+        }
                         
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }

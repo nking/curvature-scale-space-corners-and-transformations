@@ -1,10 +1,19 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
+import algorithms.compGeometry.convexHull.GrahamScanInt;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.misc.MiscMath;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -517,190 +526,142 @@ public class ImageProcesser {
     public void applyImageSegmentationForSky(GreyscaleImage input, 
         GreyscaleImage theta) throws IOException, NoSuchAlgorithmException {
                 
-        /*
-        this needs a dfs type algorithm to find contiguous '0' pixels in
-        the theta image, determine bounds of the region, and set all pixels
-        within the bounds to '0's too.
+        applyImageSegmentation(theta, 2);
         
-        for the DFS portion, I wrote group finding code in another project:
-        https://two-point-correlation.googlecode.com/git/docs/dfs.png
-       
-        https://code.google.com/p/two-point-correlation/source/browse/src/main/java/algorithms/compGeometry/clustering/twopointcorrelation/DFSGroupFinder.java
+        subtractMinimum(theta);
+      
+        GreyscaleImage mask = createSkyMask(theta);
         
-        ----------------------------------------------------------------
-        the algorithm:
-        
-        responsibilities:
-        
-            the algorithm should determine sky in the input image and turn all 
-            pixels within the sky to zero in the input image.  the theta image 
-            should be the gradient theta image created by the canny edge filter 
-            used in 'outdoorMode' for best results.
-            (when a blur is not used, the gradient theta image has alot of 
-            structure in sky, but too much blur will move the boundary of the 
-            sky.)
-        
-        rough design:
-        
-            N is the number of pixels in input. 
-            N_groups is the number of groups of contiguous pixels of values '0'. 
-            N_0 is number of pixels within largest '0' group.  
-            N_H is the number of points in the largest group '0' hull.
-            -- ~O(N^2)
-               from theta, return all groups of contiguous regions
-               that have value 0. (might change that to allow a given value).
-               This is a DFS style algorithm that should be similar to the
-               DFSGroupFinder mentioned above.
-               The data structures for the 'group' and the index information
-               will be re-written here for use with GreyScaleImage.
-            -- O(N_groups) or O(N_groups * lg(N_groups)).
-               given groups of contiguous '0' value pixels,
-               choose the largest group or largest groups if the sizes of the
-               top are very close.
-        
-            for all points within the boundaries of the largest '0' group(s)
-            we want to set those to '0's too.
-            (this is easily done by the erosion filter I have, except
-            that it's setup to only work on an entire image).
-        
-            so to make the image to apply the erosion filter to:
-                convex hull is fast approx of the '0' group(s) boundaries, 
-                but the convexity means that it may include positive pixels 
-                from non-sky areas between hull points.
-               
-                -- O(N) + O(N_0 lg(N_0)) + O(N)*O(N_H)
-                   create an empty image and turn all points outside
-                   of the convex hull to '1's.
-                   then copy all pixels of input image from within the bounds of
-                   the convex hull into the new image.
-                   (making the values binary, that is, anything > 0 gets a '1')
-                ** for points that are within the hull between 2 points'
-                   bounds specifically, do not copy those points.  that should
-                   help exclude copying the positive features under the sky
-                   (those would subsequently be eroded away)
-
-                -- 8 * O(N) * (?)
-                   then can apply the erosion filter to the new image.
-                   --> assert that the result is a binary image of sky as '0's 
-                       and all else is '1's
-
-            this is now a mask for the sky.
-            It can be used alone to create edges that are only the skyline,
-            or it can be used to multiply by the input image to remove
-            all sky pixels.
-
-            -- O(N)
-               one can multiply the input image by the new mask.  subsequent
-               operations such as an edge detection should find horizon
-               features more easily afterwards.
+        if (mask != null) {
             
-        data structures:
-        
-            re-using the small memory data structures in the code referenced 
-            above.
+            GreyscaleImage out = multiply(input, mask);
             
-           -- SimpleLinkedListNode a lightweight linked list implementation
-           -- Stack a lightweight stack implementation
-           -- primitive arrays
-           -- GreyScaleImage
-                         
-        classes:
-            ===========================================================
-            DFSContiguousValueFinder
-            -----------------------------------------------------------
-            color : int[]
-            indexes : int[]
-            GreyScaleImage : img
-            groupMembership : SimpleLinkedListNode[]
-            pointToGroupIndex : int[]
-            minimumNumberInGroup : int
-            -----------------------------------------------------------
-            +findGroups(int value)
-            +getGroupMembershipList : SimpleLinkedListNode[]
-            +getNumberOfGroups : int
-            +getPointToGroupIndexes : int[]
-            -prune
-            -checkAndExpandGroupMembershipArray
-            -expandIfNeeded(int[] a, int nTotal) : int[]
-            +getNumberofGroupMembers : int
-            +PairIntArray(int groupId) : PairIntArray
-            +getIndexes(int groupId) : int[]
-            -findClustersIterative
-            -processPair(int uIndex, int vIndex)
-            ===========================================================
+            input.resetTo(out);
+        }
         
-            ===========================================================
-            SimpleLinkedListNode
-            -----------------------------------------------------------
-            key : int
-            next : SimpleLinkedListNode
-            -----------------------------------------------------------
-            +getKey : int
-            +getNext : SimpleLinkedListNode
-            +setNext(SimpleLinkedListNode next)
-            +insert(int insertKey) : SimpleLinkedListNode
-            +insertIfDoesNotAlreadyExist(int insertKey) : SimpleLinkedListNode
-            +delete(SimpleLinkedListNode node)
-            +delete(int deleteKey)
-            +search(int searchKey) : SimpleLinkedListNode
-            +contains(int searchKey) : boolean
-            +getKeys : int[]
-            +getNumberOfKeys : int
-            ===========================================================
-                       ^
-                      /|\
-                       |
-                       |
-            ===========================================================
-            Stack
-            -----------------------------------------------------------
-            -----------------------------------------------------------
-            +insert(int idx) : SimpleLinkedListNode
-            +peek : SimpleLinkedListNode
-            +pop : SimpleLinkedListNode
-            +isEmpty : boolean
-            ===========================================================
-        
-            ===========================================================
-            ImageProcesser
-            -----------------------------------------------------------
-            -----------------------------------------------------------
-            +createSkyMask(GreyscaleImage input, GreyscaleImage theta)::GreyscaleImage
-            +applyImageSegmentationForSky(GreyscaleImage input, GreyscaleImage theta)
-            ===========================================================
-        
-        
-        collaboration as sequence diagram:
-        
-             O
-            /|\
-            / \ ---------->ImageProcesser  
-             |                 |
-             |--createSkyMask  |
-             |  (img, theta)-->|
-             |                 |---------> DFSContiguousValueFinder
-             |                 |                    |
-             |                 |---findGroups(0)--->|
-             |                 |---getGroup...----->|
-             |                 |
-             |                 |---sort--> (TBD)
-             |                 |----------------------> GrahamScan
-             |                 |                            |
-             |                 |---computeHull(x,y)-------->|
-             |                 |---get..Hull()------------->|
-             |                 |
-             |                 |---------------------------------->ErosionFilter
-             |                 |---applyFilter(GreyscaleImage)--------->|
-             .                 
-             .
-             .
-        */
-       
-        throw new UnsupportedOperationException("not implemented yet");
     }
     
-    public void multiply(GreyscaleImage input, float m) throws IOException,
-        NoSuchAlgorithmException {
+    /**
+     * create a mask for the largest contiguous zero value area in theta
+     * or for the top similar largest contiguous zero value areas if there
+     * are more than one.  the method doesn't make an assumption about the
+     * location of 'sky'.
+     * 
+     * @param theta
+     * @return 
+     */
+    public GreyscaleImage createSkyMask(GreyscaleImage theta) {
+        
+        if (theta == null) {
+            throw new IllegalArgumentException("theta cannot be null");
+        }
+        
+        List<PairIntArray> zeroPointLists = getLargestContiguousZeros(theta);
+       
+        if (zeroPointLists.isEmpty()) {
+            
+            GreyscaleImage mask = new GreyscaleImage(theta.getWidth(), 
+                theta.getHeight());
+            
+            // return an image of all 1's
+            mask.fill(1);
+            
+            return mask;
+        }
+        
+        GreyscaleImage mask = null;
+        
+        for (PairIntArray points : zeroPointLists) {
+            
+            GreyscaleImage output = createMask(theta, points);
+            
+            if (mask == null) {
+                mask = output;
+            } else {
+                mask = binaryOr(mask, output);
+            }
+        }
+              
+        return mask;
+    }
+    
+    public List<PairIntArray> getLargestContiguousZeros(GreyscaleImage theta) {
+                 
+        return getLargestContiguousValue(theta, 0, false);
+    }
+    
+    public List<PairIntArray> getLargestContiguousNonZeros(GreyscaleImage theta) {
+                 
+        return getLargestContiguousValue(theta, 0, true);
+    }
+    
+    private List<PairIntArray> getLargestContiguousValue(GreyscaleImage theta,
+        int value, boolean excludeValue) {
+        
+        DFSContiguousValueFinder zerosFinder = new DFSContiguousValueFinder(theta);
+        
+        if (excludeValue) {
+            zerosFinder.findGroupsNotThisValue(value);
+        } else {
+            zerosFinder.findGroups(value);
+        }
+        
+        int nGroups = zerosFinder.getNumberOfGroups();
+        
+        if (nGroups == 0) {
+            return new ArrayList<PairIntArray>();
+        }
+        // ====== find the group(s) with the largest number of zero pixels =====
+        
+        int[] groupIndexes = new int[nGroups];
+        int[] groupN = new int[nGroups];
+        for (int gId = 0; gId < nGroups; gId++) {
+            int n = zerosFinder.getNumberofGroupMembers(gId);
+            groupIndexes[gId] = gId;
+            groupN[gId] = n;
+        }
+        
+        MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
+        
+        List<Integer> groupIds = new ArrayList<Integer>();
+        groupIds.add(Integer.valueOf(groupIndexes[0]));
+        
+        if (nGroups > 1) {
+                        
+            float n0 = (float)groupN[0];
+            
+            for (int i = 1; i < groupN.length; i++) {
+                
+                float number = groupN[i];
+                
+                float frac = number/n0;
+System.out.println(number);    
+                //TODO: this should be adjusted by some metric.
+                //      a histogram?
+                if ((1 - frac) < 0.4) {
+                //if (number > 100) {
+                    groupIds.add(Integer.valueOf(groupIndexes[i]));
+                } else {
+                    break;
+                }
+            }
+        }
+
+        List<PairIntArray> list = new ArrayList<PairIntArray>();
+        
+        for (Integer gIndex : groupIds) {
+            
+            int gIdx = gIndex.intValue();
+            
+            PairIntArray points = zerosFinder.getXY(gIdx);
+            
+            list.add(points);
+        }
+        
+        return list;
+    }
+    
+    public void multiply(GreyscaleImage input, float m) {
         
         for (int col = 0; col < input.getWidth(); col++) {
             
@@ -713,6 +674,107 @@ public class ImageProcesser {
                 input.setValue(col, row, f);
             }
         }
+    }
+    
+    public void subtractMinimum(GreyscaleImage input) {
+        
+        int min = MiscMath.findMin(input.getValues());
+        
+        for (int col = 0; col < input.getWidth(); col++) {
+            
+            for (int row = 0; row < input.getHeight(); row++) {
+                
+                int v = input.getValue(col, row);
+                
+                int f = v - min;
+                
+                input.setValue(col, row, f);
+            }
+        }
+    }
+    
+    /**
+     * multiply these images, that is pixel by pixel multiplication.  
+     * No corrections are made for integer overflow.
+     * @param input1
+     * @param input2
+     * @return 
+     */
+    public GreyscaleImage multiply(GreyscaleImage input1, GreyscaleImage input2)  {
+        
+        if (input1 == null) {
+            throw new IllegalArgumentException("input1 cannot be null");
+        }
+        if (input2 == null) {
+            throw new IllegalArgumentException("input2 cannot be null");
+        }
+        if (input1.getWidth() != input2.getWidth()) {
+            throw new IllegalArgumentException(
+            "input1 and input2 must have same widths");
+        }
+        if (input1.getHeight()!= input2.getHeight()) {
+            throw new IllegalArgumentException(
+            "input1 and input2 must have same heights");
+        }
+        
+        GreyscaleImage output = new GreyscaleImage(input1.getWidth(), 
+            input1.getHeight());
+        
+        for (int col = 0; col < input1.getWidth(); col++) {
+            
+            for (int row = 0; row < input1.getHeight(); row++) {
+                
+                int v = input1.getValue(col, row) * input2.getValue(col, row);
+                                
+                output.setValue(col, row, v);
+            }
+        }
+        
+        return output;
+    }
+    
+    /**
+     * compare each pixel and set output to 0 if both inputs are 0, else set
+     * output to 1.
+     * @param input1
+     * @param input2
+     * @return 
+     */
+    public GreyscaleImage binaryOr(GreyscaleImage input1, GreyscaleImage input2)  {
+        
+        if (input1 == null) {
+            throw new IllegalArgumentException("input1 cannot be null");
+        }
+        if (input2 == null) {
+            throw new IllegalArgumentException("input2 cannot be null");
+        }
+        if (input1.getWidth() != input2.getWidth()) {
+            throw new IllegalArgumentException(
+            "input1 and input2 must have same widths");
+        }
+        if (input1.getHeight()!= input2.getHeight()) {
+            throw new IllegalArgumentException(
+            "input1 and input2 must have same heights");
+        }
+        
+        GreyscaleImage output = new GreyscaleImage(input1.getWidth(), 
+            input1.getHeight());
+        
+        for (int col = 0; col < input1.getWidth(); col++) {
+            
+            for (int row = 0; row < input1.getHeight(); row++) {
+                
+                int v1 = input1.getValue(col, row);
+                
+                int v2 = input2.getValue(col, row);
+                
+                if ((v1 != 0) || (v2 != 0)) {
+                    output.setValue(col, row, 1);
+                }
+            }
+        }
+        
+        return output;
     }
     
     public void blur(GreyscaleImage input, float sigma) {
@@ -766,5 +828,107 @@ public class ImageProcesser {
                 }
             }
         }
+    }
+
+    /**
+     * make a binary mask with the given zeroCoords as a group of starter points 
+     * for the mask and also set to '0' any points within zeroCoords' bounds.
+     * 
+     * @param theta
+     * @param zeroCoords
+     * @return 
+     */
+    public GreyscaleImage createMask(GreyscaleImage theta, PairIntArray zeroCoords) {
+        
+        int width = theta.getWidth();
+        
+        int height = theta.getHeight();
+        
+        GreyscaleImage out = new GreyscaleImage(width, height);
+           
+        out.fill(1);
+                
+        float critFrac = 0.8f;
+        
+        int hw = 10;
+                    
+        for (int pIdx = 0; pIdx < zeroCoords.getN(); pIdx++) {
+
+            int x = zeroCoords.getX(pIdx);
+            int y = zeroCoords.getY(pIdx);
+            out.setValue(x, y, 0);
+
+            // if a direct neighbor is not 0, look at the fraction of zeros
+            // surounding that neighbor and set it to 0 if larger than crit
+            for (int col = (x - 1); col <= (x + 1); col++) {
+                if ((col < 0) || (col > (width - 1))) {
+                    continue;
+                }
+                for (int row = (y - 1); row <= (y + 1); row++) {
+                    if ((row < 0) || (row > (height - 1))) {
+                        continue;
+                    }
+                    int v = theta.getValue(col, row);
+                    if ((v == 0) || (out.getValue(col, row) == 0)) {
+                        continue;
+                    }
+
+                    // see if this is noise in the sky, hence sky
+                    int zCount = 0;
+                    int aCount = 0;
+                    //see if surrounding area is mostly zeros to null the pixel
+                    for (int c = (col - hw); c <= (col + hw); c++) {
+                        if ((c < 0) || (c > (width - 1))) {
+                            continue;
+                        }
+                        for (int r = (row - hw); r <= (row + hw); r++) {
+                            if ((r < 0) || (r > (height - 1))) {
+                                continue;
+                            }
+                            aCount++;
+                            if (theta.getValue(c, r) == 0) {
+                                zCount++;
+                            }
+                        }
+                    }
+                    if (aCount == 0) {
+                        continue;
+                    }
+                    float fracZ = (float) zCount / (float) aCount;
+                    if (fracZ > critFrac) {
+                        out.setValue(col, row, 0);
+                    }
+                }
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * make a binary mask with the given zeroCoords as a group of starter points 
+     * for the mask and also set to '0' any points within zeroCoords' bounds.
+     * 
+     * @param theta
+     * @param nonzeroCoords
+     * @return 
+     */
+    public GreyscaleImage createInvMask(GreyscaleImage theta, 
+        PairIntArray nonzeroCoords) {
+        
+        int width = theta.getWidth();
+        
+        int height = theta.getHeight();
+        
+        GreyscaleImage out = new GreyscaleImage(width, height);
+                                                       
+        for (int pIdx = 0; pIdx < nonzeroCoords.getN(); pIdx++) {
+
+            int x = nonzeroCoords.getX(pIdx);
+            int y = nonzeroCoords.getY(pIdx);
+            out.setValue(x, y, 1);
+        }
+        
+        return out;
     }
 }

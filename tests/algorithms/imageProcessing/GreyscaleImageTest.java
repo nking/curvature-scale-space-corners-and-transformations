@@ -150,4 +150,15 @@ public class GreyscaleImageTest {
         5     1    2
         */
     }
+    
+    public void testFill() throws Exception {
+        
+        GreyscaleImage img = new GreyscaleImage(2, 2);
+        
+        img.fill(10);
+        
+        for (int idx = 0; idx < img.getNPixels(); idx++) {
+            assertTrue(img.getValue(idx) == 10);
+        }
+    }
 }

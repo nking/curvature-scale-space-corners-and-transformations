@@ -1,6 +1,7 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.util.PairIntArray;
 
 import java.util.logging.Logger;
 import junit.framework.Test;
@@ -44,10 +45,12 @@ public class PolarAngleMergeSortTest extends TestCase {
 
         double[] ap = new double[xx.length];
         for (int i = 0; i < xx.length; i++) {
-            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], yy[i]);
+            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], 
+                yy[i]);
         }
 
-        int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], yy[0], xx, yy, ap);
+        int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], 
+            yy[0], xx, yy, ap);
 
         double[] expectedxx = {2, 4, 2, 0};
     	double[] expectedyy = {0, 1, 6, 2};
@@ -55,6 +58,29 @@ public class PolarAngleMergeSortTest extends TestCase {
     	for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
+        }
+        
+        // =================================
+        xx = new float[]{2,4,2,2,0};
+        yy = new float[]{0,1,2,6,2};
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        ap = new double[xx.length];
+        for (int i = 0; i < xx.length; i++) {
+            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], 
+                yy[i]);
+        }
+        
+        nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xy.getX(0), 
+            xy.getY(0), xy, ap);
+        
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
         }
     }
 
@@ -92,6 +118,32 @@ public class PolarAngleMergeSortTest extends TestCase {
     	for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
+        }
+        
+        // =================================
+        xx = new float[]{20, 30, 40, 50, 10};
+        yy = new float[]{10, 20, 30, 40, 25};
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        ap = new double[xx.length];
+        for (int i = 0; i < xx.length; i++) {
+            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], 
+                yy[i]);
+        }
+        
+        nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xy.getX(0), 
+            xy.getY(0), xy, ap);
+        
+        expectedxx = new double[]{20, 50, 10};
+    	expectedyy = new double[]{10, 40, 25};
+        
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
         }
     }
 
@@ -131,6 +183,29 @@ public class PolarAngleMergeSortTest extends TestCase {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
         }
+        
+        // =================================
+        xx = new float[]{3, 4, 2, 1};
+        yy = new float[]{1, 3, 2, 3};
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        ap = new double[xx.length];
+        for (int i = 0; i < xx.length; i++) {
+            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], 
+                yy[i]);
+        }
+        
+        nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xy.getX(0), 
+            xy.getY(0), xy, ap);
+        
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
+        }
     }
 
     public void testSort1() {
@@ -154,7 +229,23 @@ public class PolarAngleMergeSortTest extends TestCase {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
         }
+        
+        //---------
+        xx = new float[]{2,7,0,2,2};
+    	yy = new float[]{0,1,2,2,6};
     	
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        nUsable = PolarAngleMergeSort.sort(2, 0, xy);
+
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
+        }
+        
     	// ======================================================================
     	/*            2,6
         *
@@ -184,6 +275,25 @@ public class PolarAngleMergeSortTest extends TestCase {
         for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
+        }
+        
+        //---------
+        xx = new float[] {2.0f, 7.0f, 0.0f, 2.0f, 3.0f, 2.0f};
+    	yy = new float[] {0.0f, 1.0f, 2.0f, 2.0f, 2.0f, 6.0f};
+    	
+        xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        expectedxx = new float[]{2.0f, 7.0f, 3.0f, 2.0f, 2.0f, 0.0f};
+        expectedyy = new float[]{0.0f, 1.0f, 2.0f, 2.0f, 6.0f, 2.0f};
+        
+        polarAngle = new double[xx.length];
+    	PolarAngleMergeSort.sort(2, 0, xy, 0, xy.getN() - 1, polarAngle);
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
         }
         
         // ================================================
@@ -235,6 +345,25 @@ public class PolarAngleMergeSortTest extends TestCase {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
         }
+        
+        //------------
+        xx = new float[]{20, 30, 10, 40, 50};
+        yy = new float[]{10, 20, 25, 30, 40};
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        nUsable = PolarAngleMergeSort.sort(20, 10, xy);
+        
+        expectedxx = new float[]{20, 50, 10};
+        expectedyy = new float[]{10, 40, 25};
+        
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
+        }
     }
 
     public void testSort3() {
@@ -272,6 +401,22 @@ public class PolarAngleMergeSortTest extends TestCase {
     	for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
+        }
+        
+        //------------
+        xx = new float[]{3, 4, 1};
+        yy = new float[]{1, 3, 3};
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        nUsable = PolarAngleMergeSort.sort(3, 1, xy);
+        
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
         }
     }
 
@@ -311,6 +456,22 @@ public class PolarAngleMergeSortTest extends TestCase {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
         }
+        
+        //------------
+        xx = new float[]{3, 1, 4, 2};
+        yy = new float[]{1, 3, 3, 2};
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        nUsable = PolarAngleMergeSort.sort(3, 1, xy);
+        
+        for (int i=0; i < nUsable; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
+        }
     }
 
     public void testSort() {
@@ -331,6 +492,22 @@ public class PolarAngleMergeSortTest extends TestCase {
     	for (int i=0; i < expectedxx.length; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
+        }
+        
+        //------------
+        xx = new float[]{2,4,2,0,2};
+        yy = new float[]{0,1,2,2,5};
+        
+        PairIntArray xy = new PairIntArray();
+        for (int i = 0; i < xx.length; i++) {
+            xy.add(Math.round(xx[i]), Math.round(yy[i]));
+        }
+        
+        PolarAngleMergeSort.sort(2, 0, xy);
+        
+        for (int i=0; i < expectedxx.length; i++) {
+            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
         }
     }
     

@@ -150,7 +150,7 @@ public class CannyEdgeFilter {
         if (!useLineDrawingMode) {
             apply2LayerFilter(input);
         }
-        
+       
         applyLineThinnerFilter(input);
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();

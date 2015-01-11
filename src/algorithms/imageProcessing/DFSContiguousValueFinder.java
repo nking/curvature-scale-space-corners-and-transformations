@@ -38,6 +38,8 @@ public class DFSContiguousValueFinder {
     
     protected int minimumNumberInCluster = 3;
     
+    protected boolean notValue = false;
+    
     protected boolean debug = false;
     
     protected final GreyscaleImage img;
@@ -48,7 +50,7 @@ public class DFSContiguousValueFinder {
         
         this.log = Logger.getLogger(this.getClass().getName());
     }
-    
+        
     public void setMinimumNumberInCluster(int n) {
         this.minimumNumberInCluster = n;
     }
@@ -79,6 +81,17 @@ public class DFSContiguousValueFinder {
         
         prune();        
     }
+    
+    public void findGroupsNotThisValue(int pixelValue) {
+     
+        notValue = true;
+        
+        initializeVariables();
+        
+        findClusters(pixelValue);
+        
+        prune();        
+    }
 
     protected void findClusters(int pixelValue) {
         
@@ -93,17 +106,24 @@ public class DFSContiguousValueFinder {
     }
     
     protected void findClustersIterative(int pixelValue) {
-
-        StackInt stack = new StackInt();
-        
-        for (int uIndex = (img.getNPixels() - 1); uIndex > -1; uIndex--) {
-            stack.insert(uIndex);
-        }
-                
-        color[stack.peek()] = 2;
         
         int width = img.getWidth();
         int height = img.getHeight();
+        
+        StackInt stack = new StackInt();
+        
+        /*for (int uIndex = (img.getNPixels() - 1); uIndex > -1; uIndex--) {
+            stack.insert(uIndex);
+        }*/
+        
+        for (int col = (width - 1); col > -1; col--) {
+            for (int row = (img.getHeight() - 1); row > -1; row--) {
+                int idx = (row * width) + col;
+                stack.insert(idx);
+            }
+        }
+               
+        color[stack.peek()] = 2;
         
         while (!stack.isEmpty()) {
             
@@ -113,7 +133,9 @@ public class DFSContiguousValueFinder {
             
             int uPixValue = img.getValue(uIndex);
             
-            if (uPixValue != pixelValue) {
+            if ((notValue && (uPixValue == pixelValue)) ||
+                (!notValue && (uPixValue != pixelValue))) {
+                
                 color[uIndex] = 2;
                 continue;
             }
@@ -122,8 +144,8 @@ public class DFSContiguousValueFinder {
             note to speed this up a little, have copied out the index to
             row and col relationship from GreyscaleImage.
             */            
-            int uX = uIndex/width;
-            int uY = uIndex - (uX * width);
+            int uY = uIndex/width;
+            int uX = uIndex - (uY * width);
             
             for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
                 if ((vX < 0) || (vX > (width - 1))) {
@@ -146,7 +168,9 @@ public class DFSContiguousValueFinder {
                 
                     int vPixValue = img.getValue(vIndex);
             
-                    if (vPixValue != pixelValue) {
+                    if ((notValue && (vPixValue == pixelValue)) ||
+                        (!notValue && (vPixValue != pixelValue))) {
+                        
                         continue;
                     }
                     
@@ -157,7 +181,7 @@ public class DFSContiguousValueFinder {
                     stack.insert(vIndex);
                 }
             }
-        }
+        }        
     }
 
     protected void processPair(int uIdx, int vIdx) {

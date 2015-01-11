@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
+import java.util.Arrays;
 
 /**
  *
@@ -29,6 +30,14 @@ public class GreyscaleImage {
         height = theHeight;
         
         a = new int[nPixels];
+    }
+    
+    /**
+     * convenience method to fill image with the value. 
+     * @param value 
+     */
+    public void fill(int value) {
+        Arrays.fill(a, value);
     }
     
     public void setValue(int col, int row, int value) {
