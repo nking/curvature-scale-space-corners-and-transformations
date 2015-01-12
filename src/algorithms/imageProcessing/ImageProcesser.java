@@ -39,6 +39,22 @@ public class ImageProcesser {
         applyKernels(input, kernelX, kernelY, normX, normY);
     }
     
+    
+    public void applySobelKernel(GreyscaleImage input) {
+        
+        IKernel kernel = new SobelX();
+        Kernel kernelX = kernel.getKernel();
+        
+        float normX = kernel.getNormalizationFactor();
+        
+        kernel = new SobelY();
+        Kernel kernelY = kernel.getKernel();
+        
+        float normY = kernel.getNormalizationFactor();
+       
+        applyKernels(input, kernelX, kernelY, normX, normY);
+    }
+    
     protected void applyKernels(Image input, Kernel kernelX, Kernel kernelY, 
         float normFactorX, float normFactorY) {
                 
@@ -57,6 +73,28 @@ public class ImageProcesser {
         applyKernel(imgY, kernelY, normFactorY);
         
         Image img2 = combineConvolvedImages(imgX, imgY);
+        
+        input.resetTo(img2);
+    }
+    
+    protected void applyKernels(GreyscaleImage input, Kernel kernelX, Kernel kernelY, 
+        float normFactorX, float normFactorY) {
+                
+        /*
+        assumes that kernelX is applied to a copy of the img
+        and kernelY is applied to a separate copy of the img and
+        then they are added in quadrature for the final result.
+        */
+        
+        GreyscaleImage imgX = input.copyImage();
+        
+        GreyscaleImage imgY = input.copyImage();
+        
+        applyKernel(imgX, kernelX, normFactorX);
+        
+        applyKernel(imgY, kernelY, normFactorY);
+        
+        GreyscaleImage img2 = combineConvolvedImages(imgX, imgY);
         
         input.resetTo(img2);
     }
@@ -231,6 +269,80 @@ public class ImageProcesser {
                 }
 
                 output.setRGB(i, j, (int)rValue, (int)gValue, (int)bValue);
+            }
+        }
+        
+        input.resetTo(output);
+    }
+ 
+    /**
+     * apply kernel to input. NOTE, that because the image is composed of vectors
+     * that should have values between 0 and 255, inclusive, if the kernel application
+     * results in a value outside of that range, the value is reset to 0 or
+     * 255.
+     * @param input
+     * @param kernel
+     * @param normFactor 
+     */
+    protected void applyKernel(GreyscaleImage input, Kernel kernel, float normFactor) {
+       
+        int h = (kernel.getWidth() - 1) >> 1;
+        
+        GreyscaleImage output = new GreyscaleImage(input.getWidth(), input.getHeight());
+                 
+        //TODO: consider changing the normalization to use methods that Kernel1DHelper does
+        
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                
+                long value = 0;
+                
+                // apply the kernel to pixels centered in (i, j)
+                
+                for (int col = 0; col < kernel.getWidth(); col++) {
+                    
+                    int x = col - h;
+                    
+                    int imgX = i + x;
+                    
+                    // edge corrections.  use replication
+                    if (imgX < 0) {
+                        imgX = -1 * imgX - 1;
+                    } else if (imgX >= input.getWidth()) {
+                        int diff = imgX - input.getWidth();
+                        imgX = input.getWidth() - diff - 1;
+                    }
+                    
+                    for (int row = 0; row < kernel.getHeight(); row++) {
+                        
+                        int y = row - h;
+                        
+                        int imgY = j + y;
+                        
+                        // edge corrections.  use replication
+                        if (imgY < 0) {
+                            imgY = -1 * imgY - 1;
+                        } else if (imgY >= input.getHeight()) {
+                            int diff = imgY - input.getHeight();
+                            imgY = input.getHeight() - diff - 1;
+                        }
+                        
+                        int pixel = input.getValue(imgX, imgY);
+                        int k = kernel.getValue(col, row);
+
+                        value += k * pixel;
+                    }
+                }
+                
+                value *= normFactor;
+               
+                if (value < 0) {
+                    value = 0;
+                }
+                if (value > 255) {
+                    value = 255;
+                }
+                output.setValue(i, j, (int)value);
             }
         }
         
@@ -523,14 +635,60 @@ public class ImageProcesser {
         }
     }
     
-    public void applyImageSegmentationForSky(GreyscaleImage input, 
-        GreyscaleImage theta) throws IOException, NoSuchAlgorithmException {
-                
-        applyImageSegmentation(theta, 2);
-        
-        subtractMinimum(theta);
+    public void convertToBinaryImage(GreyscaleImage input) {
+        for (int col = 0; col < input.getWidth(); col++) {
+            for (int row = 0; row < input.getHeight(); row++) {
+                int v = input.getValue(col, row);
+                if (v != 0) {
+                    input.setValue(col, row, 1);
+                }
+            }
+        }
+    }
+    
+    /**
+     * NOT READY FOR USE YET.  needs correction for gaussian convolution radius,
+     * that is deconvolution.
+     * 
+     * @param theta
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    public GreyscaleImage createSkyline(GreyscaleImage theta) throws 
+        IOException, NoSuchAlgorithmException {        
       
-        GreyscaleImage mask = createSkyMask(theta);
+        GreyscaleImage mask = createBestSkyMask(theta);
+        
+        if (mask != null) {
+            
+            multiply(mask, 255);
+            
+            CannyEdgeFilter filter = new CannyEdgeFilter();
+            
+            filter.applyFilter(mask);
+            
+            return mask;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * NOT READY FOR USE YET. needs correction for gaussian convolution radius,
+     * that is deconvolution.
+     * 
+     * @param input
+     * @param theta
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
+    public void applyImageSegmentationForSky(GreyscaleImage input, 
+        GreyscaleImage theta) throws IOException, NoSuchAlgorithmException {        
+      
+        GreyscaleImage mask = createBestSkyMask(theta);
+        
+        //GreyscaleImage mask = createRoughSkyMask(theta);
         
         if (mask != null) {
             
@@ -538,7 +696,34 @@ public class ImageProcesser {
             
             input.resetTo(out);
         }
+    }
+    
+    /**
+     * 
+     * NOT READY FOR USE YET
+     * 
+     * @param theta
+     * @return 
+     */
+    public GreyscaleImage createRoughSkyMask(GreyscaleImage theta) throws 
+        IOException, NoSuchAlgorithmException {
         
+        if (theta == null) {
+            throw new IllegalArgumentException("theta cannot be null");
+        }
+        
+        theta = theta.copyImage();
+        
+        applyImageSegmentation(theta, 2);
+        
+        subtractMinimum(theta);
+        
+        convertToBinaryImage(theta);
+        
+        removeSpurs(theta);
+        
+        //throw new UnsupportedOperationException("not ready for use yet");
+        return theta;
     }
     
     /**
@@ -550,12 +735,19 @@ public class ImageProcesser {
      * @param theta
      * @return 
      */
-    public GreyscaleImage createSkyMask(GreyscaleImage theta) {
+    public GreyscaleImage createBestSkyMask(GreyscaleImage theta) throws 
+        IOException, NoSuchAlgorithmException {
         
         if (theta == null) {
             throw new IllegalArgumentException("theta cannot be null");
         }
         
+        theta = theta.copyImage();
+        
+        applyImageSegmentation(theta, 2);
+        
+        subtractMinimum(theta);
+                
         List<PairIntArray> zeroPointLists = getLargestContiguousZeros(theta);
        
         if (zeroPointLists.isEmpty()) {
@@ -573,13 +765,17 @@ public class ImageProcesser {
         
         for (PairIntArray points : zeroPointLists) {
             
-            GreyscaleImage output = createMask(theta, points);
+            GreyscaleImage output = createNoiseRemovingMask(theta, points);
             
             if (mask == null) {
                 mask = output;
             } else {
                 mask = binaryOr(mask, output);
             }
+        }
+        
+        if (mask != null) {
+            removeSpurs(mask);
         }
               
         return mask;
@@ -847,6 +1043,35 @@ System.out.println(number);
         GreyscaleImage out = new GreyscaleImage(width, height);
            
         out.fill(1);
+
+        for (int pIdx = 0; pIdx < zeroCoords.getN(); pIdx++) {
+
+            int x = zeroCoords.getX(pIdx);
+            int y = zeroCoords.getY(pIdx);
+            out.setValue(x, y, 0);
+        }
+        
+        return out;
+    }
+    
+    /**
+     * make a binary mask with the given zeroCoords as a group of starter points 
+     * for the mask and also set to '0' any points within zeroCoords' bounds.
+     * 
+     * @param theta
+     * @param zeroCoords
+     * @return 
+     */
+    public GreyscaleImage createNoiseRemovingMask(GreyscaleImage theta, 
+        PairIntArray zeroCoords) {
+        
+        int width = theta.getWidth();
+        
+        int height = theta.getHeight();
+        
+        GreyscaleImage out = new GreyscaleImage(width, height);
+           
+        out.fill(1);
                 
         float critFrac = 0.8f;
         
@@ -857,7 +1082,7 @@ System.out.println(number);
             int x = zeroCoords.getX(pIdx);
             int y = zeroCoords.getY(pIdx);
             out.setValue(x, y, 0);
-
+            
             // if a direct neighbor is not 0, look at the fraction of zeros
             // surounding that neighbor and set it to 0 if larger than crit
             for (int col = (x - 1); col <= (x + 1); col++) {
@@ -930,5 +1155,140 @@ System.out.println(number);
         }
         
         return out;
+    }
+    
+    /**
+     * this is meant to operate on an image with only 0's and 1's
+     * @param input 
+     */
+    public void removeSpurs(GreyscaleImage input) {
+       
+        int width = input.getWidth();
+        int height = input.getHeight();
+                        
+        int nIterMax = 1000;
+        int nIter = 0;
+        int numRemoved = 1;
+        
+        while ((nIter < nIterMax) && (numRemoved > 0)) {
+            
+            numRemoved = 0;
+            
+            for (int col = 0; col < input.getWidth(); col++) {
+
+                if ((col < 2) || (col > (width - 3))) {
+                    continue;
+                }
+
+                for (int row = 0; row < input.getHeight(); row++) {
+
+                    if ((row < 2) || (row > (height - 3))) {
+                       continue;
+                    }
+
+                    int v = input.getValue(col, row);
+
+                    if (v == 0) {
+                        continue;
+                    }
+
+                    // looking for pixels having only one neighbor who subsequently
+                    // has only 1 or 2 neighbors
+                    // as long as neither are connected to image boundaries
+
+                    int neighborIdx = getIndexIfOnlyOneNeighbor(input, col, row);
+
+                    if (neighborIdx > -1) {
+                        int neighborX = input.getCol(neighborIdx);
+                        int neighborY = input.getRow(neighborIdx);
+
+                        int nn = count8RegionNeighbors(input, neighborX, neighborY);
+
+                        if (nn <= 2) {
+                            input.setValue(col, row, 0);
+                            numRemoved++;
+                        }
+                    } else {
+                        int n = count8RegionNeighbors(input, col, row);
+                        if (n == 0) {
+                            input.setValue(col, row, 0);
+                            numRemoved++;
+                        }
+                    }
+                }
+            }
+            
+            log.info("numRemoved=" + numRemoved + " nIter=" + nIter);
+            
+            nIter++;
+        }
+    }
+    
+    protected int count8RegionNeighbors(GreyscaleImage input, int x, int y) {
+        
+        int width = input.getWidth();
+        int height = input.getHeight();
+        
+        int count = 0;
+        for (int c = (x - 1); c <= (x + 1); c++) {
+            if ((c < 0) || (c > (width - 1))) {
+                continue;
+            }
+            for (int r = (y - 1); r <= (y + 1); r++) {
+                if ((r < 0) || (r > (height - 1))) {
+                    continue;
+                }
+                if ((c == x) && (r == y)) {
+                    continue;
+                }
+                int v = input.getValue(c, r);
+                if (v > 0) {
+                    count++;
+                }
+            }
+        }
+        
+        return count;
+    }
+    
+    protected int getIndexIfOnlyOneNeighbor(GreyscaleImage input, int x, int y) {
+        
+        int width = input.getWidth();
+        int height = input.getHeight();
+        
+        int count = 0;
+        int xNeighbor = -1;
+        int yNeighbor = -1;
+        
+        for (int c = (x - 1); c <= (x + 1); c++) {
+            if ((c < 0) || (c > (width - 1))) {
+                continue;
+            }
+            for (int r = (y - 1); r <= (y + 1); r++) {
+                if ((r < 0) || (r > (height - 1))) {
+                    continue;
+                }
+                if ((c == x) && (r == y)) {
+                    continue;
+                }
+                int v = input.getValue(c, r);
+                if (v > 0) {
+                    if (count > 0) {
+                        return -1;
+                    }
+                    xNeighbor = c;
+                    yNeighbor = r;
+                    count++;
+                }
+            }
+        }
+        
+        if (count == 0) {
+            return -1;
+        }
+        
+        int index = input.getIndex(xNeighbor, yNeighbor);
+        
+        return index;
     }
 }

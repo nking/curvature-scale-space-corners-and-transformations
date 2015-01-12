@@ -441,7 +441,7 @@ public class CannyEdgeFilter {
         input.resetTo(output);
     }
     
-    private void applyLineThinnerFilter(final GreyscaleImage img) {
+    void applyLineThinnerFilter(final GreyscaleImage img) {
                 
         ILineThinner lineThinner;
         

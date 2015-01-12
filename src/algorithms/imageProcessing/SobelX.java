@@ -14,7 +14,7 @@ public class SobelX implements IKernel {
     public Kernel getKernel() {
         /*
                         | -1  0  1 |
-           Soloblev_x = | -2  0  2 |
+           Sobel_x =    | -2  0  2 |
                         | -1  0  1 |
         
            this is the n=2 binomial filter for a Gaussian first derivative,

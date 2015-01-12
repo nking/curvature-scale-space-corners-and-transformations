@@ -400,7 +400,7 @@ public class ImageProcesserTest extends TestCase {
         assertTrue(image.getHeight() == (h - 2*border + 2));
     }
 
-    public void testSegmentationForSky() throws Exception {
+    public void testCreateSkyline() throws Exception {
 
         String fileName1 = "brown_lowe_2003_image2.jpg";
         String fileName2 = "brown_lowe_2003_image2_theta.jpg";
@@ -417,14 +417,12 @@ public class ImageProcesserTest extends TestCase {
 
         ImageProcesser imageProcesser = new ImageProcesser();
 
-        imageProcesser.applyImageSegmentationForSky(input, theta);
-
-        //imageProcesser.divideByBlurredSelf(input, 5);
+        GreyscaleImage out = imageProcesser.createSkyline(theta);
         
-        ImageDisplayer.displayImage("segmented for sky", input);
-        
+        ImageDisplayer.displayImage("segmented for sky", out);
+                
         String outFilePath = ResourceFinder.findDirectory("bin") + "/del.png";
-        ImageIOHelper.writeOutputImage(outFilePath, input);
+        ImageIOHelper.writeOutputImage(outFilePath, out);
         int z = 1;
     }
 }

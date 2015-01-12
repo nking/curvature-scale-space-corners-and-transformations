@@ -112,15 +112,8 @@ public class DFSContiguousValueFinder {
         
         StackInt stack = new StackInt();
         
-        /*for (int uIndex = (img.getNPixels() - 1); uIndex > -1; uIndex--) {
+        for (int uIndex = (img.getNPixels() - 1); uIndex > -1; uIndex--) {
             stack.insert(uIndex);
-        }*/
-        
-        for (int col = (width - 1); col > -1; col--) {
-            for (int row = (img.getHeight() - 1); row > -1; row--) {
-                int idx = (row * width) + col;
-                stack.insert(idx);
-            }
         }
                
         color[stack.peek()] = 2;
