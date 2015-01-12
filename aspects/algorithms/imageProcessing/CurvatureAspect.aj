@@ -366,6 +366,45 @@ public aspect CurvatureAspect {
         }
     }
 
+    after() returning : 
+	    target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) 
+        && execution(protected void extractSkyline()) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof CurvatureScaleSpaceCornerDetector)) {
+            return;
+        }
+
+        CurvatureScaleSpaceCornerDetector instance = 
+            (CurvatureScaleSpaceCornerDetector)obj;
+
+        Image img3 = instance.getOriginalImage().copyImageToGreen();
+
+        List<PairIntArray> edges = instance.getSkylineEdgesInOriginalReferenceFrame();
+
+        if (edges.isEmpty()) {
+            return; 
+        }
+
+        try {
+            
+            for (PairIntArray edge : edges) {
+                ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 255, 0);
+            }
+            
+            debugDisplay(edges, "skyline edges extracted", true, img3.getWidth(), 
+                img3.getHeight());
+            
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/image_with_skyline.png", img3);
+ 
+        } catch (IOException ex) {
+            throw new RuntimeException("ERROR: l405" + ex.getMessage());
+        }
+    }
+
     after(GreyscaleImage input, int k) returning() :
         call(public void ImageProcesser.applyImageSegmentation(GreyscaleImage, int))
         && args(input, k)
@@ -528,8 +567,6 @@ public aspect CurvatureAspect {
         } catch (IOException ex) {
             throw new RuntimeException("ERROR: l298" + ex.getMessage());
         }
-
-        log2.info("done");
     }
 
     before(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs, boolean isAClosedCurve) :

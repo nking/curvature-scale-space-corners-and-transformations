@@ -171,10 +171,10 @@ public class ImageProcesser {
     }
     
     /**
-     * apply kernel to input. NOTE, that because the image is composed of vectors
-     * that should have values between 0 and 255, inclusive, if the kernel application
-     * results in a value outside of that range, the value is reset to 0 or
-     * 255.
+     * apply kernel to input. NOTE, that because the image is composed of 
+     * vectors that should have values between 0 and 255, inclusive, if the 
+     * kernel application results in a value outside of that range, the value 
+     * is reset to 0 or 255.
      * @param input
      * @param kernel
      * @param normFactor 
@@ -290,7 +290,7 @@ public class ImageProcesser {
         
         GreyscaleImage output = new GreyscaleImage(input.getWidth(), input.getHeight());
                  
-        //TODO: consider changing the normalization to use methods that Kernel1DHelper does
+        //TODO: consider changing normalization to be similar to Kernel1DHelper
         
         for (int i = 0; i < input.getWidth(); i++) {
             for (int j = 0; j < input.getHeight(); j++) {
@@ -647,18 +647,40 @@ public class ImageProcesser {
     }
     
     /**
-     * NOT READY FOR USE YET.  needs correction for gaussian convolution radius,
-     * that is deconvolution.
+     * using the gradient's theta image, find the sky as the largest set of
+     * contiguous 0 values and apply the edge filter to it to reduce the
+     * boundary to a single pixel curve.  
+     * 
+     * NOTE that the theta image has a boundary that has been increased by 
+     * the original image blur and then the difference of gaussians to make 
+     * the gradient, so the distance of the skyline from the real image horizon 
+     * is several pixels.
+     * For example, the canny edge filter used in "outdoorMode" results in
+     * gaussian kernels applied twice to give an effective sigma of 
+     * sqrt(2*2 + 0.5*0.5) = 2.1.  The FWHM of such a spread is then 
+     * 2.355*2.1 = 6 pixels.   The theta image skyline is probably blurred to a 
+     * width larger than the combined FWHM, however, making it 7 or 8 pixels.  
+     * Therefore, it's recommended that the image returned from this be followed 
+     * with: edge extraction; then fit the edges to the intermediate canny edge 
+     * filter product (the output of the 2 layer filter) by making a translation
+     * of the extracted skyline edge until the correlation with the filter2
+     * image is highest (should be within 10 pixel shift).  Because this
+     * method does not assume orientation of the image, the invoker needs
+     * to also retrieve the centroid of the sky, so that is also returned 
+     * in an output variable given in the arguments.
      * 
      * @param theta
+     * @param outputSkyCentroid container to hold the output centroid of 
+     * the sky.
      * @return
      * @throws IOException
      * @throws NoSuchAlgorithmException 
      */
-    public GreyscaleImage createSkyline(GreyscaleImage theta) throws 
-        IOException, NoSuchAlgorithmException {        
+    public GreyscaleImage createSkyline(GreyscaleImage theta, 
+        PairIntArray outputSkyCentroid) throws IOException, 
+        NoSuchAlgorithmException {        
       
-        GreyscaleImage mask = createBestSkyMask(theta);
+        GreyscaleImage mask = createBestSkyMask(theta, outputSkyCentroid);
         
         if (mask != null) {
             
@@ -676,8 +698,7 @@ public class ImageProcesser {
     
     /**
      * NOT READY FOR USE YET. needs correction for gaussian convolution radius,
-     * that is deconvolution.
-     * 
+     * (@see createSkyline comments)
      * @param input
      * @param theta
      * @throws IOException
@@ -686,7 +707,9 @@ public class ImageProcesser {
     public void applyImageSegmentationForSky(GreyscaleImage input, 
         GreyscaleImage theta) throws IOException, NoSuchAlgorithmException {        
       
-        GreyscaleImage mask = createBestSkyMask(theta);
+        PairIntArray outputSkyCentroid = new PairIntArray();
+        
+        GreyscaleImage mask = createBestSkyMask(theta, outputSkyCentroid);
         
         //GreyscaleImage mask = createRoughSkyMask(theta);
         
@@ -722,8 +745,8 @@ public class ImageProcesser {
         
         removeSpurs(theta);
         
-        //throw new UnsupportedOperationException("not ready for use yet");
-        return theta;
+        throw new UnsupportedOperationException("not ready for use yet");
+        //return theta;
     }
     
     /**
@@ -733,20 +756,23 @@ public class ImageProcesser {
      * location of 'sky'.
      * 
      * @param theta
+     * @param outputSkyCentroid container to hold the output centroid of 
+     * the sky.
      * @return 
      */
-    public GreyscaleImage createBestSkyMask(GreyscaleImage theta) throws 
+    public GreyscaleImage createBestSkyMask(final GreyscaleImage theta, 
+        PairIntArray outputSkyCentroid) throws 
         IOException, NoSuchAlgorithmException {
         
         if (theta == null) {
             throw new IllegalArgumentException("theta cannot be null");
         }
         
-        theta = theta.copyImage();
+        //theta = theta.copyImage();
         
-        applyImageSegmentation(theta, 2);
+        //applyImageSegmentation(theta, 2);
         
-        subtractMinimum(theta);
+        //subtractMinimum(theta);
                 
         List<PairIntArray> zeroPointLists = getLargestContiguousZeros(theta);
        
@@ -762,7 +788,7 @@ public class ImageProcesser {
         }
         
         GreyscaleImage mask = null;
-        
+                
         for (PairIntArray points : zeroPointLists) {
             
             GreyscaleImage output = createNoiseRemovingMask(theta, points);
@@ -773,6 +799,12 @@ public class ImageProcesser {
                 mask = binaryOr(mask, output);
             }
         }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double[] xycen = curveHelper.calculateXYCentroids(zeroPointLists);
+        
+        outputSkyCentroid.add((int)Math.round(xycen[0]), (int)Math.round(xycen[1]));
         
         if (mask != null) {
             removeSpurs(mask);

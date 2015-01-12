@@ -124,7 +124,7 @@ public class PointMatcher3Test {
             StereoProjectionTransformer.rewriteInto3ColumnMatrix(points2));
         
         for (SimpleMatrix fm : fms) {
-            
+                        
             overplotEpipolarLines(fm,
                 points1.toPairFloatArray(), points2.toPairFloatArray(), 
                 ImageIOHelper.readImage(filePath1),
@@ -135,6 +135,34 @@ public class PointMatcher3Test {
         
         System.out.println("test done");
     }
+    
+    /*
+    https://github.com/jesolem/PCV
+    adapted from code licensed under  BSD license (2-clause "Simplified BSD License").
+    private SimpleMatrix calculateCameraMatrixFromFundamentalMatrix(SimpleMatrix fm) {
+        SimpleMatrix u = fm.svd().getU();
+        SimpleMatrix leftE = u.extractVector(true, 2);
+        leftE = leftE.divide(u.get(2, 2));
+
+        double[][] skewSymmetric = new double[3][];
+        skewSymmetric[0] = new double[]{0, -leftE.get(0, 2), leftE.get(0, 1)};
+        skewSymmetric[1] = new double[]{leftE.get(0, 2), 0, -leftE.get(0, 0)};
+        skewSymmetric[2] = new double[]{-leftE.get(0, 1), leftE.get(0, 0), 0};
+
+        SimpleMatrix sMatrix = new SimpleMatrix(skewSymmetric);
+        double v = sMatrix.dot( fm.transpose() );
+        
+       
+        //essential matrix from F: E = transpose(K2)*F*K1
+        SimpleMatrix k = DataForTests.getVenturiCameraIntrinsics()
+            .mult(DataForTests.getVenturiRotationMatrixForImage001());
+        SimpleMatrix k2 = DataForTests.getVenturiCameraIntrinsics()
+            .mult(DataForTests.getVenturiRotationMatrixForImage010());
+        
+        SimpleMatrix essentialMatrix = k2.transpose().mult(fm).mult(k);
+        
+        int z = 1;
+    }*/
     
     private void examineInvPointLists() throws Exception {
         
@@ -407,12 +435,14 @@ public class PointMatcher3Test {
     
     private void examineIterativeCorners() throws Exception {
         
-        /*
+        
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String fileName2 = "brown_lowe_2003_image2.jpg";
-        */
+        
+        /*
         String fileName1 = "venturi_mountain_j6_0001.png";
         String fileName2 = "venturi_mountain_j6_0010.png";
+        */
         
         // revisit infl points.  is there a threshold removing points?
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -430,19 +460,26 @@ public class PointMatcher3Test {
         PairIntArray points1 = null;
         PairIntArray points2 = null;
         
+        int nPreferredCorners = 100;
+        int nCrit = 500;
+        
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);
-        detector.useOutdoorMode();            
-        detector.findCornersIteratively(100);
+        detector.useOutdoorMode();
+        //detector.useOutdoorModeAndExtractSkyline();
+        //detector.findCornersIteratively(nPreferredCorners, nCrit);
+        detector.findCorners();
         edges1 = detector.getEdgesInOriginalReferenceFrame();
         points1 = detector.getCornersInOriginalReferenceFrame();
         
         detector = new CurvatureScaleSpaceCornerDetector(img2);
-        detector.useOutdoorMode();            
-        detector.findCornersIteratively(100);
+        //detector.useOutdoorMode();
+        detector.useOutdoorModeAndExtractSkyline();
+        //detector.findCornersIteratively(nPreferredCorners, nCrit);
+        detector.findCorners();
         edges2 = detector.getEdgesInOriginalReferenceFrame();
         points2 = detector.getCornersInOriginalReferenceFrame();
-            
+        
         Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
 
         for (PairIntArray edge : edges1) {
@@ -472,14 +509,14 @@ public class PointMatcher3Test {
 
         ImageIOHelper.writeOutputImage(outFilePath, image2);
             
-        log.info("POINTS1: ");
+        log.info("POINTS1: " + points1.getN() + " points");
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < points1.getN(); i++) {
             String str = String.format("%d %d\n", points1.getX(i), points1.getY(i));
             sb.append(str);
         }
         log.info(sb.toString());
-        log.info("POINTS2: ");
+        log.info("POINTS2: " + points2.getN() + " points");
         sb = new StringBuilder();
         for (int i = 0; i < points2.getN(); i++) {
             String str = String.format("%d %d\n", points2.getX(i), points2.getY(i));
@@ -491,13 +528,19 @@ public class PointMatcher3Test {
         PairIntArray outputMatchedModel = new PairIntArray();
             
         PointMatcher pointMatcher = new PointMatcher();
-                
+        //pointMatcher.setCostToNumMatchedAndDiffFromModel();
+        //pointMatcher.setCostToDiffFromModel();
+        
         pointMatcher.performPartitionedMatching(points1, points2,
-        //pointMatcher.performMatching(points1, points2,
         image1Width >> 1, image1Height >> 1,
             image2Width >> 1, image2Height >> 1,
             outputMatchedScene, outputMatchedModel);
-        
+        /*
+        pointMatcher.performMatching(points1, points2,
+        image1Width >> 1, image1Height >> 1,
+            image2Width >> 1, image2Height >> 1,
+            outputMatchedScene, outputMatchedModel, 1.0f);
+        */
         if (outputMatchedScene.getN() < 7) {
             // no solution
             return;
@@ -513,7 +556,7 @@ public class PointMatcher3Test {
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
                 StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
                 finalOutputMatchedScene, finalOutputMatchedModel);
-            
+        
         overplotEpipolarLines(sFit.getFundamentalMatrix(), 
             outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
             ImageIOHelper.readImage(filePath1),
@@ -1543,8 +1586,8 @@ public class PointMatcher3Test {
             
             //test.adjustPointsOfInterest();
             //test.examineInvPointLists();
-            test.smallestSubsets();
-            //test.examineIterativeCorners();
+            //test.smallestSubsets();
+            test.examineIterativeCorners();
             
             /*
             tests for :

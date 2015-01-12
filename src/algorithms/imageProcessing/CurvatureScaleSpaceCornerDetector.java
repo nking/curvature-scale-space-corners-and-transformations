@@ -784,6 +784,30 @@ if (useOutdoorMode) {
         return output;
     }
     
+    public List<PairIntArray> getSkylineEdgesInOriginalReferenceFrame() {
+        
+        List<PairIntArray> output = new ArrayList<PairIntArray>();
+        
+        for (int i = 0; i < skylineEdges.size(); i++) {
+            
+            PairIntArray ce = new PairIntArray();
+            
+            PairIntArray edge = skylineEdges.get(i);
+            
+            for (int j = 0; j < edge.getN(); j++) {
+                int x = edge.getX(j);
+                int y = edge.getY(j);
+                x += this.trimmedXOffset;
+                y += this.trimmedYOffset;
+                ce.add(x, y);
+            }
+            
+            output.add(ce);
+        }
+        
+        return output;
+    }
+    
     /**
      * remove false corners from maxCandidateCornerIndexes by determining if
      * the corner is due to a jagged line.  The flag "isAClosedCurve" is 

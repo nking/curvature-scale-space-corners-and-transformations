@@ -2,9 +2,11 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.HistogramHolder;
 import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayComparator;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,12 +32,11 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     protected List<PairIntArray> edges = new ArrayList<PairIntArray>();
     
     /**
-     * when making the corner list for the purpose of using them as stable
-     * features to identify in other images, may want to exclude 
-     * corners that are in this list, highChanges.
+     * if extractSkline is true, this is populated with the sky line
+     * edge(s).
      */
-    protected List<Integer> highChangeEdges = new ArrayList<Integer>();
- 
+    protected List<PairIntArray> skylineEdges = new ArrayList<PairIntArray>();
+    
     protected PairIntArray tCorners = new PairIntArray();
     
     protected boolean doNotNormalizeByHistogram = false;
@@ -48,7 +49,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     protected boolean useLowHighIntensityCutoff = false;
     
-    protected boolean useSegmentationForSky = false;
+    protected boolean extractSkyline = false;
     
     protected final int trimmedXOffset;
     
@@ -140,20 +141,20 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     }
     
     /**
-     * use segmentation to try to reduce the sky to one color which makes the
-     * horizon features such as peaks more visible.
-     * This method has the side effects of disabling histogram equalization
-     * and setting the intensity for the higher threshold in the 2-layer
-     * filter of the Canny Edge filter to a lower value than normal.
-     * Note that "line drawing" mode should probably not be used with this,
-     * but hasn't been tested yet.
+     * set the edge detector to create edges that are better for outdoor
+     * conditions and also extract the skyline from the intermediate
+     * image products.  Note that the skyline extraction is currently
+     * a long running process.
      */
-    public void useSegmentationForSky() {
-        useSegmentationForSky = true;
-        //doNotNormalizeByHistogram = true;
-        useLowHighIntensityCutoff = true;
+    public void useOutdoorModeAndExtractSkyline() {
+        
+        useLowestHighIntensityCutoff();
+        
+        useOutdoorMode = true;
+        
+        extractSkyline = true;
     }
-    
+  
     protected void initialize() {
         
         if (state.ordinal() < 
@@ -161,6 +162,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
             // (1) apply an edge filter
             applyEdgeFilter();
+            
+            if (extractSkyline) {
+                extractSkyline();
+            }
             
             // (2) extract edges
             extractEdges();
@@ -233,38 +238,106 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         theta = filter.getTheta();
         
         imgHistogram = filter.getImgHistogram();
-        
-        if (useOutdoorMode) {
-            ImageProcesser imageProcesser = new ImageProcesser();
-            try {
-                imageProcesser.applyImageSegmentationForSky(img, theta);
-            } catch (IOException ex) {
-                log.severe(ex.getMessage());
-            } catch (NoSuchAlgorithmException ex) {
-                log.severe(ex.getMessage());
-            }
-        }
                         
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
+    }
+    
+    /**
+     * use the output from the canny edge filter and the theta image
+     * it produced to find the skyline in the image, extract it as
+     * an edge(s) and make several pixels adjustment to align with
+     * the output of the canny edge filter (which should be a binary
+     * image with edges as 0's).   NOTE that this is currently a long
+     * running process.
+     */
+    protected void extractSkyline() {
+        
+        ImageProcesser imageProcesser = new ImageProcesser();
+
+        PairIntArray outputSkyCentroid = new PairIntArray();
+        
+        try {
+            GreyscaleImage out = imageProcesser.createSkyline(theta, 
+                outputSkyCentroid);
+
+            EdgeExtractor contourExtractor = new EdgeExtractor(out);
+            
+            if ((img.getWidth() > 300) && (img.getHeight() > 300)) {
+                contourExtractor.overrideEdgeSizeLowerLimit(50);
+            }
+            
+            contourExtractor.useRepeatConnectAndTrim();
+
+            List<PairIntArray> skyEdges = contourExtractor.findEdges();
+            
+            if (skyEdges.isEmpty()) {
+                return;
+            }
+
+            Collections.sort(skyEdges, new PairIntArrayComparator());
+
+            //reverse the list so the edges with largest numbers of points are
+            // at smaller indexes
+            int n = skyEdges.size();
+            if (n > 1) {
+                int end = n >> 1;
+                for (int i = 0; i < end; i++) {
+                    int idx2 = n - i - 1;                
+                    PairIntArray swap = skyEdges.get(i);
+                    skyEdges.set(i, skyEdges.get(idx2));
+                    skyEdges.set(idx2, swap);
+                }
+            }
+
+            // determine centroid of the skyline edges
+            // 
+            // for sky at top of image, and the centers of sky and edges roughly
+            // similar, we'd expect that we only need to move the edge in
+            // direction of increasing Y.
+            //
+
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
+            double[] xySkylineCen = curveHelper.calculateXYCentroids(skyEdges);
+
+            double directionX = xySkylineCen[0] - outputSkyCentroid.getX(0);
+
+            double directionY = xySkylineCen[1] - outputSkyCentroid.getY(0);
+
+            // use directions to translate skyEdges
+            //
+            // TODO: might need adjustments
+            
+            int expectedShift = (int)Math.round(2.355 * Math.sqrt(2*2 + 0.5*0.5));
+                        
+            if (Math.abs(directionY) > Math.abs(directionX)) {
+                int deltaY = expectedShift;
+                if (directionY < 0) {
+                    deltaY *= -1;
+                }
+                applyShift(skyEdges, deltaY, false);
+            } else {
+                int deltaX = expectedShift;
+                if (directionX < 0) {
+                    deltaX *= -1;
+                }
+                applyShift(skyEdges, deltaX, true);
+            }
+
+            skylineEdges.addAll(skyEdges);
+            
+        } catch(IOException e) {
+            log.severe(e.getMessage());
+            
+        } catch(NoSuchAlgorithmException e) {
+            log.severe(e.getMessage());
+        }
     }
     
     protected void setCannyEdgeFilterSettings(CannyEdgeFilter filter) {
         
         if (useOutdoorMode) {
             filter.useOutdoorMode();
-        }
-        
-        if (useSegmentationForSky) {
-            try {
-                ImageProcesser imageProcessor = new ImageProcesser();
-                imageProcessor.applyImageSegmentation(img, 2);
-            } catch (IOException e) {
-                log.severe("segmentation could not be performed: " + 
-                    e.getMessage());
-            } catch (NoSuchAlgorithmException e) {
-                log.severe("segmentation could not be performed: " + 
-                    e.getMessage());
-            }
         }
         
         if (doNotNormalizeByHistogram) {
@@ -332,6 +405,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     public List<PairIntArray> getEdges() {
         return edges;
     }
+    
+    public List<PairIntArray> getSkylineEdges() {
+        return skylineEdges;
+    }
 
     protected void addCurveToImage(PairIntArray edge, GreyscaleImage input, 
         int nExtraForDot, int value) {
@@ -355,14 +432,108 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         }
     }
     
+    private void applyBestXShift(List<PairIntArray> skyEdges, GreyscaleImage img, 
+        int deltaX, int absoluteMaxDelta) {
+        
+        applyBestXOrYShift(skyEdges, img, deltaX, absoluteMaxDelta, true);
+    }
+    private void applyBestYShift(List<PairIntArray> skyEdges, GreyscaleImage img, 
+        int deltaY, int absoluteMaxDelta) {
+        
+        applyBestXOrYShift(skyEdges, img, deltaY, absoluteMaxDelta, false);
+    }
+    private void applyBestXOrYShift(List<PairIntArray> skyEdges, GreyscaleImage img, 
+        int delta, int absoluteMaxDelta, boolean shiftX) {
+        
+        int bestShift = 0;
+        int bestSum = Integer.MIN_VALUE;
+        
+        // 0 to 12, dy=+1
+        // 0 to -12, dy=-1
+        
+        int start = 0;
+        int stop = 0;
+        if (delta > 0) {
+            stop = absoluteMaxDelta;
+        } else {
+            //-12 to 0
+            start = -1*absoluteMaxDelta;
+            delta *= -1;
+        }
+        
+        for (int shift = start; shift < stop; shift += delta) {
+            
+            int sum = 0;
+            
+            for (PairIntArray edge : skyEdges) {
+                for (int i = 0; i < edge.getN(); i++) {
+                    int x = edge.getX(i);
+                    int y = edge.getY(i);
+                    
+                    int xs = x;
+                    int ys = y;
+                    
+                    if (shiftX) {
+                        xs += shift;
+                    } else {
+                        ys += shift;
+                    }
+                    
+                    int v = img.getValue(xs, ys);
+                    
+                    if (v > 0) {
+                        sum++;
+                    }
+                }
+            }
+            
+            if (sum > bestSum) {
+                bestSum = sum;
+                bestShift = shift;
+            }
+        }
+        
+        if (bestShift != Integer.MIN_VALUE) {
+            for (PairIntArray edge : skyEdges) {
+                for (int i = 0; i < edge.getN(); i++) {
+                    int x = edge.getX(i);
+                    int y = edge.getY(i);
+                    
+                    if (shiftX) {
+                        x += bestShift;
+                    } else {
+                        y += bestShift;
+                    }
+                    
+                    edge.set(i, x, y);
+                }
+            }
+        }
+    }
+
+    private void applyShift(List<PairIntArray> skyEdges, int shift, 
+        boolean shiftX) {
+        
+        for (PairIntArray edge : skyEdges) {
+            for (int i = 0; i < edge.getN(); i++) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+
+                if (shiftX) {
+                    x += shift;
+                } else {
+                    y += shift;
+                }
+
+                edge.set(i, x, y);
+            }
+        }
+    }
+    
     public boolean getInitialized() {
         
         return (state.ordinal() >= 
             CurvatureScaleSpaceMapperState.INITIALIZED.ordinal());
-    }
-
-    public List<Integer> getNoisyEdgeIndexes() {
-        return highChangeEdges;
     }
     
     public GreyscaleImage getImage() {

@@ -59,6 +59,8 @@ public class EdgeExtractor {
      */
     private int edgeSizeLowerLimit = 15;
     
+    private boolean repeatConnectAndTrim = false;
+    
     /**
      * NOTE:  input should have a black (empty) background and edges should
      * have values > 125 counts.  Edges should also have width of 1 and no larger.
@@ -99,6 +101,14 @@ public class EdgeExtractor {
     
     public GreyscaleImage getImage() {
         return img;
+    }
+    
+    public void overrideEdgeSizeLowerLimit(int length) {
+        edgeSizeLowerLimit = length;
+    }
+    
+    public void useRepeatConnectAndTrim() {
+        repeatConnectAndTrim = true;
     }
     
     /**
@@ -299,6 +309,10 @@ public class EdgeExtractor {
         //pruneSpurs(output);
         
         adjustEdgesTowardsBrightPixels(output);
+        
+        if (repeatConnectAndTrim) {
+            output = connectClosestPointsIfCanTrim(output);
+        }
         
         return output;
     }

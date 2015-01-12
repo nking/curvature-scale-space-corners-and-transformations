@@ -117,7 +117,7 @@ public class DFSContiguousValueFinder {
         }
                
         color[stack.peek()] = 2;
-        
+
         while (!stack.isEmpty()) {
             
             SimpleLinkedListNode uNode = stack.pop();
@@ -139,7 +139,7 @@ public class DFSContiguousValueFinder {
             */            
             int uY = uIndex/width;
             int uX = uIndex - (uY * width);
-            
+
             for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
                 if ((vX < 0) || (vX > (width - 1))) {
                     continue;

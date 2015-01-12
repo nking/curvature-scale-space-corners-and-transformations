@@ -417,7 +417,10 @@ public class ImageProcesserTest extends TestCase {
 
         ImageProcesser imageProcesser = new ImageProcesser();
 
-        GreyscaleImage out = imageProcesser.createSkyline(theta);
+        PairIntArray outputSkyCentroid = new PairIntArray();
+        
+        GreyscaleImage out = imageProcesser.createSkyline(theta, 
+            outputSkyCentroid);
         
         ImageDisplayer.displayImage("segmented for sky", out);
                 

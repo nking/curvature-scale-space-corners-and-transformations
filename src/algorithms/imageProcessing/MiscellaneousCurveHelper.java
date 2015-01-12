@@ -629,6 +629,25 @@ public class MiscellaneousCurveHelper {
         return new double[]{xc, yc};
     }
     
+    public double[] calculateXYCentroids(List<PairIntArray> xyList) {
+        
+        double xc = 0;
+        double yc = 0;
+        
+        for (PairIntArray points : xyList) {
+            
+            double[] xycen = calculateXYCentroids(points);
+            
+            xc += xycen[0];
+            yc += xycen[1];
+        }
+        
+        xc /= (double)xyList.size();
+        yc /= (double)xyList.size();
+        
+        return new double[]{xc, yc};
+    }
+    
     public double[] calculateXYCentroids(float[] x, float[] y) {
         
         if (x == null) {
