@@ -736,8 +736,7 @@ public class ImageProcesser {
     }
     
     /**
-     * 
-     * NOT READY FOR USE YET
+     * NOT READY FOR USE YET.
      * 
      * @param theta
      * @return 
@@ -767,9 +766,20 @@ public class ImageProcesser {
      * create a mask for the largest contiguous zero value area in theta
      * or for the top similar largest contiguous zero value areas if there
      * are more than one.  the method doesn't make an assumption about the
-     * location of 'sky', that is the camera image plane is not expected to
-     * have a rotation of zero, that is, the horizon may not be along rows
-     * in the image.
+     * location of 'sky'.  the camera image plane might not have a rotation
+     * of zero, that is, the horizon might not be along rows in the image.
+     * 
+     * This is a long running method that is useful for determining skyline
+     * where there is low contrast such as snow covered mountains under
+     * a daytime sky.
+     * 
+     * NOT READY FOR USE YET.
+     * 
+     * This needs gradient X and gradient Y for some sunsets.
+     * 
+     * This method should not be used on silhouettes with clouds in the sky
+     * yet because it will determine that the silhouette is sky.
+     * (in progress in createRoughSkyMask...)
      * 
      * @param theta
      * @param outputSkyCentroid container to hold the output centroid of 
@@ -1091,10 +1101,6 @@ System.out.println(number);
      */
     public GreyscaleImage createMask(GreyscaleImage theta, PairIntArray zeroCoords) {
         
-        int width = theta.getWidth();
-        
-        int height = theta.getHeight();
-        
         GreyscaleImage out = theta.createWithDimensions();
            
         out.fill(1);
@@ -1119,10 +1125,6 @@ System.out.println(number);
      */
     public GreyscaleImage createInvMask(GreyscaleImage theta, 
         PairIntArray nonzeroCoords) {
-        
-        int width = theta.getWidth();
-        
-        int height = theta.getHeight();
         
         GreyscaleImage out = theta.createWithDimensions();
                                                        
@@ -1289,6 +1291,8 @@ System.out.println(number);
         
         double rgbSum = 0;
         
+        int count = 0;
+        
         for (int pIdx = 0; pIdx < points.getN(); pIdx++) {
             
             int x = points.getX(pIdx);
@@ -1304,12 +1308,25 @@ System.out.println(number);
                 oy += addAmount;
             }
             
+            if ((ox < 0) || (ox > (originalImage.getWidth() - 1))) {
+                continue;
+            }
+            if ((oy < 0) || (oy > (originalImage.getHeight() - 1))) {
+                continue;
+            }
+            
             int rgb = originalImage.getRGB(ox, oy);
             
             rgbSum += rgb;
+            
+            count++;
         }
         
-        rgbSum /= (double)points.getN();
+        rgbSum /= (double)count;
+        
+        if (count == 0) {
+            return 0;
+        }
         
         return (int)Math.round(rgbSum);
     }
@@ -1367,6 +1384,10 @@ System.out.println(number);
         as main data and putting all into a hash set
         */
         
+        if (zeroValuePoints.getN() == 0) {
+            return;
+        }
+        
         Set<Integer> zpSet = new HashSet<Integer>();
         for (int pIdx = 0; pIdx < zeroValuePoints.getN(); pIdx++) {
             int x = zeroValuePoints.getX(pIdx);
@@ -1410,6 +1431,10 @@ System.out.println(number);
                 }
             }
             
+            if (start == -1) {
+                continue;
+            }
+            
             // any pixels not in set are potentially cloud pixels
             for (int col = start; col <= stop; col++) {
                 int idx = theta.getIndex(col, row);
@@ -1423,6 +1448,13 @@ System.out.println(number);
                         ox += addAmount;
                     } else {
                         oy += addAmount;
+                    }
+                    
+                    if ((ox < 0) || (ox > (originalImage.getWidth() - 1))) {
+                        continue;
+                    }
+                    if ((oy < 0) || (oy > (originalImage.getHeight() - 1))) {
+                        continue;
                     }
                     
                     int red = originalImage.getR(ox, oy);

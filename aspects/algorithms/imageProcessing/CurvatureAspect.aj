@@ -381,9 +381,6 @@ public aspect CurvatureAspect {
 
         Image img3 = instance.getOriginalImage().copyImage();
 
-        log2.info("image used for skyline has dimensions: " + 
-            img3.getWidth() + " , " + img3.getHeight());
-
         List<PairIntArray> edges = instance.getSkylineEdgesInOriginalReferenceFrame();
 
         if (edges.isEmpty()) {
@@ -393,7 +390,10 @@ public aspect CurvatureAspect {
         try {
             
             for (PairIntArray edge : edges) {
-                ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 255, 0);
+                ImageIOHelper.addCurveToImage(edge, img3, 1, 255, 255, 0);
+            }
+            for (PairIntArray edge : edges) {
+                ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 255, 255);
             }
             
             debugDisplay(edges, "skyline edges extracted", true, img3.getWidth(), 
