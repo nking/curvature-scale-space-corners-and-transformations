@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
 import algorithms.util.SimpleLinkedListNode;
-import algorithms.util.StackInt;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
@@ -73,6 +72,12 @@ public class DFSContiguousValueFinder {
         }
     }
         
+    /**
+     * NOTE: to keep the performance reasonable, bin the image so that
+     * the number of pixels is below 87000 pixels.
+     * 
+     * @param pixelValue 
+     */
     public void findGroups(int pixelValue) {
                 
         initializeVariables();
@@ -82,6 +87,12 @@ public class DFSContiguousValueFinder {
         prune();        
     }
     
+    /**
+     * NOTE: to keep the performance reasonable, bin the image so that
+     * the number of pixels is below 87000 pixels.
+     * 
+     * @param pixelValue 
+     */
     public void findGroupsNotThisValue(int pixelValue) {
      
         notValue = true;
@@ -105,24 +116,39 @@ public class DFSContiguousValueFinder {
         
     }
     
+    /**
+     * NOTE: to keep the performance reasonable, the use of jvm stack has to
+     * be reduced.  For default jvm settings, the size of the local array variable
+     * within this method frame should be kept to having fewer that 128k items
+     * in it, therefore the GreyscaleImage should be binned before use to keep
+     * the number of pixels below 128k/1.5 (roughly keep below 87000 pixels).
+     * If all pixels are connected, that limit has to be lowered.
+     * 
+     * @param pixelValue 
+     */
     protected void findClustersIterative(int pixelValue) {
+        
+        Runtime runtime = Runtime.getRuntime();
+        log.info("memFree=" + runtime.freeMemory());
         
         int width = img.getWidth();
         int height = img.getHeight();
         
-        StackInt stack = new StackInt();
+        java.util.Stack<Integer> stack = new java.util.Stack<Integer>();
         
+        //O(N)
         for (int uIndex = (img.getNPixels() - 1); uIndex > -1; uIndex--) {
-            stack.insert(uIndex);
+            stack.add(Integer.valueOf(uIndex));
         }
                
-        color[stack.peek()] = 2;
-
+        color[stack.peek().intValue()] = 2;
+int ni = 0;
         while (!stack.isEmpty()) {
-            
-            SimpleLinkedListNode uNode = stack.pop();
-            
-            int uIndex = uNode.getKey();
+ni++;
+if ((ni % 1000) == 0) {
+log.info("memFree=" + runtime.freeMemory());
+}
+            int uIndex = stack.pop().intValue();
             
             int uPixValue = img.getValue(uIndex);
             
@@ -140,6 +166,8 @@ public class DFSContiguousValueFinder {
             int uY = uIndex/width;
             int uX = uIndex - (uY * width);
 
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
             for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
                 if ((vX < 0) || (vX > (width - 1))) {
                     continue;
@@ -171,10 +199,11 @@ public class DFSContiguousValueFinder {
                 
                     // inserting back at the top of the stack assures that the 
                     // search continues next from an associated point
-                    stack.insert(vIndex);
+                    stack.add(Integer.valueOf(vIndex));
                 }
             }
-        }        
+        }
+       
     }
 
     protected void processPair(int uIdx, int vIdx) {
@@ -241,8 +270,12 @@ public class DFSContiguousValueFinder {
      * remove groups smaller than minimumNumberInCluster
      */
     protected void prune() {
-        
+                
         log.finest("number of groups before prune=" + nGroups);
+        
+        //TODO: the data structures used could be written at the expense
+        // of space complexity to reduce changes needed when group number
+        // changes
         
         /*
          * [------] 0
@@ -254,12 +287,7 @@ public class DFSContiguousValueFinder {
             
             SimpleLinkedListNode group = groupMembership[i];
             
-            int count = 0;
-            SimpleLinkedListNode latest = group;
-            while (latest != null) {
-                count++;
-                latest = latest.getNext();
-            }
+            int count = group.getNumberOfKeys();
             
             log.finest("  group " + i + " has " + count 
                 + " members before prune (min=" + minimumNumberInCluster + ")");
@@ -274,7 +302,7 @@ public class DFSContiguousValueFinder {
                     groupMembership[newGroupId] = groupMembership[j];
                     
                     // update members in pointToGroupIndex
-                    latest = groupMembership[j];
+                    SimpleLinkedListNode latest = groupMembership[j];
                     
                     while (latest != null) {
                         
@@ -290,7 +318,7 @@ public class DFSContiguousValueFinder {
                 nGroups--;
             }
         }
-        
+   
         log.finest("number of groups after prune=" + nGroups);
     }
 
@@ -356,10 +384,8 @@ public class DFSContiguousValueFinder {
             throw new IllegalArgumentException("groupId=" + groupId 
             + " is outside of range of nGroups=" + nGroups);
         }
-        
-        int[] indexes = getIndexes(groupId);
-        
-        return indexes.length;
+                
+        return groupMembership[groupId].getNumberOfKeys();
     }
     
     public PairIntArray getXY(int groupId) {
