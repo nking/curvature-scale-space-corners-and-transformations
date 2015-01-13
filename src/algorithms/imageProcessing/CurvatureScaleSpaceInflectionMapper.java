@@ -32,8 +32,7 @@ public final class CurvatureScaleSpaceInflectionMapper extends AbstractCurvature
      */
     private double matchedScale = 1;
       
-    public CurvatureScaleSpaceInflectionMapper(GreyscaleImage image1, 
-        GreyscaleImage image2) {
+    public CurvatureScaleSpaceInflectionMapper(Image image1, Image image2) {
         
         super(image1, image2);
         

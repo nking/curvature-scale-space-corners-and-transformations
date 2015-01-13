@@ -44,7 +44,7 @@ public class CornersOfBloxTest extends TestCase {
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        Image img = ImageIOHelper.readImage(filePath);
         
         /*boolean useSturges = false;
         ImageStatistics stats = ImageStatisticsHelper.examineImageBorders(img, 

@@ -68,6 +68,8 @@ public class CannyEdgeFilter {
     
     protected boolean useOutdoorMode = false;
     
+    protected int[] shrinkToSize = null;
+    
     public CannyEdgeFilter() {        
     }
  
@@ -122,6 +124,11 @@ public class CannyEdgeFilter {
         lowThreshold = defaultOutdoorLowThreshold;
     }
     
+    public void setFilterImageTrim(int xOffset, int yOffset, int width, int
+        height) {
+        shrinkToSize = new int[]{xOffset, yOffset, width, height};
+    }
+    
     public void applyFilter(final GreyscaleImage input) {
         
         if (input.getWidth() < 3 || input.getHeight() < 3) {
@@ -130,7 +137,11 @@ public class CannyEdgeFilter {
         
         ImageProcesser imageProcesser = new ImageProcesser();
         
-        imageProcesser.shrinkImageToFirstNonZeros(input);
+        if (shrinkToSize != null) {
+            imageProcesser.shrinkImage(input, shrinkToSize);
+        } else {
+            imageProcesser.shrinkImageToFirstNonZeros(input);
+        }
              
         if (useOutdoorMode) {
             imageProcesser.blur(input, 2.0f); //3.0
@@ -248,8 +259,7 @@ public class CannyEdgeFilter {
         log.fine("threshold2=" + threshold2 + " n0=" + n0 + " n1=" + n1 + 
             " n1/n0=" + r);
         
-        GreyscaleImage img2 = new GreyscaleImage(input.getWidth(), 
-            input.getHeight());
+        GreyscaleImage img2 = input.createWithDimensions();
         
         // find points that are "sure-edge" points
         for (int i = 0; i < input.getWidth(); i++) {
@@ -265,8 +275,7 @@ public class CannyEdgeFilter {
         //       connected to any point in the image in progress?
         // for now, choosing the first and keeping them separate.
         
-        GreyscaleImage img3 = new GreyscaleImage(input.getWidth(), 
-            input.getHeight());
+        GreyscaleImage img3 = input.createWithDimensions();
         
         for (int i = 0; i < input.getWidth(); i++) {
             
@@ -572,7 +581,7 @@ public class CannyEdgeFilter {
     
     /**
      * construct the gradient in X, gradient in Y and the theta image from the 
-     * given img and return the results as new GreyscalImage[]{gX, gY, gXY, theta}.
+     * given img and return the results as new GreyscaleImage[]{gX, gY, gXY, theta}.
      * 
      * @param img
      * @return 

@@ -17,6 +17,10 @@ public class GreyscaleImage {
     
     private int nPixels;
     
+    private int xRelativeOffset = 0;
+    
+    private int yRelativeOffset = 0;
+    
     /**
      * @param theWidth
      * @param theHeight
@@ -186,9 +190,21 @@ public class GreyscaleImage {
     
     public GreyscaleImage copyImage() {
        
-        GreyscaleImage img2 = new GreyscaleImage(width, height);
-        
+        GreyscaleImage img2 = createWithDimensions();
+                
         System.arraycopy(a, 0, img2.a, 0, nPixels);
+        
+        img2.nPixels = nPixels;
+        
+        return img2;
+    }
+    
+    public GreyscaleImage createWithDimensions() {
+       
+        GreyscaleImage img2 = new GreyscaleImage(width, height);
+                
+        img2.xRelativeOffset = xRelativeOffset;
+        img2.yRelativeOffset = yRelativeOffset;
         
         return img2;
     }
@@ -217,6 +233,10 @@ public class GreyscaleImage {
             height = copyThis.height;
     
             nPixels = copyThis.nPixels;
+            
+            xRelativeOffset = copyThis.xRelativeOffset;
+            
+            yRelativeOffset = copyThis.yRelativeOffset;
         }
         
     }
@@ -226,5 +246,33 @@ public class GreyscaleImage {
      */
     public int getNPixels() {
         return nPixels;
+    }
+
+    /**
+     * @return the xRelativeOffset
+     */
+    public int getXRelativeOffset() {
+        return xRelativeOffset;
+    }
+
+    /**
+     * @param xRelativeOffset the xRelativeOffset to set
+     */
+    public void setXRelativeOffset(int xRelativeOffset) {
+        this.xRelativeOffset = xRelativeOffset;
+    }
+
+    /**
+     * @return the yRelativeOffset
+     */
+    public int getYRelativeOffset() {
+        return yRelativeOffset;
+    }
+
+    /**
+     * @param yRelativeOffset the yRelativeOffset to set
+     */
+    public void setYRelativeOffset(int yRelativeOffset) {
+        this.yRelativeOffset = yRelativeOffset;
     }
 }

@@ -111,14 +111,14 @@ public aspect CurvatureAspect {
 
         try {
 
-            Image img1 = instance.getOriginalImage1().copyImageToGreen();
+            Image img1 = instance.getOriginalImage1().copyImage();
             
             ImageIOHelper.addCurveToImage(xyc1, img1, 2, 255, 0, 0);
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
                 dirPath + "/matched_contour_peaks1.png", img1);
 
-            Image img2 = instance.getOriginalImage2().copyImageToGreen();
+            Image img2 = instance.getOriginalImage2().copyImage();
             
             ImageIOHelper.addCurveToImage(xyc2, img2, 2, 255, 0, 0);
             ImageIOHelper.writeOutputImage(
@@ -157,14 +157,14 @@ public aspect CurvatureAspect {
 
         try {
 
-            Image img1 = instance.getOriginalImage1().copyImageToGreen();
+            Image img1 = instance.getOriginalImage1().copyImage();
             
             ImageIOHelper.addCurveToImage(xyc1, img1, 2, 255, 0, 0);
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
                 dirPath + "/matched_contour_peaks1.png", img1);
 
-            Image img2 = instance.getOriginalImage2().copyImageToGreen();
+            Image img2 = instance.getOriginalImage2().copyImage();
             
             ImageIOHelper.addCurveToImage(xyc2, img2, 2, 255, 0, 0);
             ImageIOHelper.writeOutputImage(
@@ -214,14 +214,14 @@ public aspect CurvatureAspect {
 
         try {
 
-            Image img1 = instance.getOriginalImage1().copyImageToGreen();
+            Image img1 = instance.getOriginalImage1().copyImage();
             
             ImageIOHelper.addCurveToImage(xy1, img1, 2, 255, 0, 0);
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
                 dirPath + "/contour_peaks1.png", img1);
 
-            Image img2 = instance.getOriginalImage2().copyImageToGreen();
+            Image img2 = instance.getOriginalImage2().copyImage();
             
             ImageIOHelper.addCurveToImage(xy2, img2, 2, 255, 0, 0);
             ImageIOHelper.writeOutputImage(
@@ -379,7 +379,10 @@ public aspect CurvatureAspect {
         CurvatureScaleSpaceCornerDetector instance = 
             (CurvatureScaleSpaceCornerDetector)obj;
 
-        Image img3 = instance.getOriginalImage().copyImageToGreen();
+        Image img3 = instance.getOriginalImage().copyImage();
+
+        log2.info("image used for skyline has dimensions: " + 
+            img3.getWidth() + " , " + img3.getHeight());
 
         List<PairIntArray> edges = instance.getSkylineEdgesInOriginalReferenceFrame();
 
@@ -538,7 +541,7 @@ public aspect CurvatureAspect {
         CurvatureScaleSpaceCornerDetector instance = 
             (CurvatureScaleSpaceCornerDetector)obj;
 
-        Image img3 = instance.getOriginalImage().copyImageToGreen();
+        Image img3 = instance.getOriginalImage().copyImage();
 
         List<PairIntArray> edges = instance.getEdgesInOriginalReferenceFrame();
 

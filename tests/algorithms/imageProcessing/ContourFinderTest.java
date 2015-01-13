@@ -33,7 +33,7 @@ public class ContourFinderTest {
         String filePath = ResourceFinder.findFileInTestResources(
             "closed_curve.png");
         
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        Image img = ImageIOHelper.readImage(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
             new CurvatureScaleSpaceImageMaker(img);
@@ -90,7 +90,7 @@ public class ContourFinderTest {
             "blox.gif");
             //"closed_curve_translate.png");
         
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        Image img = ImageIOHelper.readImage(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
             new CurvatureScaleSpaceImageMaker(img);

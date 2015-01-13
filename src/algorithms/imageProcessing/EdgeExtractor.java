@@ -311,6 +311,7 @@ public class EdgeExtractor {
         adjustEdgesTowardsBrightPixels(output);
         
         if (repeatConnectAndTrim) {
+            
             output = connectClosestPointsIfCanTrim(output);
         }
         

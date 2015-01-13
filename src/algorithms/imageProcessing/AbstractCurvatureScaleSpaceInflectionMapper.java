@@ -20,11 +20,11 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
     protected boolean useLineDrawingMode = false;
     protected boolean doRefineTransformations = false;
     protected boolean initialized = false;
-    protected final GreyscaleImage image1;
-    protected final GreyscaleImage image2;
+    protected final Image image1;
+    protected final Image image2;
     // for debugging, keeping a reference of originals
-    protected final GreyscaleImage originalImage1;
-    protected final GreyscaleImage originalImage2;
+    protected final Image originalImage1;
+    protected final Image originalImage2;
     public final int image1OriginalWidth;
     public final int image1OriginalHeight;
     protected final int image2OriginalWidth;
@@ -71,8 +71,8 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
     protected int offsetImageY2 = 0;
     protected boolean useOutdoorMode = false;
 
-    public AbstractCurvatureScaleSpaceInflectionMapper(GreyscaleImage image1, 
-        GreyscaleImage image2) {
+    public AbstractCurvatureScaleSpaceInflectionMapper(Image image1, 
+        Image image2) {
                 
         this.image1 = image1;
         this.image2 = image2;
@@ -325,19 +325,19 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
         return contours2;
     }
 
-    protected GreyscaleImage getImage1() {
+    protected Image getImage1() {
         return image1;
     }
 
-    protected GreyscaleImage getImage2() {
+    protected Image getImage2() {
         return image2;
     }
 
-    GreyscaleImage getOriginalImage1() {
+    Image getOriginalImage1() {
         return originalImage1;
     }
 
-    GreyscaleImage getOriginalImage2() {
+    Image getOriginalImage2() {
         return originalImage2;
     }
 

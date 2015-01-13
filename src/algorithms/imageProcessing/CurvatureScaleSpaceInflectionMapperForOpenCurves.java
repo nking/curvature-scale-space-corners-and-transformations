@@ -14,8 +14,8 @@ import java.util.List;
 public final class CurvatureScaleSpaceInflectionMapperForOpenCurves 
 extends AbstractCurvatureScaleSpaceInflectionMapper {
         
-    public CurvatureScaleSpaceInflectionMapperForOpenCurves(GreyscaleImage 
-        image1, GreyscaleImage image2) {
+    public CurvatureScaleSpaceInflectionMapperForOpenCurves(Image image1, 
+        Image image2) {
         
         super(image1, image2);
         

@@ -1,5 +1,8 @@
 package algorithms.imageProcessing;
 
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+
 /**
  *
  * @author nichole
@@ -117,6 +120,51 @@ public class Image {
         System.arraycopy(b, 0, img2.b, 0, nPixels);
        
         return img2;
+    }
+    
+    public GreyscaleImage copyToGreyscale() {
+        
+        /*
+        to maintain same image conversion as used in ImageIOHelper,
+        will use the java methods.  
+        TODO: There should be a way to perform
+        a pixel by pixel conversion instead of creating a
+        BufferedImage.
+        */
+        
+        BufferedImage outputImage = new BufferedImage(width, height, 
+            BufferedImage.TYPE_BYTE_GRAY);
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                int rgbValue = getRGB(i, j);
+                outputImage.setRGB(i, j, rgbValue);
+            }
+        }
+        
+        GreyscaleImage out = new GreyscaleImage(width, height);
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                
+                // presumably, this is already combined?
+                // or does it need separation into rgb and then averaged?
+                
+                int rgb = outputImage.getRGB(i, j);
+                
+                // prefer GREEN?
+                
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;  
+                    
+                int v = (r + g + b)/3;
+                
+                out.setValue(i, j, v);
+            }
+        }
+        
+        return out;
     }
     
     public void resetTo(Image copyThis) {

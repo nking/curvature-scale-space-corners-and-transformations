@@ -149,9 +149,9 @@ public class CMDLineCornerDetector {
             (new File(filePath)).toPath().getFileName().toString();
         imageFileName = imageFileName.substring(0, imageFileName.length() -4);
         
-        GreyscaleImage img = null;
+        Image img = null;
         try {
-             img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+             img = ImageIOHelper.readImage(filePath);
              
              CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(img);
                

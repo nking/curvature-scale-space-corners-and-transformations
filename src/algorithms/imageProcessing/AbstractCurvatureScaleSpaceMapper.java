@@ -22,7 +22,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     protected GreyscaleImage img;
     
-    protected final GreyscaleImage originalImg;
+    protected final Image originalImg;
     
     /**
      * edges extracted from image.  if an instance of PairIntArrayWithColor
@@ -71,9 +71,9 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * 
      * @param input 
      */
-    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input) {
+    public AbstractCurvatureScaleSpaceMapper(Image input) {
         
-        img = input;
+        img = input.copyToGreyscale();
         
         ImageProcesser imageProcesser = new ImageProcesser();
         
@@ -93,10 +93,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * @param input
      * @param theEdges 
      */
-    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input, 
+    public AbstractCurvatureScaleSpaceMapper(Image input, 
         List<PairIntArray> theEdges) {
         
-        img = input;
+        img = input.copyToGreyscale();
         
         ImageProcesser imageProcesser = new ImageProcesser();
         
@@ -249,6 +249,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * the output of the canny edge filter (which should be a binary
      * image with edges as 0's).   NOTE that this is currently a long
      * running process.
+     * 
      */
     protected void extractSkyline() {
         
@@ -257,9 +258,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         PairIntArray outputSkyCentroid = new PairIntArray();
         
         try {
+            
             GreyscaleImage out = imageProcesser.createSkyline(theta, 
-                outputSkyCentroid);
-
+                this.originalImg, outputSkyCentroid);
+            
             EdgeExtractor contourExtractor = new EdgeExtractor(out);
             
             if ((img.getWidth() > 300) && (img.getHeight() > 300)) {
@@ -273,7 +275,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             if (skyEdges.isEmpty()) {
                 return;
             }
-
+            
             Collections.sort(skyEdges, new PairIntArrayComparator());
 
             //reverse the list so the edges with largest numbers of points are
@@ -369,7 +371,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         edges.clear();
         edges.addAll(tmpEdges);
         
-        GreyscaleImage output = new GreyscaleImage(img.getWidth(), img.getHeight());
+        GreyscaleImage output = img.createWithDimensions();
         for (PairIntArray edge : edges) {
             addCurveToImage(edge, output, 0, 255);
         }
@@ -540,7 +542,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         return img;
     }
 
-    public GreyscaleImage getOriginalImage() {
+    public Image getOriginalImage() {
         return originalImg;
     }
     

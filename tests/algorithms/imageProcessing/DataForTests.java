@@ -591,8 +591,8 @@ public class DataForTests {
         String fileName2 = "merton_college_I_002.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
-        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        Image img1 = ImageIOHelper.readImage(filePath1);
+        Image img2 = ImageIOHelper.readImage(filePath2);
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);

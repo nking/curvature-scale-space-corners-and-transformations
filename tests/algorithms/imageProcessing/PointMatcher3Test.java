@@ -183,15 +183,15 @@ public class PointMatcher3Test {
         // revisit infl points.  is there a threshold removing points?
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath1Inv = ResourceFinder.findFileInTestResources(fileName1Inv);
-        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
-        GreyscaleImage img1Inv = ImageIOHelper.readImageAsGrayScaleB(filePath1Inv);
+        Image img1 = ImageIOHelper.readImage(filePath1);
+        Image img1Inv = ImageIOHelper.readImage(filePath1Inv);
         int image1Width = img1.getWidth();
         int image1Height = img1.getHeight();
        
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        Image img2 = ImageIOHelper.readImage(filePath2);
         String filePath2Inv = ResourceFinder.findFileInTestResources(fileName2Inv);
-        GreyscaleImage img2Inv = ImageIOHelper.readImageAsGrayScaleB(filePath2Inv);
+        Image img2Inv = ImageIOHelper.readImage(filePath2Inv);
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         
@@ -446,12 +446,12 @@ public class PointMatcher3Test {
         
         // revisit infl points.  is there a threshold removing points?
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        Image img1 = ImageIOHelper.readImage(filePath1);
         int image1Width = img1.getWidth();
         int image1Height = img1.getHeight();
        
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        Image img2 = ImageIOHelper.readImage(filePath2);
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         
@@ -587,12 +587,12 @@ public class PointMatcher3Test {
         String fileName2 = "brown_lowe_2003_image2.jpg";
         // revisit infl points.  is there a threshold removing points?
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        Image img1 = ImageIOHelper.readImage(filePath1);
         int image1Width = img1.getWidth();
         int image1Height = img1.getHeight();
        
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
+        Image img2 = ImageIOHelper.readImage(filePath2);
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         
@@ -1663,4 +1663,5 @@ public class PointMatcher3Test {
             return Color.ORANGE;
         }
     }
+    
 }

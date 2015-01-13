@@ -35,7 +35,7 @@ public class CurvatureScaleSpaceContourMatcherTest {
 
         String filePath = ResourceFinder.findFileInTestResources(fileName);
 
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        Image img = ImageIOHelper.readImage(filePath);
 
         CurvatureScaleSpaceImageMaker instance
             = new CurvatureScaleSpaceImageMaker(img);

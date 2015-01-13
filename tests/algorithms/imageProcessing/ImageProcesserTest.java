@@ -409,7 +409,7 @@ public class ImageProcesserTest extends TestCase {
          String fileName1 = "venturi_mountain_j6_0001.png";
          */
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        GreyscaleImage input = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        Image input = ImageIOHelper.readImage(filePath1);
         GreyscaleImage theta = ImageIOHelper.readImageAsGrayScaleB(
             ResourceFinder.findFileInTestResources(fileName2));
         int image1Width = input.getWidth();
@@ -420,8 +420,8 @@ public class ImageProcesserTest extends TestCase {
         PairIntArray outputSkyCentroid = new PairIntArray();
         
         GreyscaleImage out = imageProcesser.createSkyline(theta, 
-            outputSkyCentroid);
-        
+            input, outputSkyCentroid);
+       
         ImageDisplayer.displayImage("segmented for sky", out);
                 
         String outFilePath = ResourceFinder.findDirectory("bin") + "/del.png";

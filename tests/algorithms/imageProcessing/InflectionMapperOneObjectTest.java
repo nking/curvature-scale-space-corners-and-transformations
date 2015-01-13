@@ -61,8 +61,8 @@ public class InflectionMapperOneObjectTest {
                     filePath2 = swap;
                 }
                 
-                GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);
-                GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
+                Image img1 = ImageIOHelper.readImage(filePath1);
+                Image img2 = ImageIOHelper.readImage(filePath2);
                 
                 double centroidX1 = img1.getWidth() >> 1;
                 double centroidY1 = img1.getHeight() >> 1;
@@ -95,9 +95,9 @@ public class InflectionMapperOneObjectTest {
                     transformer.applyTransformation(transformationParams, 
                         edges1, centroidX1, centroidY1);
 
-                img2 = ImageIOHelper.readImageAsGrayScaleG(filePath2);
+                img2 = ImageIOHelper.readImage(filePath2);
 
-                debugDisplay(transformedEdges, img2.copyImageToGreen(), rotDegrees);
+                debugDisplay(transformedEdges, img2, rotDegrees);
 
                 double expectedRotDeg = Float.valueOf(rotDegrees).floatValue();
 

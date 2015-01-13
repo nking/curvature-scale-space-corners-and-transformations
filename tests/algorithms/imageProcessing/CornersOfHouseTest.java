@@ -43,7 +43,7 @@ public class CornersOfHouseTest extends TestCase {
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        Image img = ImageIOHelper.readImage(filePath);
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);

@@ -67,7 +67,7 @@ public class StereoProjectionTransformerTest {
         //String fileName1 = "lab.gif";
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleB(filePath1);
+        Image img1 = ImageIOHelper.readImage(filePath1);
         String fileName2 = "brown_lowe_2003_image2.jpg";
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         //GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleB(filePath2);
@@ -134,7 +134,7 @@ public class StereoProjectionTransformerTest {
         
         String fileName1 = "books_illum3_v0_695x555.png";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleG(filePath1);
+        Image img1 = ImageIOHelper.readImage(filePath1);
 
 /*        String fileName2 = "books_illum3_v6_695x555.png";
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);

@@ -37,12 +37,12 @@ public final class CurvatureScaleSpaceImageMaker extends
     protected List<PairIntArray> closedCurves = 
         new ArrayList<PairIntArray>();
     
-    public CurvatureScaleSpaceImageMaker(GreyscaleImage input) {
+    public CurvatureScaleSpaceImageMaker(Image input) {
         
         super(input);        
     }
     
-    public CurvatureScaleSpaceImageMaker(GreyscaleImage input, 
+    public CurvatureScaleSpaceImageMaker(Image input, 
         List<PairIntArray> theEdges) {
         
         super(input, theEdges);          
