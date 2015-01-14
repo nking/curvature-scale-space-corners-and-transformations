@@ -1573,4 +1573,186 @@ System.out.println(number);
             }
         }        
     }
+
+    public GreyscaleImage binImageToKeepZeros(GreyscaleImage img, 
+        int binFactor) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+        
+        int w0 = img.getWidth();
+        int h0 = img.getHeight();
+        
+        int w1 = w0/binFactor;
+        int h1 = h0/binFactor;
+      
+        GreyscaleImage out = new GreyscaleImage(w1, h1);
+        out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/2.f));
+        out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/2.f));
+        
+        for (int i = 0; i < w1; i++) {
+                        
+            for (int j = 0; j < h1; j++) {
+                
+                int vSum = 0;
+                int count = 0;
+                boolean isZero = false;
+                
+                // if there's a zero in the binFactor x binFactor block,
+                // v is set to 0
+                
+                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        
+                        if ((ii < 0) || (ii > (w0 - 1))) {
+                            continue;
+                        }
+                        if ((jj < 0) || (jj > (h0 - 1))) {
+                            continue;
+                        }
+                        
+                        int v = img.getValue(ii, jj);
+                        
+                        if (v == 0) {
+                            isZero = true;
+                            vSum = 0;
+                            break;
+                        }
+                        
+                        vSum += v;
+                        count++;
+                    }
+                    if (isZero) {
+                        break;
+                    }
+                }
+                
+                if (vSum > 0) {
+                    float v = (float)vSum/(float)count;
+                    vSum = Math.round(v);
+                }
+                
+                out.setValue(i, j, vSum);
+            }
+        }
+        
+        return out;
+    }
+    
+    public Image binImage(Image img,  int binFactor) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+        
+        int w0 = img.getWidth();
+        int h0 = img.getHeight();
+        
+        int w1 = w0/binFactor;
+        int h1 = h0/binFactor;
+      
+        Image out = new Image(w1, h1);
+        
+        for (int i = 0; i < w1; i++) {
+                        
+            for (int j = 0; j < h1; j++) {
+                
+                long rSum = 0;
+                long gSum = 0;
+                long bSum = 0;
+                
+                int count = 0;
+                
+                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        
+                        if ((ii < 0) || (ii > (w0 - 1))) {
+                            continue;
+                        }
+                        if ((jj < 0) || (jj > (h0 - 1))) {
+                            continue;
+                        }
+                        
+                        int rgb = img.getRGB(ii, jj);
+                        
+                        int r = (rgb >> 16) & 0xFF;
+                        int g = (rgb >> 8) & 0xFF;
+                        int b = rgb & 0xFF;
+                    
+                        rSum += r;
+                        gSum += g;
+                        bSum += b;
+                        
+                        count++;
+                    }
+                }
+                
+                if (count > 0) {
+                    rSum = Math.round((float)rSum/(float)count);
+                    gSum = Math.round((float)gSum/(float)count);
+                    bSum = Math.round((float)bSum/(float)count);
+                }
+                
+                out.setRGB(i, j, (int)rSum, (int)gSum, (int)bSum);
+            }
+        }
+        
+        return out;
+    }
+
+    public GreyscaleImage unbinMask(GreyscaleImage mask, int binFactor, 
+        GreyscaleImage originalTheta) {
+        
+        if (mask == null) {
+            throw new IllegalArgumentException("mask cannot be null");
+        }
+        
+        if (originalTheta == null) {
+            throw new IllegalArgumentException("originalTheta cannot be null");
+        }
+        
+        GreyscaleImage out = originalTheta.createWithDimensions();
+        
+        int w0 = mask.getWidth();
+        int h0 = mask.getHeight();
+        
+        int w1 = out.getWidth();
+        int h1 = out.getHeight();
+      
+        for (int i = 0; i < w0; i++) {
+            for (int j = 0; j < h0; j++) {
+                
+                int v = mask.getValue(i, j);
+                
+                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        out.setValue(ii, jj, v);
+                    }
+                }
+            }
+        }
+        
+        if ((originalTheta.getWidth() & 1) == 1) {
+            // copy next to last column into last column
+            int i = originalTheta.getWidth() - 2;
+            for (int j = 0; j < h1; j++) {
+                int v = out.getValue(i, j);
+                out.setValue(i + 1, j, v);
+            }
+        }
+        if ((originalTheta.getHeight() & 1) == 1) {
+            // copy next to last row into last row
+            int j = originalTheta.getHeight() - 2;
+            for (int i = 0; i < w1; i++) {
+                int v = out.getValue(i, j);
+                out.setValue(i, j + 1, v);
+            }
+        }
+        
+        // TODO: consider correction for oversampling at location of skyline
+        // using originalTheta
+        
+        return out;
+    }
 }

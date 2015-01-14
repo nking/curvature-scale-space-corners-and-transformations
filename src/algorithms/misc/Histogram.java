@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
@@ -636,4 +637,30 @@ public class Histogram {
         return yPeakMinIdx;
     }
 
+    /**
+     * count the number of zero and non-zero pixels in img and return them 
+     * as int[]{numberOfZeros, numberOfNonZeros}
+     * @param img
+     * @return 
+     */
+    public static int[] createBinaryHistogram(GreyscaleImage img) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+        
+        int n0 = 0;
+        int n1 = 0;
+        
+        for (int i = 0; i < img.getNPixels(); i++) {
+            int v = img.getValue(i);
+            if (v == 0) {
+                n0++;
+            } else {
+                n1++;
+            }
+        }
+        
+        return new int[]{n0, n1};
+    }
 }

@@ -1,22 +1,13 @@
 package algorithms.misc;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.ArrayPair;
-import algorithms.util.Errors;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
@@ -765,4 +756,20 @@ public class HistogramTest extends TestCase {
         
         return hist;
     }
+    
+    public void testCreateBinaryHistogram() throws Exception {
+        
+        GreyscaleImage img = new GreyscaleImage(10, 10);
+        img.setValue(3, 1);
+        img.setValue(6, 1);
+        img.setValue(9, 1);
+        img.setValue(12, 1);
+        
+        int[] ns = Histogram.createBinaryHistogram(img);
+        
+        assertNotNull(ns);
+        assertTrue(ns[0] == (img.getNPixels() - 4));
+        assertTrue(ns[1] == 4);
+    }
+
 }

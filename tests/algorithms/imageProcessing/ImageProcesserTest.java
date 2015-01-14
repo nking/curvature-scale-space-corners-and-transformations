@@ -428,4 +428,211 @@ public class ImageProcesserTest extends TestCase {
         ImageIOHelper.writeOutputImage(outFilePath, out);
         int z = 1;
     }
+    
+    public void testBinImageToKeepZeros() throws Exception {
+        
+        int w0 = 4;
+        int h0 = 6;
+        int xoff = 2;
+        int yoff = 4;
+        
+        int binFactor = 2;
+        
+        GreyscaleImage img = new GreyscaleImage(w0, h0);
+        img.setXRelativeOffset(xoff);
+        img.setYRelativeOffset(yoff);
+        
+        img.fill(4);
+        img.setValue(0, 0, 0);
+        img.setValue(2, 4, 0);
+        /*
+        @ 1 2 3 4
+        1
+        2
+        3
+        4   @
+        5
+        */
+        
+        ImageProcesser imageProcesser = new ImageProcesser();
+        GreyscaleImage out = imageProcesser.binImageToKeepZeros(img, binFactor);
+        
+        assertTrue(out.getWidth() == w0/binFactor);
+        assertTrue(out.getHeight() == h0/binFactor);
+        
+        assertTrue(out.getXRelativeOffset() == xoff/binFactor);
+        assertTrue(out.getYRelativeOffset() == yoff/binFactor);
+        
+        for (int col = 0; col < out.getWidth(); col++) {
+            for (int row = 0; row < out.getHeight(); row++) {
+                int v = out.getValue(col, row);
+                if ((col == 0) && (row == 0)) {
+                    assertTrue(v == 0);
+                } else if ((col == 1) && (row == 2)) {
+                    assertTrue(v == 0);
+                } else {
+                    assertTrue(v == 4);
+                }
+            }
+        }
+    }
+    
+    public void testBinImage() throws Exception {
+                
+        int w0 = 4;
+        int h0 = 6;
+        
+        int binFactor = 2;
+        
+        Image img = new Image(w0, h0);
+        
+        /*
+        @ 1 2 3 4
+        1
+        2
+        3
+        4   @
+        5
+        */
+        for (int col = 0; col < img.getWidth(); col++) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                if ((col == 0) && (row == 0)) {
+                    img.setRGB(col, row, 0, 0, 0);
+                } else if ((col == 2) && (row == 4)) {
+                    img.setRGB(col, row, 0, 0, 0);
+                } else {
+                    img.setRGB(col, row, 4, 0, 0);
+                }
+            }
+        }
+        
+        ImageProcesser imageProcesser = new ImageProcesser();
+        Image out = imageProcesser.binImage(img, binFactor);
+        
+        assertTrue(out.getWidth() == w0/binFactor);
+        assertTrue(out.getHeight() == h0/binFactor);
+        
+        for (int col = 0; col < out.getWidth(); col++) {
+            for (int row = 0; row < out.getHeight(); row++) {
+                int r = out.getR(col, row);
+                if ((col == 0) && (row == 0)) {
+                    assertTrue(r == 3);
+                } else if ((col == 1) && (row == 2)) {
+                    assertTrue(r == 3);
+                } else {
+                    assertTrue(r == 4);
+                }
+                assertTrue(out.getG(col, row) == 0);
+                assertTrue(out.getB(col, row) == 0);
+            }
+        }
+    }
+    
+    public void testUnbinMask() throws Exception {
+       
+        int w0 = 4;
+        int h0 = 6;
+        int xOff = 2;
+        int yOff = 10;
+        
+        int binFactor = 2;
+        
+        int w1 = w0/binFactor;
+        int h1 = h0/binFactor;
+        
+        GreyscaleImage originalTheta = new GreyscaleImage(w0, h0);
+        originalTheta.setXRelativeOffset(xOff);
+        originalTheta.setYRelativeOffset(yOff);
+        
+        GreyscaleImage mask = new GreyscaleImage(w1, h1);
+        mask.setXRelativeOffset(xOff/binFactor);
+        mask.setYRelativeOffset(yOff/binFactor);
+        
+        /*
+        @ @ 
+        1  
+        2
+        */
+        for (int col = 0; col < mask.getWidth(); col++) {
+            for (int row = 0; row < mask.getHeight(); row++) {
+                if (row == 0) {
+                    mask.setValue(col, row, 0);
+                } else {
+                    mask.setValue(col, row, 4);
+                }
+            }
+        }
+        
+        ImageProcesser imageProcesser = new ImageProcesser();
+        GreyscaleImage out = imageProcesser.unbinMask(mask, binFactor, originalTheta);
+        
+        assertTrue(out.getWidth() == originalTheta.getWidth());
+        assertTrue(out.getHeight() == originalTheta.getHeight());
+        assertTrue(out.getXRelativeOffset() == originalTheta.getXRelativeOffset());
+        assertTrue(out.getYRelativeOffset() == originalTheta.getYRelativeOffset());
+        
+        for (int col = 0; col < out.getWidth(); col++) {
+            for (int row = 0; row < out.getHeight(); row++) {
+                if ((row == 0) || (row == 1)) {
+                    assertTrue(out.getValue(col, row) == 0);
+                } else {
+                    assertTrue(out.getValue(col, row) == 4);
+                }
+            }
+        }
+    }
+    
+    public void testUnbinMask2() throws Exception {
+       
+        int w0 = 5;
+        int h0 = 7;
+        int xOff = 2;
+        int yOff = 10;
+        
+        int binFactor = 2;
+        
+        int w1 = w0/binFactor;
+        int h1 = h0/binFactor;
+        
+        GreyscaleImage originalTheta = new GreyscaleImage(w0, h0);
+        originalTheta.setXRelativeOffset(xOff);
+        originalTheta.setYRelativeOffset(yOff);
+        
+        GreyscaleImage mask = new GreyscaleImage(w1, h1);
+        mask.setXRelativeOffset(xOff/binFactor);
+        mask.setYRelativeOffset(yOff/binFactor);
+        
+        /*
+        @ @ 
+        1  
+        2
+        */
+        for (int col = 0; col < mask.getWidth(); col++) {
+            for (int row = 0; row < mask.getHeight(); row++) {
+                if (row == 0) {
+                    mask.setValue(col, row, 0);
+                } else {
+                    mask.setValue(col, row, 4);
+                }
+            }
+        }
+        
+        ImageProcesser imageProcesser = new ImageProcesser();
+        GreyscaleImage out = imageProcesser.unbinMask(mask, binFactor, originalTheta);
+        
+        assertTrue(out.getWidth() == originalTheta.getWidth());
+        assertTrue(out.getHeight() == originalTheta.getHeight());
+        assertTrue(out.getXRelativeOffset() == originalTheta.getXRelativeOffset());
+        assertTrue(out.getYRelativeOffset() == originalTheta.getYRelativeOffset());
+        
+        for (int col = 0; col < out.getWidth(); col++) {
+            for (int row = 0; row < out.getHeight(); row++) {
+                if ((row == 0) || (row == 1)) {
+                    assertTrue(out.getValue(col, row) == 0);
+                } else {
+                    assertTrue(out.getValue(col, row) == 4);
+                }
+            }
+        }
+    }
 }
