@@ -128,9 +128,6 @@ public class DFSContiguousValueFinder {
      */
     protected void findClustersIterative(int pixelValue) {
         
-        Runtime runtime = Runtime.getRuntime();
-        log.info("memFree=" + runtime.freeMemory());
-        
         int width = img.getWidth();
         int height = img.getHeight();
         
@@ -142,12 +139,9 @@ public class DFSContiguousValueFinder {
         }
                
         color[stack.peek().intValue()] = 2;
-int ni = 0;
+
         while (!stack.isEmpty()) {
-ni++;
-if ((ni % 1000) == 0) {
-log.info("memFree=" + runtime.freeMemory());
-}
+
             int uIndex = stack.pop().intValue();
             
             int uPixValue = img.getValue(uIndex);

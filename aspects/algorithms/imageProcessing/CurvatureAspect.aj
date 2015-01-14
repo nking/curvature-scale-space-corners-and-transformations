@@ -3,10 +3,8 @@ package algorithms.imageProcessing;
 import java.io.IOException;
 import java.util.logging.Logger;
 import algorithms.util.*;
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscMath;
-import algorithms.util.Errors;
+import algorithms.misc.*;
+import algorithms.util.*;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +28,8 @@ public aspect CurvatureAspect {
     private Logger log2 = Logger.getAnonymousLogger();
 
     private String currentEdgeStr = "";
+
+    private static int outImgNum = -1;
 
     after() :
         target(algorithms.imageProcessing.ContourFinder) 
@@ -318,14 +318,30 @@ public aspect CurvatureAspect {
 
         debugDisplay(image, "after edge thinning");
 
+        GreyscaleImage cX = instance.getGradientX();
+        GreyscaleImage cY = instance.getGradientY();
+        GreyscaleImage cXY = instance.getGradientXY();
+        GreyscaleImage cTheta = instance.getTheta();
+
+        outImgNum++;
+
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/gX_" + outImgNum + ".png", cX);
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/gY_" + outImgNum + ".png", cY);
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/gXY_" + outImgNum + ".png", cXY);
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/gTheta_" + outImgNum + ".png", cTheta);
 
             ImageIOHelper.writeOutputImage(dirPath + "/edgethinned.png", image);
 
         } catch (IOException e) {
             log2.severe(e.getMessage());
         }
+   
     }
 
     after(GreyscaleImage input, float sigma) returning() :
@@ -401,10 +417,10 @@ public aspect CurvatureAspect {
             
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
-                dirPath + "/image_with_skyline.png", img3);
+                dirPath + "/image_with_skyline_" + outImgNum + ".png", img3);
  
         } catch (IOException ex) {
-            throw new RuntimeException("ERROR: l405" + ex.getMessage());
+            throw new RuntimeException("ERROR: l423" + ex.getMessage());
         }
     }
 
@@ -427,48 +443,6 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(GreyscaleImage convolvedX, GreyscaleImage convolvedY) returning(GreyscaleImage output) :
-        call(public GreyscaleImage ImageProcesser.computeTheta(GreyscaleImage, GreyscaleImage))
-        && args(convolvedX, convolvedY)
-	    && target(algorithms.imageProcessing.ImageProcesser) {
-
-        log2.fine("after ImageProcesser.computeTheta");
-
-        debugDisplay(output, "theta");
-
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(dirPath + "/gTheta.png", output);
-        } catch (IOException e) {
-            log2.severe(e.getMessage());
-        }
-    }
-
-    after(GreyscaleImage convolvedX, GreyscaleImage convolvedY) returning(GreyscaleImage output) :
-        call(public GreyscaleImage ImageProcesser.combineConvolvedImages(GreyscaleImage, GreyscaleImage))
-        && args(convolvedX, convolvedY)
-	    && target(algorithms.imageProcessing.ImageProcesser) {
-
-        log2.fine("after ImageProcesser*.combineConvolvedImages");
-
-        Object[] args = (Object[])thisJoinPoint.getArgs();
-        GreyscaleImage cX = (GreyscaleImage)args[0];
-        GreyscaleImage cY = (GreyscaleImage)args[1];
-
-        debugDisplay(cX, "gradient X");
-        debugDisplay(cY, "gradient Y");
-        debugDisplay(output, "gradient combined");
-
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(dirPath + "/gX.png", cX);
-            ImageIOHelper.writeOutputImage(dirPath + "/gY.png", cY);
-            ImageIOHelper.writeOutputImage(dirPath + "/gXY.png", output);
-        } catch (IOException e) {
-            log2.severe(e.getMessage());
-        }
-    }
-   
     before() 
         : call(void CurvatureScaleSpaceCornerDetector*.initialize() ) 
         && args() 
@@ -796,8 +770,8 @@ public aspect CurvatureAspect {
 
         Image img2 = new Image(width, height);
 
-        ImageIOHelper.addAlternatingColorCurvesToImage(curves, "edges.png",
-            writeImage, img2);        
+        ImageIOHelper.addAlternatingColorCurvesToImage(curves, 
+            "edges_" + outImgNum + ".png", writeImage, img2);        
         
         ImageDisplayer.displayImage(label, img2);
        

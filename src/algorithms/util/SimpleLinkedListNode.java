@@ -17,11 +17,14 @@ public class SimpleLinkedListNode {
     protected int key = -1;
 
     protected SimpleLinkedListNode next = null;
+    
+    protected int n = 0;
 
     public SimpleLinkedListNode() {}
     
     public SimpleLinkedListNode(int insertKey) {
         this.key = insertKey;
+        n++;
     }
     
     public int getKey() {
@@ -38,6 +41,7 @@ public class SimpleLinkedListNode {
      */
     public void setNext(SimpleLinkedListNode nextNode) {
         this.next = nextNode;
+        n++;
     }
     
     public SimpleLinkedListNode insert(int insertKey) {
@@ -46,6 +50,7 @@ public class SimpleLinkedListNode {
             throw new IllegalArgumentException(
             "insertKey must be larger than -1");
         }
+        n++;
         if (this.key == -1) {
             key = insertKey;
             return this;
@@ -72,6 +77,7 @@ public class SimpleLinkedListNode {
         }
         if (this.key == -1) {
             key = insertKey;
+            n++;
             return this;
         }
         
@@ -86,6 +92,7 @@ public class SimpleLinkedListNode {
         }
         
         last.next = new SimpleLinkedListNode(insertKey);
+        n++;
         return last.next;
         
     }
@@ -104,6 +111,7 @@ public class SimpleLinkedListNode {
                 this.key = next.key;
                 this.next = next.next;
             }
+            n--;
             return;
         }
 
@@ -113,7 +121,8 @@ public class SimpleLinkedListNode {
 
         while (current != null) {
             if (current.equals(node)) {
-                last.next = current.next;               
+                last.next = current.next; 
+                n--;
                 break;
             }
             last = current;
@@ -135,6 +144,7 @@ public class SimpleLinkedListNode {
                 this.key = next.key;
                 this.next = next.next;
             }
+            n--;
             return;
         }
         
@@ -144,7 +154,8 @@ public class SimpleLinkedListNode {
 
         while (current != null) {
             if (current.key == deleteKey) {
-                last.next = current.next;               
+                last.next = current.next;
+                n--;
                 break;
             }
             last = current;
@@ -192,17 +203,7 @@ public class SimpleLinkedListNode {
     }
 
     public int getNumberOfKeys() {
-        if (key == -1) {
-            return 0;
-        }
-        int count = 0;
-
-        SimpleLinkedListNode latest = this;
-        while (latest != null && latest.key != -1) {
-            count++;
-            latest = latest.next;
-        }
-        return count;
+        return n;
     }
     
     public static long approximateMemoryUsed() {
@@ -216,6 +217,8 @@ public class SimpleLinkedListNode {
         int overheadBytes = 16;
     
         int intBytes = (is32Bit) ? 4 : 8;
+        // 2 ints:
+        intBytes *= 2;
         
         int refBytes = nbits/8;
 
