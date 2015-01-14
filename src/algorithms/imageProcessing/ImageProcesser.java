@@ -1,20 +1,14 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
-import algorithms.compGeometry.convexHull.GrahamScanInt;
-import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
-import java.awt.Color;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -706,16 +700,18 @@ public class ImageProcesser {
      * @param originalImage
      * @param outputSkyCentroid container to hold the output centroid of 
      * the sky.
+     * @param edgeSettings
      * @return
      * @throws IOException
      * @throws NoSuchAlgorithmException 
      */
     public GreyscaleImage createSkyline(GreyscaleImage theta, 
-        Image originalImage, PairIntArray outputSkyCentroid) throws IOException, 
-        NoSuchAlgorithmException {        
+        Image originalImage,
+        CannyEdgeFilterSettings edgeSettings, PairIntArray outputSkyCentroid) 
+        throws IOException, NoSuchAlgorithmException {        
       
         GreyscaleImage mask = createBestSkyMask(theta, originalImage, 
-            outputSkyCentroid);
+            edgeSettings, outputSkyCentroid);
         
         if (mask != null) {
             
@@ -761,44 +757,83 @@ public class ImageProcesser {
         throw new UnsupportedOperationException("not ready for use yet");
         //return theta;
     }
+
+    protected int determineBinFactorForSkyMask(int numberOfThetaPixels) {
+        
+        //TODO: this can be adjusted by the jvm settings for stack size
+        int defaultLimit = 87000;
+        
+        if (numberOfThetaPixels <= defaultLimit) {
+            return 1;
+        }
+                    
+        double a = (double)numberOfThetaPixels/87000.;
+        // rounds down
+        int f2 = (int)a/2;
+        int binFactor = f2 * 2;
+        if ((a - binFactor) > 0) {
+            binFactor += 2;
+        }
+            
+        return binFactor;
+    }
     
     /**
-     * create a mask for the largest contiguous zero value area in theta
-     * or for the top similar largest contiguous zero value areas if there
-     * are more than one.  the method doesn't make an assumption about the
-     * location of 'sky'.  the camera image plane might not have a rotation
-     * of zero, that is, the horizon might not be along rows in the image.
+     * NOT READY FOR USE
      * 
-     * This is a long running method that is useful for determining skyline
-     * where there is low contrast such as snow covered mountains under
-     * a daytime sky.
+     * create a mask for what is interpreted as sky in the image and return
+     * a mask with 0's for sky and 1's for non-sky.
      * 
-     * NOT READY FOR USE YET.
+     * Internally, the method looks at contiguous regions of zero value pixels 
+     * in the theta image and it looks at color in the original image.  
+     * The camera image plane can have a rotation such that the 
+     * horizon might not be along rows in the image, that is the method
+     * looks for sky that is not necessarily at the top of the image, but 
+     * should be on the boundary of the image
+     * (note that reflection of sky can be found the same way, but this
+     * method does not try to find sky that is not on the boundary of the
+     * image).
+     * (the "boundary" logic may change, in progress...)
      * 
-     * This needs gradient X and gradient Y for some sunsets.
+     * Note that if the image contains a silhouette of featureless
+     * foreground and a sky full of clouds, the method will interpret the
+     * foreground as sky so it is up to the invoker to invert the mask.
      * 
-     * This method should not be used on silhouettes with clouds in the sky
-     * yet because it will determine that the silhouette is sky.
-     * (in progress in createRoughSkyMask...)
+     * NOTE: the cloud finding logic will currently fail if originalColorImage
+     * is black and white.
      * 
      * @param theta
+     * @param originalColorImage
+     * @param edgeSettings
      * @param outputSkyCentroid container to hold the output centroid of 
      * the sky.
      * @return 
+     * @throws java.io.IOException 
+     * @throws java.security.NoSuchAlgorithmException 
      */
     public GreyscaleImage createBestSkyMask(final GreyscaleImage theta, 
-        Image originalImage, PairIntArray outputSkyCentroid) throws 
+        Image originalColorImage, CannyEdgeFilterSettings edgeSettings,
+        PairIntArray outputSkyCentroid) throws 
         IOException, NoSuchAlgorithmException {
         
         if (theta == null) {
             throw new IllegalArgumentException("theta cannot be null");
         }
         
-        List<PairIntArray> zeroPointLists = getLargestContiguousZeros(theta);
+        GreyscaleImage thetaImg = theta;
+        
+        int binFactor = determineBinFactorForSkyMask(theta.getNPixels());
+        
+        if (binFactor > 1) {
+
+            thetaImg = binImage(theta, binFactor);
+        }
+
+        List<PairIntArray> zeroPointLists = getLargestContiguousZeros(thetaImg);
        
         if (zeroPointLists.isEmpty()) {
             
-            GreyscaleImage mask = theta.createWithDimensions();
+            GreyscaleImage mask = thetaImg.createWithDimensions();
                
             // return an image of all 1's
             mask.fill(1);
@@ -806,7 +841,27 @@ public class ImageProcesser {
             return mask;
         }
         
-        //TODO: this may need edits:
+        if (binFactor > 1) {
+                        
+            thetaImg = theta;
+        
+            zeroPointLists = unbinZeroPointLists(zeroPointLists, binFactor);
+/*
+Image img1 = theta.createWithDimensions().copyImageToGreen();
+ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
+ImageDisplayer.displayImage("before oversampling corrections", img1);
+*/
+            int topToCorrect = 5;
+
+            //make corrections for resolution:
+            addBackMissingZeros(zeroPointLists, theta, binFactor, topToCorrect);
+/*
+img1 = theta.createWithDimensions().copyImageToGreen();
+ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
+ImageDisplayer.displayImage("added missing zeros", img1);
+*/
+        }
+        
         int xMin = MiscMath.findMin(zeroPointLists.get(0).getX());
         int xMax = MiscMath.findMax(zeroPointLists.get(0).getX());
         int yMin = MiscMath.findMin(zeroPointLists.get(0).getY());
@@ -818,16 +873,19 @@ public class ImageProcesser {
         GreyscaleImage mask = null;
             
         // assuming that the largest set of points is not a cloud, but is sky
-        int rgb = getAverageColor(zeroPointLists.get(0), theta, originalImage, 
-            makeCorrectionsAlongX, 6);
-                
+        int[] rgb = getAvgMinMaxColor(zeroPointLists.get(0), thetaImg, 
+            originalColorImage, makeCorrectionsAlongX, 6);
+
         for (int pIdx = 0; pIdx < zeroPointLists.size(); pIdx++) {
             
             PairIntArray points = zeroPointLists.get(pIdx);
                         
-            removeClouds(points, theta, originalImage, makeCorrectionsAlongX, 6, rgb);
+            removeClouds(points, thetaImg, originalColorImage, 
+                makeCorrectionsAlongX, 6, rgb[0], rgb[1], rgb[2]);
+        
+//ImageDisplayer.displayImage("theta w/clouds removed", thetaImg);
                         
-            GreyscaleImage output = createMask(theta, points);
+            GreyscaleImage output = createMask(thetaImg, points);
             
             if (mask == null) {
                 mask = output;
@@ -844,7 +902,7 @@ public class ImageProcesser {
         
         if (mask != null) {
             removeSpurs(mask);
-        }
+        }            
               
         return mask;
     }
@@ -1283,13 +1341,18 @@ System.out.println(number);
         return index;
     }
     
-    private int getAverageColor(PairIntArray points, GreyscaleImage theta, 
+    private int[] getAvgMinMaxColor(PairIntArray points, GreyscaleImage theta, 
         Image originalImage, boolean addAlongX, int addAmount) {
         
         int xOffset = theta.getXRelativeOffset();
         int yOffset = theta.getYRelativeOffset();
         
-        double rgbSum = 0;
+        double rSum = 0;
+        double gSum = 0;
+        double bSum = 0;
+        
+        double rgbMinSum = Double.MAX_VALUE;        
+        double rgbMaxSum = Double.MIN_VALUE;
         
         int count = 0;
         
@@ -1316,19 +1379,39 @@ System.out.println(number);
             }
             
             int rgb = originalImage.getRGB(ox, oy);
+            int r = (rgb >> 16) & 0xFF;
+            int g = (rgb >> 8) & 0xFF;
+            int b = rgb & 0xFF;
             
-            rgbSum += rgb;
+            rSum += r;
+            gSum += g;
+            bSum += b;
+            
+            if (rgb < rgbMinSum) {
+                rgbMinSum = rgb;
+            }
+            if (rgb > rgbMaxSum) {
+                rgbMaxSum = rgb;
+            }
             
             count++;
         }
-        
-        rgbSum /= (double)count;
-        
+                
         if (count == 0) {
-            return 0;
+            return new int[]{0, 0, 0};
         }
         
-        return (int)Math.round(rgbSum);
+        rSum /= (double)count;
+        gSum /= (double)count;
+        bSum /= (double)count;
+        
+        rgbMinSum /= (double)count;
+        rgbMaxSum /= (double)count;
+        
+        double rgbSum = (rSum + gSum + bSum)/3.;        
+        
+        return new int[]{(int)Math.round(rgbSum), (int)Math.round(rgbMinSum),
+            (int)Math.round(rgbMaxSum)};
     }
 
     /**
@@ -1360,11 +1443,13 @@ System.out.println(number);
      * @return 
      */
     private void removeClouds(PairIntArray zeroValuePoints, GreyscaleImage theta, 
-        Image originalImage, boolean addAlongX, int addAmount, int rgbSky) {
+        Image originalImage, boolean addAlongX, int addAmount, 
+        int rgbSkyAvg, int rgbSkyMin, int rgbSkyMax) {
         
         /*
         find the gaps in the set zeroValuePoints and determine if their
-        color is whiteish compared to the background sky.
+        color is whiteish compared to the background sky or looks like the
+        background sky too.
         
         easiest way, though maybe not fastest:
            -- determine min and max of x and y of zeroValuePoints.
@@ -1399,9 +1484,17 @@ System.out.println(number);
         int xOffset = theta.getXRelativeOffset();
         int yOffset = theta.getYRelativeOffset();
           
-        int rSky = (rgbSky >> 16) & 0xFF;
-        int gSky = (rgbSky >> 8) & 0xFF;
-        int bSky = rgbSky & 0xFF;
+        int rSky = (rgbSkyAvg >> 16) & 0xFF;
+        int gSky = (rgbSkyAvg >> 8) & 0xFF;
+        int bSky = rgbSkyAvg & 0xFF;
+        
+        int rMinSky = (rgbSkyMin >> 16) & 0xFF;
+        int gMinSky = (rgbSkyMin >> 8) & 0xFF;
+        int bMinSky = rgbSkyMin & 0xFF;
+        
+        int rMaxSky = (rgbSkyMax >> 16) & 0xFF;
+        int gMaxSky = (rgbSkyMax >> 8) & 0xFF;
+        int bMaxSky = rgbSkyMax & 0xFF;
         
         /*
         blue sky:  143, 243, 253
@@ -1479,7 +1572,11 @@ System.out.println(number);
                         if ((db < 10) && (dr > 25)) {
                             // could be dark part of cloud, but could also be
                             // a rock formation for example
-                            //looksLikeACloudPixel = true;
+                            /*if ((((double)blue/(double)green) < 0.1) &&
+                                (((double)blue/(double)red) > 2.)) {
+                                looksLikeACloudPixel = true;
+                            }*/
+                            
                         } else if ((dr < 0) && (db >= 0)) {
                             if ((green - gSky) > 0) {
                                 looksLikeASkyPixel = true;
@@ -1640,6 +1737,59 @@ System.out.println(number);
         return out;
     }
     
+    public GreyscaleImage binImage(GreyscaleImage img, 
+        int binFactor) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+        
+        int w0 = img.getWidth();
+        int h0 = img.getHeight();
+        
+        int w1 = w0/binFactor;
+        int h1 = h0/binFactor;
+      
+        GreyscaleImage out = new GreyscaleImage(w1, h1);
+        out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/2.f));
+        out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/2.f));
+        
+        for (int i = 0; i < w1; i++) {
+                        
+            for (int j = 0; j < h1; j++) {
+                
+                int vSum = 0;
+                int count = 0;
+                
+                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        
+                        if ((ii < 0) || (ii > (w0 - 1))) {
+                            continue;
+                        }
+                        if ((jj < 0) || (jj > (h0 - 1))) {
+                            continue;
+                        }
+                        
+                        int v = img.getValue(ii, jj);
+                        
+                        vSum += v;
+                        count++;
+                    }
+                }
+                
+                if (count > 0) {
+                    float v = (float)vSum/(float)count;
+                    vSum = Math.round(v);
+                }
+                
+                out.setValue(i, j, vSum);
+            }
+        }
+        
+        return out;
+    }
+    
     public Image binImage(Image img,  int binFactor) {
         
         if (img == null) {
@@ -1754,5 +1904,154 @@ System.out.println(number);
         // using originalTheta
         
         return out;
+    }
+
+    private List<PairIntArray> unbinZeroPointLists(List<PairIntArray> zeroPointLists, 
+        int binFactor) {
+        
+        if (zeroPointLists == null) {
+            throw new IllegalArgumentException("mask cannot be null");
+        }
+        
+        List<PairIntArray> output = new ArrayList<PairIntArray>();
+        
+        for (PairIntArray zeroPointList : zeroPointLists) {
+            
+            PairIntArray transformed = new PairIntArray(zeroPointList.getN() * 
+                binFactor);
+            
+            for (int i = 0; i < zeroPointList.getN(); i++) {
+                
+                int x = zeroPointList.getX(i);
+                int y = zeroPointList.getY(i);
+                
+                for (int ii = (x*binFactor); ii < ((x + 1)*binFactor); ii++) {
+                    for (int jj = (y*binFactor); jj < ((y + 1)*binFactor); jj++) {
+                        
+                        transformed.add(ii, jj);
+                    }
+                }
+            }
+            
+            output.add(transformed);
+        }
+        
+        return output;
+    }
+
+    /**
+     * iterate over each point in zeroPointLists and visit its 8 neighbors
+     * looking for those not in it's list.  if not in list and is in the
+     * image, place it in the list.  note that this is a method to use
+     * for correcting the zero points lists after down sampling to make the
+     * list and then up sampling to use it.
+     * 
+     * @param zeroPointLists
+     * @param theta 
+     */
+    private void addBackMissingZeros(List<PairIntArray> zeroPointLists, 
+        GreyscaleImage theta, int binFactor, int topNumberToCorrect) {
+        
+        binFactor = 1;
+        
+        int width = theta.getWidth();
+        int height = theta.getHeight();
+        
+        int end = topNumberToCorrect;
+        if (zeroPointLists.size() < end) {
+            end = zeroPointLists.size();
+        }
+        
+        List<Set<Integer> > sets = new ArrayList<Set<Integer> >();
+        for (int ii = 0; ii < end; ii++) {
+            
+            PairIntArray zeroValuePoints = zeroPointLists.get(ii);
+            
+            Set<Integer> zpSet = new HashSet<Integer>();
+            for (int pIdx = 0; pIdx < zeroValuePoints.getN(); pIdx++) {
+                int x = zeroValuePoints.getX(pIdx);
+                int y = zeroValuePoints.getY(pIdx);
+                int idx = theta.getIndex(x, y);
+                zpSet.add(Integer.valueOf(idx));
+            }
+            
+            sets.add(zpSet);
+        }
+        
+        for (int ii = 0; ii < end; ii++) {
+
+            PairIntArray zeroValuePoints = zeroPointLists.get(ii);
+
+            Set<Integer> zpSet = sets.get(ii);
+
+            for (int pIdx = 0; pIdx < zeroValuePoints.getN(); pIdx++) {
+
+                int x = zeroValuePoints.getX(pIdx);
+                int y = zeroValuePoints.getY(pIdx);
+
+                for (int c = (x - binFactor); c <= (x + binFactor); c++) {
+                    if ((c < 0) || (c > (width - 1))) {
+                        continue;
+                    }
+                    for (int r = (y - binFactor); r <= (y + binFactor); r++) {
+                        if ((r < 0) || (r > (height - 1))) {
+                            continue;
+                        }
+                        if ((c == x) && (r == y)) {
+                            continue;
+                        }
+
+                        int neighborIdx = theta.getIndex(c, r);
+
+                        Integer index = Integer.valueOf(neighborIdx);
+
+                        if (zpSet.contains(index)) {
+                            continue;
+                        }
+
+                        int v = theta.getValue(c, r);
+                        if (v == 0) {
+                            zeroValuePoints.add(c, r);
+                            zpSet.add(index);
+                        }
+                    }
+                }
+            }                        
+        }
+    }
+
+    /**
+     * remove points in zeropoint lists where there is a non-zero pixel in the 
+     * theta image.
+     * 
+     * @param zeroPointLists
+     * @param theta 
+     */
+    private void removeOverSampledZeros(List<PairIntArray> zeroPointLists, 
+        GreyscaleImage theta) {
+        
+        for (PairIntArray zeroValuePoints : zeroPointLists) {
+            
+            List<Integer> remove = new ArrayList<Integer>();
+            
+            for (int pIdx = 0; pIdx < zeroValuePoints.getN(); pIdx++) {
+                
+                int x = zeroValuePoints.getX(pIdx);
+                int y = zeroValuePoints.getY(pIdx);
+                
+                int v = theta.getValue(x, y);
+                
+                if (v > 0) {
+                    remove.add(Integer.valueOf(pIdx));
+                }
+            }
+            
+            if (!remove.isEmpty()) {
+                for (int i = (remove.size() - 1); i > -1; i--) {
+                    int idx = remove.get(i).intValue();
+                    zeroValuePoints.removeRange(idx, idx);
+                }
+            }
+        }
     }
 }

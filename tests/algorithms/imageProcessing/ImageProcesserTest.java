@@ -400,35 +400,6 @@ public class ImageProcesserTest extends TestCase {
         assertTrue(image.getHeight() == (h - 2*border + 2));
     }
 
-    public void testCreateSkyline() throws Exception {
-
-        String fileName1 = "brown_lowe_2003_image2.jpg";
-        String fileName2 = "brown_lowe_2003_image2_theta.jpg";
-
-        /*
-         String fileName1 = "venturi_mountain_j6_0001.png";
-         */
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image input = ImageIOHelper.readImage(filePath1);
-        GreyscaleImage theta = ImageIOHelper.readImageAsGrayScaleB(
-            ResourceFinder.findFileInTestResources(fileName2));
-        int image1Width = input.getWidth();
-        int image1Height = input.getHeight();
-
-        ImageProcesser imageProcesser = new ImageProcesser();
-
-        PairIntArray outputSkyCentroid = new PairIntArray();
-        
-        GreyscaleImage out = imageProcesser.createSkyline(theta, 
-            input, outputSkyCentroid);
-       
-        ImageDisplayer.displayImage("segmented for sky", out);
-                
-        String outFilePath = ResourceFinder.findDirectory("bin") + "/del.png";
-        ImageIOHelper.writeOutputImage(outFilePath, out);
-        int z = 1;
-    }
-    
     public void testBinImageToKeepZeros() throws Exception {
         
         int w0 = 4;

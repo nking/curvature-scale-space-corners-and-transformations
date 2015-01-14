@@ -433,6 +433,59 @@ public class PointMatcher3Test {
         System.out.println("test done");
     }
     
+    private void testSkyline() throws Exception {
+        
+        String[] fileNames = new String[]{
+            "brown_lowe_2003_image2.jpg",
+            /*"venturi_mountain_j6_0010.png",
+            "16.jpg", 
+            "30.jpg",  
+            "arizona-sunrise-1342919937GHz.jpg",
+            "new-mexico-sunrise_w725_h490.jpg"*/
+        };
+        
+        for (String fileName : fileNames) {
+            
+            log.info("fileName=" + fileName);
+            
+            // revisit infl points.  is there a threshold removing points?
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName);
+            Image img1 = ImageIOHelper.readImage(filePath1);
+            int image1Width = img1.getWidth();
+            int image1Height = img1.getHeight();
+
+            List<PairIntArray> edges1 = null;
+            PairIntArray points1 = null;
+
+            int nPreferredCorners = 100;
+            int nCrit = 500;
+
+            CurvatureScaleSpaceCornerDetector detector = new
+                CurvatureScaleSpaceCornerDetector(img1);
+            detector.useOutdoorModeAndExtractSkyline();
+            //detector.findCornersIteratively(nPreferredCorners, nCrit);
+            detector.findCorners();
+            edges1 = detector.getEdgesInOriginalReferenceFrame();
+            points1 = detector.getCornersInOriginalReferenceFrame();
+
+            Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+
+            for (PairIntArray edge : edges1) {
+                ImageIOHelper.addCurveToImage(edge, image1, 2, 
+                    Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
+                    Color.YELLOW.getBlue());
+            }
+
+            ImageIOHelper.addCurveToImage(points1, image1, 1, 255, 0, 0);
+
+            String dirPath = ResourceFinder.findDirectory("bin");
+            String outFilePath = dirPath + "/tmp1_edges_and_corners_" + 
+                fileName + ".png";
+
+            ImageIOHelper.writeOutputImage(outFilePath, image1);
+        }
+    }
+    
     private void examineIterativeCorners() throws Exception {
         
         
@@ -1587,7 +1640,9 @@ public class PointMatcher3Test {
             //test.adjustPointsOfInterest();
             //test.examineInvPointLists();
             //test.smallestSubsets();
-            test.examineIterativeCorners();
+            //test.examineIterativeCorners();
+            
+            test.testSkyline();
             
             /*
             tests for :

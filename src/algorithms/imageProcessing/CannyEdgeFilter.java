@@ -60,6 +60,10 @@ public class CannyEdgeFilter {
     
     private GreyscaleImage gXY = null;
     
+    private GreyscaleImage gX = null;
+    
+    private GreyscaleImage gY = null;
+    
     private GreyscaleImage gTheta = null;
         
     protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -129,6 +133,33 @@ public class CannyEdgeFilter {
         shrinkToSize = new int[]{xOffset, yOffset, width, height};
     }
     
+    public void setSetters(CannyEdgeFilterSettings settings) {
+        
+        if (settings == null) {
+            return;
+        }
+        
+        if (settings.getUseOutdoorMode()) {
+            useOutdoorMode = true;
+        }
+        
+        if (settings.getDoNotNormalizeByHistogram()) {
+            doNotNormalizeByHistogram = true;
+        }
+        
+        if (settings.getUseLineDrawingMode()) {
+            useLineDrawingMode = true;
+        }
+        
+        if (settings.getOverrideHighThreshold()) {
+            highThreshold = settings.getHighThreshold();
+        }
+        
+        if (settings.getShrinkToSize() != null) {
+            shrinkToSize = settings.getShrinkToSize();
+        }
+    }
+    
     public void applyFilter(final GreyscaleImage input) {
         
         if (input.getWidth() < 3 || input.getHeight() < 3) {
@@ -151,6 +182,10 @@ public class CannyEdgeFilter {
         
         //[gX, gY, gXY, theta
         GreyscaleImage[] gradientProducts = createGradientProducts(input);
+        
+        gX = gradientProducts[0].copyImage();
+        
+        gY = gradientProducts[1].copyImage();
         
         gXY = gradientProducts[2].copyImage();
         
@@ -741,6 +776,14 @@ public class CannyEdgeFilter {
         return false;
     }
 
+    public GreyscaleImage getGradientX() {
+        return gX;
+    }
+    
+    public GreyscaleImage getGradientY() {
+        return gY;
+    }
+    
     public GreyscaleImage getGradientXY() {
         return gXY;
     }

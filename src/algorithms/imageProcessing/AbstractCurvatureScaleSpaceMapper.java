@@ -204,7 +204,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             // (1) apply an edge filter
             
             CannyEdgeFilter filter = new CannyEdgeFilter();
-            setCannyEdgeFilterSettings(filter);
+            CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
+        
+            filter.setSetters(settings);
+            
             filter.overrideLowThreshold(cannyLowThreshold);
                         
             filter.reApply2LayerFilter(input, gTheta, hist);
@@ -228,9 +231,12 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     protected void applyEdgeFilter() {
         
         CannyEdgeFilter filter = new CannyEdgeFilter();
+
+        CannyEdgeFilterSettings settings = 
+            getCannyEdgeFilterSettings();
         
-        setCannyEdgeFilterSettings(filter);
-        
+        filter.setSetters(settings);
+                
         filter.applyFilter(img);
         
         gradientXY = filter.getGradientXY();
@@ -259,8 +265,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         try {
             
+            CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
+            
             GreyscaleImage out = imageProcesser.createSkyline(theta, 
-                this.originalImg, outputSkyCentroid);
+                this.originalImg, settings, outputSkyCentroid);
             
             EdgeExtractor contourExtractor = new EdgeExtractor(out);
             
@@ -336,26 +344,30 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         }
     }
     
-    protected void setCannyEdgeFilterSettings(CannyEdgeFilter filter) {
+    protected CannyEdgeFilterSettings getCannyEdgeFilterSettings() {
+    
+        CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
         
         if (useOutdoorMode) {
-            filter.useOutdoorMode();
+            settings.setUseOutdoorMode();
         }
         
         if (doNotNormalizeByHistogram) {
-            filter.doNotPerformHistogramEqualization();
+            settings.setDoNotNormalizeByHistogram();
         }
         if (useLineDrawingMode) {
-            filter.useLineDrawingMode();
+            settings.setUseLineDrawingMode();
         }
         
         if (useLowestHighIntensityCutoff) {
-            filter.overrideHighThreshold(1.0f);
+            settings.setOverrideHighThreshold(1.0f);
         } else if (useLowHighIntensityCutoff) {
-            filter.overrideHighThreshold(2.0f);
+            settings.setOverrideHighThreshold(2.0f);
         }
+        
+        return settings;
     }
-
+    
     protected void extractEdges() {
         
         EdgeExtractor contourExtractor;
