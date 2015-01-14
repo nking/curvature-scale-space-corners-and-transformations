@@ -847,6 +847,8 @@ public class ImageProcesser {
         
             zeroPointLists = unbinZeroPointLists(zeroPointLists, binFactor);
 /*
+ImageDisplayer.displayImage("before oversampling corrections", theta);
+
 Image img1 = theta.createWithDimensions().copyImageToGreen();
 ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
 ImageDisplayer.displayImage("before oversampling corrections", img1);
@@ -867,8 +869,11 @@ ImageDisplayer.displayImage("added missing zeros", img1);
         int yMin = MiscMath.findMin(zeroPointLists.get(0).getY());
         int yMax = MiscMath.findMax(zeroPointLists.get(0).getY());
         
-        boolean makeCorrectionsAlongX = ((xMax - xMin) < (yMax - yMin)) 
-            ? true : false;
+        double xLen = (double)(xMax - xMin)/(double)theta.getWidth();
+        
+        double yLen = (double)(yMax - yMin)/(double)theta.getHeight();
+        
+        boolean makeCorrectionsAlongX = (xLen < yLen) ? true : false;
         
         GreyscaleImage mask = null;
             
@@ -879,7 +884,15 @@ ImageDisplayer.displayImage("added missing zeros", img1);
         for (int pIdx = 0; pIdx < zeroPointLists.size(); pIdx++) {
             
             PairIntArray points = zeroPointLists.get(pIdx);
-                        
+       
+            /*points should now contain all of sky or at least enough to locate
+            it in the color image
+            
+            TODO: need improvements here for different cases such as snow topped
+            mountains, red sunrise/set, foreground silhouettes, and extending
+            the current sky points.
+            */
+            
             removeClouds(points, thetaImg, originalColorImage, 
                 makeCorrectionsAlongX, 6, rgb[0], rgb[1], rgb[2]);
         
@@ -902,8 +915,8 @@ ImageDisplayer.displayImage("added missing zeros", img1);
         
         if (mask != null) {
             removeSpurs(mask);
-        }            
-              
+        }         
+            
         return mask;
     }
     
@@ -960,6 +973,8 @@ ImageDisplayer.displayImage("added missing zeros", img1);
 System.out.println(number);    
                 //TODO: this should be adjusted by some metric.
                 //      a histogram?
+                // since most images should have been binned to <= 300 x 300 pix,
+                // making an assumption about a group >= 100 pixels 
                 if ((1 - frac) < 0.4) {
                 //if (number > 100) {
                     groupIds.add(Integer.valueOf(groupIndexes[i]));
@@ -1951,9 +1966,7 @@ System.out.println(number);
      */
     private void addBackMissingZeros(List<PairIntArray> zeroPointLists, 
         GreyscaleImage theta, int binFactor, int topNumberToCorrect) {
-        
-        binFactor = 1;
-        
+                
         int width = theta.getWidth();
         int height = theta.getHeight();
         
@@ -1984,6 +1997,8 @@ System.out.println(number);
 
             Set<Integer> zpSet = sets.get(ii);
 
+            Set<Integer> add = new HashSet<Integer>();
+            
             for (int pIdx = 0; pIdx < zeroValuePoints.getN(); pIdx++) {
 
                 int x = zeroValuePoints.getX(pIdx);
@@ -2011,13 +2026,21 @@ System.out.println(number);
 
                         int v = theta.getValue(c, r);
                         if (v == 0) {
-                            zeroValuePoints.add(c, r);
-                            zpSet.add(index);
+                            add.add(index);
                         }
                     }
                 }
-            }                        
+            }
+            if (!add.isEmpty()) {
+                for (Integer a : add) {
+                    int c = theta.getCol(a.intValue());
+                    int r = theta.getRow(a.intValue());
+                    zeroValuePoints.add(c, r);
+                    zpSet.add(a);
+                }
+            }
         }
+       
     }
 
     /**
