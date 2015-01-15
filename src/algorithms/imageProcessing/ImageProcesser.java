@@ -2,8 +2,10 @@ package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -880,6 +883,10 @@ ImageDisplayer.displayImage("added missing zeros", img1);
         // assuming that the largest set of points is not a cloud, but is sky
         int[] rgb = getAvgMinMaxColor(zeroPointLists.get(0), thetaImg, 
             originalColorImage, makeCorrectionsAlongX, 6);
+        
+log.info("SKY avg: " + rgb[0] + " min=" + rgb[1] + " max=" + rgb[2]);
+ImageProcesser imageProcesser = new ImageProcesser();
+imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
 
         for (int pIdx = 0; pIdx < zeroPointLists.size(); pIdx++) {
             
@@ -1957,7 +1964,7 @@ System.out.println(number);
     /**
      * iterate over each point in zeroPointLists and visit its 8 neighbors
      * looking for those not in it's list.  if not in list and is in the
-     * image, place it in the list.  note that this is a method to use
+     * image as a zero value pixel, place it in the list.  note that this is a method to use
      * for correcting the zero points lists after down sampling to make the
      * list and then up sampling to use it.
      * 
@@ -2076,5 +2083,265 @@ System.out.println(number);
                 }
             }
         }
+    }
+    
+    public void printImageColorContrastStats(Image image, List<PairIntArray> 
+        zeroPoints) {
+        
+    }
+    
+    public void printImageColorContrastStats(Image image, int rgbSkyAvg,
+        int plotNumber) throws IOException {
+     
+        /*
+        http://dilnxsrv.king.ac.uk/papers/wses2001.pdf
+           Y   | 16  |   | 0.256  0.504  0.098 | |R|
+           U = | 128 | + |-0.148 -0.291  0.439 | |G|
+           V   | 128 |   | 0.439 -0.368 -0.072 | |B|
+        */
+        double[][] m = new double[3][];
+        m[0] = new double[]{0.256, 0.504, 0.098};
+        m[1] = new double[]{-0.148, -0.291, 0.439};
+        m[2] = new double[]{0.439, -0.368, -0.072};
+        
+        int rSky = (rgbSkyAvg >> 16) & 0xFF;
+        int gSky = (rgbSkyAvg >> 8) & 0xFF;
+        int bSky = rgbSkyAvg & 0xFF;
+        double[] yuvSky = MatrixUtil.multiply(m, new double[]{rSky, gSky, bSky});
+        
+        double t313 = Math.pow(3, (1./3.));
+        
+        int w = image.getWidth();
+        int h = image.getHeight();
+        int slice = 1;//10;
+        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        
+        for (int i = 0; i < 6; i++) {
+            
+            int startCol = -1;
+            int stopCol = -1;
+            int startRow = -1;
+            int stopRow = -1;
+            boolean plotAlongRows = true;
+            String labelSuffix = null;
+            
+            switch(i) {
+                case 0:
+                    //horizontal at low y
+                    startCol = 0;
+                    stopCol = w - 1;
+                    startRow = slice;
+                    stopRow = startRow + slice;
+                    plotAlongRows = false;
+                    labelSuffix = "horizontal stripe at low y";
+                    break;
+                case 1:
+                    //horizontal at mid y
+                    startCol = 0;
+                    stopCol = w - 1;
+                    startRow = (h - slice)/2 ;
+                    stopRow = startRow + slice;
+                    plotAlongRows = false;
+                    labelSuffix = "horizontal stripe at mid y";
+                    break;
+                case 2:
+                    //horizontal at high y
+                    startCol = 0;
+                    stopCol = w - 1;
+                    startRow = (h - 2*slice) - 1;
+                    stopRow = startRow + slice;
+                    plotAlongRows = false;
+                    labelSuffix = "horizontal stripe at high y";
+                    break;
+                case 3:
+                    //vertical at low x
+                    startCol = slice;
+                    stopCol = startCol + slice;
+                    startRow = 0;
+                    stopRow = h - 1;
+                    plotAlongRows = true;
+                    labelSuffix = "vertical stripe at low x";
+                    break;
+                case 4:
+                    //vertical at mid x
+                    startCol = (w - slice)/2;
+                    stopCol = startCol + slice;
+                    startRow = 0;
+                    stopRow = h - 1;
+                    plotAlongRows = true;
+                    labelSuffix = "vertical stripe at mid x";
+                    break;
+                default:
+                    //vertical at high x
+                    startCol = (w - 2*slice) - 1;
+                    stopCol = startCol + slice;
+                    startRow = 0;
+                    stopRow = h - 1;
+                    plotAlongRows = true;
+                    labelSuffix = "vertical stripe at high x";
+                    break;
+            }
+            
+            // contrast as y
+            // hue
+            // blue
+            // red
+            float[] contrast = null;
+            float[] hue = null;
+            float[] red = null;
+            float[] blue = null;
+            float[] white = null;
+            float[] axis = null;
+            
+            if (!plotAlongRows) {
+                
+                // plot along columns
+                
+                contrast = new float[w];
+                hue = new float[w];
+                red = new float[w];
+                blue = new float[w];
+                white = new float[w];
+                axis = new float[w];
+                
+                double len = stopRow - startRow;
+                
+                for (int col = startCol; col <= stopCol; col++) {
+                    
+                    // avg along stripe in the row
+                    double sumContrast = 0;
+                    double sumHue = 0;
+                    double sumBlue = 0;
+                    double sumRed = 0;
+                    double sumWhite = 0;
+                    
+                    for (int row = startRow; row <= stopRow; row++) {
+                        
+                        int r = image.getR(col, row);
+                        int g = image.getG(col, row);
+                        int b = image.getB(col, row);
+                        double[] rgb = new double[]{r, g, b};
+                        
+                        double[] yuv = MatrixUtil.multiply(m, rgb);
+                        yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
+                        double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));
+                        
+                        double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];
+                        
+                        double whiteValue = (r + g + b)/3.;
+                        
+                        sumContrast += contrastValue;
+                        sumHue += hueValue;
+                        sumBlue += b;
+                        sumRed += r;
+                        sumWhite += whiteValue;
+                    }
+                                        
+                    sumContrast /= len;
+                    sumHue /= len;
+                    sumBlue /= len;
+                    sumRed /= len;
+                    sumWhite /= len;
+                    
+                    contrast[col] = (float)sumContrast;
+                    hue[col] = (float)sumHue;
+                    blue[col] = (float)sumBlue;
+                    red[col] = (float)sumRed;
+                    white[col] = (float)sumWhite;
+                    
+                    axis[col] = col;
+                }
+                
+            } else {
+                // plot along rows
+                contrast = new float[h];
+                hue = new float[h];
+                red = new float[h];
+                blue = new float[h];
+                white = new float[h];
+                axis = new float[h];
+                
+                double len = stopCol - startCol;
+                
+                for (int row = startRow; row <= stopRow; row++) {
+                    
+                    // avg along stripe in the row
+                    double sumContrast = 0;
+                    double sumHue = 0;
+                    double sumBlue = 0;
+                    double sumRed = 0;
+                    double sumWhite = 0;;
+                    
+                    for (int col = startCol; col <= stopCol; col++) {
+                        
+                        int r = image.getR(col, row);
+                        int g = image.getG(col, row);
+                        int b = image.getB(col, row);
+                        double[] rgb = new double[]{r, g, b};
+                        
+                        double[] yuv = MatrixUtil.multiply(m, rgb);
+                        yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
+                        double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));
+                        
+                        double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];
+                        
+                        double whiteValue = (r + g + b)/3.;
+                        
+                        sumContrast += contrastValue;
+                        sumHue += hueValue;
+                        sumBlue += b;
+                        sumRed += r;
+                        sumWhite += whiteValue;
+                    }
+                                        
+                    sumContrast /= len;
+                    sumHue /= len;
+                    sumBlue /= len;
+                    sumRed /= len;
+                    sumWhite /= len;
+                    
+                    contrast[row] = (float)sumContrast;
+                    hue[row] = (float)sumHue;
+                    blue[row] = (float)sumBlue;
+                    red[row] = (float)sumRed;
+                    white[row] = (float)sumWhite;
+                    
+                    axis[row] = row;
+                }
+                
+            }
+            
+            float xmn = MiscMath.findMin(axis);
+            float xmx = MiscMath.findMax(axis);
+            
+            float ymn = MiscMath.findMin(contrast);
+            float ymx = 1.1f * MiscMath.findMax(contrast);
+            plotter.addPlot(xmn, xmx, ymn, ymx, 
+                axis, contrast, null, null, null, null, 
+                "contrast " + labelSuffix);
+           
+            ymn = MiscMath.findMin(hue);
+            ymx = 1.1f * MiscMath.findMax(hue);
+            plotter.addPlot(xmn, xmx, ymn, ymx, 
+                axis, hue, null, null, null, null, "hue " + labelSuffix);
+            
+            ymn = MiscMath.findMin(blue);
+            ymx = 1.1f * MiscMath.findMax(blue);
+            plotter.addPlot(xmn, xmx, ymn, ymx, 
+                axis, blue, null, null, null, null, "blue " + labelSuffix);
+            
+            ymn = MiscMath.findMin(red);
+            ymx = 1.1f * MiscMath.findMax(red);
+            plotter.addPlot(xmn, xmx, ymn, ymx, 
+                axis, red, null, null, null, null, "red " + labelSuffix);
+            
+            ymn = MiscMath.findMin(white);
+            ymx = 1.1f * MiscMath.findMax(white);
+            plotter.addPlot(xmn, xmx, ymn, ymx, 
+                axis, white, null, null, null, null, "white " + labelSuffix);
+            
+            plotter.writeFile(plotNumber);
+        }        
     }
 }

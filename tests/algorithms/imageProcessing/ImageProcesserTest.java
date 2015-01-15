@@ -606,4 +606,18 @@ public class ImageProcesserTest extends TestCase {
             }
         }
     }
+    
+    public void testPrintImageColorContrastStats() throws Exception {
+        
+        //SKY avg: 161 min=35 max=124
+        String filePath = ResourceFinder.findFileInTestResources(
+            "venturi_mountain_j6_0001.png");
+        
+        Image img = ImageIOHelper.readImage(filePath);
+                        
+        ImageProcesser imageProcesser = new ImageProcesser();
+        
+        imageProcesser.printImageColorContrastStats(img, 161, 501);
+        
+    }
 }

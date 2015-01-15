@@ -8,6 +8,75 @@ import org.ejml.simple.*;
  */
 public class MatrixUtil {
     
+    public static double[] add(double[] m, double[] n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        if (m.length != n.length) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        
+        int len = m.length;
+     
+        double[] c = new double[len];
+        
+        for (int i = 0; i < len; i++) {
+            c[i] = m[i] + n[i];
+        }
+
+        return c;
+    }
+    
+    public static float[] add(float[] m, float[] n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        if (m.length != n.length) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        
+        int len = m.length;
+     
+        float[] c = new float[len];
+        
+        for (int i = 0; i < len; i++) {
+            c[i] = m[i] + n[i];
+        }
+
+        return c;
+    }
+    
+    public static float[] subtract(float[] m, float[] n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        if (m.length != n.length) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        
+        int len = m.length;
+     
+        float[] c = new float[len];
+        
+        for (int i = 0; i < len; i++) {
+            c[i] = m[i] - n[i];
+        }
+
+        return c;
+    }
+    
     public static double[] multiply(double[][] m, double[] n) {
 
         if (m == null || m.length == 0) {

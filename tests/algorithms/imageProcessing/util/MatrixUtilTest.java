@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.util;
 
+import java.util.Arrays;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -146,4 +147,42 @@ public class MatrixUtilTest {
         assertTrue(cc[2][1] == 3017);
     }
 
+    @Test
+    public void testAdd() throws Exception {
+
+        double[] a = new double[]{1, 2, 3, 4};
+        double[] b = new double[]{100, 100, 100, 100};
+
+        double[] expected = new double[]{101, 102, 103, 104};
+        
+        double[] c = MatrixUtil.add(a, b);
+        
+        assertTrue(Arrays.equals(expected, c));
+    }
+    
+    @Test
+    public void testAdd2() throws Exception {
+
+        float[] a = new float[]{1, 2, 3, 4};
+        float[] b = new float[]{100, 100, 100, 100};
+
+        float[] expected = new float[]{101, 102, 103, 104};
+        
+        float[] c = MatrixUtil.add(a, b);
+        
+        assertTrue(Arrays.equals(expected, c));
+    }
+    
+    @Test
+    public void testSubtract() throws Exception {
+
+        float[] a = new float[]{100, 100, 100, 100};
+        float[] b = new float[]{1, 2, 3, 4};
+
+        float[] expected = new float[]{99, 98, 97, 96};
+        
+        float[] c = MatrixUtil.subtract(a, b);
+        
+        assertTrue(Arrays.equals(expected, c));
+    }
 }
