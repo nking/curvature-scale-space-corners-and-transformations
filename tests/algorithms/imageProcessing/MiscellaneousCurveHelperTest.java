@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import java.security.SecureRandom;
@@ -393,6 +394,18 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         cenXY = helper.calculateXYCentroids(x, y);
         assertTrue(cenXY[0] == 5.0);
         assertTrue(cenXY[1] == 3.0);
+        
+        //====
+        Set<PairInt> xyp = new HashSet<PairInt>();
+        for (int i = 0; i < xy.getN(); i++) {
+            int xp = xy.getX(i);
+            int yp = xy.getY(i);
+            PairInt p = new PairInt(xp, yp);
+            xyp.add(p);
+        }
+        cenXY = helper.calculateXYCentroids(xyp);
+        assertTrue(cenXY[0] == 5);
+        assertTrue(cenXY[1] == 3);
     }
     
     /**

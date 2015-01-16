@@ -3,10 +3,12 @@ package algorithms.imageProcessing;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayComparator;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Logger;
 import org.ejml.simple.*;
@@ -648,6 +650,27 @@ public class MiscellaneousCurveHelper {
         return new double[]{xc, yc};
     }
     
+    public double[] calculateXYCentroids(Set<PairInt> points) {
+        
+        double xc = 0;
+        double yc = 0;
+        
+        for (PairInt p : points) {
+            
+           int x = p.getX();
+           int y = p.getY();
+                    
+            xc += x;
+            yc += y;
+        }
+        
+        xc /= (double)(points.size());
+        
+        yc /= (double)(points.size());
+            
+        return new double[]{xc, yc};
+    }
+        
     public double[] calculateXYCentroids(float[] x, float[] y) {
         
         if (x == null) {

@@ -3,12 +3,17 @@ package algorithms.imageProcessing;
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.Errors;
+import algorithms.util.PairInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -851,25 +856,6 @@ public class ImageProcesser {
             zeroPointLists = unbinZeroPointLists(zeroPointLists, binFactor);
             
         }
-
-        pruneByColorThenReduceToLargest(zeroPointLists, originalColorImage);
-            
-        if (binFactor > 1) {
-        
-Image img1 = theta.createWithDimensions().copyImageToGreen();
-ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
-ImageDisplayer.displayImage("before oversampling corrections", img1);
-
-            int topToCorrect = 5;
-
-            //make corrections for resolution:
-            addBackMissingZeros(zeroPointLists, theta, binFactor, topToCorrect);
-/*
-img1 = theta.createWithDimensions().copyImageToGreen();
-ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
-ImageDisplayer.displayImage("added missing zeros", img1);
-*/
-        }
         
         int xMin = MiscMath.findMin(zeroPointLists.get(0).getX());
         int xMax = MiscMath.findMax(zeroPointLists.get(0).getX());
@@ -882,53 +868,71 @@ ImageDisplayer.displayImage("added missing zeros", img1);
         
         boolean makeCorrectionsAlongX = (xLen < yLen) ? true : false;
         
-        GreyscaleImage mask = null;
-            
-        // assuming that the largest set of points is not a cloud, but is sky
-        int[] rgb = getAvgMinMaxColor(zeroPointLists.get(0), thetaImg, 
-            originalColorImage, makeCorrectionsAlongX, 6);
+        int convDispl = 6;
         
+        // now the coordinates in zeroPointLists are w.r.t. thetaImg
+
+        removeSetsThatAreDark(zeroPointLists, originalColorImage, thetaImg,
+            makeCorrectionsAlongX, convDispl);
+        
+        reduceToLargest(zeroPointLists);
+        
+        removeHighContrastPoints(zeroPointLists, originalColorImage, 
+            thetaImg, 
+            makeCorrectionsAlongX, convDispl);
+        
+        if (binFactor > 1) {
+        
+Image img1 = theta.createWithDimensions().copyImageToGreen();
+ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
+ImageDisplayer.displayImage("before oversampling corrections", img1);
+
+            int topToCorrect = zeroPointLists.size();
+
+            //make corrections for resolution:
+            addBackMissingZeros(zeroPointLists, theta, binFactor, topToCorrect);
+/*
+img1 = theta.createWithDimensions().copyImageToGreen();
+ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
+ImageDisplayer.displayImage("added missing zeros", img1);
+*/
+        }
+           
+        int[] rgb = getAvgMinMaxColor(zeroPointLists.get(0), thetaImg, 
+            originalColorImage, makeCorrectionsAlongX, convDispl);
+
+        Set<PairInt> points = combine(zeroPointLists);
+
+        GreyscaleImage mask = growPointsToSkyline(points, theta, rgb);
+       
 log.info("SKY avg: " + rgb[0] + " min=" + rgb[1] + " max=" + rgb[2]);
 ImageProcesser imageProcesser = new ImageProcesser();
 imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
 
-        for (int pIdx = 0; pIdx < zeroPointLists.size(); pIdx++) {
-            
-            PairIntArray points = zeroPointLists.get(pIdx);
-       
-            /*points should now contain all of sky or at least enough to locate
-            it in the color image
-            
-            TODO: need improvements here for different cases such as snow topped
-            mountains, red sunrise/set, foreground silhouettes, and extending
-            the current sky points.
-            */
-            
-            removeClouds(points, thetaImg, originalColorImage, 
-                makeCorrectionsAlongX, 6, rgb[0], rgb[1], rgb[2]);
-        
-//ImageDisplayer.displayImage("theta w/clouds removed", thetaImg);
-                        
-            GreyscaleImage output = createMask(thetaImg, points);
-            
-            if (mask == null) {
-                mask = output;
-            } else {
-                mask = binaryOr(mask, output);
-            }
-        }
-        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        double[] xycen = curveHelper.calculateXYCentroids(zeroPointLists);
-        
+
+        double[] xycen = curveHelper.calculateXYCentroids(points);
+ 
         outputSkyCentroid.add((int)Math.round(xycen[0]), (int)Math.round(xycen[1]));
-        
+
         if (mask != null) {
             removeSpurs(mask);
         }         
-            
+   
         return mask;
+    }
+    
+    public Set<PairInt> combine(List<PairIntArray> points) {
+        Set<PairInt> set = new HashSet<PairInt>();
+        for (PairIntArray p : points) {
+            for (int i = 0; i < p.getN(); i++) {
+                int x = p.getX(i);
+                int y = p.getY(i);
+                PairInt pi = new PairInt(x, y);
+                set.add(pi);
+            }
+        }
+        return set;
     }
     
     public List<PairIntArray> getLargestSortedContiguousZeros(GreyscaleImage theta) {
@@ -2313,13 +2317,17 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
             plotter.writeFile(plotNumber);
         }        
     }
-
-    private void pruneByColorThenReduceToLargest(List<PairIntArray> 
-        zeroPointLists, Image originalColorImage) {
+    
+    private void removeSetsThatAreDark(List<PairIntArray> 
+        zeroPointLists, Image originalColorImage, GreyscaleImage theta,
+        boolean addAlongX, int addAmount) {
         
-        int limit = 100;
+        int colorLimit = 100;
         
         List<Integer> remove = new ArrayList<Integer>();
+        
+        int xOffset = theta.getXRelativeOffset();
+        int yOffset = theta.getYRelativeOffset();
         
         for (int gId = 0; gId < zeroPointLists.size(); gId++) {
             
@@ -2332,11 +2340,27 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
                 int x = points.getX(i);
                 int y = points.getY(i);
                 
+                int ox = x + xOffset;
+                int oy = y + yOffset;
+                
+                if (addAlongX) {
+                    ox += addAmount;
+                } else {
+                    oy += addAmount;
+                }
+
+                if ((ox < 0) || (ox > (originalColorImage.getWidth() - 1))) {
+                    continue;
+                }
+                if ((oy < 0) || (oy > (originalColorImage.getHeight() - 1))) {
+                    continue;
+                }
+                
                 int r = originalColorImage.getR(x, y);
                 int g = originalColorImage.getG(x, y);
                 int b = originalColorImage.getB(x, y);
                                 
-                if ((r < limit) && (b < limit) && (g < limit)) {
+                if ((r < colorLimit) && (b < colorLimit) && (g < colorLimit)) {
                     nBelowLimit++;
                 }                
             }
@@ -2355,17 +2379,310 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
             }
         }
         
-        /*   
-        try {
-            Image img1 = new Image(originalColorImage.getWidth(),
-                originalColorImage.getHeight());
+    }
+
+    private void reduceToLargest(List<PairIntArray> zeroPointLists) {
+        
+        int rmIdx = -1;
+        
+        if (zeroPointLists.size() > 1) {
+                        
+            float n0 = (float)zeroPointLists.get(0).getN();
             
-            ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
-            ImageDisplayer.displayImage("before oversampling corrections", img1);
-            
-        } catch (IOException ex) {
-            Logger.getLogger(ImageProcesser.class.getName()).log(Level.SEVERE, null, ex);
+            for (int i = 1; i < zeroPointLists.size(); i++) {
+                
+                float number = zeroPointLists.get(i).getN();
+
+                float frac = number/n0;
+    System.out.println(number + " n0=" + n0);    
+                //TODO: this should be adjusted by some metric.
+                //      a histogram?
+                // since most images should have been binned to <= 300 x 300 pix,
+                // making an assumption about a group >= 100 pixels 
+                if (frac < 0.1) {
+                    rmIdx = i;
+                    break;
+                }
+            }
         }
-        */    
+        
+        if (rmIdx > -1) {
+            List<PairIntArray> out = new ArrayList<PairIntArray>();
+            for (int i = 0; i < rmIdx; i++) {
+                out.add(zeroPointLists.get(i));
+            }
+            zeroPointLists.clear();
+            zeroPointLists.addAll(out);
+        }
+    }
+    
+    private void removeHighContrastPoints(List<PairIntArray> 
+        zeroPointLists, Image originalColorImage, GreyscaleImage theta,
+        boolean addAlongX, int addAmount) {
+        
+        int xOffset = theta.getXRelativeOffset();
+        int yOffset = theta.getYRelativeOffset();
+        
+        double avgY = calculateY(zeroPointLists.get(0), originalColorImage,
+             xOffset, yOffset, addAlongX, addAmount);
+        
+        // remove points that have contrast larger than tail of histogram
+        HistogramHolder h = createContrastHistogram(avgY, zeroPointLists, 
+            originalColorImage, xOffset, yOffset, addAlongX, 
+            addAmount);
+        
+        if (h == null) {
+            return;
+        }
+/*        
+try {
+    h.plotHistogram("contrast", 1);
+} catch (IOException e) {
+    log.severe(e.getMessage());
+}
+*/        
+        int yPeakIdx = MiscMath.findYMaxIndex(h.getYHist());
+        int tailXIdx = h.getXHist().length - 1;
+        if (tailXIdx > yPeakIdx) {
+            float yPeak =  h.getYHist()[yPeakIdx];
+            float crit = 0.03f;
+            float dy = Float.MIN_VALUE;
+            for (int i = (yPeakIdx + 1); i < h.getYHist().length; i++) {
+                
+                float f = (float)h.getYHist()[i]/yPeak;
+                dy = Math.abs(h.getYHist()[i] - h.getYHist()[i - 1]);
+                
+                System.out.println("x=" + h.getXHist()[i] + " f=" + f + " dy=" + dy);
+                
+                if (f < crit) {
+                    tailXIdx = i;
+                    break;
+                }
+            }
+        }
+        
+        double[][] m = new double[3][];
+        m[0] = new double[]{0.256, 0.504, 0.098};
+        m[1] = new double[]{-0.148, -0.291, 0.439};
+        m[2] = new double[]{0.439, -0.368, -0.072};
+        
+        //remove points w/ contrast higher than the tail of the histogram
+        double critContrast = h.getXHist()[tailXIdx];
+                
+        for (int gId = 0; gId < zeroPointLists.size(); gId++) {
+                        
+            PairIntArray points  = zeroPointLists.get(gId);
+                        
+            Set<PairInt> pointsSet = new HashSet<PairInt>();
+            for (int i = 0; i < points.getN(); i++) {
+                int x = points.getX(i);
+                int y = points.getY(i);
+                PairInt pi = new PairInt(x, y);
+                pointsSet.add(pi);
+            }
+            
+            for (int i = 0; i < points.getN(); i++) {
+                
+                int x = points.getX(i);
+                int y = points.getY(i);
+                
+                int ox = x + xOffset;
+                int oy = y + yOffset;
+
+                if (addAlongX) {
+                    ox += addAmount;
+                } else {
+                    oy += addAmount;
+                }
+
+                if ((ox < 0) || (ox > (originalColorImage.getWidth() - 1))) {
+                    continue;
+                }
+                if ((oy < 0) || (oy > (originalColorImage.getHeight() - 1))) {
+                    continue;
+                }
+                
+                int r = originalColorImage.getR(x, y);
+                int g = originalColorImage.getG(x, y);
+                int b = originalColorImage.getB(x, y);
+                
+                double[] rgb = new double[]{r, g, b};
+                        
+                double[] yuv = MatrixUtil.multiply(m, rgb);
+                yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
+
+                float contrast = (float)((avgY - yuv[0]) / yuv[0]);
+                
+                if (contrast > critContrast) {
+                    
+                    PairInt pi0 = new PairInt(x, y);
+                    
+                    pointsSet.remove(pi0);
+                    
+                    for (int xx = (x - 1); xx <= (x + 1); xx++) {
+                        if ((xx < 0) || (xx > (theta.getWidth() - 1))) {
+                            continue;
+                        }
+                        for (int yy = (y - 1); yy <= (y + 1); yy++) {
+                            if ((yy < 0) || (yy > (theta.getHeight() - 1))) {
+                                continue;
+                            }
+                            if ((xx == x) && (yy == y)) {
+                                continue;
+                            }
+                            
+                            PairInt pi1 = new PairInt(xx, yy);
+                            
+                            if (pointsSet.contains(pi1)) {
+                                pointsSet.remove(pi1);
+                            }
+                        }
+                    }
+                }
+            }
+                        
+            if (pointsSet.size() != points.getN()) {
+                PairIntArray points2 = new PairIntArray();
+                for (PairInt pi : pointsSet) {
+                    points2.add(pi.getX(), pi.getY());
+                }
+                points.swapContents(points2);
+            }
+        }
+    }
+
+    public double calculateY(PairIntArray points, Image originalColorImage,
+        int xOffset, int yOffset, boolean addAlongX, int addAmount) {
+        
+        double[][] m = new double[3][];
+        m[0] = new double[]{0.256, 0.504, 0.098};
+        m[1] = new double[]{-0.148, -0.291, 0.439};
+        m[2] = new double[]{0.439, -0.368, -0.072};
+        
+        double avgY = 0;
+        
+        for (int i = 0; i < points.getN(); i++) {
+            
+            int x = points.getX(i);
+            int y = points.getY(i);
+
+            int ox = x + xOffset;
+            int oy = y + yOffset;
+
+            if (addAlongX) {
+                ox += addAmount;
+            } else {
+                oy += addAmount;
+            }
+            if ((ox < 0) || (ox > (originalColorImage.getWidth() - 1))) {
+                continue;
+            }
+            if ((oy < 0) || (oy > (originalColorImage.getHeight() - 1))) {
+                continue;
+            }
+            
+            int r = originalColorImage.getR(x, y);
+            int g = originalColorImage.getG(x, y);
+            int b = originalColorImage.getB(x, y);
+            double[] rgb = new double[]{r, g, b};
+            double[] yuv = MatrixUtil.multiply(m, rgb);
+            avgY += yuv[0];
+        }
+        avgY /= (double)points.getN();
+        
+        return avgY;
+    }
+    
+    private HistogramHolder createContrastHistogram(List<PairIntArray> 
+        zeroPointLists, Image originalColorImage, int xRelativeOffset,
+        int yRelativeOffset, boolean addAlongX, int addAmount) {
+                
+        if (zeroPointLists.isEmpty()) {
+            return null;
+        }
+        
+        double avgY = calculateY(zeroPointLists.get(0), originalColorImage,
+            xRelativeOffset, yRelativeOffset, addAlongX, addAmount);
+        
+        return createContrastHistogram(avgY, zeroPointLists, 
+            originalColorImage, xRelativeOffset, yRelativeOffset, 
+            addAlongX, addAmount);
+    }
+    
+    private HistogramHolder createContrastHistogram(double avgY,
+        List<PairIntArray> zeroPointLists, Image originalColorImage,
+        int xOffset, int yOffset, boolean addAlongX, int addAmount) {
+        
+        if (zeroPointLists.isEmpty()) {
+            return null;
+        }
+        
+        double[][] m = new double[3][];
+        m[0] = new double[]{0.256, 0.504, 0.098};
+        m[1] = new double[]{-0.148, -0.291, 0.439};
+        m[2] = new double[]{0.439, -0.368, -0.072};
+                
+        int nPoints = 0;
+        for (int gId = 0; gId < zeroPointLists.size(); gId++) {
+            nPoints += zeroPointLists.get(gId).getN();
+        }
+        
+        float[] yValues = new float[nPoints];
+        
+        int count = 0;
+        for (int gId = 0; gId < zeroPointLists.size(); gId++) {
+            
+            PairIntArray points  = zeroPointLists.get(gId);
+                        
+            for (int i = 0; i < points.getN(); i++) {
+                
+                int x = points.getX(i);
+                int y = points.getY(i);
+         
+                int ox = x + xOffset;
+                int oy = y + yOffset;
+
+                if (addAlongX) {
+                    ox += addAmount;
+                } else {
+                    oy += addAmount;
+                }
+
+                if ((ox < 0) || (ox > (originalColorImage.getWidth() - 1))) {
+                    continue;
+                }
+                if ((oy < 0) || (oy > (originalColorImage.getHeight() - 1))) {
+                    continue;
+                }
+                
+                int r = originalColorImage.getR(x, y);
+                int g = originalColorImage.getG(x, y);
+                int b = originalColorImage.getB(x, y);
+                
+                double[] rgb = new double[]{r, g, b};
+                        
+                double[] yuv = MatrixUtil.multiply(m, rgb);
+                yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
+
+                float contrastValue = (float)((avgY - yuv[0]) / yuv[0]);
+                
+                yValues[count] = contrastValue;
+                
+                count++;
+            }
+        }
+                
+        HistogramHolder h = Histogram.calculateSturgesHistogramRemoveZeroTail(
+            yValues, Errors.populateYErrorsBySqrt(yValues));
+
+        return h;
+    }
+
+    private GreyscaleImage growPointsToSkyline(Set<PairInt> points, 
+        GreyscaleImage theta, int[] rgb) {
+        
+        // dfs w/ boundary found by contrast and color
+        
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }

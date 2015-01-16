@@ -6,8 +6,8 @@ package algorithms.util;
  */
 public class PairInt {
     
-    private int x;
-    private int y;
+    private int x = Integer.MIN_VALUE;
+    private int y = Integer.MIN_VALUE;
     
     public PairInt() {
     }
@@ -27,4 +27,32 @@ public class PairInt {
     public int getY() {
         return y;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        
+        if (!(obj instanceof PairInt)) {
+            return false;    
+        }
+        
+        PairInt other = (PairInt)obj;
+        
+        if ((x == other.getX()) && (y == other.getY())) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        
+        //TODO: revisit this...
+        
+        int hash = 7;
+        hash = 11 * hash + this.x;
+        hash = 11 * hash + this.y;
+        return hash;
+    }
+    
 }
