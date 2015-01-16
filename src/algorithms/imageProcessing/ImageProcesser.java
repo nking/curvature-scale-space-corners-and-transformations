@@ -832,8 +832,8 @@ public class ImageProcesser {
             thetaImg = binImage(theta, binFactor);
         }
 
-        List<PairIntArray> zeroPointLists = getLargestContiguousZeros(thetaImg);
-       
+        List<PairIntArray> zeroPointLists = getSortedContiguousZeros(thetaImg);
+        
         if (zeroPointLists.isEmpty()) {
             
             GreyscaleImage mask = thetaImg.createWithDimensions();
@@ -849,13 +849,17 @@ public class ImageProcesser {
             thetaImg = theta;
         
             zeroPointLists = unbinZeroPointLists(zeroPointLists, binFactor);
-/*
-ImageDisplayer.displayImage("before oversampling corrections", theta);
+            
+        }
 
+        pruneByColorThenReduceToLargest(zeroPointLists, originalColorImage);
+            
+        if (binFactor > 1) {
+        
 Image img1 = theta.createWithDimensions().copyImageToGreen();
 ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
 ImageDisplayer.displayImage("before oversampling corrections", img1);
-*/
+
             int topToCorrect = 5;
 
             //make corrections for resolution:
@@ -927,18 +931,23 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
         return mask;
     }
     
-    public List<PairIntArray> getLargestContiguousZeros(GreyscaleImage theta) {
+    public List<PairIntArray> getLargestSortedContiguousZeros(GreyscaleImage theta) {
                  
-        return getLargestContiguousValue(theta, 0, false);
+        return getSortedContiguousValues(theta, 0, false, true);
     }
     
-    public List<PairIntArray> getLargestContiguousNonZeros(GreyscaleImage theta) {
+    public List<PairIntArray> getSortedContiguousZeros(GreyscaleImage theta) {
                  
-        return getLargestContiguousValue(theta, 0, true);
+        return getSortedContiguousValues(theta, 0, false, false);
     }
     
-    private List<PairIntArray> getLargestContiguousValue(GreyscaleImage theta,
-        int value, boolean excludeValue) {
+    public List<PairIntArray> getLargestSortedContiguousNonZeros(GreyscaleImage theta) {
+                 
+        return getSortedContiguousValues(theta, 0, true, true);
+    }
+    
+    private List<PairIntArray> getSortedContiguousValues(GreyscaleImage theta,
+        int value, boolean excludeValue, boolean limitToLargest) {
         
         DFSContiguousValueFinder zerosFinder = new DFSContiguousValueFinder(theta);
         
@@ -974,19 +983,23 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
             
             for (int i = 1; i < groupN.length; i++) {
                 
-                float number = groupN[i];
-                
-                float frac = number/n0;
-System.out.println(number);    
-                //TODO: this should be adjusted by some metric.
-                //      a histogram?
-                // since most images should have been binned to <= 300 x 300 pix,
-                // making an assumption about a group >= 100 pixels 
-                if ((1 - frac) < 0.4) {
-                //if (number > 100) {
-                    groupIds.add(Integer.valueOf(groupIndexes[i]));
+                if (limitToLargest) {
+                    float number = groupN[i];
+
+                    float frac = number/n0;
+    System.out.println(number);    
+                    //TODO: this should be adjusted by some metric.
+                    //      a histogram?
+                    // since most images should have been binned to <= 300 x 300 pix,
+                    // making an assumption about a group >= 100 pixels 
+                    if ((1 - frac) < 0.4) {
+                    //if (number > 100) {
+                        groupIds.add(Integer.valueOf(groupIndexes[i]));
+                    } else {
+                        break;
+                    }
                 } else {
-                    break;
+                    groupIds.add(Integer.valueOf(groupIndexes[i]));
                 }
             }
         }
@@ -2204,51 +2217,29 @@ System.out.println(number);
                 blue = new float[w];
                 white = new float[w];
                 axis = new float[w];
-                
-                double len = stopRow - startRow;
-                
+                                
                 for (int col = startCol; col <= stopCol; col++) {
                     
-                    // avg along stripe in the row
-                    double sumContrast = 0;
-                    double sumHue = 0;
-                    double sumBlue = 0;
-                    double sumRed = 0;
-                    double sumWhite = 0;
+                    int row = startRow;
                     
-                    for (int row = startRow; row <= stopRow; row++) {
+                    int r = image.getR(col, row);
+                    int g = image.getG(col, row);
+                    int b = image.getB(col, row);
+                    double[] rgb = new double[]{r, g, b};
                         
-                        int r = image.getR(col, row);
-                        int g = image.getG(col, row);
-                        int b = image.getB(col, row);
-                        double[] rgb = new double[]{r, g, b};
+                    double[] yuv = MatrixUtil.multiply(m, rgb);
+                    yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
+                    double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));
+
+                    double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];
+
+                    double whiteValue = (r + g + b)/3.;
                         
-                        double[] yuv = MatrixUtil.multiply(m, rgb);
-                        yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
-                        double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));
-                        
-                        double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];
-                        
-                        double whiteValue = (r + g + b)/3.;
-                        
-                        sumContrast += contrastValue;
-                        sumHue += hueValue;
-                        sumBlue += b;
-                        sumRed += r;
-                        sumWhite += whiteValue;
-                    }
-                                        
-                    sumContrast /= len;
-                    sumHue /= len;
-                    sumBlue /= len;
-                    sumRed /= len;
-                    sumWhite /= len;
-                    
-                    contrast[col] = (float)sumContrast;
-                    hue[col] = (float)sumHue;
-                    blue[col] = (float)sumBlue;
-                    red[col] = (float)sumRed;
-                    white[col] = (float)sumWhite;
+                    contrast[col] = (float)contrastValue;
+                    hue[col] = (float)hueValue;
+                    blue[col] = (float)b;
+                    red[col] = (float)r;
+                    white[col] = (float)whiteValue;
                     
                     axis[col] = col;
                 }
@@ -2261,51 +2252,29 @@ System.out.println(number);
                 blue = new float[h];
                 white = new float[h];
                 axis = new float[h];
-                
-                double len = stopCol - startCol;
-                
+                                
                 for (int row = startRow; row <= stopRow; row++) {
                     
-                    // avg along stripe in the row
-                    double sumContrast = 0;
-                    double sumHue = 0;
-                    double sumBlue = 0;
-                    double sumRed = 0;
-                    double sumWhite = 0;;
+                    int col = startCol;
                     
-                    for (int col = startCol; col <= stopCol; col++) {
-                        
-                        int r = image.getR(col, row);
-                        int g = image.getG(col, row);
-                        int b = image.getB(col, row);
-                        double[] rgb = new double[]{r, g, b};
-                        
-                        double[] yuv = MatrixUtil.multiply(m, rgb);
-                        yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
-                        double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));
-                        
-                        double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];
-                        
-                        double whiteValue = (r + g + b)/3.;
-                        
-                        sumContrast += contrastValue;
-                        sumHue += hueValue;
-                        sumBlue += b;
-                        sumRed += r;
-                        sumWhite += whiteValue;
-                    }
-                                        
-                    sumContrast /= len;
-                    sumHue /= len;
-                    sumBlue /= len;
-                    sumRed /= len;
-                    sumWhite /= len;
-                    
-                    contrast[row] = (float)sumContrast;
-                    hue[row] = (float)sumHue;
-                    blue[row] = (float)sumBlue;
-                    red[row] = (float)sumRed;
-                    white[row] = (float)sumWhite;
+                    int r = image.getR(col, row);
+                    int g = image.getG(col, row);
+                    int b = image.getB(col, row);
+                    double[] rgb = new double[]{r, g, b};
+
+                    double[] yuv = MatrixUtil.multiply(m, rgb);
+                    yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
+                    double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));
+
+                    double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];
+
+                    double whiteValue = (r + g + b)/3.;
+                     
+                    contrast[row] = (float)contrastValue;
+                    hue[row] = (float)hueValue;
+                    blue[row] = (float)b;
+                    red[row] = (float)r;
+                    white[row] = (float)whiteValue;
                     
                     axis[row] = row;
                 }
@@ -2343,5 +2312,60 @@ System.out.println(number);
             
             plotter.writeFile(plotNumber);
         }        
+    }
+
+    private void pruneByColorThenReduceToLargest(List<PairIntArray> 
+        zeroPointLists, Image originalColorImage) {
+        
+        int limit = 100;
+        
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (int gId = 0; gId < zeroPointLists.size(); gId++) {
+            
+            PairIntArray points  = zeroPointLists.get(gId);
+            
+            int nBelowLimit = 0;
+            
+            for (int i = 0; i < points.getN(); i++) {
+                
+                int x = points.getX(i);
+                int y = points.getY(i);
+                
+                int r = originalColorImage.getR(x, y);
+                int g = originalColorImage.getG(x, y);
+                int b = originalColorImage.getB(x, y);
+                                
+                if ((r < limit) && (b < limit) && (g < limit)) {
+                    nBelowLimit++;
+                }                
+            }
+                        
+            log.fine(gId + ") nBelowLimit=" + nBelowLimit
+                + " (" + ((double)nBelowLimit/(double)points.getN()) + ")");
+            
+            if (((double)nBelowLimit/(double)points.getN()) > 0.5) {
+                remove.add(Integer.valueOf(gId));
+            }
+        }
+        
+        if (!remove.isEmpty()) {
+            for (int i = (remove.size() - 1); i > -1; i--) {
+                zeroPointLists.remove(remove.get(i).intValue());
+            }
+        }
+        
+        /*   
+        try {
+            Image img1 = new Image(originalColorImage.getWidth(),
+                originalColorImage.getHeight());
+            
+            ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
+            ImageDisplayer.displayImage("before oversampling corrections", img1);
+            
+        } catch (IOException ex) {
+            Logger.getLogger(ImageProcesser.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        */    
     }
 }

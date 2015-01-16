@@ -158,7 +158,7 @@ public class Image {
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;  
                     
-                int v = (r + g + b)/3;
+                int v = Math.round((r + g + b)/3.f);
                 
                 out.setValue(i, j, v);
             }

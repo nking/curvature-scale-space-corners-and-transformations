@@ -44,8 +44,9 @@ public class ImageIOHelper {
             for (int i = 0; i < w; i++) {
                 for (int j = 0; j < h; j++) {
                     
+                    //TYPE_INT_ARGB) and default sRGB colorspace
                     int rgb = img.getRGB(i, j);
-                                        
+                    
                     int r = (rgb >> 16) & 0xFF;
                     int g = (rgb >> 8) & 0xFF;
                     int b = rgb & 0xFF;
