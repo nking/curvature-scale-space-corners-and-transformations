@@ -857,6 +857,12 @@ public class ImageProcesser {
             
         }
         
+        //TODO:  this needs to be improved as soon as the rest of the
+        //       algorithm is finished.
+        //  currently not a robust way to determine that sky is horizontal
+        //  or vertical and might not be correct for an angle not 90 degrees.
+        //  probably needs equiv tranform for deconvolution of the image...
+        
         int xMin = MiscMath.findMin(zeroPointLists.get(0).getX());
         int xMax = MiscMath.findMax(zeroPointLists.get(0).getX());
         int yMin = MiscMath.findMin(zeroPointLists.get(0).getY());
@@ -903,7 +909,8 @@ ImageDisplayer.displayImage("added missing zeros", img1);
 
         Set<PairInt> points = combine(zeroPointLists);
 
-        GreyscaleImage mask = growPointsToSkyline(points, theta, rgb);
+        GreyscaleImage mask = growPointsToSkyline(points, originalColorImage, 
+            theta, rgb, makeCorrectionsAlongX, convDispl);
        
 log.info("SKY avg: " + rgb[0] + " min=" + rgb[1] + " max=" + rgb[2]);
 ImageProcesser imageProcesser = new ImageProcesser();
@@ -2671,15 +2678,42 @@ try {
                 count++;
             }
         }
-                
+        
         HistogramHolder h = Histogram.calculateSturgesHistogramRemoveZeroTail(
             yValues, Errors.populateYErrorsBySqrt(yValues));
 
         return h;
     }
+    
+    private void transformPointsToOriginalReferenceFrame(Set<PairInt> points,
+        GreyscaleImage theta, boolean makeCorrectionsAlongX, int addAmount) {
+        
+         // transform points to original color image frame
+        int totalXOffset = theta.getXRelativeOffset();
+        int totalYOffset = theta.getYRelativeOffset();
+
+        if (makeCorrectionsAlongX) {
+            totalXOffset += addAmount;
+        } else {
+            totalYOffset += addAmount;
+        }
+        
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            x += totalXOffset;
+            y += totalYOffset;
+            p.setX(x);
+            p.setY(y);
+        }
+    }
 
     private GreyscaleImage growPointsToSkyline(Set<PairInt> points, 
-        GreyscaleImage theta, int[] rgb) {
+        Image originalColorImage, GreyscaleImage theta, int[] rgb,
+        boolean makeCorrectionsAlongX, int addAmount) {
+        
+        transformPointsToOriginalReferenceFrame(points, theta, 
+            makeCorrectionsAlongX, addAmount);
         
         // dfs w/ boundary found by contrast and color
         
