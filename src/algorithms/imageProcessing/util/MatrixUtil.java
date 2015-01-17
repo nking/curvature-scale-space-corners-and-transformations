@@ -114,6 +114,19 @@ public class MatrixUtil {
         return c;
     }
     
+    public static void multiply(int[] m, int factor) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        
+        int len = m.length;
+                
+        for (int i = 0; i < len; i++) {                        
+            m[i] *= factor;
+        }
+    }
+    
     public static double[][] multiply(double[][] m, double[][] n) {
 
         if (m == null || m.length == 0) {

@@ -9,13 +9,19 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.Errors;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -883,9 +889,12 @@ public class ImageProcesser {
         
         reduceToLargest(zeroPointLists);
         
+        double[] avgYRGB = calculateYRGB(zeroPointLists.get(0), originalColorImage,
+             theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+             makeCorrectionsAlongX, convDispl);
+        
         removeHighContrastPoints(zeroPointLists, originalColorImage, 
-            thetaImg, 
-            makeCorrectionsAlongX, convDispl);
+            thetaImg, avgYRGB[0], makeCorrectionsAlongX, convDispl);
         
         if (binFactor > 1) {
         
@@ -903,19 +912,20 @@ ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
 ImageDisplayer.displayImage("added missing zeros", img1);
 */
         }
-           
-        int[] rgb = getAvgMinMaxColor(zeroPointLists.get(0), thetaImg, 
-            originalColorImage, makeCorrectionsAlongX, convDispl);
-
+        
+        avgYRGB = calculateYRGB(zeroPointLists.get(0), originalColorImage,
+             theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+             makeCorrectionsAlongX, convDispl);
+ 
         Set<PairInt> points = combine(zeroPointLists);
 
         GreyscaleImage mask = growPointsToSkyline(points, originalColorImage, 
-            theta, rgb, makeCorrectionsAlongX, convDispl);
+            theta, avgYRGB, makeCorrectionsAlongX, convDispl);
        
-log.info("SKY avg: " + rgb[0] + " min=" + rgb[1] + " max=" + rgb[2]);
-ImageProcesser imageProcesser = new ImageProcesser();
-imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
-
+GreyscaleImage mask2 = mask.copyImage();
+MatrixUtil.multiply(mask2.getValues(), 250);
+ImageDisplayer.displayImage("mask", mask2);
+       
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         double[] xycen = curveHelper.calculateXYCentroids(points);
@@ -1387,6 +1397,15 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
         return index;
     }
     
+    /**
+     * returns avg r, avg g, avg b
+     * @param points
+     * @param theta
+     * @param originalImage
+     * @param addAlongX
+     * @param addAmount
+     * @return 
+     */
     private int[] getAvgMinMaxColor(PairIntArray points, GreyscaleImage theta, 
         Image originalImage, boolean addAlongX, int addAmount) {
         
@@ -1396,9 +1415,6 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
         double rSum = 0;
         double gSum = 0;
         double bSum = 0;
-        
-        double rgbMinSum = Double.MAX_VALUE;        
-        double rgbMaxSum = Double.MIN_VALUE;
         
         int count = 0;
         
@@ -1433,13 +1449,6 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
             gSum += g;
             bSum += b;
             
-            if (rgb < rgbMinSum) {
-                rgbMinSum = rgb;
-            }
-            if (rgb > rgbMaxSum) {
-                rgbMaxSum = rgb;
-            }
-            
             count++;
         }
                 
@@ -1450,14 +1459,9 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
         rSum /= (double)count;
         gSum /= (double)count;
         bSum /= (double)count;
-        
-        rgbMinSum /= (double)count;
-        rgbMaxSum /= (double)count;
-        
-        double rgbSum = (rSum + gSum + bSum)/3.;        
-        
-        return new int[]{(int)Math.round(rgbSum), (int)Math.round(rgbMinSum),
-            (int)Math.round(rgbMaxSum)};
+                
+        return new int[]{(int)Math.round(rSum), (int)Math.round(gSum),
+            (int)Math.round(bSum)};
     }
 
     /**
@@ -2425,13 +2429,10 @@ imageProcesser.printImageColorContrastStats(originalColorImage, 161, 501);
     
     private void removeHighContrastPoints(List<PairIntArray> 
         zeroPointLists, Image originalColorImage, GreyscaleImage theta,
-        boolean addAlongX, int addAmount) {
+        double avgY, boolean addAlongX, int addAmount) {
         
         int xOffset = theta.getXRelativeOffset();
         int yOffset = theta.getYRelativeOffset();
-        
-        double avgY = calculateY(zeroPointLists.get(0), originalColorImage,
-             xOffset, yOffset, addAlongX, addAmount);
         
         // remove points that have contrast larger than tail of histogram
         HistogramHolder h = createContrastHistogram(avgY, zeroPointLists, 
@@ -2556,9 +2557,17 @@ try {
                 points.swapContents(points2);
             }
         }
+        
+        // remove empty sets
+        for (int i = (zeroPointLists.size() - 1); i > -1; i--) {
+            PairIntArray point = zeroPointLists.get(i);
+            if (point.getN() == 0) {
+                zeroPointLists.remove(i);
+            }
+        }
     }
 
-    public double calculateY(PairIntArray points, Image originalColorImage,
+    public double[] calculateYRGB(PairIntArray points, Image originalColorImage,
         int xOffset, int yOffset, boolean addAlongX, int addAmount) {
         
         double[][] m = new double[3][];
@@ -2567,6 +2576,9 @@ try {
         m[2] = new double[]{0.439, -0.368, -0.072};
         
         double avgY = 0;
+        double avgR = 0;
+        double avgG = 0;
+        double avgB = 0;
         
         for (int i = 0; i < points.getN(); i++) {
             
@@ -2593,27 +2605,20 @@ try {
             int b = originalColorImage.getB(x, y);
             double[] rgb = new double[]{r, g, b};
             double[] yuv = MatrixUtil.multiply(m, rgb);
+            
             avgY += yuv[0];
+            
+            avgR += r;
+            avgG += g;
+            avgB += b;
         }
+        
         avgY /= (double)points.getN();
+        avgR /= (double)points.getN();
+        avgG /= (double)points.getN();
+        avgB /= (double)points.getN();
         
-        return avgY;
-    }
-    
-    private HistogramHolder createContrastHistogram(List<PairIntArray> 
-        zeroPointLists, Image originalColorImage, int xRelativeOffset,
-        int yRelativeOffset, boolean addAlongX, int addAmount) {
-                
-        if (zeroPointLists.isEmpty()) {
-            return null;
-        }
-        
-        double avgY = calculateY(zeroPointLists.get(0), originalColorImage,
-            xRelativeOffset, yRelativeOffset, addAlongX, addAmount);
-        
-        return createContrastHistogram(avgY, zeroPointLists, 
-            originalColorImage, xRelativeOffset, yRelativeOffset, 
-            addAlongX, addAmount);
+        return new double[]{avgY, avgR, avgG, avgB};
     }
     
     private HistogramHolder createContrastHistogram(double avgY,
@@ -2708,15 +2713,325 @@ try {
         }
     }
 
+    /**
+     * NOT READY FOR USE YET.  THIS should be run on the binned images.
+     * The images which are more than half sky should especially be
+     * processed at binned size.
+     * 
+     * @param points
+     * @param originalColorImage
+     * @param theta
+     * @param avgYRGB
+     * @param makeCorrectionsAlongX
+     * @param addAmount
+     * @return 
+     */
     private GreyscaleImage growPointsToSkyline(Set<PairInt> points, 
-        Image originalColorImage, GreyscaleImage theta, int[] rgb,
+        Image originalColorImage, GreyscaleImage theta, double[] avgYRGB,
         boolean makeCorrectionsAlongX, int addAmount) {
         
-        transformPointsToOriginalReferenceFrame(points, theta, 
-            makeCorrectionsAlongX, addAmount);
+        // mask needs to be in the frame of the theta image
         
-        // dfs w/ boundary found by contrast and color
+        // transform points to original color image frame
+        int totalXOffset = theta.getXRelativeOffset();
+        int totalYOffset = theta.getYRelativeOffset();
+
+        if (makeCorrectionsAlongX) {
+            totalXOffset += addAmount;
+        } else {
+            totalYOffset += addAmount;
+        }
         
-        throw new UnsupportedOperationException("Not supported yet.");
+        //transformPointsToOriginalReferenceFrame(points, theta, 
+        //    makeCorrectionsAlongX, addAmount);
+        
+        boolean useBlue = (((avgYRGB[1] - avgYRGB[3])/255.) < 0.2);
+        
+        // determine contrast and blue or red for each point in points
+        Map<PairInt, PairFloat> contrastAndColorMap = calculateContrastAndBOrR(
+            points, useBlue, originalColorImage, avgYRGB,
+            totalXOffset, totalYOffset);
+
+        // determine differences in contrast and blue or red for each point 
+        // from their neighbors (if they are in the map) and return
+        // the avg and st.dev. of 
+        // {avg dContrast, stdDev dContrast, avg dBlueOrRed, stDev dBlueOrRed}
+        float[] diffsAvgAndStDev = calculateAvgAndStDevOfDiffs(
+            contrastAndColorMap);
+
+        log.info("diffsAvgAndStDev=" + Arrays.toString(diffsAvgAndStDev));
+        
+        float diffContrastAvg = diffsAvgAndStDev[0];
+        float diffContrastStDev = diffsAvgAndStDev[1];
+        float diffBlueOrRedAvg = diffsAvgAndStDev[2];
+        float diffBlueOrRedStDev = diffsAvgAndStDev[3];
+         
+        // TODO: improve this setting.  using + factor*stDev does not 
+        // lead to result needing one factor either.
+        float factor = useBlue ? 1.5f : 20.0f;
+
+        /*
+        given map of points and their contrasts and colors and the avg changes
+        in those and the std dev of that,
+        use dfs to look for neighbors of the points that fall within the critical
+        limits.  when the point is within limit, it gets marked as a '0'
+        in the output image (which is otherwise '1')
+        */
+        
+        GreyscaleImage mask = theta.createWithDimensions();
+        mask.fill(1);
+        
+        int width = theta.getWidth();
+        int height = theta.getHeight();
+        
+        double[][] m = new double[3][];
+        m[0] = new double[]{0.256, 0.504, 0.098};
+        m[1] = new double[]{-0.148, -0.291, 0.439};
+        m[2] = new double[]{0.439, -0.368, -0.072};
+        
+        java.util.Stack<PairInt> stack = new java.util.Stack<PairInt>();
+        
+        //O(N_sky)
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            stack.add(p);
+            mask.setValue(x, y, 0);
+        }
+       
+        // null = unvisited, presence = visited
+        Set<PairInt> visited = new HashSet<PairInt>();
+        visited.add(stack.peek());
+        
+        while (!stack.isEmpty()) {
+
+            PairInt uPoint = stack.pop();
+            
+            int uX = uPoint.getX();
+            int uY = uPoint.getY();
+
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
+            for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
+                if ((vX < 0) || (vX > (width - 1))) {
+                    continue;
+                }
+                for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
+                    if ((vY < 0) || (vY > (height - 1))) {
+                        continue;
+                    }
+                    
+                    PairInt vPoint = new PairInt(vX, vY);
+                    
+                    if (vPoint.equals(uPoint)) {
+                        continue;
+                    }
+                    
+                    if (visited.contains(vPoint)) {
+                        continue;
+                    }
+                                        
+                    int ox = vX + totalXOffset;
+                    int oy = vY + totalYOffset;
+                    
+                    if ((ox < 0) || (ox > (originalColorImage.getWidth() - 1))) {
+                        continue;
+                    }
+                    if ((oy < 0) || (oy > (originalColorImage.getHeight() - 1))) {
+                        continue;
+                    }
+                    
+                    visited.add(vPoint);
+                    
+                    int rV = originalColorImage.getR(ox, oy);
+                    int gV = originalColorImage.getG(ox, oy);
+                    int bV = originalColorImage.getB(ox, oy);
+                    
+                    double[] rgbV = new double[]{rV, gV, bV};
+                    double[] yuv = MatrixUtil.multiply(m, rgbV);
+                    yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
+
+                    float contrastV = (float)((avgYRGB[0] - yuv[0]) / yuv[0]);
+                    
+                    // if delta constrast and delta blue or red are within
+                    // limits, add to stack and set in mask
+                    
+                    PairFloat uContrastAndColor = contrastAndColorMap.get(uPoint);
+                    
+                    float vMinusUContrast = contrastV - uContrastAndColor.getX();
+                    
+                    boolean withinLimits = true;
+                    
+                    if (vMinusUContrast > factor*diffContrastAvg) {
+                        
+                        // see if color has decreased
+                        float vMinusUColor = useBlue ? 
+                            (bV - uContrastAndColor.getY()) :
+                            (rV - uContrastAndColor.getY());
+                        
+                        if (vMinusUColor < factor*diffBlueOrRedAvg) {
+                            withinLimits = false;
+                        }
+                    }
+                    
+                    if (withinLimits) {
+                        
+                        stack.add(vPoint);
+                        
+                        mask.setValue(vX, vY, 0);
+                        
+                        float vColor = useBlue ? bV : rV;
+                        
+                        PairFloat vCC = new PairFloat(contrastV, vColor);
+                        
+                        contrastAndColorMap.put(vPoint, vCC);
+                    }
+                }
+            }
+        }
+        
+        return mask;
     }
+
+    private Map<PairInt, PairFloat> calculateContrastAndBOrR(
+        Set<PairInt> points, boolean useBlue, Image originalColorImage, 
+        double[] avgYRGB, int totalXOffset, int totalYOffset) {
+        
+        double[][] m = new double[3][];
+        m[0] = new double[]{0.256, 0.504, 0.098};
+        m[1] = new double[]{-0.148, -0.291, 0.439};
+        m[2] = new double[]{0.439, -0.368, -0.072};
+        
+        Map<PairInt, PairFloat> map = new HashMap<PairInt, PairFloat>();
+        
+        for (PairInt p : points) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            x += totalXOffset;
+            y += totalYOffset;
+            
+            int r = originalColorImage.getR(x, y);
+            int g = originalColorImage.getG(x, y);
+            int b = originalColorImage.getB(x, y);
+
+            double[] rgb = new double[]{r, g, b};
+            double[] yuv = MatrixUtil.multiply(m, rgb);
+            yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
+
+            float contrast= (float) ((avgYRGB[0] - yuv[0]) / yuv[0]);
+            
+            PairFloat crb = new PairFloat();
+            crb.setX(contrast);
+            if (useBlue) {
+                crb.setY(b);
+            } else {
+                crb.setY(r);
+            }
+            
+            map.put(p, crb);
+        }
+        
+        return map;
+    }
+
+    private float[] calculateAvgAndStDevOfDiffs(Map<PairInt, PairFloat> 
+        contrastAndColorMap) {
+        
+        // average difference from neighbors
+        double avgContrast = 0;
+        
+        double avgColor = 0;
+        
+        int count = 0;
+        
+        Iterator<Entry<PairInt, PairFloat> > iter = 
+            contrastAndColorMap.entrySet().iterator();
+        
+        while (iter.hasNext()) {
+            
+            Entry<PairInt, PairFloat> entry = iter.next();
+            
+            PairInt i = entry.getKey();
+            int x = i.getX();
+            int y = i.getY();
+            
+            for (int xx = (x - 1); xx <= (x + 1); xx++) {
+                for (int yy = (y - 1); yy <= (y + 1); yy++) {
+                    
+                    PairInt j = new PairInt(xx, yy);
+                    
+                    if (contrastAndColorMap.containsKey(j)) {
+                        
+                        PairFloat iCC = entry.getValue();
+                        
+                        PairFloat jCC = contrastAndColorMap.get(j);
+                        
+                        float diffContrast = Math.abs(iCC.getX() - jCC.getX());
+                        
+                        float diffColor = Math.abs(iCC.getY() - jCC.getY());
+                        
+                        avgContrast += diffContrast;
+                        
+                        avgColor += diffColor;
+                        
+                        count++;
+                    }
+                }
+            }            
+        }
+        
+        avgContrast /= (double)count;
+        
+        avgColor /= (double)count;
+        
+        // standard deviation of avg difference from neighbors
+        double stDevContrast = 0;
+        
+        double stDevColor = 0;
+        
+        iter = contrastAndColorMap.entrySet().iterator();
+        
+        while (iter.hasNext()) {
+            
+            Entry<PairInt, PairFloat> entry = iter.next();
+            
+            PairInt i = entry.getKey();
+            int x = i.getX();
+            int y = i.getY();
+            
+            for (int xx = (x - 1); xx <= (x + 1); xx++) {
+                for (int yy = (y - 1); yy <= (y + 1); yy++) {
+                    
+                    PairInt j = new PairInt(xx, yy);
+                    
+                    if (contrastAndColorMap.containsKey(j)) {
+                        
+                        PairFloat iCC = entry.getValue();
+                        
+                        PairFloat jCC = contrastAndColorMap.get(j);
+                        
+                        float diffContrast = Math.abs(iCC.getX() - jCC.getX());
+                        diffContrast -= avgContrast;
+                        
+                        float diffColor = Math.abs(iCC.getY() - jCC.getY());
+                        diffColor -= avgColor;
+                        
+                        stDevContrast += (diffContrast * diffContrast);
+                        
+                        stDevColor += (diffColor * diffColor);
+                    }
+                }
+            } 
+        }
+        
+        stDevContrast = Math.sqrt(stDevContrast/((double)count - 1));
+        
+        stDevColor = Math.sqrt(stDevColor/((double)count - 1));
+        
+        return new float[]{(float)avgContrast, (float)stDevContrast, 
+            (float)avgColor, (float)stDevColor};
+    }
+    
 }

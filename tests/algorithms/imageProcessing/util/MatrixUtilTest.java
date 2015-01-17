@@ -145,6 +145,14 @@ public class MatrixUtilTest {
         assertTrue(cc[1][1] == 1811);
         assertTrue(cc[2][0] == 1517);
         assertTrue(cc[2][1] == 3017);
+        
+        int[] z = new int[]{0, 1, 2, 3};
+        int factor = 2;
+        int[] expectedZ = new int[]{0, 2, 4, 6};
+        MatrixUtil.multiply(z, factor);
+        for (int i = 0; i < z.length; i++) {
+            assertTrue(z[i] == expectedZ[i]);
+        }
     }
 
     @Test
