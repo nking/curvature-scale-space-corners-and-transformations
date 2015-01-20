@@ -182,6 +182,19 @@ public class MatrixUtilTest {
     }
     
     @Test
+    public void testAdd3() throws Exception {
+
+        int[] a = new int[]{1, 2, 3, 4};
+        int add = -1;
+        
+        int[] expected = new int[]{0, 1, 2, 3};
+        
+        MatrixUtil.add(a, add);
+        
+        assertTrue(Arrays.equals(expected, a));
+    }
+    
+    @Test
     public void testSubtract() throws Exception {
 
         float[] a = new float[]{100, 100, 100, 100};

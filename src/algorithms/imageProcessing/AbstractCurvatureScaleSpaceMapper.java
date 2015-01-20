@@ -1,8 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayComparator;
+import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -263,12 +266,12 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 
         PairIntArray outputSkyCentroid = new PairIntArray();
         
-        try {
+        try {            
             
             CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
             
             GreyscaleImage out = imageProcesser.createSkyline(theta, 
-                this.originalImg, settings, outputSkyCentroid);
+                gradientXY, this.originalImg, settings, outputSkyCentroid);
             
             EdgeExtractor contourExtractor = new EdgeExtractor(out);
             
@@ -568,6 +571,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
    
     GreyscaleImage getTheta() {
         return theta;
+    }
+    
+    GreyscaleImage getGradientXY() {
+        return gradientXY;
     }
     
     /*

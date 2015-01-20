@@ -2,11 +2,13 @@ package algorithms.misc;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.ArrayPair;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import static junit.framework.Assert.assertTrue;
@@ -770,6 +772,55 @@ public class HistogramTest extends TestCase {
         assertNotNull(ns);
         assertTrue(ns[0] == (img.getNPixels() - 4));
         assertTrue(ns[1] == 4);
+    }
+    
+    public void testCreateAFrequencyMap() throws Exception {
+        
+        GreyscaleImage img = new GreyscaleImage(10, 10);
+        
+        img.setValue(2, 2, 147);
+        img.setValue(3, 2, 147);
+        img.setValue(4, 2, 147);
+        img.setValue(5, 2, 147);
+        img.setValue(6, 2, 147);
+        img.setValue(7, 2, 147);
+        
+        img.setValue(9, 9, 250);
+        img.setValue(8, 9, 250);
+        img.setValue(7, 9, 250);
+        img.setValue(6, 9, 250);
+        
+        Map<Integer, Integer> map = Histogram.createAFrequencyMap(img);
+        
+        assertTrue(map.get(Integer.valueOf(147)).intValue() == 6);
+        assertTrue(map.get(Integer.valueOf(250)).intValue() == 4);
+        assertTrue(map.get(Integer.valueOf(0)).intValue() == 90);
+        for (int i = 0; i < 256; i++) {
+            if ((i != 0) && (i != 147) && (i != 250)) {
+                assertNull(map.get(Integer.valueOf(i)));
+            }
+        }
+        
+        PairIntArray p = Histogram.createADescendingSortbyFrequencyArray(img);
+        
+        assertTrue(p.getN() == 3);
+        
+        assertTrue(p.getX(0) == 0);
+        assertTrue(p.getY(0) == 90);
+        
+        assertTrue(p.getX(1) == 147);
+        assertTrue(p.getY(1) == 6);
+        
+        assertTrue(p.getX(2) == 250);
+        assertTrue(p.getY(2) == 4);
+        
+        PairIntArray p2 = Histogram.createADescendingSortByKeyArray(img);
+        assertTrue(p2.getX(0) == 250);
+        assertTrue(p2.getY(0) == 4);
+        assertTrue(p2.getX(1) == 147);
+        assertTrue(p2.getY(1) == 6);
+        assertTrue(p2.getX(2) == 0);
+        assertTrue(p2.getY(2) == 90);
     }
 
 }

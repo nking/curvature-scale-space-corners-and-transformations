@@ -1,17 +1,12 @@
 package algorithms.imageProcessing;
 
-import java.io.IOException;
+import algorithms.imageProcessing.util.*;
+import java.io.*;
 import java.util.logging.Logger;
 import algorithms.util.*;
 import algorithms.misc.*;
-import algorithms.util.*;
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -69,6 +64,97 @@ public aspect CurvatureAspect {
 
         log2.fine("===> in aspect for ContourFinder, filePath=" + filePath);
     }
+
+    before() :
+        execution(protected void algorithms.imageProcessing.AbstractCurvatureScaleSpaceMapper*.extractSkyline())
+        && args() 
+	    && target(algorithms.imageProcessing.AbstractCurvatureScaleSpaceMapper) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof AbstractCurvatureScaleSpaceMapper)) {
+            return;
+        }
+
+        AbstractCurvatureScaleSpaceMapper instance = 
+            (AbstractCurvatureScaleSpaceMapper)obj;
+
+        GreyscaleImage gXY2 = instance.getGradientXY().copyImage();
+        PairIntArray gXYValues = Histogram.createADescendingSortByKeyArray(gXY2);
+
+//TODO: for images where significant number of pixels were "put back" in the
+// sky to correct things like repetitive structure at same scale as convolution diffs,
+// the critical fraction should probably be 0.5
+// it might be that very blue skies need f>= 0.5, else 0.15?
+// need a test image of blue skies with as many clouds as the az or nm images
+        //find where the contour value stays above 0.3 of the count for min value
+        float v0 = gXYValues.getY(gXYValues.getN() - 1);
+        int min = gXYValues.getX(gXYValues.getN() - 1);
+        for (int i = (gXYValues.getN() - 1); i > -1; i--) {
+            float f = (float)gXYValues.getY(i)/v0;
+            if (f >= 0.5) {
+                min = gXYValues.getX(i);
+            } else {
+                break;
+            }
+        }
+        
+        StringBuilder sb = new StringBuilder("==>");
+        sb.append("(").append(Integer.valueOf(gXYValues.getN())).append(")");
+        for (int i = (gXYValues.getN() - 1); i > -1; i--) {
+            int pixelValue = gXYValues.getX(i);
+            int count = gXYValues.getY(i);
+            sb.append(" (").append(pixelValue).append(",")
+                .append(count).append(",")
+                .append((float)count/v0).append(")");
+        }
+        log2.info(sb.toString());
+
+        for (int i = 0; i < gXY2.getNPixels(); i++) {
+            int v = gXY2.getValue(i);
+            v -= min;
+            if (v < 0) {
+                v = 0;
+            }
+            gXY2.setValue(i, v);
+        }
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/gXY_thresh_" + outImgNum + ".png", gXY2);
+
+        } catch (Exception e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after(Set<PairInt> points, GreyscaleImage gradientXY) returning() :
+        execution(private void ImageProcesser.growZeroValuePoints(Set<PairInt>, GreyscaleImage))
+        && args(points, gradientXY)
+	    && target(algorithms.imageProcessing.ImageProcesser) {
+
+        Object[] args = (Object[])thisJoinPoint.getArgs();
+        GreyscaleImage gXY = (GreyscaleImage)args[1];
+
+        GreyscaleImage mask = gXY.createWithDimensions();
+        mask.fill(250);
+
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            mask.setValue(x, y, 0);
+        }
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_gxy_" + outImgNum + ".png", mask);
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+
+    }    
 
     after(ScaleSpaceCurveImage scaleSpaceImage, int sigmaIndex, int tIndex) 
         returning() :
@@ -382,6 +468,27 @@ public aspect CurvatureAspect {
         }
     }
 
+    after(final GreyscaleImage theta, 
+        GreyscaleImage gradientXY, Image originalColorImage, 
+        CannyEdgeFilterSettings edgeSettings, PairIntArray outputSkyCentroid) 
+        returning(GreyscaleImage mask) :
+        execution(GreyscaleImage ImageProcesser*.createBestSkyMask(
+        GreyscaleImage, GreyscaleImage, Image, CannyEdgeFilterSettings, PairIntArray))
+        && args(theta, gradientXY, originalColorImage, edgeSettings, outputSkyCentroid) 
+        && target(algorithms.imageProcessing.ImageProcesser) {
+
+        GreyscaleImage mask2 = mask.copyImage();
+        MatrixUtil.multiply(mask2.getValues(), 250);
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/mask_" + outImgNum + ".png", mask2);
+        } catch (IOException e) {
+            log2.severe(e.getMessage());
+        }
+    }
+    
     after() returning : 
 	    target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) 
         && execution(protected void extractSkyline()) {

@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayComparator;
 import algorithms.util.PairFloatArray;
@@ -7,6 +9,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -2300,6 +2303,78 @@ public class MiscellaneousCurveHelper {
         }
         
         return theta;
+    }
+
+    /**
+     * calculate centroid and then search nearby for the first closest
+     * point in points.  the result approximates a sort by x and y and
+       the returned values are actually present in points which is
+       not guaranteed for calculateXYCentroids alone.
+       * If that fails, it sorts all of points by y then x for the same
+       * y and returns the median value present.
+     * @param points
+     * @return 
+     */
+    public double[] calculateXYMedian(PairIntArray points) {
+        
+        Set<PairInt> points2 = new HashSet<PairInt>();
+        for (int i = 0; i < points.getN(); i++) {
+            int x = points.getX(i);
+            int y = points.getY(i);
+            PairInt p = new PairInt(x, y);
+            points2.add(p);
+        }
+        
+        double[] cen = calculateXYCentroids(points);
+        
+        int xc = (int)Math.round(cen[0]);
+        int yc = (int)Math.round(cen[1]);
+        
+        int xMin = MiscMath.findMin(points.getX());
+        int xMax = MiscMath.findMax(points.getX());
+        int dXEnd = (xMax - xc);
+        if ((xc - xMin) < dXEnd) {
+            dXEnd = (xc - xMin);
+        }
+        int yMin = MiscMath.findMin(points.getY());
+        int yMax = MiscMath.findMax(points.getY());
+        int dYEnd = (yMax - yc);
+        if ((yc - yMin) < dYEnd) {
+            dYEnd = (yc - yMin);
+        }
+        
+        int[] signs = new int[]{-1, 1};
+        
+        for (int dx = 0; dx <= dXEnd; dx++) {
+            for (int dy = 0; dy <= dYEnd; dy++) {
+                for (int fx : signs) {
+                    dx *= fx;
+                    for (int fy : signs) {
+                        dy *= fy;
+                    }
+                }
+                
+                int x = xc + dx;
+                int y = yc + dx;
+                
+                PairInt p = new PairInt(x, y);
+                
+                if (points2.contains(p)) {
+                    return new double[]{x, y};
+                }
+            }
+        }
+        
+        log.warning("should not reach here.  should have found a point within "
+            + " range of values");
+        
+        PairIntArray points3 = points.copy();
+        
+        MultiArrayMergeSort.sortByYThenX(points3);
+        
+        int idx = points3.getN()/2;
+        
+        return new double[]{points3.getX(idx), points3.getY(idx)};
     }
 
 }

@@ -1,7 +1,17 @@
 package algorithms.misc;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.util.PairIntArray;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.logging.Logger;
 
 /**
@@ -662,5 +672,101 @@ public class Histogram {
         }
         
         return new int[]{n0, n1};
+    }
+    
+    /**
+     * count the values in the image and return as a frequency map.  useful
+     * for images where the total number of numbers present is small and one
+     * doesn't want to lose number resolution by creating a histogram.
+     * @param img
+     * @return 
+     */
+    public static Map<Integer, Integer> createAFrequencyMap(GreyscaleImage img) {
+        
+        Map<Integer, Integer> freqMap = new HashMap<Integer, Integer>();
+        
+        for (int i = 0; i < img.getNPixels(); i++) {
+            
+            Integer v = Integer.valueOf(img.getValue(i));
+            
+            Integer c = freqMap.get(v);
+            
+            if (c == null) {
+                freqMap.put(v, Integer.valueOf(1));
+            } else {
+                c = Integer.valueOf(c.intValue() + 1);
+                freqMap.put(v, c);
+            }
+        }
+        
+        return freqMap;
+    }
+    
+    public static PairIntArray createADescendingSortbyFrequencyArray(GreyscaleImage img) {
+        
+        Map<Integer, Integer> freqMap = createAFrequencyMap(img);
+        
+        int[] v = new int[freqMap.size()];
+        int[] c = new int[freqMap.size()];
+        
+        int idx = 0;
+        
+        Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
+        while (iter.hasNext()) {
+            
+            Entry<Integer, Integer> entry = iter.next();
+            
+            Integer value = entry.getKey();
+            Integer count = entry.getValue();
+            
+            v[idx] = value.intValue();
+            c[idx] = count.intValue();
+            
+            idx++;
+        }
+        
+        MultiArrayMergeSort.sortByDecr(c, v);
+        
+        PairIntArray p = new PairIntArray();
+        
+        for (int i = 0; i < c.length; i++) {
+            p.add(v[i], c[i]);
+        }
+        
+        return p;
+    }
+    
+    public static PairIntArray createADescendingSortByKeyArray(GreyscaleImage img) {
+        
+        Map<Integer, Integer> freqMap = createAFrequencyMap(img);
+        
+        int[] v = new int[freqMap.size()];
+        int[] c = new int[freqMap.size()];
+        
+        int idx = 0;
+        
+        Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
+        while (iter.hasNext()) {
+            
+            Entry<Integer, Integer> entry = iter.next();
+            
+            Integer value = entry.getKey();
+            Integer count = entry.getValue();
+            
+            v[idx] = value.intValue();
+            c[idx] = count.intValue();
+            
+            idx++;
+        }
+        
+        MultiArrayMergeSort.sortByDecr(v, c);
+        
+        PairIntArray p = new PairIntArray();
+        
+        for (int i = 0; i < c.length; i++) {
+            p.add(v[i], c[i]);
+        }
+        
+        return p;
     }
 }

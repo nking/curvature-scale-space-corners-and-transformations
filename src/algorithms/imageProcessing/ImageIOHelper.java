@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 
@@ -702,6 +704,28 @@ public class ImageIOHelper {
                 }
             }
             clr++;
+        }
+    }
+    
+    public static void addToImage(
+        Set<PairInt> points, Image input) throws IOException {
+        
+        if (points == null || input == null) {
+            return;
+        }
+        
+        int c = Color.BLUE.getRGB();
+          
+        for (PairInt p : points) {
+
+            int col = p.getX();
+            int row = p.getY();
+
+            if ((col > -1) && (col < input.getWidth()) &&
+                (row > -1) && (row < input.getHeight())) {
+
+                input.setRGB(col, row, c);
+            }
         }
     }
 

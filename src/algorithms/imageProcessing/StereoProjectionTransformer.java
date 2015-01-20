@@ -541,7 +541,7 @@ public class StereoProjectionTransformer {
             normalizedXY1.getXy(), normalizedXY2.getXy());
         
         SimpleMatrix aMatrix = new SimpleMatrix(m);
-        SimpleSVD svd = aMatrix.svd();
+        SimpleSVD<SimpleMatrix> svd = aMatrix.svd();
         SimpleMatrix nullSpace = svd.nullSpace();
         
         double[][] ff1 = new double[3][3];
@@ -2187,7 +2187,7 @@ public class StereoProjectionTransformer {
     /*
     public SimpleMatrix[] calculatePFromEssential(SimpleMatrix essentialMatrix) {
         
-        SimpleSVD svd = essentialMatrix.svd();
+        SimpleSVD<SimpleMatrix> svd = essentialMatrix.svd();
         
         SimpleMatrix v = svd.getV();
         double val = svd.getU().dot(v);

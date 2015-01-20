@@ -1,8 +1,10 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.SimpleLinkedListNode;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -448,4 +450,114 @@ public class DFSContiguousValueFinder {
         }
         return a;
     }
+
+    public void findGroupsNotThisValue(int pixelValue, 
+        Map<Integer, PairInt> rowColPerimeter, int[] rowMinMax) {
+        
+        notValue = true;
+        
+        initializeVariables();
+        
+        findClustersWithinPerimeter(pixelValue, rowColPerimeter, rowMinMax);
+        
+        prune();
+     
+    }
+
+    private void findClustersWithinPerimeter(int pixelValue, 
+        Map<Integer, PairInt> rowColPerimeter, int[] rowMinMax) {
+            
+        // 0 = unvisited, 1 = processing, 2 = visited
+        color = new int[img.getNPixels()];
+        
+        int width = img.getWidth();
+        
+        /*
+        looking for pixelValue or !pixelValue groups within the region
+        bounded by rowColPerimeter.
+        
+        placing every pixel within the bounds of rowColPerimeter into a stack
+        and using dfs pattern to visit the nodes and determine if they
+        are part of the defined group.
+        */
+        
+        java.util.Stack<Integer> stack = new java.util.Stack<Integer>();
+        
+        //O(N)
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {            
+            PairInt colRange = rowColPerimeter.get(Integer.valueOf(row));
+            for (int col = colRange.getX(); col <= colRange.getY(); col++) {
+                
+                int uIndex = img.getIndex(col, row);
+                
+                stack.add(Integer.valueOf(uIndex));
+            }
+        }
+               
+        color[stack.peek().intValue()] = 2;
+
+        while (!stack.isEmpty()) {
+
+            int uIndex = stack.pop().intValue();
+            
+            int uPixValue = img.getValue(uIndex);
+            
+            if ((notValue && (uPixValue == pixelValue)) ||
+                (!notValue && (uPixValue != pixelValue))) {
+                
+                color[uIndex] = 2;
+                continue;
+            }
+            
+            /*
+            note to speed this up a little, have copied out the index to
+            row and col relationship from GreyscaleImage.
+            */            
+            int uY = uIndex/width;
+            int uX = uIndex - (uY * width);
+
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
+            for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
+                
+                if ((vY < rowMinMax[0]) || (vY > rowMinMax[1])) {
+                    continue;
+                }
+                
+                PairInt colRange = rowColPerimeter.get(Integer.valueOf(vY));
+                
+                for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
+                                        
+                    if ((vX < colRange.getX()) || (vX > colRange.getY())) {
+                        continue;
+                    }
+                    
+                    int vIndex = (vY * width) + vX;
+                    
+                    if (color[vIndex] != 0 || (uIndex == vIndex)) {
+                        continue;
+                    }
+                    
+                    //TODO: could consider not allowing diagonal connections
+                    
+                    color[vIndex] = 2;
+                
+                    int vPixValue = img.getValue(vIndex);
+            
+                    if ((notValue && (vPixValue == pixelValue)) ||
+                        (!notValue && (vPixValue != pixelValue))) {
+                        
+                        continue;
+                    }
+                    
+                    processPair(uIndex, vIndex);
+                
+                    // inserting back at the top of the stack assures that the 
+                    // search continues next from an associated point
+                    stack.add(Integer.valueOf(vIndex));
+                }
+            }
+        }
+    }
+    
 }

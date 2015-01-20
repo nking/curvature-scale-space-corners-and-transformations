@@ -77,6 +77,19 @@ public class MatrixUtil {
         return c;
     }
     
+    public static void add(int[] m, int n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        
+        int len = m.length;
+             
+        for (int i = 0; i < len; i++) {
+            m[i] += n;
+        }
+    }
+    
     public static double[] multiply(double[][] m, double[] n) {
 
         if (m == null || m.length == 0) {

@@ -86,6 +86,29 @@ public class ImageStatisticsHelper {
                 
         return new float[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};
     }
+    
+    public static int[] getQuartiles(int[] a) {
+        
+        int[] c = Arrays.copyOf(a, a.length);
+        
+        Arrays.sort(c);
+        
+        /*
+                      median
+             min        .         max
+               .        .         .
+               .   |    .    |    .
+                q1   q2   q3   q4
+        */
+        
+        int medianIdx = c.length >> 1;
+        
+        int q12Idx = (medianIdx - 1) >> 1;
+        
+        int q34Idx = (c.length + (medianIdx + 1))/2;
+                
+        return new int[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};
+    }
    
     /**
      * examine the statistics of pixels in a border of width borderWidth
