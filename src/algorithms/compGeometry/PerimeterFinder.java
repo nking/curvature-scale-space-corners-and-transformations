@@ -203,13 +203,6 @@ public class PerimeterFinder {
         double[] xyCen = curveHelper.calculateXYCentroids(xHull, yHull);
             
         /*
-                 @
-         @
-             
-                        @
-            
-              @
-            
          walk the hulls and fill in each row's start or stopCol between
          it and next point
          */
@@ -249,13 +242,7 @@ public class PerimeterFinder {
                 }
             }
         }
-/*
-                   0  1 2 3 4 5 6
-         row 0:    .  . . @ . . @ @ @ @
-         row 1:    .  . . . . . . . . .
-         row 2:    .  @ . . @ . . . . .
-         row 3:    @  . . @ . . @ . . .                  
-        */
+
         // assert that all are filled
         for (int i = 0; i < startCols.length; i++) {
             if (startCols[i] == -1 || stopCols[i] == -1) {

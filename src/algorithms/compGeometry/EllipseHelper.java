@@ -333,9 +333,8 @@ public class EllipseHelper {
     }
     
     /**
-     * compute the residuals of (xP,yP) from an ellipse described by
-     * the given parameters where the residuals are in the transformed
-       reference frame (rotated by -alpha)
+     * compute the statistics of the residuals of (xP,yP) from an ellipse 
+     * described by the given parameters.
     
      * @param xP
      * @param yP

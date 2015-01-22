@@ -3666,6 +3666,11 @@ try {
         EllipseHelper ellipseHelper = new EllipseHelper();
         double[] params = ellipseHelper.fitEllipseToPoints(yellowPoints);
         
+        if (params == null) {
+            // not close to an ellipse
+            return;
+        }
+        
         float xc = (float)params[0];
         float yc = (float)params[1];
         float a = (float)params[2];
