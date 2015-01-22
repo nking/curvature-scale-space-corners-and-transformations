@@ -167,6 +167,18 @@ public class PerimeterFinder {
         return rowColRange;
     }
 
+    /**
+     * given the convex hull, populate start and stop columns for each row
+     * between the minimum and maximum rows.  Note that the method expects
+     * a hull ordered clockwise and having the same first and last point
+     * (these characteristics are present in the hull created by GrahamScan).
+     * @param xHull
+     * @param yHull
+     * @param minY
+     * @param maxY
+     * @param startCols
+     * @param stopCols 
+     */
     private void populateStartAndStopColsForAllRows(float[] xHull, float[] yHull, 
         int minY, int maxY, float[] startCols, float[] stopCols) {
         
