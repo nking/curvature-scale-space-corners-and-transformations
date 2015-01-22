@@ -2,6 +2,9 @@ package algorithms.compGeometry;
 
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageDisplayer;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
@@ -197,29 +200,35 @@ public class PerimeterFinder {
         
         Arrays.fill(startCols, -1);
         Arrays.fill(stopCols, -1);
-            
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        double[] xyCen = curveHelper.calculateXYCentroids(xHull, yHull);
-            
+       
         /*
          walk the hulls and fill in each row's start or stopCol between
-         it and next point
+         it and next point.
+
+         NOTE: the hull created by GrahamScan is ordered clockwise and includes
+         the same first and last point.
          */
-        
+
+        boolean onRightHull = true;
+
         for (int hIdx = 0; hIdx < (xHull.length - 1); hIdx++) {
 
+            int compIdx = (hIdx + 1);
+            
             float xh = xHull[hIdx];
             float yh = yHull[hIdx];
 
             int yi = Math.round(yh);
-            int yj = Math.round(yHull[hIdx + 1]);
+            int yj = Math.round(yHull[compIdx]);
+            
+            if (yi == maxY) {
+                onRightHull = false;
+            }
+            
             int nRows = Math.abs(yj - yi) + 1;
-
-            boolean toLeft = (xh <= xyCen[0]);
-
+            
             float dx = (nRows == 1) ? 0 :
-                (xHull[hIdx + 1] - xh) / (float) (nRows - 1);
+                (xHull[compIdx] - xh) / (float) (nRows - 1);
 
             float xStart = xh;
             
@@ -228,21 +237,21 @@ public class PerimeterFinder {
                 yi = yj;
                 yj = swap;
                 dx *= -1;
-                xStart = xHull[hIdx + 1];
+                xStart = xHull[compIdx];
             }
             
             for (int row = yi; row <= yj; row++) {
                 int nr = row - yi;
                 float x = xStart + (nr * dx);
                 int idx = row - minY;
-                if (toLeft) {
-                    startCols[idx] = x;
-                } else {
+                if (onRightHull) {
                     stopCols[idx] = x;
+                } else {
+                    startCols[idx] = x;
                 }
             }
         }
-
+        
         // assert that all are filled
         for (int i = 0; i < startCols.length; i++) {
             if (startCols[i] == -1 || stopCols[i] == -1) {

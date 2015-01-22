@@ -3218,6 +3218,8 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
             // find contiguous zeros            
             growZeroValuePoints(skyPoints, gXY2);
             
+            //TODO: estimate use of PerimeterFinder vs convex hull + point in polygon
+            // within min and max ranges
             PerimeterFinder finder = new PerimeterFinder();
             
             int[] rowMinMax = new int[2];
