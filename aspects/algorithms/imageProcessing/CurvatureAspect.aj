@@ -8,6 +8,7 @@ import algorithms.misc.*;
 import java.awt.Color;
 import java.util.*;
 import java.util.Map.Entry;
+import org.ejml.ops.*;
 
 /**
 class to create debugging output from the main source code

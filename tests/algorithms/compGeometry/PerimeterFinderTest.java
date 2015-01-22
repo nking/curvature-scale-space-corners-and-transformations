@@ -116,7 +116,7 @@ public class PerimeterFinderTest extends TestCase {
         
         PairIntArray points = new PairIntArray();
         /*
-                   0  1 2 3 4 5 6
+                   0  1 2 3 4 5 6 7 8 9
          row 0:    .  . . @ . . @ @ @ @
          row 1:    .  . . . . . . . . .
          row 2:    .  @ . . @ . . . . .
@@ -156,12 +156,12 @@ public class PerimeterFinderTest extends TestCase {
         cb = rowColBounds.get(Integer.valueOf(1));
         assertNotNull(cb);
         assertTrue(cb.getX() == 2);
-        assertTrue(cb.getY() == 6);
+        assertTrue(cb.getY() == 8);
         
         cb = rowColBounds.get(Integer.valueOf(2));
         assertNotNull(cb);
         assertTrue(cb.getX() == 1);
-        assertTrue(cb.getY() == 4);
+        assertTrue(cb.getY() == 7);
         
         //=============================================================
         Set<PairInt> points2 = new HashSet<PairInt>();
@@ -199,11 +199,12 @@ public class PerimeterFinderTest extends TestCase {
         cb = rowColBounds.get(Integer.valueOf(1));
         assertNotNull(cb);
         assertTrue(cb.getX() == 2);
-        assertTrue(cb.getY() == 6);
+        assertTrue(cb.getY() == 8);
         
         cb = rowColBounds.get(Integer.valueOf(2));
         assertNotNull(cb);
         assertTrue(cb.getX() == 1);
-        assertTrue(cb.getY() == 4);
+        assertTrue(cb.getY() == 7);
+        
     }
 }

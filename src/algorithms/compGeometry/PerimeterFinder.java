@@ -1,14 +1,14 @@
 package algorithms.compGeometry;
 
+import algorithms.compGeometry.convexHull.GrahamScan;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -34,8 +34,8 @@ public class PerimeterFinder {
         int minY = Integer.MAX_VALUE;
         int maxY = Integer.MIN_VALUE;
         
-        Map<Integer, List<Integer> > rowCols = new 
-            HashMap<Integer, List<Integer> >();
+        float[] xP = new float[points.getN()];
+        float[] yP = new float[points.getN()];
         
         // O(N)
         for (int i = 0; i < points.getN(); i++) {
@@ -49,21 +49,14 @@ public class PerimeterFinder {
                 maxY = y;
             }
             
-            Integer row = Integer.valueOf(y);
-            
-            List<Integer> cols = rowCols.get(row);
-            if (cols == null) {
-                cols = new ArrayList<Integer>();
-            }
-            cols.add(Integer.valueOf(x));
-            
-            rowCols.put(row, cols);
+            xP[i] = x;
+            yP[i] = y;
         }
         
         outputRowMinMax[0] = minY;
         outputRowMinMax[1] = maxY;
         
-        return find(outputRowMinMax, rowCols);
+        return find(outputRowMinMax, xP, yP);
     }
     
     /**
@@ -83,9 +76,10 @@ public class PerimeterFinder {
         int minY = Integer.MAX_VALUE;
         int maxY = Integer.MIN_VALUE;
         
-        Map<Integer, List<Integer> > rowCols = new 
-            HashMap<Integer, List<Integer> >();
-        
+        float[] xP = new float[points.size()];
+        float[] yP = new float[points.size()];
+            
+        int i = 0;
         // O(N)
         for (PairInt p : points) {
             
@@ -98,105 +92,176 @@ public class PerimeterFinder {
                 maxY = y;
             }
             
-            Integer row = Integer.valueOf(y);
-            
-            List<Integer> cols = rowCols.get(row);
-            if (cols == null) {
-                cols = new ArrayList<Integer>();
-            }
-            cols.add(Integer.valueOf(x));
-            
-            rowCols.put(row, cols);
+            xP[i] = x;
+            yP[i] = y;
+            i++;
         }
         
         outputRowMinMax[0] = minY;
         outputRowMinMax[1] = maxY;
         
-        return find(outputRowMinMax, rowCols);
+        return find(outputRowMinMax, xP, yP);
     }
     
-    protected Map<Integer, PairInt> find(int[] minMax, 
-        Map<Integer, List<Integer> > rowCols) {
+    protected Map<Integer, PairInt> find(int[] minMax, float[] xP, float[] yP) {
+        
+        if (xP == null) {
+	    	throw new IllegalArgumentException("xP cannot be null");
+        }
+	    if (yP == null) {
+	    	throw new IllegalArgumentException("yP cannot be null");
+        }
+        if (minMax == null) {
+	    	throw new IllegalArgumentException("minMax cannot be null");
+        }
+                
+        Map<Integer, PairInt> rowColRange = new HashMap<Integer, PairInt>();
         
         int minY = minMax[0];
         int maxY = minMax[1];
         
-        // first find min and max cols for each row, then interpolate those
-        // for missing rows
-        Map<Integer, PairInt> rowColRange = new HashMap<Integer, PairInt>();
-        
-        Iterator<Entry<Integer, List<Integer> > > iter = rowCols.entrySet().iterator();
-        
-        // a little more than O(N)
-        while (iter.hasNext()) {
-            Entry<Integer, List<Integer> > entry = iter.next();
-            Integer row = entry.getKey();
-            List<Integer> cols = entry.getValue();
-            Collections.sort(cols);
+        try {
             
-            PairInt colRange = new PairInt(cols.get(0).intValue(),
-                cols.get(cols.size() - 1));
-            
-            rowColRange.put(row, colRange);
-        }
+            GrahamScan scan = new GrahamScan();
+            scan.computeHull(xP, yP);
         
-        // a little more than O(N)
-        
-        // find missing rows and interpolate with the surrounding rows
-        for (int rowIdx = (minY + 1); rowIdx < maxY; rowIdx++) {
+            float[] xHull = scan.getXHull();
+            float[] yHull = scan.getYHull();
             
-            Integer row = Integer.valueOf(rowIdx);
+            int len = (maxY - minY) + 1;
             
-            if (!rowColRange.containsKey(row)) {
+            // the indexes correspond to idx + yMin so that the first is for yMin
+            float[] startCols = new float[len];
+            float[] stopCols = new float[len];
+            
+            populateStartAndStopColsForAllRows(xHull, yHull, minY, maxY, 
+                startCols, stopCols);
+            
+            for (int i = 0; i < startCols.length; i++) {
+                int startCol = Math.round(startCols[i]);
+                int stopCol = Math.round(stopCols[i]);
+                PairInt p = new PairInt(startCol, stopCol);
                 
-                // previous row will already have been filled
-                Integer prevRow = Integer.valueOf(rowIdx - 1);
-                Integer nextRow = null;
+                Integer row = Integer.valueOf(i + minY);
                 
-                for (int nextRowIdx = (rowIdx + 1); nextRowIdx <= maxY; 
-                    nextRowIdx++) {
-                    
-                    nextRow = Integer.valueOf(nextRowIdx);
-                    
-                    if (rowColRange.containsKey(nextRow)) {
-                        break;
-                    }
-                }
-                
-                PairInt prevColRange = rowColRange.get(prevRow);
-                PairInt nextColRange = rowColRange.get(nextRow);
-                int nRows = nextRow.intValue() - prevRow.intValue() + 1;
-                
-                for (int r = rowIdx; r < nextRow.intValue(); r++) {
-                    
-                    /*
-                     row 0:    @  . . @ . . @ . .
-                     row 1:    .  . . . . . . . .
-                     row 2:    .  . . . . . . . .
-                     row 3:    .  @ . . . . . @ .                    
-                    */
-                    float deltaStart = (nextColRange.getX() - 
-                        prevColRange.getX())/(float)(nRows - 1);
-                    
-                    int nR = r - prevRow.intValue();
-                    
-                    int cStart = (int)(prevColRange.getX() + (nR * deltaStart));
-                    
-                    float deltaStop = (nextColRange.getY() - 
-                        prevColRange.getY())/(float)(nRows - 1);
-                    
-                    int cStop = (int)(prevColRange.getY() + (nR * deltaStop));
-                    
-                    PairInt colRange = new PairInt(cStart, cStop);
-                    
-                    rowColRange.put(Integer.valueOf(r), colRange);
-                }
-                
-                // skip past the next row
-                rowIdx = nextRow.intValue();
+                rowColRange.put(row, p);
             }
+            
+        } catch(GrahamScanTooFewPointsException e) {
+            
+            int minX = Math.round(MiscMath.findMin(xP));
+            int maxX = Math.round(MiscMath.findMax(xP));
+            
+            for (int row = minY; row <= maxY; row++) {
+                Integer r = Integer.valueOf(row);
+                PairInt p = new PairInt(minX, maxX);
+                rowColRange.put(r, p);
+            }
+            
+            return rowColRange;
         }
         
         return rowColRange;
+    }
+
+    private void populateStartAndStopColsForAllRows(float[] xHull, float[] yHull, 
+        int minY, int maxY, float[] startCols, float[] stopCols) {
+        
+        if (xHull == null) {
+            throw new IllegalArgumentException("xHull cannot be null");
+        }
+        if (yHull == null) {
+            throw new IllegalArgumentException("yHull cannot be null");
+        }
+        if (startCols == null) {
+            throw new IllegalArgumentException("startCols cannot be null");
+        }
+        if (stopCols == null) {
+            throw new IllegalArgumentException("stopCols cannot be null");
+        }
+        if (xHull.length != yHull.length) {
+            throw new IllegalArgumentException(
+            "xHull and yHull must have same length");
+        }
+        if (stopCols.length != startCols.length) {
+            throw new IllegalArgumentException(
+            "stopCols and startCols must have same length");
+        }
+        
+        int len = (maxY - minY) + 1;
+        
+        if (startCols.length != len) {
+            throw new IllegalArgumentException(
+            "startCols length is expected to be " + len + " from minY and maxY");
+        }
+        
+        Arrays.fill(startCols, -1);
+        Arrays.fill(stopCols, -1);
+            
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double[] xyCen = curveHelper.calculateXYCentroids(xHull, yHull);
+            
+        /*
+                 @
+         @
+             
+                        @
+            
+              @
+            
+         walk the hulls and fill in each row's start or stopCol between
+         it and next point
+         */
+        
+        for (int hIdx = 0; hIdx < (xHull.length - 1); hIdx++) {
+
+            float xh = xHull[hIdx];
+            float yh = yHull[hIdx];
+
+            int yi = Math.round(yh);
+            int yj = Math.round(yHull[hIdx + 1]);
+            int nRows = Math.abs(yj - yi) + 1;
+
+            boolean toLeft = (xh <= xyCen[0]);
+
+            float dx = (nRows == 1) ? 0 :
+                (xHull[hIdx + 1] - xh) / (float) (nRows - 1);
+
+            float xStart = xh;
+            
+            if (yj < yi) {
+                int swap = yi;
+                yi = yj;
+                yj = swap;
+                dx *= -1;
+                xStart = xHull[hIdx + 1];
+            }
+            
+            for (int row = yi; row <= yj; row++) {
+                int nr = row - yi;
+                float x = xStart + (nr * dx);
+                int idx = row - minY;
+                if (toLeft) {
+                    startCols[idx] = x;
+                } else {
+                    stopCols[idx] = x;
+                }
+            }
+        }
+/*
+                   0  1 2 3 4 5 6
+         row 0:    .  . . @ . . @ @ @ @
+         row 1:    .  . . . . . . . . .
+         row 2:    .  @ . . @ . . . . .
+         row 3:    @  . . @ . . @ . . .                  
+        */
+        // assert that all are filled
+        for (int i = 0; i < startCols.length; i++) {
+            if (startCols[i] == -1 || stopCols[i] == -1) {
+                throw new IllegalStateException(
+                "walk the hull to fill start and stop is not yet correct");
+            }
+        }
     }
 }

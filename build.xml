@@ -201,6 +201,7 @@
             </argfiles>
             <inpath>
                 <pathelement location="${src.out.dir}"/>
+                <pathelement location="${lib.dir}/ejml-0.25.jar"/>
             </inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
@@ -270,6 +271,7 @@
             </argfiles>
         	<inpath>
         		<pathelement location="${src.out.dir}"/>
+                <pathelement location="${lib.dir}/ejml-0.25.jar"/>
         	</inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
@@ -326,6 +328,7 @@
             </argfiles>
         	<inpath>
         	    <pathelement location="${src.out.dir}"/>
+                <pathelement location="${lib.dir}/ejml-0.25.jar"/>
         	</inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>

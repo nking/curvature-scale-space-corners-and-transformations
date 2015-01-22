@@ -1,5 +1,6 @@
 package algorithms.compGeometry;
 
+import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
 import java.util.logging.Logger;
 import org.ejml.data.DenseMatrix64F;
@@ -13,6 +14,7 @@ import org.ejml.simple.*;
 public class EllipseHelper {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
+    
     /**
      <pre>
      adapted from:
@@ -187,6 +189,7 @@ public class EllipseHelper {
         if (kmin == -1) {
             // not an ellipse, or my port to java is wrong
             log.severe("not an ellipse, or error in my port to java?");
+            return null;
         }
         
         SimpleMatrix y1 = vMatrix.extractVector(false, kmin);
@@ -315,6 +318,88 @@ public class EllipseHelper {
         double z0 = z.get(0, 0);
         double z1 = z.get(1, 0);
         
+        /*
+        TODO: check this
+        making a correction for aParam < bParam
+        */
+        if (aParam < bParam) {
+            double swap = aParam;
+            aParam = bParam;
+            bParam = swap;
+            alpha += (Math.PI/2.);
+        }
+        
         return new double[]{z0, z1, aParam, bParam, alpha};
     }
+    
+    /**
+     * compute the residuals of (xP,yP) from an ellipse described by
+     * the given parameters where the residuals are in the transformed
+       reference frame (rotated by -alpha)
+    
+     * @param xP
+     * @param yP
+     * @param xCenterParam
+     * @param yCenterParam
+     * @param aParam
+     * @param bParam
+     * @param alphaParam
+     * @return new double[avgResid, stDevResid]
+     */
+    public double[] calculateEllipseResidualStats(float[] xP, float[] yP, 
+        float xCenterParam, float yCenterParam, float aParam, float bParam, 
+        float alphaParam) {
+        
+        if (bParam >= aParam) {
+            throw new IllegalArgumentException("for an ellipse, a < b");
+        }
+        
+        double[][] translated = new double[xP.length][];
+        for (int row = 0; row < xP.length; row++) {
+            translated[row] = new double[]{xP[row] - xCenterParam, 
+                yP[row] - yCenterParam};
+        }
+  
+        double sine = Math.sin(alphaParam);
+        double cosine = Math.cos(alphaParam);
+        
+        SimpleMatrix q = new SimpleMatrix(2, 2);
+        q.setRow(0, 0, cosine, -1*sine);
+        q.setRow(1, 0, sine, cosine);
+  
+        SimpleMatrix transformed = (new SimpleMatrix(translated)).mult(q);
+                
+        // c^2 = a^2 - b^2 and focii are at (+-c, 0)
+        double c = Math.sqrt(aParam*aParam - bParam*bParam);
+        
+        double[] resid = new double[xP.length];
+                
+        for (int row = 0; row < xP.length; row++) {
+            
+            double xPoint = transformed.get(row, 0);
+            double yPoint = transformed.get(row, 1);
+            
+            /*
+            compute the residual as the difference between 
+            the point to the 2 foci (+-c, 0) and the value 2*a.
+            2*a = dist to F1 + dist to F2 for any point on the ellipse
+            */
+            
+            double diffX1 = xPoint - c;
+            double diffX0 = xPoint - -c;
+                        
+            double distF1 = Math.sqrt(diffX1*diffX1 + yPoint*yPoint);
+            
+            double distF0 = Math.sqrt(diffX0*diffX0 + yPoint*yPoint);
+            
+            double residSum = 2.*aParam - (distF1 + distF0);
+                        
+            resid[row] = residSum;
+        }
+        
+        double[] avgStdDev = MiscMath.getAvgAndStDev(resid);
+                
+        return new double[]{avgStdDev[0], avgStdDev[1]};
+    }
+    
 }

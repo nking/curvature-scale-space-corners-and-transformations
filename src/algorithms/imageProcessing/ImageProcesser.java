@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.EllipseHelper;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.imageProcessing.util.MatrixUtil;
@@ -11,7 +12,9 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.Errors;
 import algorithms.util.PairFloat;
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
+import java.awt.Color;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -864,8 +867,6 @@ public class ImageProcesser {
             return mask;
         }
         
-       
-        
         /*
         //TODO:  this needs to be improved as soon as the rest of the
         //       algorithm is finished.
@@ -908,11 +909,7 @@ public class ImageProcesser {
         }
         
         Set<PairInt> points = combine(zeroPointLists);
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        //double[] xyMedian0 = curveHelper.calculateXYMedian(zeroPointLists.get(0));
-        
-        //TODO: rename. this method populates "points" 
+                
         int valueToSubtract = extractSkyFromGradientXY(gXYImg, points);
         
         if (binFactor > 1) {
@@ -922,9 +919,17 @@ public class ImageProcesser {
             gXYImg = gradientXY;
             
             points = unbinZeroPointLists(points, binFactor);
-            
+                        
             //TODO:  correct for resolution, but using a gradientXY minus
             // valueToSubtract
+            
+            Image clr = originalColorImage.copyImage();
+            
+            findSunAndAddToSkyPoints(points, clr);
+            ImageDisplayer.displayImage("filtered by hue", clr);
+            
+            //removeConnectedClouds(points, clr);
+            
 /*        
 Image img1 = theta.createWithDimensions().copyImageToGreen();
 ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
@@ -945,7 +950,6 @@ ImageDisplayer.displayImage("added missing zeros", img1);
         avgYRGB = calculateYRGB(zeroPointLists.get(0), originalColorImage,
              theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
              makeCorrectionsAlongX, convDispl);
- 
         */
         
         //gradientXY = subtractThresholdLevel(gradientXY);
@@ -967,6 +971,8 @@ ImageDisplayer.displayImage("added missing zeros", img1);
         //GreyscaleImage mask = growPointsToSkyline(points, originalColorImage, 
         //    theta, avgYRGB, makeCorrectionsAlongX, convDispl);
        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
         double[] xycen = curveHelper.calculateXYCentroids(points);
  
         outputSkyCentroid.add((int)Math.round(xycen[0]), (int)Math.round(xycen[1]));
@@ -3303,8 +3309,6 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                     // entirely sky, and will revert the subtraction if it's
                     // too much
                     
-                    // get the max within embedded.  if it's value + subtracted
-                    // is not too near the max, gXYValues.getX(0)
                     int maxValue = Integer.MIN_VALUE;
                     for (PairInt p : embeddedPoints) {
                         int x = p.getX();
@@ -3318,6 +3322,10 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                     float fractionOfMax = 0.5f * (gXYValues.getX(0) - subtract);
                     
                     if ((maxValue > Float.MIN_VALUE) && (maxValue < fractionOfMax)) {
+                        
+                        if ((nIter == 0) && (subtract == 0) && (maxValue > 1)) {
+                            maxValue--;
+                        }
                         
                         Set<PairInt> prevSkyPoints = new HashSet<PairInt>();
                         prevSkyPoints.addAll(skyPoints);
@@ -3598,4 +3606,163 @@ try {
         return unbounded;
     }
 
+    private void findSunAndAddToSkyPoints(Set<PairInt> skyPoints, Image clr) {
+        
+        // gather yellow points within bounds of or connected to sky and
+        // place them in an array to test the shape
+        // and if circular, add them and the enclosed points to skyPoints
+        
+        PairFloatArray cloudPoints = new PairFloatArray();
+        
+        PairFloatArray yellowPoints = new PairFloatArray();
+        
+        for (PairInt p : skyPoints) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    
+                    int xx = x + dx;
+                    int yy = y + dy;
+                    
+                    if ((xx < 0) || xx > (clr.getWidth() - 1)) {
+                        continue;
+                    }
+                    if ((yy < 0) || yy > (clr.getHeight() - 1)) {
+                        continue;
+                    }
+                    
+                    int r = clr.getR(xx, yy);
+                    int g = clr.getG(xx, yy);
+                    int b = clr.getB(xx, yy);
+
+                    // all normalized from 0 to 1
+                    float[] hsb = new float[3];
+                    Color.RGBtoHSB(r, g, b, hsb);
+
+                    float h2 = hsb[0] * 360.f;
+                    float s2 = hsb[1] * 100.f;
+                    if ((h2 > 40) && (h2 <= 60)) {
+                        if (s2 > 56) {
+                            yellowPoints.add(xx, yy);
+                        }
+                    } else if (!skyPoints.contains(new PairInt(xx, yy)) &&
+                    ((h2 > 0) && (h2 <= 60)) || ((h2 > 350) && (h2 <= 360))) {
+                        if (s2 > 56) {
+                            //cloudPoints.add(xx, yy);
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (yellowPoints.getN() < 6) {
+            return;
+        }
+        
+        //fit ellipse to yellowPoints
+        EllipseHelper ellipseHelper = new EllipseHelper();
+        double[] params = ellipseHelper.fitEllipseToPoints(yellowPoints);
+        
+        float xc = (float)params[0];
+        float yc = (float)params[1];
+        float a = (float)params[2];
+        float b = (float)params[3];
+        float alpha = (float)params[4];
+        
+        if (((a/b) - 1) < 0.1) {
+            // looks like a circle
+            // add yellow points and all points internal to perimeter, to the sky points
+            PerimeterFinder finder = new PerimeterFinder();
+            int[] rowMinMax = new int[2];
+            Map<Integer, PairInt> rowColRange = finder.find(
+                yellowPoints.toPairIntArray(), rowMinMax);
+            for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
+                PairInt cRange = rowColRange.get(Integer.valueOf(row));
+                int colStart = cRange.getX();
+                int colStop = cRange.getY();
+                for (int col = colStart; col <= colStop; col++) {
+                    PairInt p = new PairInt(col, row);
+                    if (skyPoints.contains(p)) {
+                    //    continue;
+                    }
+                        
+                    int rr = clr.getR(col, row);
+                    int gg = clr.getG(col, row);
+                    int bb = clr.getB(col, row);
+
+                    // all normalized from 0 to 1
+                    float[] hsb = new float[3];
+                    Color.RGBtoHSB(rr, gg, bb, hsb);
+
+                    float h2 = hsb[0] * 360.f;
+                    float s2 = hsb[1] * 100.f;
+                     
+                    if (((h2 > 0) && (h2 <= 65)) || 
+                        ((hsb[2] > 0.7) && (h2 >= 275) && (h2 <= 360))
+                        || ((hsb[2] > 0.7) && (h2 == 0))
+                        || ((hsb[2] > 0.9) && (h2 < 75))
+                        || ((hsb[2] > 0.9) && (h2 >= 260) && (h2 <= 360))
+                    ) {
+                        //if (s2 > 56) {
+                            yellowPoints.add(col, row);
+                            skyPoints.add(p);
+                        //}
+                    } else {
+                        int z = 1;
+                    }
+                }
+            }
+        }
+        
+        //double[] stats = ellipseHelper.calculateEllipseResidualStats(
+        //    yellowPoints.getX(), yellowPoints.getY(), xc, yc, a, b, alpha);
+
+try {
+    Image img1 = clr.copyImage();
+    ImageIOHelper.addToImage(yellowPoints.getX(), yellowPoints.getY(), 
+        img1, 1, 0, 0, 255);
+    ImageIOHelper.addToImage(cloudPoints.getX(), cloudPoints.getY(), 
+        img1, 1, 0, 255, 0);
+    ImageDisplayer.displayImage("yellow and cloud points", img1);
+} catch (IOException ex) {
+    log.severe(ex.getMessage());
+}
+
+        // if a is approx equal to b, then it's a circle
+        // if it's occluded, by the horizon, for example, the might see
+        // a large
+        int z = 1;
+        
+    }
+
+    private void removeSnowPoints(Set<PairInt> skyPoints, Image clr) {
+        
+        for (PairInt p : skyPoints) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+if (y < 230) {
+    continue;
+}
+         
+            int r = clr.getR(x, y);
+            int g = clr.getG(x, y);
+            int b = clr.getB(x, y);
+
+            // all normalized from 0 to 1
+            float[] hsb = new float[3];
+            Color.RGBtoHSB(r, g, b, hsb);
+
+            float h2 = hsb[0] * 360.f;
+            float s2 = hsb[1] * 100.f;
+            
+            if ((h2 > 57) && (h2 < 65) && (s2 < 50)) {
+                
+            }
+        }
+    }
 }

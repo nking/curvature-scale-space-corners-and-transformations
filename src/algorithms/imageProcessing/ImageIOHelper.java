@@ -779,5 +779,30 @@ public class ImageIOHelper {
             }
         }
     }
+
+    public static void addToImage(float[] xP, float[] yP, Image input,
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (xP == null || yP == null || input == null) {
+            return;
+        }
+        
+        for (int i = 0; i < xP.length; i++) {
+            int x = Math.round(xP[i]);
+            int y = Math.round(yP[i]);
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                float xx = x + dx;
+                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
+                        float yy = y + dy;
+                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+    }
     
 }

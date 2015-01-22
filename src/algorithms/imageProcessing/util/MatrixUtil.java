@@ -173,7 +173,7 @@ public class MatrixUtil {
         double[][] c = new double[mrows][];
         
         for (int row = 0; row < mrows; row++) {
-            c[row] = new double[mcols];
+            c[row] = new double[ncols];
             for (int ncol = 0; ncol < ncols; ncol++) {
                 double sum = 0;                
                 for (int mcol = 0; mcol < mcols; mcol++) {

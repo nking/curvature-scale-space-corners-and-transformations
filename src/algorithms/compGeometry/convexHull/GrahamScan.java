@@ -49,16 +49,16 @@ public class GrahamScan {
     public void computeHull(float[] x, float[] y) throws GrahamScanTooFewPointsException {
 
         if (x == null) {
-	    	throw new IllegalArgumentException("xArray cannot be null");
+	    	throw new IllegalArgumentException("x cannot be null");
         }
 	    if (y == null) {
-	    	throw new IllegalArgumentException("yArray cannot be null");
+	    	throw new IllegalArgumentException("y cannot be null");
         }
 	    if (x.length != y.length) {
-	    	throw new IllegalArgumentException("xArray must have the same number of items as yArray");
+	    	throw new IllegalArgumentException("x must have the same number of items as y");
         }
 	    if (x.length < 3) {
-	        throw new IllegalArgumentException("xArray must have at least 3 items");
+	        throw new IllegalArgumentException("x must have at least 3 items");
         }
 
         /*
