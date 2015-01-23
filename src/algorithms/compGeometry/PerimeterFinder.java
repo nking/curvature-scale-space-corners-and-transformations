@@ -15,7 +15,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * class to create a map of rows with start and stop column bounds (inclusive)
+ * for each row that bounding the area occupied by given points.
+ * 
  * @author nichole
  */
 public class PerimeterFinder {
@@ -216,9 +218,6 @@ public class PerimeterFinder {
         /*
          walk the hulls and fill in each row's start or stopCol between
          it and next point.
-
-         NOTE: the hull created by GrahamScan is ordered clockwise and includes
-         the same first and last point.
          */
 
         boolean onRightHull = true;

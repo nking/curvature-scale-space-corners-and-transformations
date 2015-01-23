@@ -2,6 +2,9 @@ package algorithms.compGeometry;
 
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.ops.EigenOps;
@@ -40,6 +43,76 @@ public class EllipseHelper {
     }
     
     /**
+     <pre>
+     adapted from:
+        "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
+        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+        files algellipse.m and ellipse_params.m are adapted here.
+     
+       currently uses the algebraic, least square ellipse fit
+       
+     The parameters returned can be used as:
+     x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+     y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+     where t range is 0 ≤ t ≤ 2π
+      </pre>
+     * @param xyPoints
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    public double[] fitEllipseToPoints(PairIntArray xyPoints) {
+        
+        int nPoints = xyPoints.getN();
+        
+        //x*x, x*y, y*y, x, y, 1
+        SimpleMatrix a = new SimpleMatrix(nPoints, 6);
+        for (int row = 0; row < nPoints; row++) {
+            float x = xyPoints.getX(row);
+            float y = xyPoints.getY(row);
+            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);
+        }
+       
+        return fitEllipseToPointsWithAlgLSQ(a);
+    }
+    
+    /**
+     <pre>
+     adapted from:
+        "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
+        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+        files algellipse.m and ellipse_params.m are adapted here.
+     
+       currently uses the algebraic, least square ellipse fit
+       
+     The parameters returned can be used as:
+     x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+     y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+     where t range is 0 ≤ t ≤ 2π
+      </pre>
+     * @param xyPoints
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    public double[] fitEllipseToPoints(Set<PairInt> xyPoints) {
+        
+        int nPoints = xyPoints.size();
+        
+        //x*x, x*y, y*y, x, y, 1
+        SimpleMatrix a = new SimpleMatrix(nPoints, 6);
+        int row = 0;
+        for (PairInt p : xyPoints) {
+            float x = p.getX();
+            float y = p.getY();
+            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);
+            row++;
+        }
+       
+        return fitEllipseToPointsWithAlgLSQ(a);
+    }
+    
+    /**
      adapted from:
         "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
         Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
@@ -55,6 +128,34 @@ public class EllipseHelper {
     protected double[] fitEllipseToPointsWithAlgLSQ(PairFloatArray xyPoints) {
         
         int nPoints = xyPoints.getN();
+        
+        //x*x, x*y, y*y, x, y, 1
+        SimpleMatrix a = new SimpleMatrix(nPoints, 6);
+        for (int row = 0; row < nPoints; row++) {
+            float x = xyPoints.getX(row);
+            float y = xyPoints.getY(row);
+            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);
+        }
+       
+        return fitEllipseToPointsWithAlgLSQ(a);
+    }
+    
+    /**
+     adapted from:
+        "Fitting of Circles and Ellipses Least Squares Solution" by Gander, 
+        Golub, & Strebel, 1994 is available from anonymous ftp.inf.ethz.ch 
+        in directory doc/tech-reports/2xx
+        The files begin with 217.* and the list includes matlab source code.
+        files algellipse.m and ellipse_params.m are adapted here.
+     
+       algebraic, least square ellipse fit
+      
+     * @param a
+     * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
+     */
+    protected double[] fitEllipseToPointsWithAlgLSQ(SimpleMatrix a) {
+        
+        int nPoints = a.numRows();
         
         /*
         adapted from:
@@ -87,15 +188,7 @@ public class EllipseHelper {
             ---   --- - F > 0
              4    4*C
         */
-                
-        //x*x, x*y, y*y, x, y, 1
-        SimpleMatrix a = new SimpleMatrix(nPoints, 6);
-        for (int row = 0; row < nPoints; row++) {
-            float x = xyPoints.getX(row);
-            float y = xyPoints.getY(row);
-            a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);
-        }
-       
+   
         SimpleMatrix s = a.transpose().mult(a);
        
         //T = S(1:3,1:3) - S(1:3,4:6)*(S(4:6,4:6)'\S(4:6,1:3));

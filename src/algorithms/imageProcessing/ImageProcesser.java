@@ -920,31 +920,25 @@ public class ImageProcesser {
             
             points = unbinZeroPointLists(points, binFactor);
                         
-            //TODO:  correct for resolution, but using a gradientXY minus
-            // valueToSubtract
-            
-            Image clr = originalColorImage.copyImage();
-            
-            findSunAndAddToSkyPoints(points, clr);
-            ImageDisplayer.displayImage("filtered by hue", clr);
-            
-            //removeConnectedClouds(points, clr);
-            
+            //correct for resolution, with the gradientXY minus valueToSubtract
+            addBackMissingZeros(points, gXYImg, binFactor, valueToSubtract);
+        }
+        
+        findSunAndAddToSkyPoints(points, originalColorImage, 
+            thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset());
 /*        
-Image img1 = theta.createWithDimensions().copyImageToGreen();
-ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
-ImageDisplayer.displayImage("before oversampling corrections", img1);
+Image clr = originalColorImage.copyImage();
+ImageIOHelper.addToImage(points, 
+thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset(), clr);
+ImageDisplayer.displayImage("filtered by hue", clr);
 */
-            int topToCorrect = zeroPointLists.size();
+        //removeConnectedClouds(points, clr);
 
-            //make corrections for resolution:
-            //addBackMissingZeros(zeroPointLists, theta, binFactor, topToCorrect);
 /*
 img1 = theta.createWithDimensions().copyImageToGreen();
 ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
 ImageDisplayer.displayImage("added missing zeros", img1);
 */
-        }
         
         /*
         avgYRGB = calculateYRGB(zeroPointLists.get(0), originalColorImage,
@@ -3361,25 +3355,25 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                          }
                     }
                 }
-/*                
+        
 try {
     Image img1 = gradientXY.copyImageToGreen();
-    ImageIOHelper.addToImage(skyPoints, img1);
-    ImageDisplayer.displayImage("sky points nIter=" + nIter, img1);
-} catch (IOException ex) {
-    log.severe(ex.getMessage());
-}*/
-                break;
-            }
-/*
-try {
-    Image img1 = gradientXY.copyImageToGreen();
-    ImageIOHelper.addToImage(skyPoints, img1);
+    ImageIOHelper.addToImage(skyPoints, 0, 0, img1);
     ImageDisplayer.displayImage("sky points nIter=" + nIter, img1);
 } catch (IOException ex) {
     log.severe(ex.getMessage());
 }
-*/
+                break;
+            }
+
+try {
+    Image img1 = gradientXY.copyImageToGreen();
+    ImageIOHelper.addToImage(skyPoints, 0, 0, img1);
+    ImageDisplayer.displayImage("sky points nIter=" + nIter, img1);
+} catch (IOException ex) {
+    log.severe(ex.getMessage());
+}
+
             nPrevCorrectedEmbeddedGroups0 = nCorrectedEmbeddedGroups;
             prevSubtract0 = subtract;
             prevSkyPoints0 = new HashSet<PairInt>();
@@ -3608,20 +3602,19 @@ try {
         return unbounded;
     }
 
-    private void findSunAndAddToSkyPoints(Set<PairInt> skyPoints, Image clr) {
+    private void findSunAndAddToSkyPoints(Set<PairInt> skyPoints, Image clr,
+        int xOffset, int yOffset) {
         
         // gather yellow points within bounds of or connected to sky and
         // place them in an array to test the shape
         // and if circular, add them and the enclosed points to skyPoints
-        
-        PairFloatArray cloudPoints = new PairFloatArray();
-        
-        PairFloatArray yellowPoints = new PairFloatArray();
+                
+        Set<PairInt> yellowPoints = new HashSet<PairInt>();
         
         for (PairInt p : skyPoints) {
             
-            int x = p.getX();
-            int y = p.getY();
+            int x = p.getX() + xOffset;
+            int y = p.getY() + yOffset;
             
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
@@ -3646,21 +3639,23 @@ try {
 
                     float h2 = hsb[0] * 360.f;
                     float s2 = hsb[1] * 100.f;
-                    if ((h2 > 40) && (h2 <= 60)) {
-                        if (s2 > 56) {
-                            yellowPoints.add(xx, yy);
-                        }
-                    } else if (!skyPoints.contains(new PairInt(xx, yy)) &&
-                    ((h2 > 0) && (h2 <= 60)) || ((h2 > 350) && (h2 <= 360))) {
-                        if (s2 > 56) {
-                            //cloudPoints.add(xx, yy);
-                        }
-                    }
+
+                   // red halo: ((h2 >= 30) && (h2 <= 40) && (s2 > 90) && (hsb[2] > 0.9))
+                   // inward of that: ((h2 > 40) && (h2 <= 60) && (s2 > 35) && (s2 < 60))
+                   if (
+                       ((h2 >= 30) && (h2 <= 40) && (s2 > 90) && (hsb[2] > 0.9))
+                       || ((h2 > 30) && (h2 <= 60) && (s2 > 35)) 
+                       ) {
+                       
+                       PairInt p2 = new PairInt(xx - xOffset, yy - yOffset);
+                       
+                       yellowPoints.add(p2);
+                   }
                 }
             }
         }
         
-        if (yellowPoints.getN() < 6) {
+        if (yellowPoints.size() < 6) {
             return;
         }
         
@@ -3679,13 +3674,17 @@ try {
         float b = (float)params[3];
         float alpha = (float)params[4];
         
-        if (((a/b) - 1) < 0.1) {
+        //TODO: consider no filter for ecc
+        if (((a/b) - 1) < 10) {
             // looks like a circle
             // add yellow points and all points internal to perimeter, to the sky points
+            
             PerimeterFinder finder = new PerimeterFinder();
+            
             int[] rowMinMax = new int[2];
-            Map<Integer, PairInt> rowColRange = finder.find(
-                yellowPoints.toPairIntArray(), rowMinMax);
+            Map<Integer, PairInt> rowColRange = finder.find(yellowPoints, 
+                rowMinMax);
+            
             for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
                 PairInt cRange = rowColRange.get(Integer.valueOf(row));
                 int colStart = cRange.getX();
@@ -3693,8 +3692,11 @@ try {
                 for (int col = colStart; col <= colStop; col++) {
                     PairInt p = new PairInt(col, row);
                     if (skyPoints.contains(p)) {
-                    //    continue;
+                        continue;
                     }
+                    
+                    col += xOffset;
+                    row += yOffset;
                         
                     int rr = clr.getR(col, row);
                     int gg = clr.getG(col, row);
@@ -3706,33 +3708,36 @@ try {
 
                     float h2 = hsb[0] * 360.f;
                     float s2 = hsb[1] * 100.f;
-                     
-                    if (((h2 > 0) && (h2 <= 65)) || 
-                        ((hsb[2] > 0.7) && (h2 >= 275) && (h2 <= 360))
-                        || ((hsb[2] > 0.7) && (h2 == 0))
-                        || ((hsb[2] > 0.9) && (h2 < 75))
-                        || ((hsb[2] > 0.9) && (h2 >= 260) && (h2 <= 360))
+                                  
+                    if (
+                        // if add (s2 > 40), large halo around sun is found
+                        ((rr >= 245/*251*/) && (hsb[2] >= 0.97/*0.98*/) && (s2 < 87))
                     ) {
-                        //if (s2 > 56) {
-                            yellowPoints.add(col, row);
-                            skyPoints.add(p);
-                        //}
+                        
+                        PairInt p2 = new PairInt(col - xOffset, row - yOffset);
+                        
+                        yellowPoints.add(p2);
+                        
                     } else {
                         int z = 1;
                     }
                 }
             }
         }
+                    
+        skyPoints.addAll(yellowPoints);
         
         //double[] stats = ellipseHelper.calculateEllipseResidualStats(
         //    yellowPoints.getX(), yellowPoints.getY(), xc, yc, a, b, alpha);
 
+        
 try {
     Image img1 = clr.copyImage();
-    ImageIOHelper.addToImage(yellowPoints.getX(), yellowPoints.getY(), 
-        img1, 1, 0, 0, 255);
-    ImageIOHelper.addToImage(cloudPoints.getX(), cloudPoints.getY(), 
-        img1, 1, 0, 255, 0);
+    ImageIOHelper.addToImage(yellowPoints, xOffset, yOffset, 
+        img1, 0, 0, 255);
+    //ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, img1);
+    //ImageIOHelper.addToImage(cloudPoints.getX(), cloudPoints.getY(), 
+    //    img1, 1, 0, 255, 0);
     ImageDisplayer.displayImage("yellow and cloud points", img1);
 } catch (IOException ex) {
     log.severe(ex.getMessage());
@@ -3771,5 +3776,55 @@ if (y < 230) {
                 
             }
         }
+    }
+
+    private void addBackMissingZeros(Set<PairInt> zeroPoints,
+        GreyscaleImage gXYImg, int binFactor, int valueToSubtract) {
+        
+        int width = gXYImg.getWidth();
+        int height = gXYImg.getHeight();
+        
+        GreyscaleImage img = gXYImg.copyImage();
+        MatrixUtil.add(img.getValues(), -1*valueToSubtract);
+        
+        Set<PairInt> addPoints = new HashSet<PairInt>();
+        
+        for (PairInt p : zeroPoints) {
+
+            int x = p.getX();
+            int y = p.getY();
+
+            for (int c = (x - binFactor); c <= (x + binFactor); c++) {
+                if ((c < 0) || (c > (width - 1))) {
+                    continue;
+                }
+                for (int r = (y - binFactor); r <= (y + binFactor); r++) {
+                    if ((r < 0) || (r > (height - 1))) {
+                        continue;
+                    }
+                    if ((c == x) && (r == y)) {
+                        continue;
+                    }
+
+                    int neighborIdx = img.getIndex(c, r);
+
+                    Integer index = Integer.valueOf(neighborIdx);
+
+                    if (addPoints.contains(index)) {
+                        continue;
+                    }
+                    if (zeroPoints.contains(index)) {
+                        continue;
+                    }
+
+                    int v = img.getValue(c, r);
+                    if (v == 0) {
+                        addPoints.add(new PairInt(c, r));
+                    }
+                }
+            }
+        }
+        
+        zeroPoints.addAll(addPoints);
     }
 }

@@ -707,8 +707,8 @@ public class ImageIOHelper {
         }
     }
     
-    public static void addToImage(
-        Set<PairInt> points, Image input) throws IOException {
+    public static void addToImage(Set<PairInt> points, int xOffsetToApply, 
+        int yOffsetToApply, Image input) throws IOException {
         
         if (points == null || input == null) {
             return;
@@ -718,13 +718,34 @@ public class ImageIOHelper {
           
         for (PairInt p : points) {
 
-            int col = p.getX();
-            int row = p.getY();
+            int col = p.getX() + xOffsetToApply;
+            int row = p.getY() + yOffsetToApply;
 
             if ((col > -1) && (col < input.getWidth()) &&
                 (row > -1) && (row < input.getHeight())) {
 
                 input.setRGB(col, row, c);
+            }
+        }
+    }
+    
+    public static void addToImage(Set<PairInt> points, int xOffsetToApply, 
+        int yOffsetToApply, Image input, int rClr, int gClr, int bClr) throws 
+        IOException {
+        
+        if (points == null || input == null) {
+            return;
+        }
+                  
+        for (PairInt p : points) {
+
+            int col = p.getX() + xOffsetToApply;
+            int row = p.getY() + yOffsetToApply;
+
+            if ((col > -1) && (col < input.getWidth()) &&
+                (row > -1) && (row < input.getHeight())) {
+
+                input.setRGB(col, row, rClr, gClr, bClr);
             }
         }
     }
@@ -780,7 +801,8 @@ public class ImageIOHelper {
         }
     }
 
-    public static void addToImage(float[] xP, float[] yP, Image input,
+    public static void addToImage(float[] xP, float[] yP, 
+        int xOffsetToApply, int yOffsetToApply, Image input,
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
         if (xP == null || yP == null || input == null) {
@@ -788,8 +810,10 @@ public class ImageIOHelper {
         }
         
         for (int i = 0; i < xP.length; i++) {
-            int x = Math.round(xP[i]);
-            int y = Math.round(yP[i]);
+            
+            int x = Math.round(xP[i]) + xOffsetToApply;
+            
+            int y = Math.round(yP[i]) + yOffsetToApply;
             
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
                 float xx = x + dx;
@@ -805,4 +829,31 @@ public class ImageIOHelper {
         }
     }
     
+    public static void addToImage(int[] xP, int[] yP, 
+        int xOffsetToApply, int yOffsetToApply, Image input,
+        int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (xP == null || yP == null || input == null) {
+            return;
+        }
+        
+        for (int i = 0; i < xP.length; i++) {
+            
+            int x = xP[i] + xOffsetToApply;
+            
+            int y = yP[i] + yOffsetToApply;
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                int xx = x + dx;
+                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
+                        int yy = y + dy;
+                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                            input.setRGB(xx, yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
