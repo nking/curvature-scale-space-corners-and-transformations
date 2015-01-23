@@ -131,9 +131,9 @@ public aspect CurvatureAspect {
     }
 
     after(Set<PairInt> points, GreyscaleImage gradientXY) returning() :
-        execution(private void ImageProcesser.growZeroValuePoints(Set<PairInt>, GreyscaleImage))
+        execution(private void ImageProcessor.growZeroValuePoints(Set<PairInt>, GreyscaleImage))
         && args(points, gradientXY)
-	    && target(algorithms.imageProcessing.ImageProcesser) {
+	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Object[] args = (Object[])thisJoinPoint.getArgs();
         GreyscaleImage gXY = (GreyscaleImage)args[1];
@@ -151,6 +151,30 @@ public aspect CurvatureAspect {
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_gxy_" + outImgNum + ".png", mask);
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+
+    }
+
+    after(Set<PairInt> points, Image clrImage, int xOffset, int yOffset) returning() :
+        execution(private void ImageProcessor.findSunAndAddToSkyPoints(Set<PairInt>, Image, int, int))
+        && args(points, clrImage, xOffset, yOffset)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Object[] args = (Object[])thisJoinPoint.getArgs();
+        Image img = (Image)args[1];
+
+        Image clr = img.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(points, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_sun_removed_" + outImgNum + ".png", clr);
+
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
         }
@@ -432,9 +456,9 @@ public aspect CurvatureAspect {
     }
 
     after(GreyscaleImage input, float sigma) returning() :
-        call(public void ImageProcesser.blur(GreyscaleImage, float))
+        call(public void ImageProcessor.blur(GreyscaleImage, float))
         && args(input, sigma)
-	    && target(algorithms.imageProcessing.ImageProcesser) {
+	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Object[] args = (Object[])thisJoinPoint.getArgs();
         GreyscaleImage output = (GreyscaleImage)args[0];
@@ -473,10 +497,10 @@ public aspect CurvatureAspect {
         GreyscaleImage gradientXY, Image originalColorImage, 
         CannyEdgeFilterSettings edgeSettings, PairIntArray outputSkyCentroid) 
         returning(GreyscaleImage mask) :
-        execution(GreyscaleImage ImageProcesser*.createBestSkyMask(
+        execution(GreyscaleImage ImageProcessor*.createBestSkyMask(
         GreyscaleImage, GreyscaleImage, Image, CannyEdgeFilterSettings, PairIntArray))
         && args(theta, gradientXY, originalColorImage, edgeSettings, outputSkyCentroid) 
-        && target(algorithms.imageProcessing.ImageProcesser) {
+        && target(algorithms.imageProcessing.ImageProcessor) {
 
         GreyscaleImage mask2 = mask.copyImage();
         MatrixUtil.multiply(mask2.getValues(), 250);
@@ -533,9 +557,9 @@ public aspect CurvatureAspect {
     }
 
     after(GreyscaleImage input, int k) returning() :
-        call(public void ImageProcesser.applyImageSegmentation(GreyscaleImage, int))
+        call(public void ImageProcessor.applyImageSegmentation(GreyscaleImage, int))
         && args(input, k)
-	    && target(algorithms.imageProcessing.ImageProcesser) {
+	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Object[] args = (Object[])thisJoinPoint.getArgs();
         GreyscaleImage image = (GreyscaleImage)args[0];

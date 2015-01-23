@@ -12,9 +12,9 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class ImageProcesserTest extends TestCase {
+public class ImageProcessorTest extends TestCase {
 
-    public ImageProcesserTest(String testName) {
+    public ImageProcessorTest(String testName) {
         super(testName);
     }
 
@@ -53,7 +53,7 @@ public class ImageProcesserTest extends TestCase {
         
         Image img = ImageIOHelper.readImage(filePath);
         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
                 
         Image img2 = img.copyImage();
         
@@ -71,11 +71,11 @@ public class ImageProcesserTest extends TestCase {
         
         Image img = ImageIOHelper.readImage(filePath);
                         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
         ImageDisplayer.displayImage("", img);
         
-        imageProcesser.applySobelKernel(img);
+        ImageProcessor.applySobelKernel(img);
         
         ImageDisplayer.displayImage("sobel", img);
                 
@@ -87,25 +87,25 @@ public class ImageProcesserTest extends TestCase {
         
         String filePath = ResourceFinder.findFileInTestResources("lena.jpg");
         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
         Image imgX = ImageIOHelper.readImage(filePath);
         ImageDisplayer.displayImage("", imgX);
         SobelX s0 = new SobelX();
         Kernel kernelX = s0.getKernel();
         float norm0 = s0.getNormalizationFactor();
-        imageProcesser.applyKernel(imgX, kernelX, norm0);
+        ImageProcessor.applyKernel(imgX, kernelX, norm0);
         ImageDisplayer.displayImage("Sobel X", imgX);
         
         Image imgY = ImageIOHelper.readImage(filePath);
         SobelY s1 = new SobelY();
         Kernel kernelY = s1.getKernel();
         norm0 = s1.getNormalizationFactor();
-        imageProcesser.applyKernel(imgY, kernelY, norm0);
+        ImageProcessor.applyKernel(imgY, kernelY, norm0);
         ImageDisplayer.displayImage("Sobel Y", imgY);
         
         Image img = ImageIOHelper.readImage(filePath);
-        imageProcesser.applySobelKernel(img);
+        ImageProcessor.applySobelKernel(img);
                 
         ImageDisplayer.displayImage("Sobel", img);
         
@@ -122,18 +122,18 @@ public class ImageProcesserTest extends TestCase {
     */
     public void testCalculateTheta() throws Exception {
         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
-        assertTrue(imageProcesser.calculateTheta(0, 1) == 90);
-        assertTrue(imageProcesser.calculateTheta(0, -1) == 90);
-        assertTrue(imageProcesser.calculateTheta(1, 0) == 0);
-        assertTrue(imageProcesser.calculateTheta(-1, 0) == 0);
+        assertTrue(ImageProcessor.calculateTheta(0, 1) == 90);
+        assertTrue(ImageProcessor.calculateTheta(0, -1) == 90);
+        assertTrue(ImageProcessor.calculateTheta(1, 0) == 0);
+        assertTrue(ImageProcessor.calculateTheta(-1, 0) == 0);
         
         
-        assertTrue(imageProcesser.calculateTheta(1, 1) == 45);
-        assertTrue(imageProcesser.calculateTheta(-1, 1) == -45);
-        assertTrue(imageProcesser.calculateTheta(-1, -1) == 45);
-        assertTrue(imageProcesser.calculateTheta(1, -1) == -45);
+        assertTrue(ImageProcessor.calculateTheta(1, 1) == 45);
+        assertTrue(ImageProcessor.calculateTheta(-1, 1) == -45);
+        assertTrue(ImageProcessor.calculateTheta(-1, -1) == 45);
+        assertTrue(ImageProcessor.calculateTheta(1, -1) == -45);
     }
 
      @Test
@@ -154,7 +154,7 @@ public class ImageProcesserTest extends TestCase {
              }
         }
         
-        ImageProcesser instance = new ImageProcesser();
+        ImageProcessor instance = new ImageProcessor();
         Image result = instance.combineConvolvedImages(imageX, imageY);
         
         for (int col = 0; col < w; col++) {
@@ -187,7 +187,7 @@ public class ImageProcesserTest extends TestCase {
              }
         }
         
-        ImageProcesser instance = new ImageProcesser();
+        ImageProcessor instance = new ImageProcessor();
         GreyscaleImage result = instance.combineConvolvedImages(imageX, imageY);
         
         for (int col = 0; col < w; col++) {
@@ -238,7 +238,7 @@ public class ImageProcesserTest extends TestCase {
         imageX.setRGB(8, 8, 1, 1, 1);
         imageY.setRGB(8, 8, -1, -1, -1);
         
-        ImageProcesser instance = new ImageProcesser();
+        ImageProcessor instance = new ImageProcessor();
         Image result = instance.computeTheta(imageX, imageY);
                 
         // 1,1  90
@@ -323,7 +323,7 @@ public class ImageProcesserTest extends TestCase {
         imageX.setValue(8, 8, 1);
         imageY.setValue(8, 8, -1);
         
-        ImageProcesser instance = new ImageProcesser();
+        ImageProcessor instance = new ImageProcessor();
         GreyscaleImage result = instance.computeTheta(imageX, imageY);
         
         // 1,1  90
@@ -366,7 +366,7 @@ public class ImageProcesserTest extends TestCase {
              }
         }
         
-        ImageProcesser instance = new ImageProcesser();
+        ImageProcessor instance = new ImageProcessor();
         
         GreyscaleImage result = instance.subtractImages(image4, image3);
        
@@ -392,7 +392,7 @@ public class ImageProcesserTest extends TestCase {
              }
         }
         
-        ImageProcesser instance = new ImageProcesser();
+        ImageProcessor instance = new ImageProcessor();
         int[] offsetXY = instance.shrinkImageToFirstNonZeros(image);
         
         // added a buffer of 1 around each border
@@ -425,8 +425,8 @@ public class ImageProcesserTest extends TestCase {
         5
         */
         
-        ImageProcesser imageProcesser = new ImageProcesser();
-        GreyscaleImage out = imageProcesser.binImageToKeepZeros(img, binFactor);
+        ImageProcessor ImageProcessor = new ImageProcessor();
+        GreyscaleImage out = ImageProcessor.binImageToKeepZeros(img, binFactor);
         
         assertTrue(out.getWidth() == w0/binFactor);
         assertTrue(out.getHeight() == h0/binFactor);
@@ -477,8 +477,8 @@ public class ImageProcesserTest extends TestCase {
             }
         }
         
-        ImageProcesser imageProcesser = new ImageProcesser();
-        Image out = imageProcesser.binImage(img, binFactor);
+        ImageProcessor ImageProcessor = new ImageProcessor();
+        Image out = ImageProcessor.binImage(img, binFactor);
         
         assertTrue(out.getWidth() == w0/binFactor);
         assertTrue(out.getHeight() == h0/binFactor);
@@ -534,8 +534,8 @@ public class ImageProcesserTest extends TestCase {
             }
         }
         
-        ImageProcesser imageProcesser = new ImageProcesser();
-        GreyscaleImage out = imageProcesser.unbinMask(mask, binFactor, originalTheta);
+        ImageProcessor ImageProcessor = new ImageProcessor();
+        GreyscaleImage out = ImageProcessor.unbinMask(mask, binFactor, originalTheta);
         
         assertTrue(out.getWidth() == originalTheta.getWidth());
         assertTrue(out.getHeight() == originalTheta.getHeight());
@@ -588,8 +588,8 @@ public class ImageProcesserTest extends TestCase {
             }
         }
         
-        ImageProcesser imageProcesser = new ImageProcesser();
-        GreyscaleImage out = imageProcesser.unbinMask(mask, binFactor, originalTheta);
+        ImageProcessor ImageProcessor = new ImageProcessor();
+        GreyscaleImage out = ImageProcessor.unbinMask(mask, binFactor, originalTheta);
         
         assertTrue(out.getWidth() == originalTheta.getWidth());
         assertTrue(out.getHeight() == originalTheta.getHeight());
@@ -615,9 +615,9 @@ public class ImageProcesserTest extends TestCase {
         
         Image img = ImageIOHelper.readImage(filePath);
                         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
-        imageProcesser.printImageColorContrastStats(img, 161, 501);
+        ImageProcessor.printImageColorContrastStats(img, 161, 501);
         
     }
 }

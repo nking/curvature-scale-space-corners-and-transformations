@@ -78,11 +78,11 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         img = input.copyToGreyscale();
         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
         originalImg = input.copyImage();
             
-        int[] offsetXY = imageProcesser.shrinkImageToFirstNonZeros(img);
+        int[] offsetXY = ImageProcessor.shrinkImageToFirstNonZeros(img);
         
         trimmedXOffset = offsetXY[0];
         
@@ -101,11 +101,11 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         img = input.copyToGreyscale();
         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
         originalImg = input.copyImage();
         
-        int[] offsetXY = imageProcesser.shrinkImageToFirstNonZeros(img);
+        int[] offsetXY = ImageProcessor.shrinkImageToFirstNonZeros(img);
         
         trimmedXOffset = offsetXY[0];
         
@@ -262,7 +262,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      */
     protected void extractSkyline() {
         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
 
         PairIntArray outputSkyCentroid = new PairIntArray();
         
@@ -270,7 +270,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
             CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
             
-            GreyscaleImage out = imageProcesser.createSkyline(theta, 
+            GreyscaleImage out = ImageProcessor.createSkyline(theta, 
                 gradientXY, this.originalImg, settings, outputSkyCentroid);
             
             EdgeExtractor contourExtractor = new EdgeExtractor(out);
@@ -321,7 +321,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             //
             // TODO: might need adjustments
             
-            int expectedShift = (int)Math.round(2.355 * Math.sqrt(2*2 + 0.5*0.5));
+            int expectedShift = 0;//(int)Math.round(2.355 * Math.sqrt(2*2 + 0.5*0.5));
                         
             if (Math.abs(directionY) > Math.abs(directionX)) {
                 int deltaY = expectedShift;

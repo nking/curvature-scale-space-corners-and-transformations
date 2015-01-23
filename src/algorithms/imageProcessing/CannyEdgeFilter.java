@@ -166,16 +166,16 @@ public class CannyEdgeFilter {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
         if (shrinkToSize != null) {
-            imageProcesser.shrinkImage(input, shrinkToSize);
+            ImageProcessor.shrinkImage(input, shrinkToSize);
         } else {
-            imageProcesser.shrinkImageToFirstNonZeros(input);
+            ImageProcessor.shrinkImageToFirstNonZeros(input);
         }
              
         if (useOutdoorMode) {
-            imageProcesser.blur(input, 2.0f); //3.0
+            ImageProcessor.blur(input, 2.0f); //3.0
         }
 
         applyHistogramEqualization(input);
@@ -392,9 +392,9 @@ public class CannyEdgeFilter {
         
         apply1DKernelToImage(g1, kernel2, calculateForX);
        
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
-        GreyscaleImage g = imageProcesser.subtractImages(g1, g0);
+        GreyscaleImage g = ImageProcessor.subtractImages(g1, g0);
         
         return g;
     }
@@ -625,7 +625,7 @@ public class CannyEdgeFilter {
         
         GreyscaleImage gX, gY, g, theta;
         
-        ImageProcesser imageProcesser = new ImageProcesser();
+        ImageProcessor ImageProcessor = new ImageProcessor();
         
         if (useLineDrawingMode) {
             
@@ -637,9 +637,9 @@ public class CannyEdgeFilter {
             
             removeOnePixelSpanningBorders(gY);
             
-            theta = imageProcesser.computeTheta(gX, gY);
+            theta = ImageProcessor.computeTheta(gX, gY);
 
-            g = imageProcesser.combineConvolvedImages(gX, gY);
+            g = ImageProcessor.combineConvolvedImages(gX, gY);
             
         } else {
         
@@ -651,9 +651,9 @@ public class CannyEdgeFilter {
             
             removeOnePixelSpanningBorders(gY);
             
-            theta = imageProcesser.computeTheta(gX, gY);
+            theta = ImageProcessor.computeTheta(gX, gY);
             
-            g = imageProcesser.combineConvolvedImages(gX, gY);
+            g = ImageProcessor.combineConvolvedImages(gX, gY);
        
         }
         

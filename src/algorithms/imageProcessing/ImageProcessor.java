@@ -35,7 +35,7 @@ import org.ejml.simple.SimpleMatrix;
  *
  * @author nichole
  */
-public class ImageProcesser {
+public class ImageProcessor {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -866,23 +866,7 @@ public class ImageProcesser {
             
             return mask;
         }
-        
-        /*
-        //TODO:  this needs to be improved as soon as the rest of the
-        //       algorithm is finished.
-        //  currently not a robust way to determine that sky is horizontal
-        //  or vertical and might not be correct for an angle not 90 degrees.
-        //  probably needs equiv tranform for deconvolution of the image...
-        int xMin = MiscMath.findMin(zeroPointLists.get(0).getX());
-        int xMax = MiscMath.findMax(zeroPointLists.get(0).getX());
-        int yMin = MiscMath.findMin(zeroPointLists.get(0).getY());
-        int yMax = MiscMath.findMax(zeroPointLists.get(0).getY());
-        double xLen = (double)(xMax - xMin)/(double)theta.getWidth();
-        double yLen = (double)(yMax - yMin)/(double)theta.getHeight();        
-        boolean makeCorrectionsAlongX = (xLen < yLen) ? true : false;
-        int convDispl = 6;
-        */
-        
+      
         // now the coordinates in zeroPointLists are w.r.t. thetaImg
 
         removeSetsThatAreDark(zeroPointLists, colorImg, thetaImg,
@@ -922,23 +906,13 @@ public class ImageProcesser {
                         
             //correct for resolution, with the gradientXY minus valueToSubtract
             addBackMissingZeros(points, gXYImg, binFactor, valueToSubtract);
+            
         }
         
         findSunAndAddToSkyPoints(points, originalColorImage, 
             thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset());
-/*        
-Image clr = originalColorImage.copyImage();
-ImageIOHelper.addToImage(points, 
-thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset(), clr);
-ImageDisplayer.displayImage("filtered by hue", clr);
-*/
-        //removeConnectedClouds(points, clr);
 
-/*
-img1 = theta.createWithDimensions().copyImageToGreen();
-ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, img1);
-ImageDisplayer.displayImage("added missing zeros", img1);
-*/
+        //removeConnectedClouds(points, clr);
         
         /*
         avgYRGB = calculateYRGB(zeroPointLists.get(0), originalColorImage,
@@ -1363,7 +1337,7 @@ ImageDisplayer.displayImage("added missing zeros", img1);
                 ImageDisplayer.displayImage("segmented for sky", input);
                 int z = 1;
             } catch (IOException ex) {
-                Logger.getLogger(ImageProcesser.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -2482,6 +2456,20 @@ ImageDisplayer.displayImage("added missing zeros", img1);
         }
     }
     
+    /**
+     * remove high contrast points from the sky points.  this helps to remove
+     * points from structures like skyscraper windows which have repetitive
+     * structure on the scale of the combined convolutions of the gradient image
+     * that results in the repetitive structure not being a feature in the
+     * gradient and theta images, hence present in the theta image extracted
+     * skypoints when they should not be.
+     * @param zeroPointLists
+     * @param originalColorImage
+     * @param theta
+     * @param avgY
+     * @param addAlongX
+     * @param addAmount 
+     */
     private void removeHighContrastPoints(List<PairIntArray> 
         zeroPointLists, Image originalColorImage, GreyscaleImage theta,
         double avgY, boolean addAlongX, int addAmount) {
@@ -2531,7 +2519,7 @@ try {
         
         //remove points w/ contrast higher than the tail of the histogram
         double critContrast = h.getXHist()[tailXIdx];
-                
+Set<PairInt> debug = new HashSet<PairInt>();                
         for (int gId = 0; gId < zeroPointLists.size(); gId++) {
                         
             PairIntArray points  = zeroPointLists.get(gId);
@@ -2543,7 +2531,7 @@ try {
                 PairInt pi = new PairInt(x, y);
                 pointsSet.add(pi);
             }
-            
+
             for (int i = 0; i < points.getN(); i++) {
                 
                 int x = points.getX(i);
@@ -2581,7 +2569,7 @@ try {
                     PairInt pi0 = new PairInt(x, y);
                     
                     pointsSet.remove(pi0);
-                    
+debug.add(pi0);
                     for (int xx = (x - 1); xx <= (x + 1); xx++) {
                         if ((xx < 0) || (xx > (theta.getWidth() - 1))) {
                             continue;
@@ -2598,6 +2586,7 @@ try {
                             
                             if (pointsSet.contains(pi1)) {
                                 pointsSet.remove(pi1);
+debug.add(pi1);                                
                             }
                         }
                     }
@@ -2620,6 +2609,14 @@ try {
                 zeroPointLists.remove(i);
             }
         }
+        
+try {
+    Image img1 = theta.copyImageToGreen();
+    ImageIOHelper.addToImage(debug, 0, 0, img1);
+    ImageDisplayer.displayImage("removing high contrast", img1);
+} catch (IOException ex) {
+    log.severe(ex.getMessage());
+}
     }
 
     public double[] calculateYRGB(PairIntArray points, Image originalColorImage,

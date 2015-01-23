@@ -253,8 +253,10 @@ public final class PointMatcher {
     
     private boolean costIsNumAndDiff = false;
     
+    //TODO: this has to be a high number for sets with projection.
+    // the solution is sensitive to this value.
     private float generalTolerance = 8;
-        
+    
     public void setCostToDiffFromModel() {
         costIsDiff = true;
     }
@@ -335,14 +337,11 @@ public final class PointMatcher {
         float setsFractionOfImage = 1.f/(float)(nDiv*nDiv);
         
         for (int p1 = 0; p1 < parts1.length; p1++) {
-//if (p1 != 1) {continue;}
-//if (p1 != 3) {continue;}
             for (int p2 = 0; p2 < parts2.length; p2++) {
-//if (p2 != 0) {continue;}
-//if (p2 != 2) {continue;}
+if (!((p1 == 1 && p2 == 0) || (p1 == 3 && p2 ==2))) { continue;}
 
                 // determine fit only with partitioned points
-   
+
                 PairIntArray part1 = parts1[p1];
                 PairIntArray part2 = parts2[p2];
 
@@ -394,13 +393,17 @@ public final class PointMatcher {
                 continue;
             }
         
-            log.info(String.format("%6f %6.2f %7.1f %7.1f   %d %d", 
+            log.info(String.format(
+                "%d) %6f %6.2f %7.1f %7.1f   [%d %d]  %6.2f  %6.2f ", 
+                i,
                 bestFits[i].getParameters().getScale(),
                 bestFits[i].getParameters().getRotationInDegrees(),
                 bestFits[i].getParameters().getTranslationX(),
                 bestFits[i].getParameters().getTranslationY(),
                 bestFits[i].getNumberOfMatchedPoints(),
-                bestFits[i].getNMaxMatchable()
+                bestFits[i].getNMaxMatchable(),
+                bestFits[i].getMeanDistFromModel(),
+                bestFits[i].getStDevFromMean()
             ));
             
             TransformationParameters params1 = bestFits[i].getParameters();
@@ -713,8 +716,8 @@ public final class PointMatcher {
                           
         fit2.setMaximumNumberMatchable(nMaxMatchable);
 
-        float nStat = (nMaxMatchable == 0) ? 0.0f : 
-            (float)part1Matched.getN()/(float)nMaxMatchable;
+        float nStat = (nMaxMatchable > 0) ? 
+            (float)part1Matched.getN()/(float)nMaxMatchable : 0;
 
         log.info("nStat=" + nStat + " nMaxMatchable=" + nMaxMatchable +
             " Euclidean fit=" + fit2.toString()
@@ -724,7 +727,6 @@ public final class PointMatcher {
         
         outputMatchedRightXY.swapContents(part2Matched);        
         
-
 
         return fit2;
     }
@@ -1555,8 +1557,9 @@ public final class PointMatcher {
                     fit = evaluateFitForMatchedTransformed(params, 
                         allPoints1Tr, set2);                    
                 } else {
-                   
+        
                     fit = evaluateFitForUnMatchedTransformedGreedy(params,
+                    //fit = evaluateFitForUnMatchedTransformedOptimal(params,
                         allPoints1Tr, set2, tolTransX, tolTransY);
                     
                     //TODO: rerun tests. is this still necessary:
@@ -6111,7 +6114,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         int scaleStop = 5;
         int scaleDelta = 1;
         boolean setsAreMatched = false;
-        
+                    
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             scene, model, sceneImageCentroidX, sceneImageCentroidY,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
@@ -6143,7 +6146,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             float fracMatched = (float)fit.getNumberOfMatchedPoints()/
                 (float)nMaxMatchable;
             
-            if (fracMatched <= frac) {
+            if (true /*fracMatched <= frac*/) {
 
                 // refine the euclidean solution, centered on current values
 
