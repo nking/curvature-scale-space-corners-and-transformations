@@ -903,12 +903,6 @@ public class ImageProcessor {
             gXYImg = gradientXY;
             
             points = unbinZeroPointLists(points, binFactor);
-                        
-            //TODO: note, this might be better handled by the later
-            // "grow to skyline"
-            //correct for resolution, with the gradientXY minus valueToSubtract
-            //addBackMissingZeros(points, gXYImg, binFactor, valueToSubtract);
-            
         }
         
         findSunAndAddToSkyPoints(points, originalColorImage, 
