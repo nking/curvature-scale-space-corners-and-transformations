@@ -73,7 +73,15 @@ public class EllipseHelper {
             a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);
         }
        
-        return fitEllipseToPointsWithAlgLSQ(a);
+        try {
+            
+            return fitEllipseToPointsWithAlgLSQ(a);
+                        
+        } catch(RuntimeException t) {
+            log.warning(t.getMessage());
+        }
+        
+        return null;
     }
     
     /**
@@ -109,7 +117,15 @@ public class EllipseHelper {
             row++;
         }
        
-        return fitEllipseToPointsWithAlgLSQ(a);
+        try {
+            
+            return fitEllipseToPointsWithAlgLSQ(a);
+                        
+        } catch(RuntimeException t) {
+            log.warning(t.getMessage());
+        }
+        
+        return null;
     }
     
     /**
@@ -137,7 +153,15 @@ public class EllipseHelper {
             a.setRow(row, 0, x*x, x*y, y*y, x, y, 1);
         }
        
-        return fitEllipseToPointsWithAlgLSQ(a);
+        try {
+            
+            return fitEllipseToPointsWithAlgLSQ(a);
+                        
+        } catch(RuntimeException t) {
+            log.warning(t.getMessage());
+        }
+        
+        return null;
     }
     
     /**
@@ -150,6 +174,10 @@ public class EllipseHelper {
      
        algebraic, least square ellipse fit
       
+     NOTE: SimpleMatrix.solve(...) method may throw:
+     *    org.ejml.factory.SingularMatrixException: Solution contains 
+     *    uncountable numbers
+     * 
      * @param a
      * @return new double[]{xCenter, yCenter, aParam, bParam, alpha};
      */
