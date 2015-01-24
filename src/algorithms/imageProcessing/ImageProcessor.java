@@ -3238,13 +3238,13 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
             if (doNotSubtractMore) {
                 break;
             }
-                
+            
             float fracPixels = (float)embeddedPoints.size()/nSkyPix;
             //TODO: improve this
             if (((nIter == 0) && (fracPixels < 0.01) && (nCorrectedEmbeddedGroups < 10)) ||
-                ((nIter > 0) && (nCorrectedEmbeddedGroups < 4))) {
+                ((nIter > 0) && (nCorrectedEmbeddedGroups < 4) && (fracPixels < 0.008))) {
                 
-                if ((nCorrectedEmbeddedGroups > 0) && (fracPixels < 0.008)) {
+                if (nCorrectedEmbeddedGroups > 0) {
                     
                     // this last subtraction can lead to the entire image being
                     // connected to zero value regions if the skyline is low
@@ -3269,39 +3269,48 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                         if ((nIter == 0) && (subtract == 0) && (maxValue > 1)) {
                             maxValue--;
                         }
-                      
-                        /*TODO:rewrite here to copy previous state.
-                        then invoke subtract and grow
-                        then check and revert if needed */
+                                                
+                        int subtract2 = maxValue;
                         
-                        Set<PairInt> prevSkyPoints = new HashSet<PairInt>();
-                        prevSkyPoints.addAll(skyPoints);
-                        int prevSubtract = subtract;
-                    
-                        subtractWithCorrectForNegative(gXY2, maxValue);
+                        // try to remove max value from image, else try revert and
+                        // try again w/ smaller than max value
+                        while (!doNotSubtractMore && (subtract2 > 0)) {
+                            
+                            Set<PairInt> prevSkyPoints = new HashSet<PairInt>(skyPoints);
+                            int prevSubtract = subtract;
+                            GreyscaleImage prevGXY2 = gXY2.copyImage();
+                            
+                            subtractWithCorrectForNegative(gXY2, subtract2);
                         
-                        growZeroValuePoints(skyPoints, gXY2);
-                        
-                        log.info("--> subtracted " + maxValue);
-                        
-                        // if nearly all pixels are sky pixels, revert solution.
-                        float fracSky = (float) skyPoints.size() / (float) gXY2.getNPixels();
-
-                        log.info("fracSky=" + fracSky);
-                        if (fracSky > 0.8) {
-                            // TODO: if subtract > 1, try again here with subtracting
-                            // one less and check fraction again
-                            // else revert
-                            // 
-                            log.info("--> reverting to previous");
-                            skyPoints.clear();
-                            skyPoints.addAll(prevSkyPoints);
-                            subtract = prevSubtract;
-                            doNotSubtractMore = true;
-                         }
+                            growZeroValuePoints(skyPoints, gXY2);
+                            
+                            float fracSky = (float)skyPoints.size()/
+                                (float) gXY2.getNPixels();
+                            
+                            log.info("--> subtracted " + subtract2 
+                                + " fracSky=" + fracSky);
+                            
+                            if (fracSky > 0.8) {
+                                
+                                /*if (subtract2 > 1) {
+                                    subtract2--;
+                                    log.info("--> reverting to previous" +
+                                        " and retrying smaller subtraction=" +
+                                        subtract2);
+                                } else {*/
+                                    log.info("--> reverting to previous");
+                                    doNotSubtractMore = true;
+                                //}
+                                
+                                gXY2 = prevGXY2;
+                                skyPoints.clear();
+                                skyPoints.addAll(prevSkyPoints);
+                                subtract = prevSubtract;
+                            }
+                        }
                     }
                 }
-                        
+                
 try {
     Image img1 = gradientXY.copyImageToGreen();
     ImageIOHelper.addToImage(skyPoints, 0, 0, img1);
