@@ -904,6 +904,8 @@ public class ImageProcessor {
             
             points = unbinZeroPointLists(points, binFactor);
                         
+            //TODO: note, this might be better handled by the later
+            // "grow to skyline"
             //correct for resolution, with the gradientXY minus valueToSubtract
             addBackMissingZeros(points, gXYImg, binFactor, valueToSubtract);
             
@@ -3127,6 +3129,14 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
             (float)avgColor, (float)stDevColor};
     }
 
+    /**
+     * using adaptive "thresholding" to subtract intensity levels from
+     * gradientXY, find the contiguous zero values connected to skyPoints
+     * and add them to skyPoints.
+     * @param gradientXY
+     * @param skyPoints
+     * @return 
+     */
     public int extractSkyFromGradientXY(GreyscaleImage gradientXY,
         Set<PairInt> skyPoints) {
         
@@ -3150,13 +3160,12 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                 
         // subtracting thresholds that are >= 0.5, 
         
+        boolean doNotSubtractMore = false;
+        
         while (nIter < nMaxIter) {
-
+            
             // subtract a threshold amount from gradientXY,
-            //   starting from a value that's half of the peak,
-            //   then >= 0.15, >= 0.05, then each successive interval
-            //   then for each iteration, incrementally by the values present 
-            //   in the image
+            //   starting from a value that's half of the peak, then intervals
             
             if (nIter > 0) {
                 gXY2 = gradientXY.copyImage();
@@ -3187,113 +3196,54 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                 }
                 subtract = gXYValues.getX(lastMinIdx);
             }
+                        
+            subtractWithCorrectForNegative(gXY2, subtract);
+           
+            // ==== find contiguous zeros =====  
             
-            int nz = 0;
-            
-            if (subtract > 0) {
-                for (int i = 0; i < gXY2.getNPixels(); i++) {
-                    int v = gXY2.getValue(i);
-                    v -= subtract;
-                    if (v < 0) {
-                        v = 0;
-                    }
-                    gXY2.setValue(i, v);
-                    if (v == 0) {
-                        nz++;
-                    }
-                }
-            }
-            
-            log.info("number of set 0's=" + nz);
-                    
-            // find contiguous zeros            
             growZeroValuePoints(skyPoints, gXY2);
             
-            //TODO: estimate use of PerimeterFinder vs convex hull + point in polygon
-            // within min and max ranges
-            PerimeterFinder finder = new PerimeterFinder();
-            
-            int[] rowMinMax = new int[2];
-            Map<Integer, PairInt> rowColRange = finder.find(skyPoints, rowMinMax);
-                        
-            // counting the number of gaps in the points group 
-            //    as a means of gauging whether another iteration of loop
-            //    to subtract a value from gXY2 should occur.
-           
-            DFSContiguousValueFinder contiguousNonZeroFinder = 
-                new DFSContiguousValueFinder(gXY2);
-
-            contiguousNonZeroFinder.findGroupsNotThisValue(0, rowColRange,
-                rowMinMax);
-
-            int nEmbeddedGroups = contiguousNonZeroFinder.getNumberOfGroups();
-                        
-            int nCorrectedEmbeddedGroups = 0;
-            
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+            // === count number of embedded groups of non-zeros in skyPoints ===
             
             Set<PairInt> embeddedPoints = new HashSet<PairInt>();
             
-            for (int gId = 0; gId < nEmbeddedGroups; gId++) {
-                
-                Set<PairInt> groupPoints = new HashSet<PairInt>();
-                
-                int[] indexes = contiguousNonZeroFinder.getIndexes(gId);
-                
-                for (int j = 0; j < indexes.length; j++) {
-                    int x = gXY2.getCol(indexes[j]);
-                    int y = gXY2.getRow(indexes[j]);
-                    groupPoints.add(new PairInt(x, y));
-                }
-                
-                // if a perimeter point is not bounded in cardinal directions by 
-                // image offsides or a pixel within skyPoints
-                // the group should be considered unbounded (such as the
-                // tops of buildings would be when their shapes intersect
-                // the convex hull of the sky points for example.
-                // Note: the perimeter is ignoring concaveness on a row to
-                // make this approx faster.  it's still better than a convex
-                // hull for this purpose.
-                
-                int[] gRowMinMax = new int[2];
-                Map<Integer, PairInt> gRowColRange = finder.find(groupPoints, 
-                    gRowMinMax);
-                
-                double[] gCen = curveHelper.calculateXYCentroids(groupPoints);
-                    
-                boolean unbounded = isPerimeterUnbound(gRowColRange, gRowMinMax,
-                    skyPoints, gCen, gXY2.getWidth(), gXY2.getHeight());
-                
-                if (!unbounded) {
-                    nCorrectedEmbeddedGroups++;
-                    embeddedPoints.addAll(groupPoints);
-                }
-            }
-
+            int nCorrectedEmbeddedGroups = extractEmbeddedGroupPoints(
+                skyPoints, gXY2, embeddedPoints);
+            
+            float nSkyPix = skyPoints.size();
             log.info("nIter=" + nIter + ")" 
-                + " nEmbeddedGroups=" + nEmbeddedGroups 
                 + " nCorrectedEmbeddedGroups=" + nCorrectedEmbeddedGroups
                 + " nEmbeddedPixels=" + embeddedPoints.size()
-                + " out of " + skyPoints.size()
+                + " out of " + nSkyPix
                 + " (level=" + ((float)gXYValues.getY(lastMinIdx)/v0) 
                 + " subtract=" + subtract + " out of max=" + gXYValues.getX(0)
                 + ")"
             );
             
-            if ((nCorrectedEmbeddedGroups >= 2*nPrevCorrectedEmbeddedGroups0) 
-                && (prevSkyPoints0 != null)) {
+            if (
+                ((nCorrectedEmbeddedGroups >= 2*nPrevCorrectedEmbeddedGroups0) 
+                && (prevSkyPoints0 != null))                    
+                ) {
                 skyPoints.clear();
                 skyPoints.addAll(prevSkyPoints0);
                 subtract = prevSubtract0;
                 break;
             }
-
-            float fracPixels = (float)embeddedPoints.size()/(float)skyPoints.size();
+ 
+            doNotSubtractMore = (nIter == 0)
+                && (embeddedPoints.isEmpty()
+                || (((double) nCorrectedEmbeddedGroups
+                * (double) embeddedPoints.size() / nSkyPix) < 0.008));
+            
+            if (doNotSubtractMore) {
+                break;
+            }
+                
+            float fracPixels = (float)embeddedPoints.size()/nSkyPix;
             //TODO: improve this
             if (((nIter == 0) && (fracPixels < 0.01) && (nCorrectedEmbeddedGroups < 10)) ||
-                ((nIter == 0) && (nEmbeddedGroups < 4)) || 
-                ((nIter > 0) && (nEmbeddedGroups < 10))) {
-                    
+                ((nIter > 0) && (nCorrectedEmbeddedGroups < 4))) {
+                
                 if ((nCorrectedEmbeddedGroups > 0) && (fracPixels < 0.008)) {
                     
                     // this last subtraction can lead to the entire image being
@@ -3313,28 +3263,22 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                     }
                     
                     float fractionOfMax = 0.5f * (gXYValues.getX(0) - subtract);
-                    
+ 
                     if ((maxValue > Float.MIN_VALUE) && (maxValue < fractionOfMax)) {
                         
                         if ((nIter == 0) && (subtract == 0) && (maxValue > 1)) {
                             maxValue--;
                         }
+                      
+                        /*TODO:rewrite here to copy previous state.
+                        then invoke subtract and grow
+                        then check and revert if needed */
                         
                         Set<PairInt> prevSkyPoints = new HashSet<PairInt>();
                         prevSkyPoints.addAll(skyPoints);
                         int prevSubtract = subtract;
                     
-                        for (int i = 0; i < gXY2.getNPixels(); i++) {
-                            int v = gXY2.getValue(i);
-                            v -= maxValue;
-                            if (v < 0) {
-                                v = 0;
-                            }
-                            gXY2.setValue(i, v);
-                            if (v == 0) {
-                                nz++;
-                            }
-                        }
+                        subtractWithCorrectForNegative(gXY2, maxValue);
                         
                         growZeroValuePoints(skyPoints, gXY2);
                         
@@ -3345,14 +3289,19 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
 
                         log.info("fracSky=" + fracSky);
                         if (fracSky > 0.8) {
+                            // TODO: if subtract > 1, try again here with subtracting
+                            // one less and check fraction again
+                            // else revert
+                            // 
+                            log.info("--> reverting to previous");
                             skyPoints.clear();
                             skyPoints.addAll(prevSkyPoints);
                             subtract = prevSubtract;
-                            nIter = Integer.MAX_VALUE;
+                            doNotSubtractMore = true;
                          }
                     }
                 }
-        
+                        
 try {
     Image img1 = gradientXY.copyImageToGreen();
     ImageIOHelper.addToImage(skyPoints, 0, 0, img1);
@@ -3360,6 +3309,10 @@ try {
 } catch (IOException ex) {
     log.severe(ex.getMessage());
 }
+                if (doNotSubtractMore) {
+                    break;
+                }
+                
                 break;
             }
 
@@ -3371,6 +3324,10 @@ try {
     log.severe(ex.getMessage());
 }
 
+            if (doNotSubtractMore) {
+                break;
+            }
+            
             nPrevCorrectedEmbeddedGroups0 = nCorrectedEmbeddedGroups;
             prevSubtract0 = subtract;
             prevSkyPoints0 = new HashSet<PairInt>();
@@ -3599,12 +3556,23 @@ try {
         return unbounded;
     }
 
+    /**
+     * attempt to find sun by color (hsb) and elliptical shape of
+     * points with that color.  those points are then added to the skyPoints.
+     * Note that if the sun is present in sky and in reflection, such as
+     * water, their location in x,y must be fittable by an ellipse, else they 
+     * may not be found as sun points.
+     * @param skyPoints
+     * @param clr
+     * @param xOffset
+     * @param yOffset 
+     */
     private void findSunAndAddToSkyPoints(Set<PairInt> skyPoints, Image clr,
         int xOffset, int yOffset) {
         
-        // gather yellow points within bounds of or connected to sky and
-        // place them in an array to test the shape
-        // and if circular, add them and the enclosed points to skyPoints
+        // gather yellow points within bounds or connected to sky and
+        // place them in an array to test the shape.
+        // and if elliptical, add them and the enclosed points to skyPoints
                 
         Set<PairInt> yellowPoints = new HashSet<PairInt>();
         
@@ -3656,7 +3624,7 @@ try {
             return;
         }
         
-        //fit ellipse to yellowPoints
+        //fit ellipse to yellowPoints.  ellipse because of possible occlusion.
         EllipseHelper ellipseHelper = new EllipseHelper();
         double[] params = ellipseHelper.fitEllipseToPoints(yellowPoints);
         
@@ -3671,10 +3639,10 @@ try {
         float b = (float)params[3];
         float alpha = (float)params[4];
         
-        //TODO: consider no filter for ecc
+        //TODO: consider no filter for eccentricity
         if (((a/b) - 1) < 10) {
-            // looks like a circle
-            // add yellow points and all points internal to perimeter, to the sky points
+            
+            // add to skyPoints, sun color points internal to perimeter of yellowPoints
             
             PerimeterFinder finder = new PerimeterFinder();
             
@@ -3707,7 +3675,7 @@ try {
                     float s2 = hsb[1] * 100.f;
                                   
                     if (
-                        // if add (s2 > 40), large halo around sun is found
+                        // NOTE, if add (s2 > 40), large halo around sun is found
                         ((rr >= 245/*251*/) && (hsb[2] >= 0.97/*0.98*/) && (s2 < 87))
                     ) {
                         
@@ -3726,7 +3694,6 @@ try {
         
         //double[] stats = ellipseHelper.calculateEllipseResidualStats(
         //    yellowPoints.getX(), yellowPoints.getY(), xc, yc, a, b, alpha);
-
         
 try {
     Image img1 = clr.copyImage();
@@ -3735,16 +3702,11 @@ try {
     //ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, img1);
     //ImageIOHelper.addToImage(cloudPoints.getX(), cloudPoints.getY(), 
     //    img1, 1, 0, 255, 0);
-    ImageDisplayer.displayImage("yellow and cloud points", img1);
+    ImageDisplayer.displayImage("sun points", img1);
 } catch (IOException ex) {
     log.severe(ex.getMessage());
 }
 
-        // if a is approx equal to b, then it's a circle
-        // if it's occluded, by the horizon, for example, the might see
-        // a large
-        int z = 1;
-        
     }
 
     private void removeSnowPoints(Set<PairInt> skyPoints, Image clr) {
@@ -3823,5 +3785,83 @@ if (y < 230) {
         }
         
         zeroPoints.addAll(addPoints);
+    }
+
+    private void subtractWithCorrectForNegative(GreyscaleImage gXY2, int subtract) {
+
+        int nz = 0;
+        
+        if (subtract > 0) {
+            
+            for (int i = 0; i < gXY2.getNPixels(); i++) {
+                int v = gXY2.getValue(i);
+                v -= subtract;
+                if (v < 0) {
+                    v = 0;
+                }
+                gXY2.setValue(i, v);
+                if (v == 0) {
+                    nz++;
+                }
+            }
+        }
+
+        log.info("number of set 0's=" + nz);
+
+    }
+
+    private int extractEmbeddedGroupPoints(Set<PairInt> skyPoints, 
+        GreyscaleImage gXY2, Set<PairInt> outputEmbeddedPoints) {
+        
+        PerimeterFinder finder = new PerimeterFinder();
+        int[] rowMinMax = new int[2];
+        Map<Integer, PairInt> rowColRange = finder.find(skyPoints, rowMinMax);
+        DFSContiguousValueFinder contiguousNonZeroFinder = 
+            new DFSContiguousValueFinder(gXY2);
+        contiguousNonZeroFinder.findGroupsNotThisValue(0, rowColRange,
+            rowMinMax);
+        int nEmbeddedGroups = contiguousNonZeroFinder.getNumberOfGroups();
+
+        int nCorrectedEmbeddedGroups = 0;
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
+        for (int gId = 0; gId < nEmbeddedGroups; gId++) {
+
+            Set<PairInt> groupPoints = new HashSet<PairInt>();
+
+            int[] indexes = contiguousNonZeroFinder.getIndexes(gId);
+
+            for (int j = 0; j < indexes.length; j++) {
+                int x = gXY2.getCol(indexes[j]);
+                int y = gXY2.getRow(indexes[j]);
+                groupPoints.add(new PairInt(x, y));
+            }
+
+            // if a perimeter point is not bounded in cardinal directions by 
+            // image offsides or a pixel within skyPoints
+            // the group should be considered unbounded (such as the
+            // tops of buildings would be when their shapes intersect
+            // the convex hull of the sky points for example.
+            // Note: the perimeter is ignoring concaveness on a row to
+            // make this approx faster.  it's still better than a convex
+            // hull for this purpose.
+
+            int[] gRowMinMax = new int[2];
+            Map<Integer, PairInt> gRowColRange = finder.find(groupPoints, 
+                gRowMinMax);
+
+            double[] gCen = curveHelper.calculateXYCentroids(groupPoints);
+
+            boolean unbounded = isPerimeterUnbound(gRowColRange, gRowMinMax,
+                skyPoints, gCen, gXY2.getWidth(), gXY2.getHeight());
+
+            if (!unbounded) {
+                nCorrectedEmbeddedGroups++;
+                outputEmbeddedPoints.addAll(groupPoints);
+            }
+        }
+
+        return nCorrectedEmbeddedGroups;
     }
 }
