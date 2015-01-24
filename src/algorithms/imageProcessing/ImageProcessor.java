@@ -907,7 +907,7 @@ public class ImageProcessor {
             //TODO: note, this might be better handled by the later
             // "grow to skyline"
             //correct for resolution, with the gradientXY minus valueToSubtract
-            addBackMissingZeros(points, gXYImg, binFactor, valueToSubtract);
+            //addBackMissingZeros(points, gXYImg, binFactor, valueToSubtract);
             
         }
         
@@ -2020,135 +2020,6 @@ public class ImageProcessor {
         return output;
     }
 
-    /**
-     * iterate over each point in zeroPointLists and visit its 8 neighbors
-     * looking for those not in it's list.  if not in list and is in the
-     * image as a zero value pixel, place it in the list.  note that this is a method to use
-     * for correcting the zero points lists after down sampling to make the
-     * list and then up sampling to use it.
-     * 
-     * @param zeroPointLists
-     * @param theta 
-     */
-    private void addBackMissingZeros(List<PairIntArray> zeroPointLists, 
-        GreyscaleImage theta, int binFactor, int topNumberToCorrect) {
-                
-        int width = theta.getWidth();
-        int height = theta.getHeight();
-        
-        int end = topNumberToCorrect;
-        if (zeroPointLists.size() < end) {
-            end = zeroPointLists.size();
-        }
-        
-        List<Set<Integer> > sets = new ArrayList<Set<Integer> >();
-        for (int ii = 0; ii < end; ii++) {
-            
-            PairIntArray zeroValuePoints = zeroPointLists.get(ii);
-            
-            Set<Integer> zpSet = new HashSet<Integer>();
-            for (int pIdx = 0; pIdx < zeroValuePoints.getN(); pIdx++) {
-                int x = zeroValuePoints.getX(pIdx);
-                int y = zeroValuePoints.getY(pIdx);
-                int idx = theta.getIndex(x, y);
-                zpSet.add(Integer.valueOf(idx));
-            }
-            
-            sets.add(zpSet);
-        }
-        
-        for (int ii = 0; ii < end; ii++) {
-
-            PairIntArray zeroValuePoints = zeroPointLists.get(ii);
-
-            Set<Integer> zpSet = sets.get(ii);
-
-            Set<Integer> add = new HashSet<Integer>();
-            
-            for (int pIdx = 0; pIdx < zeroValuePoints.getN(); pIdx++) {
-
-                int x = zeroValuePoints.getX(pIdx);
-                int y = zeroValuePoints.getY(pIdx);
-
-                for (int c = (x - binFactor); c <= (x + binFactor); c++) {
-                    if ((c < 0) || (c > (width - 1))) {
-                        continue;
-                    }
-                    for (int r = (y - binFactor); r <= (y + binFactor); r++) {
-                        if ((r < 0) || (r > (height - 1))) {
-                            continue;
-                        }
-                        if ((c == x) && (r == y)) {
-                            continue;
-                        }
-
-                        int neighborIdx = theta.getIndex(c, r);
-
-                        Integer index = Integer.valueOf(neighborIdx);
-
-                        if (zpSet.contains(index)) {
-                            continue;
-                        }
-
-                        int v = theta.getValue(c, r);
-                        if (v == 0) {
-                            add.add(index);
-                        }
-                    }
-                }
-            }
-            if (!add.isEmpty()) {
-                for (Integer a : add) {
-                    int c = theta.getCol(a.intValue());
-                    int r = theta.getRow(a.intValue());
-                    zeroValuePoints.add(c, r);
-                    zpSet.add(a);
-                }
-            }
-        }
-       
-    }
-
-    /**
-     * remove points in zeropoint lists where there is a non-zero pixel in the 
-     * theta image.
-     * 
-     * @param zeroPointLists
-     * @param theta 
-     */
-    private void removeOverSampledZeros(List<PairIntArray> zeroPointLists, 
-        GreyscaleImage theta) {
-        
-        for (PairIntArray zeroValuePoints : zeroPointLists) {
-            
-            List<Integer> remove = new ArrayList<Integer>();
-            
-            for (int pIdx = 0; pIdx < zeroValuePoints.getN(); pIdx++) {
-                
-                int x = zeroValuePoints.getX(pIdx);
-                int y = zeroValuePoints.getY(pIdx);
-                
-                int v = theta.getValue(x, y);
-                
-                if (v > 0) {
-                    remove.add(Integer.valueOf(pIdx));
-                }
-            }
-            
-            if (!remove.isEmpty()) {
-                for (int i = (remove.size() - 1); i > -1; i--) {
-                    int idx = remove.get(i).intValue();
-                    zeroValuePoints.removeRange(idx, idx);
-                }
-            }
-        }
-    }
-    
-    public void printImageColorContrastStats(Image image, List<PairIntArray> 
-        zeroPoints) {
-        
-    }
-    
     public void printImageColorContrastStats(Image image, int rgbSkyAvg,
         int plotNumber) throws IOException {
      
@@ -3566,8 +3437,10 @@ try {
     }
 
     /**
-     * attempt to find sun by color (hsb) and elliptical shape of
-     * points with that color.  those points are then added to the skyPoints.
+     * attempt to find within pixels connected to skyPoints, pixels that
+     * look like sun pixels by color (hsb) and whose x,y distribution
+     * resemble and ellipse (circle w/ possible occlusion).  
+     * those sun points are then added to the skyPoints.
      * Note that if the sun is present in sky and in reflection, such as
      * water, their location in x,y must be fittable by an ellipse, else they 
      * may not be found as sun points.
@@ -3619,11 +3492,13 @@ try {
                    if (
                        ((h2 >= 30) && (h2 <= 40) && (s2 > 90) && (hsb[2] > 0.9))
                        || ((h2 > 30) && (h2 <= 60) && (s2 > 35)) 
+                       || ((r == 255) && (hsb[2] == 1.00) && (s2 > 99))
                        ) {
                        
                        PairInt p2 = new PairInt(xx - xOffset, yy - yOffset);
                        
                        yellowPoints.add(p2);
+
                    }
                 }
             }
@@ -3716,34 +3591,6 @@ try {
     log.severe(ex.getMessage());
 }
 
-    }
-
-    private void removeSnowPoints(Set<PairInt> skyPoints, Image clr) {
-        
-        for (PairInt p : skyPoints) {
-            
-            int x = p.getX();
-            int y = p.getY();
-            
-if (y < 230) {
-    continue;
-}
-         
-            int r = clr.getR(x, y);
-            int g = clr.getG(x, y);
-            int b = clr.getB(x, y);
-
-            // all normalized from 0 to 1
-            float[] hsb = new float[3];
-            Color.RGBtoHSB(r, g, b, hsb);
-
-            float h2 = hsb[0] * 360.f;
-            float s2 = hsb[1] * 100.f;
-            
-            if ((h2 > 57) && (h2 < 65) && (s2 < 50)) {
-                
-            }
-        }
     }
 
     private void addBackMissingZeros(Set<PairInt> zeroPoints,
