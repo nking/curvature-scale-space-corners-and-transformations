@@ -905,33 +905,48 @@ public class ImageProcessor {
             points = unbinZeroPointLists(points, binFactor);
         }
         
-        findSunAndAddToSkyPoints(points, originalColorImage, 
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        int[] skyRowMinMax = new int[2];
+        Map<Integer, PairInt> skyRowColRange = perimeterFinder.find(points, 
+            skyRowMinMax);
+        //TODO:  revisit this... shouldn't be necessary when grow to sky is impl 
+        fillInRightBoundarySkyPoints(points, binFactor, 
+            skyRowColRange, skyRowMinMax, originalColorImage,
             thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset());
+          
+        Set<PairInt> sunPoints = findSunConnectedToSkyPoints(points, 
+            originalColorImage, thetaImg.getXRelativeOffset(), 
+            thetaImg.getYRelativeOffset());
 
-        //removeConnectedClouds(points, clr);
+        //addPointsAndUpdateRowColRange(points, sunPoints, skyRowColRange,
+        //    skyRowMinMax);
+
+        GreyscaleImage mask = gradientXY.createWithDimensions();
+        mask.fill(1);
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();            
+            mask.setValue(x, y, 0);
+        }
+
+        removeClouds(points, sunPoints, skyRowColRange, skyRowMinMax, 
+            originalColorImage, mask);
         
+        /*
+        grow the pixels towards the sky boundary.
+        Looks like contrast and color should be used here as a safer boundary
+        that works for low contrast regions too (else, could have just used
+        the difference of gaussians alone).
+        */
+        //growToSkyline(points, skyRowColRange, skyRowMinMax, originalColorImage, 
+        //    thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset());
+            
         /*
         avgYRGB = calculateYRGB(zeroPointLists.get(0), originalColorImage,
              theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
              makeCorrectionsAlongX, convDispl);
         */
         
-        //gradientXY = subtractThresholdLevel(gradientXY);
-        
-        //removeClouds(points, thetaImg, originalColorImage,
-        //    makeCorrectionsAlongX, convDispl,
-        //    (int)avgYRGB[1], (int)avgYRGB[2], (int)avgYRGB[3]);
-        
-        //growZeroValuePoints(points, gradientXY);
-        
-        GreyscaleImage mask = gradientXY.createWithDimensions();
-        mask.fill(1);
-        for (PairInt p : points) {
-            int x = p.getX();
-            int y = p.getY();
-            mask.setValue(x, y, 0);
-        }
-
         //GreyscaleImage mask = growPointsToSkyline(points, originalColorImage, 
         //    theta, avgYRGB, makeCorrectionsAlongX, convDispl);
        
@@ -1471,252 +1486,6 @@ public class ImageProcessor {
                 
         return new int[]{(int)Math.round(rSum), (int)Math.round(gSum),
             (int)Math.round(bSum)};
-    }
-
-    /**
-     * look for gaps in zeroValuePoints and if the color of the points within
-     * the originalImage appears to be whiter than sky, consider the points
-     * to be clouds.  cloud points are then added to zeroValuePoints because 
-     * it's known that zeroValuePoints is subsequently used to mask out pixels
-     * that should not be used for a skyline edge (and hence corners).
-     * 
-     * NOTE: this makes a correction for gaussian blurring, that is subtracting
-     * the 6 pixels from convolving w/ gaussian of sigma=2, then sigma=0.5
-     * which is what happens when "outdoorMode" is used to create the theta
-     * image.
-     * 
-     * Note, this method won't find the clouds which are touching the horizon.
-     * The Brown & Lowe 2003 panoramic images of a snowy mountain shows 
-     * 2 examples of complications with cloud removal.
-     * To the far left on the mountain horizon, one can see that clouds do
-     * obscure the mountain, and in the middle of the horizon of image, 
-     * one can see that clouds and the mountain peak are surrounded by 
-     * sky to left and right, though not completely below.
-     * In those cases where the clouds are touching the horizon, one probably 
-     * wants to wait until have registered more than one image to understand 
-     * motion and hence how to identify the clouds.
-     * 
-     * @param points
-     * @param theta
-     * @param originalImage
-     * @return 
-     */
-    private void removeClouds(Set<PairInt> zeroValuePoints, GreyscaleImage theta, 
-        Image originalImage, boolean addAlongX, int addAmount, 
-        int rSky, int gSky, int bSky) {
-        
-        /*
-        find the gaps in the set zeroValuePoints and determine if their
-        color is whiteish compared to the background sky or looks like the
-        background sky too.
-        
-        easiest way, though maybe not fastest:
-           -- determine min and max of x and y of zeroValuePoints.
-           -- scan along each row to find the start column of the row and the
-              end column of the row.
-           -- repeat the scan of the row only within column boundaries and 
-              search for each point in zeroValuePoints
-              -- if it is not present in zeroValuePoints,
-                 check the originalImage value.  if it is white with respect
-                 to rgbSky, add it to zeroValuePoints
-           Can see that snowy mountain tops may be removed, so need to add to
-           the block within the row scan, a scan above and below the possible
-           cloud pixel to make sure that it is enclosed by sky pixels above
-           and below too.
-        
-        would like to make a fast search of zeroValuePoints so using pixel index
-        as main data and putting all into a hash set
-        */
-        
-        if (zeroValuePoints.isEmpty()) {
-            return;
-        }
-        
-        int xMin = Integer.MAX_VALUE;
-        int xMax = Integer.MIN_VALUE;
-        int yMin = Integer.MAX_VALUE;
-        int yMax = Integer.MIN_VALUE;
-        
-        Set<Integer> zpSet = new HashSet<Integer>();
-        for (PairInt p : zeroValuePoints) {
-            int x = p.getX();
-            int y = p.getY();
-            int idx = theta.getIndex(x, y);
-            zpSet.add(Integer.valueOf(idx));
-        }
-        
-        int xOffset = theta.getXRelativeOffset();
-        int yOffset = theta.getYRelativeOffset();
-          
-        /*
-        blue sky:  143, 243, 253
-        white clouds on blue sky:  192, 242, 248  (increased red, roughly same blue)
-        
-        red sky:
-        white clouds on red sky: (increased blue and green, roughly same red)
-        */
-        
-        boolean skyIsBlue = (bSky > rSky);
-                
-        for (int row = yMin; row <= yMax; row++) {
-            int start = -1;
-            int stop = 0;
-            for (int col = xMin; col <= xMax; col++) {
-                int idx = theta.getIndex(col, row);
-                if (zpSet.contains(Integer.valueOf(idx))) {
-                    stop = col;
-                    if (start == -1) {
-                        start = col;
-                    }
-                }
-            }
-            
-            if (start == -1) {
-                continue;
-            }
-            
-            // any pixels not in set are potentially cloud pixels
-            for (int col = start; col <= stop; col++) {
-                int idx = theta.getIndex(col, row);
-                if (!zpSet.contains(Integer.valueOf(idx))) {
-                    int x = theta.getCol(idx);
-                    int y = theta.getRow(idx);
-                    int ox = x + xOffset;
-                    int oy = y + yOffset;
-                    //TODO: this may need corrections for other orientations
-                    if (addAlongX) {
-                        ox += addAmount;
-                    } else {
-                        oy += addAmount;
-                    }
-                    
-                    if ((ox < 0) || (ox > (originalImage.getWidth() - 1))) {
-                        continue;
-                    }
-                    if ((oy < 0) || (oy > (originalImage.getHeight() - 1))) {
-                        continue;
-                    }
-                    
-                    int red = originalImage.getR(ox, oy);
-                    int green = originalImage.getG(ox, oy);
-                    int blue = originalImage.getB(ox, oy);
-
-                    // is it white or near the color?
-                    boolean looksLikeACloudPixel = false;
-                    boolean looksLikeASkyPixel = false;
-                    
-                    looksLikeACloudPixel = ((blue >= bSky) && (red >= rSky)
-                        && (green >= gSky) &&
-                        ((skyIsBlue && (blue > bSky) && (green > gSky))
-                        ||
-                        (!skyIsBlue && (red > rSky))));
-                    
-                    if (skyIsBlue && !looksLikeACloudPixel) {
-                        // expect blue ~ b, but red > r
-                        int db = Math.abs(blue - bSky);
-                        int dr = red - rSky;
-                        // if dr is < 0, it's 'bluer', hence similar to sky
-                        if ((db < 10) && (dr > 25)) {
-                            // could be dark part of cloud, but could also be
-                            // a rock formation for example
-                            /*if ((((double)blue/(double)green) < 0.1) &&
-                                (((double)blue/(double)red) > 2.)) {
-                                looksLikeACloudPixel = true;
-                            }*/
-                            
-                        } else if ((dr < 0) && (db >= 0)) {
-                            if ((green - gSky) > 0) {
-                                looksLikeASkyPixel = true;
-                            }
-                        }
-                    } else if (!looksLikeACloudPixel) {
-                        // expect red ~ r, but blue > b and green > g
-                        int dr = Math.abs(red - rSky);
-                        int db = blue - bSky;
-                        int dg = green - gSky;
-                        if ((dr < 10) && (db > 25) && (dg > 25)) {
-                            looksLikeACloudPixel = true;
-                        } else if ((db < 0) && (dr >= 0)) {
-                            if ((green - gSky) < 0) {
-                                looksLikeASkyPixel = true;
-                            }
-                        }
-                    }
-                      
-                    if (looksLikeASkyPixel) {
-                        PairInt p = new PairInt(col, row);
-                        zeroValuePoints.add(p);
-                        zpSet.add(Integer.valueOf(idx));
-                        if (col < xMin) {
-                            xMin = col;
-                        } 
-                        if (col > xMax) {
-                            xMax = col;
-                        }
-                        if (row < yMin) {
-                            yMin = row;
-                        } 
-                        if (row > yMax) {
-                            yMax = row;
-                        }
-                        continue;
-                    }
-                    
-                    if (looksLikeACloudPixel) {
-                        
-                        //further scan up and down to make sure enclosed by sky
-                        
-                        boolean foundSkyPixel = false;
-                        
-                        // search for sky pixel above current (that is, lower y)
-                        if ((row - 1) == -1) {
-                            foundSkyPixel = true;
-                        }
-                        if (!foundSkyPixel) {
-                            for (int rowI = (row - 1); rowI >= yMin; rowI--) {
-                                int idxI = theta.getIndex(col, rowI);
-                                if (zpSet.contains(Integer.valueOf(idxI))) {
-                                    foundSkyPixel = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (!foundSkyPixel) {
-                            continue;
-                        }
-                        
-                        // search below for sky pixels, that is search higher y
-                        
-                        foundSkyPixel = false;
-                        
-                        if ((row + 1) == theta.getHeight()) {
-                            foundSkyPixel = true;
-                        }
-                        
-                        if (!foundSkyPixel) {
-                            for (int rowI = (row + 1); rowI <= yMax; rowI++) {
-                                int idxI = theta.getIndex(col, rowI);
-                                if (zpSet.contains(Integer.valueOf(idxI))) {
-                                    foundSkyPixel = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (!foundSkyPixel) {
-                            // might be the peak of a snowy mountain
-                            continue;
-                        }
-                        
-                        // this looks like a cloud pixel, so region should be
-                        // considered 'sky'
-                        PairInt p = new PairInt(col, row);
-                        zeroValuePoints.add(p);
-                    }
-                }
-            }
-        }     
     }
 
     public GreyscaleImage binImageToKeepZeros(GreyscaleImage img, 
@@ -3442,9 +3211,10 @@ try {
      * @param clr
      * @param xOffset
      * @param yOffset 
+     * @return the extracted sun points that are connected to skyPoints
      */
-    private void findSunAndAddToSkyPoints(Set<PairInt> skyPoints, Image clr,
-        int xOffset, int yOffset) {
+    protected Set<PairInt> findSunConnectedToSkyPoints(Set<PairInt> skyPoints, 
+        Image clr, int xOffset, int yOffset) {
         
         // gather yellow points within bounds or connected to sky and
         // place them in an array to test the shape.
@@ -3486,9 +3256,7 @@ try {
 
                    // red halo: ((h2 >= 30) && (h2 <= 40) && (s2 > 90) && (hsb[2] > 0.9))
                     // inward of that: ((h2 > 40) && (h2 <= 60) && (s2 > 35) && (s2 < 60))
-                    if (((h2 >= 30) && (h2 <= 40) && (s2 > 90) && (hsb[2] > 0.9))
-                        || ((h2 > 30) && (h2 <= 60) && (s2 > 35))
-                        || ((r == 255) && (hsb[2] == 1.00) && (s2 > 99))) {
+                    if ((h2 > 30) && (h2 <= 50) && (s2 > 35)) {
 
                         PairInt p2 = new PairInt(xx - xOffset, yy - yOffset);
 
@@ -3499,7 +3267,7 @@ try {
         }
         
         if (yellowPoints.size() < 6) {
-            return;
+            return new HashSet<PairInt>();
         }
         
         //fit ellipse to yellowPoints.  ellipse because of possible occlusion.
@@ -3508,7 +3276,7 @@ try {
         
         if (params == null) {
             // not close to an ellipse
-            return;
+            return new HashSet<PairInt>();
         }
         
         float xc = (float)params[0];
@@ -3567,24 +3335,11 @@ try {
                 }
             }
         }
-                    
-        skyPoints.addAll(yellowPoints);
-        
+                
         //double[] stats = ellipseHelper.calculateEllipseResidualStats(
         //    yellowPoints.getX(), yellowPoints.getY(), xc, yc, a, b, alpha);
         
-try {
-    Image img1 = clr.copyImage();
-    ImageIOHelper.addToImage(yellowPoints, xOffset, yOffset, 
-        img1, 0, 0, 255);
-    //ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, img1);
-    //ImageIOHelper.addToImage(cloudPoints.getX(), cloudPoints.getY(), 
-    //    img1, 1, 0, 255, 0);
-    ImageDisplayer.displayImage("sun points", img1);
-} catch (IOException ex) {
-    log.severe(ex.getMessage());
-}
-
+        return yellowPoints;
     }
 
     private void addBackMissingZeros(Set<PairInt> zeroPoints,
@@ -3714,4 +3469,237 @@ try {
 
         return nCorrectedEmbeddedGroups;
     }
+
+    /**
+     * fill in the rightmost sky points that would be missing due to down sizing
+     * the image to find sky points then up sizing the image to current scale.
+     * 
+     * @param skyPoints
+     * @param binFactor the size of the former down sizing to find sky points.
+     * @param skyRowColRange the minimum row number of sky points with respect
+     * to the canny edge filter product images (theta, gradientXY).
+     * @param skyRowMinMax the maximum row number of sky points with respect
+     * to the canny edge filter product images (theta, gradientXY).
+     * @param originalColorImage the original color image
+     * @param xRelativeOffset the offset in x of the canny edge filter intermediate
+     * product images from the reference frame of the originalColorImage.
+     * @param yRelativeOffset the offset in y of the canny edge filter intermediate
+     * product images from the reference frame of the originalColorImage.
+     */
+    private void fillInRightBoundarySkyPoints(Set<PairInt> skyPoints, int binFactor, 
+        Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax,
+        Image originalColorImage, int xRelativeOffset, int yRelativeOffset) {
+        
+        if (binFactor == 1) {
+            return;
+        }
+        
+        int lastCol = (originalColorImage.getWidth() - 1) - xRelativeOffset;
+        
+        for (int r = skyRowMinMax[0]; r <= skyRowMinMax[1]; r++) {
+            
+            final int row = r;
+            final Integer rowIndex = Integer.valueOf(row);
+            
+            PairInt cRange = skyRowColRange.get(rowIndex);
+            
+            int rightCol = cRange.getY();
+            
+            if (rightCol < (lastCol - binFactor + 1)) {
+                continue;
+            }
+            
+            for (int i = 1; i <= binFactor; i++) {
+                
+                int x = rightCol + i;
+                
+                if ((x + xRelativeOffset) > (originalColorImage.getWidth() - 1)) {
+                    break;
+                }
+                
+                PairInt rightPoint = new PairInt(x, row);
+                
+                skyPoints.add(rightPoint);
+                
+                skyRowColRange.put(rowIndex, new PairInt(cRange.getX(), x));
+            }
+        }        
+    }
+
+    private void addPointsAndUpdateRowColRange(Set<PairInt> skyPoints, 
+        Set<PairInt> sunPoints, Map<Integer, PairInt> skyRowColRange, 
+        int[] skyRowMinMax) {
+        
+        if (skyPoints == null) {
+            throw new IllegalArgumentException("skyPoints cannot be null");
+        }
+        if (sunPoints == null) {
+            throw new IllegalArgumentException("sunPoints cannot be null");
+        }
+        if (skyRowColRange == null) {
+            throw new IllegalArgumentException("skyRowColRange cannot be null");
+        }
+        if (skyRowMinMax == null) {
+            throw new IllegalArgumentException("skyRowMinMax cannot be null");
+        }
+        
+        if (sunPoints.isEmpty()) {
+            return;
+        }
+        
+        skyPoints.addAll(sunPoints);
+        
+        PerimeterFinder finder = new PerimeterFinder();
+        Map<Integer, PairInt> skyRowColRange2 = finder.find(skyPoints, 
+            skyRowMinMax);
+        
+        skyRowColRange.clear();
+        
+        skyRowColRange.putAll(skyRowColRange2);
+        
+    }
+
+    private void removeClouds(Set<PairInt> skyPoints, Set<PairInt> sunPoints, 
+        Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax, 
+        Image originalColorImage, GreyscaleImage mask) {
+           
+        /*
+        collecting the candidateCloudPoints to try to remove clouds that are
+        connected to skyPoints but only on one side and those are connected to
+        more clouds.
+        */
+        
+        java.util.Stack<PairInt> cloudStack = new java.util.Stack<PairInt>();
+        
+        Set<PairInt> candidateCloudPoints = new HashSet<PairInt>();
+        
+        Map<Integer, PixelColors> pixelColorsMap = new HashMap<Integer, PixelColors>();
+        
+        Map<PairInt, List<PixelColors> > candidateSkyColorsMap = 
+            new HashMap<PairInt, List<PixelColors> >();
+        
+        int xOffset = mask.getXRelativeOffset();
+        int yOffset = mask.getYRelativeOffset();
+              
+        int[] dxs = new int[]{-1,  0, 1, 0};
+        int[] dys = new int[]{ 0, -1, 0, 1};
+        
+        for (PairInt skyPoint : skyPoints) {
+            
+            int x = skyPoint.getX();
+            int y = skyPoint.getY();
+            Integer index = Integer.valueOf(mask.getIndex(x, y));
+            
+            for (int k = 0; k < dxs.length; k++) {
+                    
+                int dx = dxs[k];
+                int dy = dys[k];
+                
+                int xx = x + dx;
+                int yy = y + dy;
+                
+                PairInt p = new PairInt(xx, yy);
+                
+                if (skyPoints.contains(p) || sunPoints.contains(p)) {
+                    continue;
+                }
+                
+                if (candidateCloudPoints.contains(p)) {
+                    continue;
+                }
+                
+                PixelColors skyPC = pixelColorsMap.get(index);
+                if (skyPC == null) {
+                    int r = originalColorImage.getR(x + xOffset, y + yOffset);
+                    int g = originalColorImage.getG(x + xOffset, y + yOffset);
+                    int b = originalColorImage.getB(x + xOffset, y + yOffset);
+                    skyPC = new PixelColors(r, g, b);
+                    pixelColorsMap.put(index, skyPC);
+                }
+                
+                List<PixelColors> skyColors = candidateSkyColorsMap.get(p);
+                if (skyColors == null) {
+                    skyColors = new ArrayList<PixelColors>();
+                    candidateSkyColorsMap.put(p, skyColors);
+                }
+                
+                skyColors.add(skyPC);
+                
+                // including perimeter points too (they're missing from  
+                // skyPoints due to convolution widening of gradientXY
+                // features).
+                candidateCloudPoints.add(p);
+                
+                cloudStack.add(p);
+            }
+        }
+        
+        int width = mask.getWidth();
+        int height = mask.getHeight();
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        visited.add(cloudStack.peek());
+       
+        while (!cloudStack.isEmpty()) {
+
+            PairInt uPoint = cloudStack.pop();
+            
+            int uX = uPoint.getX();
+            int uY = uPoint.getY();
+
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
+            for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
+                
+                if ((vX < 0) || (vX > (width - 1))) {
+                    continue;
+                }
+                
+                for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
+                    if ((vY < 0) || (vY > (height - 1))) {
+                        continue;
+                    }
+                    
+                    PairInt vPoint = new PairInt(vX, vY);
+                    
+                    if (skyPoints.contains(vPoint) || sunPoints.contains(vPoint)
+                        || candidateCloudPoints.contains(vPoint)) {
+                        continue;
+                    }
+                    
+                    visited.add(vPoint);
+                    
+                    /*is this within color and contrast limits?  if yes,
+                       add to candidateCloudPoints 
+                       add to cloudStack
+                       add skyColors to candidateSkyColorsMap for vPoint
+                    */
+                    List<PixelColors> skyColors = candidateSkyColorsMap.get(uPoint);
+                    
+                    int rV = originalColorImage.getR(vX + xOffset, vY + yOffset);
+                    int gV = originalColorImage.getG(vX + xOffset, vY + yOffset);
+                    int bV = originalColorImage.getB(vX + xOffset, vY + yOffset);
+                    /*
+                    <> need contrast of skyColors from one another
+                    <> need color diff of skyColors from one another
+                    <> need stdev of those properties
+                        
+                    <> then if vPoints contrast or color diff is larger
+                        than stdev, should not be included.
+                    <> tests to use for tuning:
+                        <>brown & lowe 2003 image should not start including
+                        snow covered peaks.
+                        <>ventura mountain image should not start including
+                        snow covered peaks
+                        <> arizona image should not start including the foreground
+                        mountains
+                    */
+                }
+            }
+        }
+         
+        skyPoints.addAll(candidateCloudPoints);
+       
+    }
+    
 }

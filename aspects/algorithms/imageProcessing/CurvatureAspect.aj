@@ -157,26 +157,87 @@ public aspect CurvatureAspect {
 
     }
 
-    after(Set<PairInt> points, Image clrImage, int xOffset, int yOffset) returning() :
-        execution(private void ImageProcessor.findSunAndAddToSkyPoints(Set<PairInt>, Image, int, int))
+    after(Set<PairInt> points, Image clrImage, int xOffset, int yOffset) 
+        returning(Set<PairInt> sunPoints) :
+        execution(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(Set<PairInt>, Image, int, int))
         && args(points, clrImage, xOffset, yOffset)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = clrImage.copyImage();
 
+        log2.info("plotting " + sunPoints.size() + " sun points");
+
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
 
-            ImageIOHelper.addToImage(points, xOffset, yOffset, clr);
+            ImageIOHelper.addToImage(sunPoints, xOffset, yOffset, clr);
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_sun_removed_" + outImgNum + ".png", clr);
+                dirPath + "/sky_sun_points_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
         }
+    }
 
-    }    
+    before(Set<PairInt> skyPoints, Set<PairInt> sunPoints,
+        Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax, 
+        Image originalColorImage, GreyscaleImage mask) 
+        : call(private void ImageProcessor.removeClouds( 
+             Set<PairInt>, Set<PairInt>, Map<Integer, PairInt>, int[], Image, GreyscaleImage)) 
+        && args(skyPoints, sunPoints, skyRowColRange, skyRowMinMax, originalColorImage, mask) 
+        && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = mask.getXRelativeOffset();
+        int yOffset = mask.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.addToImage(sunPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_before_cloud_removal_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after(Set<PairInt> skyPoints, Set<PairInt> sunPoints,
+        Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax, 
+        Image originalColorImage, GreyscaleImage mask)
+        returning() :
+        execution(private void ImageProcessor.removeClouds(
+            Set<PairInt>, Set<PairInt>, Map<Integer, PairInt>, int[], Image, 
+            GreyscaleImage) )
+        && args(skyPoints, sunPoints, skyRowColRange, skyRowMinMax, originalColorImage, 
+        mask)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = mask.getXRelativeOffset();
+        int yOffset = mask.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(sunPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_after_cloud_removal_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
 
     after(ScaleSpaceCurveImage scaleSpaceImage, int sigmaIndex, int tIndex) 
         returning() :
