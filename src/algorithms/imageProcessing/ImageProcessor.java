@@ -3457,25 +3457,28 @@ try {
         // and if elliptical, add them and the enclosed points to skyPoints
                 
         Set<PairInt> yellowPoints = new HashSet<PairInt>();
-        
+
         for (PairInt p : skyPoints) {
-            
+
             int x = p.getX() + xOffset;
             int y = p.getY() + yOffset;
-            
+
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
-                    
+
                     int xx = x + dx;
                     int yy = y + dy;
-                    
+
                     if ((xx < 0) || xx > (clr.getWidth() - 1)) {
                         continue;
                     }
                     if ((yy < 0) || yy > (clr.getHeight() - 1)) {
                         continue;
                     }
-                    
+                    if (skyPoints.contains(new PairInt(xx, yy))) {
+                        continue;
+                    }
+
                     int r = clr.getR(xx, yy);
                     int g = clr.getG(xx, yy);
                     int b = clr.getB(xx, yy);
@@ -3488,18 +3491,15 @@ try {
                     float s2 = hsb[1] * 100.f;
 
                    // red halo: ((h2 >= 30) && (h2 <= 40) && (s2 > 90) && (hsb[2] > 0.9))
-                   // inward of that: ((h2 > 40) && (h2 <= 60) && (s2 > 35) && (s2 < 60))
-                   if (
-                       ((h2 >= 30) && (h2 <= 40) && (s2 > 90) && (hsb[2] > 0.9))
-                       || ((h2 > 30) && (h2 <= 60) && (s2 > 35)) 
-                       || ((r == 255) && (hsb[2] == 1.00) && (s2 > 99))
-                       ) {
-                       
-                       PairInt p2 = new PairInt(xx - xOffset, yy - yOffset);
-                       
-                       yellowPoints.add(p2);
+                    // inward of that: ((h2 > 40) && (h2 <= 60) && (s2 > 35) && (s2 < 60))
+                    if (((h2 >= 30) && (h2 <= 40) && (s2 > 90) && (hsb[2] > 0.9))
+                        || ((h2 > 30) && (h2 <= 60) && (s2 > 35))
+                        || ((r == 255) && (hsb[2] == 1.00) && (s2 > 99))) {
 
-                   }
+                        PairInt p2 = new PairInt(xx - xOffset, yy - yOffset);
+
+                        yellowPoints.add(p2);
+                    }
                 }
             }
         }

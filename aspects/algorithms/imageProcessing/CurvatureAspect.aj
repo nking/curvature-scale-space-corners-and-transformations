@@ -162,10 +162,7 @@ public aspect CurvatureAspect {
         && args(points, clrImage, xOffset, yOffset)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
-        Object[] args = (Object[])thisJoinPoint.getArgs();
-        Image img = (Image)args[1];
-
-        Image clr = img.copyImage();
+        Image clr = clrImage.copyImage();
 
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
