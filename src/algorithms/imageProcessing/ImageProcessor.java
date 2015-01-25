@@ -3691,7 +3691,7 @@ try {
         
         int width = mask.getWidth();
         int height = mask.getHeight();
-        
+                
         Set<PairInt> visited = new HashSet<PairInt>();
         visited.add(cloudStack.peek());
        
@@ -3759,11 +3759,13 @@ try {
                         skyStDevContrast,
                         localSky.getStandardDeviationColorDifference())
                     );*/
+                
+                    boolean doNotAddToStack = false;
                     
                     if (skyIsRed) {
                         // if contrast is '+' and large, may be the skyline boundary
                         if (
-                            (Double.isInfinite(skyStDevContrast) || (skyStDevContrast == 0.))
+                            Double.isInfinite(skyStDevContrast)
                             || (
                                 (contrastV > 0) && !Double.isInfinite(skyStDevContrast)
                                 && (skyStDevContrast != 0.)
@@ -3775,9 +3777,15 @@ try {
 
                             continue;
 
+                        } else if (skyStDevContrast == 0.) {
+                            
+                            if (contrastV >= 0.) {
+                                doNotAddToStack = true;
+                            }
+                            
                         } else {
 
-                            //TODO:  if there are sunpoints, need a zone of
+                            //TODO:  if there are sun points, need a zone of
                             // avoidance to not erode the foreground 
                         }
                         
@@ -3789,7 +3797,10 @@ try {
                     }
                     
                     candidateCloudPoints.add(vPoint);
-                    cloudStack.add(vPoint);
+                    
+                    if (!doNotAddToStack) {
+                        cloudStack.add(vPoint);
+                    }
                     
                     localSkyColors.put(vPoint, localSky);
                     candidateSkyColorsMap.put(vPoint, 
@@ -3800,7 +3811,7 @@ try {
         }
          
         skyPoints.addAll(candidateCloudPoints);
-       
+
     }
     
 }
