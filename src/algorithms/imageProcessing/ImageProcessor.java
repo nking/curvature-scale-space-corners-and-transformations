@@ -2137,13 +2137,13 @@ public class ImageProcessor {
         if (h == null) {
             return;
         }
-/*        
+
 try {
     h.plotHistogram("contrast", 1);
 } catch (IOException e) {
     log.severe(e.getMessage());
 }
-*/        
+        
         int yPeakIdx = MiscMath.findYMaxIndex(h.getYHist());
         int tailXIdx = h.getXHist().length - 1;
         if (tailXIdx > yPeakIdx) {
@@ -2387,7 +2387,7 @@ try {
                 count++;
             }
         }
-        
+        replace the histogram method or fix it
         HistogramHolder h = Histogram.calculateSturgesHistogramRemoveZeroTail(
             yValues, Errors.populateYErrorsBySqrt(yValues));
 
@@ -2795,24 +2795,23 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
         GreyscaleImage gXY2 = gradientXY.copyImage();
         
         // x is pixelValue , y is number of pixels holding that value
+        // last in array is for the smallest pixelValue
         PairIntArray gXYValues = Histogram.createADescendingSortByKeyArray(gXY2);
+        
+        int lastHistIdx = gXYValues.getN();
         
         int nMaxIter = gXYValues.getN();
         int nIter = 0;
         
-        float v0 = gXYValues.getY(gXYValues.getN() - 1);
-        
-        int lastMinIdx = -1;
-        
+        float originalMaxValue = gXYValues.getY(gXYValues.getN() - 1);
+                
         int nPrevCorrectedEmbeddedGroups0 = Integer.MAX_VALUE;
         int prevSubtract0 = 0;
         Set<PairInt> prevSkyPoints0 = new HashSet<PairInt>(skyPoints);
                 
-        // subtracting thresholds that are >= 0.5, 
-        
         boolean doNotSubtractMore = false;
         
-        while (nIter < nMaxIter) {
+        while ((nIter < nMaxIter) && (subtract < originalMaxValue)) {
             
             // subtract a threshold amount from gradientXY,
             //   starting from a value that's half of the peak, then intervals
@@ -2821,35 +2820,12 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                 gXY2 = gradientXY.copyImage();
             }
             
-            if (nIter < 5) {
-                
-                float critFraction = (nIter == 0) ? 0.65f :
-                    (nIter == 1) ? 0.45f :
-                    (nIter == 2) ? 0.25f : 
-                    (nIter == 2) ? 0.1f : 0.05f;
-                
-                subtract = gXYValues.getX(gXYValues.getN() - 1);
-                
-                for (int i = (gXYValues.getN() - 1); i > -1; i--) {
-                    float f = (float)gXYValues.getY(i)/v0;
-                    if (f >= critFraction) {
-                        subtract = gXYValues.getX(i);
-                        lastMinIdx = i;
-                    } else {
-                        break;
-                    }
-                }
-            } else {
-                lastMinIdx--;
-                if (lastMinIdx < 1) {
-                    break;
-                }
-                subtract = gXYValues.getX(lastMinIdx);
+            lastHistIdx--;
+            if (lastHistIdx < 1) {
+                break;
             }
-                        
-rewrite this section to march forward only, but in increment levels
-    of 1 and always able to revert
-                    
+            subtract = gXYValues.getX(lastHistIdx);
+            
             subtractWithCorrectForNegative(gXY2, subtract);
            
             // ==== find contiguous zeros =====  
@@ -2862,123 +2838,35 @@ rewrite this section to march forward only, but in increment levels
             
             int nCorrectedEmbeddedGroups = extractEmbeddedGroupPoints(
                 skyPoints, gXY2, embeddedPoints);
-            <
+            
             float nSkyPix = skyPoints.size();
             log.info("nIter=" + nIter + ")" 
                 + " nCorrectedEmbeddedGroups=" + nCorrectedEmbeddedGroups
                 + " nEmbeddedPixels=" + embeddedPoints.size()
                 + " out of " + nSkyPix
-                + " (level=" + ((float)gXYValues.getY(lastMinIdx)/v0) 
+                + " (level=" + ((float)gXYValues.getY(lastHistIdx)/originalMaxValue) 
                 + " subtract=" + subtract + " out of max=" + gXYValues.getX(0)
                 + ")"
             );
             
             if (
                 ((nCorrectedEmbeddedGroups >= 2*nPrevCorrectedEmbeddedGroups0) 
-                && (prevSkyPoints0 != null))                    
-                ) {
+                && (prevSkyPoints0 != null)) ) {
                 skyPoints.clear();
                 skyPoints.addAll(prevSkyPoints0);
                 subtract = prevSubtract0;
                 break;
             }
  
+            float fracPixels = (float)embeddedPoints.size()/nSkyPix;
+            
             doNotSubtractMore = (nIter == 0)
                 && (embeddedPoints.isEmpty()
-                || (((double) nCorrectedEmbeddedGroups
-                * (double) embeddedPoints.size() / nSkyPix) < 0.008));
+                || (((double) nCorrectedEmbeddedGroups * fracPixels) < 0.008));
             
             if (doNotSubtractMore) {
                 break;
-            }
-            
-            float fracPixels = (float)embeddedPoints.size()/nSkyPix;
-            //TODO: improve this
-            if (((nIter == 0) && (fracPixels < 0.01) && (nCorrectedEmbeddedGroups < 10)) ||
-                ((nIter > 0) && (nCorrectedEmbeddedGroups < 4) && (fracPixels < 0.008))) {
-                
-                if (nCorrectedEmbeddedGroups > 0) {
-                    
-                    // this last subtraction can lead to the entire image being
-                    // connected to zero value regions if the skyline is low
-                    // contrast, so will assume that the image is not usually
-                    // entirely sky, and will revert the subtraction if it's
-                    // too much
-                    
-                    int maxValue = Integer.MIN_VALUE;
-                    for (PairInt p : embeddedPoints) {
-                        int x = p.getX();
-                        int y = p.getY();
-                        int v = gXY2.getValue(x, y);
-                        if (v > maxValue) {
-                            maxValue = v;
-                        }
-                    }
-                    
-                    float fractionOfMax = 0.5f * (gXYValues.getX(0) - subtract);
- 
-                    if ((maxValue > Float.MIN_VALUE) && (maxValue < fractionOfMax)) {
-                        
-                        if ((nIter == 0) && (subtract == 0) && (maxValue > 1)) {
-                            maxValue--;
-                        }
-                                                
-                        int subtract2 = maxValue;
-                        
-                        <>
-                        
-                        // try to remove max value from image, else try revert and
-                        // try again w/ smaller than max value
-                        while (!doNotSubtractMore && (subtract2 > 0)) {
-                            
-                            Set<PairInt> prevSkyPoints = new HashSet<PairInt>(skyPoints);
-                            int prevSubtract = subtract;
-                            GreyscaleImage prevGXY2 = gXY2.copyImage();
-                            
-                            subtractWithCorrectForNegative(gXY2, subtract2);
-                        
-                            growZeroValuePoints(skyPoints, gXY2);
-                            
-                            float fracSky = (float)skyPoints.size()/
-                                (float) gXY2.getNPixels();
-                            
-                            log.info("--> subtracted " + subtract2 
-                                + " fracSky=" + fracSky);
-                            
-                            if (fracSky > 0.8) {
-                                
-                                /*if (subtract2 > 1) {
-                                    subtract2--;
-                                    log.info("--> reverting to previous" +
-                                        " and retrying smaller subtraction=" +
-                                        subtract2);
-                                } else {*/
-                                    log.info("--> reverting to previous");
-                                    doNotSubtractMore = true;
-                                //}
-                                
-                                gXY2 = prevGXY2;
-                                skyPoints.clear();
-                                skyPoints.addAll(prevSkyPoints);
-                                subtract = prevSubtract;
-                            }
-                        } // end while !doNotSubtractMore
-                    } // end if maxValue
-                } //endif
-                
-try {
-    Image img1 = gradientXY.copyImageToGreen();
-    ImageIOHelper.addToImage(skyPoints, 0, 0, img1);
-    ImageDisplayer.displayImage("sky points nIter=" + nIter, img1);
-} catch (IOException ex) {
-    log.severe(ex.getMessage());
-}
-                if (doNotSubtractMore) {
-                    break;
-                }
-                
-                break;
-            }
+            }   
 
 try {
     Image img1 = gradientXY.copyImageToGreen();
@@ -2987,10 +2875,6 @@ try {
 } catch (IOException ex) {
     log.severe(ex.getMessage());
 }
-
-            if (doNotSubtractMore) {
-                break;
-            }
             
             nPrevCorrectedEmbeddedGroups0 = nCorrectedEmbeddedGroups;
             prevSubtract0 = subtract;
@@ -2999,7 +2883,15 @@ try {
 
             nIter++;
         }
-        
+
+try {
+    Image img1 = gradientXY.copyImageToGreen();
+    ImageIOHelper.addToImage(skyPoints, 0, 0, img1);
+    ImageDisplayer.displayImage("sky points nIter=" + nIter, img1);
+} catch (IOException ex) {
+    log.severe(ex.getMessage());
+}
+         
         return subtract;
     }
 
@@ -3817,7 +3709,7 @@ try {
                             ) {
 
                             //log.info("removing contrast=" + contrastV);
-                            log.info(String.format(
+                            log.fine(String.format(
                                 "REMOVING: (%d, %d) contrast=%f clrDiff=%f contrastStDev=%f clrStDev=%f",
                                 vX + xOffset, vY + yOffset,
                                 contrastV, colorDiffV, 

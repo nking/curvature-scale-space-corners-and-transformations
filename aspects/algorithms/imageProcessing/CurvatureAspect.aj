@@ -274,6 +274,57 @@ public aspect CurvatureAspect {
         }
     }
 
+    before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
+        GreyscaleImage theta, double avgY, boolean addAlongX, int addAmount) :
+        execution(private void ImageProcessor.removeHighContrastPoints(
+            List<PairIntArray>, Image, GreyscaleImage, double, boolean, int) )
+        && args(zeroPointLists, originalColorImage, theta, avgY, addAlongX, addAmount)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = theta.getXRelativeOffset();
+        int yOffset = theta.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_before_high_contrast_points_removed_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
+        GreyscaleImage theta, double avgY, boolean addAlongX, int addAmount)
+        returning() :
+        execution(private void ImageProcessor.removeHighContrastPoints(
+            List<PairIntArray>, Image, GreyscaleImage, double, boolean, int) )
+        && args(zeroPointLists, originalColorImage, theta, avgY, addAlongX, addAmount)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = theta.getXRelativeOffset();
+        int yOffset = theta.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_high_contrast_points_removed_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
     after(ScaleSpaceCurveImage scaleSpaceImage, int sigmaIndex, int tIndex) 
         returning() :
         execution(void algorithms.imageProcessing.ContourFinder.removeContourFromImage(ScaleSpaceCurveImage, int, int))
