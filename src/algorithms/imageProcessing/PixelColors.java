@@ -73,7 +73,7 @@ public class PixelColors {
             yuv = MatrixUtil.multiply(m, new double[]{red, green, blue});
         }
         
-        double[] yuvOther = MatrixUtil.multiply(m, new double[]{red, green, blue});
+        double[] yuvOther = MatrixUtil.multiply(m, new double[]{otherRed, otherGreen, otherBlue});
         
         double contrast = (yuv[0] - yuvOther[0])/yuvOther[0];
         

@@ -183,7 +183,7 @@ public aspect CurvatureAspect {
     before(Set<PairInt> skyPoints, Set<PairInt> sunPoints,
         Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax, 
         Image originalColorImage, GreyscaleImage mask) 
-        : call(private void ImageProcessor.removeClouds( 
+        : call(private void ImageProcessor.findClouds( 
              Set<PairInt>, Set<PairInt>, Map<Integer, PairInt>, int[], Image, GreyscaleImage)) 
         && args(skyPoints, sunPoints, skyRowColRange, skyRowMinMax, originalColorImage, mask) 
         && target(algorithms.imageProcessing.ImageProcessor) {
@@ -212,7 +212,7 @@ public aspect CurvatureAspect {
         Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax, 
         Image originalColorImage, GreyscaleImage mask)
         returning() :
-        execution(private void ImageProcessor.removeClouds(
+        execution(private void ImageProcessor.findClouds(
             Set<PairInt>, Set<PairInt>, Map<Integer, PairInt>, int[], Image, 
             GreyscaleImage) )
         && args(skyPoints, sunPoints, skyRowColRange, skyRowMinMax, originalColorImage, 
