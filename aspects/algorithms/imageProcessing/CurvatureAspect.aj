@@ -157,6 +157,26 @@ public aspect CurvatureAspect {
 
     }
 
+    before(Set<PairInt> points, Image clrImage, int xOffset, int yOffset) :
+        call(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(Set<PairInt>, Image, int, int))
+        && args(points, clrImage, xOffset, yOffset)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = clrImage.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(points, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_points_before_sun_search_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
     after(Set<PairInt> points, Image clrImage, int xOffset, int yOffset) 
         returning(Set<PairInt> sunPoints) :
         execution(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(Set<PairInt>, Image, int, int))
@@ -180,12 +200,9 @@ public aspect CurvatureAspect {
         }
     }
 
-    before(Set<PairInt> skyPoints, Set<PairInt> sunPoints,
-        Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax, 
-        Image originalColorImage, GreyscaleImage mask) 
-        : call(private void ImageProcessor.findClouds( 
-             Set<PairInt>, Set<PairInt>, Map<Integer, PairInt>, int[], Image, GreyscaleImage)) 
-        && args(skyPoints, sunPoints, skyRowColRange, skyRowMinMax, originalColorImage, mask) 
+    before(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask) 
+        : call(private void ImageProcessor.findClouds(Set<PairInt>, Image, GreyscaleImage)) 
+        && args(skyPoints, originalColorImage, mask) 
         && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -198,8 +215,6 @@ public aspect CurvatureAspect {
 
             ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
 
-            ImageIOHelper.addToImage(sunPoints, xOffset, yOffset, clr);
-
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_before_cloud_removal_" + outImgNum + ".png", clr);
 
@@ -208,15 +223,11 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(Set<PairInt> skyPoints, Set<PairInt> sunPoints,
-        Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax, 
-        Image originalColorImage, GreyscaleImage mask)
+    after(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask)
         returning() :
         execution(private void ImageProcessor.findClouds(
-            Set<PairInt>, Set<PairInt>, Map<Integer, PairInt>, int[], Image, 
-            GreyscaleImage) )
-        && args(skyPoints, sunPoints, skyRowColRange, skyRowMinMax, originalColorImage, 
-        mask)
+            Set<PairInt>, Image, GreyscaleImage) )
+        && args(skyPoints, originalColorImage, mask)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -227,12 +238,36 @@ public aspect CurvatureAspect {
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
 
-            ImageIOHelper.addToImage(sunPoints, xOffset, yOffset, clr);
-
             ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
 
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_after_cloud_removal_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
+        GreyscaleImage theta, boolean addAlongX, int addAmount)
+        returning() :
+        execution(private void ImageProcessor.removeSetsWithNonCloudColors(
+            List<PairIntArray>, Image, GreyscaleImage, boolean, int) )
+        && args(zeroPointLists, originalColorImage, theta, addAlongX, addAmount)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = theta.getXRelativeOffset();
+        int yOffset = theta.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_noncloudcolors_removed_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
