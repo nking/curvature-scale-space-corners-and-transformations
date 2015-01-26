@@ -248,6 +248,31 @@ public aspect CurvatureAspect {
         }
     }
 
+    before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
+        GreyscaleImage theta, boolean addAlongX, int addAmount) :
+        execution(private void ImageProcessor.removeSetsWithNonCloudColors(
+            List<PairIntArray>, Image, GreyscaleImage, boolean, int) )
+        && args(zeroPointLists, originalColorImage, theta, addAlongX, addAmount)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = theta.getXRelativeOffset();
+        int yOffset = theta.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_before_noncloudcolors_removed_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
     after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount)
         returning() :
@@ -319,6 +344,28 @@ public aspect CurvatureAspect {
 
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_high_contrast_points_removed_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after(GreyscaleImage gradientXY, Set<PairInt> skyPoints)
+        returning() :
+        execution(public int ImageProcessor.extractSkyFromGradientXY(
+            GreyscaleImage, Set<PairInt>) )
+        && args(gradientXY, skyPoints)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = gradientXY.copyImageToGreen();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(skyPoints, 0, 0, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_from_gradientXY_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());

@@ -872,11 +872,31 @@ public class ImageProcessor {
         removeSetsWithNonCloudColors(zeroPointLists, colorImg, thetaImg,
             true, 0);
         
+        if (zeroPointLists.isEmpty()) {
+            
+            GreyscaleImage mask = theta.createWithDimensions();
+               
+            // return an image of all 1's
+            mask.fill(1);
+            
+            return mask;
+        }
+        
         //TODO:  assumes that largest smooth component of image is sky.
         // if sky is small and a foreground object is large and featureless
         // and not found as dark, this will fail. 
         // will adjust for that one day, possibly with color validation
         reduceToLargest(zeroPointLists);
+        
+        if (zeroPointLists.isEmpty()) {
+            
+            GreyscaleImage mask = theta.createWithDimensions();
+               
+            // return an image of all 1's
+            mask.fill(1);
+            
+            return mask;
+        }
         
         double[] avgYRGB = calculateYRGB(zeroPointLists.get(0), colorImg,
              thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset(), 
@@ -2043,10 +2063,11 @@ public class ImageProcessor {
                 
                 if ((r < colorLimit) && (b < colorLimit) && (g < colorLimit)) {
                     nBelowLimit++;
-                } 
-                if ((Math.abs((r/255.) - 0.35) < 10) 
-                    && (Math.abs((g/255.) - 0.35) < 10) 
-                    && (Math.abs((b/255.) - 0.35) < 10)
+                }
+                // tracking color of sand
+                if ((Math.abs((r/255.) - 0.35) < .10) 
+                    && (Math.abs((g/255.) - 0.35) < .10) 
+                    && (Math.abs((b/255.) - 0.35) < .10)
                     && (b < g)) {
                     nBelowLimit2++;
                 }
@@ -2110,11 +2131,16 @@ public class ImageProcessor {
     
     /**
      * remove high contrast points from the sky points.  this helps to remove
-     * points from structures like skyscraper windows which have repetitive
-     * structure on the scale of the combined convolutions of the gradient image
-     * that results in the repetitive structure not being a feature in the
-     * gradient and theta images, hence present in the theta image extracted
-     * skypoints when they should not be.
+     * points that are present due to "blind spots" in gradientXY on the scale
+     * of the combined convolution of gaussians that created the gradientXY.
+     * For example, repetitive structure like skyscraper windows are objects
+     * in the color image which may be missing an outline in the gradientXY.
+     * These features have higher contrast in the color image than the normal
+     * sky because they are objects, not sky, so this method tries to find
+     * those and remove them from the sky points.  Note that the method prefers
+     * to err on the side of over subtracting because later steps can find 
+     * any removed connected sky as long as the majority of sky points remain.
+     * 
      * @param zeroPointLists
      * @param originalColorImage
      * @param theta
@@ -2140,11 +2166,22 @@ public class ImageProcessor {
 
 try {
     h.plotHistogram("contrast", 1);
+    // printed as bin/classes/points_and_polygon1.html
 } catch (IOException e) {
     log.severe(e.getMessage());
 }
+        List<Integer> strongPeaks = MiscMath.findStrongPeakIndexes(h, 0.1f);
+         
+        if (strongPeaks == null || strongPeaks.isEmpty()) {
+            return;
+        }
+       
+        int lastPeakIdx = strongPeaks.get(strongPeaks.size() - 1).intValue();
         
-        int yPeakIdx = MiscMath.findYMaxIndex(h.getYHist());
+        //TODO: this is sensitive to the histogram formation so needs a wide
+        // variety of data for testing to make sure it finds the right characteristic
+        
+        int yPeakIdx = lastPeakIdx;
         int tailXIdx = h.getXHist().length - 1;
         if (tailXIdx > yPeakIdx) {
             float yPeak =  h.getYHist()[yPeakIdx];
@@ -2325,6 +2362,23 @@ try {
         return new double[]{avgY, avgR, avgG, avgB};
     }
     
+    /**
+     * if the range of contrast is large, return a contrast histogram,
+     * else return null.  
+     * TODO: refactor to move the logic to return null to the invoker. 
+     * For now, the only use of this method is simpler if it does not
+     * return a histogram when it won't be needed.  definitely should
+     * be refactored...
+     * 
+     * @param avgY
+     * @param zeroPointLists
+     * @param originalColorImage
+     * @param xOffset
+     * @param yOffset
+     * @param addAlongX
+     * @param addAmount
+     * @return 
+     */
     private HistogramHolder createContrastHistogram(double avgY,
         List<PairIntArray> zeroPointLists, Image originalColorImage,
         int xOffset, int yOffset, boolean addAlongX, int addAmount) {
@@ -2371,9 +2425,9 @@ try {
                     continue;
                 }
                 
-                int r = originalColorImage.getR(x, y);
-                int g = originalColorImage.getG(x, y);
-                int b = originalColorImage.getB(x, y);
+                int r = originalColorImage.getR(ox, oy);
+                int g = originalColorImage.getG(ox, oy);
+                int b = originalColorImage.getB(ox, oy);
                 
                 double[] rgb = new double[]{r, g, b};
                         
@@ -2387,11 +2441,45 @@ try {
                 count++;
             }
         }
-        replace the histogram method or fix it
-        HistogramHolder h = Histogram.calculateSturgesHistogramRemoveZeroTail(
-            yValues, Errors.populateYErrorsBySqrt(yValues));
+        
+        float[] yErr = Errors.populateYErrorsBySqrt(yValues);
+        HistogramHolder h = Histogram.createSimpleHistogram(yValues, 
+            yErr);
 
-        return h;
+        if (h != null) {
+            
+            int lastZeroIdx = MiscMath.findLastZeroIndex(h);
+            
+            int nBins = h.getXHist().length;
+            
+            int nLastZeros = nBins - lastZeroIdx;
+            
+            if ((nLastZeros > 4) && (lastZeroIdx > -1)) {
+                
+                float halfBinWidth = (h.getXHist()[1] - h.getXHist()[1]) / 2.f;
+
+                nBins = lastZeroIdx - 1;
+                float xMin = h.getXHist()[0] - halfBinWidth;
+                float xMax = h.getXHist()[lastZeroIdx - 1] + halfBinWidth;
+
+                float contrastRange = h.getXHist()[lastZeroIdx - 1]
+                    - h.getXHist()[0];
+
+                if (contrastRange > 1.5) {
+
+                    h = Histogram.calculateSturgesHistogramRemoveZeroTail(yValues, yErr);
+                    
+                    if ((h != null) && (h.getXHist().length == 1)) {
+                        h = Histogram.calculateSturgesHistogram(xMin, xMax, yValues, yErr);
+                    }
+                    
+                    return h;
+
+                }
+            }
+        }
+        
+        return null;
     }
     
     private void transformPointsToOriginalReferenceFrame(Set<PairInt> points,
@@ -2789,32 +2877,68 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
      */
     public int extractSkyFromGradientXY(GreyscaleImage gradientXY,
         Set<PairInt> skyPoints) {
-        
-        int subtract = 0;
-        
+                
         GreyscaleImage gXY2 = gradientXY.copyImage();
-        
+                
         // x is pixelValue , y is number of pixels holding that value
         // last in array is for the smallest pixelValue
         PairIntArray gXYValues = Histogram.createADescendingSortByKeyArray(gXY2);
-        
+
+        float sumF = 0;
+        int valueFor0Point9 = 0;
+        for (int i = (gXYValues.getN() - 1); i > -1; i--) {
+            float f = (float)gXYValues.getY(i)/(float)gradientXY.getNPixels();
+            sumF += f;
+            if (sumF > 0.9) {
+                break;
+            }
+            valueFor0Point9 = gXYValues.getX(i);
+        }
+/*        
+float sumFrac = 0;
+StringBuilder sb = new StringBuilder("gXY:\n");
+for (int i = (gXYValues.getN() - 1); i > -1; i--) {
+int sumToHighValues = 0;
+for (int ii = i; ii > -1; ii--) {
+    sumToHighValues += gXYValues.getY(ii);
+}
+float frac = (float)gXYValues.getY(i)/(float)gradientXY.getNPixels();
+sumFrac += frac;
+sb.append(String.format(" value=%d count=%d  f=%f  sumToEnd=%d", 
+gXYValues.getX(i), gXYValues.getY(i), frac, sumToHighValues));
+sb.append("sumF=").append(Float.toString(sumFrac));
+sb.append("\n");
+}
+log.info(sb.toString());
+*/
+        int subtract = 0;
         int lastHistIdx = gXYValues.getN();
         
-        int nMaxIter = gXYValues.getN();
+        float c0 = (float)gXYValues.getY(gXYValues.getN() - 1)/(float)gradientXY.getNPixels();
+        float c1 = (float)gXYValues.getY(gXYValues.getN() - 2)/(float)gradientXY.getNPixels();
+        //float c01 = c1 + c0;
+        float cm01 = c0 - c1;
+        if ((cm01 < 0.0) && (valueFor0Point9 <= 2)) {
+            subtract = 0;
+            lastHistIdx = gXYValues.getN();
+        } else if (cm01 < 0.3) {
+            if (valueFor0Point9 <= 2) {
+                subtract = 2;
+                lastHistIdx = gXYValues.getN() - 2;
+            } else {
+                subtract = 1;
+                lastHistIdx = gXYValues.getN() - 1;
+            }
+        } else if ((cm01 >= 0.3) && (cm01 <= 0.45) && (valueFor0Point9 <= 2)) {
+            subtract = 1;
+            lastHistIdx = gXYValues.getN() - 1;
+        }
+        
         int nIter = 0;
         
         float originalMaxValue = gXYValues.getY(gXYValues.getN() - 1);
-                
-        int nPrevCorrectedEmbeddedGroups0 = Integer.MAX_VALUE;
-        int prevSubtract0 = 0;
-        Set<PairInt> prevSkyPoints0 = new HashSet<PairInt>(skyPoints);
-                
-        boolean doNotSubtractMore = false;
-        
-        while ((nIter < nMaxIter) && (subtract < originalMaxValue)) {
-            
-            // subtract a threshold amount from gradientXY,
-            //   starting from a value that's half of the peak, then intervals
+                                
+        while ((subtract < originalMaxValue) && (nIter == 0)) {
             
             if (nIter > 0) {
                 gXY2 = gradientXY.copyImage();
@@ -2825,7 +2949,7 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
                 break;
             }
             subtract = gXYValues.getX(lastHistIdx);
-            
+
             subtractWithCorrectForNegative(gXY2, subtract);
            
             // ==== find contiguous zeros =====  
@@ -2839,59 +2963,26 @@ if ((ox == (517/2)) && (contrastV > uContrastAndColor.getX())) {
             int nCorrectedEmbeddedGroups = extractEmbeddedGroupPoints(
                 skyPoints, gXY2, embeddedPoints);
             
-            float nSkyPix = skyPoints.size();
-            log.info("nIter=" + nIter + ")" 
+            log.fine("nIter=" + nIter + ")" 
                 + " nCorrectedEmbeddedGroups=" + nCorrectedEmbeddedGroups
                 + " nEmbeddedPixels=" + embeddedPoints.size()
-                + " out of " + nSkyPix
+                + " out of " + skyPoints.size()
                 + " (level=" + ((float)gXYValues.getY(lastHistIdx)/originalMaxValue) 
                 + " subtract=" + subtract + " out of max=" + gXYValues.getX(0)
                 + ")"
             );
-            
-            if (
-                ((nCorrectedEmbeddedGroups >= 2*nPrevCorrectedEmbeddedGroups0) 
-                && (prevSkyPoints0 != null)) ) {
-                skyPoints.clear();
-                skyPoints.addAll(prevSkyPoints0);
-                subtract = prevSubtract0;
-                break;
-            }
- 
-            float fracPixels = (float)embeddedPoints.size()/nSkyPix;
-            
-            doNotSubtractMore = (nIter == 0)
-                && (embeddedPoints.isEmpty()
-                || (((double) nCorrectedEmbeddedGroups * fracPixels) < 0.008));
-            
-            if (doNotSubtractMore) {
-                break;
-            }   
-
-try {
-    Image img1 = gradientXY.copyImageToGreen();
-    ImageIOHelper.addToImage(skyPoints, 0, 0, img1);
-    ImageDisplayer.displayImage("sky points nIter=" + nIter, img1);
-} catch (IOException ex) {
-    log.severe(ex.getMessage());
-}
-            
-            nPrevCorrectedEmbeddedGroups0 = nCorrectedEmbeddedGroups;
-            prevSubtract0 = subtract;
-            prevSkyPoints0 = new HashSet<PairInt>();
-            prevSkyPoints0.addAll(skyPoints);
-
+                        
             nIter++;
         }
-
+/*
 try {
     Image img1 = gradientXY.copyImageToGreen();
     ImageIOHelper.addToImage(skyPoints, 0, 0, img1);
-    ImageDisplayer.displayImage("sky points nIter=" + nIter, img1);
+    ImageDisplayer.displayImage("sky points subtract=" + subtract, img1);
 } catch (IOException ex) {
     log.severe(ex.getMessage());
 }
-         
+*/         
         return subtract;
     }
 
@@ -3523,16 +3614,8 @@ try {
         
         // TODO: some adjustment should be made for the perimeter of the
         // sun points to not erode the skyline.  
-        
-        Set<PairInt> combinedPoints = null;
-        //if (sunPoints.isEmpty()) {
-            combinedPoints = skyPoints;
-        /*} else {
-            combinedPoints = new HashSet<PairInt>(skyPoints);
-            combinedPoints.addAll(sunPoints);
-        }*/
-        
-        for (PairInt skyPoint : combinedPoints) {
+                
+        for (PairInt skyPoint : skyPoints) {
             
             int x = skyPoint.getX();
             int y = skyPoint.getY();
@@ -3553,7 +3636,7 @@ try {
                 
                 PairInt p = new PairInt(xx, yy);
                 
-                if (combinedPoints.contains(p)) {
+                if (skyPoints.contains(p)) {
                     continue;
                 }
                 
@@ -3645,7 +3728,7 @@ try {
                     
                     PairInt vPoint = new PairInt(vX, vY);
                     
-                    if (visited.contains(vPoint) || combinedPoints.contains(vPoint)
+                    if (visited.contains(vPoint) || skyPoints.contains(vPoint)
                         || candidateCloudPoints.contains(vPoint)) {
                         continue;
                     }
@@ -3691,6 +3774,8 @@ try {
                     );*/
                 
                     boolean doNotAddToStack = false;
+                 
+ //TODO: this needs adjustments...
                     
                     if (skyIsRed) {
                         // if contrast is '+' and large, may be the skyline boundary

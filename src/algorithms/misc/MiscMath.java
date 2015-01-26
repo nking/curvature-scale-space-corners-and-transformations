@@ -806,4 +806,17 @@ public class MiscMath {
         return xs;
     }
 
+    public static int findLastZeroIndex(HistogramHolder h) {
+        int n = h.getXHist().length;
+        int lastZeroIdx = n - 1;
+        for (int i = (n - 1); i > -1; i--) {
+            int y = h.getYHist()[i];
+            if (y > 0) {
+                break;
+            }
+            lastZeroIdx = i;
+        }
+        return lastZeroIdx;
+    }
+
 }
