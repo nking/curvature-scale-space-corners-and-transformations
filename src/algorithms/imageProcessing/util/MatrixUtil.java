@@ -127,6 +127,43 @@ public class MatrixUtil {
         return c;
     }
     
+    public static float[] multiply(float[][] m, float[] n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        
+        int mcols = m.length;
+
+        int mrows = m[0].length;
+
+        int ncols = n.length;
+        
+        if (mcols != ncols) {
+            throw new IllegalArgumentException(
+                "the number of columns in m must equal the number of rows in n");
+        }
+        
+        float[] c = new float[mrows];
+
+        int cCol = 0;
+        
+        for (int row = 0; row < mrows; row++) {
+                        
+            for (int col = 0; col < mcols; col++) {
+                
+                c[cCol] += (m[col][row] * n[col]);
+            }
+            
+            cCol++;        
+        }
+
+        return c;
+    }
+    
     public static void multiply(int[] m, int factor) {
 
         if (m == null || m.length == 0) {

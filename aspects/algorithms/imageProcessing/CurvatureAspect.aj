@@ -248,6 +248,56 @@ public aspect CurvatureAspect {
         }
     }
 
+    after(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask)
+        returning() :
+        execution(private void ImageProcessor.findMoreClouds(
+            Set<PairInt>, Image, GreyscaleImage) )
+        && args(skyPoints, originalColorImage, mask)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = mask.getXRelativeOffset();
+        int yOffset = mask.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_after_cloud_removal2_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after(Set<PairInt> sunPoints, Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask)
+        returning() :
+        execution(private void ImageProcessor.findSeparatedClouds(
+            Set<PairInt>, Set<PairInt>, Image, GreyscaleImage) )
+        && args(sunPoints, skyPoints, originalColorImage, mask)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = mask.getXRelativeOffset();
+        int yOffset = mask.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_sunlit_clouds_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
     before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount) :
         execution(private void ImageProcessor.removeSetsWithNonCloudColors(
