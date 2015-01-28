@@ -3979,7 +3979,7 @@ try {
                     }
                 }
          
-                if (debug)
+                if (false)
                 log.info(String.format("(%d, %d) dClr=%f,%f,%f   dContrast=%f,%f,%f   (%f,%f,%f) (%f,%f,%f)",
                     xx, yy, 
                     allSkyColors[0].calculateColorDifferenceToOther(rV, gV, bV),
@@ -4312,10 +4312,25 @@ try {
         // else do not.  for cases where they are attached, the points tend
         // to be mainly the boundary points and another round of findClouds
         // can erode the skyLine if the contrast is weak.
+    
+        // find the number of groups of connected pixels within skyPoints and
+        // extSkyPoints
         
+        int n = skyPoints.size();
         
         skyPoints.addAll(extSkyPoints);
-                      
+        
+        DFSConnectedGroupsFinder groupsFinder = new DFSConnectedGroupsFinder();
+        groupsFinder.setMinimumNumberInCluster(100);
+        groupsFinder.findConnectedPointGroups(skyPoints, mask.getWidth(), 
+            mask.getHeight());
+        
+        log.info("NUMBER of groups of connected skyPoints=" + groupsFinder.getNumberOfGroups());
+        
+        if (groupsFinder.getNumberOfGroups() > 1) {
+            findClouds(skyPoints, originalColorImage, mask);
+        }
+                
         for (PairInt p : skyPoints) {
             int x = p.getX();
             int y = p.getY();            
