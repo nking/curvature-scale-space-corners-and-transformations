@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
+import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
@@ -270,6 +271,53 @@ public class ImageIOHelper {
                     int b = rgb & 0xFF;         
                     
                     image.setRGB(i, j, r, g, b);
+                }
+            }
+            
+            return image;
+            
+        } catch (IOException e) {
+        }
+        
+        return null;
+    }
+    
+    /**
+     * read image at filePath into a greyscale image with assumptions that pixel
+     * value '0' is '0' and anything else gets stored in output as a '1'.
+     * 
+     * @param filePath
+     * @return
+     * @throws Exception 
+     */
+    public static GreyscaleImage readImageAsBinary(String filePath) 
+        throws Exception {
+     
+        if (filePath == null) {
+            throw new IllegalStateException("filePath cannot be null");
+        }
+                
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                throw new IllegalStateException(filePath + " does not exist");
+            }
+            
+            BufferedImage img = ImageIO.read(file);
+                 
+            int h = img.getHeight();
+            int w = img.getWidth();
+           
+            Raster raster = img.getData();
+            
+            GreyscaleImage image = new GreyscaleImage(w, h);
+            
+            int[] data = null;
+            for (int i = 0; i < w; i++) {
+                for (int j = 0; j < h; j++) {
+                    data = raster.getPixel(i, j, data);
+                    int value = data[0];
+                    image.setValue(i, j, value);
                 }
             }
             

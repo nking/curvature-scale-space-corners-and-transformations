@@ -1,9 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairIntArray;
-import algorithms.util.SimpleLinkedListNode;
+import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -42,7 +43,7 @@ public class DFSContiguousValueFinderTest extends TestCase {
                 finder.findGroupsNotThisValue(1);
             }
 
-            SimpleLinkedListNode[] groups = finder.getGroupMembershipList();
+            List<Set<Integer> > groups = finder.getGroupMembershipList();
 
             assertNotNull(groups);
 
@@ -75,9 +76,9 @@ public class DFSContiguousValueFinderTest extends TestCase {
             expected.add(String.format("%d:%d", 2, 0));
             expected.add(String.format("%d:%d", 1, 1));
 
-            SimpleLinkedListNode indexList = groups[0];
-            while (indexList != null) {
-                int idx = indexList.getKey();
+            Set<Integer> indexList = groups.get(0);
+            for (Integer index : indexList) {
+                int idx = index.intValue();
                 int x = img.getCol(idx);
                 int y = img.getRow(idx);
 
@@ -85,11 +86,29 @@ public class DFSContiguousValueFinderTest extends TestCase {
                 int eIdx = expected.indexOf(v);
                 assertTrue(eIdx > -1);
                 expected.remove(eIdx);
-
-                indexList = indexList.getNext();
             }
 
             assertTrue(expected.isEmpty());
         }
+    }
+    
+    public void testGroups2() throws Exception {
+                
+        String filePath = ResourceFinder.findFileInTestResources("test_mask_0.png");
+        
+        GreyscaleImage img = ImageIOHelper.readImageAsBinary(filePath);
+        
+        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);
+
+        finder.findGroups(0);
+                
+        assertTrue(finder.getNumberOfGroups() == 1);
+        
+        finder = new DFSContiguousValueFinder(img);
+
+        finder.findGroups(1);
+                
+        assertTrue(finder.getNumberOfGroups() == 5);
+        
     }
 }

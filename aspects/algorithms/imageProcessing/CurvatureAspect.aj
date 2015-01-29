@@ -243,6 +243,9 @@ public aspect CurvatureAspect {
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_after_cloud_removal_" + outImgNum + ".png", clr);
 
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/mask_after_cloud_removal_" + outImgNum + ".png", mask);
+
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
         }

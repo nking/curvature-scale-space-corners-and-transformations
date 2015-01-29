@@ -957,8 +957,33 @@ public class ImageProcessor {
         if ((nBeforeHighContrastRemoval - nAfterHighContrastRemoval) < 
             (int)(((float)nBeforeHighContrastRemoval)*0.1f)) {
             
-            findSeparatedClouds(sunPoints, points, 
-                originalColorImage, mask);
+            // also, do not perform this if we can tell that the sky is mostly
+            // found except the nBinFactor pixels near the border.
+            // (wanting to avoid overrunning low contrast skylines such as
+            // snow covered peaks under a hazy sky, etc)
+            
+            /*
+            is this part of the code present several times elsewhere?
+            if yes, replace with this method.
+            
+            find embedded non-sky pixels:
+            */
+            PerimeterFinder finder = new PerimeterFinder();
+            int[] rowMinMax = new int[2];
+            Map<Integer, PairInt> rowColRange = finder.find(points, rowMinMax);
+            
+            /*DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
+            contiguousNonZeroFinder.findGroupsNotThisValue(0, rowColRange,
+                rowMinMax);
+            int nEmbeddedGroups = contiguousNonZeroFinder.getNumberOfGroups();
+            */
+            
+            /*
+            and determine whether the sky pixels' perimeter is along one or
+               more image borders.
+            */
+            
+            findSeparatedClouds(sunPoints, points, originalColorImage, mask);
         }
         
         //TODO: refine this number comparison
@@ -2979,6 +3004,9 @@ log.info(sb.toString());
             
             growZeroValuePoints(skyPoints, gXY2);
             
+            
+            //TODO: remove this section or move it into an aspect
+                
             // === count number of embedded groups of non-zeros in skyPoints ===
             
             Set<PairInt> embeddedPoints = new HashSet<PairInt>();
@@ -3477,13 +3505,7 @@ try {
 
             Set<PairInt> groupPoints = new HashSet<PairInt>();
 
-            int[] indexes = contiguousNonZeroFinder.getIndexes(gId);
-
-            for (int j = 0; j < indexes.length; j++) {
-                int x = gXY2.getCol(indexes[j]);
-                int y = gXY2.getRow(indexes[j]);
-                groupPoints.add(new PairInt(x, y));
-            }
+            contiguousNonZeroFinder.getXY(gId, groupPoints);
 
             // if a perimeter point is not bounded in cardinal directions by 
             // image offsides or a pixel within skyPoints
@@ -3630,11 +3652,6 @@ try {
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
         
-        // for sunPoints, the connected points not in combinedPoints
-        // might unfortunately be foreground (sunpoints were derived from
-        // the color image rather than gradientXY, so they do not have the
-        // convolution widened offset from other features).
-        
         // TODO: some adjustment should be made for the perimeter of the
         // sun points to not erode the skyline.  
                 
@@ -3698,24 +3715,8 @@ try {
         
         double rDivB = allSkyColor.getAverageRed() / allSkyColor.getAverageBlue();
         boolean skyIsRed = (rDivB > 1);
-        /*
-        if (skyIsRed && (rDivB < 2)) {
-            
-            // example:  water with reflected sunlight in it
-            
-            double rDivBStDevs = allSkyColor.getStandardDeviationRed()
-                /allSkyColor.getStandardDeviationBlue();
-            
-            if ((rDivBStDevs > 1.1) && 
-                (allSkyColor.getStandardDeviationRed() > 25) &&
-                (allSkyColor.getStandardDeviationBlue() > 25)) {
-                
-                skyIsRed = false;
-            }
-        }*/
-
-        log.info("==> r/b="
-            + (allSkyColor.getAverageRed() / allSkyColor.getAverageBlue())
+       
+        log.info("==> r/b=" + rDivB
             + " redStdev=" + allSkyColor.getStandardDeviationRed()
             + " blueStDev=" + allSkyColor.getStandardDeviationBlue());
         
@@ -3865,7 +3866,8 @@ try {
 
                 } else {
 
-                    //TODO: need a few more test images for cloudy and blue
+                    //TODO:
+                    // sky is blue filters
 
                     continue;
                 }
@@ -3885,6 +3887,11 @@ try {
         
         skyPoints.addAll(candidateCloudPoints);
         
+        for (PairInt p : skyPoints) {
+            int x = p.getX();
+            int y = p.getY();            
+            mask.setValue(x, y, 0);
+        }
     }
 
     private void findMoreClouds(Set<PairInt> skyPoints, Image originalColorImage, 

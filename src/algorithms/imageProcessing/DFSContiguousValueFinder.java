@@ -3,8 +3,13 @@ package algorithms.imageProcessing;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.SimpleLinkedListNode;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -18,24 +23,22 @@ import java.util.logging.Logger;
  */
 public class DFSContiguousValueFinder {
     
-    /**
+   /**
      * an array to hold each group as an item.  each item contains a key which is an index
      * to arrays indexer.x, indexer.y and this.pointToGroupIndex
      */
-    protected SimpleLinkedListNode[] groupMembership = null;
-
-    protected int nGroups = 0;
+    protected List<Set<Integer> > groupMembership = new ArrayList<Set<Integer> >();
     
     protected Logger log = null;
     
-    // 0 = unvisited, 1 = processing, 2 = visited
-    protected int[] color = null;
+    protected Set<Integer> visited = new HashSet<Integer>();
     
     /*
-     * array holding indexes for a point to the group it belongs to.
+     * map w/ key holding indexes for a point to the group it belongs to.
      * note that the point index is relative to indexer.x and indexer.y
      */
-    protected int[] pointToGroupIndex = null;
+    protected Map<Integer, Integer> pointToGroupMap = new
+        HashMap<Integer, Integer >();
     
     protected int minimumNumberInCluster = 3;
     
@@ -59,21 +62,7 @@ public class DFSContiguousValueFinder {
     public void setDebug(boolean setDebugToTrue) {
         this.debug = setDebugToTrue;
     }
-    
-    protected void initializeVariables() {
-
-        pointToGroupIndex = new int[img.getNPixels()];
-        
-        Arrays.fill(pointToGroupIndex, -1);
-
-        groupMembership = new SimpleLinkedListNode[10];
-        
-        for (int i = 0; i < groupMembership.length; i++) {
-            
-            groupMembership[i] = new SimpleLinkedListNode();
-        }
-    }
-        
+       
     /**
      * NOTE: to keep the performance reasonable, bin the image so that
      * the number of pixels is below 87000 pixels.
@@ -81,9 +70,7 @@ public class DFSContiguousValueFinder {
      * @param pixelValue 
      */
     public void findGroups(int pixelValue) {
-                
-        initializeVariables();
-        
+            
         findClusters(pixelValue);
         
         prune();        
@@ -98,9 +85,7 @@ public class DFSContiguousValueFinder {
     public void findGroupsNotThisValue(int pixelValue) {
      
         notValue = true;
-        
-        initializeVariables();
-        
+                
         findClusters(pixelValue);
         
         prune();        
@@ -110,9 +95,6 @@ public class DFSContiguousValueFinder {
         
         // traverse the data by ordered x values 
         //    so can break when exceed critical distance
-                                
-        // 0 = unvisited, 1 = processing, 2 = visited
-        color = new int[img.getNPixels()];
         
         findClustersIterative(pixelValue);
         
@@ -139,19 +121,22 @@ public class DFSContiguousValueFinder {
         for (int uIndex = (img.getNPixels() - 1); uIndex > -1; uIndex--) {
             stack.add(Integer.valueOf(uIndex));
         }
-               
-        color[stack.peek().intValue()] = 2;
+        
+        visited.add(stack.peek());
 
         while (!stack.isEmpty()) {
 
             int uIndex = stack.pop().intValue();
+            
+            Integer uKey = Integer.valueOf(uIndex);
             
             int uPixValue = img.getValue(uIndex);
             
             if ((notValue && (uPixValue == pixelValue)) ||
                 (!notValue && (uPixValue != pixelValue))) {
                 
-                color[uIndex] = 2;
+                visited.add(uKey);
+                
                 continue;
             }
             
@@ -174,14 +159,16 @@ public class DFSContiguousValueFinder {
                     }
                     
                     int vIndex = (vY * width) + vX;
+            
+                    Integer vKey = Integer.valueOf(vIndex);
                     
-                    if (color[vIndex] != 0 || (uIndex == vIndex)) {
+                    if (visited.contains(vKey) || (uIndex == vIndex)) {
                         continue;
                     }
                     
                     //TODO: could consider not allowing diagonal connections
                     
-                    color[vIndex] = 2;
+                    visited.add(vKey);
                 
                     int vPixValue = img.getValue(vIndex);
             
@@ -190,76 +177,64 @@ public class DFSContiguousValueFinder {
                         
                         continue;
                     }
-                    
-                    processPair(uIndex, vIndex);
+                   
+                    processPair(uKey, vKey);
                 
                     // inserting back at the top of the stack assures that the 
                     // search continues next from an associated point
-                    stack.add(Integer.valueOf(vIndex));
+                    stack.add(vKey);
                 }
             }
         }
        
     }
 
-    protected void processPair(int uIdx, int vIdx) {
+    protected void processPair(Integer uIdx, Integer vIdx) {
+                
+        Integer groupId = pointToGroupMap.get(uIdx);
         
-        //log.finest("processPair " + uSortedXIndex + ":" + vSortedXIndex);           
-        
-        int groupId;
-        
-        if ((pointToGroupIndex[uIdx] > -1) && (pointToGroupIndex[vIdx] == -1)) {
-        
-            groupId = pointToGroupIndex[uIdx];
+        if ((groupId != null) && (pointToGroupMap.get(vIdx) == null)) {
+                    
+            groupMembership.get(groupId).add(vIdx);
             
-            pointToGroupIndex[vIdx] = groupId;
+            pointToGroupMap.put(vIdx, groupId);
+                        
+        } else if ((groupId == null) && (pointToGroupMap.get(vIdx) != null)) {
+
+            groupId = pointToGroupMap.get(vIdx);
+
+            groupMembership.get(groupId).add(uIdx);
             
-            groupMembership[groupId].insert(vIdx);
+            pointToGroupMap.put(uIdx, groupId);
             
-        } else if ((pointToGroupIndex[vIdx] > -1) && (pointToGroupIndex[uIdx] == -1)) {
+        } else if ((groupId == null) && (pointToGroupMap.get(vIdx) == null)) {
+                        
+            groupId = Integer.valueOf(groupMembership.size());
             
-           groupId = pointToGroupIndex[vIdx];
+            pointToGroupMap.put(uIdx, groupId);
             
-            pointToGroupIndex[uIdx] = groupId;
+            pointToGroupMap.put(vIdx, groupId);
             
-            groupMembership[groupId].insert(uIdx);
+            Set<Integer> set = new HashSet<Integer>();
+            set.add(uIdx);
+            set.add(vIdx);
             
-        } else if ((pointToGroupIndex[uIdx] == -1) && (pointToGroupIndex[vIdx] == -1)) {
-            
-            checkAndExpandGroupMembershipArray();
-            
-            groupId = nGroups;
-            
-            pointToGroupIndex[uIdx] = groupId;
-            
-            pointToGroupIndex[vIdx] = groupId; 
-            
-            groupMembership[groupId].insert(uIdx);
-            
-            groupMembership[groupId].insert(vIdx);
-     
-            nGroups++;
-            
-        } else {
-            
-            groupId = -1;
-            
-            log.finest("not reading " + uIdx + ":" + vIdx );
+            groupMembership.add(set);
+                      
         }
        
     }
             
-    public SimpleLinkedListNode[] getGroupMembershipList() {
-        return Arrays.copyOf(groupMembership, nGroups);
-        //return groupMembership;
+    public List<Set<Integer> > getGroupMembershipList() {
+        return groupMembership;
     }
 
     public int getNumberOfGroups() {
-        return nGroups;
+        return groupMembership.size();
     }
 
-    public int[] getPointToGroupIndexes() {
-        return pointToGroupIndex;
+    public Map<Integer, Integer> getPointToGroupIndexes() {
+        return pointToGroupMap;
     }
     
     /**
@@ -267,7 +242,7 @@ public class DFSContiguousValueFinder {
      */
     protected void prune() {
                 
-        log.finest("number of groups before prune=" + nGroups);
+        log.finest("number of groups before prune=" + groupMembership.size());
         
         //TODO: the data structures used could be written at the expense
         // of space complexity to reduce changes needed when group number
@@ -279,185 +254,117 @@ public class DFSContiguousValueFinder {
          * [------] 2
          */
         // iterate backwards so can move items up without conflict with iterator
-        for (int i = (nGroups - 1); i > -1; i--) {
+        for (int i = (groupMembership.size() - 1); i > -1; i--) {
             
-            SimpleLinkedListNode group = groupMembership[i];
+            Set<Integer> group = groupMembership.get(i);
             
-            int count = group.getNumberOfKeys();
+            int count = group.size();
             
             log.finest("  group " + i + " has " + count 
                 + " members before prune (min=" + minimumNumberInCluster + ")");
             
             if (count < minimumNumberInCluster) {
-                
+            
                 // remove this group and move up all groups w/ index > i by one index
-                for (int j = (i + 1); j < nGroups; j++) {
+                for (int j = (i + 1); j < groupMembership.size(); j++) {
                     
                     int newGroupId = j - 1;
                     
-                    groupMembership[newGroupId] = groupMembership[j];
+                    groupMembership.set(newGroupId, groupMembership.get(j));
                     
                     // update members in pointToGroupIndex
-                    SimpleLinkedListNode latest = groupMembership[j];
+                    Set<Integer> latest = groupMembership.get(j);
                     
-                    while (latest != null) {
-                        
-                        int idx = latest.getKey();
-                        
-                        pointToGroupIndex[idx] = newGroupId;
-                        
-                        latest = latest.getNext();
-                        
+                    for (Integer p : latest) {
+                        pointToGroupMap.put(p, Integer.valueOf(newGroupId));
                     }
                 }
                 
-                nGroups--;
+                groupMembership.remove(i);
             }
         }
    
-        log.finest("number of groups after prune=" + nGroups);
+        log.finest("number of groups after prune=" + groupMembership.size());
     }
 
-    protected void checkAndExpandGroupMembershipArray() {
-        
-        if (groupMembership == null) {
-            throw new IllegalStateException("groupMembership cannot be null");
-        }
-
-        if (groupMembership.length < (nGroups + 1)) {
-            int oldN = groupMembership.length;
-            int n = (oldN == 0) ? 10 : (int) (1.5f * oldN);
-
-            groupMembership = Arrays.copyOf(groupMembership, n);
-            for (int k = oldN; k < n; k++) {
-                groupMembership[k] = new SimpleLinkedListNode();
-            }
-        }
-    }
-    
-    /**
-     * estimate the amount of memory used by this class and its instance and class variables
-     * @return the memory in bytes used by this class and its instance and class variables.
-    */
-    public long approximateMemoryUsed() {
-        
-        String arch = System.getProperty("sun.arch.data.model");
-
-        boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
-
-        int nbits = (is32Bit) ? 32 : 64;
-
-        int overheadBytes = 16;
-
-        int intBytes = (is32Bit) ? 4 : 8;
-        int arrayBytes = 32/8;
-        int refBytes = nbits/8;
-        
-        long sumBytes = 4*intBytes + 2*arrayBytes;
-        if (groupMembership != null) {
-            long nodeInBytes = SimpleLinkedListNode.approximateMemoryUsed();
-            sumBytes += (groupMembership.length * nodeInBytes);
-        }
-        if (pointToGroupIndex != null) {
-            sumBytes += (pointToGroupIndex.length * intBytes);
-        }
-        
-        sumBytes += overheadBytes;
-        
-        long padding = (sumBytes % 8);
-        
-        sumBytes += padding;
-        
-        return sumBytes;
-    }
-    
     public int getNumberofGroupMembers(int groupId) {
         
-        if (nGroups == 0) {
+        if (groupMembership.isEmpty()) {
             return 0;
         }
-        if (groupId > (nGroups - 1) || (groupId < 0)) {
+        if (groupId > (groupMembership.size() - 1) || (groupId < 0)) {
             throw new IllegalArgumentException("groupId=" + groupId 
-            + " is outside of range of nGroups=" + nGroups);
+            + " is outside of range of nGroups=" + groupMembership.size());
         }
                 
-        return groupMembership[groupId].getNumberOfKeys();
+        return groupMembership.get(groupId).size();
     }
     
     public PairIntArray getXY(int groupId) {
         
-        if (nGroups == 0) {
+        if (groupMembership.size() == 0) {
             return new PairIntArray();
         }
-        if (groupId > (nGroups - 1) || (groupId < 0)) {
+        if (groupId > (groupMembership.size() - 1) || (groupId < 0)) {
             throw new IllegalArgumentException("groupId=" + groupId 
-            + " is outside of range of nGroups=" + nGroups);
+            + " is outside of range of nGroups=" + groupMembership.size());
         }
         
-        int[] indexes = getIndexes(groupId);
+        Set<Integer> indexes = getIndexes(groupId);
         
         PairIntArray xy = new PairIntArray();
                 
-        for (int i = 0; i < indexes.length; i++) {
-            
-            int index = indexes[i];
-            
-            img.getXY(xy, index);
+        for (Integer index : indexes) {
+                        
+            img.getXY(xy, index.intValue());
         }
         
         return xy;
     }
     
-    public int[] getIndexes(int groupId) {
+    public void getXY(int groupId, Set<PairInt> set) {
         
-        if (nGroups == 0) {
-            return new int[0];
+        if (groupMembership.size() == 0) {
+            return;
         }
-        if (groupId > (nGroups - 1) || (groupId < 0)) {
+        if (groupId > (groupMembership.size() - 1) || (groupId < 0)) {
             throw new IllegalArgumentException("groupId=" + groupId 
-            + " is outside of range of nGroups=" + nGroups);
+            + " is outside of range of nGroups=" + groupMembership.size());
         }
         
-        int[] indexes = new int[10];
+        Set<Integer> indexes = getIndexes(groupId);
+                        
+        for (Integer index : indexes) {
+            
+            int idx = index.intValue();
+            
+            int x = img.getCol(idx);
+            int y = img.getRow(idx);
+            
+            PairInt p = new PairInt(x, y);
+            
+            set.add(p);
+        }        
+    }
+    
+    public Set<Integer> getIndexes(int groupId) {
         
-        int count = 0;
-        
-        SimpleLinkedListNode group = groupMembership[groupId];
-        
-        while (group != null) {
-            
-            int idx = group.getKey();
-            
-            indexes = expandIfNeeded(indexes, count + 1);
-            
-            indexes[count] = idx;
-            
-            group = group.getNext();
-            
-            count++;
+        if (groupMembership.isEmpty()) {
+            return new HashSet<Integer>();
         }
-        
-        return Arrays.copyOf(indexes, count);
+        if (groupId > (groupMembership.size() - 1) || (groupId < 0)) {
+            throw new IllegalArgumentException("groupId=" + groupId 
+            + " is outside of range of nGroups=" + groupMembership.size());
+        }
+               
+        return groupMembership.get(groupId);
     }
  
-    protected int[] expandIfNeeded(int[] a, int nTotal) {
-        if (nTotal > a.length) {
-            int n = a.length + 10;
-            if (nTotal > n) {
-                n = nTotal;
-            }
-            return Arrays.copyOf(a, n);
-        }
-        return a;
-    }
-
     public void findGroupsNotThisValue(int pixelValue, 
         Map<Integer, PairInt> rowColPerimeter, int[] rowMinMax) {
         
         notValue = true;
-        
-        initializeVariables();
-        
+                
         findClustersWithinPerimeter(pixelValue, rowColPerimeter, rowMinMax);
         
         prune();
@@ -466,9 +373,6 @@ public class DFSContiguousValueFinder {
 
     private void findClustersWithinPerimeter(int pixelValue, 
         Map<Integer, PairInt> rowColPerimeter, int[] rowMinMax) {
-            
-        // 0 = unvisited, 1 = processing, 2 = visited
-        color = new int[img.getNPixels()];
         
         int width = img.getWidth();
         
@@ -493,19 +397,22 @@ public class DFSContiguousValueFinder {
                 stack.add(Integer.valueOf(uIndex));
             }
         }
-               
-        color[stack.peek().intValue()] = 2;
+            
+        visited.add(stack.peek());
 
         while (!stack.isEmpty()) {
 
             int uIndex = stack.pop().intValue();
+            
+            Integer uKey = Integer.valueOf(uIndex);
             
             int uPixValue = img.getValue(uIndex);
             
             if ((notValue && (uPixValue == pixelValue)) ||
                 (!notValue && (uPixValue != pixelValue))) {
                 
-                color[uIndex] = 2;
+                visited.add(uKey);
+                
                 continue;
             }
             
@@ -534,13 +441,15 @@ public class DFSContiguousValueFinder {
                     
                     int vIndex = (vY * width) + vX;
                     
-                    if (color[vIndex] != 0 || (uIndex == vIndex)) {
+                    Integer vKey = Integer.valueOf(vIndex);
+                    
+                    if (visited.contains(vKey) || (uIndex == vIndex)) {
                         continue;
                     }
                     
                     //TODO: could consider not allowing diagonal connections
                     
-                    color[vIndex] = 2;
+                    visited.add(vKey);
                 
                     int vPixValue = img.getValue(vIndex);
             

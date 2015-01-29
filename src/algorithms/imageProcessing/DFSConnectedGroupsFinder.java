@@ -157,9 +157,7 @@ public class DFSConnectedGroupsFinder {
             
             groupMembership.add(set);
                       
-        }
-       
-        int z = 1;
+        }       
     }
 
     public List<Set<PairInt> > getGroupMembershipList() {
