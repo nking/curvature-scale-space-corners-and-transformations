@@ -204,9 +204,7 @@ public class DFSConnectedGroupsFinder {
                 for (int j = (i + 1); j < groupMembership.size(); j++) {
                     
                     int newGroupId = j - 1;
-                    
-                    groupMembership.set(newGroupId, groupMembership.get(j));
-                    
+                                        
                     // update members in pointToGroupIndex
                     Set<PairInt> latest = groupMembership.get(j);
                     
@@ -215,7 +213,7 @@ public class DFSConnectedGroupsFinder {
                     }
                 }
                 
-                groupMembership.remove(i);
+                Set<PairInt> removed = groupMembership.remove(i);
             }
         }
    

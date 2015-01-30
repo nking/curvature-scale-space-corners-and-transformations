@@ -29,6 +29,8 @@ public class DFSContiguousValueFinder {
      */
     protected List<Set<Integer> > groupMembership = new ArrayList<Set<Integer> >();
     
+    protected List<Boolean> groupIsUnbound = new ArrayList<Boolean>();
+    
     protected Logger log = null;
     
     protected Set<Integer> visited = new HashSet<Integer>();
@@ -178,7 +180,7 @@ public class DFSContiguousValueFinder {
                         continue;
                     }
                    
-                    processPair(uKey, vKey);
+                    processPair(uKey, vKey, false);
                 
                     // inserting back at the top of the stack assures that the 
                     // search continues next from an associated point
@@ -189,7 +191,7 @@ public class DFSContiguousValueFinder {
        
     }
 
-    protected void processPair(Integer uIdx, Integer vIdx) {
+    protected void processPair(Integer uIdx, Integer vIdx, boolean isBeyondBounds) {
                 
         Integer groupId = pointToGroupMap.get(uIdx);
         
@@ -220,9 +222,15 @@ public class DFSContiguousValueFinder {
             set.add(vIdx);
             
             groupMembership.add(set);
+            
+            groupIsUnbound.add(Boolean.FALSE);
                       
         }
-       
+        
+        if (isBeyondBounds) {
+            groupIsUnbound.set(groupId, Boolean.TRUE);
+        }
+
     }
             
     public List<Set<Integer> > getGroupMembershipList() {
@@ -263,24 +271,23 @@ public class DFSContiguousValueFinder {
             log.finest("  group " + i + " has " + count 
                 + " members before prune (min=" + minimumNumberInCluster + ")");
             
-            if (count < minimumNumberInCluster) {
-            
+            if ((count < minimumNumberInCluster) || groupIsUnbound.get(i).booleanValue()) {
+                             
                 // remove this group and move up all groups w/ index > i by one index
                 for (int j = (i + 1); j < groupMembership.size(); j++) {
                     
                     int newGroupId = j - 1;
-                    
-                    groupMembership.set(newGroupId, groupMembership.get(j));
-                    
+                                        
                     // update members in pointToGroupIndex
                     Set<Integer> latest = groupMembership.get(j);
-                    
+                    //
                     for (Integer p : latest) {
                         pointToGroupMap.put(p, Integer.valueOf(newGroupId));
                     }
-                }
+                } 
+               
+                Set<Integer> removed = groupMembership.remove(i);
                 
-                groupMembership.remove(i);
             }
         }
    
@@ -360,11 +367,11 @@ public class DFSContiguousValueFinder {
         return groupMembership.get(groupId);
     }
  
-    public void findGroupsNotThisValue(int pixelValue, 
+    public void findEmbeddedGroupsNotThisValue(int pixelValue, 
         Map<Integer, PairInt> rowColPerimeter, int[] rowMinMax) {
         
         notValue = true;
-                
+               
         findClustersWithinPerimeter(pixelValue, rowColPerimeter, rowMinMax);
         
         prune();
@@ -375,6 +382,7 @@ public class DFSContiguousValueFinder {
         Map<Integer, PairInt> rowColPerimeter, int[] rowMinMax) {
         
         int width = img.getWidth();
+        int height = img.getHeight();
         
         /*
         looking for pixelValue or !pixelValue groups within the region
@@ -427,7 +435,7 @@ public class DFSContiguousValueFinder {
             
             for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
                 
-                if ((vY < rowMinMax[0]) || (vY > rowMinMax[1])) {
+                if ((vY < 0) || (vY > (height - 1))) {
                     continue;
                 }
                 
@@ -435,7 +443,7 @@ public class DFSContiguousValueFinder {
                 
                 for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
                                         
-                    if ((vX < colRange.getX()) || (vX > colRange.getY())) {
+                    if ((vX < 0) || (vX > (width - 1))) {
                         continue;
                     }
                     
@@ -459,7 +467,14 @@ public class DFSContiguousValueFinder {
                         continue;
                     }
                     
-                    processPair(uIndex, vIndex);
+                    boolean unBounded = false;
+                    if ((vY < rowMinMax[0]) || (vY > rowMinMax[1]) || 
+                        (vX < colRange.getX()) || (vX > colRange.getY())) {
+                        
+                        unBounded = true;
+                    }
+                    
+                    processPair(uIndex, vIndex, unBounded);
                 
                     // inserting back at the top of the stack assures that the 
                     // search continues next from an associated point

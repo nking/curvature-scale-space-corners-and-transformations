@@ -961,28 +961,18 @@ public class ImageProcessor {
             // found except the nBinFactor pixels near the border.
             // (wanting to avoid overrunning low contrast skylines such as
             // snow covered peaks under a hazy sky, etc)
-            
-            /*
-            is this part of the code present several times elsewhere?
-            if yes, replace with this method.
-            
-            find embedded non-sky pixels:
-            */
+           
+            // find embedded non-sky pixels:
             PerimeterFinder finder = new PerimeterFinder();
             int[] rowMinMax = new int[2];
             Map<Integer, PairInt> rowColRange = finder.find(points, rowMinMax);
             
-            /*DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
-            contiguousNonZeroFinder.findGroupsNotThisValue(0, rowColRange,
+            DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
+            contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0, rowColRange,
                 rowMinMax);
+            
             int nEmbeddedGroups = contiguousNonZeroFinder.getNumberOfGroups();
-            */
-            
-            /*
-            and determine whether the sky pixels' perimeter is along one or
-               more image borders.
-            */
-            
+         
             findSeparatedClouds(sunPoints, points, originalColorImage, mask);
         }
         
@@ -3107,7 +3097,70 @@ try {
             }
         }
     }
-
+    
+    boolean isPerimeterUnbound(Map<Integer, PairInt> gRowColRange, 
+        int[] gRowMinMax, Map<Integer, PairInt> boundingRowColRange, 
+        int[] boundingRowMinMax,
+        int xMinImage, int xMaxImage, int yMinImage, int yMaxImage) {
+        
+        // check top and bottom rows of group are within bounds
+        if (gRowMinMax[0] == boundingRowMinMax[0]) {
+            if (gRowMinMax[0] != yMinImage) {
+                return true;
+            }
+        } else if (gRowMinMax[0] < boundingRowMinMax[0]) {
+            return true;
+        }
+        if (gRowMinMax[1] == boundingRowMinMax[1]) {
+            if (gRowMinMax[1] != yMaxImage) {
+                return true;
+            }
+        } else if (gRowMinMax[1] > boundingRowMinMax[1]) {
+            return true;
+        }
+        
+        for (int r = gRowMinMax[0]; r <= gRowMinMax[1]; r++) {
+                    
+            PairInt cRange = gRowColRange.get(Integer.valueOf(r));
+            
+            // see if each point in cRange is on the boundary of rowColRange
+            //   or within it
+           
+            // check left half            
+            int x = cRange.getX();
+            int y = r;
+            
+            PairInt cRange2 = boundingRowColRange.get(Integer.valueOf(y));
+            if (cRange2 == null) {
+                return true;
+            }
+            int x2 = cRange2.getX();
+            
+            if (x == x2) {
+                if (x > xMinImage) {
+                    return true;
+                }
+            } else if (x < x2) {
+                // x is outside of the larger region defined by gRowColRange
+                return true;
+            }
+            
+            // check right half
+            x2 = cRange2.getY();
+            
+            if (x == x2) {
+                if (x < xMaxImage) {
+                    return true;
+                }
+            } else if (x > x2) {
+                // x is outside of the larger region defined by gRowColRange
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     private boolean isPerimeterUnbound(Map<Integer, PairInt> gRowColRange, 
         int[] gRowMinMax, Set<PairInt> skyPoints, double[] groupXYCen,
         int imageWidth, int imageHeight) {
@@ -3485,6 +3538,37 @@ try {
 
     }
 
+    public int extractEmbeddedGroupPoints(
+        List<Set<PairInt>> embeddedGroups, Map<Integer, PairInt> rowColRange, 
+        int[] rowMinMax, Set<PairInt> outputEmbeddedPoints,
+        int xMinImage, int xMaxImage, int yMinImage, int yMaxImage) {
+        
+        int nCorrectedEmbeddedGroups = 0;
+        
+        PerimeterFinder finder = new PerimeterFinder();
+        
+        for (int gId = 0; gId < embeddedGroups.size(); gId++) {
+
+            Set<PairInt> groupPoints = embeddedGroups.get(gId);
+
+            int[] gRowMinMax = new int[2];
+            Map<Integer, PairInt> gRowColRange = finder.find(groupPoints, 
+                gRowMinMax);
+
+            boolean unbounded = isPerimeterUnbound(gRowColRange, gRowMinMax,
+                rowColRange, rowMinMax, xMinImage, xMaxImage, yMinImage, yMaxImage);
+
+            if (!unbounded) {
+                
+                nCorrectedEmbeddedGroups++;
+                
+                outputEmbeddedPoints.addAll(groupPoints);
+            }
+        }
+        
+        return nCorrectedEmbeddedGroups;
+    }
+    
     private int extractEmbeddedGroupPoints(Set<PairInt> skyPoints, 
         GreyscaleImage gXY2, Set<PairInt> outputEmbeddedPoints) {
         
@@ -3493,45 +3577,22 @@ try {
         Map<Integer, PairInt> rowColRange = finder.find(skyPoints, rowMinMax);
         DFSContiguousValueFinder contiguousNonZeroFinder = 
             new DFSContiguousValueFinder(gXY2);
-        contiguousNonZeroFinder.findGroupsNotThisValue(0, rowColRange,
+        contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0, rowColRange,
             rowMinMax);
         int nEmbeddedGroups = contiguousNonZeroFinder.getNumberOfGroups();
 
-        int nCorrectedEmbeddedGroups = 0;
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
+        List<Set<PairInt>> embeddedGroups = new ArrayList<Set<PairInt>>();
+        
         for (int gId = 0; gId < nEmbeddedGroups; gId++) {
-
+            
             Set<PairInt> groupPoints = new HashSet<PairInt>();
 
             contiguousNonZeroFinder.getXY(gId, groupPoints);
-
-            // if a perimeter point is not bounded in cardinal directions by 
-            // image offsides or a pixel within skyPoints
-            // the group should be considered unbounded (such as the
-            // tops of buildings would be when their shapes intersect
-            // the convex hull of the sky points for example.
-            // Note: the perimeter is ignoring concaveness on a row to
-            // make this approx faster.  it's still better than a convex
-            // hull for this purpose.
-
-            int[] gRowMinMax = new int[2];
-            Map<Integer, PairInt> gRowColRange = finder.find(groupPoints, 
-                gRowMinMax);
-
-            double[] gCen = curveHelper.calculateXYCentroids(groupPoints);
-
-            boolean unbounded = isPerimeterUnbound(gRowColRange, gRowMinMax,
-                skyPoints, gCen, gXY2.getWidth(), gXY2.getHeight());
-
-            if (!unbounded) {
-                nCorrectedEmbeddedGroups++;
-                outputEmbeddedPoints.addAll(groupPoints);
-            }
+            
+            embeddedGroups.add(groupPoints);
         }
-
-        return nCorrectedEmbeddedGroups;
+                
+        return nEmbeddedGroups;
     }
 
     /**
@@ -4415,5 +4476,5 @@ try {
         
         return n;
     }
-    
+
 }
