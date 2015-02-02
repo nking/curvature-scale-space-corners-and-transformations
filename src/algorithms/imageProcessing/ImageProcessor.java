@@ -4100,16 +4100,16 @@ try {
                 boolean isBrown = (Math.abs(rPercentV - 0.5) < 0.4)
                     && (Math.abs(gPercentV - 0.32) < 0.1)
                     && (Math.abs(bPercentV - 0.17) < 0.1);
-            
+/*            
 if (((vX + xOffset) > 347) && ((vX + xOffset) < 351) && ((vY + yOffset) > 289) && ((vY + yOffset) < 291)) {
     log.info(String.format(
-        "(%d,%d) k=%d : rgb=(%d,%d,%d)   contrastV=%f  colorDiffV=%f stdevContrast=%f stdevColorDiff=%f  %rgb=(%f,%f,%f)  isBrown=%b",
+        "(%d,%d) k=%d : rgb=(%d,%d,%d)   contrastV=%f  colorDiffV=%f stdevContrast=%f stdevColorDiff=%f  percent rgb=(%f,%f,%f)  isBrown=%b",
         vX + xOffset, vY + yOffset, k,
         rV, gV, bV,
         contrastV, colorDiffV, skyStDevContrast, skyStDevColorDiff,
         rPercentV, gPercentV, bPercentV, isBrown
         ));
-}                
+}*/               
                 if (isBrown) {
                     
                     // trying to skip over foreground such as land or sunset + water
