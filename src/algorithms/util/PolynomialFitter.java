@@ -35,7 +35,7 @@ public class PolynomialFitter {
         sr.setSeed(System.currentTimeMillis());
         
         int[] indexes = new int[n];
-        MiscMath.chooseRandomly(sr, indexes, points.size() - 1);
+        MiscMath.chooseRandomly(sr, indexes, points.size());
         
         float[] xP = new float[n];
         float[] yP = new float[xP.length];

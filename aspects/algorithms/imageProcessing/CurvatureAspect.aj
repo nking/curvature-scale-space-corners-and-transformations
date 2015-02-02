@@ -362,6 +362,10 @@ public aspect CurvatureAspect {
         && args(sunPoints, skyPoints, originalColorImage, xOffset, yOffset)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
+        if (rainbowPoints.isEmpty()) {
+            return;
+        }
+
         Image clr = originalColorImage.copyImage();
 
         try {

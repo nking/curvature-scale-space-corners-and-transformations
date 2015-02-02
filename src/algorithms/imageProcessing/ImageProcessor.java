@@ -3543,7 +3543,7 @@ try {
     private Set<PairInt> findRainbowConnectedToSkyPoints(Set<PairInt> sunPoints, 
         Set<PairInt> points, Image colorImg, int xOffset, int yOffset) {
         
-        if (sunPoints.isEmpty()) {
+        if (sunPoints.isEmpty() || (sunPoints.size() < 12)) {
             return new HashSet<PairInt>();
         }
         
@@ -3675,6 +3675,13 @@ try {
         PolynomialFitter polyFitter = new PolynomialFitter();
         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
         float[] coef = polyFitter.solveAfterRandomSampling(rainbowPoints);
+        
+        if (coef == null) {
+            return new HashSet<PairInt>();
+        }
+        
+        //TODO: add validation that polynomial looks like an arc
+        
         polyFitter.plotFit(coef, rainbowPoints, 234, colorImg.getWidth(),
             colorImg.getHeight(), "rainbow points");
         
