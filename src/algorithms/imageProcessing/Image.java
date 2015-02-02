@@ -167,6 +167,64 @@ public class Image {
         return out;
     }
     
+    public GreyscaleImage copyRedToImage() {
+        return copyToImage(0);
+    }
+    
+    public GreyscaleImage copyGreenToImage() {
+        return copyToImage(1);
+    }
+    
+    public GreyscaleImage copyBlueToImage() {
+        return copyToImage(2);
+    }
+    
+    protected GreyscaleImage copyToImage(int redOrGreenOrBlue) {
+        
+        /*
+        to maintain same image conversion as used in ImageIOHelper,
+        will use the java methods.  
+        TODO: There should be a way to perform
+        a pixel by pixel conversion instead of creating a
+        BufferedImage.
+        */
+        
+        BufferedImage outputImage = new BufferedImage(width, height, 
+            BufferedImage.TYPE_BYTE_GRAY);
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                int rgbValue = getRGB(i, j);
+                outputImage.setRGB(i, j, rgbValue);
+            }
+        }
+        
+        GreyscaleImage out = new GreyscaleImage(width, height);
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                
+                // presumably, this is already combined?
+                // or does it need separation into rgb and then averaged?
+                
+                int rgb = outputImage.getRGB(i, j);
+                                
+                int v;
+                if (redOrGreenOrBlue == 0) {
+                    v = (rgb >> 16) & 0xFF;
+                } else if (redOrGreenOrBlue == 1) {
+                    v = (rgb >> 8) & 0xFF;
+                } else {
+                    v = rgb & 0xFF;
+                }
+                                    
+                out.setValue(i, j, v);
+            }
+        }
+        
+        return out;
+    }
+    
     public void resetTo(Image copyThis) {
         
         if (copyThis.getNPixels() != nPixels) {

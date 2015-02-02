@@ -755,6 +755,56 @@ public class ImageIOHelper {
         }
     }
     
+    public static void addAlternatingColorPointSetsToImage(
+        List<Set<PairInt>> pointSets, int xOffset, int yOffset, Image input) 
+        throws IOException {
+        
+        if (pointSets == null || input == null) {
+            return;
+        }
+        
+        int clr = 0;
+        
+        for (int i = 0; i < pointSets.size(); i++) {
+            Set<PairInt> points = pointSets.get(i);
+            if (clr > 5) {
+                clr = 0;
+            }
+            int c = Color.BLUE.getRGB();
+            switch(clr) {
+                case 1:
+                    c = Color.PINK.getRGB();
+                    break;
+                case 2:
+                    c = Color.GREEN.getRGB();
+                    break;
+                case 3:
+                    c = Color.RED.getRGB();
+                    break;
+                case 4:
+                    c = Color.CYAN.getRGB();
+                    break;
+                case 5:
+                    c = Color.MAGENTA.getRGB();
+                    break;
+                default:
+                    break;
+            }
+            for (PairInt p : points) {
+                
+                int col = p.getX() + xOffset;
+                int row = p.getY() + yOffset;
+                
+                if ((col > -1) && (col < input.getWidth()) &&
+                    (row > -1) && (row < input.getHeight())) {
+                
+                    input.setRGB(col, row, c);
+                }
+            }
+            clr++;
+        }
+    }
+    
     public static void addToImage(Set<PairInt> points, int xOffsetToApply, 
         int yOffsetToApply, Image input) throws IOException {
         

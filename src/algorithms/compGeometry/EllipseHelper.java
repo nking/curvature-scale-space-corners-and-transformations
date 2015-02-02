@@ -4,6 +4,8 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
+import java.io.IOException;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.ejml.data.DenseMatrix64F;
@@ -522,4 +524,43 @@ public class EllipseHelper {
         return new double[]{avgStdDev[0], avgStdDev[1]};
     }
     
+    public void plotEllipseAndPoints(Set<PairInt> points, 
+        float xCenterParam, float yCenterParam, float aParam, float bParam, 
+        float alphaParam, int xMin, int xMax, int yMin, int yMax,
+        int plotNumber, String plotLabel) throws IOException {
+        
+        float[] ellipseX = new float[360];
+        float[] ellipseY = new float[360];
+        double ca = Math.cos(alphaParam);
+        double sa = Math.sin(alphaParam);
+            
+        for (int angle = 0; angle < 360; angle++) {
+            double theta = ((double)angle) * Math.PI/180.;
+            double ct = Math.cos(theta);
+            double st = Math.sin(theta);
+            double g = xCenterParam + (aParam * ca * ct) - (bParam * sa * st);
+            ellipseX[angle] = (float)g;
+            double h = yCenterParam + (aParam * sa * ct) + (bParam * ca * st);
+            ellipseY[angle] = (float)h;
+        }
+        
+        float[] xp = new float[points.size()];
+        float[] yp = new float[xp.length];
+        int i = 0;
+        for (PairInt p : points) {
+            xp[i] = p.getX();
+            yp[i] = p.getY();
+            i++;
+        }
+        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xMin, xMax, 
+            yMin, yMax);
+        
+        plotter.addPlot(xp, yp, ellipseX, ellipseY, plotLabel);
+        
+        String fileName = plotter.writeFile(Integer.valueOf(plotNumber));
+        
+        log.info("wrote to file: " + fileName);
+    }
+        
 }

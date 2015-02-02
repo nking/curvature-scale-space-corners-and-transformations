@@ -177,6 +177,27 @@ public class MatrixUtil {
         }
     }
     
+    public static void multiply(int[] m, int[] n) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        
+        if (m.length != n.length) {
+            throw new IllegalArgumentException("m must be the same size as n");
+        }
+        
+        int len = m.length;
+                
+        for (int i = 0; i < len; i++) {                        
+            m[i] *= n[i];
+        }
+    }
+    
     public static double[][] multiply(double[][] m, double[][] n) {
 
         if (m == null || m.length == 0) {

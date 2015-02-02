@@ -90,7 +90,6 @@ public class DFSConnectedGroupsFinder {
             //(1 + frac)*O(N) where frac is the fraction added back to stack
             
             for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
-                
                 if ((vX < 0) || (vX > (imageWidth - 1))) {
                     continue;
                 }
@@ -122,7 +121,6 @@ public class DFSConnectedGroupsFinder {
                 }
             }
         }
-       
     }
 
     protected void processPair(PairInt uPoint, PairInt vPoint) {
@@ -157,7 +155,7 @@ public class DFSConnectedGroupsFinder {
             
             groupMembership.add(set);
                       
-        }       
+        } 
     }
 
     public List<Set<PairInt> > getGroupMembershipList() {

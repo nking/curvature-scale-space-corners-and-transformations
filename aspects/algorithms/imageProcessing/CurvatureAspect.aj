@@ -130,6 +130,58 @@ public aspect CurvatureAspect {
         }
     }
 
+    after(Set<PairInt> extSkyPoints, Image originalColorImage, 
+        int xOffset, int yOffset, String outputPrefixForFileName) returning() :
+        execution(private void ImageProcessor.debugPlot(Set<PairInt>, Image,
+        int, int, String))
+        && args(extSkyPoints, originalColorImage, xOffset, yOffset, outputPrefixForFileName)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(extSkyPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/" + outputPrefixForFileName + "_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after(Set<PairInt> r0, Set<PairInt> r1, Set<PairInt> r2, Set<PairInt> r3, 
+        Image originalColorImage, 
+        int xOffset, int yOffset, String outputPrefixForFileName) returning() :
+        execution(private void ImageProcessor.debugPlot(Set<PairInt>,
+        Set<PairInt>, Set<PairInt>, Set<PairInt>, Image, int, int, String))
+        && args(r0, r1, r2, r3, originalColorImage, xOffset, yOffset, 
+        outputPrefixForFileName)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            List<Set<PairInt>> sets = new ArrayList<Set<PairInt>>();
+            sets.add(r0);
+            sets.add(r1);
+            sets.add(r2);
+            sets.add(r3);
+            ImageIOHelper.addAlternatingColorPointSetsToImage(sets,
+                xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/" + outputPrefixForFileName + "_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
     after(Set<PairInt> points, GreyscaleImage gradientXY) returning() :
         execution(private void ImageProcessor.growZeroValuePoints(Set<PairInt>, GreyscaleImage))
         && args(points, gradientXY)
@@ -276,7 +328,8 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(Set<PairInt> sunPoints, Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask)
+    after(Set<PairInt> sunPoints, 
+        Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask)
         returning() :
         execution(private void ImageProcessor.findSeparatedClouds(
             Set<PairInt>, Set<PairInt>, Image, GreyscaleImage) )
@@ -295,6 +348,29 @@ public aspect CurvatureAspect {
 
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_sunlit_clouds_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after(Set<PairInt> sunPoints, Set<PairInt> skyPoints, Image originalColorImage, 
+        int xOffset, int yOffset)
+        returning(Set<PairInt> rainbowPoints) :
+        execution(private Set<PairInt> ImageProcessor.findRainbowConnectedToSkyPoints(
+            Set<PairInt>, Set<PairInt>, Image, int, int) )
+        && args(sunPoints, skyPoints, originalColorImage, xOffset, yOffset)
+	    && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(rainbowPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/rainbow_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
@@ -353,10 +429,13 @@ public aspect CurvatureAspect {
     }
 
     before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
-        GreyscaleImage theta, double avgY, boolean addAlongX, int addAmount) :
+        GreyscaleImage theta, double avgY, boolean addAlongX, int addAmount,
+        Set<PairInt> outputRemovedPoints) :
         execution(private void ImageProcessor.removeHighContrastPoints(
-            List<PairIntArray>, Image, GreyscaleImage, double, boolean, int) )
-        && args(zeroPointLists, originalColorImage, theta, avgY, addAlongX, addAmount)
+            List<PairIntArray>, Image, GreyscaleImage, double, boolean, int,
+            Set<PairInt>) )
+        && args(zeroPointLists, originalColorImage, theta, avgY, addAlongX, 
+        addAmount, outputRemovedPoints)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -378,11 +457,14 @@ public aspect CurvatureAspect {
     }
 
     after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
-        GreyscaleImage theta, double avgY, boolean addAlongX, int addAmount)
+        GreyscaleImage theta, double avgY, boolean addAlongX, int addAmount,
+        Set<PairInt> outputRemovedPoints)
         returning() :
         execution(private void ImageProcessor.removeHighContrastPoints(
-            List<PairIntArray>, Image, GreyscaleImage, double, boolean, int) )
-        && args(zeroPointLists, originalColorImage, theta, avgY, addAlongX, addAmount)
+            List<PairIntArray>, Image, GreyscaleImage, double, boolean, int,
+            Set<PairInt>) )
+        && args(zeroPointLists, originalColorImage, theta, avgY, addAlongX, 
+        addAmount, outputRemovedPoints)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -734,6 +816,32 @@ public aspect CurvatureAspect {
             ImageIOHelper.writeOutputImage(dirPath + "/filters2.png", output);
         } catch (IOException e) {
             log2.severe(e.getMessage());
+        }
+    }
+
+    after(Set<PairInt> points, Image originalColorImage, GreyscaleImage mask,
+        double[] avgYRGB) 
+        returning(Set<PairInt> added) :
+        execution(Set<PairInt> ImageProcessor*.growPointsToSkyline(
+        Set<PairInt>, Image, GreyscaleImage, double[]))
+        && args(points, originalColorImage, mask, avgYRGB) 
+        && target(algorithms.imageProcessing.ImageProcessor) {
+
+        Image clr = originalColorImage.copyImage();
+
+        int xOffset = mask.getXRelativeOffset();
+        int yOffset = mask.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(points, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_after_grow_to_skyline_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
         }
     }
 
