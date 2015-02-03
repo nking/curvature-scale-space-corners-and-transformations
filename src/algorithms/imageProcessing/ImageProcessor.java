@@ -3697,6 +3697,7 @@ try {
         // expecting the polynomial to have coef[1] negative
         // and close to a 45 degree angle (dx/dy about 0.5)
         // but that's for an image with 0 degrees of camera rotation about z axis.
+        //TODO: revisit this and add tests with rainbows and rotated camera images
         
         if (Math.abs((Math.abs(coef[1]) - 0.5)) > 0.25) {
             return new HashSet<PairInt>();
