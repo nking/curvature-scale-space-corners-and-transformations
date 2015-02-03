@@ -182,13 +182,15 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(Set<PairInt> points, GreyscaleImage gradientXY) returning() :
-        execution(private void ImageProcessor.growZeroValuePoints(Set<PairInt>, GreyscaleImage))
-        && args(points, gradientXY)
+    after(Set<PairInt> points, Set<PairInt> excludeThesePoints, 
+        GreyscaleImage gradientXY) returning() :
+        execution(private void ImageProcessor.growZeroValuePoints(Set<PairInt>, 
+        Set<PairInt>, GreyscaleImage))
+        && args(points, excludeThesePoints, gradientXY)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Object[] args = (Object[])thisJoinPoint.getArgs();
-        GreyscaleImage gXY = (GreyscaleImage)args[1];
+        GreyscaleImage gXY = (GreyscaleImage)args[2];
 
         GreyscaleImage mask = gXY.createWithDimensions();
         mask.fill(250);
@@ -252,9 +254,13 @@ public aspect CurvatureAspect {
         }
     }
 
-    before(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask) 
-        : call(private void ImageProcessor.findClouds(Set<PairInt>, Image, GreyscaleImage)) 
-        && args(skyPoints, originalColorImage, mask) 
+    before(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask,
+        Map<Integer, PixelColors> pixelColorsMap,
+        Map<PairInt, Set<PixelColors> > skyColorsMap
+        ) 
+        : call(private void ImageProcessor.findClouds(Set<PairInt>, Image, 
+        GreyscaleImage, Map<Integer, PixelColors>, Map<PairInt, Set<PixelColors> >)) 
+        && args(skyPoints, originalColorImage, mask, pixelColorsMap, skyColorsMap) 
         && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -275,11 +281,15 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask)
+    after(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask,
+        Map<Integer, PixelColors> pixelColorsMap,
+        Map<PairInt, Set<PixelColors> > skyColorsMap
+        )
         returning() :
         execution(private void ImageProcessor.findClouds(
-            Set<PairInt>, Image, GreyscaleImage) )
-        && args(skyPoints, originalColorImage, mask)
+            Set<PairInt>, Image, GreyscaleImage, Map<Integer, PixelColors>,
+            Map<PairInt, Set<PixelColors> >) )
+        && args(skyPoints, originalColorImage, mask, pixelColorsMap, skyColorsMap)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -329,11 +339,20 @@ public aspect CurvatureAspect {
     }
 
     after(Set<PairInt> sunPoints, 
-        Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask)
+        Set<PairInt> skyPoints, Set<PairInt> excludeThesePoints,
+        Image originalColorImage, GreyscaleImage mask,
+        Map<Integer, PixelColors> pixelColorsMap,
+        Map<PairInt, Set<PixelColors> > skyColorsMap,
+        HistogramHolder[] brightnessHistogram, 
+        GroupPixelColors[] skyPartitionedByBrightness)
         returning() :
         execution(private void ImageProcessor.findSeparatedClouds(
-            Set<PairInt>, Set<PairInt>, Image, GreyscaleImage) )
-        && args(sunPoints, skyPoints, originalColorImage, mask)
+        Set<PairInt>, Set<PairInt>, Set<PairInt>, Image, GreyscaleImage, 
+        Map<Integer, PixelColors>, Map<PairInt, Set<PixelColors> >,
+        HistogramHolder[], GroupPixelColors[]) )
+        && args(sunPoints, skyPoints, excludeThesePoints, originalColorImage, mask,
+        pixelColorsMap, skyColorsMap,
+        brightnessHistogram, skyPartitionedByBrightness)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -489,11 +508,12 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(GreyscaleImage gradientXY, Set<PairInt> skyPoints)
+    after(GreyscaleImage gradientXY, Set<PairInt> skyPoints, 
+        Set<PairInt> excludeThesePoints)
         returning() :
         execution(public int ImageProcessor.extractSkyFromGradientXY(
-            GreyscaleImage, Set<PairInt>) )
-        && args(gradientXY, skyPoints)
+            GreyscaleImage, Set<PairInt>, Set<PairInt>) )
+        && args(gradientXY, skyPoints, excludeThesePoints)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = gradientXY.copyImageToGreen();

@@ -3,7 +3,6 @@ package algorithms.imageProcessing;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PairInt;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -12,18 +11,18 @@ import java.util.Set;
  */
 public class GroupPixelColors {
     
-    private float averageContrast;
-    private float averageColorDifference;
-    private double standardDeviationContrast;
-    private double standardDeviationColorDifference;
-    private float averageRed;
-    private float averageGreen;
-    private float averageBlue;
-    private double standardDeviationRed;
-    private double standardDeviationGreen;
-    private double standardDeviationBlue;
+    private float avgContrast;
+    private float avgColorDiff;
+    private double stdDevContrast;
+    private double stdDevColorDiff;
+    private float avgRed;
+    private float avgGreen;
+    private float avgBlue;
+    private double stdDevRed;
+    private double stdDevGreen;
+    private double stdDevBlue;
     
-    private float[] averageYUV;
+    private float[] avgYUV;
     
     public GroupPixelColors(final Set<PixelColors> colors) {
         
@@ -86,23 +85,22 @@ public class GroupPixelColors {
             i++;
         }
         
-        averageRed = sumRed/n;
-        averageGreen = sumGreen/n;
-        averageBlue = sumBlue/n;
+        avgRed = sumRed/n;
+        avgGreen = sumGreen/n;
+        avgBlue = sumBlue/n;
          
         float[][] m = new float[3][];
         m[0] = new float[]{0.256f, 0.504f, 0.098f};
         m[1] = new float[]{-0.148f, -0.291f, 0.439f};
         m[2] = new float[]{0.439f, -0.368f, -0.072f};
         
-        averageYUV = MatrixUtil.multiply(m, new float[]{averageRed, 
-            averageGreen, averageBlue});
+        avgYUV = MatrixUtil.multiply(m, new float[]{avgRed, avgGreen, avgBlue});
         
         float sumContrast = 0;
-        float sumColorDifference = 0;
-        double sumStandardDeviationRed = 0;
-        double sumStandardDeviationGreen = 0;
-        double sumStandardDeviationBlue = 0;
+        float sumColorDiff = 0;
+        double sumStdDevRed = 0;
+        double sumStdDevGreen = 0;
+        double sumStdDevBlue = 0;
         float[] contrast = new float[colors.size()];
         float[] colorDiff = new float[colors.size()];
        
@@ -114,69 +112,73 @@ public class GroupPixelColors {
             
             float[] yuv = MatrixUtil.multiply(m, new float[]{r, g, b});
             
-            float diffR = r - averageRed;
-            float diffG = g - averageGreen;
-            float diffB = b - averageBlue;
+            float diffR = r - avgRed;
+            float diffG = g - avgGreen;
+            float diffB = b - avgBlue;
             
-            sumStandardDeviationRed += (diffR * diffR);
-            sumStandardDeviationGreen += (diffG * diffG);
-            sumStandardDeviationBlue += (diffB * diffB);
+            sumStdDevRed += (diffR * diffR);
+            sumStdDevGreen += (diffG * diffG);
+            sumStdDevBlue += (diffB * diffB);
             
-            contrast[i] = (averageYUV[0] - yuv[0])/yuv[0];
+            contrast[i] = (avgYUV[0] - yuv[0])/yuv[0];
             sumContrast += contrast[i];
             
-            colorDiff[i] = (float)Math.sqrt(diffR*diffR + diffG*diffG + diffB*diffB);
-            sumColorDifference += colorDiff[i];
+            colorDiff[i] = (float)Math.sqrt(diffR*diffR + diffG*diffG + 
+                diffB*diffB);
+            sumColorDiff += colorDiff[i];
             i++;
         }
         
-        averageContrast = sumContrast/n;
-        averageColorDifference = sumColorDifference/n;
+        avgContrast = sumContrast/n;
+        avgColorDiff = sumColorDiff/n;
         
-        standardDeviationRed = (n > 1) ? 
-            Math.sqrt(sumStandardDeviationRed/(n - 1)) : Double.POSITIVE_INFINITY;
+        stdDevRed = (n > 1) ? 
+            Math.sqrt(sumStdDevRed/(n - 1)) : Double.POSITIVE_INFINITY;
         
-        standardDeviationGreen = (n > 1) ? 
-            Math.sqrt(sumStandardDeviationGreen/(n - 1)) : Double.POSITIVE_INFINITY;
-        standardDeviationBlue = (n > 1) ? 
-            Math.sqrt(sumStandardDeviationBlue/(n - 1)) : Double.POSITIVE_INFINITY;
+        stdDevGreen = (n > 1) ? 
+            Math.sqrt(sumStdDevGreen/(n - 1)) : Double.POSITIVE_INFINITY;
+        stdDevBlue = (n > 1) ? 
+            Math.sqrt(sumStdDevBlue/(n - 1)) : Double.POSITIVE_INFINITY;
         
-        double sumStandardDeviationContrast = 0;
-        double sumStandardDeviationColorDifference = 0;
+        double sumStdDevContrast = 0;
+        double sumStdDevColorDiff = 0;
         
         for (i = 0; i < colors.size(); i++) {
-            float diffContrast = contrast[i] - averageContrast;
-            sumStandardDeviationContrast += (diffContrast * diffContrast);
+            float diffContrast = contrast[i] - avgContrast;
+            sumStdDevContrast += (diffContrast * diffContrast);
             
-            float diffColorDiff = colorDiff[i] - averageColorDifference;
-            sumStandardDeviationColorDifference += (diffColorDiff * diffColorDiff);            
+            float diffColorDiff = colorDiff[i] - avgColorDiff;
+            sumStdDevColorDiff += (diffColorDiff * diffColorDiff);            
         }
         
-        standardDeviationContrast = (n > 1) ? 
-            Math.sqrt(sumStandardDeviationContrast/(n - 1)) : Double.POSITIVE_INFINITY;
-        standardDeviationColorDifference = (n > 1) ? 
-            Math.sqrt(sumStandardDeviationColorDifference/(n - 1)) : Double.POSITIVE_INFINITY;
+        stdDevContrast = (n > 1) ? 
+            Math.sqrt(sumStdDevContrast/(n - 1)) : Double.POSITIVE_INFINITY;
+        stdDevColorDiff = (n > 1) ? 
+            Math.sqrt(sumStdDevColorDiff/(n - 1)) : Double.POSITIVE_INFINITY;
     }
     
-    public float calculateContrastToOther(int otherRed, int otherGreen, int otherBlue) {
+    public float calcContrastToOther(int otherRed, int otherGreen, 
+        int otherBlue) {
         
         float[][] m = new float[3][];
         m[0] = new float[]{0.256f, 0.504f, 0.098f};
         m[1] = new float[]{-0.148f, -0.291f, 0.439f};
         m[2] = new float[]{0.439f, -0.368f, -0.072f};
         
-        float[] yuvOther = MatrixUtil.multiply(m, new float[]{otherRed, otherGreen, otherBlue});
+        float[] yuvOther = MatrixUtil.multiply(m, new float[]{otherRed, 
+            otherGreen, otherBlue});
         
-        float contrast = (averageYUV[0] - yuvOther[0])/yuvOther[0];
+        float contrast = (avgYUV[0] - yuvOther[0])/yuvOther[0];
         
         return contrast;
     }
     
-    public float calculateColorDifferenceToOther(int otherRed, int otherGreen, int otherBlue) {
+    public float calcColorDiffToOther(int otherRed, int otherGreen, 
+        int otherBlue) {
         
-        float rDiff = otherRed - averageRed;
-        float gDiff = otherGreen - averageGreen;
-        float bDiff = otherBlue - averageBlue;
+        float rDiff = otherRed - avgRed;
+        float gDiff = otherGreen - avgGreen;
+        float bDiff = otherBlue - avgBlue;
         
         float dist = (float)Math.sqrt(rDiff*rDiff + gDiff*gDiff + bDiff*bDiff);
         
@@ -186,94 +188,94 @@ public class GroupPixelColors {
     /**
      * @return the averageContrast
      */
-    public float getAverageContrast() {
-        return averageContrast;
+    public float getAvgContrast() {
+        return avgContrast;
     }
 
     /**
      * @return the averageColorDifference
      */
-    public float getAverageColorDifference() {
-        return averageColorDifference;
+    public float getAvgColorDiff() {
+        return avgColorDiff;
     }
 
     /**
      * @return the standardDeviationContrast
      */
-    public double getStandardDeviationContrast() {
-        return standardDeviationContrast;
+    public double getStdDevContrast() {
+        return stdDevContrast;
     }
 
     /**
      * @return the standardDeviationColorDifference
      */
-    public double getStandardDeviationColorDifference() {
-        return standardDeviationColorDifference;
+    public double getStdDevColorDiff() {
+        return stdDevColorDiff;
     }
 
     /**
      * @return the averageRed
      */
-    public float getAverageRed() {
-        return averageRed;
+    public float getAvgRed() {
+        return avgRed;
     }
 
     /**
      * @return the averageGreen
      */
-    public float getAverageGreen() {
-        return averageGreen;
+    public float getAvgGreen() {
+        return avgGreen;
     }
 
     /**
      * @return the averageBlue
      */
-    public float getAverageBlue() {
-        return averageBlue;
+    public float getAvgBlue() {
+        return avgBlue;
     }
 
     /**
      * @return the standardDeviationRed
      */
-    public double getStandardDeviationRed() {
-        return standardDeviationRed;
+    public double getStdDevRed() {
+        return stdDevRed;
     }
 
     /**
      * @return the standardDeviationGreen
      */
-    public double getStandardDeviationGreen() {
-        return standardDeviationGreen;
+    public double getStdDevGreen() {
+        return stdDevGreen;
     }
 
     /**
      * @return the standardDeviationBlue
      */
-    public double getStandardDeviationBlue() {
-        return standardDeviationBlue;
+    public double getStdDevBlue() {
+        return stdDevBlue;
     }
 
     /**
      * @return the averageYUV
      */
     public float[] getAverageYUV() {
-        return averageYUV;
+        return avgYUV;
     }
 
     @Override
     public String toString() {
         
         StringBuilder sb = new StringBuilder();
-        sb.append(" averageRed=").append(averageRed).append("\n")
-        .append(" averageGreen=").append(averageGreen).append("\n")
-        .append(" averageBlue=").append(averageBlue).append("\n")
-        .append("averageContrast=").append(averageContrast).append("\n")
-        .append(" averageColorDifference=").append(averageColorDifference).append("\n")
-        .append(" standardDeviationRed=").append(standardDeviationRed).append("\n")
-        .append(" standardDeviationGreen=").append(standardDeviationGreen).append("\n")
-        .append(" standardDeviationBlue=").append(standardDeviationBlue).append("\n")
-        .append(" standardDeviationContrast=").append(standardDeviationContrast).append("\n")
-        .append(" standardDeviationColorDifference=").append(standardDeviationColorDifference).append("\n");
+        sb.append(" avgRed=").append(avgRed).append("\n")
+        .append(" avgGreen=").append(avgGreen).append("\n")
+        .append(" avgBlue=").append(avgBlue).append("\n")
+        .append("avgContrast=").append(avgContrast).append("\n")
+        .append(" avgColorDiff=").append(avgColorDiff).append("\n")
+        .append(" stdDevRed=").append(stdDevRed).append("\n")
+        .append(" stdDevGreen=").append(stdDevGreen).append("\n")
+        .append(" stdDevBlue=").append(stdDevBlue).append("\n")
+        .append(" stdDevContrast=").append(stdDevContrast).append("\n")
+        .append(" stdDevColorDiff=").append(stdDevColorDiff).append("\n");
        
         return sb.toString();
     }
