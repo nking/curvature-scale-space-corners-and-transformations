@@ -3664,14 +3664,24 @@ try {
             }
         }
         
-        if (rainbowPoints.isEmpty()) {
-            return rainbowPoints;
+        Set<PairInt> tmp = new HashSet<PairInt>(rainbowPoints);
+        tmp.removeAll(sunPoints);
+        
+        if (tmp.isEmpty()) {
+            return tmp;
         }
         
-        if (rainbowPoints.size() < 12) {
+        if (tmp.size() < 12) {
             return new HashSet<PairInt>();
         }
-       
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(tmp);
+        log.info("rainbow range in x: " + minMaxXY[0] + " to " + minMaxXY[1]);
+        
+        // TODO: consider filtering here by the size the rainbow is in the image.
+        
+        log.info("rainbow - sun = " + tmp.size() + " points");
+        
         PolynomialFitter polyFitter = new PolynomialFitter();
         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
         float[] coef = polyFitter.solveAfterRandomSampling(rainbowPoints);
@@ -3680,7 +3690,23 @@ try {
             return new HashSet<PairInt>();
         }
         
-        //TODO: add validation that polynomial looks like an arc
+        log.info("rainbow polynomial coefficients = " + Arrays.toString(coef));
+        log.info("image dimensions are " + colorImg.getWidth() + " X " + 
+            colorImg.getHeight() + " pixels^2");
+        
+        // expecting the polynomial to have coef[1] negative
+        // and close to a 45 degree angle (dx/dy about 0.5)
+        // but that's for an image with 0 degrees of camera rotation about z axis.
+        
+        if (Math.abs((Math.abs(coef[1]) - 0.5)) > 0.25) {
+            return new HashSet<PairInt>();
+        }
+        if (coef[1] > 0) {
+            return new HashSet<PairInt>();
+        }
+        if (coef[2] > 0.01) {
+            return new HashSet<PairInt>();
+        }        
         
         polyFitter.plotFit(coef, rainbowPoints, 234, colorImg.getWidth(),
             colorImg.getHeight(), "rainbow points");

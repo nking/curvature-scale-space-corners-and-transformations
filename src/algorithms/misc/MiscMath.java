@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.util.PairInt;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -817,6 +818,32 @@ public class MiscMath {
             lastZeroIdx = i;
         }
         return lastZeroIdx;
+    }
+
+    public static int[] findMinMaxXY(Set<PairInt> points) {
+        
+        int xMin = Integer.MAX_VALUE;
+        int xMax = Integer.MIN_VALUE;
+        int yMin = Integer.MAX_VALUE;
+        int yMax = Integer.MIN_VALUE;
+        
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            if (x < xMin) {
+                xMin = x;
+            }
+            if (y < yMin) {
+                yMin = y;
+            }
+            if (x > xMax) {
+                xMax = x;
+            }
+            if (y > yMax) {
+                yMax = y;
+            }
+        }
+        return new int[]{xMin, xMax, yMin, yMax};
     }
 
 }
