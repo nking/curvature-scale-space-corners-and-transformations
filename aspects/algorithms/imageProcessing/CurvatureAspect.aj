@@ -254,13 +254,14 @@ public aspect CurvatureAspect {
         }
     }
 
-    before(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask,
+    before(Set<PairInt> skyPoints, Set<PairInt> excludePoints, Image originalColorImage, GreyscaleImage mask,
         Map<Integer, PixelColors> pixelColorsMap,
         Map<PairInt, Set<PixelColors> > skyColorsMap
         ) 
-        : call(private void ImageProcessor.findClouds(Set<PairInt>, Image, 
-        GreyscaleImage, Map<Integer, PixelColors>, Map<PairInt, Set<PixelColors> >)) 
-        && args(skyPoints, originalColorImage, mask, pixelColorsMap, skyColorsMap) 
+        : call(private void ImageProcessor.findClouds(Set<PairInt>, Set<PairInt>,
+        Image, GreyscaleImage, Map<Integer, PixelColors>, Map<PairInt, 
+        Set<PixelColors> >)) 
+        && args(skyPoints, excludePoints, originalColorImage, mask, pixelColorsMap, skyColorsMap) 
         && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -281,15 +282,15 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask,
+    after(Set<PairInt> skyPoints, Set<PairInt> excludePoints, Image originalColorImage, GreyscaleImage mask,
         Map<Integer, PixelColors> pixelColorsMap,
         Map<PairInt, Set<PixelColors> > skyColorsMap
         )
         returning() :
         execution(private void ImageProcessor.findClouds(
-            Set<PairInt>, Image, GreyscaleImage, Map<Integer, PixelColors>,
+            Set<PairInt>, Set<PairInt>, Image, GreyscaleImage, Map<Integer, PixelColors>,
             Map<PairInt, Set<PixelColors> >) )
-        && args(skyPoints, originalColorImage, mask, pixelColorsMap, skyColorsMap)
+        && args(skyPoints, excludePoints, originalColorImage, mask, pixelColorsMap, skyColorsMap)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -366,7 +367,7 @@ public aspect CurvatureAspect {
             ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_sunlit_clouds_" + outImgNum + ".png", clr);
+                dirPath + "/sky_added_separated_clouds_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
@@ -402,7 +403,7 @@ public aspect CurvatureAspect {
 
     before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount) :
-        execution(private void ImageProcessor.removeSetsWithNonCloudColors(
+        execution(private List<PairIntArray> ImageProcessor.removeSetsWithNonCloudColors(
             List<PairIntArray>, Image, GreyscaleImage, boolean, int) )
         && args(zeroPointLists, originalColorImage, theta, addAlongX, addAmount)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
@@ -427,8 +428,8 @@ public aspect CurvatureAspect {
 
     after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount)
-        returning() :
-        execution(private void ImageProcessor.removeSetsWithNonCloudColors(
+        returning(List<PairIntArray> removedNonCloudColors) :
+        execution(private List<PairIntArray> ImageProcessor.removeSetsWithNonCloudColors(
             List<PairIntArray>, Image, GreyscaleImage, boolean, int) )
         && args(zeroPointLists, originalColorImage, theta, addAlongX, addAmount)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
