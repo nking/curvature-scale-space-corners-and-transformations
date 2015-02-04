@@ -232,6 +232,31 @@ public class DFSContiguousValueFinder {
         }
 
     }
+    
+    protected void process(Integer uIdx, boolean isBeyondBounds) {
+                
+        Integer groupId = pointToGroupMap.get(uIdx);
+        
+        if (groupId == null) {
+                        
+            groupId = Integer.valueOf(groupMembership.size());
+            
+            pointToGroupMap.put(uIdx, groupId);
+            
+            Set<Integer> set = new HashSet<Integer>();
+            set.add(uIdx);
+            
+            groupMembership.add(set);
+            
+            groupIsUnbound.add(Boolean.FALSE);
+                      
+        }
+        
+        if (isBeyondBounds) {
+            groupIsUnbound.set(groupId, Boolean.TRUE);
+        }
+
+    }
             
     public List<Set<Integer> > getGroupMembershipList() {
         return groupMembership;
@@ -405,15 +430,15 @@ public class DFSContiguousValueFinder {
                 stack.add(Integer.valueOf(uIndex));
             }
         }
-            
+        
         visited.add(stack.peek());
 
         while (!stack.isEmpty()) {
 
             int uIndex = stack.pop().intValue();
-            
+
             Integer uKey = Integer.valueOf(uIndex);
-            
+
             int uPixValue = img.getValue(uIndex);
             
             if ((notValue && (uPixValue == pixelValue)) ||
@@ -432,6 +457,8 @@ public class DFSContiguousValueFinder {
             int uX = uIndex - (uY * width);
 
             //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
+            boolean foundANeighbor = false;
             
             for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
                 
@@ -460,7 +487,7 @@ public class DFSContiguousValueFinder {
                     visited.add(vKey);
                 
                     int vPixValue = img.getValue(vIndex);
-            
+
                     if ((notValue && (vPixValue == pixelValue)) ||
                         (!notValue && (vPixValue != pixelValue))) {
                         
@@ -479,7 +506,21 @@ public class DFSContiguousValueFinder {
                     // inserting back at the top of the stack assures that the 
                     // search continues next from an associated point
                     stack.add(Integer.valueOf(vIndex));
+                    
+                    foundANeighbor = true;
                 }
+            }
+
+            if (!foundANeighbor && (minimumNumberInCluster == 1)) {
+                
+                PairInt colRange = rowColPerimeter.get(Integer.valueOf(uY));
+                boolean unBounded = false;
+                if ((uY < rowMinMax[0]) || (uY > rowMinMax[1])
+                    || (uX < colRange.getX()) || (uX > colRange.getY())) {
+                    unBounded = true;
+                }
+                
+                process(uIndex, unBounded);
             }
         }
     }

@@ -987,7 +987,7 @@ public class ImageProcessor {
         Map<Integer, PairInt> rowColRange = finder.find(points, rowMinMax);
 
         DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
-
+        contiguousNonZeroFinder.setMinimumNumberInCluster(1);
         contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0,
             rowColRange, rowMinMax);
 
