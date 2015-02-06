@@ -21,25 +21,36 @@ public class CIEChromaticity {
      */
     public ArrayPair getYellowPolynomial() {
         /*
-        greenish yellow, yellow, and yellowish orange
-        455, 355
-        559, 459
-        493, 480
-        467, 455
-        437, 446
-        391, 457
-        345, 474
-        
-        including center is larger polygon w/ fewer points:
-        302, 221
-        559, 459
-        331, 573
+        516, 486
+        488,512  
+        436,450
+        327, 340
+        466, 444
         */
         
         ArrayPair p = new ArrayPair(
-            new float[]{.302f, .559f, .331f, .298f, .302f},
-            new float[]{0.9f - .221f, 0.9f - .459f, 0.9f - .573f, 0.9f - .449f, 
-                0.9f - .221f}
+            new float[]{.516f, .488f, .436f, .327f, .466f},
+            new float[]{.486f, .512f, .450f, .340f, .444f}
+        );
+        
+        return p;
+    }
+    
+    public ArrayPair getYellowThroughOrangePolynomial() {
+        
+        /*
+        685, 312
+        488, 512
+        435, 454
+                  343, 373
+        342, 344
+        420, 340
+        550, 349
+        */
+        
+        ArrayPair p = new ArrayPair(
+            new float[]{.685f, .488f, .435f, .343f, .342f, .420f, .550f, .685f},
+            new float[]{.312f, .512f, .454f, .373f, .344f, .340f, .349f, .312f}
         );
         
         return p;
@@ -47,26 +58,37 @@ public class CIEChromaticity {
     
     public ArrayPair getYellowishGreenThroughOrangePolynomial() {
         /*
-        422, 558
-        550, 551
-        687, 585
-        457, 357
-        393, 453
-        438, 445
-        467, 455
-        490, 479
-        495, 511
-        438, 524
-        
-        including center is larger polygon w/ fewer points:
-        302, 221
-        615, 510
-        330, 573        
+        685, 312
+        456, 544
+        393, 448
+                  340, 373
+        342, 344
+        420, 340
+        550, 349
         */
         
         ArrayPair p = new ArrayPair(
-            new float[]{.302f, .615f, .330f, .302f},
-            new float[]{0.9f - .221f, 0.9f - .510f, 0.9f - .573f, 0.9f - .221f}
+            new float[]{.685f, .456f, .393f, .340f, .342f, .420f, .550f, .685f},
+            new float[]{.312f, .544f, .448f, .373f, .344f, .340f, .349f, .312f}
+        );
+        
+        return p;
+    }
+            
+    public ArrayPair getRedThroughPurplishRedPolynomial() {
+        
+        /*
+        690, 310
+        552, 346
+        422, 341    
+        337, 344  339, 326
+        554, 182
+        738, 264
+        */
+        
+        ArrayPair p = new ArrayPair(
+            new float[]{.688f, .552f, .422f, .337f, .339f, .554f, .738f, .688f},
+            new float[]{.313f, .346f, .341f, .344f, .326f, .182f, .264f, .313f}
         );
         
         return p;
@@ -75,25 +97,37 @@ public class CIEChromaticity {
     public ArrayPair getRedPolynomial() {
         
         /*
-        529, 606
-        660, 670
-        740, 636
-        688, 588
-        553, 551
+        690, 310
+        552, 346
+        422, 341    382, 342
         
-        including center is larger polygon w/ fewer points:
-        330, 573
-        529, 606
-        660, 670
-        740, 636
-        688, 588
-        552, 552
+        527, 291
+        659, 229
+        738, 264
         */
         
         ArrayPair p = new ArrayPair(
-            new float[]{.330f, .529f, .660f, .740f, .688f, .552f, .330f},
-            new float[]{0.9f - .573f, 0.9f - .606f, 0.9f - .670f, 0.9f - .636f, 
-                0.9f - .588f, 0.9f - .552f, 0.9f - .573f}
+            new float[]{.688f, .552f, .422f, .367f, .527f, .659f, .738f, .688f},
+            new float[]{.313f, .346f, .341f, .342f, .291f, .229f, .264f, .313f}
+        );
+        
+        return p;
+    }
+    
+    public ArrayPair getOrangePolynomial() {
+        
+        /*
+        558, 439 <== 515, 482
+        490, 416 <== 467, 442
+        386, 365 <== 331,341
+        420, 340
+        550, 349
+        687, 314
+        */
+        
+        ArrayPair p = new ArrayPair(
+            new float[]{.515f, .467f, .331f, .420f, .550f, .687f, .515f},
+            new float[]{.482f, .442f, .341f, .340f, .349f, .314f, .482f}
         );
         
         return p;
