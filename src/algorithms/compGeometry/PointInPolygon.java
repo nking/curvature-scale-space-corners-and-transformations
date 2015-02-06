@@ -30,7 +30,7 @@ public class PointInPolygon {
         int sumIntersectingRays = 0;
         for (int i = 0; i < nPolygonPoints; i++) {
 
-            if (i + 2 > nPolygonPoints) {
+            if ((i + 2) > nPolygonPoints) {
                 continue;
             }
 
@@ -41,7 +41,7 @@ public class PointInPolygon {
             }
         }
 
-        return ((sumIntersectingRays % 2) == 1);
+        return ((sumIntersectingRays & 1) == 1);
     }
 
     /**
@@ -116,9 +116,7 @@ public class PointInPolygon {
         float bx = xPolygon[index2];
         float by = yPolygon[index2];
 
-        boolean intersect = false;
-
-        if (ay > by) {
+        if (ay >= by) {
             float xtmp = ax;
             float ytmp = ay;
             ax = bx;
@@ -130,45 +128,29 @@ public class PointInPolygon {
             yPt += eps;
         }
 
-        float tmax = (ax > bx) ? ax : bx;
-
-        // check within y boundaries
-        if (((yPt > by) || (yPt < ay)) || (xPt > tmax)) {
-            return intersect;
+        if ((yPt < ay) || (yPt > by)) {
+            return false;
         }
-
-        float tmin = (ax < bx) ? ax : bx;
-
-        if (xPt <= tmin) {
-            intersect = true;
+        
+        if (ax > bx) {
+            if (xPt > ax) {
+                return false;
+            }
+            if (xPt < bx) {
+                return true;
+            }
         } else {
-
-            float diff = ax = bx;
-            if (diff < 0) {
-                diff *= -1;
+            if (xPt > bx) {
+                return false;
             }
-
-            float m_red, m_blue;
-
-            if (diff > Float.MIN_VALUE) {
-                m_red = (by - ay) / (bx - ax);
-            } else {
-                m_red = Float.MAX_VALUE;
+            if (xPt < ax) {
+                return true;
             }
-
-            diff = ax - xPt;
-            if (diff < 0) {
-                diff *= -1;
-            }
-
-            if (diff > Float.MIN_VALUE) {
-                m_blue = (yPt - ay) / (xPt - ax);
-            } else {
-                m_blue = Float.MAX_VALUE;
-            }
-            intersect = (m_blue >= m_red);
         }
-        return intersect;
+
+        boolean intersects = (yPt - ay)/(xPt - ax) >= (by - ay)/(bx - ax);
+        
+        return intersects;
     }
 
 }

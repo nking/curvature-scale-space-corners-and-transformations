@@ -304,10 +304,14 @@ public aspect CurvatureAspect {
             ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_after_cloud_removal_" + outImgNum + ".png", clr);
+                dirPath + "/sky_after_find_clouds_" + outImgNum + 
+                "_" + n3 + ".png", clr);
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/mask_after_cloud_removal_" + outImgNum + ".png", mask);
+                dirPath + "/mask_after_find_clouds_" + outImgNum + 
+                "_" + n3 + ".png", mask);
+
+            n3++;
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
@@ -339,6 +343,9 @@ public aspect CurvatureAspect {
         }
     }
 
+private static int n2 = 0;
+private static int n3 = 0;
+
     after(Set<PairInt> sunPoints, 
         Set<PairInt> skyPoints, Set<PairInt> excludeThesePoints,
         Image originalColorImage, GreyscaleImage mask,
@@ -367,7 +374,10 @@ public aspect CurvatureAspect {
             ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_added_separated_clouds_" + outImgNum + ".png", clr);
+                dirPath + "/sky_added_separated_clouds_" + outImgNum + "_" + 
+                n2 + ".png", clr);
+
+            n2++;
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
@@ -786,6 +796,8 @@ public aspect CurvatureAspect {
         GreyscaleImage cTheta = instance.getTheta();
 
         outImgNum++;
+        n2 = 0;
+        n3 = 0;
 
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
