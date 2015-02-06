@@ -263,4 +263,82 @@ public class CIEChromaticityTest extends TestCase {
         ImageIOHelper.writeOutputImage(filePath2, img1);
         int z = 1;
     }
+    
+    public void test3() throws Exception {
+    
+        String filePath1 = ResourceFinder.findFileInTestResources(
+            "sky_with_rainbow.jpg");
+        Image img1 = ImageIOHelper.readImage(filePath1);        
+        
+        BrightSkyRainbowColors colors = new BrightSkyRainbowColors();
+        
+        for (int col = 0; col < img1.getWidth(); col++) {
+            for (int row = 0; row < img1.getHeight(); row++) {
+                
+                int r = img1.getR(col, row);
+                int g = img1.getG(col, row);
+                int b = img1.getB(col, row);
+                
+                if (colors.isInRedThroughPurplishRed(r, g, b)) {
+                    
+                    img1.setRGB(col, row, 0, 0, 255);
+
+                } else if (colors.isInOrangeRed(r, g, b)) {
+                    
+                    img1.setRGB(col, row, 0, 0, 255);
+                
+                } else if (colors.isInGreenishYellowOrange(r, g, b)) {
+                 
+                    img1.setRGB(col, row, 0, 0, 255);
+
+                }
+            }
+        }
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String filePath2 = dirPath + "/tmp3.png";
+            
+        ImageDisplayer.displayImage("points", img1);
+        ImageIOHelper.writeOutputImage(filePath2, img1);
+        int z = 1;
+    }
+    
+    public void test4() throws Exception {
+    
+        String filePath1 = ResourceFinder.findFileInTestResources(
+            "sky_with_rainbow2.jpg");
+        Image img1 = ImageIOHelper.readImage(filePath1);        
+        
+        DarkSkyRainbowColors colors = new DarkSkyRainbowColors();
+        
+        for (int col = 0; col < img1.getWidth(); col++) {
+            for (int row = 0; row < img1.getHeight(); row++) {
+                
+                int r = img1.getR(col, row);
+                int g = img1.getG(col, row);
+                int b = img1.getB(col, row);
+                
+                if (colors.isInRedThroughPurplishRed(r, g, b)) {
+                    
+                    img1.setRGB(col, row, 0, 0, 255);
+
+                } else if (colors.isInOrangeRed(r, g, b)) {
+                    
+                    img1.setRGB(col, row, 0, 0, 255);
+                
+                } else if (colors.isInGreenishYellowOrange(r, g, b)) {
+                 
+                    img1.setRGB(col, row, 0, 0, 255);
+
+                }
+            }
+        }
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String filePath2 = dirPath + "/tmp4.png";
+            
+        ImageDisplayer.displayImage("points", img1);
+        ImageIOHelper.writeOutputImage(filePath2, img1);
+        int z = 1;
+    }
 }
