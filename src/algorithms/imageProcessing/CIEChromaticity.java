@@ -38,7 +38,8 @@ public class CIEChromaticity {
         
         ArrayPair p = new ArrayPair(
             new float[]{.302f, .559f, .331f, .298f, .302f},
-            new float[]{.221f, .459f, .573f, .449f, .221f}
+            new float[]{0.9f - .221f, 0.9f - .459f, 0.9f - .573f, 0.9f - .449f, 
+                0.9f - .221f}
         );
         
         return p;
@@ -65,7 +66,7 @@ public class CIEChromaticity {
         
         ArrayPair p = new ArrayPair(
             new float[]{.302f, .615f, .330f, .302f},
-            new float[]{.221f, .510f, .573f, .221f}
+            new float[]{0.9f - .221f, 0.9f - .510f, 0.9f - .573f, 0.9f - .221f}
         );
         
         return p;
@@ -91,7 +92,29 @@ public class CIEChromaticity {
         
         ArrayPair p = new ArrayPair(
             new float[]{.330f, .529f, .660f, .740f, .688f, .552f, .330f},
-            new float[]{.573f, .606f, .670f, .636f, .588f, .552f, .573f}
+            new float[]{0.9f - .573f, 0.9f - .606f, 0.9f - .670f, 0.9f - .636f, 
+                0.9f - .588f, 0.9f - .552f, 0.9f - .573f}
+        );
+        
+        return p;
+    }
+    
+    public ArrayPair getPurplePolynomial() {
+        
+        /*
+        
+        including center is larger polygon w/ fewer points:
+        168,   3
+        237, 193
+        300, 324
+        340, 324
+        552, 180
+        
+        */
+        
+        ArrayPair p = new ArrayPair(
+            new float[]{.168f, .237f, .300f, .340f, .552f, .168f},
+            new float[]{0.003f, .193f, .324f, .324f, .180f, .003f}
         );
         
         return p;

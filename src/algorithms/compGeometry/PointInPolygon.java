@@ -73,7 +73,7 @@ public class PointInPolygon {
             }
         }
 
-        return ((sumIntersectingRays % 2) == 1);
+        return ((sumIntersectingRays & 1) == 1);
     }
 
     /**
