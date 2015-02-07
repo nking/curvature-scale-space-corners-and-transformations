@@ -3,11 +3,13 @@ package algorithms.imageProcessing;
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.EllipseHelper;
 import algorithms.compGeometry.PerimeterFinder;
+import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
+import algorithms.util.ArrayPair;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.Errors;
@@ -3151,7 +3153,7 @@ if ((ox > 560) && (ox <= 570) && (oy > 425) && (oy <= 431) && (contrastV > uCont
             }
             valueFor0Point9 = gXYValues.getX(i);
         }
-        
+/*        
 float sumFrac = 0;
 StringBuilder sb = new StringBuilder("gXY:\n");
 for (int i = (gXYValues.getN() - 1); i > -1; i--) {
@@ -3167,7 +3169,7 @@ sb.append("sumF=").append(Float.toString(sumFrac));
 sb.append("\n");
 }
 log.info(sb.toString());
-
+*/
         int subtract = 0;
         int lastHistIdx = gXYValues.getN();
         
@@ -3552,30 +3554,33 @@ try {
         Set<PairInt> yellowPoints = new HashSet<PairInt>();
 
         java.util.Stack<PairInt> yellowStack = new java.util.Stack<PairInt>();
+     
+        SunColors sunColors = new SunColors();
         
+        GroupPixelColors allSkyColor = new GroupPixelColors(skyPoints,
+            clr, xOffset, yOffset);
+        
+        float rDiffG = Math.abs(allSkyColor.getAvgRed() - 
+            allSkyColor.getAvgGreen());
+        
+        float gDiffB = Math.abs(allSkyColor.getAvgGreen() - 
+            allSkyColor.getAvgBlue());
+                
+        float rDivB = Math.abs(allSkyColor.getAvgRed()/ 
+            allSkyColor.getAvgBlue());
+        
+        if ((rDivB >= 0.85) && (rDivB <= 1.15) && (rDiffG < 20) && 
+            (gDiffB < 20) && (allSkyColor.getAvgGreen() < 125)) {
+            
+            sunColors.useDarkSkiesLogic();
+        }
+                
         int width = clr.getWidth();
         int height = clr.getHeight();
         
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
-        /*
-          _ _ _ _ _
-          _ _ _ _ _
-          _ _ @ _ _
-          _ _ _ _ _
-          _ _ _ _ _
-        */
-        
-        /*int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1,
-            -2,    -2,    -2,     -1,    0,    1,    2,    2,    
-            2,  2,   2,    1,   0,   -1,  -2,  -2,  -2
-        };
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1,
-            0,    -1,    -2,     -2,    -2,   -2,   -2,   -1,    
-            0,  1,   2,    2,   2,    2,   2,    1,  0 
-        };*/
-        
+       
         for (PairInt p : skyPoints) {
 
             int x = p.getX() + xOffset;
@@ -3601,15 +3606,8 @@ try {
                 int g = clr.getG(xx, yy);
                 int b = clr.getB(xx, yy);
 
-                // all normalized from 0 to 1
-                float[] hsb = new float[3];
-                Color.RGBtoHSB(r, g, b, hsb);
-
-                float h2 = hsb[0] * 360.f;
-
-                // increasing s2 to < 60 finds larger diameter sun and scattered light
-                if ((r >= 240/*251*/) && (hsb[2] >= 0.87/*0.97*/) && (hsb[1] < .30)) {
-
+                if (sunColors.isSunCenterColor(r, g, b)) {
+                    
                     yellowPoints.add(p2);
 
                     yellowStack.add(p2);
@@ -3620,10 +3618,12 @@ try {
         
         log.info("found " + yellowPoints.size() + " yellow points in connected search");
         
-        if (yellowStack.isEmpty()) {
+        if (yellowStack.size() < 3) {
             return new HashSet<PairInt>();
         }
-                
+        
+debugPlot(yellowPoints, clr, xOffset, yOffset, "y_0");
+
         Set<PairInt> visited = new HashSet<PairInt>();
         visited.add(yellowStack.peek());
        
@@ -3664,25 +3664,20 @@ try {
                 int g = clr.getG(vX, vY);
                 int b = clr.getB(vX, vY);
 
-                // all normalized from 0 to 1
-                float[] hsb = new float[3];
-                Color.RGBtoHSB(r, g, b, hsb);
-
-                float h2 = hsb[0] * 360.f;
-                float s2 = hsb[1] * 100.f;
-
-                // increasing s2 to < 60 finds larger diameter sun and scattered light
-                if ((r >= 240/*251*/) && (hsb[2] >= 0.97/*0.98*/) && (s2 < 30)) {
-
+                if (sunColors.isSunCenterColor(r, g, b)) {
+                    
                     yellowPoints.add(vPoint);
 
                     yellowStack.add(vPoint);
+                    
                 }
             }
         }
         
         log.info("found " + yellowPoints.size() + " points");
-        
+
+debugPlot(yellowPoints, clr, xOffset, yOffset, "y_1");
+
         if (yellowPoints.size() < 6) {
             return new HashSet<PairInt>();
         }
@@ -3701,9 +3696,11 @@ try {
         float a = (float)params[2];
         float b = (float)params[3];
         float alpha = (float)params[4];
-                
-        //double[] stats = ellipseHelper.calculateEllipseResidualStats(
-        //    yellowPoints.getX(), yellowPoints.getY(), xc, yc, a, b, alpha);
+       
+        //TODO:  this may need adjustements.  top of sun rising over mountains..
+        /*if ((a/b) > 6) {
+            return new HashSet<PairInt>();
+        }*/
         
         return yellowPoints;
     }
@@ -3738,9 +3735,7 @@ try {
         }
         
         /*
-        looking for connected ribbons, first connected to the yellow sun points
-        which may actually be rainbow points.
-        
+        looking for points connected to sky points that have rainbow colors.
         */
         
         int width = colorImg.getWidth();
@@ -3750,103 +3745,57 @@ try {
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
         
         java.util.Stack<PairInt> rainbowStack = new java.util.Stack<PairInt>();
+
+        //BrightSkyRainbowColors rainbowColors = new BrightSkyRainbowColors();
+        DarkSkyRainbowColors rainbowColors = new DarkSkyRainbowColors();
         
-        int nLast = rainbowPoints.size();
-        
-        for (int nBands = 0; nBands < 10; nBands++) {
+        rainbowStack.addAll(rainbowPoints);
             
-            if ((nBands > 0) && (nLast == rainbowPoints.size())) {
-                break;
-            }
-            
-            nLast = rainbowPoints.size();
-            
-            int hueLo = 45;
-            int hueHi = 65;
-            int saturationLo = 0;
-            int saturationHi = 35;
-            int brightnessLo = 40;
-            int brightnessHi = 100;
-            
-            if (nBands == 1) {
-                hueLo = 5;
-                saturationHi = 45;
-            } else if (nBands == 2) {
-                hueLo = 65;
-                hueHi = 140;
-                saturationLo = 0;
-                saturationHi = 15;
-            } else if ((nBands == 3) || (nBands == 4)) {
-                hueHi = 200;
-                saturationLo = 0;
-            } else if (nBands >= 5) {
-                hueLo = 200;
-                hueHi = 360;
-                saturationHi = 10;
-            }
-            
-            rainbowStack.addAll(rainbowPoints);
-            
-            Set<PairInt> visited = new HashSet<PairInt>();
-            visited.add(rainbowStack.peek());
-       
-            while (!rainbowStack.isEmpty()) {
+        Set<PairInt> visited = new HashSet<PairInt>();
+        visited.add(rainbowStack.peek());
 
-                PairInt uPoint = rainbowStack.pop();
-            
-                int uX = uPoint.getX() + xOffset;
-                int uY = uPoint.getY() + yOffset;
+        while (!rainbowStack.isEmpty()) {
 
-                //(1 + frac)*O(N) where frac is the fraction added back to stack
+            PairInt uPoint = rainbowStack.pop();
 
-                for (int k = 0; k < dxs.length; k++) {
-                    
-                    int dx = dxs[k];
-                    int dy = dys[k];
+            int uX = uPoint.getX() + xOffset;
+            int uY = uPoint.getY() + yOffset;
 
-                    int vX = uX + dx;
-                    int vY = uY + dy;
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
 
-                    if ((vX < 0) || (vX > (width - 1)) || (vY < 0) || 
-                        (vY > (height - 1))) {
-                        continue;
-                    }
-            
-                    PairInt vPoint = new PairInt(vX - xOffset, vY - yOffset);
+            for (int k = 0; k < dxs.length; k++) {
 
-                    // skypoints has already been check for same color criteria
-                    // so no need to check again here
-                    if (visited.contains(vPoint) || rainbowStack.contains(vPoint)
-                        ) {
-                        continue;
-                    }
+                int dx = dxs[k];
+                int dy = dys[k];
 
-                    visited.add(vPoint);
+                int vX = uX + dx;
+                int vY = uY + dy;
 
-                    int r = colorImg.getR(vX, vY);
-                    int g = colorImg.getG(vX, vY);
-                    int b = colorImg.getB(vX, vY);
+                if ((vX < 0) || (vX > (width - 1)) || (vY < 0) || 
+                    (vY > (height - 1))) {
+                    continue;
+                }
 
-                    // all normalized from 0 to 1
-                    float[] hsb = new float[3];
-                    Color.RGBtoHSB(r, g, b, hsb);
+                PairInt vPoint = new PairInt(vX - xOffset, vY - yOffset);
 
-                    float hue = hsb[0] * 360.f;
-                    float saturation = hsb[1] * 100.f;
-                    float brightness = hsb[2] * 100.f;
+                // skypoints has already been check for same color criteria
+                // so no need to check again here
+                if (visited.contains(vPoint) || rainbowStack.contains(vPoint)
+                    ) {
+                    continue;
+                }
 
-                    // increasing s2 to < 60 finds larger diameter sun and scattered light
-                    if ((hue >= hueLo) && (hue <= hueHi) && 
-                        (saturation >= saturationLo) && (saturation <= saturationHi)
-                        && (brightness >= brightnessLo) && (brightness <= brightnessHi)
-                        ) {
+                visited.add(vPoint);
 
-                        if (nBands < 2) {
-                            rainbowStack.add(vPoint);
-                        }
-
-                        rainbowPoints.add(vPoint);
-                    }
+                int r = colorImg.getR(vX, vY);
+                int g = colorImg.getG(vX, vY);
+                int b = colorImg.getB(vX, vY);
+                        
+                if (rainbowColors.isInGreenishYellowOrange(r, g, b) ||
+                    rainbowColors.isInOrangeRed(r, g, b) ||
+                    rainbowColors.isInRedThroughPurplishRed(r, g, b)) {
+                    rainbowStack.add(vPoint);
+                    rainbowPoints.add(vPoint);
                 }
             }
         }
@@ -3862,52 +3811,8 @@ try {
             return new HashSet<PairInt>();
         }
         
-        // keep the largest contiguous group.
-        // NOTE that when multiple rainbows are present, only the brightest
-        // (that is, largest number of points) will pass this next filter.
-        
-        //TODO: correct to allow for occluded rainbows such as
-        //  https://www.flickr.com/photos/1234abcd/5267740387
-        
-        DFSConnectedGroupsFinder groupsFinder = new DFSConnectedGroupsFinder();
-        groupsFinder.setMinimumNumberInCluster(100);
-        groupsFinder.findConnectedPointGroups(tmp, colorImg.getWidth() - xOffset, 
-            colorImg.getHeight() - yOffset);
-        if (groupsFinder.getNumberOfGroups() > 1) {
-            int maxN = Integer.MIN_VALUE;
-            int maxNIdx = -1;
-            for (int i = 0; i < groupsFinder.getNumberOfGroups(); i++) {
-                int n = groupsFinder.getNumberofGroupMembers(i);
-                if (n > maxN) {
-                    maxN = n;
-                    maxNIdx = i;
-                }
-            }
-            tmp.clear();
-            tmp.addAll(groupsFinder.getXY(maxNIdx));
-            rainbowPoints.clear();
-            rainbowPoints.addAll(tmp);
-        }
-        
-        // do a check for color to assert that orange and red are in the
-        // points too.  note that the search isn't expanded enough to
-        // guarantee that purple is in the points, so only checking for
-        // red and orange and yellow.
-        boolean foundRed = false;
-        boolean foundOrange = false;
-        boolean foundYellow = false;
-        for (PairInt p : tmp) {
-            int r = colorImg.getR(p.getX() + xOffset, p.getY() + yOffset);
-            int g = colorImg.getG(p.getX() + xOffset, p.getY() + yOffset);
-            int b = colorImg.getB(p.getX() + xOffset, p.getY() + yOffset);
-            float[] hsb = new float[3];
-            Color.RGBtoHSB(r, g, b, hsb);
-            
-        }
-        
-        if (!foundRed || !foundOrange || !foundYellow) {
-            return new HashSet<PairInt>();
-        }
+debugPlot(rainbowPoints, colorImg, xOffset, yOffset, 
+"rainbow0");
         
         int[] minMaxXY = MiscMath.findMinMaxXY(tmp);
         log.info("rainbow range in x: " + minMaxXY[0] + " to " + minMaxXY[1]);
@@ -3921,7 +3826,7 @@ debugPlot(rainbowPoints, colorImg, xOffset, yOffset,
         
         PolynomialFitter polyFitter = new PolynomialFitter();
         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
-        float[] coef = polyFitter.solveAfterRandomSampling(rainbowPoints);
+        float[] coef = polyFitter.solveAfterRandomSampling(tmp);
         
         if (coef == null) {
             return new HashSet<PairInt>();
@@ -3930,6 +3835,28 @@ debugPlot(rainbowPoints, colorImg, xOffset, yOffset,
         log.info("rainbow polynomial coefficients = " + Arrays.toString(coef));
         log.info("image dimensions are " + colorImg.getWidth() + " X " + 
             colorImg.getHeight() + " pixels^2");
+         
+        polyFitter.plotFit(coef, tmp, colorImg.getWidth(),
+            colorImg.getHeight(), 23, "rainbow points");
+        
+        double resid = polyFitter.calcResiduals(coef, tmp);
+
+        //TODO: determine this more accurately:
+        if (resid > (tmp.size() * 5)) {
+            
+            Set<PairInt> bestFittingPoints = new HashSet<PairInt>();
+            
+            coef = polyFitter.solveForBestFittingContiguousSubSamples(tmp, 
+                bestFittingPoints, colorImg.getWidth(), colorImg.getHeight());
+            
+            if (coef == null) {
+                return new HashSet<PairInt>();
+            }
+            
+            rainbowPoints.clear();
+            
+            rainbowPoints.addAll(bestFittingPoints);
+        }
         
         // expecting the polynomial to have coef[1] negative
         // and close to a 45 degree angle (dx/dy about 0.5)
@@ -5741,40 +5668,9 @@ skyIsRed, hasDarkGreyClouds
             to boundaries?
             */
             
-        }
-        
+        }        
     }
 
-    public void testFilter(Image img) {
-        
-        for (int col = 0; col < img.getWidth(); col++) {
-            for (int row = 0; row < img.getHeight(); row++) {
-                
-                int r = img.getR(col, row);
-                int g = img.getG(col, row);
-                int b = img.getB(col, row);
-
-                // all normalized from 0 to 1
-                float[] hsb = new float[3];
-                Color.RGBtoHSB(r, g, b, hsb);
-                
-                if ((r >= 240/*251*/) && (hsb[2] >= 0.97/*0.97*/) && (hsb[1] < .30)) {
-                    img.setRGB(col, row, 0, 0, 255);
-                } else {
-                    
-                }
-            }
-        }
-        
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/testFilter.png", img);
-        } catch (Exception e) {
-            log.severe("ERROR: " + e.getMessage());
-        }
-    }
-    
     /**
      * find sun colored points by searching entire image.
      * @param colorImg
@@ -5786,6 +5682,8 @@ skyIsRed, hasDarkGreyClouds
         
         Set<PairInt> set = new HashSet<PairInt>();
         
+        SunColors sunColors = new SunColors();
+        
         for (int col = 0; col < colorImg.getWidth(); col++) {
             for (int row = 0; row < colorImg.getHeight(); row++) {
                 
@@ -5793,16 +5691,15 @@ skyIsRed, hasDarkGreyClouds
                 int g = colorImg.getG(col, row);
                 int b = colorImg.getB(col, row);
 
-                // all normalized from 0 to 1
-                float[] hsb = new float[3];
-                Color.RGBtoHSB(r, g, b, hsb);
-                
-                if ((r >= 240/*251*/) && (hsb[2] >= 0.97/*0.97*/) && (hsb[1] < .30)) {
+                if (sunColors.isSunCenterColor(r, g, b)) {
                     set.add(new PairInt(col - xOffset, row - yOffset));
                 }
             }
         }
         
+debugPlot(set, colorImg, xOffset, yOffset, 
+"sunpoints");
+
         return set;
     }
     

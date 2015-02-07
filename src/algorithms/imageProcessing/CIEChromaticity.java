@@ -24,13 +24,13 @@ public class CIEChromaticity {
         516, 486
         488,512  
         436,450
-        327, 340
+        327, 340 <=== 346, 360
         466, 444
         */
         
         ArrayPair p = new ArrayPair(
-            new float[]{.516f, .488f, .436f, .327f, .466f},
-            new float[]{.486f, .512f, .450f, .340f, .444f}
+            new float[]{.516f, .488f, .436f, .346f, .466f, .516f},
+            new float[]{.486f, .512f, .450f, .360f, .444f, .486f}
         );
         
         return p;

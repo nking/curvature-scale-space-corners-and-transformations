@@ -4,6 +4,7 @@ import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 import algorithms.util.PolygonAndPointPlotter;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -274,6 +275,51 @@ public class MiscMathTest extends TestCase {
         
         //No test. looking for pattern to calculate bitstring for
         // ith iteration without iterating...
+    }
+    
+    public void testReadSetBits() throws Exception {
+        
+        List<Integer> setBits = new ArrayList<Integer>();
+        
+        Long bitstring = Long.valueOf(3);
+        
+        MiscMath.readSetBits(bitstring, setBits);
+        
+        assertTrue(setBits.size() == 2);
+        assertTrue(setBits.get(0).intValue() == 0);
+        assertTrue(setBits.get(1).intValue() == 1);
+        
+        //5	       101        ==> '0' '2'
+        setBits.clear();
+        bitstring = Long.valueOf(5);
+        
+        MiscMath.readSetBits(bitstring, setBits);
+        
+        assertTrue(setBits.size() == 2);
+        assertTrue(setBits.get(0).intValue() == 0);
+        assertTrue(setBits.get(1).intValue() == 2);
+        
+        //6	       110        ==> '1' '2'
+        setBits.clear();
+        bitstring = Long.valueOf(6);
+        
+        MiscMath.readSetBits(bitstring, setBits);
+        
+        assertTrue(setBits.size() == 2);
+        assertTrue(setBits.get(0).intValue() == 1);
+        assertTrue(setBits.get(1).intValue() == 2);
+        
+        //15	      1111        ==> '0' '1' '2' '3'
+        setBits.clear();
+        bitstring = Long.valueOf(15);
+        
+        MiscMath.readSetBits(bitstring, setBits);
+        
+        assertTrue(setBits.size() == 4);
+        assertTrue(setBits.get(0).intValue() == 0);
+        assertTrue(setBits.get(1).intValue() == 1);
+        assertTrue(setBits.get(2).intValue() == 2);
+        assertTrue(setBits.get(3).intValue() == 3);
     }
     
     public void testCubicRoots() throws Exception {

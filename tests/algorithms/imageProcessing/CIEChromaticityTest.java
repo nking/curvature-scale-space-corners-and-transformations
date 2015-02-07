@@ -89,13 +89,15 @@ public class CIEChromaticityTest extends TestCase {
         CIEChromaticity cieC = new CIEChromaticity();
         
         String filePath1 = ResourceFinder.findFileInTestResources(
-            "sky_with_rainbow.jpg");
+            //"sky_with_rainbow.jpg"
+            "arizona-sunrise-1342919937GHz.jpg"
+        );
         Image img1 = ImageIOHelper.readImage(filePath1);
         int image1Width = img1.getWidth();
         int image1Height = img1.getHeight();
 
-        int col = 77;
-        int row = 236;
+        int col = 83;
+        int row = 89;
         int pixR = img1.getR(col, row);
         int pixG = img1.getG(col, row);
         int pixB = img1.getB(col, row);
@@ -108,8 +110,8 @@ public class CIEChromaticityTest extends TestCase {
             pixCIEXY[0], pixCIEXY[1],
             hsb[0], hsb[1], hsb[2]));
         
-        col = 41;
-        row = 180;
+        col = 88;
+        row = 84;
         pixR = img1.getR(col, row);
         pixG = img1.getG(col, row);
         pixB = img1.getB(col, row);
@@ -122,8 +124,8 @@ public class CIEChromaticityTest extends TestCase {
             pixCIEXY[0], pixCIEXY[1],
             hsb[0], hsb[1], hsb[2]));
         
-        col = 387;
-        row = 198;
+        col = 93;
+        row = 88;
         pixR = img1.getR(col, row);
         pixG = img1.getG(col, row);
         pixB = img1.getB(col, row);

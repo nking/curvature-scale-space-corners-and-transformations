@@ -511,6 +511,39 @@ public class MiscMath {
         return Long.valueOf(t);
     }
     
+    /**
+     * read the set bits from bitstring and return them as indexes in 
+     * outputIndexes.
+     * @param bitstring
+     * @param outputIndexes 
+     */
+    public static void readSetBits(Long bitstring, List<Integer> outputIndexes) {
+        
+        if (bitstring == null) {
+            throw new IllegalArgumentException("bitstring cannot be null");
+        }
+        if (outputIndexes == null) {
+            throw new IllegalArgumentException("outputIndexes cannot be null");
+        }
+        
+        long b = bitstring.longValue();
+        
+        int count = 0;
+        
+        while (b > 0) {
+            
+            long idx = (b & 1L);
+            
+            if (idx == 1) {
+                outputIndexes.add(Integer.valueOf(count));
+            }
+            
+            b >>= 1L;
+            
+            count++;
+        }
+    }
+    
      /**
       * solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a4 = 0;
       * 
