@@ -211,9 +211,12 @@ public aspect CurvatureAspect {
 
     }
 
-    before(Set<PairInt> points, Image clrImage, int xOffset, int yOffset) :
-        call(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(Set<PairInt>, Image, int, int))
-        && args(points, clrImage, xOffset, yOffset)
+    before(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
+        Image clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey) :
+        call(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(
+            Set<PairInt>, Set<PairInt>, Image, int, int, boolean))
+        && args(skyPoints, reflectedSunRemoved, clrImage, xOffset, yOffset,
+            skyIsDarkGrey)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = clrImage.copyImage();
@@ -221,7 +224,7 @@ public aspect CurvatureAspect {
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
 
-            ImageIOHelper.addToImage(points, xOffset, yOffset, clr);
+            ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
 
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_points_before_sun_search_" + outImgNum + ".png", clr);
@@ -231,10 +234,13 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(Set<PairInt> points, Image clrImage, int xOffset, int yOffset) 
+    after(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
+        Image clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey) 
         returning(Set<PairInt> sunPoints) :
-        execution(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(Set<PairInt>, Image, int, int))
-        && args(points, clrImage, xOffset, yOffset)
+        execution(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(
+            Set<PairInt>, Set<PairInt>, Image, int, int, boolean))
+        && args(skyPoints, reflectedSunRemoved, clrImage, xOffset, yOffset,
+        skyIsDarkGrey)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = clrImage.copyImage();
@@ -384,12 +390,14 @@ private static int n3 = 0;
         }
     }
 
-    after(Set<PairInt> sunPoints, Set<PairInt> skyPoints, Image originalColorImage, 
-        int xOffset, int yOffset)
+    after(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
+        Image originalColorImage, int xOffset, int yOffset,
+        boolean skyIsDarkGrey)
         returning(Set<PairInt> rainbowPoints) :
-        execution(private Set<PairInt> ImageProcessor.findRainbowConnectedToSkyPoints(
-            Set<PairInt>, Set<PairInt>, Image, int, int) )
-        && args(sunPoints, skyPoints, originalColorImage, xOffset, yOffset)
+        execution(private Set<PairInt> ImageProcessor.findRainbowPoints(
+            Set<PairInt>, Set<PairInt>, Image, int, int, boolean) )
+        && args(skyPoints, reflectedSunRemoved, originalColorImage, 
+            xOffset, yOffset, skyIsDarkGrey)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         if (rainbowPoints.isEmpty()) {

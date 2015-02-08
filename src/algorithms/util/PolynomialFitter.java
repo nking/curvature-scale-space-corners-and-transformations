@@ -2,12 +2,20 @@ package algorithms.util;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageDisplayer;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.misc.MiscMath;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.ejml.data.DenseMatrix64F;
@@ -43,12 +51,13 @@ public class PolynomialFitter {
      * (dataX, dataY).
      * 
      * @param points
+     * @param sr instance of secure random to use for generating random numbers
      * @return 
      */
     protected float[] solveAfterRandomSampling(Set<PairInt> points,
         SecureRandom sr) {
         
-        int n = (points.size() > 1000) ? 1000 : points.size();
+        int n = (points.size() > 2500) ? 2500 : points.size();
         
         List<PairInt> tmp = new ArrayList<PairInt>(points);
         
@@ -284,14 +293,18 @@ public class PolynomialFitter {
         
         float[] bestSubsetCoeff = null;
                 
-        Set<PairInt> bestSubsetPoints = null;
-        
-        // TODO: consider storing all coeff and bitstrings, so that best match
-        // can aggregate points from similar fits
+        // key = coefficients for a subset's fit, value = bitstring representing
+        //   indexes to extract from contigList
+        Map<CoefficientWrapper, Long> subsetCoeffMap = new 
+            HashMap<CoefficientWrapper, Long>();
         
         List<Integer> setBits = new ArrayList<Integer>();
         
-        for (int k = 1; k <= n; k++) {
+        //TODO: simplify the iteration thru subsets
+        
+        int nIter = 0;
+        
+        for (int k = n; k > 0; k--) {
             
             Long bitstring = MiscMath.getNextSubsetBitstring(n, k, null);
             
@@ -300,13 +313,14 @@ public class PolynomialFitter {
                         
             int count = 0;
             
-            while ((bitstring != null) && (count < nExpected)) {
+            while ((bitstring != null) && ((nIter == 0) || (count < nExpected))) {
 
                 setBits.clear();
                 
-                System.out.println("n=" + n + " k=" + k + " " +
-                    Long.toBinaryString(bitstring.longValue()));
-                 
+                //System.out.println("n=" + n + " k=" + k + " " +
+                //    Long.toBinaryString(bitstring.longValue())
+                //    + " nIter=" + nIter);
+                
                 MiscMath.readSetBits(bitstring, setBits);
                 
                 Set<PairInt> subset = new HashSet<PairInt>();
@@ -322,26 +336,79 @@ public class PolynomialFitter {
                 
                 float[] coeff = solveAfterRandomSampling(subset, sr);
                 
-                double resid = calcResiduals(coeff, subset);
+                if (coeff != null) {
+                    subsetCoeffMap.put(new CoefficientWrapper(coeff), bitstring);
+                }
                 
+                double resid = calcResiduals(coeff, subset);
+/*                
+String label = Long.toBinaryString(bitstring.longValue()) + " " 
++ Double.toString(resid) + " "
++ Arrays.toString(coeff);                
+Image img = new Image(imageWidth, imageHeight);
+try {
+ImageIOHelper.addToImage(subset, 0, 0, img);
+ImageDisplayer.displayImage(label, img);
+} catch(IOException e) {
+}
+*/
                 if (resid < bestSubsetResiduals) {
                     
-                    if (resid < (subset.size() * 5)) {
+                    //if (resid < (subset.size() * 5)) {
                         bestSubsetResiduals = resid;
                         bestSubsetCoeff = coeff;
-                        bestSubsetPoints = subset;
-                    }
+                    //}
                 }
                 
                 bitstring = MiscMath.getNextSubsetBitstring(n, k, bitstring);
                 
                 count++;
+                
+                nIter++;
             }
         }
         
-        if (bestSubsetPoints != null) {
-            outputPoints.clear();
-            outputPoints.addAll(bestSubsetPoints);
+        if (bestSubsetCoeff != null) {
+            
+            // find all fits similar to best fit and add subsets to outputPoints
+            
+            Iterator<Entry<CoefficientWrapper, Long>> iter = 
+                subsetCoeffMap.entrySet().iterator();
+            
+            while (iter.hasNext()) {
+                
+                Entry<CoefficientWrapper, Long> entry = iter.next();
+                
+                float[] c = entry.getKey().getCoefficients();
+                
+                float diffC0 = Math.abs(bestSubsetCoeff[0] - c[0]);
+                float divC1 = bestSubsetCoeff[1]/c[1];
+                float divC2 = bestSubsetCoeff[2]/c[2];
+                
+                //TODO: this probably needs adjustment. 
+                // diffC0 needs real world scale or relative size knowledge
+                // divC1 comparison might be reduced to 0.1
+                if ((Math.abs(divC1 - 1) < 0.2) && (Math.abs(divC2 - 1) < 0.6)
+                    && (diffC0 < 20)) {
+                    
+                    setBits.clear();
+                    
+                    Long bitstring = entry.getValue();
+                    
+                    System.out.println("adding subsets: "
+                        + Long.toBinaryString(bitstring.longValue()));
+                    
+                    MiscMath.readSetBits(bitstring, setBits);
+                    for (Integer bitIndex : setBits) {
+                        int groupId = bitIndex.intValue();
+                        Set<PairInt> g = contigList.get(groupId);
+                        outputPoints.addAll(g);
+                    }
+                }
+            }
+            
+            // redo fit for outputPoints
+            return solveAfterRandomSampling(outputPoints, sr);
         }
         
         return bestSubsetCoeff;
