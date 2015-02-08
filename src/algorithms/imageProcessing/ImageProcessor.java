@@ -3626,8 +3626,6 @@ try {
             return new HashSet<PairInt>();
         }
         
-debugPlot(yellowPoints, clr, xOffset, yOffset, "y_0");
-
         Set<PairInt> visited = new HashSet<PairInt>();
         visited.add(yellowStack.peek());
        
@@ -3683,8 +3681,6 @@ debugPlot(yellowPoints, clr, xOffset, yOffset, "y_0");
         }
         
         log.info("found " + yellowPoints.size() + " points");
-
-debugPlot(yellowPoints, clr, xOffset, yOffset, "y_1");
 
         if (yellowPoints.size() < 6) {
             return new HashSet<PairInt>();
@@ -3746,9 +3742,6 @@ debugPlot(yellowPoints, clr, xOffset, yOffset, "y_1");
         if (rainbowPoints.size() < 12) {
             return new HashSet<PairInt>();
         }
-                
-debugPlot(rainbowPoints, colorImg, xOffset, yOffset, 
-"rainbow0");
         
         // fit a polynomial to rainbow points.  
         // would prefer a circle, but the optical depth of the dispersers and the
@@ -3787,29 +3780,110 @@ debugPlot(rainbowPoints, colorImg, xOffset, yOffset,
             if (coef == null) {
                 return new HashSet<PairInt>();
             }
+            
+            int w = colorImg.getWidth() - xOffset;
+            int h = colorImg.getHeight() - yOffset;
+            if (bestFittingPoints.size() > (0.3f * (float)(w*h))) {
+                return new HashSet<PairInt>();
+            }
+ 
+            // assert that colors are as expected, that is, that we don't
+            // have only green and blue from rocks
+            
+            // filter to keep only those with a significant fraction with 
+            //    cieX > 0.4 and cieY < 0.3
+            // filter to keep only those with red
+            
+            int nGTX = 0;
+            int nLTY = 0;
+            int nPurpRed = 0;
+            int nOranRed = 0;
+            int nYellow = 0;
+            CIEChromaticity cieC = new CIEChromaticity();
+            ArrayPair cPurpRed = cieC.getRedThroughPurplishRedPolynomial();
+            ArrayPair cOranRed = cieC.getOrangePolynomial();
+            ArrayPair cYellow = cieC.getYellowishGreenThroughOrangePolynomial();
+            PointInPolygon pInPoly = new PointInPolygon();
+            
+            float minCIEX = Float.MAX_VALUE;
+            float maxCIEX = Float.MIN_VALUE;
+            float minCIEY = Float.MAX_VALUE;
+            float maxCIEY = Float.MIN_VALUE;
+            for (PairInt p : bestFittingPoints) {
+                int x = p.getX();
+                int y = p.getY();
+                int r = colorImg.getR(x + xOffset, y + yOffset);
+                int g = colorImg.getG(x + xOffset, y + yOffset);
+                int b = colorImg.getB(x + xOffset, y + yOffset);
+                float[] hsb = new float[3];
+                Color.RGBtoHSB(r, b, b, hsb);
         
-   // TODO: add an assert that the points have expected colors.
+                float[] cie = cieC.rgbToXYChromaticity(r, g, b);
+                if (cie[0] >= 0.39) {
+                    nGTX++;
+                }
+                if (cie[1] <= 0.3) {
+                    nLTY++;
+                }
+                if (cie[0] < minCIEX) {
+                    minCIEX = cie[0];
+                }
+                if (cie[0] > maxCIEX) {
+                    maxCIEX = cie[0];
+                }
+                if (cie[1] < minCIEY) {
+                    minCIEY = cie[1];
+                }
+                if (cie[1] > maxCIEY) {
+                    maxCIEY = cie[1];
+                }
+                
+                if (pInPoly.isInSimpleCurve(cie[0], cie[1], cPurpRed.getX(), 
+                    cPurpRed.getY(), cPurpRed.getX().length)) {
+                    nPurpRed++;
+                }
+                if (pInPoly.isInSimpleCurve(cie[0], cie[1], cOranRed.getX(), 
+                    cOranRed.getY(), cOranRed.getX().length)) {
+                    nOranRed++;
+                }
+                if (pInPoly.isInSimpleCurve(cie[0], cie[1], cYellow.getX(), 
+                    cYellow.getY(), cYellow.getX().length)) {
+                    nYellow++;
+                }
+            }
             
-            
+            float cieXRange = maxCIEX - minCIEX;
+            float cieYRange = maxCIEY - minCIEY;
+    
+            log.info("nGTX=" + nGTX + " nLTY=" + nLTY + " n=" 
+                + bestFittingPoints.size() + " "
+                + " CIE: minx=" + minCIEX + " maxx=" + maxCIEX
+                + " miny=" + minCIEY + " maxy=" + maxCIEY
+                + " range=(" + cieXRange + "," + cieYRange + ")"
+                + " nPurpRed=" + nPurpRed + " nOranRed=" + nOranRed
+                + " nYellow=" + nYellow
+            );
+
             rainbowPoints.clear();
             
-            rainbowPoints.addAll(bestFittingPoints);
+            if ((nPurpRed < 10) || 
+                (((float)nPurpRed/(float)bestFittingPoints.size()) < 0.05)) {
+                
+                return rainbowPoints;
+                
+            } else if ((cieXRange < 0.08) && (cieYRange < 0.08)) {
+                
+                return rainbowPoints;
+            }
+            
+            if ((nGTX > 10) || (nLTY > 10)) {
+                
+                float frac = (float)(nGTX + nLTY)/(float)bestFittingPoints.size();
+                if (frac > 0.002) {
+                    rainbowPoints.addAll(bestFittingPoints);
+                }
+            }
         }
-        
-        // expecting the polynomial to have coef[1] negative
-        // and close to a 45 degree angle (dx/dy about 0.5)
-        // but that's for an image with 0 degrees of camera rotation about z axis.
-        //TODO: revisit this and add tests with rainbows and rotated camera images
-        /*
-        if (Math.abs((Math.abs(coef[1]) - 0.5)) > 0.25) {
-            return new HashSet<PairInt>();
-        }
-        if (coef[1] > 0) {
-            return new HashSet<PairInt>();
-        }
-        if (coef[2] > 0.01) {
-            return new HashSet<PairInt>();
-        }*/       
         
         polyFitter.plotFit(coef, rainbowPoints, colorImg.getWidth(),
             colorImg.getHeight(), 234, "rainbow points");

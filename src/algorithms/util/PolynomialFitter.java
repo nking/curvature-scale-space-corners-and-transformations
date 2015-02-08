@@ -35,7 +35,7 @@ public class PolynomialFitter {
      * (dataX, dataY).
      * 
      * @param points
-     * @return 
+     * @return 2nd order polynomial coefficients if solved, else null
      */
     public float[] solveAfterRandomSampling(Set<PairInt> points) {
         
@@ -52,7 +52,7 @@ public class PolynomialFitter {
      * 
      * @param points
      * @param sr instance of secure random to use for generating random numbers
-     * @return 
+     * @return 2nd order polynomial coefficients if solved, else null
      */
     protected float[] solveAfterRandomSampling(Set<PairInt> points,
         SecureRandom sr) {
@@ -83,7 +83,7 @@ public class PolynomialFitter {
      * 
      * @param dataX
      * @param dataY
-     * @return 
+     * @return 2nd order polynomial coefficients if solved, else null
      */
     public float[] solve(float[] dataX, float[] dataY) {
         
@@ -236,6 +236,72 @@ public class PolynomialFitter {
         }
                 
         return sum;
+    }
+
+    /**
+     * calculate the square root of the sum of the squared differences between 
+     * a 2nd order polygon defined by the given coefficients and the given 
+     * points.
+     * Note that if coefficients or points are null or empty, it returns
+     * a result of infinity.
+     * 
+     * @param coefficients
+     * @param points
+     * @return 
+     */
+    public double[] calcResidualsForAvg(float[] coefficients, Set<PairInt> points) {
+        
+        if (points == null || points.isEmpty()) {
+            return new double[]{Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};
+        }
+        
+        if (coefficients == null || (coefficients.length != 3)) {
+            return new double[]{Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};
+        }
+                
+        int[] minMaxXY = MiscMath.findMinMaxXY(points);
+        
+        double xMin = minMaxXY[0];
+        
+        // these can be large, so use abs value instead of sum of squares
+        
+        double sum = 0;
+        
+        for (PairInt p : points) {
+            
+            double x = p.getX();
+            
+            double y = p.getY();            
+            
+            double yPoly = xMin + coefficients[0] + (coefficients[1]*x) 
+                + (coefficients[2]*x*x);
+            
+            double diff = y - yPoly;
+            
+            sum += diff;
+        }
+        
+        double avg = sum/(double)points.size();
+        
+        sum = 0;
+        
+        for (PairInt p : points) {
+            
+            double x = p.getX();
+            
+            double y = p.getY();
+            
+            double yPoly = xMin + coefficients[0] + (coefficients[1]*x) 
+                + (coefficients[2]*x*x);
+            
+            double diff = (y - yPoly) - avg;
+            
+            sum += (diff * diff);
+        }
+        
+        double stDev = Math.sqrt(sum/((double)points.size() - 1.0));
+                
+        return new double[]{avg, stDev};
     }
 
     public float[] solveForBestFittingContiguousSubSamples(Set<PairInt> points, 
@@ -408,7 +474,20 @@ ImageDisplayer.displayImage(label, img);
             }
             
             // redo fit for outputPoints
-            return solveAfterRandomSampling(outputPoints, sr);
+            float[] coeff = solveAfterRandomSampling(outputPoints, sr);
+            
+            if (coeff == null) {
+                return null;
+            }
+                        
+            /*
+            double[] avgAndStDevDiffs = calcResidualsForAvg(coeff, outputPoints);
+            
+            System.out.println("avgAndStDevDiffs[0]=" + avgAndStDevDiffs[0] +
+                " avgAndStDevDiffs[1]=" + avgAndStDevDiffs[1]);
+            */
+            
+            return coeff;
         }
         
         return bestSubsetCoeff;

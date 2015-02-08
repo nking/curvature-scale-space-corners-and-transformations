@@ -414,6 +414,32 @@ private static int n3 = 0;
             ImageIOHelper.writeOutputImage(
                 dirPath + "/rainbow_" + outImgNum + ".png", clr);
 
+            float[] cieX = new float[rainbowPoints.size()];
+            float[] cieY = new float[rainbowPoints.size()];
+            CIEChromaticity cieC = new CIEChromaticity();
+            int count = 0;
+            for (PairInt p : rainbowPoints) {
+                int x = p.getX();
+                int y = p.getY();
+                int r = originalColorImage.getR(x + xOffset, y + yOffset);
+                int g = originalColorImage.getG(x + xOffset, y + yOffset);
+                int b = originalColorImage.getB(x + xOffset, y + yOffset);
+                float[] cie = cieC.rgbToXYChromaticity(r, g, b);
+                cieX[count] = cie[0];
+                cieY[count] = cie[1];
+                count++;
+            }
+            float cieXMin = MiscMath.findMin(cieX);
+            float cieXMax = MiscMath.findMax(cieX);
+            float cieYMin = MiscMath.findMin(cieY);
+            float cieYMax = MiscMath.findMax(cieY);
+        
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(
+                0.f, 0.8f, 0.0f, 0.9f);
+            plotter.addPlot(cieX, cieY, cieX, cieY, "CIE for rainbow points");
+
+            plotter.writeFile(outImgNum*10);
+
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
         }
