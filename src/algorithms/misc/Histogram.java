@@ -798,7 +798,6 @@ public class Histogram {
             
             fwhms[i] = measureFWHM(hist, yPeakIdx);
         }
-        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
         
         return fwhms;
     }
@@ -824,12 +823,16 @@ public class Histogram {
                 if (y == halfPeak) {
                     x0 = hist.getXHist()[i];
                 } else if (y > halfPeak) {
-                    // interpret between i and i-1
-                    float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];
-                    float dy01 = y - hist.getYHistFloat()[i - 1];
-                    float dy0h = y - halfPeak;
-                    float ratio = dy0h/dy01;
-                    x0 = hist.getXHist()[i] - (dx01 * ratio);
+                    if (i == 0) {
+                        x0 = hist.getXHist()[0];
+                    } else {
+                        // interpret between i and i-1
+                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];
+                        float dy01 = y - hist.getYHistFloat()[i - 1];
+                        float dy0h = y - halfPeak;
+                        float ratio = dy0h/dy01;
+                        x0 = hist.getXHist()[i] - (dx01 * ratio);
+                    }
                     break;
                 }
             }
@@ -844,12 +847,16 @@ public class Histogram {
                 if (y == halfPeak) {
                     x1 = hist.getXHist()[i];
                 } else if (y < halfPeak) {
-                    // interpret between i and i-1
-                    float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];
-                    float dy01 = y - hist.getYHistFloat()[i - 1];
-                    float dy0h = y - halfPeak;
-                    float ratio = dy0h/dy01;
-                    x1 = hist.getXHist()[i] - (dx01 * ratio);
+                    if (i == (hist.getYHist().length - 1)) {
+                        x1 = hist.getXHist()[(hist.getYHist().length - 1)];
+                    } else {
+                        // interpret between i and i-1
+                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];
+                        float dy01 = y - hist.getYHistFloat()[i - 1];
+                        float dy0h = y - halfPeak;
+                        float ratio = dy0h/dy01;
+                        x1 = hist.getXHist()[i] - (dx01 * ratio);
+                    }
                     break;
                 }
             }
