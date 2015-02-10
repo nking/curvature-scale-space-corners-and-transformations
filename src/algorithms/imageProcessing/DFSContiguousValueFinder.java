@@ -2,9 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.SimpleLinkedListNode;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -286,6 +284,9 @@ public class DFSContiguousValueFinder {
          * [------] 1 <---- too few
          * [------] 2
          */
+
+        log.fine("PRUNE: nGroups before prune =" + groupMembership.size());
+
         // iterate backwards so can move items up without conflict with iterator
         for (int i = (groupMembership.size() - 1); i > -1; i--) {
             
@@ -294,7 +295,12 @@ public class DFSContiguousValueFinder {
             int count = group.size();
             
             log.finest("  group " + i + " has " + count 
-                + " members before prune (min=" + minimumNumberInCluster + ")");
+                + " members before prune (min=" + minimumNumberInCluster + ")" 
+                + ".  doPrune=" +
+                ((count < minimumNumberInCluster) || groupIsUnbound.get(i).booleanValue())
+                + "   count=" + count + " minimumNumberInCluster=" + minimumNumberInCluster
+                + " isUnbound=" + groupIsUnbound.get(i).booleanValue()
+            );
             
             if ((count < minimumNumberInCluster) || groupIsUnbound.get(i).booleanValue()) {
                              
@@ -316,7 +322,7 @@ public class DFSContiguousValueFinder {
             }
         }
    
-        log.finest("number of groups after prune=" + groupMembership.size());
+        log.fine("number of groups after prune=" + groupMembership.size());
     }
 
     public int getNumberofGroupMembers(int groupId) {
@@ -354,9 +360,9 @@ public class DFSContiguousValueFinder {
         return xy;
     }
     
-    public void getXY(int groupId, Set<PairInt> set) {
+    public void getXY(final int groupId, final Set<PairInt> output) {
         
-        if (groupMembership.size() == 0) {
+        if (groupMembership.isEmpty()) {
             return;
         }
         if (groupId > (groupMembership.size() - 1) || (groupId < 0)) {
@@ -364,8 +370,8 @@ public class DFSContiguousValueFinder {
             + " is outside of range of nGroups=" + groupMembership.size());
         }
         
-        Set<Integer> indexes = getIndexes(groupId);
-                        
+        Set<Integer> indexes = groupMembership.get(groupId);
+
         for (Integer index : indexes) {
             
             int idx = index.intValue();
@@ -374,8 +380,8 @@ public class DFSContiguousValueFinder {
             int y = img.getRow(idx);
             
             PairInt p = new PairInt(x, y);
-            
-            set.add(p);
+                       
+            output.add(p);
         }        
     }
     
@@ -426,7 +432,7 @@ public class DFSContiguousValueFinder {
             for (int col = colRange.getX(); col <= colRange.getY(); col++) {
                 
                 int uIndex = img.getIndex(col, row);
-                
+               
                 stack.add(Integer.valueOf(uIndex));
             }
         }
@@ -440,7 +446,7 @@ public class DFSContiguousValueFinder {
             Integer uKey = Integer.valueOf(uIndex);
 
             int uPixValue = img.getValue(uIndex);
-            
+
             if ((notValue && (uPixValue == pixelValue)) ||
                 (!notValue && (uPixValue != pixelValue))) {
                 
@@ -459,7 +465,7 @@ public class DFSContiguousValueFinder {
             //(1 + frac)*O(N) where frac is the fraction added back to stack
             
             boolean foundANeighbor = false;
-            
+         
             for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
                 
                 if ((vY < 0) || (vY > (height - 1))) {
@@ -473,7 +479,7 @@ public class DFSContiguousValueFinder {
                     if ((vX < 0) || (vX > (width - 1))) {
                         continue;
                     }
-                    
+                   
                     int vIndex = (vY * width) + vX;
                     
                     Integer vKey = Integer.valueOf(vIndex);
@@ -487,7 +493,7 @@ public class DFSContiguousValueFinder {
                     visited.add(vKey);
                 
                     int vPixValue = img.getValue(vIndex);
-
+                    
                     if ((notValue && (vPixValue == pixelValue)) ||
                         (!notValue && (vPixValue != pixelValue))) {
                         
@@ -500,9 +506,9 @@ public class DFSContiguousValueFinder {
                         
                         unBounded = true;
                     }
-                    
+
                     processPair(uIndex, vIndex, unBounded);
-                
+ 
                     // inserting back at the top of the stack assures that the 
                     // search continues next from an associated point
                     stack.add(Integer.valueOf(vIndex));
@@ -519,7 +525,7 @@ public class DFSContiguousValueFinder {
                     || (uX < colRange.getX()) || (uX > colRange.getY())) {
                     unBounded = true;
                 }
-                
+
                 process(uIndex, unBounded);
             }
         }

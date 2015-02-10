@@ -6,6 +6,7 @@ import algorithms.util.PairIntArray;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
@@ -768,5 +769,98 @@ public class Histogram {
         }
         
         return p;
+    }
+
+    public static float measureFWHMOfStrongestPeak(HistogramHolder hist) {
+        
+        if (hist == null) {
+            throw new IllegalArgumentException("hist cannot be null");
+        }
+        
+        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        
+        return measureFWHM(hist, yMaxIdx);
+    }
+    
+    public static float[] measureFWHMOfAllPeaks(HistogramHolder hist, float frac) {
+        
+        if (hist == null) {
+            throw new IllegalArgumentException("hist cannot be null");
+        }
+        
+        List<Integer> yPeakIndexes = MiscMath.findStrongPeakIndexes(hist, frac);
+
+        float[] fwhms = new float[yPeakIndexes.size()];
+        
+        for (int i = 0; i < fwhms.length; i++) {
+            
+            int yPeakIdx = yPeakIndexes.get(i).intValue();
+            
+            fwhms[i] = measureFWHM(hist, yPeakIdx);
+        }
+        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        
+        return fwhms;
+    }
+    
+    public static float measureFWHM(HistogramHolder hist, int yPeakIndex) {
+        
+        if (hist == null) {
+            throw new IllegalArgumentException("hist cannot be null");
+        }
+                
+        if ((yPeakIndex == -1) || (yPeakIndex > (hist.getXHist().length - 1))) {
+            return 0;
+        }
+        
+        float halfPeak = hist.getYHist()[yPeakIndex]/2.f;
+        
+        float x0 = Float.MIN_VALUE;
+        if (yPeakIndex == 0) {
+            x0 = hist.getXHist()[0];
+        } else {
+            for (int i = 0; i <= yPeakIndex; i++) {
+                float y = hist.getYHistFloat()[i];
+                if (y == halfPeak) {
+                    x0 = hist.getXHist()[i];
+                } else if (y > halfPeak) {
+                    // interpret between i and i-1
+                    float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];
+                    float dy01 = y - hist.getYHistFloat()[i - 1];
+                    float dy0h = y - halfPeak;
+                    float ratio = dy0h/dy01;
+                    x0 = hist.getXHist()[i] - (dx01 * ratio);
+                    break;
+                }
+            }
+        }
+        
+        float x1 = Float.MIN_VALUE;
+        if (yPeakIndex == (hist.getYHist().length - 1)) {
+            x1 = hist.getXHist()[(hist.getYHist().length - 1)];
+        } else {
+            for (int i = (yPeakIndex + 1); i < hist.getYHist().length; i++) {    
+                float y = hist.getYHist()[i];
+                if (y == halfPeak) {
+                    x1 = hist.getXHist()[i];
+                } else if (y < halfPeak) {
+                    // interpret between i and i-1
+                    float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];
+                    float dy01 = y - hist.getYHistFloat()[i - 1];
+                    float dy0h = y - halfPeak;
+                    float ratio = dy0h/dy01;
+                    x1 = hist.getXHist()[i] - (dx01 * ratio);
+                    break;
+                }
+            }
+        }
+        
+        if ((x0 == Float.MIN_VALUE) || (x1 == Float.MIN_VALUE)) {
+            return 0;
+        }
+        
+        float fwhm = x1 - x0;
+            
+        return fwhm;
     }
 }

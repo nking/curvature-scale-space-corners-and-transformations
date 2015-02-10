@@ -1,6 +1,9 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.ArrayPair;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -203,5 +206,42 @@ public class CIEChromaticity {
         float capZ = (0.01f * g + 0.99f * b)/0.17697f;
         
         return new float[]{capX, capY, capZ};
+    }
+
+    public List<Double> calcAvgAndStdDevXY(int[] r, int[] g, int[] b) {
+        
+        double xSum = 0;
+        double ySum = 0;
+        float[] x = new float[r.length];
+        float[] y = new float[r.length];
+        for (int i = 0; i < r.length; i++) {
+            float[] xy = rgbToXYChromaticity(r[i], g[i], b[i]);
+            x[i] = xy[0];
+            y[i] = xy[1];
+            xSum += xy[0];
+            ySum += xy[1];
+            i++;
+        }
+        double avgX = xSum/(double)r.length;
+        double avgY = ySum/(double)r.length;
+        
+        xSum = 0;
+        ySum = 0;
+        for (int i = 0; i < r.length; i++) {
+            double diffX = x[i] - avgX;
+            double diffY = y[i] - avgY;
+            xSum += (diffX * diffX);
+            ySum += (diffY * diffY);
+        }
+        double stDevX = Math.sqrt(xSum/((double)r.length - 1));
+        double stDevY = Math.sqrt(ySum/((double)r.length - 1));
+        
+        List<Double> list = new ArrayList<Double>();
+        list.add(Double.valueOf(avgX));
+        list.add(Double.valueOf(avgY));
+        list.add(Double.valueOf(stDevX));
+        list.add(Double.valueOf(stDevY));
+        
+        return list;
     }
 }
