@@ -212,11 +212,12 @@ public aspect CurvatureAspect {
     }
 
     before(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
-        Image clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey) :
-        call(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(
-            Set<PairInt>, Set<PairInt>, Image, int, int, boolean))
+        Image clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey,
+        Set<PairInt> sunPoints) :
+        call(protected double[] ImageProcessor.findSunConnectedToSkyPoints(
+            Set<PairInt>, Set<PairInt>, Image, int, int, boolean,  Set<PairInt>))
         && args(skyPoints, reflectedSunRemoved, clrImage, xOffset, yOffset,
-            skyIsDarkGrey)
+            skyIsDarkGrey, sunPoints)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = clrImage.copyImage();
@@ -235,12 +236,13 @@ public aspect CurvatureAspect {
     }
 
     after(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
-        Image clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey) 
-        returning(Set<PairInt> sunPoints) :
-        execution(protected Set<PairInt> ImageProcessor.findSunConnectedToSkyPoints(
-            Set<PairInt>, Set<PairInt>, Image, int, int, boolean))
+        Image clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey,
+        Set<PairInt> sunPoints) 
+        returning(double[] params) :
+        execution(protected double[] ImageProcessor.findSunConnectedToSkyPoints(
+            Set<PairInt>, Set<PairInt>, Image, int, int, boolean, Set<PairInt>))
         && args(skyPoints, reflectedSunRemoved, clrImage, xOffset, yOffset,
-        skyIsDarkGrey)
+        skyIsDarkGrey, sunPoints)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = clrImage.copyImage();
@@ -281,7 +283,7 @@ public aspect CurvatureAspect {
             ImageIOHelper.addToImage(skyPoints, xOffset, yOffset, clr);
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_before_cloud_removal_" + outImgNum + ".png", clr);
+                dirPath + "/sky_before_find_clouds_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());
@@ -497,13 +499,13 @@ private static int n3 = 0;
     }
 
     before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
-        GreyscaleImage theta, double avgY, boolean addAlongX, int addAmount,
+        GreyscaleImage theta, double avgY,
         Set<PairInt> outputRemovedPoints) :
         execution(private void ImageProcessor.removeHighContrastPoints(
-            List<PairIntArray>, Image, GreyscaleImage, double, boolean, int,
+            List<PairIntArray>, Image, GreyscaleImage, double,
             Set<PairInt>) )
-        && args(zeroPointLists, originalColorImage, theta, avgY, addAlongX, 
-        addAmount, outputRemovedPoints)
+        && args(zeroPointLists, originalColorImage, theta, avgY, 
+        outputRemovedPoints)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
@@ -525,14 +527,13 @@ private static int n3 = 0;
     }
 
     after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
-        GreyscaleImage theta, double avgY, boolean addAlongX, int addAmount,
-        Set<PairInt> outputRemovedPoints)
+        GreyscaleImage theta, double avgY, Set<PairInt> outputRemovedPoints)
         returning() :
         execution(private void ImageProcessor.removeHighContrastPoints(
-            List<PairIntArray>, Image, GreyscaleImage, double, boolean, int,
+            List<PairIntArray>, Image, GreyscaleImage, double,
             Set<PairInt>) )
-        && args(zeroPointLists, originalColorImage, theta, avgY, addAlongX, 
-        addAmount, outputRemovedPoints)
+        && args(zeroPointLists, originalColorImage, theta, avgY, 
+        outputRemovedPoints)
 	    && target(algorithms.imageProcessing.ImageProcessor) {
 
         Image clr = originalColorImage.copyImage();
