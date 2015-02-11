@@ -202,6 +202,9 @@
             <inpath>
                 <pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
+                <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
+                <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
@@ -272,6 +275,9 @@
         	<inpath>
         		<pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
+                <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
+                <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
         	</inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
@@ -326,10 +332,13 @@
             <argfiles>
                 <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
             </argfiles>
-        	<inpath>
-        	    <pathelement location="${src.out.dir}"/>
+            <inpath>
+                <pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
-        	</inpath>
+                <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
+                <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
+                <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
+            </inpath>
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
             </classpath>
@@ -497,6 +506,9 @@
         
         <mkdir dir="${classes.dir}/tmp" />
         <unjar src="${lib.dir}/ejml-0.25.jar" dest="${classes.dir}/tmp"/>
+        <unjar src="${lib.dir}/jfreechart-1.0.19.jar" dest="${classes.dir}/tmp"/>
+        <unjar src="${lib.dir}/jcommon-1.0.23.jar" dest="${classes.dir}/tmp"/>
+        <unjar src="${lib.dir}/servlet-api-2.5.jar" dest="${classes.dir}/tmp"/>
         
         <jar destfile="${classes.dir}/scalespace_${TS}.jar" manifest="${jar.mf}">
             <fileset dir="${src.out.dir}" includes="**"/>
@@ -504,6 +516,7 @@
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
             <fileset dir="${lib.dir}" includes="EJML_LICENSE.txt"/>
+            <fileset dir="${lib.dir}" includes="JFREECHART_LICENSE.txt"/>
             <fileset dir="${classes.dir}/tmp" includes="**"/>
         </jar>
         
