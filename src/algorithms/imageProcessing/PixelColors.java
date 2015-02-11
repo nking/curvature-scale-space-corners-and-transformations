@@ -80,6 +80,15 @@ public class PixelColors {
         return contrast;
     }
     
+    /**
+     * calculate the difference between red, green, and blue of other and this,
+     * added in quadrature.  if the scale is 0-255 inclusive, the maximum
+     * possible value returned will be 441.7 and the minimum will be 0.
+     * @param otherRed
+     * @param otherGreen
+     * @param otherBlue
+     * @return 
+     */
     public double calculateColorDiffererenceToOther(int otherRed, int otherGreen, int otherBlue) {
         
         double rDiff = otherRed - red;
