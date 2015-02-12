@@ -918,10 +918,7 @@ public class ImageProcessor {
             return mask;
         }
         
-        int nAfterHighContrastRemoval = 0;
-        for (int ii = 0; ii < zeroPointLists.size(); ii++) {
-            nAfterHighContrastRemoval += zeroPointLists.get(ii).getN();
-        }
+        int nAfterHighContrastRemoval = count(zeroPointLists);
                 
         Set<PairInt> reflectedSunRemoved = removeReflectedSun(zeroPointLists, 
             colorImg, thetaImg);
@@ -955,7 +952,7 @@ public class ImageProcessor {
                 binFactor);
             
             if (!highContrastRemoved.isEmpty()) {
-                removeBinFactorProtusions(points, binFactor,
+                removeBinFactorArtifacts(points, binFactor,
                     thetaImg.getWidth(), thetaImg.getHeight(),
                     thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset());
             }
@@ -6464,7 +6461,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return avgColor;
     }
 
-    private void removeBinFactorProtusions(Set<PairInt> points, int binFactor, 
+    private void removeBinFactorArtifacts(Set<PairInt> points, int binFactor, 
         int pointsImageWidth, int pointsImageHeight,
         int pointsImageXOffset, int pointsImageYOffset) {
         
