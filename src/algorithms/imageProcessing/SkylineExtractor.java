@@ -337,6 +337,9 @@ public class SkylineExtractor {
         Set<PairInt> embeddedPoints = findEmbeddedNonPointsExtendedToImageBounds(
             points, mask, 1);
         
+debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+"after_first_0");
+
         if (!embeddedPoints.isEmpty()) {
 
             HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
@@ -357,8 +360,9 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
 
 //plotSkyColor(points, colorImg, mask);
 
-            if ((nBeforeHighContrastRemoval - nAfterHighContrastRemoval) <= 
-                (int)(((float)nBeforeHighContrastRemoval)*0.1f)) {
+            if ((reflectedSunRemoved.size() < 50) &&
+                ((nBeforeHighContrastRemoval - nAfterHighContrastRemoval) <= 
+                (int)(((float)nBeforeHighContrastRemoval)*0.1f))) {
             
                 // also, do not perform this if we can tell that the sky is mostly
                 // found except the nBinFactor pixels near the border.
@@ -371,7 +375,7 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
                     int nBefore = points.size();
                     //Set<PairInt> copyOfPoints = new HashSet<PairInt>(points);
                     //GreynMascaleImage copyOfMask = mask.copyImage();
-                    
+
                     findSeparatedClouds(sunPoints, points, highContrastRemoved,
                         colorImg, mask,
                         pixelColorsMap, skyColorsMap,
@@ -388,9 +392,10 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
 
                     if (reflectedSunRemoved.size() > 0) {
                         
-                        reduceToLargestContiguousGroup(points, mask, 10);
+                        reduceToLargestContiguousGroup(points, mask, 10, 
+                            new HashSet<PairInt>());                        
                     }
-                    
+
 debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_added_separated_clouds");
 
@@ -429,22 +434,22 @@ log.info("number of sunPoints=" + sunPoints.size() + ""
         if (sunPoints.isEmpty()) {
             
             growForLowContrastLimits(points, exclude, colorImg, mask);
-            
-            if (rainbowPoints.isEmpty()) {
-                reduceToLargestContiguousGroup(points, mask, 1000);
-            }
-            
-            // one more round of search for embedded but only in the new points
-            embeddedPoints = findEmbeddedNonPoints(points, mask, 1);
+        
+            // TODO: might need to expand these a little
+            Set<PairInt> placeholdingPoints = new HashSet<PairInt>();
+            placeholdingPoints.addAll(sunPoints);
+            placeholdingPoints.addAll(rainbowPoints);
 
-            points.addAll(embeddedPoints);
+            reduceToLargestContiguousGroup(points, mask, 1000, 
+                placeholdingPoints);
 
-            for (PairInt p : embeddedPoints) {
-                int x = p.getX();
-                int y = p.getY();
-                mask.setValue(x, y, 0);
-            }
         }
+       
+        if (!sunPoints.isEmpty()) {
+            correctSkylineForSun(sunPoints, points, colorImg, mask, gradientXY);
+        }/* else if (!rainbowPoints.isEmpty()) {
+            correctSkylineForRainbow(rainbowPoints, points, colorImg, mask);
+        }*/
 
 debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), "final");
 
@@ -2804,14 +2809,14 @@ debugPlot(skyPoints, originalColorImage,
 
 debugPlot(skyPoints, originalColorImage, mask.getXRelativeOffset(), 
     mask.getYRelativeOffset(), "after_find_clouds_in_findClouds2");
-                
+
                 if ((((nAfter - nBefore)/nBefore) > 2) || 
                     ((nAfter - nBefore) > 1000)) {
-                    
+ 
                     // one more round of search for embedded but only in the new points
                     Set<PairInt> embeddedPoints = findEmbeddedNonPoints(
-                        cloudPoints, mask, 1);
-                    
+                        cloudPoints);
+
                     skyPoints.addAll(embeddedPoints);
 
                     for (PairInt p : embeddedPoints) {
@@ -2819,9 +2824,38 @@ debugPlot(skyPoints, originalColorImage, mask.getXRelativeOffset(),
                         int y = p.getY();
                         mask.setValue(x, y, 0);
                     }
-                } 
+
+debugPlot(skyPoints, originalColorImage, mask.getXRelativeOffset(), 
+    mask.getYRelativeOffset(), "after_findEmbeddedNonPoints");
+int z = 1;
+
+                    //TODO: cases where sky is not contiguous at this point?
+                    embeddedPoints = findEmbeddedNonPointsExtendedToImageBounds(
+                        skyPoints, mask, 1);
+
+                    skyPoints.addAll(embeddedPoints);
+
+                    for (PairInt p : embeddedPoints) {
+                        int x = p.getX();
+                        int y = p.getY();
+                        mask.setValue(x, y, 0);
+                    }
+                }
+                
+            } else {
+                
+                Set<PairInt> embeddedPoints = findEmbeddedContiguousUnincludedPoints(
+                    skyPoints, mask);
+
+                skyPoints.addAll(embeddedPoints);
+
+                for (PairInt p : embeddedPoints) {
+                    int x = p.getX();
+                    int y = p.getY();
+                    mask.setValue(x, y, 0);
+                }
             }
-        
+
         } else {
         
             // == case (2)  find only points connected to 
@@ -4469,16 +4503,19 @@ if (col==518 && row==245) {
     }
 
     private void reduceToLargestContiguousGroup(Set<PairInt> points,
-        GreyscaleImage mask, int minNumberPointsInGroup) {
+        GreyscaleImage mask, int minNumberPointsInGroup,
+        Set<PairInt> placeholdingPoints) {
         
         int width = mask.getWidth();
         int height = mask.getHeight();
         
+        Set<PairInt> temp = new HashSet<PairInt>(points);
+        temp.addAll(placeholdingPoints);
+        
         // only keep the contiguous sky
         DFSConnectedGroupsFinder groupsFinder = new DFSConnectedGroupsFinder();
         groupsFinder.setMinimumNumberInCluster(minNumberPointsInGroup);
-        groupsFinder.findConnectedPointGroups(points,
-            width, height);
+        groupsFinder.findConnectedPointGroups(temp, width, height);
 
         int nMax = Integer.MIN_VALUE;
         int maxIdx = -1;
@@ -4494,16 +4531,22 @@ if (col==518 && row==245) {
                 + " contiguous sky points");
         }
 
+        mask.fill(1);
+        
         Set<PairInt> g = groupsFinder.getXY(maxIdx);
         points.clear();
-        points.addAll(g);
-
-        mask.fill(1);
-        for (PairInt p : points) {
-            int x = p.getX();
-            int y = p.getY();
-            mask.setValue(x, y, 0);
+        
+        for (PairInt p : g) {
+            if (!placeholdingPoints.contains(p)) {
+                
+                points.add(p);
+                
+                int x = p.getX();
+                int y = p.getY();
+                mask.setValue(x, y, 0);
+            }
         }
+
     }
 
     private List<PairIntArray> removeSetsWithNonCloudColors(List<PairIntArray> 
@@ -4614,21 +4657,49 @@ if (col==518 && row==245) {
         return removed;
     }
 
-    private Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points, 
-        GreyscaleImage mask, int minGroupSize) {
+    private Set<PairInt> findEmbeddedContiguousUnincludedPoints(
+        Set<PairInt> points, GreyscaleImage mask) {
+        
+        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
+        
+        // adjust perimeter to enclose the edges that are touching the image
+        // boundaries
+        PerimeterFinder finder = new PerimeterFinder();
+        int[] rowMinMax = new int[2];
+        Map<Integer, PairInt> rowColRange = finder.find(points, rowMinMax);
+       
+        DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
+        contiguousNonZeroFinder.setMinimumNumberInCluster(1);
+        contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0,
+            rowColRange, rowMinMax);
+
+        for (int i = 0; i < contiguousNonZeroFinder.getNumberOfGroups(); i++) {
+            contiguousNonZeroFinder.getXY(i, embeddedPoints);
+        }
+        
+        return embeddedPoints;
+    }
+    
+    private Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points) {
+        
+        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
         
         PerimeterFinder finder = new PerimeterFinder();
         int[] rowMinMax = new int[2];
         Map<Integer, PairInt> rowColRange = finder.find(points, rowMinMax);
 
-        DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
-        contiguousNonZeroFinder.setMinimumNumberInCluster(minGroupSize);
-        contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0,
-            rowColRange, rowMinMax);
-
-        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
-        for (int i = 0; i < contiguousNonZeroFinder.getNumberOfGroups(); i++) {
-            contiguousNonZeroFinder.getXY(i, embeddedPoints);
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {            
+            
+            PairInt colRange = rowColRange.get(Integer.valueOf(row));
+            
+            for (int col = colRange.getX(); col <= colRange.getY(); col++) {
+                
+                PairInt p = new PairInt(col, row);
+                
+                if (!points.contains(p)) {
+                    embeddedPoints.add(p);
+                }
+            }
         }
         
         return embeddedPoints;
@@ -4650,7 +4721,7 @@ if (col==518 && row==245) {
             dSkylineXY, mask.getWidth(), mask.getHeight());
 
         DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
-        contiguousNonZeroFinder.setMinimumNumberInCluster(1);
+        contiguousNonZeroFinder.setMinimumNumberInCluster(minGroupSize);
         contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0,
             rowColRange, rowMinMax);
 
@@ -4660,6 +4731,90 @@ if (col==518 && row==245) {
         }
 
         return embeddedPoints;
+    }
+
+    private void correctSkylineForSun(Set<PairInt> sunPoints, 
+        Set<PairInt> skyPoints, Image colorImg, GreyscaleImage mask, 
+        GreyscaleImage gradientXY) {
+        
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        double[] xySunCen = ch.calculateXYCentroids(sunPoints);
+        
+        int h = mask.getHeight();
+        int w = mask.getWidth();
+        
+        int srchRadius = 125;
+        
+        int maxValue = Integer.MIN_VALUE;
+        
+        for (int col = ((int)xySunCen[0] - srchRadius); 
+            col < ((int)xySunCen[0] + srchRadius); col++) {
+        
+            for (int row = ((int)xySunCen[1] - srchRadius); 
+                row < ((int)xySunCen[1] + srchRadius); row++) {
+                
+                if ((col < 0) || (col > (w - 1)) || (row < 0) || (row > (h - 1))) {
+                    continue;
+                }
+                
+                int v = gradientXY.getValue(col, row);
+                
+                if (v > maxValue) {
+                    maxValue = v;
+                }
+            }
+        }
+        
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        
+        for (int col = ((int)xySunCen[0] - srchRadius); 
+            col < ((int)xySunCen[0] + srchRadius); col++) {
+        
+            for (int row = ((int)xySunCen[1] - srchRadius); 
+                row < ((int)xySunCen[1] + srchRadius); row++) {
+                
+                if ((col < 0) || (col > (w - 1)) || (row < 0) || (row > (h - 1))) {
+                    continue;
+                }
+                
+                int v = gradientXY.getValue(col, row);
+                
+                if (v == maxValue) {
+                    
+                    set.add(new PairInt(col, row));
+                    
+                    if (col < minX) {
+                        minX = col;
+                    }
+                    if (col > maxX) {
+                        maxX = col;
+                    }
+                    if (row < minY) {
+                        minY = row;
+                    }
+                    if (row > maxY) {
+                        maxY = row;
+                    }
+                }
+            }
+        }
+        
+        // points in set now represent the skyline near the sun.
+        // the points are a line widened by convolution so need to be thinned
+        // to the line centroid.
+        // ErosionFilter isn't currently able to provide a line that is centered,
+        // it may be a line closer to one side than the other of the original
+        // thick band of points.
+        
+        // so trying Zhang-Suen:
+        Set<PairInt> thinned = new HashSet<PairInt>();
+        
+        
     }
 
 } 
