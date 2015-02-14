@@ -132,10 +132,10 @@ public aspect CurvatureAspect {
 
     after(Set<PairInt> extSkyPoints, Image originalColorImage, 
         int xOffset, int yOffset, String outputPrefixForFileName) returning() :
-        execution(private void ImageProcessor.debugPlot(Set<PairInt>, Image,
+        execution(private void SkylineExtractor.debugPlot(Set<PairInt>, Image,
         int, int, String))
         && args(extSkyPoints, originalColorImage, xOffset, yOffset, outputPrefixForFileName)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -155,11 +155,11 @@ public aspect CurvatureAspect {
     after(Set<PairInt> r0, Set<PairInt> r1, Set<PairInt> r2, Set<PairInt> r3, 
         Image originalColorImage, 
         int xOffset, int yOffset, String outputPrefixForFileName) returning() :
-        execution(private void ImageProcessor.debugPlot(Set<PairInt>,
+        execution(private void SkylineExtractor.debugPlot(Set<PairInt>,
         Set<PairInt>, Set<PairInt>, Set<PairInt>, Image, int, int, String))
         && args(r0, r1, r2, r3, originalColorImage, xOffset, yOffset, 
         outputPrefixForFileName)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -184,10 +184,10 @@ public aspect CurvatureAspect {
 
     after(Set<PairInt> points, Set<PairInt> excludeThesePoints, 
         GreyscaleImage gradientXY) returning() :
-        execution(private void ImageProcessor.growZeroValuePoints(Set<PairInt>, 
+        execution(private void SkylineExtractor.growZeroValuePoints(Set<PairInt>, 
         Set<PairInt>, GreyscaleImage))
         && args(points, excludeThesePoints, gradientXY)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Object[] args = (Object[])thisJoinPoint.getArgs();
         GreyscaleImage gXY = (GreyscaleImage)args[2];
@@ -214,11 +214,11 @@ public aspect CurvatureAspect {
     before(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
         Image clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey,
         Set<PairInt> sunPoints) :
-        call(protected double[] ImageProcessor.findSunConnectedToSkyPoints(
+        call(protected double[] SkylineExtractor.findSunConnectedToSkyPoints(
             Set<PairInt>, Set<PairInt>, Image, int, int, boolean,  Set<PairInt>))
         && args(skyPoints, reflectedSunRemoved, clrImage, xOffset, yOffset,
             skyIsDarkGrey, sunPoints)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = clrImage.copyImage();
 
@@ -239,11 +239,11 @@ public aspect CurvatureAspect {
         Image clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey,
         Set<PairInt> sunPoints) 
         returning(double[] params) :
-        execution(protected double[] ImageProcessor.findSunConnectedToSkyPoints(
+        execution(protected double[] SkylineExtractor.findSunConnectedToSkyPoints(
             Set<PairInt>, Set<PairInt>, Image, int, int, boolean, Set<PairInt>))
         && args(skyPoints, reflectedSunRemoved, clrImage, xOffset, yOffset,
         skyIsDarkGrey, sunPoints)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = clrImage.copyImage();
 
@@ -266,11 +266,11 @@ public aspect CurvatureAspect {
         Map<Integer, PixelColors> pixelColorsMap,
         Map<PairInt, Set<PixelColors> > skyColorsMap
         ) 
-        : call(private void ImageProcessor.findClouds(Set<PairInt>, Set<PairInt>,
+        : call(private void SkylineExtractor.findClouds(Set<PairInt>, Set<PairInt>,
         Image, GreyscaleImage, Map<Integer, PixelColors>, Map<PairInt, 
         Set<PixelColors> >)) 
         && args(skyPoints, excludePoints, originalColorImage, mask, pixelColorsMap, skyColorsMap) 
-        && target(algorithms.imageProcessing.ImageProcessor) {
+        && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -295,11 +295,11 @@ public aspect CurvatureAspect {
         Map<PairInt, Set<PixelColors> > skyColorsMap
         )
         returning() :
-        execution(private void ImageProcessor.findClouds(
+        execution(private void SkylineExtractor.findClouds(
             Set<PairInt>, Set<PairInt>, Image, GreyscaleImage, Map<Integer, PixelColors>,
             Map<PairInt, Set<PixelColors> >) )
         && args(skyPoints, excludePoints, originalColorImage, mask, pixelColorsMap, skyColorsMap)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -328,10 +328,10 @@ public aspect CurvatureAspect {
 
     after(Set<PairInt> skyPoints, Image originalColorImage, GreyscaleImage mask)
         returning() :
-        execution(private void ImageProcessor.findMoreClouds(
+        execution(private void SkylineExtractor.findMoreClouds(
             Set<PairInt>, Image, GreyscaleImage) )
         && args(skyPoints, originalColorImage, mask)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -362,14 +362,14 @@ private static int n3 = 0;
         HistogramHolder[] brightnessHistogram, 
         GroupPixelColors[] skyPartitionedByBrightness)
         returning() :
-        execution(private void ImageProcessor.findSeparatedClouds(
+        execution(private void SkylineExtractor.findSeparatedClouds(
         Set<PairInt>, Set<PairInt>, Set<PairInt>, Image, GreyscaleImage, 
         Map<Integer, PixelColors>, Map<PairInt, Set<PixelColors> >,
         HistogramHolder[], GroupPixelColors[]) )
         && args(sunPoints, skyPoints, excludeThesePoints, originalColorImage, mask,
         pixelColorsMap, skyColorsMap,
         brightnessHistogram, skyPartitionedByBrightness)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -396,11 +396,11 @@ private static int n3 = 0;
         Image originalColorImage, int xOffset, int yOffset,
         boolean skyIsDarkGrey)
         returning(Set<PairInt> rainbowPoints) :
-        execution(private Set<PairInt> ImageProcessor.findRainbowPoints(
+        execution(private Set<PairInt> SkylineExtractor.findRainbowPoints(
             Set<PairInt>, Set<PairInt>, Image, int, int, boolean) )
         && args(skyPoints, reflectedSunRemoved, originalColorImage, 
             xOffset, yOffset, skyIsDarkGrey)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         if (rainbowPoints.isEmpty()) {
             return;
@@ -449,10 +449,10 @@ private static int n3 = 0;
 
     before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount) :
-        execution(private List<PairIntArray> ImageProcessor.removeSetsWithNonCloudColors(
+        execution(private List<PairIntArray> SkylineExtractor.removeSetsWithNonCloudColors(
             List<PairIntArray>, Image, GreyscaleImage, boolean, int) )
         && args(zeroPointLists, originalColorImage, theta, addAlongX, addAmount)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -475,10 +475,10 @@ private static int n3 = 0;
     after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount)
         returning(List<PairIntArray> removedNonCloudColors) :
-        execution(private List<PairIntArray> ImageProcessor.removeSetsWithNonCloudColors(
+        execution(private List<PairIntArray> SkylineExtractor.removeSetsWithNonCloudColors(
             List<PairIntArray>, Image, GreyscaleImage, boolean, int) )
         && args(zeroPointLists, originalColorImage, theta, addAlongX, addAmount)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -501,12 +501,12 @@ private static int n3 = 0;
     before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, double avgY,
         Set<PairInt> outputRemovedPoints) :
-        execution(private void ImageProcessor.removeHighContrastPoints(
+        execution(private void SkylineExtractor.removeHighContrastPoints(
             List<PairIntArray>, Image, GreyscaleImage, double,
             Set<PairInt>) )
         && args(zeroPointLists, originalColorImage, theta, avgY, 
         outputRemovedPoints)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -529,12 +529,12 @@ private static int n3 = 0;
     after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, double avgY, Set<PairInt> outputRemovedPoints)
         returning() :
-        execution(private void ImageProcessor.removeHighContrastPoints(
+        execution(private void SkylineExtractor.removeHighContrastPoints(
             List<PairIntArray>, Image, GreyscaleImage, double,
             Set<PairInt>) )
         && args(zeroPointLists, originalColorImage, theta, avgY, 
         outputRemovedPoints)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -557,10 +557,10 @@ private static int n3 = 0;
     after(GreyscaleImage gradientXY, Set<PairInt> skyPoints, 
         Set<PairInt> excludeThesePoints)
         returning() :
-        execution(public int ImageProcessor.extractSkyFromGradientXY(
+        execution(public int SkylineExtractor.extractSkyFromGradientXY(
             GreyscaleImage, Set<PairInt>, Set<PairInt>) )
         && args(gradientXY, skyPoints, excludeThesePoints)
-	    && target(algorithms.imageProcessing.ImageProcessor) {
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = gradientXY.copyImageToGreen();
 
@@ -894,10 +894,10 @@ private static int n3 = 0;
     after(Set<PairInt> points, Image originalColorImage, GreyscaleImage mask,
         double[] avgYRGB) 
         returning(Set<PairInt> added) :
-        execution(Set<PairInt> ImageProcessor*.growPointsToSkyline(
+        execution(Set<PairInt> SkylineExtractor*.growPointsToSkyline(
         Set<PairInt>, Image, GreyscaleImage, double[]))
         && args(points, originalColorImage, mask, avgYRGB) 
-        && target(algorithms.imageProcessing.ImageProcessor) {
+        && target(algorithms.imageProcessing.SkylineExtractor) {
 
         Image clr = originalColorImage.copyImage();
 
@@ -921,10 +921,10 @@ private static int n3 = 0;
         GreyscaleImage gradientXY, Image originalColorImage, 
         CannyEdgeFilterSettings edgeSettings, PairIntArray outputSkyCentroid) 
         returning(GreyscaleImage mask) :
-        execution(GreyscaleImage ImageProcessor*.createBestSkyMask(
+        execution(GreyscaleImage SkylineExtractor*.createBestSkyMask(
         GreyscaleImage, GreyscaleImage, Image, CannyEdgeFilterSettings, PairIntArray))
         && args(theta, gradientXY, originalColorImage, edgeSettings, outputSkyCentroid) 
-        && target(algorithms.imageProcessing.ImageProcessor) {
+        && target(algorithms.imageProcessing.SkylineExtractor) {
 
         GreyscaleImage mask2 = mask.copyImage();
         MatrixUtil.multiply(mask2.getValues(), 250);

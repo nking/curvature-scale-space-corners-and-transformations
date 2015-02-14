@@ -1,9 +1,7 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;
-import java.util.List;
 import junit.framework.TestCase;
 import org.junit.Test;
 import static org.junit.Assert.*;

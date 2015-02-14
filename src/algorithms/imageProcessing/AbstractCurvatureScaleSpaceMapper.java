@@ -262,15 +262,15 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      */
     protected void extractSkyline() {
         
-        ImageProcessor ImageProcessor = new ImageProcessor();
-
         PairIntArray outputSkyCentroid = new PairIntArray();
         
         try {            
             
             CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
             
-            GreyscaleImage out = ImageProcessor.createSkyline(theta, 
+            SkylineExtractor skylineExtractor = new SkylineExtractor();
+            
+            GreyscaleImage out = skylineExtractor.createSkyline(theta, 
                 gradientXY, this.originalImg, settings, outputSkyCentroid);
             
             EdgeExtractor contourExtractor = new EdgeExtractor(out);
@@ -300,41 +300,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                     skyEdges.set(i, skyEdges.get(idx2));
                     skyEdges.set(idx2, swap);
                 }
-            }
-
-            // determine centroid of the skyline edges
-            // 
-            // for sky at top of image, and the centers of sky and edges roughly
-            // similar, we'd expect that we only need to move the edge in
-            // direction of increasing Y.
-            //
-
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-            double[] xySkylineCen = curveHelper.calculateXYCentroids(skyEdges);
-
-            double directionX = xySkylineCen[0] - outputSkyCentroid.getX(0);
-
-            double directionY = xySkylineCen[1] - outputSkyCentroid.getY(0);
-
-            // use directions to translate skyEdges
-            //
-            // TODO: might need adjustments
-            
-            int expectedShift = 0;//(int)Math.round(2.355 * Math.sqrt(2*2 + 0.5*0.5));
-                        
-            if (Math.abs(directionY) > Math.abs(directionX)) {
-                int deltaY = expectedShift;
-                if (directionY < 0) {
-                    deltaY *= -1;
-                }
-                applyShift(skyEdges, deltaY, false);
-            } else {
-                int deltaX = expectedShift;
-                if (directionX < 0) {
-                    deltaX *= -1;
-                }
-                applyShift(skyEdges, deltaX, true);
             }
 
             skylineEdges.addAll(skyEdges);

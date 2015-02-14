@@ -144,8 +144,8 @@ public class DFSContiguousValueFinderTest extends TestCase {
                 
         Collections.sort(embeddedGroups, new SizeComparator<Set<PairInt>>());
         
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
+        SkylineExtractor skylineExtractor = new SkylineExtractor();
+                
         // the first 4 in embeddedGroups should be found as bound by the sky
         //    perimeter
         // while the rest should not.  the rest are concave foreground
@@ -170,7 +170,7 @@ public class DFSContiguousValueFinderTest extends TestCase {
             plotPerimeters(0, img.getWidth() - 1, 0, img.getHeight() - 1,
                 skyRowColRange, skyRowMinMax, gRowColRange, gRowMinMax, gIdx);
             
-            boolean unbound = imageProcessor.isPerimeterUnbound(
+            boolean unbound = skylineExtractor.isPerimeterUnbound(
                 gRowColRange, gRowMinMax, 
                  skyRowColRange, skyRowMinMax,
                  0, img.getWidth() - 1, 0, img.getHeight() - 1);
@@ -181,7 +181,7 @@ public class DFSContiguousValueFinderTest extends TestCase {
         // points that should be on or within the sky perimeter
         
         Set<PairInt> embeddedPoints = new HashSet<PairInt>();
-        imageProcessor.extractEmbeddedGroupPoints(
+        skylineExtractor.extractEmbeddedGroupPoints(
             embeddedGroups, skyRowColRange, skyRowMinMax, embeddedPoints,
             0, img.getWidth() - 1, 0, img.getHeight() - 1);
         
