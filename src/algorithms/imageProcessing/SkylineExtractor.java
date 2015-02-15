@@ -451,7 +451,8 @@ log.info("number of sunPoints=" + sunPoints.size() + " "
             correctSkylineForRainbow(rainbowPoints, points, colorImg, mask);
         }*/
 
-debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), "final");
+debugPlot(points, colorImg, mask.getXRelativeOffset(), 
+    mask.getYRelativeOffset(), "final");
 
         //TODO: refine this number comparison
         float f = (float)points.size()/(float)nSkyPointsBeforeFindClouds;
@@ -4463,16 +4464,10 @@ debugPlot(set, colorImg, xOffset, yOffset,
 
                 PairInt p = new PairInt(col - xOffset, row - yOffset);
     
-if (col==518 && row==245) {
-    int z = 1;
-}
                 if (excludeThesePoints.contains(p)) {
                     continue;
                 }
-                    
-if (col==518 && row==245) {
-    int z = 1;
-}                    
+             
                 filterToAddCloudPixel(pointsToConnectOrExclude, skyPoints, 
                     originalColorImage, xOffset, yOffset, p,
                     brightnessHistogram, skyPartitionedByBrightness,
@@ -4870,6 +4865,13 @@ debugPlot(set, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(),
             int y = p.getY();
             mask.setValue(x, y, 0);
         }*/
+        
+        mask.fill(1);
+        for (PairInt p : skyPoints) {
+            int x = p.getX();
+            int y = p.getY(); 
+            mask.setValue(x, y, 0);
+        }
         
 debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "horizon_near_sun_final");
