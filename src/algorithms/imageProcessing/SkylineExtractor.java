@@ -428,7 +428,7 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
 
         }
 
-log.info("number of sunPoints=" + sunPoints.size() + ""
+log.info("number of sunPoints=" + sunPoints.size() + " "
     + "reflectedSunRemoved.size()=" + reflectedSunRemoved.size());
 
         if (sunPoints.isEmpty()) {
@@ -4747,6 +4747,8 @@ if (col==518 && row==245) {
         
         int maxValue = Integer.MIN_VALUE;
         
+        Set<PairInt> pointsNearSun = new HashSet<PairInt>();
+                
         for (int col = ((int)xySunCen[0] - srchRadius); 
             col < ((int)xySunCen[0] + srchRadius); col++) {
         
@@ -4762,7 +4764,31 @@ if (col==518 && row==245) {
                 if (v > maxValue) {
                     maxValue = v;
                 }
+                
+                if (v > 0) {
+                    pointsNearSun.add(new PairInt(col, row));
+                }
             }
+        }
+        
+        PairIntArray valueCounts = 
+            Histogram.createADescendingSortByKeyArray(pointsNearSun, gradientXY);
+        int countIsDoubledValue = maxValue;
+        int lastCount = Integer.MAX_VALUE;
+        for (int i = 1; i < valueCounts.getN(); i++) {
+            int count = valueCounts.getY(i);
+            if ((count/lastCount) >= 2) {
+                countIsDoubledValue = valueCounts.getX(i);
+                break;
+            }
+            lastCount = count;
+        }
+        
+        assert(maxValue == valueCounts.getX(0));
+        
+        int valueTolerance = 10;
+        if ((maxValue - countIsDoubledValue) > valueTolerance) {
+            valueTolerance = maxValue - countIsDoubledValue;
         }
         
         int minX = Integer.MAX_VALUE;
@@ -4784,7 +4810,7 @@ if (col==518 && row==245) {
                 
                 int v = gradientXY.getValue(col, row);
                 
-                if (v == maxValue) {
+                if (Math.abs(v - maxValue) < valueTolerance) {
                     
                     set.add(new PairInt(col, row));
                     
@@ -4803,6 +4829,9 @@ if (col==518 && row==245) {
                 }
             }
         }
+
+debugPlot(set, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+"horizon_near_sun_before_thinning");
         
         // points in set now represent the skyline near the sun.
         // the points are a line widened by convolution so need to be thinned
@@ -4811,10 +4840,128 @@ if (col==518 && row==245) {
         // it may be a line closer to one side than the other of the original
         // thick band of points.
         
-        // so trying Zhang-Suen:
-        Set<PairInt> thinned = new HashSet<PairInt>();
+        // so trying Zhang-Suen: 
         
+        ZhangSuenLineThinner zsLT = new ZhangSuenLineThinner();
+        zsLT.applyLineThinner(set, minX, maxX, minY, maxY);
         
+        ch.populateGapsWithInterpolation(set);
+        
+debugPlot(set, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+"horizon_near_sun");
+
+        // if know skyline direction and any points are "below" set towards
+        // the skyline, those should be removed from skyPoints
+
+        int[] dSkylineXY = determineChangeTowardsSkyline(skyPoints, 
+            mask.getWidth(), mask.getHeight());
+        
+        removePointsUnderSkyline(set, skyPoints, mask.getWidth(), 
+            mask.getHeight(), dSkylineXY);
+
+        skyPoints.addAll(set);
+        skyPoints.addAll(sunPoints);
+        
+        // fill in the gaps
+        /*Set<PairInt> embeddedPoints = findEmbeddedNonPoints(skyPoints);
+        skyPoints.addAll(embeddedPoints);
+        for (PairInt p : embeddedPoints) {
+            int x = p.getX();
+            int y = p.getY();
+            mask.setValue(x, y, 0);
+        }*/
+        
+debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+"horizon_near_sun_final");
+
     }
 
-} 
+    private void removePointsUnderSkyline(Set<PairInt> skyline, Set<PairInt> 
+        skyPoints, int width, int height, int[] dSkylineXY) {
+        
+        //TODO:  needs alot of testing with images that are tilted and
+        // have sun in them.
+        
+        if ((dSkylineXY[0] == 0) && (dSkylineXY[1] == 0)) {
+            
+            // the pixels under the sun may have been removed to the edge of image
+                        
+            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+            
+            double[] xyCen = ch.calculateXYCentroids(skyPoints);
+            
+            double xFrac = xyCen[0]/(double)width;
+            
+            double yFrac = xyCen[1]/(double)height;
+            
+            if (yFrac < 0.47) {
+                dSkylineXY[1] = 1;
+            } else if (yFrac > 0.53) {
+                dSkylineXY[1] = -1;
+            }
+            if (xFrac < 0.47) {
+                dSkylineXY[0] = 1;
+            } else if (xFrac > 0.53) {
+                dSkylineXY[0] = -1;
+            }
+        }
+        
+        if ((dSkylineXY[0] == 0) && (dSkylineXY[1] == 0)) {
+            // do nothing
+            
+        } else if ((dSkylineXY[0] >= 0) && (dSkylineXY[1] >= 0)) {
+            
+            for (PairInt s : skyline) {
+                int vX = s.getX() + dSkylineXY[0];
+                int vY = s.getY() + dSkylineXY[1];
+                while ((vX < (width - 1)) && (vY < (height - 1))) {
+                    PairInt p = new PairInt(vX, vY);
+                    skyPoints.remove(p);
+                    vX += dSkylineXY[0];
+                    vY += dSkylineXY[1];
+                }
+            }
+            
+        } else if ((dSkylineXY[0] == -1) && (dSkylineXY[1] >= 0)) {
+            
+            for (PairInt s : skyline) {
+                int vX = s.getX() + dSkylineXY[0];
+                int vY = s.getY() + dSkylineXY[1];
+                while ((vX > -1) && (vY < (height - 1))) {
+                    PairInt p = new PairInt(vX, vY);
+                    skyPoints.remove(p);
+                    vX += dSkylineXY[0];
+                    vY += dSkylineXY[1];
+                }
+            }
+        
+        } else if ((dSkylineXY[0] >= 0) && (dSkylineXY[1] == -1)) {
+            
+            for (PairInt s : skyline) {
+                int vX = s.getX() + dSkylineXY[0];
+                int vY = s.getY() + dSkylineXY[1];
+                while ((vX < (width - 1)) && (vY > -1)) {
+                    PairInt p = new PairInt(vX, vY);
+                    skyPoints.remove(p);
+                    vX += dSkylineXY[0];
+                    vY += dSkylineXY[1];
+                }
+            }
+            
+        } else if ((dSkylineXY[0] == -1) && (dSkylineXY[1] == -1)) {
+            
+            for (PairInt s : skyline) {
+                int vX = s.getX() + dSkylineXY[0];
+                int vY = s.getY() + dSkylineXY[1];
+                while ((vX > -1) && (vY > -1)) {
+                    PairInt p = new PairInt(vX, vY);
+                    skyPoints.remove(p);
+                    vX += dSkylineXY[0];
+                    vY += dSkylineXY[1];
+                }
+            }
+        
+        }
+    }
+
+}

@@ -891,32 +891,6 @@ private static int n3 = 0;
         }
     }
 
-    after(Set<PairInt> points, Image originalColorImage, GreyscaleImage mask,
-        double[] avgYRGB) 
-        returning(Set<PairInt> added) :
-        execution(Set<PairInt> SkylineExtractor*.growPointsToSkyline(
-        Set<PairInt>, Image, GreyscaleImage, double[]))
-        && args(points, originalColorImage, mask, avgYRGB) 
-        && target(algorithms.imageProcessing.SkylineExtractor) {
-
-        Image clr = originalColorImage.copyImage();
-
-        int xOffset = mask.getXRelativeOffset();
-        int yOffset = mask.getYRelativeOffset();
-
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-
-            ImageIOHelper.addToImage(points, xOffset, yOffset, clr);
-
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_after_grow_to_skyline_" + outImgNum + ".png", clr);
-
-        } catch (IOException e) {
-            log2.severe("ERROR: " + e.getMessage());
-        }
-    }
-
     after(final GreyscaleImage theta, 
         GreyscaleImage gradientXY, Image originalColorImage, 
         CannyEdgeFilterSettings edgeSettings, PairIntArray outputSkyCentroid) 

@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.PerimeterFinder;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayComparator;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Logger;
@@ -2295,7 +2297,7 @@ public class MiscellaneousCurveHelper {
         
         int x10 = curve.getX(idx1) - curve.getX(idx0);
         int y10 = curve.getY(idx1) - curve.getY(idx0);
-           double theta;
+        double theta;
         if (x10 == 0) {
             theta = (y10 < 0) ? 1.5 * Math.PI : 0.5 * Math.PI;
         } else {
@@ -2377,4 +2379,192 @@ public class MiscellaneousCurveHelper {
         return new double[]{points3.getX(idx), points3.getY(idx)};
     }
 
+    public PairInt[] findClosestPair(Set<PairInt> set0, Set<PairInt> set1) {
+        
+        if (set0 == null) {
+            throw new IllegalArgumentException("set0 cannot be null");
+        }
+        
+        if (set1 == null) {
+            throw new IllegalArgumentException("set1 cannot be null");
+        }
+        
+        if (set0.isEmpty()) {
+            throw new IllegalArgumentException("set0 cannot be empty");
+        }
+        
+        if (set1.isEmpty()) {
+            throw new IllegalArgumentException("set1 cannot be empty");
+        }
+        
+        //TODO: consider other algorithms besides brute force
+    
+        double minDistSq = Double.MAX_VALUE;
+        PairInt p0 = null;
+        PairInt p1 = null;
+        
+        for (PairInt s0 : set0) {
+            
+            double x = s0.getX();
+            double y = s0.getY();
+            
+            for (PairInt s1 : set1) {
+                
+                double x1 = s1.getX();
+                double y1 = s1.getY();
+                
+                double diffX = x1 - x;
+                double diffY = y1 - y;
+                
+                double distSq = (diffX * diffX) + (diffY * diffY);
+                
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    p0 = s0;
+                    p1 = s1;
+                }
+            }
+        }
+        
+        return new PairInt[]{p0, p1};
+    }
+    
+    public void populateGapsWithInterpolation(Set<PairInt> points) {
+        
+        // probably many ways to do this... ordered point algorithm?
+        // dfs to find connected groups, then connect the closest among those?
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(points);
+        
+        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        finder.setMinimumNumberInCluster(1);
+        finder.findConnectedPointGroups(points, minMaxXY[1] + 1, minMaxXY[3] + 1);
+        
+        int nIter = 0;
+        int nMaxIter = 10;
+        
+        int nGroups = finder.getNumberOfGroups();
+        
+        while ((nGroups > 1) && (nIter < nMaxIter)) {
+            
+            // find the closest pair of points between any 2 groups
+                        
+            double minDistSq = Double.MAX_VALUE;
+            PairInt minDistPoint0 = null;
+            PairInt minDistPoint1 = null;
+            int minDistGroupId0 = -1;
+            int minDistGroupId1 = -1;
+                        
+            for (int g0Idx = 0; g0Idx < nGroups; g0Idx++) {
+                
+                Set<PairInt> g0 = finder.getXY(g0Idx);
+                
+                for (int g1Idx = 0; g1Idx < nGroups; g1Idx++) {
+                    
+                    if (g0Idx == g1Idx) {
+                        continue;
+                    }
+                    
+                    Set<PairInt> g1 = finder.getXY(g1Idx);
+                    
+                    PairInt[] closestPair = findClosestPair(g0, g1);
+                    
+                    if (closestPair == null) {
+                        continue;
+                    }
+                    
+                    double x0 = closestPair[0].getX();
+                    double y0 = closestPair[0].getY();
+
+                    double x1 = closestPair[1].getX();
+                    double y1 = closestPair[1].getY();
+                    
+                    double diffX = x1 - x0;
+                    double diffY = y1 - y0;
+                    
+                    double distSq = (diffX * diffX) + (diffY * diffY);
+                    
+                    if (distSq < minDistSq) {
+                        minDistSq = distSq;
+                        minDistPoint0 = closestPair[0];
+                        minDistPoint1 = closestPair[1];
+                        minDistGroupId0 = g0Idx;
+                        minDistGroupId1 = g1Idx;
+                    }
+                }
+            }
+            
+            if (minDistPoint0 != null) {
+                
+                double x1 = minDistPoint1.getX();
+                double y1 = minDistPoint1.getY();
+                
+                double dxDivDy = (minDistPoint0.getX() - x1)/
+                    (minDistPoint0.getY() - y1);
+                
+                /*
+                x0 - x1
+                ------- = dxDivDy
+                y0 - y1
+                
+                x0 - x1 = (y0 - y1) * dyDivDx;
+                x0 = x1 + (y0 - y1) * dyDivDx;
+                */
+                int startY, stopY;
+                if (minDistPoint0.getY() < minDistPoint1.getY()) {
+                    startY = minDistPoint0.getY();
+                    stopY = minDistPoint1.getY();
+                } else {
+                    startY = minDistPoint1.getY();
+                    stopY = minDistPoint0.getY();
+                }
+                
+                for (int y = startY; y <= stopY; y++) {
+                    
+                    int x = (int)Math.round(x1 + (y - y1) * dxDivDy);
+                    
+                    PairInt p = new PairInt(x, y);
+                    
+                    boolean added = points.add(p);                    
+                }
+                
+                /*
+                y0 - y1
+                ------- = dyDivDx
+                x0 - x1
+                
+                y0 - y1 = (x0 - x1) * dxDivDy;
+                y0 = y1 + (x0 - x1) * dxDivDy;
+                */
+                double dyDivDx = (minDistPoint0.getY() - y1)/
+                    (minDistPoint0.getX() - x1);
+                
+                int startX, stopX;
+                if (minDistPoint0.getX() < minDistPoint1.getX()) {
+                    startX = minDistPoint0.getX();
+                    stopX = minDistPoint1.getX();
+                } else {
+                    startX = minDistPoint1.getX();
+                    stopX = minDistPoint0.getX();
+                }
+                
+                for (int x = startX; x <= stopX; x++) {
+                    
+                    int y = (int)Math.round(y1 + (x - x1) * dyDivDx);
+                    
+                    PairInt p = new PairInt(x, y);
+                    
+                    boolean added = points.add(p);     
+                }
+            }
+        
+            finder = new DFSConnectedGroupsFinder();
+            finder.setMinimumNumberInCluster(1);
+            finder.findConnectedPointGroups(points, minMaxXY[1] + 1, minMaxXY[3] + 1);
+
+            nGroups = finder.getNumberOfGroups();
+            
+            nIter++;
+        }
+    }
 }

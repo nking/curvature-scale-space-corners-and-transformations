@@ -74,9 +74,7 @@ public class DFSConnectedGroupsFinder {
         java.util.Stack<PairInt> stack = new java.util.Stack<PairInt>();
         
         //O(N)
-        for (PairInt p : points) {
-            stack.add(p);
-        }
+        stack.addAll(points);
                
         visited.add(stack.peek());
 
@@ -87,6 +85,8 @@ public class DFSConnectedGroupsFinder {
             int uX = uPoint.getX();
             int uY = uPoint.getY();
 
+            boolean foundANeighbor = false;
+            
             //(1 + frac)*O(N) where frac is the fraction added back to stack
             
             for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
@@ -118,7 +118,14 @@ public class DFSConnectedGroupsFinder {
                     processPair(uPoint, vPoint);
                 
                     stack.add(vPoint);
+                    
+                    foundANeighbor = true;
                 }
+            }
+            
+            if (!foundANeighbor && (minimumNumberInCluster == 1)) {
+                
+                //process(uPoint);
             }
         }
     }
@@ -158,6 +165,24 @@ public class DFSConnectedGroupsFinder {
         } 
     }
 
+    protected void process(PairInt uPoint) {
+                
+        Integer groupId = pointToGroupMap.get(uPoint);
+        
+        if (groupId == null) {
+                        
+            groupId = Integer.valueOf(groupMembership.size());
+            
+            pointToGroupMap.put(uPoint, groupId);
+            
+            Set<PairInt> set = new HashSet<PairInt>();
+            set.add(uPoint);
+            
+            groupMembership.add(set);
+        }
+        
+    }
+    
     public List<Set<PairInt> > getGroupMembershipList() {
         return new ArrayList<Set<PairInt> >(groupMembership);
     }

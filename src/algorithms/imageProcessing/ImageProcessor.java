@@ -680,6 +680,8 @@ public class ImageProcessor {
      * 
      * @param theta
      * @return 
+     * @throws java.io.IOException 
+     * @throws java.security.NoSuchAlgorithmException 
      */
     public GreyscaleImage createRoughSkyMask(GreyscaleImage theta) throws 
         IOException, NoSuchAlgorithmException {

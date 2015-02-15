@@ -2,13 +2,16 @@ package algorithms.misc;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.ArrayPair;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import static junit.framework.Assert.assertTrue;
@@ -823,4 +826,62 @@ public class HistogramTest extends TestCase {
         assertTrue(p2.getY(2) == 90);
     }
 
+    public void testCreateAFrequencyMap2() throws Exception {
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        GreyscaleImage img = new GreyscaleImage(10, 10);
+        
+        img.setValue(2, 2, 147);
+        img.setValue(3, 2, 147);
+        img.setValue(4, 2, 147);
+        img.setValue(5, 2, 147);
+        img.setValue(6, 2, 147);
+        img.setValue(7, 2, 147);
+        
+        img.setValue(9, 9, 250);
+        img.setValue(8, 9, 250);
+        img.setValue(7, 9, 250);
+        img.setValue(6, 9, 250);
+        
+        points.add(new PairInt(2, 2));
+        points.add(new PairInt(3, 2));
+        points.add(new PairInt(4, 2));
+        points.add(new PairInt(5, 2));
+        points.add(new PairInt(6, 2));
+        points.add(new PairInt(7, 2));
+        
+        points.add(new PairInt(9, 9));
+        points.add(new PairInt(8, 9));
+        points.add(new PairInt(7, 9));
+        points.add(new PairInt(6, 9));
+        
+        Map<Integer, Integer> map = Histogram.createAFrequencyMap(points, img);
+        
+        assertTrue(map.get(Integer.valueOf(147)).intValue() == 6);
+        assertTrue(map.get(Integer.valueOf(250)).intValue() == 4);
+        for (int i = 0; i < 256; i++) {
+            if ((i != 0) && (i != 147) && (i != 250)) {
+                assertNull(map.get(Integer.valueOf(i)));
+            }
+        }
+        
+        PairIntArray p = 
+            Histogram.createADescendingSortbyFrequencyArray(points, img);
+        
+        assertTrue(p.getN() == 2);
+        
+        assertTrue(p.getX(0) == 147);
+        assertTrue(p.getY(0) == 6);
+        
+        assertTrue(p.getX(1) == 250);
+        assertTrue(p.getY(1) == 4);
+        
+        PairIntArray p2 = Histogram.createADescendingSortByKeyArray(
+            points, img);
+        assertTrue(p2.getX(0) == 250);
+        assertTrue(p2.getY(0) == 4);
+        assertTrue(p2.getX(1) == 147);
+        assertTrue(p2.getY(1) == 6);
+    }
 }
