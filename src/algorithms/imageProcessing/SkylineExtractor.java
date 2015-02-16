@@ -10,6 +10,7 @@ import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
+import algorithms.util.LinearRegression;
 import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -403,7 +404,7 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
             }
         }
 
-        HashSet<PairInt> exclude = new HashSet<PairInt>();
+        Set<PairInt> exclude = new HashSet<PairInt>();
         exclude.addAll(highContrastRemoved);
         exclude.addAll(rainbowPoints);
         exclude.addAll(sunPoints);
@@ -4841,30 +4842,22 @@ debugPlot(set, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(),
         zsLT.applyLineThinner(set, minX, maxX, minY, maxY);
         
         ch.populateGapsWithInterpolation(set);
-        
+
 debugPlot(set, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "horizon_near_sun");
 
         // if know skyline direction and any points are "below" set towards
         // the skyline, those should be removed from skyPoints
-
-        int[] dSkylineXY = determineChangeTowardsSkyline(skyPoints, 
-            mask.getWidth(), mask.getHeight());
         
-        removePointsUnderSkyline(set, skyPoints, mask.getWidth(), 
-            mask.getHeight(), dSkylineXY);
+        removePointsUnderSkyline(set, sunPoints, skyPoints, mask.getWidth(), 
+            mask.getHeight());
 
         skyPoints.addAll(set);
         skyPoints.addAll(sunPoints);
         
         // fill in the gaps
-        /*Set<PairInt> embeddedPoints = findEmbeddedNonPoints(skyPoints);
-        skyPoints.addAll(embeddedPoints);
-        for (PairInt p : embeddedPoints) {
-            int x = p.getX();
-            int y = p.getY();
-            mask.setValue(x, y, 0);
-        }*/
+        //Set<PairInt> embeddedPoints = findEmbeddedNonPoints(skyPoints);
+        //skyPoints.addAll(embeddedPoints);
         
         mask.fill(1);
         for (PairInt p : skyPoints) {
@@ -4876,90 +4869,145 @@ debugPlot(set, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(),
 debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "horizon_near_sun_final");
 
+        int z = 1;
     }
-
-    private void removePointsUnderSkyline(Set<PairInt> skyline, Set<PairInt> 
-        skyPoints, int width, int height, int[] dSkylineXY) {
+    
+    private int[] determineChangeTowardsSkyline(Set<PairInt> skyline, 
+        Set<PairInt> sunPoints, Set<PairInt> skyPoints) {
         
         //TODO:  needs alot of testing with images that are tilted and
         // have sun in them.
         
-        if ((dSkylineXY[0] == 0) && (dSkylineXY[1] == 0)) {
+        // need to fit a line to skyline to get the slope and hence
+        // know what is perpendicular to the skyline near the sun.
+        
+        int[] xsl = new int[skyline.size()];
+        int[] ysl = new int[xsl.length];
+        int i = 0;
+        for (PairInt p : skyline) {
+            xsl[i] = p.getX();
+            ysl[i] = p.getY();
+            i++;
+        }
+        
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
             
-            // the pixels under the sun may have been removed to the edge of image
-                        
-            MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        double[] skyXYCen = ch.calculateXYCentroids(skyPoints);
             
-            double[] xyCen = ch.calculateXYCentroids(skyPoints);
-            
-            double xFrac = xyCen[0]/(double)width;
-            
-            double yFrac = xyCen[1]/(double)height;
-            
-            if (yFrac < 0.47) {
-                dSkylineXY[1] = 1;
-            } else if (yFrac > 0.53) {
-                dSkylineXY[1] = -1;
+        double[] sunXYCen = ch.calculateXYCentroids(sunPoints);
+        
+        LinearRegression lr = new LinearRegression();
+        float[] yInterceptAndSlope = lr.calculateTheilSenEstimatorParams(
+            xsl, ysl);
+        
+        int dSkylineX = 0;
+        int dSkylineY = 0;
+        
+        /*
+        inf
+           1.7
+         |    1.0
+         |   /    0.57
+         | /     
+        @ ----- 0        
+        */
+        
+        if (Math.abs(yInterceptAndSlope[1]) < 0.57) {
+            // ~ horizontal line, less than 30 degrees from horiz
+            if (skyXYCen[1] > sunXYCen[1]) {
+                dSkylineY = -1;
+            } else {
+                dSkylineY = 1;
             }
-            if (xFrac < 0.47) {
-                dSkylineXY[0] = 1;
-            } else if (xFrac > 0.53) {
-                dSkylineXY[0] = -1;
+        } else if (Math.abs(yInterceptAndSlope[1]) < 1.73) {
+            // ~ diagonal line, between 30 degrees and 60 degrees from horiz
+            if (skyXYCen[0] > sunXYCen[0]) {
+                dSkylineX = -1;
+            } else {
+                dSkylineX = 1;
+            }
+            if (skyXYCen[1] > sunXYCen[1]) {
+                dSkylineY = -1;
+            } else {
+                dSkylineY = 1;
+            }
+        } else  {
+            // approx w/ a vertical line
+            if (skyXYCen[0] > sunXYCen[0]) {
+                dSkylineX = -1;
+            } else {
+                dSkylineX = 1;
             }
         }
         
-        if ((dSkylineXY[0] == 0) && (dSkylineXY[1] == 0)) {
+        return new int[]{dSkylineX, dSkylineY};
+    }
+
+    private void removePointsUnderSkyline(Set<PairInt> skyline, 
+        Set<PairInt> sunPoints, Set<PairInt> skyPoints, 
+        int width, int height) {
+                
+        //TODO:  needs alot of testing with images that are tilted and
+        // have sun in them.
+        
+        int[] dSkylineXY = determineChangeTowardsSkyline(skyline, sunPoints,
+            skyPoints);
+        
+        int dSkylineX = (int)Math.round(dSkylineXY[0]);
+        int dSkylineY = (int)Math.round(dSkylineXY[1]);
+        
+        if ((dSkylineX == 0) && (dSkylineY == 0)) {
             // do nothing
             
-        } else if ((dSkylineXY[0] >= 0) && (dSkylineXY[1] >= 0)) {
+        } else if ((dSkylineX >= 0) && (dSkylineY >= 0)) {
             
             for (PairInt s : skyline) {
-                int vX = s.getX() + dSkylineXY[0];
-                int vY = s.getY() + dSkylineXY[1];
+                int vX = s.getX() + dSkylineX;
+                int vY = s.getY() + dSkylineY;
                 while ((vX < (width - 1)) && (vY < (height - 1))) {
                     PairInt p = new PairInt(vX, vY);
                     skyPoints.remove(p);
-                    vX += dSkylineXY[0];
-                    vY += dSkylineXY[1];
+                    vX += dSkylineX;
+                    vY += dSkylineY;
                 }
             }
             
-        } else if ((dSkylineXY[0] == -1) && (dSkylineXY[1] >= 0)) {
+        } else if ((dSkylineX == -1) && (dSkylineY >= 0)) {
             
             for (PairInt s : skyline) {
-                int vX = s.getX() + dSkylineXY[0];
-                int vY = s.getY() + dSkylineXY[1];
+                int vX = s.getX() + dSkylineX;
+                int vY = s.getY() + dSkylineY;
                 while ((vX > -1) && (vY < (height - 1))) {
                     PairInt p = new PairInt(vX, vY);
                     skyPoints.remove(p);
-                    vX += dSkylineXY[0];
-                    vY += dSkylineXY[1];
+                    vX += dSkylineX;
+                    vY += dSkylineY;
                 }
             }
         
-        } else if ((dSkylineXY[0] >= 0) && (dSkylineXY[1] == -1)) {
+        } else if ((dSkylineX >= 0) && (dSkylineY == -1)) {
             
             for (PairInt s : skyline) {
-                int vX = s.getX() + dSkylineXY[0];
-                int vY = s.getY() + dSkylineXY[1];
+                int vX = s.getX() + dSkylineX;
+                int vY = s.getY() + dSkylineY;
                 while ((vX < (width - 1)) && (vY > -1)) {
                     PairInt p = new PairInt(vX, vY);
                     skyPoints.remove(p);
-                    vX += dSkylineXY[0];
-                    vY += dSkylineXY[1];
+                    vX += dSkylineX;
+                    vY += dSkylineY;
                 }
             }
             
-        } else if ((dSkylineXY[0] == -1) && (dSkylineXY[1] == -1)) {
+        } else if ((dSkylineX == -1) && (dSkylineY == -1)) {
             
             for (PairInt s : skyline) {
-                int vX = s.getX() + dSkylineXY[0];
-                int vY = s.getY() + dSkylineXY[1];
+                int vX = s.getX() + dSkylineX;
+                int vY = s.getY() + dSkylineY;
                 while ((vX > -1) && (vY > -1)) {
                     PairInt p = new PairInt(vX, vY);
                     skyPoints.remove(p);
-                    vX += dSkylineXY[0];
-                    vY += dSkylineXY[1];
+                    vX += dSkylineX;
+                    vY += dSkylineY;
                 }
             }
         
