@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.VeryLargeNumber;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -279,7 +281,137 @@ public class GaussianHelperForTests {
         
         return sum;
     }
- 
+   
+    /**
+     * @param d
+     * @return 
+     */
+    public static byte[] convertIntToBigEndian(int d) {
+        
+        if (d == 0) {
+            return new byte[]{0};
+        }
+        if (d == -1) {
+            return new byte[]{-1};
+        }
+        
+        int nBytes = 0;
+        
+        long b = d;
+        while ((b != 0) && (b != -1)) {
+            nBytes++;
+            b >>= 8;
+        }
+        
+        byte[] bytes = new byte[nBytes];
+        
+        for (int i = 0; i < nBytes; i++) {
+            int shift = i * 8;
+            int a = (d >> shift) & 255;
+            bytes[nBytes - i - 1] = (byte)a;
+        }
+
+        return bytes;
+    }
+    
+    /**
+     * print Pascal's triangle.  this method handles levels that produce
+     * extremely large numbers.  for levels >= 64, it divides a level's numbers
+     * by the maximum value to print numbers that should fit within a
+     * float.
+     * 
+     * @param seed
+     * @param seedN
+     * @param finalN
+     * @param printAFactor 
+     * @throws java.lang.CloneNotSupportedException 
+     */
+    public static void printPascalsTriangle2(int[] seed, int seedN, int finalN,
+        boolean printAFactor) throws CloneNotSupportedException {
+        
+        int count = 1;
+        
+        int finalLen = seed.length + (finalN - seedN);
+        
+        BigDecimal[] in = new BigDecimal[finalLen];
+        BigDecimal[] out = new BigDecimal[finalLen];
+        for (int i = 0; i < seed.length; i++) {
+            int number = seed[i];
+            byte[] numberBytes = convertIntToBigEndian(number);
+            in[i] = new BigDecimal(new BigInteger(numberBytes));
+            out[i] = BigDecimal.ZERO;
+        }
+        
+        while ((seedN + count) <= finalN) {
+            
+            out[0] = new BigDecimal(in[0].toString());
+            
+            BigDecimal max = new BigDecimal(new BigInteger(
+                convertIntToBigEndian(Integer.MIN_VALUE)));
+            int lastInIdx = (seed.length - 1) + (count - 1);
+            int lastOutIdx = lastInIdx + 1;
+            for (int i = 0; i < lastInIdx; i++) {
+             
+                out[i + 1] = new BigDecimal(in[i].toString());
+                out[i + 1] = out[i + 1].add(in[i + 1]);
+                
+                int comp = out[i + 1].compareTo(max);
+                if ((out[i + 1].signum() != -1) && (comp > 0)) {
+                    max = new BigDecimal(out[i + 1].toString());
+                } else if ((out[i + 1].signum() == -1) && (comp < 0)) {
+                    // -123456   -123         comp=-1
+                    // -123456   1234         comp=-1
+                    // -123456   -12345678    comp=1
+                    max = new BigDecimal(out[i + 1].toString());
+                    max = max.negate();
+                }
+            }
+                        
+            out[lastOutIdx] = new BigDecimal(in[lastInIdx].toString());
+            
+            if (!printAFactor) {
+                log.log(Level.INFO, "n={0}:\n{1}", 
+                    new Object[]{Integer.valueOf(seedN + count).toString(), 
+                        Arrays.toString(out)});
+            } else {
+                StringBuilder sb = new StringBuilder();
+                int indent = 0;
+                sb.append("n=").append(seedN + count).append(" has ")
+                    .append(lastOutIdx).append(" items:\n");
+                for (int ii = 0; ii < indent; ii++) {
+                    sb.append(" ");
+                }
+                
+                for (int i = 0; i <= lastOutIdx; i++) {
+                    if ((seedN + count) < 32) {
+                        sb.append("(float)(").append(out[i]).append("l*a), ");
+                    } else {
+                        // divide by max to keep numbers small
+                        out[i] = out[i].divide(max, 5, BigDecimal.ROUND_DOWN);
+                        String divStr = out[i].toString();
+                        sb.append("(float)(").append(divStr).append(")*a, ");
+                    }
+                    
+                    if (sb.length() >= (50)) {
+                        log.log(Level.INFO, "{0}\n", sb.toString());
+                        sb.delete(0, sb.length());
+                        for (int ii = 0; ii < indent; ii++) {
+                            sb.append(" ");
+                        }
+                    }
+                }
+                log.info(sb.toString());
+                if ((seedN + count) < 64) {
+                    log.log(Level.INFO, " ==> |max|={0}", max);
+                }
+            }
+            
+            System.arraycopy(out, 0, in, 0, out.length);
+            
+            count++;
+        }
+    }
+    
     /**
      * print Pascal's triangle.  this method handles levels that produce
      * extremely large numbers.  for levels >= 64, it divides a level's numbers
