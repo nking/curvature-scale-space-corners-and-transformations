@@ -199,21 +199,7 @@ public class MultiArrayMergeSort {
         }
         
         sortByDecr(a1, a2, 0, a1.length - 1);
-        
-        int n = a1.length;
-        
-        // reverse
-        int end = n >> 1;
-        for (int i = 0; i < end; i++) {
-            int idx2 = n - i - 1;
-            int swap = a1[i];
-            a1[i] = a1[idx2];
-            a1[idx2] = swap;
-            
-            swap = a2[i];
-            a2[i] = a2[idx2];
-            a2[idx2] = swap;
-        }
+              
     }
     
     private static void sortByDecr(int[] a1, int[] a2, int idxLo, int idxHi) {
@@ -239,10 +225,10 @@ public class MultiArrayMergeSort {
         int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
         int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
         
-        a1Left[a1Left.length - 1] = Integer.MAX_VALUE;
-        a2Left[a2Left.length - 1] = Integer.MAX_VALUE;
-        a1Right[a1Right.length - 1] = Integer.MAX_VALUE;
-        a2Right[a2Right.length - 1] = Integer.MAX_VALUE;
+        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;
+        a2Left[a2Left.length - 1] = Integer.MIN_VALUE;
+        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;
+        a2Right[a2Right.length - 1] = Integer.MIN_VALUE;
         
         int leftPos = 0;
         int rightPos = 0;
@@ -250,7 +236,7 @@ public class MultiArrayMergeSort {
         for (int k = idxLo; k <= idxHi; k++) {
             int l = a1Left[leftPos];
             int r = a1Right[rightPos];
-            if (l <= r) {
+            if (l > r) {
                 a2[k] = a2Left[leftPos];
                 a1[k] = a1Left[leftPos];
                 leftPos++;
@@ -261,55 +247,5 @@ public class MultiArrayMergeSort {
             }
         }
     }
-    
-    /*
-    TODO:  fix these!
-    
-    private static void sortByDecr(int[] a1, int[] a2, int idxLo, int idxHi) {
-
-        if (idxLo < idxHi) {
-
-            int indexMid = (idxLo + idxHi) >> 1;
-            
-            mergeByDecr(a1, a2, idxLo, indexMid, idxHi);
-            
-            sortByDecr(a1, a2, indexMid + 1, idxHi);
-            
-            sortByDecr(a1, a2, idxLo, indexMid);   
-        }
-    }
-
-    private static void mergeByDecr(int[] a1, int[] a2, int idxLo, 
-        int idxMid, int idxHi) {
-
-        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);
-        int[] a2Left = Arrays.copyOfRange(a2, idxLo, idxMid + 2);
-        
-        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);
-        int[] a2Right = Arrays.copyOfRange(a2, idxMid + 1, idxHi + 2);
-        
-        a1Left[a1Left.length - 1] = Integer.MAX_VALUE;
-        a2Left[a2Left.length - 1] = Integer.MAX_VALUE;
-        a1Right[a1Right.length - 1] = Integer.MAX_VALUE;
-        a2Right[a2Right.length - 1] = Integer.MAX_VALUE;
-        
-        int leftPos = 0;
-        int rightPos = 0;
-
-        for (int k = idxHi; k >= idxLo; k--) {
-            int l = a1Left[leftPos];
-            int r = a1Right[rightPos];
-            if (l <= r) {
-                a2[k] = a2Left[leftPos];
-                a1[k] = a1Left[leftPos];
-                leftPos++;
-            } else {
-                a2[k] = a2Right[rightPos];
-                a1[k] = a1Right[rightPos];
-                rightPos++;
-            }
-        }
-    }
-    */
     
 }
