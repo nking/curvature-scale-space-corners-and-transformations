@@ -47,7 +47,7 @@ public class QuickSortTest {
 
         QuickSort.sort(a, b, c, 0, a.length - 1);
 
-        for (int i = 0; i < a.length; i++) {            
+        for (int i = 0; i < a.length; i++) {
             assertTrue(a[i] == i);
             assertTrue(b[i] == i);
             assertTrue(c[i] == i);
