@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.EllipseHelper;
 import algorithms.compGeometry.PerimeterFinder;
@@ -535,15 +536,23 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(),
         }
         // ====== find the group(s) with the largest number of zero pixels =====
         
+        int nMaxGroupN = Integer.MIN_VALUE;
         int[] groupIndexes = new int[nGroups];
         int[] groupN = new int[nGroups];
         for (int gId = 0; gId < nGroups; gId++) {
             int n = zerosFinder.getNumberofGroupMembers(gId);
             groupIndexes[gId] = gId;
             groupN[gId] = n;
+            if (n > nMaxGroupN) {
+                nMaxGroupN = n;
+            }
         }
         
-        MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
+        if (nMaxGroupN > 10000000) {
+            MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
+        } else {
+            CountingSort.sort(groupN, groupIndexes, nMaxGroupN);
+        }
         
         List<Integer> groupIds = new ArrayList<Integer>();
         groupIds.add(Integer.valueOf(groupIndexes[0]));
