@@ -140,4 +140,77 @@ public class CountingSort {
         System.arraycopy(aa, 0, a, 0, a.length);
         System.arraycopy(bb, 0, b, 0, b.length);
     }
+    
+    /**
+     * apply a descending sort to the members of a with values less than max 
+     * and apply the same changes of item position to b.
+     * 
+     * Note that the numbers have to be positive, so if negative numbers are
+     * in the array, the invoker needs to add a number to bring the values
+     * to >= 0 and then subtract that after the sort.
+     * 
+     * @param a
+     * @param b
+     * @param max 
+     */
+    public static void sortByDecr(int[] a, int[] b, int max) {
+
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException(
+            "the lengths of a and b must be the same");
+        }
+        if (max <= 0) {
+            throw new IllegalArgumentException("max must be > 0");
+        }
+        
+        long[] c = new long[max + 1];
+
+        // c holds frequency of each number by index, e.g. c[0] holds the number of 0's in a
+        for (int i = 0; i < a.length; i++) {
+            
+            int idx = a[i];
+            
+            c[idx]++;
+        }
+                
+        // cumulative sum to end of array c.  the last item in c holds the 
+        // total number of items in 'a' less than or equal to max
+        for (int i = 1; i < c.length; i++) {
+            c[i] = c[i] + c[i - 1];
+        }
+        
+        int[] aa = new int[a.length];
+        int[] bb = new int[a.length];
+        
+        int maxInt = Integer.MAX_VALUE;
+        
+        int n = a.length;
+        
+        // use the order imposed by c to write the values of a into aa.  c holds
+        // frequency, that is place markers too so that is updated as aa is written
+        for (int i = (n - 1); i > -1; i--) {
+            
+            int aIdx = a[i];
+            
+            assert (c[aIdx] > maxInt);
+            
+            int cfa = (int)c[aIdx];
+            
+            int ii = n - (cfa - 1) - 1;
+            
+            aa[ii] = aIdx;
+            bb[ii] = b[i];
+            
+            c[aIdx]--;
+        }
+
+        System.arraycopy(aa, 0, a, 0, a.length);
+        System.arraycopy(bb, 0, b, 0, b.length);
+    }
 }

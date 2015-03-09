@@ -37,6 +37,19 @@ public class CountingSortTest extends TestCase {
     
     public void testsort2() throws Exception {
         
+        int[] a = new int[]{2, 5, 3, 0, 2, 3, 0, 3};
+        int[] b = new int[]{2, 5, 3, 0, 2, 3, 0, 3};
+        
+        CountingSort.sortByDecr(a, b, 5);
+        
+        int[] expected = new int[]{5, 3, 3, 3, 2, 2, 0, 0};
+        
+        assertTrue(Arrays.equals(expected, a));
+        assertTrue(Arrays.equals(expected, b));
+    }
+    
+    public void testsort3() throws Exception {
+        
         // use more than 46340 random numbers whose value is higher than
         // 46340 to show that the internal long summations are safely
         // reduced back to the integer values
