@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairInt;
@@ -745,6 +746,8 @@ public class Histogram {
         
         int idx = 0;
         
+        int cMax = Integer.MIN_VALUE;
+        
         Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
         while (iter.hasNext()) {
             
@@ -756,10 +759,18 @@ public class Histogram {
             v[idx] = value.intValue();
             c[idx] = count.intValue();
             
+            if (c[idx] > cMax) {
+                cMax = c[idx];
+            }
+            
             idx++;
         }
         
-        MultiArrayMergeSort.sortByDecr(c, v);
+        if (cMax > 10000000) {
+            MultiArrayMergeSort.sortByDecr(c, v);
+        } else {
+            CountingSort.sortByDecr(c, v, cMax);
+        }
         
         PairIntArray p = new PairIntArray();
         
@@ -780,6 +791,8 @@ public class Histogram {
         
         int idx = 0;
         
+        int cMax = Integer.MIN_VALUE;
+        
         Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
         while (iter.hasNext()) {
             
@@ -791,10 +804,18 @@ public class Histogram {
             v[idx] = value.intValue();
             c[idx] = count.intValue();
             
+            if (c[idx] > cMax) {
+                cMax = c[idx];
+            }
+            
             idx++;
         }
         
-        MultiArrayMergeSort.sortByDecr(c, v);
+        if (cMax > 10000000) {
+            MultiArrayMergeSort.sortByDecr(c, v);
+        } else {
+            CountingSort.sortByDecr(c, v, cMax);
+        }
         
         PairIntArray p = new PairIntArray();
         
@@ -814,6 +835,8 @@ public class Histogram {
         
         int idx = 0;
         
+        int vMax = Integer.MIN_VALUE;
+        
         Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
         while (iter.hasNext()) {
             
@@ -825,10 +848,18 @@ public class Histogram {
             v[idx] = value.intValue();
             c[idx] = count.intValue();
             
+            if (v[idx] > vMax) {
+                vMax = v[idx];
+            }
+            
             idx++;
         }
         
-        MultiArrayMergeSort.sortByDecr(v, c);
+        if (vMax > 10000000) {
+            MultiArrayMergeSort.sortByDecr(v, c);
+        } else {
+            CountingSort.sortByDecr(v, c, vMax);
+        }
         
         PairIntArray p = new PairIntArray();
         
@@ -849,6 +880,8 @@ public class Histogram {
         
         int idx = 0;
         
+        int vMax = Integer.MIN_VALUE;
+        
         Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
         while (iter.hasNext()) {
             
@@ -860,10 +893,18 @@ public class Histogram {
             v[idx] = value.intValue();
             c[idx] = count.intValue();
             
+            if (v[idx] > vMax) {
+                vMax = v[idx];
+            }
+            
             idx++;
         }
         
-        MultiArrayMergeSort.sortByDecr(v, c);
+        if (vMax > 10000000) {
+            MultiArrayMergeSort.sortByDecr(v, c);
+        } else {
+            CountingSort.sortByDecr(v, c, vMax);
+        }
         
         PairIntArray p = new PairIntArray();
         

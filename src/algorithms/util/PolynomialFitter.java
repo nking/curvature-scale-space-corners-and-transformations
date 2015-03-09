@@ -1,5 +1,6 @@
 package algorithms.util;
 
+import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.Image;
@@ -323,14 +324,22 @@ public class PolynomialFitter {
             
         } else if (n > 7) {
             
+            int nMaxGroupN = Integer.MIN_VALUE;
             int[] groupIndexes = new int[n];
             int[] groupN = new int[n];
             for (int gId = 0; gId < n; gId++) {
                 int n2 = groupsFinder.getNumberofGroupMembers(gId);
                 groupIndexes[gId] = gId;
                 groupN[gId] = n2;
+                if (n > nMaxGroupN) {
+                    nMaxGroupN = n;
+                }
             }
-            MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
+            if (nMaxGroupN > 10000000) {
+                MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
+            } else {
+                CountingSort.sortByDecr(groupN, groupIndexes, nMaxGroupN);
+            }
             
             n = 5;
             
