@@ -1,26 +1,16 @@
 package algorithms.imageProcessing;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 
 /**
  *
  * @author nichole
  */
-public class PascalsTest {
+public class PascalsTest extends TestCase {
     
     public PascalsTest() {
     }
     
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-
     public void testPascals() throws Exception {
         /*
         // fsecond deriv:
