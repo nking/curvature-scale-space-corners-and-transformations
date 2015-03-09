@@ -548,11 +548,11 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(),
             }
         }
         
-        if (nMaxGroupN > 10000000) {
+        //if (nMaxGroupN > 10000000) {
             MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
-        } else {
-            CountingSort.sort(groupN, groupIndexes, nMaxGroupN);
-        }
+        /*} else {
+            CountingSort.sortByDecr(groupN, groupIndexes, nMaxGroupN);
+        }*/
         
         List<Integer> groupIds = new ArrayList<Integer>();
         groupIds.add(Integer.valueOf(groupIndexes[0]));
