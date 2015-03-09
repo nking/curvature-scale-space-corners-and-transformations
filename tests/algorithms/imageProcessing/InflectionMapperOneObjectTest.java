@@ -39,8 +39,8 @@ public class InflectionMapperOneObjectTest {
         //boolean swapDueToScale = false;
             for (String rotDegrees : rotDegreesList) {
 
-                /*
-                if (!rotDegrees.equals("315")) {
+               /* 
+                if (!rotDegrees.equals("180")) {
                     continue;
                 }
                 */
@@ -108,7 +108,8 @@ public class InflectionMapperOneObjectTest {
                 double foundRotDeg = rotDeg;
 
                 log.info("PARAMS: " + transformationParams.toString() 
-                    + "\nEXPECTED=" + rotDegrees + " (" + expectedRotDeg + ")");
+                    + "\nEXPECTED=" + rotDegrees + " (" + expectedRotDeg + ")"
+                    + " found=" + foundRotDeg);
 
                 assertTrue(Math.abs(expectedRotDeg - foundRotDeg) < 10.f);
 

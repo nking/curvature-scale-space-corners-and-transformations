@@ -121,7 +121,7 @@ public class EllipseHelperTest extends TestCase {
             xc, yc, a, b, alpha);
         
         assertTrue(Math.abs(stats[0] - 0) < 1e-4);
-        assertTrue(Math.abs(stats[1] - 0) < 1e-3);
+        assertTrue(Math.abs(stats[1] - 0) < 1e-2);
     }
     
     public void testCalculateEllipseResiduals2() throws Exception {

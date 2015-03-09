@@ -4952,8 +4952,8 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         int[] dSkylineXY = determineChangeTowardsSkyline(skyline, sunPoints,
             skyPoints);
         
-        int dSkylineX = (int)Math.round(dSkylineXY[0]);
-        int dSkylineY = (int)Math.round(dSkylineXY[1]);
+        int dSkylineX = Math.round(dSkylineXY[0]);
+        int dSkylineY = Math.round(dSkylineXY[1]);
         
         if ((dSkylineX == 0) && (dSkylineY == 0)) {
             // do nothing
