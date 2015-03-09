@@ -47,12 +47,44 @@ public class PairInt {
     @Override
     public int hashCode() {
         
-        //TODO: revisit this...
-        
-        int hash = 7;
-        hash = 11 * hash + this.x;
-        hash = 11 * hash + this.y;
+        int hash = fnvHashCode(this.x, this.y);
+
         return hash;
     }
+
+    protected static int fnv321aInit = 0x811c9dc5;
+    protected static int fnv32Prime = 0x01000193;
+
+    protected int fnvHashCode(int i0, int i1) {
+
+        /*
+         * hash = offset_basis
+         * for each octet_of_data to be hashed
+         *     hash = hash xor octet_of_data
+         *     hash = hash * FNV_prime
+         * return hash
+         *
+         * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+         */
+
+        int hash = 0;
+
+        int sum = fnv321aInit;
+
+        // xor the bottom with the current octet.
+        sum ^= i0;
+
+        // multiply by the 32 bit FNV magic prime mod 2^32
+        sum *= fnv32Prime;
+        
+        sum ^= i1;
+        
+        sum *= fnv32Prime;
+        
+        hash = sum;
+
+        return hash;
+    }
+
     
 }

@@ -181,7 +181,7 @@ public class MultiArrayMergeSort {
     /**
      * sort by decreasing value a1 and apply same changes to a2.
      * Ties are further sorted by increasing values of a2.
-     * runtime is O(N) + O(N * log_2(N))
+     * runtime is O(N * log_2(N))
      *
      * @param a1 array of points to be sorted
      * @param a2 array of points to apply a1 sorting to also

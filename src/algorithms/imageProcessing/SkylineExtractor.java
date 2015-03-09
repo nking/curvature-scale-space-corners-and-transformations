@@ -4869,7 +4869,6 @@ debugPlot(set, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(),
 debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "horizon_near_sun_final");
 
-        int z = 1;
     }
     
     private int[] determineChangeTowardsSkyline(Set<PairInt> skyline, 

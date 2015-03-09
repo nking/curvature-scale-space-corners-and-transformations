@@ -275,7 +275,7 @@ public class Heap {
         HeapNode node = rootList.getSentinel().getRight();
         
         int sentinel = DoubleLinkedCircularList.sentinelKey;
-                
+         
         Stack<HeapNode> stack = new Stack<HeapNode>();
         
         while (!stack.isEmpty() || (node.getKey() != sentinel)) {
