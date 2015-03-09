@@ -27,12 +27,12 @@ public class TwoPointIdentityFactory {
 
             } else {
 
-                return new TwoPointBinarySearchTree();
+                return new TwoPointHash(indexerNXY);
             } 
 
         } else {
 
-            return new TwoPointBinarySearchTree();
+            return new TwoPointHash(indexerNXY);
         }
     }
 }
