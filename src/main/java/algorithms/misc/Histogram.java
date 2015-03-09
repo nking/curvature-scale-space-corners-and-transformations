@@ -94,7 +94,8 @@ public class Histogram {
         createHistogram(a, nBins, aMin, aMax, xHist, yHist, xInterval);
     }
 
-    public static HistogramHolder createSimpleHistogram(float[] values, float[] valueErrors) {
+    public static HistogramHolder createSimpleHistogram(float[] values, 
+        float[] valueErrors) {
 
         if (values == null || valueErrors == null || values.length != valueErrors.length) {
             throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
@@ -105,10 +106,14 @@ public class Histogram {
         return createSimpleHistogram(nBins, values, valueErrors);
     }
     
-    public static HistogramHolder createSimpleHistogram(int nBins, float[] values, float[] valueErrors) {
+    public static HistogramHolder createSimpleHistogram(int nBins, 
+        float[] values, float[] valueErrors) {
 
-        if (values == null || valueErrors == null || values.length != valueErrors.length) {
-            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        if (values == null || valueErrors == null || 
+            values.length != valueErrors.length) {
+            
+            throw new IllegalArgumentException(
+                "values and valueErrors cannot be null and must be the same length");
         }
 
         float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
@@ -118,7 +123,47 @@ public class Histogram {
         float[] xHist = new float[nBins];
         int[] yHist = new int[nBins];
         
-        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], xHist, yHist, binWidth);
+        Histogram.createHistogram(values, nBins, minMax[0], minMax[1], 
+            xHist, yHist, binWidth);
+
+        float[] yHistFloat = new float[yHist.length];
+        for (int i = 0; i < yHist.length; i++) {
+            yHistFloat[i] = (float) yHist[i];
+        }
+
+        float[] yErrors = new float[xHist.length];
+        float[] xErrors = new float[xHist.length];
+
+        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);
+
+        HistogramHolder histogram = new HistogramHolder();
+        histogram.setXHist(xHist);
+        histogram.setYHist(yHist);
+        histogram.setYHistFloat(yHistFloat);
+        histogram.setYErrors(yErrors);
+        histogram.setXErrors(xErrors);
+        
+        return histogram;
+    }
+
+    public static HistogramHolder createSimpleHistogram(
+        final float xMin, final float xMax, int nBins, 
+        float[] values, float[] valueErrors) {
+
+        if (values == null || valueErrors == null || 
+            values.length != valueErrors.length) {
+            
+            throw new IllegalArgumentException(
+                "values and valueErrors cannot be null and must be the same length");
+        }
+                
+        float binWidth = calculateBinWidth(xMin, xMax, nBins);
+
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+        
+        Histogram.createHistogram(values, nBins, xMin, xMax,
+            xHist, yHist, binWidth);
 
         float[] yHistFloat = new float[yHist.length];
         for (int i = 0; i < yHist.length; i++) {
@@ -259,18 +304,19 @@ public class Histogram {
     }
     
     /**
-     * determine the errors in determining the width of the histogram for points with y above yLimit.  This is meant to 
-     * determine the error in calculations of things like fwhm.
+     * determine the errors in determining the width of the histogram for points 
+     * with y above yLimit.  This is meant to determine the error in 
+     * calculations of things like fwhm.
      * 
      * @param xHist
      * @param yHist
      * @param xErrors
      * @param yErrors
-     * @param yLimit
+     * @param yMaxFactor
      * @return
      */
-    public static float calculateHistogramWidthYLimitError(float[] xHist, float[] yHist,
-        float[] xErrors, float[] yErrors, float yMaxFactor) {
+    public static float calculateHistogramWidthYLimitError(float[] xHist, 
+        float[] yHist, float[] xErrors, float[] yErrors, float yMaxFactor) {
 
         /* Errors in histogram:
          *     error in Y is sqrt(Y) and that is already in standard units.
@@ -320,10 +366,12 @@ public class Histogram {
         return sum;
     }
 
-    public static HistogramHolder defaultHistogramCreator(float[] values, float[] valueErrors) {
+    public static HistogramHolder defaultHistogramCreator(float[] values, 
+        float[] valueErrors) {
         
         if (values == null || valueErrors == null || values.length != valueErrors.length) {
-            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+            throw new IllegalArgumentException(
+                "values and valueErrors cannot be null and must be the same length");
         }
         
         if (values.length < 100) {
@@ -336,11 +384,62 @@ public class Histogram {
         return hist;
     }
     
+    public static HistogramHolder calculateSturgesHistogram(
+        final float xMin, final float xMax,
+        float[] values, float[] valueErrors) {
+    
+        if (values == null || valueErrors == null || 
+            values.length != valueErrors.length) {
+            
+            throw new IllegalArgumentException(
+                "values and valueErrors cannot be null and must be the same length");
+        }
+
+        /*
+        log_2(values.length) + 1 = (xMax - xMin)/binWidth
+        
+        ==> binWidth = (xMax - xMin) / (log_2(values.length) + 1)
+        */
+        
+        float binWidth = (float) ((xMax - xMin)/(Math.log(values.length) + 1));
+        
+        int nBins = (int)(Math.log(values.length) + 1);
+        
+        float[] xHist = new float[nBins];
+        int[] yHist = new int[nBins];
+       
+        Histogram.createHistogram(values, nBins, xMin, xMax, xHist, yHist, 
+            binWidth);
+        
+        float[] yHistFloat = new float[yHist.length];
+        for (int i = 0; i < yHist.length; i++) {
+            yHistFloat[i] = (float) yHist[i];
+        }
+
+        float[] yErrors = new float[xHist.length];
+        float[] xErrors = new float[xHist.length];
+
+        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, 
+            yErrors);
+        
+        HistogramHolder histogram = new HistogramHolder();
+        histogram.setXHist(xHist);
+        histogram.setYHist(yHist);
+        histogram.setYHistFloat(yHistFloat);
+        histogram.setYErrors(yErrors);
+        histogram.setXErrors(xErrors);
+        
+        return histogram;
+    }
+    
     public static HistogramHolder calculateSturgesHistogramRemoveZeroTail(
         float[] values, float[] valueErrors) {
     
-        if (values == null || valueErrors == null || values.length != valueErrors.length) {
-            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+        if (values == null || valueErrors == null || 
+            values.length != valueErrors.length) {
+            
+            throw new IllegalArgumentException(
+                "values and valueErrors cannot be null and must be the same length");
         }
 
         int nIntervalsSturges = (int)Math.ceil( Math.log(values.length)/Math.log(2));
@@ -378,6 +477,7 @@ public class Histogram {
                 break;
             }
         }
+        
         if (countsBelowMinAtTail > 0) {
             
             maxx = xHist[lastLowCountIdx];
@@ -387,7 +487,7 @@ public class Histogram {
 
             Histogram.createHistogram(values, nBins, minx, maxx, xHist, yHist, binWidth);
             
-            if (countsBelowMinAtTail > (nBins/2)) {
+            if (countsBelowMinAtTail > (nBins >> 1)) {
                 // one more round of trimming
                 maxy = MiscMath.findMax(yHist);
                 minCountsLimit = (int)Math.max(5, 0.03f*maxy);
@@ -410,7 +510,8 @@ public class Histogram {
         }
         
         if (values.length > 100) {
-            // if there are a large number of points, we'd like to increase the resolution of the peak if needed
+            // if there are a large number of points, we'd like to increase the 
+            // resolution of the peak if needed
             int nLeftOfPeak = MiscMath.findYMaxIndex(yHist);
             int nIter = 0;
             while (nIter < 30 && nLeftOfPeak < 3 && (yHist[nLeftOfPeak] > 100)) {
@@ -482,7 +583,7 @@ public class Histogram {
         int yPeakIdx = -1;
         
         // specific to use here, find max within first half of histogram
-        for (int i = 0; i < hist.getXHist().length/2; i++) {
+        for (int i = 0; i < hist.getXHist().length >> 1; i++) {
             
             float y = hist.getYHistFloat()[i];
             

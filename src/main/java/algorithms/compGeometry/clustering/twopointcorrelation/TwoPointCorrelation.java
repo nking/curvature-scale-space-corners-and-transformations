@@ -678,7 +678,7 @@ public class TwoPointCorrelation {
 
                 insideClusters[pointIndex] = true;
 
-                groupNode = groupNode.next;
+                groupNode = groupNode.getNext();
             }
         }
 

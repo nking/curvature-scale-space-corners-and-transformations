@@ -79,7 +79,7 @@ public class MultiArrayMergeSort {
 
         if (idxLo < idxHi) {
 
-            idxMid = (idxLo + idxHi)/2;
+            idxMid = (idxLo + idxHi) >> 1;
 
             sortBy1stArg(a1, a2, idxLo, idxMid);
             sortBy1stArg(a1, a2, idxMid + 1, idxHi);
@@ -103,7 +103,7 @@ public class MultiArrayMergeSort {
 
         if (idxLo < idxHi) {
 
-            idxMid = (idxLo + idxHi)/2;
+            idxMid = (idxLo + idxHi) >> 1;
 
             sortBy1stArg(a1, a2, a3, idxLo, idxMid);
             sortBy1stArg(a1, a2, a3, idxMid + 1, idxHi);
@@ -145,7 +145,7 @@ public class MultiArrayMergeSort {
 
         if (idxLo < idxHi) {
 
-            indexMid = (idxLo + idxHi)/2;
+            indexMid = (idxLo + idxHi) >> 1;
 
             sortBy1stArgThen2nd(a1, a2, idxLo, indexMid);
             sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi);

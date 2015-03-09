@@ -46,9 +46,11 @@ public class DFSGroupFinder extends AbstractGroupFinder {
     @Override
     protected void findClusters(AxisIndexer indexer) {
              
-        log.info("using a critical density of " + threshhold + " * " + threshholdFactor + " = " + thrsh);
+        log.info("using a critical density of " + threshhold + " * " 
+            + threshholdFactor + " = " + thrsh);
         
-        // traverse the data by ordered x values using indexer.getSortedXIndexes() so can break when exceed critical distance
+        // traverse the data by ordered x values using 
+        //     indexer.getSortedXIndexes() so can break when exceed critical distance
         
         this.indexer = indexer;
         
@@ -70,7 +72,7 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         for (int uSortedXIndex = (sortedXIndexes.length - 1); uSortedXIndex > -1; uSortedXIndex--) {
             stack.insert(uSortedXIndex);
         }
-        
+                
         color[stack.peek()] = 2;
         
         while (!stack.isEmpty()) {

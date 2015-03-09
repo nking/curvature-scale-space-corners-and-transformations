@@ -115,7 +115,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
             SimpleLinkedListNode latest = group;
             while (latest != null) {
                 count++;
-                latest = latest.next;
+                latest = latest.getNext();
             }
             
             log.finest("  group " + i + " has " + count + " members before prune (min=" + minimumNumberInCluster + ")");
@@ -138,7 +138,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
                         
                         pointToGroupIndex[idx] = newGroupId;
                         
-                        latest = latest.next;
+                        latest = latest.getNext();
                     }
                 }
                 
@@ -276,7 +276,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
             
             indexes[count] = idx;
             
-            group = group.next;
+            group = group.getNext();
             
             count++;
         }
@@ -322,7 +322,7 @@ public abstract class AbstractGroupFinder implements IGroupFinder {
                 
                 System.out.println("    (" + x + "," + y + ")");
                 
-                group = group.next;
+                group = group.getNext();
             }
         }
     }

@@ -335,7 +335,7 @@ public class TwoPointVoidStats extends AbstractPointBackgroundStats {
 
         int yMaxBin = -1;
         float ymax = Float.MIN_VALUE;
-        for (int i = 0; i < (statsHistogram.getYHist().length/2.); i++) {
+        for (int i = 0; i < (statsHistogram.getYHist().length >> 1); i++) {
             if (statsHistogram.getYHist()[i] > ymax) {
                 ymax = statsHistogram.getYHist()[i];
                 yMaxBin = i;

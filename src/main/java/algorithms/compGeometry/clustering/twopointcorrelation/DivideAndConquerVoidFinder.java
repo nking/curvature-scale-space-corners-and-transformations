@@ -40,14 +40,12 @@ public class DivideAndConquerVoidFinder extends AbstractVoidFinder {
      *</pre>
      * @param xIndexLo
      * @param xIndexHi
-     * @param yIndexLo
-     * @param yIndexHi
      */
     protected void findVoids(int xIndexLo, int xIndexHi) {
                 
         if (xIndexLo < xIndexHi) {    
 
-            int xIndexMid = (xIndexLo + xIndexHi)/2;         
+            int xIndexMid = (xIndexLo + xIndexHi) >> 1;         
 
             findVoids(xIndexLo, xIndexMid);      
 

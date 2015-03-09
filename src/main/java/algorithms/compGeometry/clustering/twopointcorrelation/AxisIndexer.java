@@ -154,7 +154,8 @@ public class AxisIndexer {
      * @param yPointErrors
      * @param nPoints
      */
-    public void sortAndIndexX(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nPoints) {
+    public void sortAndIndexX(float[] xPoints, float[] yPoints, 
+        float[] xPointErrors, float[] yPointErrors, int nPoints) {
 
         this.x = Arrays.copyOf(xPoints, nPoints);
         this.y = Arrays.copyOf(yPoints, nPoints);

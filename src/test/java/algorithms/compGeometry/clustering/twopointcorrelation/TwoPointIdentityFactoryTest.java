@@ -14,7 +14,7 @@ public class TwoPointIdentityFactoryTest extends TestCase {
         
         ITwoPointIdentity bt = TwoPointIdentityFactory.create(indexer.getNXY());
         
-        assertTrue(bt instanceof TwoPointBinarySearchTree);
+        assertTrue(bt instanceof TwoPointHash);
         
        
         nPoints = 1000;

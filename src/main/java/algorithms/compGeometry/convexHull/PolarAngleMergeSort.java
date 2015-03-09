@@ -123,7 +123,7 @@ public class PolarAngleMergeSort {
 
         if (indexLo < indexHi) {
 
-            indexMid = (indexLo + indexHi)/2;
+            indexMid = (indexLo + indexHi) >> 1;
 
             sort(xP0, yP0, x, y, indexLo, indexMid, polarAngle);
             sort(xP0, yP0, x, y, indexMid + 1, indexHi, polarAngle);

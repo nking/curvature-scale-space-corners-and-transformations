@@ -131,6 +131,44 @@ public class HistogramHolder implements Externalizable {
         this.xErrors = xErrors;
     }
 
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("histogram=[");
+        
+        for (int i = 0; i < xHist.length; i++) {
+            
+            sb.append("(").append(xHist[i]).append(", ");
+            
+            if (yHist != null) {
+                sb.append(yHist[i]);
+            } else {
+                sb.append(yHistFloat[i]);
+            }
+            sb.append(") ");
+            
+        }
+        
+        sb.append("]\n");
+        
+        if (xErrors != null) {
+            
+            sb.append("histogram errors=[");
+            
+            for (int i = 0; i < xErrors.length; i++) {
+
+                sb.append("(").append(xErrors[i]).append(", ");
+
+                sb.append(yErrors[i]).append(") ");
+            }
+            
+            sb.append("]\n");
+        }      
+        
+        return sb.toString();
+    }
+
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
 
