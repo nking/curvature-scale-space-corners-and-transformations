@@ -44,8 +44,8 @@ public class SimpleLinkedListNodeTest extends TestCase {
         assertTrue(node.next == null);
 
         node.insert(key2);
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key2);
+        assertTrue(node.key == key2);
+        assertTrue(node.next.key == key);
         assertTrue(node.next.next == null);
         
         assertNull(node.search(9876));
@@ -84,13 +84,13 @@ public class SimpleLinkedListNodeTest extends TestCase {
         assertTrue(node.next == null);
 
         node.insertIfDoesNotAlreadyExist(key2);
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key2);
+        assertTrue(node.key == key2);
+        assertTrue(node.next.key == key);
         assertTrue(node.next.next == null);
 
         node.insertIfDoesNotAlreadyExist(key);
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key2);
+        assertTrue(node.key == key2);
+        assertTrue(node.next.key == key);
         assertTrue(node.next.next == null);
         
         int key3 = 12;
@@ -165,36 +165,36 @@ public class SimpleLinkedListNodeTest extends TestCase {
         node.insert(key2);
         node.insert(key3);
         node.delete(key2);
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key3);
+        assertTrue(node.key == key3);
+        assertTrue(node.next.key == key);
         node.delete(-1);
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key3);
+        assertTrue(node.key == key3);
+        assertTrue(node.next.key == key);
         node.delete(key2);
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key3);
+        assertTrue(node.key == key3);
+        assertTrue(node.next.key == key);
         
         node = new SimpleLinkedListNode();
         node.insert(key);
         node.insert(key2);
         node.insert(key3);
         node.delete(new SimpleLinkedListNode(key2));
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key3);
+        assertTrue(node.key == key3);
+        assertTrue(node.next.key == key);
         node.delete(-1);
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key3);
+        assertTrue(node.key == key3);
+        assertTrue(node.next.key == key);
         node.delete(new SimpleLinkedListNode(key2));
-        assertTrue(node.key == key);
-        assertTrue(node.next.key == key3);
+        assertTrue(node.key == key3);
+        assertTrue(node.next.key == key);
         
         node = new SimpleLinkedListNode();
         node.insert(key);
         node.insert(key2);
         node.insert(key3);
         node.delete(new SimpleLinkedListNode(key));
-        assertTrue(node.key == key2);
-        assertTrue(node.next.key == key3);
+        assertTrue(node.key == key3);
+        assertTrue(node.next.key == key2);
         
     }
 
@@ -245,8 +245,8 @@ public class SimpleLinkedListNodeTest extends TestCase {
         
         int[] keys = node.getKeys();
         assertTrue(keys.length == 2);
-        assertTrue(keys[0] == key);
-        assertTrue(keys[1] == key2);
+        assertTrue(keys[0] == key2);
+        assertTrue(keys[1] == key);
         
         
         node = new SimpleLinkedListNode();

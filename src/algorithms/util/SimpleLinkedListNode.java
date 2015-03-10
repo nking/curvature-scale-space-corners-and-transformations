@@ -55,13 +55,19 @@ public class SimpleLinkedListNode {
             key = insertKey;
             return this;
         }
-        SimpleLinkedListNode node = new SimpleLinkedListNode(insertKey);
+        
+        SimpleLinkedListNode node = new SimpleLinkedListNode(key);
+        
+        key = insertKey;
 
-        SimpleLinkedListNode last = this;
-        while (last.next != null) {
-            last = last.next;
+        if (next == null) {
+            next = node;
+            return this;
         }
-        last.next = node;
+        
+        node.next = next;
+        
+        next = node;
 
         return node;
     }
@@ -77,24 +83,16 @@ public class SimpleLinkedListNode {
         }
         if (this.key == -1) {
             key = insertKey;
-            n++;
             return this;
         }
         
-        SimpleLinkedListNode last = this;
-        SimpleLinkedListNode current = next;
-        while (current != null) {
-            if (current.key == insertKey) {
-                return null;
-            }
-            last = current;
-            current = current.next;
+        SimpleLinkedListNode node = search(insertKey);
+        
+        if (node != null) {
+            return null;
         }
         
-        last.next = new SimpleLinkedListNode(insertKey);
-        n++;
-        return last.next;
-        
+        return insert(insertKey);
     }
 
     public void delete(SimpleLinkedListNode node) {
