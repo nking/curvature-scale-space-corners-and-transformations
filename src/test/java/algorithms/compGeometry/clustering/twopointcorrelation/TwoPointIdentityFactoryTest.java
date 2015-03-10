@@ -29,4 +29,5 @@ public class TwoPointIdentityFactoryTest extends TestCase {
         TwoPointIdentityFactory tf = new TwoPointIdentityFactory();
         assertNotNull(tf);
     }
+    
 }

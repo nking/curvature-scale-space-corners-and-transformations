@@ -1,7 +1,6 @@
 package algorithms.compGeometry.clustering.twopointcorrelation;
 
 import algorithms.misc.HistogramHolder;
-import algorithms.util.ArrayPair;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -37,7 +36,7 @@ public class FindClusters6Test extends TestCase {
         String[] fileNames = {
             "Aggregation.txt", "Compound.txt", "Pathbased.txt" , "Spiral.txt",
             "D31.txt", "R15.txt" , "Jain.txt", "Flame.txt",
-            "a1.txt", "a2.txt", "a3.txt" /*,
+            "a1.txt", "a2.txt", "a3.txt"/*,
             "s1.txt", "s2.txt", "s3.txt", "s4.txt",
             "birch1.txt", "birch2.txt", "birch3.txt" */
         };
@@ -65,7 +64,7 @@ public class FindClusters6Test extends TestCase {
         int[] expectedNGroups = {
             7, 6, 3, 3, 
             31, 15 , 2, 2,
-            20, 35, 50 /*,
+            20, 35, 50/*,
             15, 15, 15, 15,
             100, 100, 100*/
         };
@@ -132,7 +131,8 @@ public class FindClusters6Test extends TestCase {
                         ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getK(),
                         ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getSigma(),
                         ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getMu(),
-                        areaAndXYTopCentroid[1], ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getChiSqStatistic());
+                        areaAndXYTopCentroid[1], 
+                        ((TwoPointVoidStats)twoPtC.backgroundStats).bestFit.getChiSqStatistic());
 
                 } else {
 
@@ -195,5 +195,5 @@ public class FindClusters6Test extends TestCase {
 
         log.info("  END ");
     }
-
+    
 }

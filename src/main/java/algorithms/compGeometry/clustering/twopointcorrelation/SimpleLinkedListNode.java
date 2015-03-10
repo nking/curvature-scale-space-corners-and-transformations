@@ -3,7 +3,8 @@ package algorithms.compGeometry.clustering.twopointcorrelation;
 import java.util.Arrays;
 
 /**
- * a node holding only a integer key and the next reference.  the key must be larger than -1.
+ * a node holding only a integer key and the next reference.  the key must be 
+ * larger than -1.
  *
  * @author nichole
  */
@@ -36,27 +37,44 @@ public class SimpleLinkedListNode {
     }
     
     public SimpleLinkedListNode insert(int insertKey) {
+        
         if (insertKey == -1) {
-            throw new IllegalArgumentException("insertKey must be larger than -1");
+            throw new IllegalArgumentException(
+            "insertKey must be larger than -1");
         }
         if (this.key == -1) {
             key = insertKey;
             return this;
         }
-        SimpleLinkedListNode node = new SimpleLinkedListNode(insertKey);
+        
+        SimpleLinkedListNode node = new SimpleLinkedListNode(key);
+        
+        key = insertKey;
 
-        SimpleLinkedListNode last = this;
-        while (last.next != null) {
-            last = last.next;
+        if (next == null) {
+            next = node;
+            return this;
         }
-        last.next = node;
+        
+        node.next = next;
+        
+        next = node;
 
         return node;
     }
 
+    /**
+     * insert into list if a node with the same key does not already exist
+     * in this instance or any of the next in the linked nodes.
+     * 
+     * @param insertKey
+     * @return 
+     */
     public SimpleLinkedListNode insertIfDoesNotAlreadyExist(int insertKey) {
+        
         if (insertKey == -1) {
-            throw new IllegalArgumentException("insertKey must be larger than -1");
+            throw new IllegalArgumentException(
+            "insertKey must be larger than -1");
         }
         if (insertKey == this.key) {
             return null;
@@ -66,19 +84,13 @@ public class SimpleLinkedListNode {
             return this;
         }
         
-        SimpleLinkedListNode last = this;
-        SimpleLinkedListNode current = next;
-        while (current != null) {
-            if (current.key == insertKey) {
-                return null;
-            }
-            last = current;
-            current = current.next;
+        SimpleLinkedListNode node = search(insertKey);
+        
+        if (node != null) {
+            return null;
         }
         
-        last.next = new SimpleLinkedListNode(insertKey);
-        return last.next;
-        
+        return insert(insertKey);
     }
 
     public void delete(SimpleLinkedListNode node) {
