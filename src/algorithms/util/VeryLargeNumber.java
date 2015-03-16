@@ -2,14 +2,23 @@ package algorithms.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 //import java.util.logging.Level;
 //import java.util.logging.Logger;
 
 /**
  * NOTE: still testing this class.  it needs more testing for operations that
- * change the instance value from positive to negative and for cases when
- * a divisor is still larger than 64 bits.
+ * change the instance value from positive to negative.
  * 
  * A class to hold numbers that can be larger than 64 bits after adds.
  * 
@@ -33,13 +42,30 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
     // adding faster alternative methods for the large integer division
     // could improve the largest bottleneck.
  
-    public final static int BASE = (1<<30)-1;
+    //TODO: change BASE to (1<<30)-1, that is, 1073741823 
+    public final static int BASE = (1<<30) - 1;
     
     private int[] a;
     
     private int nLen = 0;
     
     private boolean isPositive = true;
+    
+    /** a temporary work around holding non-integer values as a result
+    of inverse operations.
+    */ 
+    private boolean hasADoubleValue = false;
+    /**
+    a temporary work around holding non-integer values as a result
+    of inverse operations.  this should not be used unless 
+    * hasADoubleValue == true.
+    * Note, that no other logic is in place to use this except as a
+    * result of inverse operation, that is pow(-number) and any subsequent
+    * operation is lost.
+    * needs to be refactored for any real use.  (in which case
+    * the inverse should be replaced with Picarte's or Newton's).
+     */
+    private double doubleValue = 0;
     
     //private Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -51,16 +77,47 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
     }
     
     /**
+     * a temporary work around for holding the results of inverse operations.
+     * retrieve the result with getDoubleValueIfExists().
+     * NOTE that this instance is not compatible with any other operations
+     * at this time.  It's merely a way to return a value from the pow operation.
+     * @param value 
+     */
+    VeryLargeNumber(double value) {
+        
+        a = new int[1];
+        nLen = 1;
+        
+        hasADoubleValue = true;
+        doubleValue = value;
+    }
+    
+    public double getDoubleValueIfExists() {
+        if (hasADoubleValue) {
+            return doubleValue;
+        }
+        return 0;
+    }
+    
+    /**
      * add addThis to this instance.
      * 
      * @param addThis number to add to this
      */
     public void add(VeryLargeNumber addThis) {
                 
+        VeryLargeNumber result = add(this, addThis);
+        
+        resetTo(result);
+    }
+    
+    static VeryLargeNumber add(final VeryLargeNumber number1, 
+        final VeryLargeNumber addThis) {
+                
         //log.log(Level.FINEST, "add: {0} + {1}", new String[]{toString(), 
         //    addThis.toString()});
         
-        boolean thisIsLarger = (addThis.nLen <= nLen);
+        boolean thisIsLarger = (addThis.nLen <= number1.nLen);
         
         int[] longer;
         int[] shorter;
@@ -68,28 +125,57 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
         boolean longerIsPositive, shorterIsPositive;
         
         if (thisIsLarger) {
-            longer = a;
-            shorter = addThis.a;
-            n = nLen;
-            idxOffsetShorter = nLen - addThis.nLen;
-            longerIsPositive = isPositive;
+            longer = number1.getInternalArray();
+            shorter = addThis.getInternalArray();
+            n = number1.nLen;
+            idxOffsetShorter = n - addThis.nLen;
+            longerIsPositive = number1.isPositive;
             shorterIsPositive = addThis.isPositive();
         } else {
-            longer = addThis.a;
-            shorter = a;
+            longer = addThis.getInternalArray();
+            shorter = number1.getInternalArray();
             n = addThis.nLen;
-            idxOffsetShorter = addThis.nLen - nLen;
+            idxOffsetShorter = addThis.nLen - number1.nLen;
             longerIsPositive = addThis.isPositive();
-            shorterIsPositive = isPositive;
+            shorterIsPositive = number1.isPositive;
         }
-                
+        
+        int[] output = new int[n + 1];
+        int[] outputLength = new int[1];
+        
+        boolean resultIsPositive = add(longer, shorter, n, idxOffsetShorter, 
+            longerIsPositive, shorterIsPositive, output, outputLength);
+        if (output[0] == 0) {
+            int nLength = VeryLargeNumber.moveUpIfStartsWithZeros(output, 
+                outputLength[0]);
+            outputLength[0] = nLength;
+        }
+        
+        VeryLargeNumber result = new VeryLargeNumber(0);
+        result.setInternalArray(output, outputLength[0], resultIsPositive);
+        
+        return result;
+    }
+    
+    /**
+     * add shorter to longer.  NOTE that the use of this method requires the
+     * invoker to have already made room for a carry, that is output.length
+     * should be one larger than longer.length.
+     * ALSO it is the responsibility of the invoker to move up the numbers
+     * in output if they start w/ zero.
+     * 
+     * @return returns true if the result in output is a positive number, else
+     * returns false.
+     */
+    private static boolean add(int[] longer, int[] shorter, int n, int idxOffsetShorter, 
+        boolean longerIsPositive, boolean shorterIsPositive, int[] output,
+        int[] outputLength) {
+    
         int	carry = 0;
         int sum = 0;
         int idxShorter;
         boolean resetCarry = true;
-        
-        int[] s = new int[n];
-        
+                
         for (int i = (n - 1); i > -1; i--) {
                    
             resetCarry = true;
@@ -101,9 +187,7 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
             if (idxShorter < 0) {
                 
                 if ((carry == -1) && (longer[i] == 0)) {
-                    
-                    carry = -1;
-                    
+                                        
                     resetCarry = false;
                     
                     sum = BASE - 1;
@@ -167,30 +251,54 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
                 longerIsPositive = true;
             }
 
-            s[i] = longerIsPositive ? sum : -1*sum;
+            output[i] = longerIsPositive ? sum : -1*sum;
         }
         
-        a = s;
+        boolean resultIsPositive = longerIsPositive;
         
-        nLen = n;
-        
-        isPositive = longerIsPositive;
+        outputLength[0] = n;
         
         if (carry != 0) {
-            // expand a by 1 and move elements down
-            insertSpaceAtTopOfArray();
+            
+            if (output.length <= longer.length) {
+                throw new IllegalArgumentException(
+                "output must be given to this method with a length that is at " 
+                + "least one larger than longer.length");
+            }
+            
+            VeryLargeNumber.moveDown(output, 1);
             
             if (carry < 0) {
-                isPositive = false;
+                resultIsPositive = false;
                 carry *= -1;
             }
             
-            a[0] = carry;
+            output[0] = carry;
             
-        } else {
-        
-            moveUpIfStartsWithZeros();
+            outputLength[0]++;
+            
         }
+        
+        return resultIsPositive;
+    }
+    
+    int countNumberOfDigits(int number) {
+        
+        int count = 0;
+        
+        if (number == 0) {
+            return 1;
+        }
+        
+        if (number < 0) {
+            number *= -1;
+        }
+        
+        while (number > 0) {
+            number /= BASE;
+        }
+        
+        return count;
     }
     
     /**
@@ -200,34 +308,60 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
      * for this instance's number.
      */
     private void moveUpIfStartsWithZeros() {
+        nLen = moveUpIfStartsWithZeros(this.a, this.nLen);
+    }
+    
+    static int moveUpIfStartsWithZeros(int[] in, int length) {
         
         // move up if needed
         int firstNonZeroIdx = -1;
-        for (int i = 0; i < nLen; i++) {
-            if (a[i] == 0) {
+        for (int i = 0; i < length; i++) {
+            if (in[i] == 0) {
                 firstNonZeroIdx = i + 1;
             } else {
                 break;
             }
         }
         
-        if (firstNonZeroIdx == nLen) {
-            nLen = 1;
-            isPositive = true;
-            Arrays.fill(a, 0);
+        if (firstNonZeroIdx > -1) {
+            
+            if (length == firstNonZeroIdx) {
+                // it's all zeros
+                return 1;
+            }
+
+            moveUp(in, length, firstNonZeroIdx);
+            
+            length -= firstNonZeroIdx;
+        }
+        
+        return length;
+    }
+    
+    static void moveUp(int[] in, int length, int shift) {
+        
+        for (int i = 0; i < (length - shift); i++) {
+            in[i] = in[i + shift];
+        }
+
+        Arrays.fill(in, (length - shift), length, 0);
+    }
+    
+    static void moveDown(int[] in, int shift) {
+        
+        if (shift > (in.length - 1)) {
+            throw new IllegalArgumentException("shift is larger than array");
+        }
+        
+        if (shift == 0) {
             return;
         }
         
-        if (firstNonZeroIdx > -1) {
-            
-            for (int i = 0; i < (nLen - firstNonZeroIdx); i++) {
-                a[i] = a[i + firstNonZeroIdx];
-            }
-            
-            Arrays.fill(a, (nLen - firstNonZeroIdx), nLen, 0);
-            
-            nLen -= firstNonZeroIdx;
+        for (int i = (in.length - 1); i >= shift; i--) {
+            in[i] = in[i - shift];
         }
+        
+        Arrays.fill(in, 0, shift, 0);
     }
     
     /**
@@ -245,7 +379,545 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
         
         subtractThis.reversePolarity();
     }
+
+    /*
+    https://en.wikipedia.org/wiki/Multiplication_algorithm
+    summarizes use of:
+    https://en.wikipedia.org/wiki/Karatsuba_algorithm
+    https://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
+    https://en.wikipedia.org/wiki/Sch%C3%B6nhage%E2%80%93Strassen_algorithm
+    Schonhage-Strassen is fastest for numbers larger than 2^32768.       
+    */
+    public void multiply(VeryLargeNumber number) {
+        
+        boolean numbersAreSmall = (this.nLen < 2) || (number.nLen < 2);
+        
+        if (numbersAreSmall) {
+            VeryLargeNumber result = multiplySmall(number);
+            this.resetTo(result);
+        } else {
+            VeryLargeNumber result = VeryLargeNumber.karatsuba(
+                this, number);
+            this.resetTo(result);
+        }
+        
+    }
+    
+    /**
+     * the O(N^2) method for multiplication:
+     * http://www.cs.utexas.edu/users/djimenez/utsa/cs3343/lecture20.html
+     * 
+     * @param num2
+     */
+    protected VeryLargeNumber multiplySmall(VeryLargeNumber num2) {
+        
+        // zero check
+        VeryLargeNumber zero = new VeryLargeNumber(0);
+        if ((num2.compareTo(zero) == 0) || (compareTo(zero) == 0)) {
+            return zero;
+        }
+        
+        // one check:
+        VeryLargeNumber one = new VeryLargeNumber(1);
+        if (num2.compareTo(one) == 0) {
+            VeryLargeNumber result = new VeryLargeNumber(0);
+            result.resetTo(this);
+            return result;
+        } else if (compareTo(one) == 0) {
+            VeryLargeNumber result = new VeryLargeNumber(0);
+            result.resetTo(num2);
+            return result;
+        }
+        
+        int length0 = (nLen >= num2.nLen) ? nLen : num2.nLen;
+        
+        int shiftSum = 0;
+        for (int i = 0; i <= length0; i++) {
+            shiftSum += i;
+        }
+        // making the array longer to handle multiplication, and add a
+        // right shift by one to allow space for a carry
+        int length = length0 + shiftSum + 1;
+        
+        int[] bb = num2.getInternalArray();
+        int[] aa;
+        int[] cc;
+        int[] pp;
+        
+        /*
+        1294 is: a[0] is 1, a[1] is 2, a[2] is 9, and a[3] is 4
+        
+        so if multiplying by a larger number, need to shift the numbers down.
+        */
+
+        int[] tmp = new int[length];
+        System.arraycopy(bb, 0, tmp, 1, num2.nLen);
+        bb = tmp;
+        
+        tmp = new int[length];
+        System.arraycopy(a, 0, tmp, 1, nLen);
+        aa = tmp;
+        cc = new int[length + 1];
+        pp = new int[length];
+     
+        int[] outputLength = new int[1];
+        
+	    //cc will accumulate the sum of partial products.  It's initially 0.
+        for (int i = 1; i < (length0 + 1); i++) {
+            
+            //multiply bb by digit aa[i]
+            multiplyOneDigit(bb, pp, aa[i]);
+            
+            //shift the partial product i spaces up to increase by BASE steps
+            moveDown(pp, i - 1);
+            
+            //add result to the running sum
+            add(cc, pp, length, 0, true, true, cc, outputLength);        
+        }
+        
+        // remove leading zeros
+        length = moveUpIfStartsWithZeros(cc, length);
+        
+        boolean resultIsPositive = this.isPositive;
+        if (!num2.isPositive) {
+            resultIsPositive = !resultIsPositive;
+        }
+        
+        // find the last 0
+        for (int i = (length - 1); i > 0; i--) {
+            if (cc[i] == 0) {
+                length--;
+            } else {
+                break;
+            }
+        }
+        
+        VeryLargeNumber result = new VeryLargeNumber(0);
+        result.setInternalArray(cc, length, resultIsPositive);
+        
+        return result;
+    }
+    
+    /**
+     * http://www.cs.utexas.edu/users/djimenez/utsa/cs3343/lecture20.html
+     * 
+     * NOTE: in and out must have same lengths (and have been created
+     * with the same BASE).  To account for overflow, out and in should be
+     * one larger than the original length of in.
+     * 
+     * output = input * d
+     * 
+     * @param in
+     * @param out
+     * @param d
+     */
+    protected void multiplyOneDigit(int in[], int out[], int d) {
+        
+        if (in == null) {
+            throw new IllegalArgumentException("in cannot be null");
+        }
+        if (out == null) {
+            throw new IllegalArgumentException("out cannot be null");
+        }
+        if (in.length != out.length) {
+            throw new IllegalArgumentException(
+                "in and out must have the same lengths");
+        }
+        
+        int i, carry;
+
+        // no extra overflow to add yet
+        carry = 0;
+
+        // for each digit, starting with least significant...
+        for (i = 0; i < in.length; i++) {
+
+            // multiply by digit d
+            out[i] = d * in[i];
+
+            // add in any overflow from the last digit
+            out[i] += carry;
+
+            // if this product is too big to fit in a digit...
+            if (out[i] >= BASE) {
+
+                // handle the overflow
+                carry = out[i] / BASE;
+                
+                out[i] %= BASE;
+                
+            } else {
+                
+                // no overflow
+                carry = 0;
+            }
+        }
+        
+        if (carry > 0) {
+            throw new IllegalArgumentException("overflow in multiplication!  " 
+            + "Increase the lengths of in and out by one.\n");
+        }
+    }
+    
+    /**
+       https://en.wikipedia.org/wiki/Karatsuba_algorithm
+
+       runtime O(n_digits^(lg2(3)))
+
+       Let x and y be represented as n-digit strings in some base B.
+       x = x_1*B^m + x_0
+       y = y_1*B^m + y_0,  where x_0 and y_0 are less than B^m
+       
+       x*y = (x_1*B^m + x_0)(y_1*B^m + y_0)
+       x*y = z_2*B^{2m} + z_1*B^m + z_0
+       
+       z_2 = x_1*y_1
+       z_1 = x_1*y_0 + x_0*y_1
+       z_0 = x_0*y_0
+
+       z_1 = x_1*y_0 + x_0*y_1
+       z_1 = (x_1 + x_0)(y_1 + y_0) - x_1*y_1 - x_0*y_0
+       z_1 = (x_1 + x_0)(y_1 + y_0) - z_2 - z_0
+
+       z_2 = x_1*y_1
+       z_0 = x_0*y_0
+       
+       x*y = (b^2 + b)*x_1*y_1 - b*(x_1 - x_0)(y_1 - y_0) + (b + 1)*x_0*y_0
+       where b is the power where the split occurs of x_1.
+        
+    Below, is an iterative version of karatsuba.  Java doesn't use tail recursion
+    at this time, so cannot use a recursive version of the algorithm for very
+    large numbers.
+    */
+    static VeryLargeNumber karatsuba(VeryLargeNumber num1, VeryLargeNumber num2) {
+                
+        try {
+            num1 = num1.clone();
+            num2 = num2.clone();
+        } catch (CloneNotSupportedException e) {
+            System.err.println(e.getMessage());
+        }
+        
+        boolean resultIsPositive = true;
+        if (!num1.isPositive) {
+            resultIsPositive = !resultIsPositive;
+            num1.reversePolarity();
+        }
+        if (!num2.isPositive) {
+            resultIsPositive = !resultIsPositive;
+            num2.reversePolarity();
+        }
+                
+        java.util.Stack<VeryLargeNumber> stack1 = new java.util.Stack<VeryLargeNumber>();
+        java.util.Stack<VeryLargeNumber> stack2 = new java.util.Stack<VeryLargeNumber>();
+        java.util.Stack<String> stackKey = new java.util.Stack<String>();
+        
+        // key=current nIter, value = nIter+var to place results in
+        Map<Integer, String> prevMap = new HashMap<Integer, String>();
+                
+        Map<String, Integer> keyM2Map = new HashMap<String, Integer>();
+        
+        stack1.push(num1);
+        stack2.push(num2);
+        stackKey.push(Integer.toString(0));
+        
+        Map<String, VeryLargeNumber> resultMap = new HashMap<String, VeryLargeNumber>();
+              
+        int nIter = -1;
+        
+        while(!stack1.empty()) {
+            
+            nIter++;
+            
+            num1 = stack1.pop();
+            num2 = stack2.pop();
+            String currentKey = stackKey.pop();
+            
+            // zero check
+            VeryLargeNumber zero = new VeryLargeNumber(0);
+            if ((num2.compareTo(zero) == 0) || (num2.compareTo(zero) == 0)) {
+                return zero;
+            }
  
+            // one check:
+            VeryLargeNumber one = new VeryLargeNumber(1);
+            if (num2.compareTo(one) == 0) {
+                
+                VeryLargeNumber result = new VeryLargeNumber(0);
+                result.resetTo(num1);
+                
+                resultMap.put(currentKey, result);
+                
+                continue;
+                
+            } else if (num1.compareTo(one) == 0) {
+                
+                VeryLargeNumber result = new VeryLargeNumber(0);
+                result.resetTo(num2);
+                
+                resultMap.put(currentKey, result);
+                              
+                continue;
+            }
+
+            // calculates the size of the numbers
+            int sz1 = num1.nLen;
+            int sz2 = num2.nLen;
+
+            if ((sz1 < 2) || (sz2 < 2)) {
+
+                VeryLargeNumber result = num1.multiplySmall(num2);
+
+                resultMap.put(currentKey, result);
+                                
+                continue;
+            }
+
+            int m = (sz2 > sz1) ? sz2 : sz1;
+            int m2 = (m >> 1);
+            if (m2 > (num1.nLen - 1)) {
+                m2 = num1.nLen - 1;
+            } else if (m2 > (num2.nLen - 1)) {
+                m2 = num2.nLen - 1;
+            }
+            // split the digit sequences about the middle
+            VeryLargeNumber[] highLow1 = num1.splitAt(m2);
+            VeryLargeNumber[] highLow2 = num2.splitAt(m2);
+            
+            VeryLargeNumber high1 = highLow1[0];
+            VeryLargeNumber low1 = highLow1[1];
+            
+            assert(high1.nLen + low1.nLen == num1.nLen);
+
+            VeryLargeNumber high2 = highLow2[0];
+            VeryLargeNumber low2 = highLow2[1];
+
+            assert(high2.nLen + low2.nLen == num2.nLen);
+            
+            VeryLargeNumber z1pt1 = VeryLargeNumber.add(low1, high1);
+            VeryLargeNumber z1pt2 = VeryLargeNumber.add(low2, high2);
+            
+            /*
+            VeryLargeNumber z0 = VeryLargeNumber.karatsuba(low1, low2);
+            VeryLargeNumber z1 = VeryLargeNumber.karatsuba(z1pt1, z1pt2);            
+            VeryLargeNumber z2 = VeryLargeNumber.karatsuba(high1, high2);
+            z1.subtract(z2);
+            z1.subtract(z0);
+            
+            // result = (z2 * BASE^(2*m2)) + (z1 * BASE^(m2)) + (z0)
+
+            int z2Length = 2*m2 + z2.nLen;
+            z2.setInternalArray(Arrays.copyOf(z2.a, z2Length), z2Length, z2.isPositive);
+
+            int z1Length = m2 + z1.nLen;
+            z1.setInternalArray(Arrays.copyOf(z1.a, z1Length), z1Length, z1.isPositive);
+
+            VeryLargeNumber result = VeryLargeNumber.add(z2, z1);
+            result.add(z0);
+            */
+            
+            String nIterStr = Integer.toString(nIter);
+            
+            String key = nIterStr + "z0";
+            stack1.push(low1);  
+            stack2.push(low2); 
+            stackKey.push(key);
+            keyM2Map.put(key, Integer.valueOf(0));
+            
+            key = nIterStr + "z1";
+            stack1.push(z1pt1);  
+            stack2.push(z1pt2); 
+            stackKey.push(key);
+            keyM2Map.put(key, Integer.valueOf(0));
+            
+            key = nIterStr + "z2";
+            stack1.push(high1);
+            stack2.push(high2);
+            stackKey.push(key);
+            keyM2Map.put(key, Integer.valueOf(m2));
+            
+            prevMap.put(Integer.valueOf(nIter), currentKey);
+        }
+        
+        SortedSet<Integer> keys = new TreeSet<Integer>(prevMap.keySet());
+        
+        Integer keyNIter = keys.isEmpty() ? Integer.valueOf(0) : keys.last();
+                
+        while (keyNIter != null) {
+                        
+            if (keyNIter.equals(Integer.valueOf(0))) {
+                
+                if (resultMap.containsKey(keyNIter.toString())) {
+                    VeryLargeNumber result = resultMap.get(keyNIter.toString());
+                    if (!resultIsPositive) {
+                        result.reversePolarity();
+                    }
+                    
+                    assert(keys.isEmpty());
+                    
+                    return result;
+                }
+            }
+                                                
+            if (resultMap.containsKey(keyNIter.toString() + "z0") &&
+                resultMap.containsKey(keyNIter.toString() + "z1") &&
+                resultMap.containsKey(keyNIter.toString() + "z2")) {
+
+                String prevKey = prevMap.get(keyNIter);
+
+                if (prevKey != null) {
+
+                    keys.remove(keyNIter);
+                    
+                    // process the whole set of z0, z1, and z2
+                    VeryLargeNumber z0 = resultMap.get(keyNIter.toString() + "z0");
+                    VeryLargeNumber z1 = resultMap.get(keyNIter.toString() + "z1");
+                    VeryLargeNumber z2 = resultMap.get(keyNIter.toString() + "z2");
+                    
+                    //int shiftz0 = tmpKeyM2Map.get(keyNIter.toString() + "z0");
+                    //int shiftz1 = tmpKeyM2Map.get(keyNIter.toString() + "z1");
+                    int shiftz2 = keyM2Map.get(keyNIter.toString() + "z2");
+                    
+                    z1.subtract(z0);
+                    z1.subtract(z2);
+                    
+                    // m2 will always be <= ((1<<30)-1)=1073741823
+                    // result = (z2 * BASE^(2*m2)) + (z1 * BASE^(m2)) + (z0)
+
+                    int z2Length = (2 * shiftz2) + z2.nLen;
+                    z2.setInternalArray(Arrays.copyOf(z2.a, z2Length), z2Length, 
+                        z2.isPositive);
+
+                    int z1Length = shiftz2 + z1.nLen;
+                    z1.setInternalArray(Arrays.copyOf(z1.a, z1Length), z1Length, 
+                        z1.isPositive);
+                    
+                    VeryLargeNumber result2 = VeryLargeNumber.add(z2, z1);
+                    result2.add(z0);
+                    
+                    resultMap.put(prevKey, result2);
+            
+                    keyNIter = keys.isEmpty() ? Integer.valueOf(0) : keys.last();
+  
+                }
+            }
+        }
+            
+        return null;
+    }
+
+    /**
+     * a split of the array at BASE^m is performed and the returned array is
+     * new VeryLargeNumber[]{highDigits, lowDigits}.
+     * @param index
+     * @return 
+     */
+    VeryLargeNumber[] splitAt(int m) {
+               
+        if (m > (nLen - 1)) {
+            throw new IllegalArgumentException("m is larger than array size");
+        }
+        if (m < 1) {
+            throw new IllegalArgumentException("m must be larger than 0");
+        }
+       
+        int hi0 = 0;
+        int hi1Excl = nLen - m;
+        int hiLen = hi1Excl - hi0;
+        
+        int lo0 = nLen - m;
+        int lo1Excl = nLen;
+        int loLen = m;
+      
+        VeryLargeNumber[] result = new VeryLargeNumber[2];
+        result[0] = new VeryLargeNumber(0);
+        result[0].setInternalArray(Arrays.copyOfRange(a, hi0, hi1Excl), hiLen, isPositive);
+        
+        result[1] = new VeryLargeNumber(0);
+        result[1].setInternalArray(Arrays.copyOfRange(a, lo0, lo1Excl), loLen, isPositive);
+        
+        return result;
+    }
+    
+    private static void printDebug(String label, VeryLargeNumber number) {
+        int[] tmp = Arrays.copyOf(number.a, number.nLen);
+        System.out.println(label + " " + Arrays.toString(tmp));
+    }
+            
+    /**
+    For exponentiation:
+        https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+    */
+    public VeryLargeNumber pow(int x) {
+        
+        return VeryLargeNumber.expBySquaring(this, x);
+    }
+    
+    /**     
+     http://en.wikipedia.org/wiki/Exponentiation_by_squaring
+     
+     could replace with a 2^k method with precomputed values.
+     * @param number
+     * @param x
+     * @return 
+     */
+    private static VeryLargeNumber expBySquaring(VeryLargeNumber number, int x) {
+        
+        //changed the recursion to use iteration...
+        
+        VeryLargeNumber correctionForOddX = null;
+        
+        int nIter = 0;
+        
+        while (true) {
+            
+            if (x < 0) {
+                double inverted = number.inverse();
+                double result0 = Math.pow(inverted, -1*x);
+                VeryLargeNumber result = new VeryLargeNumber(result0);
+                return result;
+            } else if (x == 0) {
+                return new VeryLargeNumber(1);
+            } else if (x == 1) {
+                if (correctionForOddX != null) {
+                    number.multiply(correctionForOddX);
+                }
+                return number;
+            } else {
+                VeryLargeNumber num1 = new VeryLargeNumber(0);
+                num1.resetTo(number);
+                num1.multiply(number);
+                if ((x & 1) == 1) {
+                    VeryLargeNumber f = new VeryLargeNumber(0);
+                    f.resetTo(number);
+                    correctionForOddX = f;
+                    x--;
+                }
+                                
+                number = num1;
+                
+                x >>= 1;
+                
+                nIter++;
+            }
+        }
+    }
+    
+    /*
+    http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm#Modular_integers
+    
+    function inverse(a, p)
+    t := 0;     newt := 1;    
+    r := p;     newr := a;    
+    while newr ≠ 0
+        quotient := r div newr
+        (r, newr) := (newr, r - quotient * newr)
+        (t, newt) := (newt, t - quotient * newt) 
+    if degree(r) > 0 then 
+        return "Either p is not irreducible or a is a multiple of p"
+    return (1/r) * t
+    */
+        
     /**
      * divide internal number by the divisor and return a string.  note that the
      * method currently uses the simplest implementation, Euclidean division.
@@ -267,12 +939,12 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
      * @return 
      */
     public boolean isZero() {
-        long sum = 0;
-        for (int i = 0; i < nLen; i++) {
-            sum += a[i];
-        }
-        return (sum == 0);
+        return (a[nLen - 1] == 0);
     }
+    
+    public boolean isOdd() {
+        return ((a[nLen - 1] & 1) == 1);
+    }    
     
     /**
      * whether this is a positive number
@@ -332,7 +1004,7 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
         while (r.compareTo(divisor) > -1) {
             
             q.increment();
-            
+ 
             r.subtract(divisor);
         }
         
@@ -357,8 +1029,75 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
         } else if (thisIsNegative && !divisorIsNegative) {
             q.reversePolarity();
         }
-      
+        
         return printQR(q, r, divisor);
+    }
+    
+    /**
+     * 
+     * 
+     * @param number
+     * @return 
+     */
+    double inverse() {
+     
+        return inverseByEuclidean(this);        
+    }
+    
+    /**
+     * using Euclidean division, divide this by divisor and return the result.
+     * 
+     * @param number
+     * @return 
+     */
+    double inverseByEuclidean(VeryLargeNumber number) {
+        
+        if (number.isZero()) {
+            throw new IllegalArgumentException("Cannot divide by zero");
+        }
+        
+        boolean divisorIsNegative = !number.isPositive();
+                
+        if (divisorIsNegative) {
+            number.reversePolarity();
+        }
+        
+        // both this number and divisor are positive or zero
+        VeryLargeNumber q = new VeryLargeNumber(0);
+        
+        VeryLargeNumber r = new VeryLargeNumber(1);
+        
+        // while  R ≥ D
+        while (r.compareTo(number) > -1) {
+            
+            q.increment();
+            
+            r.subtract(number);
+        }
+        
+        if (!r.isPositive()) {
+            // the while loop proceeds one step too far so reverse by 1 loop
+            q.reversePolarity();
+            q.increment();
+            q.reversePolarity();
+            r.add(number);
+        }
+        
+        if (divisorIsNegative) {
+            number.reversePolarity();            
+        }
+        
+        if (divisorIsNegative) {
+            q.reversePolarity();            
+        }
+      
+        long numerator = Long.valueOf(r.toString());
+        
+        long denominator = Long.valueOf(number.toString());
+        
+        double mantissa = (double)numerator/(double)denominator;
+                
+        return mantissa;
     }
     
     /**
@@ -426,6 +1165,12 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
         mantissaStr = mantissaStr.substring(idx + 1);
         
         sb.append(mantissaStr);
+        
+        if ((numerator == 1) && (mantissa < 0)) {
+            if (sb.charAt(0) != '-') {
+                sb.insert(0, "-");
+            }
+        }
         
         return sb.toString();
     }
@@ -533,11 +1278,8 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
 
             expandIfNeeded(i + 1);
 
-            //TODO: caveats w/ java modulus operator.  might be able to impl this faster too.
             int tmp = number % BASE;
 
-            //2147483647
-            //1073741823
             a[i] = tmp;
 
             number /= BASE;
@@ -707,8 +1449,8 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
      */
     @Override
     public VeryLargeNumber clone() throws CloneNotSupportedException {
-                
-        VeryLargeNumber clone = (VeryLargeNumber) super.clone();
+        
+        VeryLargeNumber clone = new VeryLargeNumber(0);
         
         int[] b = Arrays.copyOf(a, a.length);
         
@@ -755,7 +1497,9 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
         
         a = Arrays.copyOf(copyThis.a, copyThis.nLen);
         
-        isPositive = copyThis.isPositive;        
+        nLen = copyThis.nLen;
+        
+        isPositive = copyThis.isPositive;     
     }
     
     /**
@@ -836,4 +1580,5 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
         }
         return sb.toString();
     }
+
 }

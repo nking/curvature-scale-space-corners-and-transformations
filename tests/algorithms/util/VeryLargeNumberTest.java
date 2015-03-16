@@ -1,5 +1,6 @@
 package algorithms.util;
 
+import java.util.Arrays;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,6 +44,8 @@ public class VeryLargeNumberTest {
             assertTrue(instance.getInternalArraySize() == 1);
         }
         
+        assertFalse(instance.isOdd());
+        
         instance = new VeryLargeNumber(Integer.MAX_VALUE);
         a = instance.getInternalArray();
    
@@ -65,6 +68,8 @@ public class VeryLargeNumberTest {
             assertTrue(a[1] == 1);
             assertTrue(instance.getInternalArraySize() == 2);
         }
+        
+        assertTrue(instance.isOdd());
     }
     
     @Test
@@ -84,6 +89,9 @@ public class VeryLargeNumberTest {
         assertTrue(instance.isPositive() == instance2.isPositive());
         
         assertFalse(instance2.isPositive());
+        
+        assertFalse(instance.isOdd());
+        assertFalse(instance2.isOdd());
     }
     
     @Test
@@ -430,6 +438,23 @@ public class VeryLargeNumberTest {
         }
         
         assertTrue(instance.compareTo(expected) == 0);
+        
+        if (VeryLargeNumber.BASE == 1073741823) {
+            
+            instance = new VeryLargeNumber(1073741823);
+            
+            assertTrue(instance.getInternalArraySize() == 2);
+            
+            addThis = new VeryLargeNumber(1073741823);
+            
+            instance.add(addThis);
+            
+            assertTrue(instance.getInternalArraySize() == 2);
+            
+            expected = new VeryLargeNumber(2147483646);
+            
+            assertTrue(expected.compareTo(instance) == 0);
+        }         
     }
 
     @Test
@@ -462,6 +487,8 @@ public class VeryLargeNumberTest {
         
         assertEquals("9223372036854775807", strA);
         assertEquals("2147483647", str0);
+        
+        assertTrue(instance.isOdd());
         
         //((1<<63)-1) + ((1<<31)-1) = 9223372039002259454L
         instance.add(maxLong);
@@ -679,6 +706,28 @@ public class VeryLargeNumberTest {
             clone.getInternalArraySize());
     }
     
+    //@Test
+    public void testInverseByEuclidean() {
+        
+        VeryLargeNumber instance = new VeryLargeNumber(4);
+        
+        VeryLargeNumber divisor = new VeryLargeNumber(4);        
+        instance = new VeryLargeNumber(1);
+        String str = instance.divideByAndPrint(divisor);
+        
+        divisor = new VeryLargeNumber(-4);        
+        instance = new VeryLargeNumber(1);
+        str = instance.divideByAndPrint(divisor);
+        
+        instance = new VeryLargeNumber(4);
+        double inverted = instance.inverseByEuclidean(instance);
+        assertTrue(Math.abs(inverted - 0.25) < 0.01);
+        
+        instance = new VeryLargeNumber(-4);
+        inverted = instance.inverseByEuclidean(instance);
+        assertTrue(Math.abs(inverted - -0.25) < 0.01);        
+    }
+    
     @Test
     public void testDivideByAndPrint() {
         
@@ -727,28 +776,316 @@ public class VeryLargeNumberTest {
         assertEquals("184.8571428571428571", str);
         //                 123 1234567890123456
         
-        //System.out.println("1294/7=" + str);
-     
+        //System.out.println("1294/7=" + str);       
+    }
+    
+    @Test
+    public void testSplitAt() {
+        
+        VeryLargeNumber number;
+        VeryLargeNumber[] split;
+        
+        int m = 3;
+        
+        number = new VeryLargeNumber(0);
+        number.setInternalArray(new int[]{1, 2, 3, 4, 5}, 5, true);
+        split = number.splitAt(m);
+        assertTrue(split[0].getInternalArraySize() == 2);
+        assertTrue(Arrays.equals(split[0].getInternalArray(), new int[]{1, 2}));
+        assertTrue(split[1].getInternalArraySize() == 3);
+        assertTrue(Arrays.equals(split[1].getInternalArray(), new int[]{3, 4, 5}));
+        
+        number = new VeryLargeNumber(0);
+        number.setInternalArray(new int[]{6, 7, 8, 9}, 4, true);
+        split = number.splitAt(m);
+        assertTrue(split[0].getInternalArraySize() == 1);
+        assertTrue(Arrays.equals(split[0].getInternalArray(), new int[]{6}));
+        assertTrue(split[1].getInternalArraySize() == 3);
+        assertTrue(Arrays.equals(split[1].getInternalArray(), new int[]{7, 8, 9}));
+        
+    }
+    
+    @Test
+    public void testKaratasuba() throws CloneNotSupportedException {
+        
+        VeryLargeNumber num1 = new VeryLargeNumber(0);
+        VeryLargeNumber num2 = new VeryLargeNumber(0);
+        VeryLargeNumber result = VeryLargeNumber.karatsuba(num1, num2);
+        
+        VeryLargeNumber expected = new VeryLargeNumber(0);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        num1 = new VeryLargeNumber(12345);
+        num2 = new VeryLargeNumber(6789);
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        expected = new VeryLargeNumber(0);
+        //83810205
+        expected.setInternalArray(new int[]{83810205}, 1, true);        
+        assertTrue(result.compareTo(expected) == 0); 
+        
+        //-----------------------------------------------
+        num1 = new VeryLargeNumber(0);
+        num1.setInternalArray(new int[]{1, 1}, 2, true);
+        num2 = new VeryLargeNumber(0);
+        num2.setInternalArray(new int[]{1, 1}, 2, true);
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        expected = new VeryLargeNumber(0);
+        //1152921504606846976
+        expected.setInternalArray(new int[]{1, 2, 1}, 3, true);        
+        assertTrue(result.compareTo(expected) == 0); 
+        
+        //------------------------------------------------
+               
+        num1 = new VeryLargeNumber(Integer.MAX_VALUE);
+        num2 = new VeryLargeNumber(Integer.MAX_VALUE);
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        expected = new VeryLargeNumber(0);
+        //4611686014132420609
+        expected.setInternalArray(new int[]{4, 4, 1}, 3, true);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        num1 = new VeryLargeNumber(Integer.MIN_VALUE);
+        num2 = new VeryLargeNumber(Integer.MAX_VALUE);
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        expected = new VeryLargeNumber(0);
+        //-4611686016279904256
+        expected.setInternalArray(new int[]{4, 6, 2}, 3, false);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        
+        num1 = VeryLargeNumber.createMaxLong();
+        num2 = new VeryLargeNumber(0);
+        num2.setInternalArray(new int[]{1, 1}, 2, true);
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        assertNotNull(result);
+        expected = new VeryLargeNumber(0);
+        //9903520314283042198119251968L
+        expected.setInternalArray(new int[]{8, 24, 23, 7}, 4, true);
+        assertTrue(result.compareTo(expected) == 0);
+          
+        num1 = VeryLargeNumber.createMaxLong();
+        num2 = new VeryLargeNumber(Integer.MAX_VALUE);
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        assertNotNull(result);
+        expected = new VeryLargeNumber(0);
+        //19807040619342712359383728129L
+        expected.setInternalArray(new int[]{16, 40, 30, 7}, 4, true);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        
+        num1 = VeryLargeNumber.createMaxLong();
+        num2 = VeryLargeNumber.createMaxLong();
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        assertNotNull(result);
+        //85070591730234615847396907784232501249L
+        expected = new VeryLargeNumber(0);      
+        expected.setInternalArray(new int[]{64, 256, 368, 224, 49}, 5, true);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        num1 = result;
+        num2 = VeryLargeNumber.createMaxLong();
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        assertNotNull(result);
+        //784637716923335095224261902710254454442933591094742482943L
+        expected = new VeryLargeNumber(0);      
+        expected.setInternalArray(new int[]{512, 3072, 7488, 9472, 6552, 2352, 343}, 7, true);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        //TODO: not correct yet.
+        // this number is completely backwards, but has expected components
+        num1 = result;
+        num2 = result.clone();
+        result = VeryLargeNumber.karatsuba(num1, num2);
+        assertNotNull(result);
+        //615656346818663737291362432329573325363859439854215515892590030606645220018700810278654093633374614700204645941249L
+        expected = new VeryLargeNumber(0);      
+        expected.setInternalArray(new int[]{
+            262144, 3145728, 17104896, 55705600, 120975360, 184516608, 
+            202643456, 161452032, 92621760, 37318400, 10026576, 1613472, 
+            117649}, 13,
+            true);
+        /*
+        int[] pr = Arrays.copyOf(result.getInternalArray(), 
+            result.getInternalArraySize());
+        System.out.println("result=" + Arrays.toString(pr));
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < (pr.length - 1); i++) {
+            if (sb.length() > 0) {
+                sb.append(" + ");
+            }
+            sb.append(Integer.toString(pr[i]));
+            int nb = pr.length - i - 1;
+            sb.append("*math.pow(base,").append(Integer.toString(nb)).append(")");
+        }
+        sb.append(" + ").append(Integer.toString(pr[(pr.length - 1)]));
+        System.out.println(sb.toString());
+        */
+        assertTrue(result.compareTo(expected) == 0);
+        
+    }
+    
+    @Test
+    public void testPow() {
+        
+        VeryLargeNumber instance = new VeryLargeNumber(2);
+        VeryLargeNumber result = instance.pow(-1);
+        double r = result.getDoubleValueIfExists();
+        double exp = 0.5;
+        assertTrue(Math.abs(r - 0.5) < 0.01*exp);
+        
+        instance = new VeryLargeNumber(Integer.MAX_VALUE);
+        result = instance.pow(-3);
+        r = result.getDoubleValueIfExists();
+        exp = 1.0097419600934883e-28;
+        assertTrue(Math.abs(r - 1.0097419600934883e-28) < 0.01*exp);
+        
+        instance = new VeryLargeNumber(2);
+        result = instance.pow(0);
+        VeryLargeNumber expected = new VeryLargeNumber(1);
+        assertTrue(expected.compareTo(result) == 0);
+        
+        instance = new VeryLargeNumber(2);
+        result = instance.pow(1);
+        expected = new VeryLargeNumber(2);
+        assertTrue(expected.compareTo(result) == 0);
+        
+        instance = new VeryLargeNumber(2);
+        result = instance.pow(4);
+        expected = new VeryLargeNumber(16);
+        assertTrue(expected.compareTo(result) == 0);
+        
+        instance = new VeryLargeNumber(2);
+        result = instance.pow(5);
+        expected = new VeryLargeNumber(32);
+        assertTrue(expected.compareTo(result) == 0);
+        
+        
+        //9223372036854775807
+        instance = VeryLargeNumber.createMaxLong();
+        result = instance.pow(5);
+        //6.674959487252844e+94
+        //66749594872528440038659400431137192519314960677663778810642210898138927029830146832929608695807L
+        VeryLargeNumber expected2 = new VeryLargeNumber(0);
+        expected.setInternalArray(new int[]{
+            32768, 327680, 1454080, 3768320, 6312960, 7141376, 5523840, 
+            2885120, 974120, 192080, 16807}, 11,
+            true);
+        assertTrue(expected.compareTo(result) == 0);
+    }
+    
+    //@Test
+    public void estDivideByAndPrint2() {
+        
         //---------------------------------------------------------
         // very large number test
         //9223372036854775807
-        /*VeryLargeNumber maxLong = VeryLargeNumber.createMaxLong();
+        VeryLargeNumber maxLong = VeryLargeNumber.createMaxLong();
         
-        instance = new VeryLargeNumber(Integer.MAX_VALUE);
+        VeryLargeNumber instance = new VeryLargeNumber(Integer.MAX_VALUE);
         instance.add(maxLong);
         // ===> 9223372039002259454
         
-        divisor = new VeryLargeNumber(Integer.MAX_VALUE);
+        VeryLargeNumber divisor = new VeryLargeNumber(Integer.MAX_VALUE);
         divisor.add(new VeryLargeNumber(Integer.MAX_VALUE));
         // ==> 4294967294
         
         // 9223372039002259454 / 4294967294
-        str = instance.divideByAndPrint(divisor);
+        String str = instance.divideByAndPrint(divisor);
         
         System.out.println("9223372039002259454 / 4294967294=" + str);
         
         assertTrue(str.startsWith("2147483649.5"));
-        */
+    
     }
-
+    
+    public void testMoveUpIfStartsWithZeros() {
+        
+        int[] a = new int[]{0, 0, 0, 1, 2, 3, 4, 5};
+                
+        int len = VeryLargeNumber.moveUpIfStartsWithZeros(a, a.length);
+        
+        assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5, 0, 0, 0}, a));
+        
+        assertTrue(len == 5);
+        
+        a = new int[]{1, 2, 3, 4, 5};
+        len = VeryLargeNumber.moveUpIfStartsWithZeros(a, a.length);
+        
+        assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, a));
+        
+        assertTrue(len == 0);
+    }
+    
+    public void testShiftDown() {
+        
+        int[] a = new int[]{1, 2, 3, 4, 5, 0, 0, 0};
+                
+        VeryLargeNumber.moveDown(a, 3);
+        
+        assertTrue(Arrays.equals(new int[]{0, 0, 0, 1, 2, 3, 4, 5}, a));
+        
+    }
+    
+    @Test
+    public void testMultiply() {
+        
+        VeryLargeNumber v = new VeryLargeNumber(0);
+        VeryLargeNumber result = v.multiplySmall(new VeryLargeNumber(0));
+        
+        VeryLargeNumber expected = new VeryLargeNumber(0);
+        
+        assertTrue(result.compareTo(expected) == 0);
+        
+        // ---------------------
+        v = new VeryLargeNumber(1);
+        result = v.multiplySmall(new VeryLargeNumber(2));
+        
+        expected = new VeryLargeNumber(2);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        //-------------------------------------------------
+        v = new VeryLargeNumber(1111);
+        result = v.multiplySmall(new VeryLargeNumber(234));
+        
+        expected = new VeryLargeNumber(259974);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        //-------------------------------------------------
+        v = new VeryLargeNumber(-1111);
+        result = v.multiplySmall(new VeryLargeNumber(-234));
+        
+        expected = new VeryLargeNumber(259974);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        //-------------------------------------------------
+        v = new VeryLargeNumber(-1111);
+        result = v.multiplySmall(new VeryLargeNumber(234));
+        
+        expected = new VeryLargeNumber(-259974);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        //-------------------------------------------------
+        v = new VeryLargeNumber(1111);
+        result = v.multiplySmall(new VeryLargeNumber(-234));
+        
+        expected = new VeryLargeNumber(-259974);
+        assertTrue(result.compareTo(expected) == 0);
+        
+        //-------------------------------------------------
+        //9223372036854775807L * 2147483647 = 19807040619342712359383728129L
+        VeryLargeNumber maxLong = VeryLargeNumber.createMaxLong();        
+        v = new VeryLargeNumber(Integer.MAX_VALUE);
+        result = v.multiplySmall(maxLong);
+        
+        /*
+        19807040619342712359383728129 % base = 7 <===
+        19807040619342712359383728129 /= base = 18446744082299486214L
+        7, 30, 40, 16, 0
+        */
+        expected = new VeryLargeNumber(0);
+        expected.setInternalArray(
+            new int[]{16, 40, 30, 7}, 4, true);
+        assertTrue(result.compareTo(expected) == 0);
+    }
+    
 }
