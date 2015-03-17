@@ -97,6 +97,9 @@ public class Heap {
 
         if (z != null) {
 
+            boolean noRemaining = z.getRight().getKey() == z.getKey();
+            HeapNode nextMin = z.getRight();
+            
         	// detach each child and add it to heap
         	HeapNode x = z.getChildren().getSentinel().getRight();
         	
@@ -109,10 +112,10 @@ public class Heap {
 
             rootList.remove(z);
     
-            if (z.getRight().getKey() == z.getKey()) {
+            if (noRemaining) {
                 minimumNode = null;
             } else {
-                minimumNode = z.getRight();
+                minimumNode = nextMin;
                 consolidate();
             }
 

@@ -60,8 +60,12 @@ public class DoubleLinkedCircularList {
             throw new IllegalArgumentException("node must have key set");
         }
         
-        node.setRight(sentinel.getRight());
-        sentinel.getRight().setLeft(node);
+        // nodes are inserted to the right of the sentinel.
+                
+        HeapNode rightOfSentinel = sentinel.getRight();
+        
+        node.setRight(rightOfSentinel);
+        rightOfSentinel.setLeft(node);
         sentinel.setRight(node);
         node.setLeft(sentinel);
         number++;
@@ -81,6 +85,18 @@ public class DoubleLinkedCircularList {
     	}
         node.getRight().setLeft(node.getLeft());
         node.getLeft().setRight(node.getRight());
+        
+        HeapNode right = node.getRight();
+        HeapNode left = node.getLeft();
+        
+        right.setLeft(left);
+        left.setRight(right);
+        
+        // reset node's ends to a sentinel.  the user's of the class use that logic.
+        node.setRight(new HeapNode(sentinelKey));
+        node.getRight().setRight(node);
+        node.getRight().setLeft(node);
+        node.setLeft(node.getRight());
                 
         number--;
     }
