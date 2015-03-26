@@ -2,16 +2,16 @@ These are notes for making 3D point clouds from stereo images
 summarized from browsing papers in the literature and reviews
 and tutorials.
    Rectification is outlined briefly, then the making of disparity maps,
-   and the visualization of the 3-D point clouds.
+   followed by the visualization of the 3-D point clouds.
 ========================================================================
 
 --------------
 Rectification:
 --------------
 Once a set of point correspondances between images have been derived,
-and the stereo projection from those, the transformation information
-is used to create rectified left and right images where the epipolar
-lines are parallel to the horizontal axis.
+and the stereo projection transformation solved from those, the 
+transformation parameters are used to create rectified left and right 
+images where the epipolar lines are parallel to the horizontal axis.
 
    There are 3 algorithms for rectification:
       -- planar (Fusiello et al. 2000;  Trucco and Verri 1998):
@@ -48,7 +48,8 @@ Making of Disparity Maps:
 -------------------------
 
 Given rectified stereo images, one can learn the relative distance of
-objects in the image within limits dependening on camera parameters.
+objects in the left or right image within distance limits dependening 
+on camera details.
 
 When viewing a 3D point through 2 cameras, if the cameras are not
 pointing towards one another, a point in the image of the camera on the right
@@ -83,14 +84,14 @@ stereo vision of the rectified images:
     derive the depth of the point P and know that value relative to the
     camera.  d is that distance for P and is called the disparity for that point.
     
-    if the cameras are pinhole cameras, can use similar triangles to
+    If the cameras are pinhole cameras, can use similar triangles to
     write
               b * f       b * f
        z = ----------- = -------
             x_L - x_R       d
 
     Note that the camera should be calibrated so that the objects of interest are
-    within a range of distance from focal plane.
+    within a range of distance from the focal plane.
     -- To calibrate the camera:
        one needs the intrinsic parameters of each camera such as pixel size, 
        focal length, and lens distortions
@@ -128,16 +129,19 @@ stereo vision of the rectified images:
 
     -- The SIMPLEST algorithm for making a disparity map would be to compare patches
        of a block size in the left image to patches in the right image using a brute force
-       pattern of each pixel centered patch in left compared to that in right.
+       comparison of each pixel centered patch in the left image and a range search against
+       each pixel centered patch in the right image.
           -- One can improve upon that by retaining the pixel centered patch calculations
              from the right image and reusing them for each left patch comparison.
           -- One can improve upon that by limiting the comparisons to only those 
              in the forward scan directions once one establishes the first best 
              matching patches.
+          -- One can limit the number of rows needed in a comparison presumably in a few ways
+             including possibly during camera system set up.
           -- One could improve upon that by storing the previous left pixel patch calculations
              by columns and rows in a manner to update the patch of comparison
              (more memoization)
-          -- One could imagine re-using the points correspondences used to derive the 
+          -- One could imagine re-using the points of correspondences used to derive the 
              transformations in the first place as anchors of smaller error disparities
              that be used to define boundaries from which one could further match left and right within
              the bounds.  Note, one of the fastest current algorithms further written about in the next
@@ -145,7 +149,11 @@ stereo vision of the rectified images:
              bounds to search within to populate the remaining disparity map points.
 
           The patch block comparisons tend to use a greyscale intensity for the pixel (0-255)
-          or color space indexing such as CIE x and y.
+          or color space indexing such as CIE x and y. (The CIE xy color space are independent of
+          intensity, but most objects have a color dependent reflection (see index of refraction 
+          for materials or albedo for more information).  But if the illumination
+          is largely grey scattering of light, that is Mie scattering, CIE xy could be very useful
+          for segmentation of related pixels.)
 
           The 3 different patterns used for comparing the blocks of pixels are for the simplest:
               -- Sum of absolute differences:
@@ -163,10 +171,10 @@ stereo vision of the rectified images:
 
           The disparity for a pixel is then where those comparison functions are minimized
           and that means that the number of scanned pixels, that is the offset from left and
-          right, has to be large enough to find the real disparity for a pixel.
+          right, has to be large enough to find the real disparity for a left pixel.
 
-          Instead of using the minimum, one can interpolate between the minimum as a problem
-          of finding the peak of a parabola if only using a 1-D scan comparison:
+          Instead of using the minimum, one can interpolate between the smallest values 
+          to find the peak of those as a parabola if only using a 1-D scan comparison:
             https://chrisjmccormick.wordpress.com/2014/01/10/stereo-vision-tutorial-part-i/
             d_estimated = d_2 - 0.5*(C_3 - C_1)/(C_1 - 2*C_2 + c_3) 
                where _2 is for the closest matching block and _1 and _3 are those to the left
@@ -208,7 +216,15 @@ stereo vision of the rectified images:
             final disparity for that pixel is found by minimizing an eqn that combines use of
             the log of the prior and constrained laplacian probabilities.
             (Note: the 100 throws might be purely for the paper figure and the impl in code
-             might be different?) 
+            might be different?) 
+            Note also that the minimization for each pixel's matching r sets of data can be
+            completed faster on processors that can process SIMD instructions provided by
+            the authors.
+
+            Are there some images in which the calculated "support points" are not 
+            a small enough mesh to handle image characteristics such as shadows?
+            just noticing the disparity maps for this and SGM and a proposed local plane 
+            sweep algorithm in other online slides...
 
         -- Note that in their paper, the next best performing for the runtime is from the paper
                "Growing Correspondence Seeds.  A Fast Stereo Matching of Large Images" by
@@ -216,7 +232,7 @@ stereo vision of the rectified images:
                Their code is offered w/o commercial restrictions, but is in matlab.
                http://cmp.felk.cvut.cz/~cechj/GCS/
 
-    -- The most ACCURATE algorithms considering a compromise w/ runtime are the graph-cut algorithms.
+    -- Among the most ACCURATE algorithms considering a compromise w/ runtime are the Graph-Cut algorithms.
         One of the latest implementations:
             http://www.csd.uwo.ca/~yuri/Papers/pami04.pdf
             "An Experimental Comparison of Min-Cut/Max-Flow Algorithms for
@@ -227,6 +243,21 @@ stereo vision of the rectified images:
             "Computing visual correspondence with occlusions using graph cuts."
             http://pub.ist.ac.at/~vnk/software.html, match-v3.4.src.tar.gz
 
+        Compare where possible to Semi-Global Matching.
+           There is a CUDA only Semi-Global Matching algorithm: 
+               "Real-time Stereo Vision: Optimizing Semi-Global Matching" by Michael et al. 2013.
+               http://www.ini.rub.de/data/documents/michaeletal_improvesgm_iv2013.pdf
+           There is Hirschmuller 2005
+               but there are mentions of using it in textureless patches or where dense 
+               disparity maps are needed.
+
+    In navigation systems with very high resolution images, wouldn't an early 
+         down sampled image pair solution much faster than 1 second be useful 
+         before a more accurate dense disparty map that might take 10 seconds?
+         (see the Disney mansion runtimes in 
+         http://www.imgfsr.com/CVPR2014IRW/I1.pdf
+         http://research.microsoft.com/pubs/232423/sinhaLPS_CVPR2014.pdf)
+
 -----------------
 3-D point clouds:
 -----------------
@@ -235,3 +266,4 @@ stereo vision of the rectified images:
         that is the 2D point is reprojected to 3D space as [X/W Y/W Z/W]^T
 
     in progress...
+
