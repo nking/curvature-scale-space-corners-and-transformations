@@ -1,0 +1,237 @@
+These are notes for making 3D point clouds from stereo images
+summarized from browsing papers in the literature and reviews
+and tutorials.
+   Rectification is outlined briefly, then the making of disparity maps,
+   and the visualization of the 3-D point clouds.
+========================================================================
+
+--------------
+Rectification:
+--------------
+Once a set of point correspondances between images have been derived,
+and the stereo projection from those, the transformation information
+is used to create rectified left and right images where the epipolar
+lines are parallel to the horizontal axis.
+
+   There are 3 algorithms for rectification:
+      -- planar (Fusiello et al. 2000;  Trucco and Verri 1998):
+      -- cylindrical rectification (Oram 2001):
+      -- polar rectification (Pollefeys et al. 1999):
+
+   If the transformation matrix is still normalized, one can use the
+   extrinsic parameters rotation and translation:
+      (reference for this section? adding more details and cleaning up this section soon...)
+      -- rotate the left image plane so that the epipole goes to
+         infinity along the horiz line.
+         Since the rotation transformation is an orthonormal matrix,
+         have to derive the other two vectors.  The starting vector
+         is found by the epipole which is a forehortened vector of the
+         translation "t" between 2 camera coordinates.
+         So let the first vector be "t"/|"t"|
+             then the other 2 vectors are found as R_rect^T = [u, u_perp, u x u_perp].
+         Set the rotation matrices to 
+             R_left = R_rect and
+             R_right = R*R_rect for the left and right cameras.
+         then points in the rectified system, q, are
+             q_left = (f/z_left)*R_left*p_left
+             q_right = (f/z_right)*R_right*p_right
+                 where p_left = (x_left, y_left, z_left)^T
+                 and p_right = (x_right, y_right, z_right)^T
+      -- after the transformation, the image needs to be resampled and interpolated
+         to compensate for irregular empty pixels.
+         (Kang and Ho 2011; Loop and Zhang 1999; Miraldo and Araujo 2013;
+         OpenCV 2013; Xhang 2000).
+
+  
+-------------------------
+Making of Disparity Maps:
+-------------------------
+
+Given rectified stereo images, one can learn the relative distance of
+objects in the image within limits dependening on camera parameters.
+
+When viewing a 3D point through 2 cameras, if the cameras are not
+pointing towards one another, a point in the image of the camera on the right
+will be lower horizontally than the image of the point in the left camera.
+This disparity is also inversely proportional to the depth of the point.
+
+stereo vision of the rectified images:
+
+                                   #P(x,y,z)
+                                 . | .
+                               .   |   .
+                             .     |     .
+                           .       |       .
+               <-x_L->   .         |         .  <-x_R->
+  image plane |-------# P_L        |       P_R #-------| image plane
+                   .               |              .    .
+                .                  |                 . f=focal length
+              @----------------------------------------@
+          opt center          b=Baseline           opt center
+            left                                     right
+            camera                                   camera
+
+    For each camera, left and right, the focal length f is the perpendicular
+    distance from the optical center to the image plane,
+
+    b is the distance between the right and left cameras.
+
+    P is a point in the (x, y, z) reference frame seen as P_L and P_R in the left
+    and right images, respectively.
+    x_L and x_R are the x coordinates of P_L and P_R.
+    Using geometry (similar triangles and parallax), and camera details, one can 
+    derive the depth of the point P and know that value relative to the
+    camera.  d is that distance for P and is called the disparity for that point.
+    
+    if the cameras are pinhole cameras, can use similar triangles to
+    write
+              b * f       b * f
+       z = ----------- = -------
+            x_L - x_R       d
+
+    Note that the camera should be calibrated so that the objects of interest are
+    within a range of distance from focal plane.
+    -- To calibrate the camera:
+       one needs the intrinsic parameters of each camera such as pixel size, 
+       focal length, and lens distortions
+       and the camera extrinsics (rotation, translation etc of each image).
+(add a good reference here)
+
+       Calibration requires multiple pairs of images of a test pattern viewed 
+       from different angles.  Need the entire pattern visible in each image 
+       without occlusion.   A chess or checker board pattern is common as rulers
+       projected to 2 dimensions.
+
+       The test pattern should be at approx the distance of the objects of interest
+       to photograph after calibration.   The measurements of the the test pattern,
+       such as a checkerboard, should be measured very precisely.
+
+    -- The distance in pixels between corresponding points in the rectified images
+       is called disparity. The disparity is used for 3-D reconstruction, because
+       it is proportional to the distance between the cameras and the 3-D world point.
+       That is, objects w/ larger disparity are closer to the camera.
+
+       from http://www.cs.cornell.edu/~hema/rgbd-workshop-2014/papers/Alhwarin.pdf
+
+    There are many algorithms for determining sparse or dense disparity maps.
+    Here, will summarize the simplest of methods, the fastest, and then the most 
+    accurate but slower algorithms.
+        Useful resources for reading were:
+           http://en.wikipedia.org/wiki/Binocular_disparity
+           http://chrisjmccormick.wordpress.com/2014/01/10/stereo-vision-tutorial-part-i/
+           http://vision.middlebury.edu/mview/seitz_mview_cvpr06.pdf
+           http://vision.middlebury.edu/stereo/taxonomy-IJCV.pdf
+           http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.17.7321&rep=rep1&type=pdf
+           http://www.cvlibs.net/publications/Geiger2010ACCV.pdf
+           http://cmp.felk.cvut.cz/~cechj/GCS/
+           http://www.csd.uwo.ca/~yuri/Papers/pami04.pdf 
+
+    -- The SIMPLEST algorithm for making a disparity map would be to compare patches
+       of a block size in the left image to patches in the right image using a brute force
+       pattern of each pixel centered patch in left compared to that in right.
+          -- One can improve upon that by retaining the pixel centered patch calculations
+             from the right image and reusing them for each left patch comparison.
+          -- One can improve upon that by limiting the comparisons to only those 
+             in the forward scan directions once one establishes the first best 
+             matching patches.
+          -- One could improve upon that by storing the previous left pixel patch calculations
+             by columns and rows in a manner to update the patch of comparison
+             (more memoization)
+          -- One could imagine re-using the points correspondences used to derive the 
+             transformations in the first place as anchors of smaller error disparities
+             that be used to define boundaries from which one could further match left and right within
+             the bounds.  Note, one of the fastest current algorithms further written about in the next
+             section, uses different points in such a manner to create a Delanauy Triangulation of 
+             bounds to search within to populate the remaining disparity map points.
+
+          The patch block comparisons tend to use a greyscale intensity for the pixel (0-255)
+          or color space indexing such as CIE x and y.
+
+          The 3 different patterns used for comparing the blocks of pixels are for the simplest:
+              -- Sum of absolute differences:
+                 \sum{\sum{ | L(r,c) - R(r,c-d) | }}
+              -- Sum of squared differences:
+                 \sum{\sum{ (L(r,c) - R(r,c-d))^2 }}
+              -- Normalized correlation:
+                 \sum{\sum{ L(r,c) dot R(r,c-d) }}
+                 --------------------------------------------------------------
+                 \sqrt{(\sum{\sum{ L(r,c)^2 }}) dot (\sum{\sum{ R(r,c-d)^2 }})} 
+              
+              where r and c are row and column of the  pixel within the left image (L)
+              and right image (R).
+              d is the disparity.
+
+          The disparity for a pixel is then where those comparison functions are minimized
+          and that means that the number of scanned pixels, that is the offset from left and
+          right, has to be large enough to find the real disparity for a pixel.
+
+          Instead of using the minimum, one can interpolate between the minimum as a problem
+          of finding the peak of a parabola if only using a 1-D scan comparison:
+            https://chrisjmccormick.wordpress.com/2014/01/10/stereo-vision-tutorial-part-i/
+            d_estimated = d_2 - 0.5*(C_3 - C_1)/(C_1 - 2*C_2 + c_3) 
+               where _2 is for the closest matching block and _1 and _3 are those to the left
+               and right of it, respectively.
+
+          Note also, that some algorithms use segmentation of either disparity or of color in
+          the first step to interpret the disparities as surfaces.  Segmentation, combined
+          with growing connected similar regions are sometimes used.
+
+          Algorithms similar to the above tend to have the longest runtimes unless steps
+          are taken to make the comparisons smaller in number and size.
+
+    -- The FASTEST algorithms for making a disparity map want to be usable in realtime systems.
+        The algorithm with the fastest runtime with a high accuracy seems to be:
+            Geiger, Roser, and Urtasun 2010, "Efficient Large-Scale Stereo Matching"
+            http://www.cvlibs.net/publications/Geiger2010ACCV.pdf
+            The authors offer the code under a GPL license, but only for non-commercial systems.
+                http://www.cvlibs.net/download.php?file=libelas.zip
+            The algorithm uses a Delanay triangulation of well determined disparities called
+            "support points" as boundary points to more efficiently search the disparity space.
+            Image boundary "support points" are added with values assigned from their neighbors.
+            It assumes the left and right images are already aligned vertically so that
+            scaning is only needed along a row.
+            They discard ambiguous matches if the 2nd best match is within a threshold 0.9 
+            (factor?  difference?) of the first.  They discard matches which look spurious
+            by being very different from all of their surrounding support points.
+            For each pixel, the support points within a 20x20 region are used to calculate
+            a mean which is used to limit the disparity range of the pixel search to less
+            than 3 * sigma from the mean (where sigma is presumably the standard deviation
+            of the mean).   For those pixels, feature vectors are created using Sobel operators
+            in blocks of size 5x5.  the feature vectors are used to generate probabilities of
+            matches between the compared left and right image pixels.
+            Their generative model: (1) Given support points and left image pixels, draw
+            a disparity from the prior probability function which is eqn 2 in the paper.  
+            (2) Given the generated disparity and left pixel, draw the right pixel from the 
+            constrained Laplacian distribution which uses the feature vectors.  This is eqn
+            4 in the paper.  The "draws" are repeated 100 times for each pixel.
+            For each left pixel set of generative disparities and right pixels, the estimated
+            final disparity for that pixel is found by minimizing an eqn that combines use of
+            the log of the prior and constrained laplacian probabilities.
+            (Note: the 100 throws might be purely for the paper figure and the impl in code
+             might be different?) 
+
+        -- Note that in their paper, the next best performing for the runtime is from the paper
+               "Growing Correspondence Seeds.  A Fast Stereo Matching of Large Images" by
+               Jan Cech, 2007.
+               Their code is offered w/o commercial restrictions, but is in matlab.
+               http://cmp.felk.cvut.cz/~cechj/GCS/
+
+    -- The most ACCURATE algorithms considering a compromise w/ runtime are the graph-cut algorithms.
+        One of the latest implementations:
+            http://www.csd.uwo.ca/~yuri/Papers/pami04.pdf
+            "An Experimental Comparison of Min-Cut/Max-Flow Algorithms for
+            Energy Minimization in Computer Vision"
+            by Boykov and Kolmogorov 2004
+            http://pub.ist.ac.at/~vnk/software/maxflow-v3.03.src.zip
+        and before that was V. Kolmogorov and R. Zabih, 2001
+            "Computing visual correspondence with occlusions using graph cuts."
+            http://pub.ist.ac.at/~vnk/software.html, match-v3.4.src.tar.gz
+
+-----------------
+3-D point clouds:
+-----------------
+    The reprojection from the disparity map to a 3D point cloud is
+        Q * [x y d 1]^T = [X Y Z W]^T
+        that is the 2D point is reprojected to 3D space as [X/W Y/W Z/W]^T
+
+    in progress...
