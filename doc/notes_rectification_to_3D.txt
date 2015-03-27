@@ -12,36 +12,69 @@ Once a set of point correspondances between images have been derived,
 and the stereo projection transformation solved from those, the 
 transformation parameters are used to create rectified left and right 
 images where the epipolar lines are parallel to the horizontal axis.
+This places both images in the same reference frame.
 
    There are 3 algorithms for rectification:
       -- planar (Fusiello et al. 2000;  Trucco and Verri 1998):
       -- cylindrical rectification (Oram 2001):
       -- polar rectification (Pollefeys et al. 1999):
+   But there are also methods which use the epipolar geometry to rectify
+   the images and these can be used if there are enough correspondence
 
    If the transformation matrix is still normalized, one can use the
    extrinsic parameters rotation and translation:
-      (reference for this section? adding more details and cleaning up this section soon...)
-      -- rotate the left image plane so that the epipole goes to
-         infinity along the horiz line.
-         Since the rotation transformation is an orthonormal matrix,
-         have to derive the other two vectors.  The starting vector
-         is found by the epipole which is a forehortened vector of the
-         translation "t" between 2 camera coordinates.
-         So let the first vector be "t"/|"t"|
-             then the other 2 vectors are found as R_rect^T = [u, u_perp, u x u_perp].
-         Set the rotation matrices to 
-             R_left = R_rect and
-             R_right = R*R_rect for the left and right cameras.
-         then points in the rectified system, q, are
-             q_left = (f/z_left)*R_left*p_left
-             q_right = (f/z_right)*R_right*p_right
-                 where p_left = (x_left, y_left, z_left)^T
-                 and p_right = (x_right, y_right, z_right)^T
-      -- after the transformation, the image needs to be resampled and interpolated
-         to compensate for irregular empty pixels.
-         (Kang and Ho 2011; Loop and Zhang 1999; Miraldo and Araujo 2013;
-         OpenCV 2013; Xhang 2000).
 
+       "Theory and practice of projective rectification", 1991 by Hartley
+       Hartley 1991 offers a method of rectifying pairs of images by making
+       matched epipolar projections, that is projections in which the epipolar
+       lines run parallel with the x-axis and the epipoles are mapped to infinity.
+       The chosen projective transform is as close to rigid as possible 
+       (that is, rotation and translation only).
+           The transformation       | 1   0   0 |
+                                G = | 0   1   0 |
+                                    |-1/f 0   1 |
+            transforms the epipole (f, 0, 1)^T  to the point at infinity (f, 0, 0)^T.
+            A point (u, v, 1)^T is mapped by G to the point (u, v, 1 − u/f)^T. 
+            If |u/f| < 1 then we may write (u, v, 1 − u/f) = (u(1 + u/f + ...), v(1 + u/f + ...),1)^T
+
+            The Jacobian is
+                ∂(u_transformed, v_transformed)     ( 1 + 2*u/f      0   )
+                -------------------------------  =  (   v/f      1 + u/f )
+                            ∂(u, v)
+
+            One wants to avoid a non-quasi-affine projectivity.
+
+            The transformation H' = G*R*T where T is a translation taking a point u0 to
+            the origin and R is a rotation about the origin which puts the epipole
+            point p at (f, 0, 1)^T on the x-axis.  G takes that point to infinity.
+            The composite mapping is to first order a rigid transformation in the 
+            neighbourhood of u0.
+
+            Then the matching projective transformation H that minimizes the least-squares
+            distance  summation_i of d(H*u_i, H'*u'_i)
+            knowing H' and M, the matched points u'_i <--> u_i
+            from the first image, vector u_i = (u_i, v_i, 1), so need to minimize
+                summation_i of (a*u_i + b*v_i + c-u'_i^2)^2
+                can find a, b, and c through linear least squares
+
+                      then          | a   b   c |
+                                A = | 0   1   0 |
+                                    | 0   0   1 |
+
+		      then H = (I + H'*p'*a^T)*H'*M
+
+            Then resample the first image according to the projective 
+            transformation H and the second image according to the 
+            projective transformation H'.
+
+       Other methods for rectifying images are in:
+           "Rectifying transformations that minimize resampling effects", 2001 
+                by Gluckman and Nayar
+           "Multiple view image rectification", 2011 by Nozick
+
+      Note that the rectified images now are aligned by y coordinate too, that is a matching
+      point in one image has the same y coordinate in the other image, though the
+      x will differ by disparity.
   
 -------------------------
 Making of Disparity Maps:
@@ -92,27 +125,85 @@ stereo vision of the rectified images:
 
     Note that the camera should be calibrated so that the objects of interest are
     within a range of distance from the focal plane.
-    -- To calibrate the camera:
-       one needs the intrinsic parameters of each camera such as pixel size, 
-       focal length, and lens distortions
-       and the camera extrinsics (rotation, translation etc of each image).
-(add a good reference here)
+    -------------------------
+    calibration of the camera
+    -------------------------
+       From "3D Video: From Capture to Diffusion" by 
+           Laurent Lucas; Celine Loscos; Yannick Remion
+
+       For camera calibration, calculate the projection matrix, then split it
+       into sub-matrices to determine focal, position, and direction parameters.
+
+       intrinsic parameters, representing a camera's lens:
+               | f_x   s   u_x |
+           K = |  0   f_y  u_y |
+               |  0    0    1  |
+
+           where f_x and f_y are the focal distance of the camera expressed in 
+               pixel units
+           s is the non-orthogonality of the sensor's photosite grid, so this
+               is usually 0 because the photosite are square. 
+           u_x, u_y are coordinates in pixels of the principal point
+               (where the optical axis intersects the image).  this is usually
+               the image center, but may be offset, especially if zoom is used
+
+       extrinsic parameters represent the position and direction of the camera.
+
+       P_3x4 = K_3x3 * [R_3x3 | -R_3x3*c_3x1]
+
+       where [A | B] is the matrix concatenation of A and B
+       and R is the rotation matrix for the camera's direction in the scene's 
+           reference frame,
+       and c is the camera's position of the camera's center of projection in
+           the scene's reference frame.  c is the vector [c_x, c_y, c_z, c_w]^T
+
+       P = K * [R | -R*c]
+       P = [K*R | -K*R*c] = [p1 p2 p3 p4]
+       let M = [p1 p2 p3]
+       then [K*R | -K*R*c] = [M | p4]
+
+           once K and R are solved by QR decomposition of M, 
+           the position of the camera is obtained as:
+           c_x = det([p2 p3 p4])
+           c_y = det([p1 p3 p4])
+           c_z = det([p1 p2 p4])
+           c_w = det([p1 p2 p3])
+
+           and c = [c_x/c_w, c_y/c_w, c_z/c_w)^T
 
        Calibration requires multiple pairs of images of a test pattern viewed 
        from different angles.  Need the entire pattern visible in each image 
        without occlusion.   A chess or checker board pattern is common as rulers
-       projected to 2 dimensions.
+       projected to 2 dimensions from several angles and covering vanishing points.
 
        The test pattern should be at approx the distance of the objects of interest
        to photograph after calibration.   The measurements of the the test pattern,
        such as a checkerboard, should be measured very precisely.
 
+       correspondences in the images can be used to solve for the fundamental
+       matrix.   (left image points)^T * (fundamental matrix) * (right image points) = 0
+ 
+       then the essential matrix can be derived from the fundamental matrix or 
+       essential solved for from beginning?
+
+-------------------------------------
+Making of Disparity Maps (continued):
+-------------------------------------
     -- The distance in pixels between corresponding points in the rectified images
        is called disparity. The disparity is used for 3-D reconstruction, because
        it is proportional to the distance between the cameras and the 3-D world point.
        That is, objects w/ larger disparity are closer to the camera.
 
        from http://www.cs.cornell.edu/~hema/rgbd-workshop-2014/papers/Alhwarin.pdf
+
+    Matching homologous pixels between left and right images is called stereoscopic
+    matching.  The otherwise similar pixels present in both images may vary due to
+    the lighting, or occlusion, or color variations at the edges of objects due to
+    a difference in background objects due to a change in perspective, or due to
+    a difference in the size of a patch of pixels in one image and the other due to
+    being further or closer to the optical center, or ambiguity due to a pixel
+    being in a largely featureless region, or ambiguity due to repetitive patterns.
+
 
     There are many algorithms for determining sparse or dense disparity maps.
     Here, will summarize the simplest of methods, the fastest, and then the most 
@@ -137,15 +228,17 @@ stereo vision of the rectified images:
              in the forward scan directions once one establishes the first best 
              matching patches.
           -- One can limit the number of rows needed in a comparison presumably in a few ways
-             including possibly during camera system set up.
+             including possibly during camera system set up
+             (in other words, creating a rectilinear stereo rig).
           -- One could improve upon that by storing the previous left pixel patch calculations
              by columns and rows in a manner to update the patch of comparison
              (more memoization)
           -- One could imagine re-using the points of correspondences used to derive the 
              transformations in the first place as anchors of smaller error disparities
-             that be used to define boundaries from which one could further match left and right within
-             the bounds.  Note, one of the fastest current algorithms further written about in the next
-             section, uses different points in such a manner to create a Delanauy Triangulation of 
+             that be used to define boundaries from which one could further match 
+             left and right within the bounds.  Note, one of the fastest current 
+             algorithms further written about in the next section, uses different 
+             points in such a manner to create a Delanauy Triangulation of 
              bounds to search within to populate the remaining disparity map points.
 
           The patch block comparisons tend to use a greyscale intensity for the pixel (0-255)
@@ -232,7 +325,8 @@ stereo vision of the rectified images:
                Their code is offered w/o commercial restrictions, but is in matlab.
                http://cmp.felk.cvut.cz/~cechj/GCS/
 
-    -- Among the most ACCURATE algorithms considering a compromise w/ runtime are the Graph-Cut algorithms.
+    -- Among the most ACCURATE algorithms considering a compromise w/ runtime are the 
+            Graph-Cut algorithms.
         One of the latest implementations:
             http://www.csd.uwo.ca/~yuri/Papers/pami04.pdf
             "An Experimental Comparison of Min-Cut/Max-Flow Algorithms for
@@ -257,6 +351,9 @@ stereo vision of the rectified images:
          (see the Disney mansion runtimes in 
          http://www.imgfsr.com/CVPR2014IRW/I1.pdf
          http://research.microsoft.com/pubs/232423/sinhaLPS_CVPR2014.pdf)
+         There would be large errors per down sized image pixel that could be
+         used to estimate a possible range of true distances around the quick 
+         determination for an early look around.
 
 -----------------
 3-D point clouds:
