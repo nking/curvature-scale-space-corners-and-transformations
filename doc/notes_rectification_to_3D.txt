@@ -24,7 +24,7 @@ This places both images in the same reference frame.
    If the transformation matrix is still normalized, one can use the
    extrinsic parameters rotation and translation:
 
-       "Theory and practice of projective rectification", 1991 by Hartley
+       Hartley 1991, "Theory and practice of projective rectification"
        Hartley 1991 offers a method of rectifying pairs of images by making
        matched epipolar projections, that is projections in which the epipolar
        lines run parallel with the x-axis and the epipoles are mapped to infinity.
@@ -68,9 +68,8 @@ This places both images in the same reference frame.
             projective transformation H'.
 
        Other methods for rectifying images are in:
-           "Rectifying transformations that minimize resampling effects", 2001 
-                by Gluckman and Nayar
-           "Multiple view image rectification", 2011 by Nozick
+           Gluckman and Nayar 2001, "Rectifying transformations that minimize resampling effects"
+           Nozick 2011, "Multiple view image rectification"
 
       Note that the rectified images now are aligned by y coordinate too, that is a matching
       point in one image has the same y coordinate in the other image, though the
@@ -130,6 +129,9 @@ stereo vision of the rectified images:
     -------------------------
        From "3D Video: From Capture to Diffusion" by 
            Laurent Lucas; Celine Loscos; Yannick Remion
+
+       If no camera calibration, self-calibration:
+           (Pollefeys et al. 1999; Pollefeys and Van Gool 2002)
 
        For camera calibration, calculate the projection matrix, then split it
        into sub-matrices to determine focal, position, and direction parameters.
@@ -221,7 +223,7 @@ Making of Disparity Maps (continued):
     -- The SIMPLEST algorithm for making a disparity map would be to compare patches
        of a block size in the left image to patches in the right image using a brute force
        comparison of each pixel centered patch in the left image and a range search against
-       each pixel centered patch in the right image.
+       each pixel centered patch in the right image for the scanned row.
           -- One can improve upon that by retaining the pixel centered patch calculations
              from the right image and reusing them for each left patch comparison.
           -- One can improve upon that by limiting the comparisons to only those 
@@ -280,6 +282,7 @@ Making of Disparity Maps (continued):
           Algorithms similar to the above tend to have the longest runtimes unless steps
           are taken to make the comparisons smaller in number and size.
 
+
     -- The FASTEST algorithms for making a disparity map want to be usable in realtime systems.
         The algorithm with the fastest runtime with a high accuracy seems to be:
             Geiger, Roser, and Urtasun 2010, "Efficient Large-Scale Stereo Matching"
@@ -320,30 +323,33 @@ Making of Disparity Maps (continued):
             sweep algorithm in other online slides...
 
         -- Note that in their paper, the next best performing for the runtime is from the paper
-               "Growing Correspondence Seeds.  A Fast Stereo Matching of Large Images" by
-               Jan Cech, 2007.
+               Jan Cech 2007, "Growing Correspondence Seeds.  A Fast Stereo Matching of 
+               Large Images" 
                Their code is offered w/o commercial restrictions, but is in matlab.
                http://cmp.felk.cvut.cz/~cechj/GCS/
 
     -- Among the most ACCURATE algorithms considering a compromise w/ runtime are the 
             Graph-Cut algorithms.
         One of the latest implementations:
-            http://www.csd.uwo.ca/~yuri/Papers/pami04.pdf
-            "An Experimental Comparison of Min-Cut/Max-Flow Algorithms for
-            Energy Minimization in Computer Vision"
-            by Boykov and Kolmogorov 2004
-            http://pub.ist.ac.at/~vnk/software/maxflow-v3.03.src.zip
+            Boykov and Kolmogorov 2004, 
+                "An Experimental Comparison of Min-Cut/Max-Flow Algorithms for
+                Energy Minimization in Computer Vision"
+                http://www.csd.uwo.ca/~yuri/Papers/pami04.pdf
+                http://pub.ist.ac.at/~vnk/software/maxflow-v3.03.src.zip
         and before that was V. Kolmogorov and R. Zabih, 2001
             "Computing visual correspondence with occlusions using graph cuts."
             http://pub.ist.ac.at/~vnk/software.html, match-v3.4.src.tar.gz
 
         Compare where possible to Semi-Global Matching.
            There is a CUDA only Semi-Global Matching algorithm: 
-               "Real-time Stereo Vision: Optimizing Semi-Global Matching" by Michael et al. 2013.
+               Michael et al. 2013., "Real-time Stereo Vision: Optimizing Semi-Global Matching" 
                http://www.ini.rub.de/data/documents/michaeletal_improvesgm_iv2013.pdf
            There is Hirschmuller 2005
                but there are mentions of using it in textureless patches or where dense 
                disparity maps are needed.
+
+        "fast plane sweeping stereo"?
+            http://research.microsoft.com/pubs/232423/sinhaLPS_CVPR2014.pdf
 
     In navigation systems with very high resolution images, wouldn't an early 
          down sampled image pair solution much faster than 1 second be useful 
@@ -364,3 +370,131 @@ Making of Disparity Maps (continued):
 
     in progress...
 
+    http://people.csail.mit.edu/sparis/talks/Paris_06_3D_Reconstruction.pdf
+
+    Thrun et al. 200
+        "A Real-Time Algorithm for Mobile Robot Mapping With Applications to
+        Multi-Robot and 3D Mapping"
+        http://robots.stanford.edu/papers/thrun.map3d.pdf
+        and references therein
+
+    Polygonal modeling: 
+        pros: flexibility and speed
+        3D points connected by line segments to create a polygonal mesh.
+
+    Curve modeling:
+        surfaces created using weighted points w/ curves changed by control points.
+        splines, patches, geometric primitives, nonuniform rational B-splines (NURBS).
+
+    Digital sculpting:
+        Displacement is the type used more often.  Each vertex stores its
+            modifiable position.
+        Volumetric digital sculpting is the type based on Voxels and is useful
+            to avoid deformation for regions w/ few polygons. 
+        Dynamic tesselation is the type which also uses Voxels, but it uses
+            triangulation for surfaces for finer detail capability.
+            (mesh algorithms here?)
+
+    surfels:
+        http://graphics.ucsd.edu/~matthias/Papers/Surfels.pdf
+
+    Dense 3D reconstruction:
+        Ummenhofer and Brox 2012
+        http://lmb.informatik.uni-freiburg.de/Publications/2012/UB12/ummenhofer2012Dense3D.pdf
+
+    sfm w/ video:
+
+    WebGL / Three.js:
+
+    Kinect fusion reconstructs surfaces from dense 3D point clouds from
+       depth maps:
+       http://research.microsoft.com/pubs/155416/kinectfusion-uist-comp.pdf
+
+    Reconstructing geometry using public images from different cameras:
+        Frahm et al. 2010, "Building Rome on a Cloudless Day"
+        http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.174.8828&rep=rep1&type=pdf
+        (see also, the sparse 3D mapping section below).
+
+     Simultaneous Localization and Mapping:
+
+    http://cronos.rutgers.edu/~meer/TEACHTOO/PAPERS/Szeliskistereodraft.pdf
+    surface mesh reconstruction techniques such as the one of Fua and Leclerc (1995) 
+
+    silhouette-based reconstruction:
+        Laurentini 1994, "The Visual Hull Concept for Silhouette-Based 
+        Image Understanding"
+        http://dl.acm.org/citation.cfm?coll=GUIDE&dl=GUIDE&id=628563&preflayout=flat
+        The visual hull of a 3-D object is computed using silhouette based algorithms.
+
+    Image based modeling:
+      * Furukawa and Ponce 2008 http://www.cse.wustl.edu/~furukawa/papers/pami08a.pdf
+        Vogiatzis et al. 2007
+        Pons et al 2006
+
+-------------------------------------------------------------
+For non-stereo images: sparse 3D reconstruction
+-------------------------------------------------------------
+    sparse 3D reconstruction (w/ absolute location)
+    (Szeliski and Kang 1994)
+
+    Kaminsky et al 2009, "Alignment of 3D Point Clouds to Overhead Images"
+    http://grail.cs.washington.edu/pub/papers/kaminsky2009ao.pdf
+
+    Snavely, Seitz, and Szeliski 2007
+    "Modeling the World from Internet Photo Collections"
+    http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf
+
+    Snavely, Seitz and Szeliski 2007:
+       To find features, they use SIFT.  To make correspondences between
+       images, they use SIFT and RANSAC and additional steps to remove
+       outliers, discard ambiguities, and discard images with less than 
+       20 matches.
+
+       image connectivity graph: the images are placed into a graph with 
+       an edge representing that the 2 images (vertexes) have point 
+       correspondences.
+
+       "Structure from Motion" is used to get relative positions of cameras:
+           a position of the same point in correspondences in all images is 
+           called a track.
+           non-linear least squares and bundle adjustment is used to refine
+           the solution, incrementally for each camera.
+           The pair of images w/ the largest number of matches and both images
+           having different homographies is selected.
+           RANSAC is again used to retain the best matches and discard outliers
+           using a threshold of 0.4% of max(image width, image height).
+           The image pair w/ smallest % inliers for the (total?) recovered 
+           homography but with >= 100 matches is then selected and the camera 
+           parameters are estimated using Nister's 5-point algorithm.   
+           The tracks between the two images are triangulated.
+           From those, a 2-frame bundle adjustment is performed.
+           Then the camera w/ largest number of tracks w/ 3D estimations 
+           is selected and it's camera extrinsic parameters are found using 
+           DLT (Hartley and Zisserman 2004) inside a RANSAC procedure 
+           (w/ same threshold as prev defined).
+           DLT returns the upper triangular matrix K (which is the intrinsics)
+           and the rotation and translation (part of the extrinsics).   
+           K combined with the focal length from the EXIF tags refines the 
+           new camera parameter for focal length.
+           Then each new camera's individual points are added if the location 
+           errors are small and if the maximum separation between the point 
+           considered and all possible points too create another triangle 
+           which is larger than 2 degrees and also has a small location error.
+           After each camera's points are added, bundle adjustment is used again.
+           The largest runtime phases are for the pairwise matching and the 
+           incremental bundle adjustment.
+      
+           Then, this consistent model can be aligned with a map, a sattelite
+           image, floor plan, etc having a precise geo-reference frame.
+           orthographic projections of the 3D points, lines, and camera 
+           locations are rendered superimposed on the alignment image.
+
+
+-------------------------------------------------------------
+object recognition
+-------------------------------------------------------------
+in progress...
+
+http://www.di.ens.fr/~ponce/mundy.pdf
+
+many papers...
