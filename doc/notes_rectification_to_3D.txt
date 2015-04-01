@@ -191,6 +191,15 @@ stereo vision of the rectified images:
 -------------------------------------
 Making of Disparity Maps (continued):
 -------------------------------------
+
+    Note that energy functions are also known as objective functions, loss functions,
+    cost functions, and utility functions.  the goal is always to find the minimum
+    of the energy function.   current minimization methods are 
+    sets of partitions that are higher order and irregular,
+    linear programming relaxation (LPR) inference,
+    variations of message passing,
+    move-making algorithms in graph cuts.
+
     -- The distance in pixels between corresponding points in the rectified images
        is called disparity. The disparity is used for 3-D reconstruction, because
        it is proportional to the distance between the cameras and the 3-D world point.
@@ -282,6 +291,35 @@ Making of Disparity Maps (continued):
           Algorithms similar to the above tend to have the longest runtimes unless steps
           are taken to make the comparisons smaller in number and size.
 
+          Note also, there is dynamic programming to find the global minimum for independent 
+          scanlines in polynomial time, but the solution has streaks in it.
+              see http://vision.middlebury.edu/stereo/taxonomy-IJCV.pdf
+              the basic outline for sparse dynamic solution (edges only) is in
+              Ohta and Kanade 1983 "Stereo by Intra- and Inter- scanline Search Using
+              Dynamic Programming"
+                  from a rectified pair of stereo images, a search is made for corresponding
+                  points in the left and right for the same scane lines and using information
+                  from the already found correspondences as progress is made.
+                  two simultaneous searches proceed dynamically:
+                    -- the sum of the cost of matching surface is the intra-line search 
+                       for correspondences between left and right for all scan lines
+                    -- the contraint of the searches across the 2D plane is given
+                       by connected edges.
+                  some characteristics:  
+                    - a match of left pixel to right pixel on one scanline should match on
+                      other scanlines too and the same for a "not match".
+                    - when searching for the correspondence of 2 edges, the left image edges
+                      for each scanline must already be processed.
+                      edges left-to-right on each scanline:  
+                           left is [0:N] and right is [0:M]
+                      and scanning by block bounds, starting at smaller indices:
+                         The path is a consecutive set of straight line segments from 
+                         node (0,0) to node (M,N) on a 2D array [0:M,0:N]. 
+                      then the order of matched edges is preserved.
+                      a path has a vertex at node=(m,n) when right edge m and left edge n 
+                      are matched.
+                      D(m,k) is the minimal cost of the partial path from node k to node m. 
+                      D(m) is the cost of the optimal path from the origin (0,0) to node m.
 
     -- The FASTEST algorithms for making a disparity map want to be usable in realtime systems.
         The algorithm with the fastest runtime with a high accuracy seems to be:
@@ -361,6 +399,14 @@ Making of Disparity Maps (continued):
          used to estimate a possible range of true distances around the quick 
          determination for an early look around.
 
+
+  Tests data:
+      -- Middlebury stereo vision datasets and/or Merton College I
+      -- 2 all black images?  2 all white images?
+      -- 2 identical images
+      -- simple image with a single area of texture
+      -- a stereo vision image pair containing a repeated pattern
+
 -----------------
 3-D point clouds:
 -----------------
@@ -369,6 +415,25 @@ Making of Disparity Maps (continued):
         that is the 2D point is reprojected to 3D space as [X/W Y/W Z/W]^T
 
     in progress...
+
+    from Pollefeys et al. 2001, "Structure and motion from image sequences"
+        http://www.inf.ethz.ch/personal/pomarc/pubs/PollefeysCO3DM01.pdf
+        overlay a 2D triangular mesh on one of the images, then build 
+        a corresponding 3D mesh by placing the vertices of the triangles 
+        in 3D space by their depth map or disparity map.
+        then use the image as a texture map.
+
+    grow connected disparity regions that are the same within a tolerance
+    and assign that region as a polygon?
+
+    consider reduced polygon resolution for further disparities or depths?
+    (see LDOS below)
+    
+
+
+    triangular mesh is obtained from a voxel representation via marching cubes algorithm, 
+    after silhouette-based reconstruction
+
 
     http://people.csail.mit.edu/sparis/talks/Paris_06_3D_Reconstruction.pdf
 
@@ -387,8 +452,8 @@ Making of Disparity Maps (continued):
         splines, patches, geometric primitives, nonuniform rational B-splines (NURBS).
 
     Digital sculpting:
-        Displacement is the type used more often.  Each vertex stores its
-            modifiable position.
+        Displacement, a.k.a. deformable polygon meshes, is the type used more often.  
+            Each vertex stores its modifiable position.
         Volumetric digital sculpting is the type based on Voxels and is useful
             to avoid deformation for regions w/ few polygons. 
         Dynamic tesselation is the type which also uses Voxels, but it uses
@@ -397,6 +462,27 @@ Making of Disparity Maps (continued):
 
     surfels:
         http://graphics.ucsd.edu/~matthias/Papers/Surfels.pdf
+
+    terrain:
+        mipmapping and tiling
+        mesh simplification:  Luebke et al. 2001
+            http://www.cs.virginia.edu/~luebke/publications/pdf/cg+a.2001.pdf
+            improve runtime performance:
+                levels of detail (LOD): distant objects have lower LOD and
+                    nearer have higher LOD
+                SE (Simplification Envelopes) for manifold models:
+                    Rossignac et al. 1999,
+                    "Edgebreaker: Connectivity Compression for Triangle
+                    Meshes"
+                QEM (Quadratic Error Metrics):
+                    Taubin and Rossignac 1999,
+                    "3D Geometry Compression"
+                Progressive Meshes:
+                    Deering 1995
+                    "Geometry Compression"
+
+    Simultaneous Localization and Mapping:
+
 
     Dense 3D reconstruction:
         Ummenhofer and Brox 2012
@@ -414,8 +500,6 @@ Making of Disparity Maps (continued):
         Frahm et al. 2010, "Building Rome on a Cloudless Day"
         http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.174.8828&rep=rep1&type=pdf
         (see also, the sparse 3D mapping section below).
-
-     Simultaneous Localization and Mapping:
 
     http://cronos.rutgers.edu/~meer/TEACHTOO/PAPERS/Szeliskistereodraft.pdf
     surface mesh reconstruction techniques such as the one of Fua and Leclerc (1995) 
@@ -445,10 +529,10 @@ For non-stereo images: sparse 3D reconstruction
     http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf
 
     Snavely, Seitz and Szeliski 2007:
-       To find features, they use SIFT.  To make correspondences between
-       images, they use SIFT and RANSAC and additional steps to remove
-       outliers, discard ambiguities, and discard images with less than 
-       20 matches.
+       To find features, they use SIFT (Lowe 1999.  To make correspondences 
+       between images, they use SIFT and RANSAC and additional steps to 
+       remove outliers, discard ambiguities, and discard images with less 
+       than 20 matches.
 
        image connectivity graph: the images are placed into a graph with 
        an edge representing that the 2 images (vertexes) have point 
