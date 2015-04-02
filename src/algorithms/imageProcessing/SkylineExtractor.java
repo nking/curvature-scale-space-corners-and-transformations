@@ -150,134 +150,44 @@ public class SkylineExtractor {
         if (theta == null) {
             throw new IllegalArgumentException("theta cannot be null");
         }
-                
-        Image colorImg = originalColorImage;
-        GreyscaleImage thetaImg = theta;
-        GreyscaleImage gXYImg = gradientXY;
         
         int binFactor = determineBinFactorForSkyMask(theta.getNPixels());
 
         log.info("binFactor=" + binFactor);
         
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        if (binFactor > 1) {
-            thetaImg = imageProcessor.binImage(theta, binFactor);
-            colorImg = imageProcessor.binImage(originalColorImage, binFactor);
-            gXYImg = imageProcessor.binImage(gradientXY, binFactor);
-        }
-
-        List<PairIntArray> zeroPointLists = getSortedContiguousZeros(thetaImg);
-        
-        if (zeroPointLists.isEmpty()) {
-            
-            GreyscaleImage mask = theta.createWithDimensions();
-               
-            // return an image of all 1's
-            mask.fill(1);
-            
-            return mask;
-        }
-      
-        List<PairIntArray> removedNonCloudColors = 
-            removeSetsWithNonCloudColors(zeroPointLists, colorImg, thetaImg,
-            true, 0);
-        
-        if (zeroPointLists.isEmpty()) {
-            
-            GreyscaleImage mask = theta.createWithDimensions();
-               
-            // return an image of all 1's
-            mask.fill(1);
-            
-            return mask;
-        }
-        
-        //TODO:  assumes that largest smooth component of image is sky.
-        // if sky is small and a foreground object is large and featureless
-        // and not found as dark, this will fail. 
-        // will adjust for that one day, possibly with color validation
-        reduceToLargest(zeroPointLists);
-        
-        if (zeroPointLists.isEmpty()) {
-            
-            GreyscaleImage mask = theta.createWithDimensions();
-               
-            // return an image of all 1's
-            mask.fill(1);
-            
-            return mask;
-        }
-        
-        double[] avgYRGB = imageProcessor.calculateYRGB(zeroPointLists.get(0), 
-            colorImg,
-             thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset(), 
-             true, 0);
-        
-        int nBeforeHighContrastRemoval = count(zeroPointLists);
-        
-        Set<PairInt> highContrastRemoved = new HashSet<PairInt>();
-        removeHighContrastPoints(zeroPointLists, colorImg, 
-            thetaImg, avgYRGB[0], highContrastRemoved);
-        
-        if (zeroPointLists.isEmpty()) {
-            GreyscaleImage mask = theta.createWithDimensions();
-            // return an image of all 1's
-            mask.fill(1);
-            return mask;
-        }
-        
-        int nAfterHighContrastRemoval = count(zeroPointLists);
+        Set<PairInt> points = new HashSet<PairInt>();
                 
-        Set<PairInt> reflectedSunRemoved = removeReflectedSun(zeroPointLists, 
-            colorImg, thetaImg);
+        RemovedSets removedSets = filterAndExtractSkyFromGradient(
+            originalColorImage, theta, gradientXY, binFactor, points);
         
-        if (zeroPointLists.isEmpty()) {
+        if (removedSets == null) {
+            
             GreyscaleImage mask = theta.createWithDimensions();
+               
+            // return an image of all 1's
             mask.fill(1);
+            
             return mask;
-        }
-        
-        Set<PairInt> points = combine(zeroPointLists);
-       
-        int valueToSubtract = extractSkyFromGradientXY(gXYImg, points,
-            highContrastRemoved);
-        
-        if (binFactor > 1) {
-            
-            thetaImg = theta;
-            colorImg = originalColorImage;
-            gXYImg = gradientXY;
-            
-            points = imageProcessor.unbinZeroPointLists(points, binFactor);
-            
-            removedNonCloudColors = imageProcessor.unbinZeroPointLists(removedNonCloudColors, 
-                binFactor);
-            
-            highContrastRemoved = imageProcessor.unbinZeroPointLists(highContrastRemoved,
-                binFactor);
-            
-            reflectedSunRemoved = imageProcessor.unbinZeroPointLists(reflectedSunRemoved,
-                binFactor);
-            
-            if (!highContrastRemoved.isEmpty()) {
-                removeBinFactorArtifacts(points, binFactor,
-                    thetaImg.getWidth(), thetaImg.getHeight(),
-                    thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset());
-            }
         }
         
         //now the coordinates in zeroPointLists are w.r.t. thetaImg
-        
+
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         int[] skyRowMinMax = new int[2];
         Map<Integer, PairInt> skyRowColRange = perimeterFinder.find(points, 
             skyRowMinMax);
-        fillInRightAndLowerBoundarySkyPoints(points, binFactor, 
-            skyRowColRange, skyRowMinMax, colorImg,
-            thetaImg.getWidth(), thetaImg.getHeight(),
-            thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset());
         
+debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"before_downsize_corrections_2");
+
+        rightAndLowerDownSizingSkyPointCorrections(points, binFactor, 
+            skyRowColRange, skyRowMinMax, originalColorImage,
+            theta.getWidth(), theta.getHeight(),
+            theta.getXRelativeOffset(), theta.getYRelativeOffset());
+
+debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"after_downsize_corrections_2");
+
         GreyscaleImage mask = gradientXY.createWithDimensions();
         mask.fill(1);
         for (PairInt p : points) {
@@ -297,26 +207,27 @@ public class SkylineExtractor {
         //TODO: this will be revised when have narrowed down which color spaces
         // to use.
                 
-        populatePixelColorMaps(points, colorImg, mask, pixelColorsMap, 
+        populatePixelColorMaps(points, originalColorImage, mask, pixelColorsMap, 
             skyColorsMap);
         
-        findClouds(points, new HashSet<PairInt>(), colorImg, mask, 
+        findClouds(points, new HashSet<PairInt>(), originalColorImage, mask, 
             pixelColorsMap, skyColorsMap);
 
-        mergeOverlappingPreviouslyRemovedNonCloudColors(points, 
-            removedNonCloudColors);
+        //TODO: these should be reincluded for some sets
+        //points.addAll(removedSets.getRemovedNonCloudColors());
 
         GroupPixelColors allSkyColor = new GroupPixelColors(points,
-            colorImg, thetaImg.getXRelativeOffset(), 
-            thetaImg.getYRelativeOffset());
+            originalColorImage, theta.getXRelativeOffset(), 
+            theta.getYRelativeOffset());
         
         boolean skyIsDarkGrey = skyIsDarkGrey(allSkyColor);
 
         Set<PairInt> sunPoints = new HashSet<PairInt>();
         double[] ellipFitParams = findSunConnectedToSkyPoints(points, 
-            reflectedSunRemoved, colorImg, thetaImg.getXRelativeOffset(), 
-            thetaImg.getYRelativeOffset(), skyIsDarkGrey, sunPoints);
-        
+            removedSets.getReflectedSunRemoved(), originalColorImage, 
+            theta.getXRelativeOffset(), 
+            theta.getYRelativeOffset(), skyIsDarkGrey, sunPoints);
+
         //TODO: adjust this:
         if ((ellipFitParams != null) && 
             (
@@ -330,8 +241,10 @@ public class SkylineExtractor {
         
         // should not see sun and rainbow in same image
         Set<PairInt> rainbowPoints = sunPoints.isEmpty() ?
-            findRainbowPoints(points, reflectedSunRemoved, colorImg, 
-                thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset(),
+            findRainbowPoints(points, 
+                removedSets.getReflectedSunRemoved(), 
+                originalColorImage, 
+                theta.getXRelativeOffset(), theta.getYRelativeOffset(),
                 skyIsDarkGrey) :
             new HashSet<PairInt>();
         
@@ -339,7 +252,7 @@ public class SkylineExtractor {
         Set<PairInt> embeddedPoints = findEmbeddedNonPointsExtendedToImageBounds(
             points, mask, 1);
         
-debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_first_0");
 
         if (!embeddedPoints.isEmpty()) {
@@ -349,22 +262,24 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
             // brightest sky is in bin [2], and dimmest is in [0]
             GroupPixelColors[] skyPartitionedByBrightness = 
                 partitionInto3ByBrightness(points, originalColorImage, 
-                thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset(), 
+                theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
                 brightnessHistogram);
 
-            findEmbeddedClouds(embeddedPoints, points, highContrastRemoved,
-                colorImg, mask,
+            findEmbeddedClouds(embeddedPoints, points, 
+                removedSets.getHighContrastRemoved(),
+                originalColorImage, mask,
                 pixelColorsMap, skyColorsMap,
                 brightnessHistogram, skyPartitionedByBrightness);
 
-debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_0");
 
 //plotSkyColor(points, colorImg, mask);
 
-            if ((reflectedSunRemoved.size() < 50) &&
-                ((nBeforeHighContrastRemoval - nAfterHighContrastRemoval) <= 
-                (int)(((float)nBeforeHighContrastRemoval)*0.1f))) {
+            if ((removedSets.getReflectedSunRemoved().size() < 50) &&
+                ((removedSets.getNBeforeHighContrastRemoval()
+                - removedSets.getNAfterHighContrastRemoval()) <= 
+                (int)(((float)removedSets.getNBeforeHighContrastRemoval())*0.1f))) {
             
                 // also, do not perform this if we can tell that the sky is mostly
                 // found except the nBinFactor pixels near the border.
@@ -378,8 +293,9 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
                     //Set<PairInt> copyOfPoints = new HashSet<PairInt>(points);
                     //GreynMascaleImage copyOfMask = mask.copyImage();
 
-                    findSeparatedClouds(sunPoints, points, highContrastRemoved,
-                        colorImg, mask,
+                    findSeparatedClouds(sunPoints, points, 
+                        removedSets.getHighContrastRemoved(),
+                        originalColorImage, mask,
                         pixelColorsMap, skyColorsMap,
                         brightnessHistogram, skyPartitionedByBrightness);
                     
@@ -389,16 +305,16 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
                         nPointsAdded + " to " + points.size() + " points (" +
                         frac + "%)");
                        
-debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_1");          
 
-                    if (reflectedSunRemoved.size() > 0) {
+                    if (removedSets.getReflectedSunRemoved().size() > 0) {
                         
                         reduceToLargestContiguousGroup(points, mask, 10, 
                             new HashSet<PairInt>());                        
                     }
 
-debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_added_separated_clouds");
 
                 }
@@ -406,7 +322,7 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
         }
 
         Set<PairInt> exclude = new HashSet<PairInt>();
-        exclude.addAll(highContrastRemoved);
+        exclude.addAll(removedSets.getHighContrastRemoved());
         exclude.addAll(rainbowPoints);
         exclude.addAll(sunPoints);
 
@@ -417,25 +333,25 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset()
             // brightest sky is in bin [2], and dimmest is in [0]
             GroupPixelColors[] skyPartitionedByBrightness = 
                 partitionInto3ByBrightness(points, originalColorImage, 
-                thetaImg.getXRelativeOffset(), 
-                thetaImg.getYRelativeOffset(), brightnessHistogram);
+                theta.getXRelativeOffset(), 
+                theta.getYRelativeOffset(), brightnessHistogram);
 
             findEmbeddedClouds(embeddedPoints, points, exclude,
-                colorImg, mask,
+                originalColorImage, mask,
                 pixelColorsMap, skyColorsMap,
                 brightnessHistogram, skyPartitionedByBrightness);
 
-debugPlot(points, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_2");
 
         }
 
 log.info("number of sunPoints=" + sunPoints.size() + " "
-    + "reflectedSunRemoved.size()=" + reflectedSunRemoved.size());
+    + "reflectedSunRemoved.size()=" + removedSets.getReflectedSunRemoved().size());
 
         if (sunPoints.isEmpty()) {
             
-            growForLowContrastLimits(points, exclude, colorImg, mask);
+            growForLowContrastLimits(points, exclude, originalColorImage, mask);
         
             // TODO: might need to expand these a little
             Set<PairInt> placeholdingPoints = new HashSet<PairInt>();
@@ -448,12 +364,12 @@ log.info("number of sunPoints=" + sunPoints.size() + " "
         }
        
         if (!sunPoints.isEmpty()) {
-            correctSkylineForSun(sunPoints, points, colorImg, mask, gradientXY);
+            correctSkylineForSun(sunPoints, points, originalColorImage, mask, gradientXY);
         }/* else if (!rainbowPoints.isEmpty()) {
             correctSkylineForRainbow(rainbowPoints, points, colorImg, mask);
         }*/
 
-debugPlot(points, colorImg, mask.getXRelativeOffset(), 
+debugPlot(points, originalColorImage, mask.getXRelativeOffset(), 
     mask.getYRelativeOffset(), "final");
 
         //TODO: refine this number comparison
@@ -483,24 +399,26 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(),
  
         outputSkyCentroid.add((int)Math.round(xycen[0]), (int)Math.round(xycen[1]));
 
-        if (mask != null) {
-            imageProcessor.removeSpurs(mask);
-        }         
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.removeSpurs(mask);
    
         return mask;
     }
     
     public Set<PairInt> combine(List<PairIntArray> points) {
         Set<PairInt> set = new HashSet<PairInt>();
+        combine(points, set);
+        return set;
+    }
+    public void combine(List<PairIntArray> points, Set<PairInt> outputCombined) {
         for (PairIntArray p : points) {
             for (int i = 0; i < p.getN(); i++) {
                 int x = p.getX(i);
                 int y = p.getY(i);
                 PairInt pi = new PairInt(x, y);
-                set.add(pi);
+                outputCombined.add(pi);
             }
         }
-        return set;
     }
     
     public List<PairIntArray> getLargestSortedContiguousZeros(GreyscaleImage theta) {
@@ -551,7 +469,8 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(),
         if (nMaxGroupN > 10000000) {
             MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
         } else {
-            CountingSort.sortByDecr(groupN, groupIndexes, nMaxGroupN);
+            int maxValue = MiscMath.findMax(groupN);
+            CountingSort.sortByDecr(groupN, groupIndexes, maxValue);
         }
         
         List<Integer> groupIds = new ArrayList<Integer>();
@@ -643,7 +562,8 @@ debugPlot(points, colorImg, mask.getXRelativeOffset(),
      * sky because they are objects, not sky, so this method tries to find
      * those and remove them from the sky points.  Note that the method prefers
      * to err on the side of over subtracting because later steps can find 
-     * any removed connected sky as long as the majority of sky points remain.
+     * and re-include any connected sky as long as the majority of sky points 
+     * remain at the end of this method.
      * 
      * @param zeroPointLists
      * @param originalColorImage
@@ -948,6 +868,7 @@ debugPlot(outputRemovedPoints, originalColorImage, xOffset, yOffset, "filtered_o
      * using adaptive "thresholding" to subtract intensity levels from
      * gradientXY, find the contiguous zero values connected to skyPoints
      * and add them to skyPoints.
+     * 
      * @param gradientXY
      * @param skyPoints
      * @param excludeThesePoints
@@ -1041,6 +962,9 @@ log.info(sb.toString());
             
             Set<PairInt> embeddedPoints = new HashSet<PairInt>();
             
+//TODO: these embedded points are not used now!
+// follow up...
+            
             int nCorrectedEmbeddedGroups = extractEmbeddedGroupPoints(
                 skyPoints, gXY2, embeddedPoints);
             
@@ -1070,6 +994,10 @@ try {
     private void growZeroValuePoints(Set<PairInt> points, 
         Set<PairInt> excludeThesePoints, GreyscaleImage gradientXY) {
   
+        if (points.isEmpty()) {
+            return;
+        }
+        
         java.util.Stack<PairInt> stack = new java.util.Stack<PairInt>();
         
         //O(N_sky)
@@ -1359,7 +1287,7 @@ try {
      * resemble and ellipse (circle w/ possible occlusion).  
      * those sun points are then added to the skyPoints.
      * Note that if the sun is present in sky and in reflection, such as
-     * water, their location in x,y must be fittable by an ellipse, else they 
+     * water, their location in x, y must be fittable by an ellipse, else they 
      * may not be found as sun points.
      * @param skyPoints
      * @param reflectedSunRemoved previously removed points assumed to be
@@ -1369,7 +1297,8 @@ try {
      * @param yOffset 
      * @param skyIsDarkGrey 
      * @param outputYellowPoints 
-     * @return the extracted sun points that are connected to skyPoints
+     * @return ellipse fitting parameters if there are sun points
+     *  [xc, yc, a, b, alpha]
      */
     protected double[] findSunConnectedToSkyPoints(Set<PairInt> skyPoints, 
         Set<PairInt> reflectedSunRemoved,
@@ -1972,9 +1901,9 @@ try {
     }
 
     /**
-     * fill in the rightmost sky points that would be missing due to down sizing
-     * the image to find sky points then up sizing the image to current scale
-     * and do the same for the lowest sky points in the image (highest y).
+     * make downsizing corrections if any to fill in the rightmost sky points 
+     * that would be missing due to down sizing
+     * then the same for the lowest sky points in the image (highest y).
      * 
      * @param skyPoints
      * @param binFactor the size of the former down sizing to find sky points.
@@ -1988,7 +1917,7 @@ try {
      * @param yRelativeOffset the offset in y of the canny edge filter intermediate
      * product images from the reference frame of the originalColorImage.
      */
-    private void fillInRightAndLowerBoundarySkyPoints(Set<PairInt> skyPoints, 
+    private void rightAndLowerDownSizingSkyPointCorrections(Set<PairInt> skyPoints, 
         int binFactor, Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax,
         Image originalColorImage, int imageWidth, int imageHeight,
         int xRelativeOffset, int yRelativeOffset) {
@@ -2154,6 +2083,10 @@ try {
                 
                 cloudStack.add(p);
             }
+        }
+        
+        if (cloudStack.isEmpty()) {
+            return;
         }
     
         GroupPixelColors allSkyColor = new GroupPixelColors(skyPoints,
@@ -2821,7 +2754,7 @@ debugPlot(skyPoints, originalColorImage,
 debugPlot(skyPoints, originalColorImage, mask.getXRelativeOffset(), 
     mask.getYRelativeOffset(), "after_find_clouds_in_findClouds2");
 
-                if ((((nAfter - nBefore)/nBefore) > 2) || 
+                if (((nBefore > 0) && ((nAfter - nBefore)/nBefore) > 2) || 
                     ((nAfter - nBefore) > 1000)) {
  
                     // one more round of search for embedded but only in the new points
@@ -3302,37 +3235,6 @@ skyIsRed, hasDarkGreyClouds
         }
         
         return new HashSet<PairInt>();
-    }
-
-    private void mergeOverlappingPreviouslyRemovedNonCloudColors(
-        Set<PairInt> points, List<PairIntArray> removedNonCloudColors) {
-               
-        log.info("before merge: " + points.size() + " points");
-        
-        for (PairIntArray pai : removedNonCloudColors) {
-            int nOverlapping = 0;
-            for (int i = 0; i < pai.getN(); i++) {
-                int x = pai.getX(i);
-                int y = pai.getY(i);
-                PairInt p = new PairInt(x, y);
-                if (points.contains(p)) {
-                    nOverlapping++;
-                }
-            }
-            //TODO: this needs more tests to find a limit empirically:
-            float f = (float)nOverlapping/(float)pai.getN();
-            
-            log.fine("f=" + f + " nOverlapping=" + nOverlapping + " nPoints=" + pai.getN());
-
-            if ((f > 0.001) && (nOverlapping < pai.getN()) && (nOverlapping > 3)) {
-                for (int i = 0; i < pai.getN(); i++) {
-                    PairInt p = new PairInt(pai.getX(i), pai.getY(i));
-                    points.add(p);
-                }
-            }
-        }
-        
-        log.info("after merge: " + points.size() + " points");
     }
 
     private int[] determineChangeTowardsSkyline(Set<PairInt> points, 
@@ -4554,7 +4456,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
 
     }
 
-    private List<PairIntArray> removeSetsWithNonCloudColors(List<PairIntArray> 
+    private Set<PairInt> removeSetsWithNonCloudColors(List<PairIntArray> 
         zeroPointLists, Image originalColorImage, GreyscaleImage theta,
         boolean addAlongX, int addAmount) {
         
@@ -4647,7 +4549,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
             }
         }
         
-        List<PairIntArray> removed = new ArrayList<PairIntArray>();
+        Set<PairInt> removed = new HashSet<PairInt>();
         
         if (!remove.isEmpty()) {
             
@@ -4655,7 +4557,14 @@ debugPlot(set, colorImg, xOffset, yOffset,
                 
                 PairIntArray r = zeroPointLists.remove(remove.get(i).intValue());
                 
-                removed.add(r);
+                for (int ii = 0; ii < r.getN(); ii++) {
+                    
+                    int x = r.getX(ii);
+                    int y = r.getY(ii);
+                    PairInt p = new PairInt(x, y);
+
+                    removed.add(p);
+                }
             }
         }
         
@@ -5021,5 +4930,152 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         
         }
     }
+    
+    RemovedSets filterAndExtractSkyFromGradient(Image colorImg, 
+        GreyscaleImage thetaImg, GreyscaleImage gXYImg, int binFactor,
+        Set<PairInt> outputSkyPoints) {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
 
+        GreyscaleImage originalThetaImg = thetaImg.copyImage();
+        
+        if (binFactor > 1) {
+            thetaImg = imageProcessor.binImage(thetaImg, binFactor);
+            colorImg = imageProcessor.binImage(colorImg, binFactor);
+            gXYImg = imageProcessor.binImage(gXYImg, binFactor);
+        }
+
+        List<PairIntArray> zeroPointLists = getSortedContiguousZeros(thetaImg);
+        
+        if (zeroPointLists.isEmpty()) {
+            return null;
+        }
+      
+        Set<PairInt> removedNonCloudColors = removeSetsWithNonCloudColors(
+            zeroPointLists, colorImg, thetaImg, true, 0);
+        
+        if (zeroPointLists.isEmpty()) {
+            return null;
+        }
+        
+        //TODO:  assumes that largest smooth component of image is sky.
+        // if sky is small and a foreground object is large and featureless
+        // and not found as dark, this will fail. 
+        // will adjust for that one day, possibly with color validation
+        reduceToLargest(zeroPointLists);
+ 
+        if (zeroPointLists.isEmpty()) {
+            return null;
+        }
+        
+        double[] avgYRGB = imageProcessor.calculateYRGB(zeroPointLists.get(0),
+            colorImg,
+            thetaImg.getXRelativeOffset(), thetaImg.getYRelativeOffset(),
+            true, 0);
+        
+        int nBeforeHighContrastRemoval = count(zeroPointLists);
+        
+        Set<PairInt> highContrastRemoved = new HashSet<PairInt>();
+        removeHighContrastPoints(zeroPointLists, colorImg, 
+            thetaImg, avgYRGB[0], highContrastRemoved);
+  
+        if (zeroPointLists.isEmpty()) {
+            return null;
+        }
+
+        int nAfterHighContrastRemoval = count(zeroPointLists);
+
+        Set<PairInt> reflectedSunRemoved = removeReflectedSun(zeroPointLists, 
+            colorImg, thetaImg);
+ 
+        if (zeroPointLists.isEmpty()) {
+            return null;
+        }
+        
+        combine(zeroPointLists, outputSkyPoints);
+       
+        int valueToSubtract = extractSkyFromGradientXY(gXYImg, outputSkyPoints,
+            highContrastRemoved);
+        
+        RemovedSets rmvd = new RemovedSets();
+        rmvd.setHighContrastRemoved(highContrastRemoved);
+        rmvd.setReflectedSunRemoved(reflectedSunRemoved);
+        rmvd.setRemovedNonCloudColors(removedNonCloudColors);
+        rmvd.setBeforeHighContrastRemoval(nBeforeHighContrastRemoval);
+        rmvd.setAfterHighContrastRemoval(nAfterHighContrastRemoval);
+        
+        if (binFactor > 1) {
+            
+            Set<PairInt> tmp = imageProcessor.unbinZeroPointLists(
+                outputSkyPoints, binFactor);
+            outputSkyPoints.clear();
+            outputSkyPoints.addAll(tmp);
+            
+            tmp = imageProcessor.unbinZeroPointLists(
+                removedNonCloudColors, binFactor);
+            rmvd.setRemovedNonCloudColors(tmp);
+            
+            tmp = imageProcessor.unbinZeroPointLists(
+                highContrastRemoved, binFactor);
+            rmvd.setHighContrastRemoved(tmp);
+            
+            tmp = imageProcessor.unbinZeroPointLists(
+                reflectedSunRemoved, binFactor);
+            rmvd.setReflectedSunRemoved(tmp);
+            
+            if (!highContrastRemoved.isEmpty()) {
+                                
+                removeBinFactorArtifacts(outputSkyPoints, binFactor,
+                    originalThetaImg.getWidth(), originalThetaImg.getHeight(),
+                    originalThetaImg.getXRelativeOffset(), 
+                    originalThetaImg.getYRelativeOffset());
+            }
+        }
+        
+        return rmvd;
+    }
+
+    public class RemovedSets {
+        private Set<PairInt> removedNonCloudColors = null;
+        private Set<PairInt> highContrastRemoved = null;
+        private Set<PairInt> reflectedSunRemoved = null;
+        private int nBeforeHighContrastRemoval = Integer.MIN_VALUE;
+        private int nAfterHighContrastRemoval = Integer.MIN_VALUE;
+        
+        public RemovedSets(){};
+        public void setRemovedNonCloudColors(Set<PairInt> points) {
+            this.removedNonCloudColors = points;
+        }
+        public void setHighContrastRemoved(Set<PairInt> points) {
+            this.highContrastRemoved = points;
+        }
+        public void setReflectedSunRemoved(Set<PairInt> points) {
+            this.reflectedSunRemoved = points;
+        }
+        public Set<PairInt> getRemovedNonCloudColors() {
+            return removedNonCloudColors;
+        }
+        public Set<PairInt> getHighContrastRemoved() {
+            return highContrastRemoved;
+        }
+        public Set<PairInt> getReflectedSunRemoved() {
+            return reflectedSunRemoved;
+        }
+
+        private void setBeforeHighContrastRemoval(int nBeforeHighContrastRemoval) {
+            this.nBeforeHighContrastRemoval = nBeforeHighContrastRemoval;
+        }
+
+        private void setAfterHighContrastRemoval(int nAfterHighContrastRemoval) {
+            this.nAfterHighContrastRemoval = nAfterHighContrastRemoval;
+        }
+        
+        private int getNBeforeHighContrastRemoval() {
+            return nBeforeHighContrastRemoval;
+        }
+
+        private int getNAfterHighContrastRemoval() {
+            return nAfterHighContrastRemoval;
+        }
+    }
 }

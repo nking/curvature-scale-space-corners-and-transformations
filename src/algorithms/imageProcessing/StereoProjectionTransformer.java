@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.PointPartitioner;
 import algorithms.util.PairFloatArray;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;

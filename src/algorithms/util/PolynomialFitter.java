@@ -338,7 +338,8 @@ public class PolynomialFitter {
             if (nMaxGroupN > 10000000) {
                 MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
             } else {
-                CountingSort.sortByDecr(groupN, groupIndexes, nMaxGroupN);
+                int maxValue = MiscMath.findMax(groupN);
+                CountingSort.sortByDecr(groupN, groupIndexes, maxValue);
             }
             
             n = 5;

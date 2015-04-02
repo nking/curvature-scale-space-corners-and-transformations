@@ -423,25 +423,16 @@ Making of Disparity Maps (continued):
         in 3D space by their depth map or disparity map.
         then use the image as a texture map.
 
-    grow connected disparity regions that are the same within a tolerance
-    and assign that region as a polygon?
+    or:
+        grow connected disparity regions that are the same within a tolerance
+        and assign that region as a polygon?  
 
-    consider reduced polygon resolution for further disparities or depths?
-    (see LDOS below)
+        consider reduced polygon resolution for further disparities or depths?
+        (see LDOS below)
     
-
-
-    triangular mesh is obtained from a voxel representation via marching cubes algorithm, 
-    after silhouette-based reconstruction
-
-
-    http://people.csail.mit.edu/sparis/talks/Paris_06_3D_Reconstruction.pdf
-
-    Thrun et al. 200
-        "A Real-Time Algorithm for Mobile Robot Mapping With Applications to
-        Multi-Robot and 3D Mapping"
-        http://robots.stanford.edu/papers/thrun.map3d.pdf
-        and references therein
+    or:
+        triangular mesh is obtained from a voxel representation via marching 
+        cubes algorithm, after silhouette-based reconstruction
 
     Polygonal modeling: 
         pros: flexibility and speed
@@ -459,6 +450,14 @@ Making of Disparity Maps (continued):
         Dynamic tesselation is the type which also uses Voxels, but it uses
             triangulation for surfaces for finer detail capability.
             (mesh algorithms here?)
+
+    http://people.csail.mit.edu/sparis/talks/Paris_06_3D_Reconstruction.pdf
+
+    Thrun et al. 200
+        "A Real-Time Algorithm for Mobile Robot Mapping With Applications to
+        Multi-Robot and 3D Mapping"
+        http://robots.stanford.edu/papers/thrun.map3d.pdf
+        and references therein
 
     surfels:
         http://graphics.ucsd.edu/~matthias/Papers/Surfels.pdf

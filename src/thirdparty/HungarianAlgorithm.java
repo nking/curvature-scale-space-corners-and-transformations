@@ -3,6 +3,17 @@ package thirdparty;
 import java.util.*;
 
 /**
+  NOTE:
+    see references n the abstract of 
+     http://mpc.zib.de/index.php/MPC/article/viewFile/11/4
+    to implement a O(nm log n) version.
+    "Blossom V: a new implementation of a minimum cost
+    perfect matching algorithm" by Kolmogorov, 2009
+    Or the author's version:
+        http://pub.ist.ac.at/~vnk/software/blossom5-v2.05.src.tar.gz
+
+  The algorithm below was instead adapted from code by Gary Baker
+
  * Edits were made to the code below to allow rectangular matrix with more
  * columns than rows.  Comments were also added.
  * 

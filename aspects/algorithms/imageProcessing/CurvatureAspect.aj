@@ -449,7 +449,7 @@ private static int n3 = 0;
 
     before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount) :
-        execution(private List<PairIntArray> SkylineExtractor.removeSetsWithNonCloudColors(
+        execution(private Set<PairInt> SkylineExtractor.removeSetsWithNonCloudColors(
             List<PairIntArray>, Image, GreyscaleImage, boolean, int) )
         && args(zeroPointLists, originalColorImage, theta, addAlongX, addAmount)
 	    && target(algorithms.imageProcessing.SkylineExtractor) {
@@ -472,10 +472,36 @@ private static int n3 = 0;
         }
     }
 
+    after(List<PairIntArray> zeroPointLists, Image colorImg, 
+        GreyscaleImage thetaImg)
+        returning(Set<PairInt> reflectedSun) :
+        execution(private Set<PairInt> SkylineExtractor.removeReflectedSun(
+            List<PairIntArray>, Image, GreyscaleImage) )
+        && args(zeroPointLists, colorImg, thetaImg)
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
+
+        Image clr = colorImg.copyImage();
+
+        int xOffset = thetaImg.getXRelativeOffset();
+        int yOffset = thetaImg.getYRelativeOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_reflectedsun_removed_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
     after(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount)
-        returning(List<PairIntArray> removedNonCloudColors) :
-        execution(private List<PairIntArray> SkylineExtractor.removeSetsWithNonCloudColors(
+        returning(Set<PairInt> removedNonCloudColors) :
+        execution(private Set<PairInt> SkylineExtractor.removeSetsWithNonCloudColors(
             List<PairIntArray>, Image, GreyscaleImage, boolean, int) )
         && args(zeroPointLists, originalColorImage, theta, addAlongX, addAmount)
 	    && target(algorithms.imageProcessing.SkylineExtractor) {
@@ -491,7 +517,7 @@ private static int n3 = 0;
             ImageIOHelper.addAlternatingColorCurvesToImage(zeroPointLists, clr);
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_noncloudcolors_removed_" + outImgNum + ".png", clr);
+                dirPath + "/sky_after_noncloudcolors_removed_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
             log2.severe("ERROR: " + e.getMessage());

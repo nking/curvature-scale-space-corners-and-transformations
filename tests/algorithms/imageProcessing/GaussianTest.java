@@ -66,6 +66,14 @@ public class GaussianTest {
         // convolving the X then the Y to make a 2-D set.
         PairIntArray convolvedA0XY = new PairIntArray(n);
         
+        /*
+        two 1-D gaussian convolutions vs one 2-D gaussian convolution:
+        
+        nCurve * nKernel + nCurve * nKernel = 2 * nCurve * nKernel
+        vs
+        nCurve * (nKernel*nKernel) = nCurve * nKernel^2
+        */
+        
         for (int i = 0; i < n; i++) {
                         
             int x = (int)k1dh.convolvePointWithKernel(a0, i, gSIGMA, true);

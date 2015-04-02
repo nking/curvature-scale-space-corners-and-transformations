@@ -39,8 +39,8 @@ public class InflectionMapperOneObjectTest {
         //boolean swapDueToScale = false;
             for (String rotDegrees : rotDegreesList) {
 
-               /* 
-                if (!rotDegrees.equals("180")) {
+                /*
+                if (!rotDegrees.equals("335")) {
                     continue;
                 }
                 */

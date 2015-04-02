@@ -151,9 +151,9 @@ public class CountingSort {
      * 
      * @param a
      * @param b
-     * @param max 
+     * @param maxValueInA max value in a 
      */
-    public static void sortByDecr(int[] a, int[] b, int max) {
+    public static void sortByDecr(int[] a, int[] b, int maxValueInA) {
 
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -165,11 +165,11 @@ public class CountingSort {
             throw new IllegalArgumentException(
             "the lengths of a and b must be the same");
         }
-        if (max <= 0) {
+        if (maxValueInA <= 0) {
             throw new IllegalArgumentException("max must be > 0");
         }
         
-        long[] c = new long[max + 1];
+        long[] c = new long[maxValueInA + 1];
 
         // c holds frequency of each number by index, e.g. c[0] holds the number of 0's in a
         for (int i = 0; i < a.length; i++) {

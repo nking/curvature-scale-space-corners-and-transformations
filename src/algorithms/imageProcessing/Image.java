@@ -14,11 +14,11 @@ public class Image {
     final int[] g;
     final int[] b;
     
-    private final int width;
+    protected final int width;
     
-    private final int height;
+    protected final int height;
     
-    private final int nPixels;
+    protected final int nPixels;
     
     /**
      * @param theWidth
@@ -37,6 +37,12 @@ public class Image {
         g = new int[nPixels];
         
         b = new int[nPixels];
+        
+        init();
+    }
+    
+    protected void init() {
+        // not used for base class
     }
     
     public void setRGB(int col, int row, int rPix, int gPix, int bPix) {
@@ -235,6 +241,7 @@ public class Image {
         System.arraycopy(copyThis.r, 0, r, 0, nPixels);
         System.arraycopy(copyThis.g, 0, g, 0, nPixels);
         System.arraycopy(copyThis.b, 0, b, 0, nPixels);
+        
     }
 
     /**
