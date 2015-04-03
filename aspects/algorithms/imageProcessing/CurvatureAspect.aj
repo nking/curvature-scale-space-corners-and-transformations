@@ -266,7 +266,7 @@ public aspect CurvatureAspect {
         Map<Integer, PixelColors> pixelColorsMap,
         Map<PairInt, Set<PixelColors> > skyColorsMap
         ) 
-        : call(private void SkylineExtractor.findClouds(Set<PairInt>, Set<PairInt>,
+        : call(void SkylineExtractor.findClouds(Set<PairInt>, Set<PairInt>,
         Image, GreyscaleImage, Map<Integer, PixelColors>, Map<PairInt, 
         Set<PixelColors> >)) 
         && args(skyPoints, excludePoints, originalColorImage, mask, pixelColorsMap, skyColorsMap) 
@@ -290,12 +290,13 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(Set<PairInt> skyPoints, Set<PairInt> excludePoints, Image originalColorImage, GreyscaleImage mask,
+    after(Set<PairInt> skyPoints, Set<PairInt> excludePoints, 
+        Image originalColorImage, GreyscaleImage mask,
         Map<Integer, PixelColors> pixelColorsMap,
         Map<PairInt, Set<PixelColors> > skyColorsMap
         )
         returning() :
-        execution(private void SkylineExtractor.findClouds(
+        execution(void SkylineExtractor.findClouds(
             Set<PairInt>, Set<PairInt>, Image, GreyscaleImage, Map<Integer, PixelColors>,
             Map<PairInt, Set<PixelColors> >) )
         && args(skyPoints, excludePoints, originalColorImage, mask, pixelColorsMap, skyColorsMap)
@@ -396,7 +397,7 @@ private static int n3 = 0;
         Image originalColorImage, int xOffset, int yOffset,
         boolean skyIsDarkGrey)
         returning(Set<PairInt> rainbowPoints) :
-        execution(private Set<PairInt> SkylineExtractor.findRainbowPoints(
+        execution(Set<PairInt> SkylineExtractor.findRainbowPoints(
             Set<PairInt>, Set<PairInt>, Image, int, int, boolean) )
         && args(skyPoints, reflectedSunRemoved, originalColorImage, 
             xOffset, yOffset, skyIsDarkGrey)

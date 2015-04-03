@@ -245,13 +245,11 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
                 skyIsDarkGrey) :
             new HashSet<PairInt>();
         
-        // find embedded non-sky pixels that should be sky:
-        Set<PairInt> embeddedPoints = findEmbeddedNonPointsExtendedToImageBounds(
-            points, mask, 1);
+        // find remaining embedded points that look like high contrast clouds
+        // (uses a color range to try to avoid including objects that aren't sky)
+        Set<PairInt> embeddedPoints = findEmbeddedNonPoints(points, sunPoints,
+            rainbowPoints);
         
-debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
-"after_first_0");
-
         if (!embeddedPoints.isEmpty()) {
 
             HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
@@ -1459,7 +1457,7 @@ try {
      * @param yRelativeOffset
      * @return 
      */
-    private Set<PairInt> findRainbowPoints(Set<PairInt> skyPoints, 
+    Set<PairInt> findRainbowPoints(Set<PairInt> skyPoints, 
         Set<PairInt> reflectedSunRemoved,
         Image colorImg, int xOffset, int yOffset, boolean skyIsDarkGrey) {
                 
@@ -2182,11 +2180,6 @@ try {
                 boolean isBrown = (Math.abs(rPercentV - 0.5) < 0.4)
                     && (Math.abs(gPercentV - 0.32) < 0.1)
                     && (Math.abs(bPercentV - 0.17) < 0.1);
-int vxDebug = 69;
-int vyDebug = 197;
-if (((vX + xOffset)==vxDebug) && ((vY + yOffset)==vyDebug)) {
-    int z = 1;
-}
               
                 if (isBrown) {
                     
@@ -2213,74 +2206,28 @@ if (((vX + xOffset)==vxDebug) && ((vY + yOffset)==vyDebug)) {
                 if (Double.isInfinite(skyStDevContrast)) {
                     continue;
                 }
-int tmp0 = 0;                
+              
                 if (skyIsRed) {
-                    
-if (
-    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    ||
-    (((vX + xOffset) >= 72) && ((vX + xOffset) <= 84) &&
-    ((vY + yOffset) >= 194) && ((vY + yOffset) <= 216))
-) {
-    log.info("[0]==> (" + (vX + xOffset) + "," + (vY + yOffset) + ")"
-+ " diffCIEX=" + diffCIEX + " diffCIEY=" + diffCIEY
-+ " stdDevCIEX=" + localSky.getStdDevCIEX() 
-+ " stdDevCIEY=" + localSky.getStdDevCIEY()
-+ " skyStDevContrast=" + skyStDevContrast
-+ " diff/stdv cieX=" + (diffCIEX/localSky.getStdDevCIEX())
-+ " diff/stdv cieY=" + (diffCIEY/localSky.getStdDevCIEY())
-+ " contrastV=" + contrastV
-+ " contrV/stdev=" + (Math.abs(contrastV)/skyStDevContrast)
-+ " clrDiffV/stdev=" + (colorDiffV/skyStDevColorDiff)
-+ " skyStDevColorDiff=" + skyStDevColorDiff
-);
-    int z = 1;
-}
 
                     // if contrast is '+' and large, may be the skyline boundary
                     if ((skyStDevContrast != 0.)
                         &&
                             ((contrastV > 1.0) && (Math.abs(contrastV) > 100.*skyStDevContrast))
                         ) {
-                        //th1 has the clause, th0 does not
-tmp0 = 20;
-if (
-    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    ||
-    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
-    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
-) {
-    log.info("  ==> EXCLUDED " + tmp0);
-}//for t00_nm, look for EXCLUDED for coords near (400, 100)
-//same for t11_half for ADDED for coords near (75, 200)
+                        
                         continue;
                     } else if ((skyStDevContrast != 0.)
                         &&
                             ((contrastV > 0.1) && (Math.abs(contrastV) > 3.*skyStDevContrast))
                         && (
                             ((diffCIEX > 0.03) &&
-                               (diffCIEX > 10.*localSky.getStdDevCIEX())
-                            )
+                               (diffCIEX > 10.*localSky.getStdDevCIEX()))
                             || 
                             ((diffCIEY > 0.03) &&
-                               (diffCIEY > 5.*localSky.getStdDevCIEY())
-                            )
+                               (diffCIEY > 5.*localSky.getStdDevCIEY()))
                             )
                         ) {
-                        //th1 has the clause, th0 does not
-tmp0 = 10;
-if (
-    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    ||
-    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
-    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
-) {
-    log.info("  ==> EXCLUDED " + tmp0);
-}//for t00_nm, look for EXCLUDED for coords near (400, 100)
-//same for t11_half for ADDED for coords near (75, 200)
+                        
                         continue;
                     } else if ((skyStDevContrast != 0.)
                         &&
@@ -2288,17 +2235,7 @@ if (
                         &&
                             (!((diffCIEX < 0.02) && (diffCIEY < 0.02)))
                         ) {
-                        //th1 has the clause, th0 does not
-tmp0 = 1;
-if (
-    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    ||
-    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
-    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
-) {
-    log.info("  ==> EXCLUDED (large contrast)" + tmp0);//
-}
+                        
                         continue;
                      
                     } else if ((skyStDevContrast != 0.)
@@ -2307,16 +2244,6 @@ if (
                         && ((diffCIEX > 0.03) || (diffCIEY > 0.03))
                         ) {
 
-tmp0 = 2;
-if (
-    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    ||
-    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
-    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
-) {
-    log.info("  ==> EXCLUDED " + tmp0);
-}
                         continue;
                         
                     } else if (skyStDevContrast == 0.) {
@@ -2324,29 +2251,65 @@ if (
                         if (contrastV >= 0.) {
                             doNotAddToStack = true;
                         }
-tmp0 = 3;
+
                     } else {
-tmp0 = 4;
+                        
                         //TODO:  if there are sun points, need a zone of
                         // avoidance to not erode the foreground 
                     }
 
                 } else {
 
-if (((vX + xOffset) == vxDebug) && ((vY + yOffset) == vyDebug)) {
-    float[] hsb = new float[3];
-    Color.RGBtoHSB(rV, gV, bV, hsb);
-    String str = String.format(
-        "*(%d, %d) contrastV=%f skyStDevContrast=%f colorDiffV=%f skyStDevColorDiff=%f hsb=%s",
-        (vX + xOffset), (vY + yOffset),
-        contrastV, skyStDevContrast, colorDiffV, skyStDevColorDiff,
-        Arrays.toString(hsb)
-    );
-    log.info(str);
-int z = 1;
+if (
+    //(((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    //((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    //||
+    (((vX + xOffset) >= 70) && ((vX + xOffset) <= 80) &&
+    ((vY + yOffset) >= 180) && ((vY + yOffset) <= 195))
+) {
+log.info(
+"==> (" + (vX + xOffset) + "," + (vY + yOffset) + ")"
++ " diffCIEX=" + diffCIEX + " diffCIEY=" + diffCIEY
++ " \nstdDevCIEX=" + localSky.getStdDevCIEX() 
++ " stdDevCIEY=" + localSky.getStdDevCIEY()
++ " \ndiff/stdv cieX=" + (diffCIEX/localSky.getStdDevCIEX())
++ " diff/stdv cieY=" + (diffCIEY/localSky.getStdDevCIEY())
++ " contrastV=" + contrastV
++ " contrastV/stdev=" + (Math.abs(contrastV)/skyStDevContrast)
++ " colorDiffV=" + colorDiffV
++ " \nclrDiffV/stdev=" + (colorDiffV/skyStDevColorDiff)
++ " \nskyStDevContrast=" + skyStDevContrast
++ " skyStDevColorDiff=" + skyStDevColorDiff
+);
+    int z = 1;
 }
+                    
                     //blue filters
                     if (
+                        (
+                            ((contrastV < 0.05) && (colorDiffV < 16)) 
+                            || 
+                            ((contrastV > 0.0) && (skyStDevContrast > 0.0) 
+                                && ((Math.abs(contrastV)/skyStDevContrast) < 2.5)
+                                && (diffCIEX < 0.01) && (diffCIEY < 0.01)
+                            )
+                            || 
+                            (
+                                (skyStDevContrast == 0.0) && (skyStDevColorDiff == 0.0)
+                                && (contrastV < 0.01) && (colorDiffV < 16)
+                            )
+                        )
+                        ) {
+/*if (
+    //(((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    //((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    //||
+    (((vX + xOffset) >= 70) && ((vX + xOffset) <= 80) &&
+    ((vY + yOffset) >= 180) && ((vY + yOffset) <= 195))
+) {*/
+log.info("   ==> ADDED");
+//}
+                    } else if (
                         (
                             (contrastV < 0.05)
                             || 
@@ -2356,11 +2319,26 @@ int z = 1;
                             )
                         )
                         &&
-                        (colorDiffV < 16)
+                        ((diffCIEX < 0.005) && (diffCIEY < 0.005))
+                        &&
+                            !((Math.abs(0.33 - rPercentV) < 0.3) 
+                            && (Math.abs(0.33 - gPercentV) < 0.3) 
+                            && (Math.abs(0.33 - bPercentV) < 0.3)
+                            && (gV > 199) && (bV > 199))
                         ) {
-                       
+log.info("   ==> SAME COLOR.  r=" + rV + " g=" + gV + " b=" + bV
++ " r/V=" + rPercentV + " g/V=" + gPercentV + " b/V=" + bPercentV);
+continue;
                     } else {
-
+/*if (
+    //(((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    //((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    //||
+    (((vX + xOffset) >= 70) && ((vX + xOffset) <= 80) &&
+    ((vY + yOffset) >= 180) && ((vY + yOffset) <= 195))
+) {*/
+log.info("   ==> EXCLUDED");
+//}
                         continue;
                     }
                 }
@@ -2373,17 +2351,6 @@ int z = 1;
 
                 localSkyColors.put(vPoint, localSky);
                 skyColorsMap.put(vPoint, skyColorsMap.get(uPoint));
-
-if (
-    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    ||
-    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
-    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
-) {
-    log.info("  ==> ADDED " + tmp0);
-}
-
             }
         }
                 
@@ -4175,7 +4142,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return rainbowPoints;
     }
 
-    private boolean skyIsDarkGrey(GroupPixelColors allSkyColor) {
+    boolean skyIsDarkGrey(GroupPixelColors allSkyColor) {
         
         float rDiffG = Math.abs(allSkyColor.getAvgRed() -
             allSkyColor.getAvgGreen());
@@ -4703,7 +4670,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return embeddedPoints;
     }
     
-    private Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points) {
+    Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points) {
         
         Set<PairInt> embeddedPoints = new HashSet<PairInt>();
         
@@ -4721,6 +4688,36 @@ debugPlot(set, colorImg, xOffset, yOffset,
                 
                 if (!points.contains(p)) {
                     embeddedPoints.add(p);
+                }
+            }
+        }
+        
+        return embeddedPoints;
+    }
+    
+    Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points,
+        Set<PairInt> exclude0, Set<PairInt> exclude1) {
+        
+        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
+        
+        PerimeterFinder finder = new PerimeterFinder();
+        int[] rowMinMax = new int[2];
+        Map<Integer, List<PairInt>> rowColRange = finder.find2(points, rowMinMax);
+
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {            
+            
+            List<PairInt> colRanges = rowColRange.get(Integer.valueOf(row));
+            
+            for (PairInt colRange : colRanges) {
+            
+                for (int col = colRange.getX(); col <= colRange.getY(); col++) {
+
+                    PairInt p = new PairInt(col, row);
+
+                    if (!points.contains(p) && !exclude0.contains(p) && 
+                        !exclude1.contains(p)) {
+                        embeddedPoints.add(p);
+                    }
                 }
             }
         }
