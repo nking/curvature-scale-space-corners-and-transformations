@@ -124,9 +124,12 @@ public class PerimeterFinder {
     }
     
     /**
-     * for the given points, find the ranges of contiguous columns and return
-     * that by row.  Note, it's assumed that the given points are contiguous,
-     * but see notes within for how it's handled when not.
+     * For the given points, find the ranges of columns that bound the points
+     * that are contiguous and the points that are completely 
+     * enclosed within points but not part of the set.
+     * This returns an outline of the points attempting to correct for
+     * concave portions of the hull, that is, it is roughly a concave hull
+     * that includes embedded PairInts that are not in the set points.
      * 
      * @param points
      * @param outputRowMinMax output populated as the min and max of rows are 
