@@ -1,14 +1,19 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PerimeterFinder;
 import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairInt;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.Before;
 import static org.junit.Assert.fail;
+import org.junit.Test;
 
 /**
  *
@@ -29,7 +34,8 @@ public class SkylineExtractorTest {
     public void tearDown() {
     }
    
-    private void testSkyline() throws Exception {
+    @Test
+    public void testSkyline() throws Exception {
         
         String[] fileNames = new String[] {
             "brown_lowe_2003_image1.jpg",
@@ -73,6 +79,8 @@ public class SkylineExtractorTest {
             SkylineExtractor skylineExtractor = new SkylineExtractor();
             
             Image originalColorImage = ImageIOHelper.readImage(filePath1);
+            
+            //------------------------
             Set<PairInt> skyPoints = new HashSet<PairInt>();
             int binFactor = skylineExtractor.determineBinFactorForSkyMask(
                 detector.getTheta().getNPixels());
@@ -81,17 +89,54 @@ public class SkylineExtractorTest {
                 skylineExtractor.filterAndExtractSkyFromGradient(
                 originalColorImage, detector.getTheta(), 
                 detector.getGradientXY(), binFactor, skyPoints);
+
+            PerimeterFinder perimeterFinder = new PerimeterFinder();
+            int[] skyRowMinMax = new int[2];
+            Map<Integer, PairInt> skyRowColRange = perimeterFinder.find(
+                skyPoints, skyRowMinMax);
+        
+            skylineExtractor.rightAndLowerDownSizingSkyPointCorrections(
+                skyPoints, binFactor, 
+                skyRowColRange, skyRowMinMax, originalColorImage,
+                detector.getTheta().getWidth(), detector.getTheta().getHeight(),
+                detector.getTheta().getXRelativeOffset(), 
+                detector.getTheta().getYRelativeOffset());
+
+debugPlot(skyPoints, originalColorImage, 
+detector.getTheta().getXRelativeOffset(), detector.getTheta().getYRelativeOffset(), 
+"skylinetest_" + fileName + "_after_downsize_corrections");            
             
+            GreyscaleImage mask = detector.getGradientXY().createWithDimensions();
+            mask.fill(1);
+            for (PairInt p : skyPoints) {
+                int x = p.getX();
+                int y = p.getY();
+                mask.setValue(x, y, 0);
+            }
             
-            Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+            int nSkyPointsBeforeFindClouds = skyPoints.size();
+        
+            Map<Integer, PixelColors> pixelColorsMap = new HashMap<Integer, PixelColors>();
 
-            ImageIOHelper.addToImage(skyPoints, 0, 0, image1, 255, 0, 0);
+            Map<PairInt, Set<PixelColors>> skyColorsMap = new HashMap<PairInt, Set<PixelColors>>();
 
-            String dirPath = ResourceFinder.findDirectory("bin");
-            String outFilePath = dirPath + "/skylinetest_01" + 
-                fileName + ".png";
+            //TODO: this will be revised when have narrowed down which color spaces
+            // to use.
+            skylineExtractor.populatePixelColorMaps(
+                skyPoints, originalColorImage, 
+                mask, pixelColorsMap,
+                skyColorsMap);
 
-            ImageIOHelper.writeOutputImage(outFilePath, image1);
+            skylineExtractor.findClouds(
+                skyPoints, new HashSet<PairInt>(), originalColorImage, 
+                mask,
+                pixelColorsMap, skyColorsMap);
+
+debugPlot(skyPoints, originalColorImage, 
+detector.getTheta().getXRelativeOffset(), detector.getTheta().getYRelativeOffset(), 
+"skylinetest_" + fileName + "_after_findClouds");
+
+            //--------------------------
         }
     }
     
@@ -106,6 +151,28 @@ public class SkylineExtractorTest {
             e.printStackTrace();
             System.out.println(e.getMessage());
             fail(e.getMessage());
+        }
+    }
+
+    static int count=0;
+    private void debugPlot(Set<PairInt> skyPoints, Image originalColorImage, 
+        int xRelativeOffset, int yRelativeOffset, String label) {
+        
+        Image clr = originalColorImage.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(skyPoints, xRelativeOffset, 
+                yRelativeOffset, clr, 0, 0, 255);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/" + label + "_" + count + ".png", clr);
+
+            //ImageDisplayer.displayImage(label, clr);
+            
+        } catch (IOException e) {
+            System.err.println("ERROR: " + e.getMessage());
         }
     }
 

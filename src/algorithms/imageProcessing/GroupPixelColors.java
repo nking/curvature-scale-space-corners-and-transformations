@@ -21,8 +21,13 @@ public class GroupPixelColors {
     private double stdDevRed;
     private double stdDevGreen;
     private double stdDevBlue;
-    
+        
     private float[] avgYUV;
+    
+    private float avgCIEX;
+    private float avgCIEY;
+    private double stdDevCIEX;
+    private double stdDevCIEY;
     
     public GroupPixelColors(final Set<PixelColors> colors) {
         
@@ -74,6 +79,9 @@ public class GroupPixelColors {
         float sumGreen = 0;
         float sumBlue = 0;
         
+        float sumCIEX = 0;
+        float sumCIEY = 0;
+        
         int i = 0;
         for (PixelColors pixColor : colors) {
             int r = pixColor.getRed();
@@ -82,12 +90,16 @@ public class GroupPixelColors {
             sumRed += r;
             sumGreen += g;
             sumBlue += b;
+            sumCIEX += pixColor.getCIEXY()[0];
+            sumCIEY += pixColor.getCIEXY()[1];
             i++;
         }
         
         avgRed = sumRed/n;
         avgGreen = sumGreen/n;
         avgBlue = sumBlue/n;
+        avgCIEX = sumCIEX/n;
+        avgCIEY = sumCIEY/n;
          
         float[][] m = new float[3][];
         m[0] = new float[]{0.256f, 0.504f, 0.098f};
@@ -104,6 +116,9 @@ public class GroupPixelColors {
         float[] contrast = new float[colors.size()];
         float[] colorDiff = new float[colors.size()];
        
+        double sumStdDevCIEX = 0;
+        double sumStdDevCIEY = 0;
+        
         i = 0;
         for (PixelColors pixColor : colors) {
             int r = pixColor.getRed();
@@ -120,6 +135,11 @@ public class GroupPixelColors {
             sumStdDevGreen += (diffG * diffG);
             sumStdDevBlue += (diffB * diffB);
             
+            float diffCIEX = pixColor.getCIEXY()[0] - avgCIEX;
+            float diffCIEY = pixColor.getCIEXY()[1] - avgCIEY;
+            sumStdDevCIEX += (diffCIEX * diffCIEX);
+            sumStdDevCIEY += (diffCIEY * diffCIEY);
+            
             contrast[i] = (avgYUV[0] - yuv[0])/yuv[0];
             sumContrast += contrast[i];
             
@@ -131,7 +151,7 @@ public class GroupPixelColors {
         
         avgContrast = sumContrast/n;
         avgColorDiff = sumColorDiff/n;
-        
+                
         stdDevRed = (n > 1) ? 
             Math.sqrt(sumStdDevRed/(n - 1)) : Double.POSITIVE_INFINITY;
         
@@ -139,6 +159,11 @@ public class GroupPixelColors {
             Math.sqrt(sumStdDevGreen/(n - 1)) : Double.POSITIVE_INFINITY;
         stdDevBlue = (n > 1) ? 
             Math.sqrt(sumStdDevBlue/(n - 1)) : Double.POSITIVE_INFINITY;
+        
+        stdDevCIEX = (n > 1) ? 
+            Math.sqrt(sumStdDevCIEX/(n - 1)) : Double.POSITIVE_INFINITY;
+        stdDevCIEY = (n > 1) ? 
+            Math.sqrt(sumStdDevCIEY/(n - 1)) : Double.POSITIVE_INFINITY;
         
         double sumStdDevContrast = 0;
         double sumStdDevColorDiff = 0;
@@ -261,6 +286,31 @@ public class GroupPixelColors {
     public float[] getAverageYUV() {
         return avgYUV;
     }
+    
+    /**
+     * @return the avgCIEX
+     */
+    public double getAverageCIEX() {
+        return avgCIEX;
+    }
+    /**
+     * @return the avgCIEY
+     */
+    public double getAverageCIEY() {
+        return avgCIEY;
+    }
+    /**
+     * @return the stdDevCIEX
+     */
+    public double getStdDevCIEX() {
+        return stdDevCIEX;
+    }
+    /**
+     * @return the stdDevCIEY
+     */
+    public double getStdDevCIEY() {
+        return stdDevCIEY;
+    }
 
     @Override
     public String toString() {
@@ -275,7 +325,12 @@ public class GroupPixelColors {
         .append(" stdDevGreen=").append(stdDevGreen).append("\n")
         .append(" stdDevBlue=").append(stdDevBlue).append("\n")
         .append(" stdDevContrast=").append(stdDevContrast).append("\n")
-        .append(" stdDevColorDiff=").append(stdDevColorDiff).append("\n");
+        .append(" stdDevColorDiff=").append(stdDevColorDiff).append("\n")
+        .append(" avgCIEX=").append(avgCIEX).append("\n")
+        .append(" avgCIEY=").append(avgCIEY).append("\n")
+        .append(" stdDevCIEX=").append(stdDevCIEX).append("\n")
+        .append(" stdDevCIEY=").append(stdDevCIEY).append("\n")
+        ;
        
         return sb.toString();
     }

@@ -177,9 +177,6 @@ public class SkylineExtractor {
         Map<Integer, PairInt> skyRowColRange = perimeterFinder.find(points, 
             skyRowMinMax);
         
-debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
-"before_downsize_corrections_2");
-
         rightAndLowerDownSizingSkyPointCorrections(points, binFactor, 
             skyRowColRange, skyRowMinMax, originalColorImage,
             theta.getWidth(), theta.getHeight(),
@@ -206,7 +203,7 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
         
         //TODO: this will be revised when have narrowed down which color spaces
         // to use.
-                
+        
         populatePixelColorMaps(points, originalColorImage, mask, pixelColorsMap, 
             skyColorsMap);
         
@@ -1917,7 +1914,7 @@ try {
      * @param yRelativeOffset the offset in y of the canny edge filter intermediate
      * product images from the reference frame of the originalColorImage.
      */
-    private void rightAndLowerDownSizingSkyPointCorrections(Set<PairInt> skyPoints, 
+    void rightAndLowerDownSizingSkyPointCorrections(Set<PairInt> skyPoints, 
         int binFactor, Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax,
         Image originalColorImage, int imageWidth, int imageHeight,
         int xRelativeOffset, int yRelativeOffset) {
@@ -2022,7 +2019,7 @@ try {
      * @param pixelColorsMap
      * @param skyColorsMap 
      */
-    private void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
+    void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
         Image originalColorImage, GreyscaleImage mask,
         Map<Integer, PixelColors> pixelColorsMap,
         Map<PairInt, Set<PixelColors> > skyColorsMap
@@ -2108,6 +2105,8 @@ try {
         //dxs = new int[]{-1,  0, 1, 0};
         //dys = new int[]{ 0, -1, 0, 1};
         
+        CIEChromaticity cieC = new CIEChromaticity();
+        
         while (!cloudStack.isEmpty()) {
 
             PairInt uPoint = cloudStack.pop();
@@ -2176,9 +2175,18 @@ try {
                 float gPercentV = (float)gV/totalRGBV;
                 float bPercentV = (float)bV/totalRGBV;
                 
+                float[] cieXY = cieC.rgbToXYChromaticity(rV, gV, bV);
+                double diffCIEX = Math.abs(cieXY[0] - localSky.getAverageCIEX());
+                double diffCIEY = Math.abs(cieXY[1] - localSky.getAverageCIEY());
+                
                 boolean isBrown = (Math.abs(rPercentV - 0.5) < 0.4)
                     && (Math.abs(gPercentV - 0.32) < 0.1)
                     && (Math.abs(bPercentV - 0.17) < 0.1);
+int vxDebug = 69;
+int vyDebug = 197;
+if (((vX + xOffset)==vxDebug) && ((vY + yOffset)==vyDebug)) {
+    int z = 1;
+}
               
                 if (isBrown) {
                     
@@ -2205,19 +2213,110 @@ try {
                 if (Double.isInfinite(skyStDevContrast)) {
                     continue;
                 }
-                
+int tmp0 = 0;                
                 if (skyIsRed) {
                     
+if (
+    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    ||
+    (((vX + xOffset) >= 72) && ((vX + xOffset) <= 84) &&
+    ((vY + yOffset) >= 194) && ((vY + yOffset) <= 216))
+) {
+    log.info("[0]==> (" + (vX + xOffset) + "," + (vY + yOffset) + ")"
++ " diffCIEX=" + diffCIEX + " diffCIEY=" + diffCIEY
++ " stdDevCIEX=" + localSky.getStdDevCIEX() 
++ " stdDevCIEY=" + localSky.getStdDevCIEY()
++ " skyStDevContrast=" + skyStDevContrast
++ " diff/stdv cieX=" + (diffCIEX/localSky.getStdDevCIEX())
++ " diff/stdv cieY=" + (diffCIEY/localSky.getStdDevCIEY())
++ " contrastV=" + contrastV
++ " contrV/stdev=" + (Math.abs(contrastV)/skyStDevContrast)
++ " clrDiffV/stdev=" + (colorDiffV/skyStDevColorDiff)
++ " skyStDevColorDiff=" + skyStDevColorDiff
+);
+    int z = 1;
+}
+
                     // if contrast is '+' and large, may be the skyline boundary
                     if ((skyStDevContrast != 0.)
                         &&
-                        (
+                            ((contrastV > 1.0) && (Math.abs(contrastV) > 100.*skyStDevContrast))
+                        ) {
+                        //th1 has the clause, th0 does not
+tmp0 = 20;
+if (
+    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    ||
+    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
+    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
+) {
+    log.info("  ==> EXCLUDED " + tmp0);
+}//for t00_nm, look for EXCLUDED for coords near (400, 100)
+//same for t11_half for ADDED for coords near (75, 200)
+                        continue;
+                    } else if ((skyStDevContrast != 0.)
+                        &&
                             ((contrastV > 0.1) && (Math.abs(contrastV) > 3.*skyStDevContrast))
-                            ||
-                            ((contrastV > 0) && (colorDiffV > 15*skyStDevColorDiff))
-                        )
+                        && (
+                            ((diffCIEX > 0.03) &&
+                               (diffCIEX > 10.*localSky.getStdDevCIEX())
+                            )
+                            || 
+                            ((diffCIEY > 0.03) &&
+                               (diffCIEY > 5.*localSky.getStdDevCIEY())
+                            )
+                            )
+                        ) {
+                        //th1 has the clause, th0 does not
+tmp0 = 10;
+if (
+    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    ||
+    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
+    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
+) {
+    log.info("  ==> EXCLUDED " + tmp0);
+}//for t00_nm, look for EXCLUDED for coords near (400, 100)
+//same for t11_half for ADDED for coords near (75, 200)
+                        continue;
+                    } else if ((skyStDevContrast != 0.)
+                        &&
+                            ((contrastV > 0.1) && (Math.abs(contrastV) > 3.*skyStDevContrast))
+                        &&
+                            (!((diffCIEX < 0.02) && (diffCIEY < 0.02)))
+                        ) {
+                        //th1 has the clause, th0 does not
+tmp0 = 1;
+if (
+    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    ||
+    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
+    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
+) {
+    log.info("  ==> EXCLUDED (large contrast)" + tmp0);//
+}
+                        continue;
+                     
+                    } else if ((skyStDevContrast != 0.)
+                        &&
+                        (contrastV > 0.01) && (colorDiffV > 15*skyStDevColorDiff)
+                        && ((diffCIEX > 0.03) || (diffCIEY > 0.03))
                         ) {
 
+tmp0 = 2;
+if (
+    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    ||
+    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
+    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
+) {
+    log.info("  ==> EXCLUDED " + tmp0);
+}
                         continue;
                         
                     } else if (skyStDevContrast == 0.) {
@@ -2225,16 +2324,16 @@ try {
                         if (contrastV >= 0.) {
                             doNotAddToStack = true;
                         }
-
+tmp0 = 3;
                     } else {
-
+tmp0 = 4;
                         //TODO:  if there are sun points, need a zone of
                         // avoidance to not erode the foreground 
                     }
 
                 } else {
-/* 
-if (((vX + xOffset) >= 588) && ((vX + xOffset) <= 588) && ((vY + yOffset) == 266)) {
+
+if (((vX + xOffset) == vxDebug) && ((vY + yOffset) == vyDebug)) {
     float[] hsb = new float[3];
     Color.RGBtoHSB(rV, gV, bV, hsb);
     String str = String.format(
@@ -2245,7 +2344,7 @@ if (((vX + xOffset) >= 588) && ((vX + xOffset) <= 588) && ((vY + yOffset) == 266
     );
     log.info(str);
 int z = 1;
-}*/
+}
                     //blue filters
                     if (
                         (
@@ -2274,6 +2373,16 @@ int z = 1;
 
                 localSkyColors.put(vPoint, localSky);
                 skyColorsMap.put(vPoint, skyColorsMap.get(uPoint));
+
+if (
+    (((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
+    ((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
+    ||
+    (((vX + xOffset) >= 65) && ((vX + xOffset) <= 95) &&
+    ((vY + yOffset) >= 182) && ((vY + yOffset) <= 225))
+) {
+    log.info("  ==> ADDED " + tmp0);
+}
 
             }
         }
@@ -2951,14 +3060,14 @@ int z = 1;
         return n;
     }
 
-    private void debugPlot(Set<PairInt> extSkyPoints, Image originalColorImage, 
+    void debugPlot(Set<PairInt> extSkyPoints, Image originalColorImage, 
         int xOffset, int yOffset, String outputPrefixForFileName) {
         
         //plot is made in aspects
         
     }
     
-    private void debugPlot(Set<PairInt> r0, Set<PairInt> r1, Set<PairInt> r2, 
+    void debugPlot(Set<PairInt> r0, Set<PairInt> r1, Set<PairInt> r2, 
         Set<PairInt> r3, Image originalColorImage, int xOffset, int yOffset, 
         String filtered_out_of_clouds) {
         
@@ -3124,7 +3233,7 @@ skyIsRed, hasDarkGreyClouds
         }
     }
 
-    private void populatePixelColorMaps(Set<PairInt> points, 
+    void populatePixelColorMaps(Set<PairInt> points, 
         Image originalColorImage, GreyscaleImage mask, 
         Map<Integer, PixelColors> pixelColorsMap, 
         Map<PairInt, Set<PixelColors>> skyColorsMap) {

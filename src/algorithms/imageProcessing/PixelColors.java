@@ -17,6 +17,8 @@ public class PixelColors {
     
     private double[] yuv = null;
     
+    private float[] cieXY = null;
+    
     public PixelColors(int r, int g, int b) {
         this.red = r;
         this.green = g;
@@ -42,6 +44,16 @@ public class PixelColors {
             Color.RGBtoHSB(red, green, blue, hsb);
         }
         return hsb[0];
+    }
+    
+    public float[] getCIEXY() {
+        
+        if (cieXY == null) {
+            CIEChromaticity cieC = new CIEChromaticity();
+            cieXY = cieC.rgbToXYChromaticity(red, green, blue);
+        }
+        
+        return cieXY;
     }
     
     public float getSaturation() {
