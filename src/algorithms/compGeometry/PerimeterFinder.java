@@ -4,10 +4,12 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * class to create a map of rows with start and stop column bounds (inclusive)
@@ -164,108 +166,47 @@ public class PerimeterFinder {
         Map<Integer, List<PairInt>> rowColRanges = findRowColRanges(points, 
             minX, maxX, minY, maxY);        
         
-        /*
-        TODO: alter algorithm to look at whether the contiguous gap pixels
-        are unbounded, rather than looking at each gap along a row.
-        TODO: consider where can make changes to iterate over data by
-        point in "points" instead of minX, maxX, minY, maxY to reduce the
-        runtime and keep it easier to make polynomial estimate.
+        // runtime complexity is > O(m) where m is the number of contig gap ranges by row
+        List<List<Gap>> contiguousGaps = findContiguousGaps(rowColRanges,
+            minX, maxX, minY, maxY);
         
-        -- visit each row in rowColRanges and store the gaps if any:
-           Gap: row, startGap, stopGapInclusive
-           store in a stack so that the last pushed are the smallest rows.
-           * runtime complexity is
-             O((maxY-minY+1)*k) where k is the number of contig ranges per row
-           * storage is a stack, inserts are O(1) rt and later pops are O(1) rt
-        -- visit each stack member using a DFS style w/ a push for true neighbors.
-           visit of gap u:
-              neighbors of u are gaps immediately above in row that are "connected".
-              for each neighbor v of u:
-                  process the pair as a new group or add to existing group for u or v.
-           * runtime complexity is > O(m) where m is the number of contig gap ranges by row
-           * storage is
-             reverse lookup: Gap -> group number.  needs fast search and insert
-                 so Map<Gap, Integer>
-             forward storage: need to be able to aggregate Gaps for a group,
-                 in a random indexed container.
-                 so List<List<Gap>>
-        -- each contiguous gap is then present in List<List<Gap>> as first 
-           level item
+        //runtime complexity is > O(m) where m is the number of contig gap ranges by row
+        Set<Gap> embeddedGaps = findBoundedGaps(contiguousGaps, minY, maxY, 
+            rowColRanges);
         
-        -- for each Gap in a gap group:
-              have row and gap.  use the check bounds for a row
-              -- if any are not bounded, this invalidates the entire
-                 group, so skip over it
-                 -- else add the entire group to a List<List<Gap>>
-                    that will be used for merging items in rowColRanges
-           * runtime complexity is > O(m) where m is the number of contig gap ranges by row
-           * storage is a List<List<Gap>>
-        -- visit each item in the new gaps List<List<Gap>>
-           condense the affected colRange for the row in rowColRanges
-           * runtime complexity depends on the dataset...still roughly O(m) or less
-        */ 
-        
-        // now, want to find gaps in the colRanges where there are points
-        // in "points" above it and below it (i.e. the gap is completely embedded
-        // in "points")
-        
-        //== O((maxY-minY+1)*k) where k is the number of contig ranges per row:
-        for (int row = minY; row <= maxY; row++) {
+        for (Gap gap : embeddedGaps) {
             
-            Integer key = Integer.valueOf(row);
+            int row = gap.getRow();
             
-            List<PairInt> colRanges = rowColRanges.get(key);
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
             
-            List<Integer> mergeIndexes = new ArrayList<Integer>();
-            
-            for (int i = 1; i < colRanges.size(); i++) {
+            for (int i = (colRanges.size() - 1); i > 0; i--) {
                 
                 int gapStart = colRanges.get(i - 1).getY() + 1;
                 int gapStop = colRanges.get(i).getX() - 1;
                 
-                boolean bounded = boundedByPointsInHigherRows(row, gapStart,
-                    gapStop, maxY, rowColRanges);
-                
-                if (!bounded) {
-                    continue;
-                }
-                
-                bounded = boundedByPointsInLowerRows(row, gapStart,
-                    gapStop, minY, rowColRanges);
-                
-                if (!bounded) {
-                    continue;
-                }
-                
-                // the gap is bounded above and below, so
-                // combine colRange before with current colRange
-                mergeIndexes.add(Integer.valueOf(i));
-            }
-            
-            if (!mergeIndexes.isEmpty()) {
-                
-                for (int i = (mergeIndexes.size() - 1); i > -1; i--) {
+                if ((gap.getStart() == gapStart) && (gap.getStopInclusive() == gapStop)) {
                     
-                    int idx = mergeIndexes.get(i).intValue();
-                    
-                    PairInt edit = colRanges.get(idx - 1);
-                    
-                    int gapStart = edit.getY() + 1;
-                    
-                    PairInt current = colRanges.get(idx);
-                    
-                    int gapStop = current.getX() - 1;
-                    
+                    PairInt edit = colRanges.get(i - 1);
+                                        
+                    PairInt current = colRanges.get(i);
+                                        
                     edit.setY(current.getY());
                                         
-                    colRanges.remove(idx);
+                    colRanges.remove(i);
                     
                     for (int cIdx = gapStart; cIdx <= gapStop; cIdx++) {
                         outputEmbeddedGapPoints.add(new PairInt(cIdx, row));
                     }
                 }
-            }
+            }    
         }
+        
+        /*
+        TODO: consider where can make changes to iterate over data by
+        point in "points" instead of minX, maxX, minY, maxY to reduce the
+        runtime and keep it easier to make polynomial estimate.
+        */ 
         
         return rowColRanges;
     }
@@ -435,14 +376,273 @@ public class PerimeterFinder {
         return rowColRange;
     }
 
-    private class Gap {
+    /**
+     * Find the gaps in rowColRanges and put them in same group if they are 
+     * connected.  Note that diagonal pixel are not considered connected
+     * (though this may change if test cases show they should be).
+     * 
+     * @param rowColRanges
+     * @param minX
+     * @param maxX
+     * @param minY
+     * @param maxY
+     * @return 
+     */
+    protected List<List<Gap>> findContiguousGaps(Map<Integer, List<PairInt>> 
+        rowColRanges, int minX, int maxX, int minY, int maxY) {
+        
+        // ---------------- store the gaps in a stack ---------------------
+        // runtime complexity is
+        // O((maxY-minY+1)*k) where k is the number of contig ranges per row
+        
+        // stack is lifo, so push in reverse order of desired use
+        Stack<Gap> stack = findGaps(rowColRanges, minX, maxX, minY, maxY);
+        
+        // ----------------- find contiguous gaps ------------------------        
+        List<List<Gap>> gapGroups = new ArrayList<List<Gap>>();
+        
+        if (stack.isEmpty()) {
+            return gapGroups;
+        }
+        
+        Map<Gap, Integer> gapToIndexMap = new HashMap<Gap, Integer>();
+        
+        Map<Gap, Boolean> visited = new HashMap<Gap, Boolean>();
+                
+        while (!stack.isEmpty()) {
+            
+            Gap uNode = stack.pop();
+            
+            if (visited.containsKey(uNode)) {
+                continue;
+            }
+            
+            visited.put(uNode, Boolean.TRUE);
+            
+            int row = uNode.getRow();
+            int uStart = uNode.getStart();
+            int uStopIncl = uNode.getStopInclusive();
+            
+            // search in row above for a neighbor.
+            // to save space, just looking in rowColRanges
+            
+            int vRow = row + 1;
+            
+            if (vRow > maxY) {
+                continue;
+            }
+            
+            // ------ find the connected neighbors of u, below u ---------
+            
+            List<Gap> vNodes = new ArrayList<Gap>();
+            
+            // these are ordered by increasing range:
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(vRow));
+            
+            /*
+                  |----|    |----|
+                @@@@@@@@@            case 0
+               @@@@@                 case 1
+                      @@@@@          case 2
+                    @@               case 3
+            */
+            for (int i = 1; i < colRanges.size(); i++) {
+                int gapStart = colRanges.get(i - 1).getY() + 1;
+                int gapStop = colRanges.get(i).getX() - 1;
+                
+                Gap vNode = null;
+                
+                // is any portion of uStart is within col0:col2
+                if ((uStart <= gapStart) && (uStopIncl >= gapStop)) {
+                    vNode = new Gap(vRow, gapStart, gapStop);
+                } else if ((uStopIncl >= gapStart) && (uStopIncl <= gapStop)) {
+                    vNode = new Gap(vRow, gapStart, gapStop);
+                } else if ((uStart >= gapStart) && (uStart <= gapStop)) {
+                    vNode = new Gap(vRow, gapStart, gapStop);
+                }
+                                
+                if (vNode != null) {
+                    
+                    vNodes.add(vNode);                    
+                }
+            }
+            
+            // ---------------- process the neighbors -----------------
+            
+            for (Gap vNode : vNodes) {
+                // process each node.  add to existing group or start a new one
+                Integer uIdx = gapToIndexMap.get(uNode);
+                Integer vIdx = gapToIndexMap.get(vNode);
+                Integer groupIdx = null;
+                if ((uIdx != null) && (vIdx != null)) {
+                    if (uIdx.intValue() == vIdx.intValue()) {
+                        // these are already in the same group... should not be visited again though
+                        groupIdx = uIdx;
+                    } else {
+                        Integer moveTo;
+                        Integer moveFrom;
+                        if (uIdx.intValue() < vIdx.intValue()) {
+                            moveTo = uIdx;
+                            moveFrom = vIdx;
+                        } else {
+                            moveTo = vIdx;
+                            moveFrom = uIdx;
+                        }
+                        List<Gap> moveFromG = gapGroups.get(moveFrom);
+                        for (Gap g : moveFromG) {
+                            gapToIndexMap.put(g, moveTo);
+                        }
+                        gapGroups.get(moveTo).addAll(moveFromG);
+                        gapGroups.get(moveFrom).clear();
+                        
+                        int z = 1;
+                    }
+                } else if (uIdx != null) {
+                    groupIdx = uIdx;
+                    List<Gap> group = gapGroups.get(groupIdx);
+                    group.add(vNode);
+                    gapToIndexMap.put(vNode, groupIdx);
+                } else if (vIdx != null) {
+                    groupIdx = vIdx;
+                    List<Gap> group = gapGroups.get(groupIdx);
+                    group.add(uNode);
+                    gapToIndexMap.put(uNode, groupIdx);
+                } else {
+                    // both are null
+                    List<Gap> group = new ArrayList<Gap>();
+                    group.add(uNode);
+                    group.add(vNode);
+                    groupIdx = Integer.valueOf(gapGroups.size());
+                    gapGroups.add(group);
+                    gapToIndexMap.put(uNode, groupIdx);
+                    gapToIndexMap.put(vNode, groupIdx);
+                }
+                
+                System.out.println(groupIdx + " ==> u " + uNode.toString() 
+                    + " v " + vNode.toString());
+                
+                stack.push(vNode);
+            }
+            
+            if (vNodes.isEmpty()) {
+                // store u alone
+                Integer groupIdx = gapToIndexMap.get(uNode);
+                if (groupIdx == null) {
+                    groupIdx = Integer.valueOf(gapGroups.size());
+                    List<Gap> group = new ArrayList<Gap>();
+                    group.add(uNode);
+                    gapGroups.add(group);
+                    gapToIndexMap.put(uNode, groupIdx);
+                }
+            }
+        }
+        
+        // condense:
+        boolean hasEmpty = false;
+        for (List<Gap> group : gapGroups) {
+            if (group.isEmpty()) {
+                hasEmpty = true;
+                break;
+            }
+        }
+        if (hasEmpty) {
+            List<List<Gap>> tmp = new ArrayList<List<Gap>>();
+            for (List<Gap> group : gapGroups) {
+                if (!group.isEmpty()) {
+                    tmp.add(group);
+                }
+            }
+            gapGroups = tmp;
+        }
+        /*
+        for (int i = 0; i < gapGroups.size(); i++) {
+            List<Gap> group = gapGroups.get(i);
+            System.out.println("group: " + i);
+            for (Gap gap : group) {
+                System.out.println("  " + gap.toString());
+            }
+        }
+        */
+        
+        return gapGroups;
+    }
+    
+    Stack<Gap> findGaps(Map<Integer, List<PairInt>> 
+        rowColRanges, int minX, int maxX, int minY, int maxY) {
+        
+        // ------- store the gaps in a stack --------
+        // runtime complexity is
+        // O((maxY-minY+1)*k) where k is the number of contig ranges per row
+        
+        // stack is lifo, so push in reverse order of desired use
+        Stack<Gap> stack = new java.util.Stack<Gap>();
+        
+        //for (int row = minY; row <= maxY; row++) {
+        for (int row = maxY; row >= minY; row--) {
+            
+            Integer key = Integer.valueOf(row);
+            
+            List<PairInt> colRanges = rowColRanges.get(key);
+                        
+            //for (int i = 1; i < colRanges.size(); i++) {
+            for (int i = (colRanges.size() - 1); i > 0; i--) {
+                
+                int gapStart = colRanges.get(i - 1).getY() + 1;
+                int gapStop = colRanges.get(i).getX() - 1;
+                
+                Gap gap = new Gap(row, gapStart, gapStop);
+                
+                stack.push(gap);
+            }
+        }
+        
+        return stack;
+    }
+
+    protected Set<Gap> findBoundedGaps(List<List<Gap>> contiguousGapGroups, 
+        int minY, int maxY, Map<Integer, List<PairInt>> rowColRanges) {
+        
+        Set<Gap> embeddedGaps = new HashSet<Gap>();
+        
+        for (List<Gap> contiguousGap : contiguousGapGroups) {
+            
+            boolean notBounded = false;
+            
+            for (Gap gap : contiguousGap) {
+                
+                boolean bounded = boundedByPointsInHigherRows(gap.getRow(), 
+                    gap.getStart(), gap.getStopInclusive(), maxY, rowColRanges);
+                
+                if (!bounded) {
+                    notBounded = true;
+                    break;
+                }
+                
+                bounded = boundedByPointsInLowerRows(gap.getRow(), 
+                    gap.getStart(), gap.getStopInclusive(), minY, rowColRanges);
+                
+                if (!bounded) {
+                    notBounded = true;
+                    break;
+                }
+            }
+            
+            if (!notBounded) {
+                embeddedGaps.addAll(contiguousGap);
+            }
+        }
+        
+        return embeddedGaps;
+    }
+
+    static class Gap {
         
         private final int row;
         
         private final int start;
         
         private final int stopInclusive;
-        
+                
         public Gap(int rowNumber, int startColumn, int stopColumnInclusive) {
             row = rowNumber;
             start = startColumn;
@@ -532,5 +732,15 @@ public class PerimeterFinder {
             return hash;
         }
 
+        @Override
+        public String toString() {
+            
+            StringBuilder sb = new StringBuilder();
+            sb.append("row=").append(Integer.toString(row))
+                .append(" cols=").append(Integer.toString(start))
+                .append(":").append(Integer.toString(stopInclusive));
+            
+            return sb.toString();
+        }
     }
 }

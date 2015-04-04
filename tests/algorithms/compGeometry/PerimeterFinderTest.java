@@ -1,5 +1,6 @@
 package algorithms.compGeometry;
 
+import algorithms.compGeometry.PerimeterFinder.Gap;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
@@ -12,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -745,7 +747,230 @@ public class PerimeterFinderTest extends TestCase {
         colRange = colRanges.get(1);
         assertTrue(colRange.getX() == 8);
         assertTrue(colRange.getY() == 9);
+        
     }
+    
+    /*
+    points with gaps, similar to st. louis arch image gaps:
+        0 1 2 3 4 5 6 7 8 9
+     0  @ @ @ @ @ @ @ @ @ @
+     1  @ @ @ @ @ @ @ @ @ @
+     2  @ @ @ @       @ @ @
+     3  @ @ @     @   @ @ @
+     4  @ @     @ @     @ @
+     5  @     @ @ @     @ @
+     6  @ # @ @ @ @ @   @ @
+     7      @ @ @ @ @   @ @
+     8      @ @ @ @ @   @ @
+     9      @ @ @ @ @ # @ @
+    */
+    public void testFindContiguousGaps_6_0() throws Exception {
+
+        Set<PairInt> points = getSet6();
+        points.add(new PairInt(1, 6));
+        points.add(new PairInt(7, 9));
+
+        int minX = 0;
+        int maxX = 9; 
+        int minY = 0; 
+        int maxY = 9;
+    
+        List<List<Gap>> expectedGapGroups = new ArrayList<List<Gap>>();
+        List<Gap> contigGaps = new ArrayList<Gap>();
+        contigGaps.add(new PerimeterFinder.Gap(2, 4, 6));
+        contigGaps.add(new PerimeterFinder.Gap(3, 3, 4));
+        contigGaps.add(new PerimeterFinder.Gap(3, 6, 6));
+        contigGaps.add(new PerimeterFinder.Gap(4, 2, 3));
+        contigGaps.add(new PerimeterFinder.Gap(4, 6, 7));
+        contigGaps.add(new PerimeterFinder.Gap(5, 1, 2));
+        contigGaps.add(new PerimeterFinder.Gap(5, 6, 7));
+        contigGaps.add(new PerimeterFinder.Gap(6, 7, 7));
+        contigGaps.add(new PerimeterFinder.Gap(7, 7, 7));
+        contigGaps.add(new PerimeterFinder.Gap(8, 7, 7));
+        expectedGapGroups.add(contigGaps);
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        Map<Integer, List<PairInt>> rowColRanges = 
+            perimeterFinder.findRowColRanges(points, minX, maxX, minY, maxY);
+        assertTrue(rowColRanges.size() == 10);
+        
+        Stack<Gap> gaps = perimeterFinder.findGaps(rowColRanges, 
+            minX, maxX, minY, maxY);
+        
+        Set<Gap> gaps2 = new HashSet<Gap>(gaps);
+        
+        assertTrue(gaps.size() == 10);
+        
+        //--- assert order of items in stack, and assert that all expected 
+        //    are present
+        
+        Set<Gap> expected = new HashSet<Gap>(expectedGapGroups.get(0));
+        int lastRow = Integer.MIN_VALUE;
+        int lastCol = Integer.MIN_VALUE;
+        while (!gaps.isEmpty()) {
+            Gap gap = gaps.pop();
+            
+            int row = gap.getRow();
+            int col = gap.getStart();
+            
+            if (row == lastRow) {
+                assertTrue(col > lastCol);
+            } else {
+                assertTrue(row > lastRow);
+            }
+            
+            assertTrue(expected.remove(gap));
+            
+            lastCol = gap.getStopInclusive();
+            lastRow = row;
+        }
+        assertTrue(expected.isEmpty());
+        
+        
+        int[] outputRowMinMax = new int[2];
+
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        rowColRanges = perimeterFinder.find2(
+            points, outputRowMinMax, outputEmbeddedGapPoints);
+        Set<PairInt> expectedPoints = new HashSet<PairInt>();
+        for (Gap gap : gaps2) {
+            for (int i = gap.getStart(); i <= gap.getStopInclusive(); i++) {
+                PairInt p = new PairInt(i, gap.getRow());
+                expectedPoints.add(p);
+            }
+        }
+        for (PairInt p : outputEmbeddedGapPoints) {
+            assertTrue(expectedPoints.remove(p));
+        }
+        assertTrue(expectedPoints.isEmpty());
+    }
+    
+    /*
+    points with gaps, similar to st. louis arch image gaps:
+        0 1 2 3 4 5 6 7 8 9
+     0  @ @ @ @ @ @ @ @ @ @
+     1  @ @ @ @ @ @ @ @ @ @
+     2  @ @ @ @       @ @ @
+     3  @ @ @     @   @ @ @
+     4  @ @     @ @     @ @
+     5  @     @ @ @     @ @
+     6  @ # @ @ @ @ @   @ @
+     7      @ @ @ @ @   @ @
+     8      @ @ @ @ @   @ @
+     9      @ @ @ @ @ # @ @
+    */
+    public void testFindContiguousGaps_6() throws Exception {
+
+        Set<PairInt> points = getSet6();
+        points.add(new PairInt(1, 6));
+        points.add(new PairInt(7, 9));
+
+        int minX = 0;
+        int maxX = 9; 
+        int minY = 0; 
+        int maxY = 9;
+    
+        List<List<Gap>> expectedGapGroups = new ArrayList<List<Gap>>();
+        List<Gap> contigGaps = new ArrayList<Gap>();
+        contigGaps.add(new PerimeterFinder.Gap(2, 4, 6));
+        contigGaps.add(new PerimeterFinder.Gap(3, 3, 4));
+        contigGaps.add(new PerimeterFinder.Gap(3, 6, 6));
+        contigGaps.add(new PerimeterFinder.Gap(4, 2, 3));
+        contigGaps.add(new PerimeterFinder.Gap(4, 6, 7));
+        contigGaps.add(new PerimeterFinder.Gap(5, 1, 2));
+        contigGaps.add(new PerimeterFinder.Gap(5, 6, 7));
+        contigGaps.add(new PerimeterFinder.Gap(6, 7, 7));
+        contigGaps.add(new PerimeterFinder.Gap(7, 7, 7));
+        contigGaps.add(new PerimeterFinder.Gap(8, 7, 7));
+        expectedGapGroups.add(contigGaps);
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        Map<Integer, List<PairInt>> rowColRanges = 
+            perimeterFinder.findRowColRanges(points, minX, maxX, minY, maxY);
+        assertTrue(rowColRanges.size() == 10);
+        
+        List<List<Gap>> contiguousGapGroups = perimeterFinder.findContiguousGaps(rowColRanges, 
+            minX, maxX, minY, maxY);
+        
+        assertTrue(contiguousGapGroups.size() == 1);
+        
+        Set<Gap> expected = new HashSet<Gap>(expectedGapGroups.get(0));        
+        for (Gap gap : contiguousGapGroups.get(0)) {
+            assertTrue(expected.remove(gap));
+        }
+        assertTrue(expected.isEmpty());
+        
+        
+        //-----------
+        Set<Gap> boundedGaps = perimeterFinder.findBoundedGaps(
+            contiguousGapGroups, minY, maxY, rowColRanges);
+        
+        expected = new HashSet<Gap>(expectedGapGroups.get(0));        
+        for (Gap gap : boundedGaps) {
+            assertTrue(expected.remove(gap));
+        }
+        assertTrue(expected.isEmpty());
+    }
+    
+    /*2: group of points with points not all along the perimeter
+        0 1 2 3 4 5 6
+        @ @ @ @ @ @ @
+        @   @ @   @
+        @ @ @ @ @ @ @
+    */
+    public void testFindContiguousGaps_2() throws Exception {
+
+        Set<PairInt> points = getSet2();
+
+        int minX = 0;
+        int maxX = 6; 
+        int minY = 0; 
+        int maxY = 2;
+    
+        List<List<Gap>> expectedGapGroups = new ArrayList<List<Gap>>();
+        List<Gap> contigGaps = new ArrayList<Gap>();
+        contigGaps.add(new PerimeterFinder.Gap(1, 1, 1));
+        expectedGapGroups.add(contigGaps);
+        contigGaps = new ArrayList<Gap>();
+        contigGaps.add(new PerimeterFinder.Gap(1, 4, 4));
+        expectedGapGroups.add(contigGaps);
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        Map<Integer, List<PairInt>> rowColRanges = 
+            perimeterFinder.findRowColRanges(points, minX, maxX, minY, maxY);
+        assertTrue(rowColRanges.size() == 3);
+        
+        List<List<Gap>> contiguousGapGroups = perimeterFinder.findContiguousGaps(rowColRanges, 
+            minX, maxX, minY, maxY);
+        
+        assertTrue(contiguousGapGroups.size() == 2);
+        
+        Set<Gap> expected = new HashSet<Gap>(expectedGapGroups.get(0));
+        expected.addAll(expectedGapGroups.get(1));
+        for (List<Gap> contiguousGapGroup : contiguousGapGroups) {
+            for (Gap gap : contiguousGapGroup) {
+                assertTrue(expected.remove(gap));
+            }
+        }
+        assertTrue(expected.isEmpty());
+        
+        
+        //-----------
+        Set<Gap> boundedGaps = perimeterFinder.findBoundedGaps(
+            contiguousGapGroups, minY, maxY, rowColRanges);
+        
+        expected = new HashSet<Gap>(expectedGapGroups.get(0));
+        expected.addAll(expectedGapGroups.get(1));
+        for (Gap gap : boundedGaps) {
+            assertTrue(expected.remove(gap));
+        }
+        assertTrue(expected.isEmpty());
+    }
+    
     
     /*
     0: dense group of points w/o gaps
@@ -826,60 +1051,32 @@ public class PerimeterFinderTest extends TestCase {
      9      @ @ @ @ @   @ @
     */
     private Set<PairInt> getSet6() {
-        Set<PairInt> points = new HashSet<PairInt>();
-        for (int row = 0; row < 2; row++) {
-            for (int col = 0; col < 10; col++) {
-                points.add(new PairInt(col, row));
-            }
-        }
-        points.add(new PairInt(0, 2));
-        points.add(new PairInt(1, 2));
-        points.add(new PairInt(2, 2));
-        points.add(new PairInt(3, 2));
-        points.add(new PairInt(7, 2));
-        points.add(new PairInt(8, 2));
-        points.add(new PairInt(9, 2));
-        
-        points.add(new PairInt(0, 3));
-        points.add(new PairInt(1, 3));
-        points.add(new PairInt(2, 3));
-        points.add(new PairInt(5, 3));
-        points.add(new PairInt(7, 3));
-        points.add(new PairInt(8, 3));
-        points.add(new PairInt(9, 3));
-        
-        points.add(new PairInt(0, 4));
-        points.add(new PairInt(1, 4));
-        points.add(new PairInt(4, 4));
-        points.add(new PairInt(5, 4));
-        points.add(new PairInt(8, 4));
-        points.add(new PairInt(9, 4));
-        
-        points.add(new PairInt(0, 5));
-        points.add(new PairInt(3, 5));
-        points.add(new PairInt(4, 5));
-        points.add(new PairInt(5, 5));
-        points.add(new PairInt(8, 5));
-        points.add(new PairInt(9, 5));
-        
-        points.add(new PairInt(0, 6));
-        points.add(new PairInt(2, 6));
-        points.add(new PairInt(3, 6));
-        points.add(new PairInt(4, 6));
-        points.add(new PairInt(5, 6));
-        points.add(new PairInt(6, 6));
-        points.add(new PairInt(8, 6));
-        points.add(new PairInt(9, 6));
-        
-        for (int row = 7; row < 10; row++) {
-            points.add(new PairInt(2, row));
-            points.add(new PairInt(3, row));
-            points.add(new PairInt(4, row));
-            points.add(new PairInt(5, row));
-            points.add(new PairInt(6, row));
-            points.add(new PairInt(8, row));
-            points.add(new PairInt(9, row));
-        }
+        Set<PairInt> points = getSet(10, 10);
+        points.remove(new PairInt(4, 2));
+        points.remove(new PairInt(5, 2));
+        points.remove(new PairInt(6, 2));
+        points.remove(new PairInt(3, 3));
+        points.remove(new PairInt(4, 3));
+        points.remove(new PairInt(6, 3));
+        points.remove(new PairInt(2, 4));
+        points.remove(new PairInt(3, 4));
+        points.remove(new PairInt(6, 4));
+        points.remove(new PairInt(7, 4));
+        points.remove(new PairInt(1, 5));
+        points.remove(new PairInt(2, 5));
+        points.remove(new PairInt(6, 5));
+        points.remove(new PairInt(7, 5));
+        points.remove(new PairInt(1, 6));
+        points.remove(new PairInt(7, 6));
+        points.remove(new PairInt(0, 7));
+        points.remove(new PairInt(1, 7));
+        points.remove(new PairInt(7, 7));
+        points.remove(new PairInt(0, 8));
+        points.remove(new PairInt(1, 8));
+        points.remove(new PairInt(7, 8));
+        points.remove(new PairInt(0, 9));
+        points.remove(new PairInt(1, 9));
+        points.remove(new PairInt(7, 9));
         return points;
     }
     

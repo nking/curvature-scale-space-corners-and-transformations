@@ -38,7 +38,7 @@ public class SkylineExtractorTest {
     public void testSkyline() throws Exception {
         
         String[] fileNames = new String[] {
-            /*"brown_lowe_2003_image1.jpg",
+            "brown_lowe_2003_image1.jpg",
             //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             "venturi_mountain_j6_0001.png",
@@ -56,7 +56,7 @@ public class SkylineExtractorTest {
             "costa_rica.jpg",
             "new-mexico-sunrise_w725_h490.jpg",
             "arizona-sunrise-1342919937GHz.jpg",
-            "arches_sun_01.jpg", */
+            "arches_sun_01.jpg",
             "stlouis_arch.jpg", 
             //"contrail.jpg"
         };
