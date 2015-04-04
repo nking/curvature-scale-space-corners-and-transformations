@@ -316,11 +316,11 @@ public class PerimeterFinder {
 	    	throw new IllegalArgumentException("points cannot be null");
         }
         
-        //TODO: consider whether this needs to have an entry for every row
-        // between minY and maxY, and if not, then note that invoker
-        // needs to check for null, even within expected range,
-        // and change the algorithm here to iterate over points instead of 
-        // row and col.
+        /*
+        TODO: consider where can make changes to iterate over data by
+        point in "points" instead of minX, maxX, minY, maxY to reduce the
+        runtime and keep it easier to make polynomial estimate.
+        */ 
         
         // key holds row number
         // value holds (first column number, last column number) for points in the row
@@ -493,9 +493,7 @@ public class PerimeterFinder {
                             gapToIndexMap.put(g, moveTo);
                         }
                         gapGroups.get(moveTo).addAll(moveFromG);
-                        gapGroups.get(moveFrom).clear();
-                        
-                        int z = 1;
+                        gapGroups.get(moveFrom).clear();                        
                     }
                 } else if (uIdx != null) {
                     groupIdx = uIdx;
@@ -518,8 +516,8 @@ public class PerimeterFinder {
                     gapToIndexMap.put(vNode, groupIdx);
                 }
                 
-                System.out.println(groupIdx + " ==> u " + uNode.toString() 
-                    + " v " + vNode.toString());
+                //System.out.println(groupIdx + " ==> u " + uNode.toString() 
+                //    + " v " + vNode.toString());
                 
                 stack.push(vNode);
             }
@@ -538,15 +536,15 @@ public class PerimeterFinder {
         }
         
         // condense:
-        boolean hasEmpty = false;
+        boolean hasAnEmpty = false;
         for (List<Gap> group : gapGroups) {
             if (group.isEmpty()) {
-                hasEmpty = true;
+                hasAnEmpty = true;
                 break;
             }
         }
-        if (hasEmpty) {
-            List<List<Gap>> tmp = new ArrayList<List<Gap>>();
+        if (hasAnEmpty) {
+            List<List<Gap>> tmp = new ArrayList<List<Gap>>(gapGroups.size() - 1);
             for (List<Gap> group : gapGroups) {
                 if (!group.isEmpty()) {
                     tmp.add(group);
@@ -554,15 +552,6 @@ public class PerimeterFinder {
             }
             gapGroups = tmp;
         }
-        /*
-        for (int i = 0; i < gapGroups.size(); i++) {
-            List<Gap> group = gapGroups.get(i);
-            System.out.println("group: " + i);
-            for (Gap gap : group) {
-                System.out.println("  " + gap.toString());
-            }
-        }
-        */
         
         return gapGroups;
     }
