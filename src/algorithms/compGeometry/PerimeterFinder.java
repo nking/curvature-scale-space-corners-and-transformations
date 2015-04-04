@@ -256,26 +256,46 @@ public class PerimeterFinder {
         Map<Integer, List<PairInt>> rowColRanges = findRowColRanges(points, 
             minX, maxX, minY, maxY);        
         
-        /* TODO: alter algorithm to look at whether the contiguous gap pixels
+        /*
+        TODO: alter algorithm to look at whether the contiguous gap pixels
         are unbounded, rather than looking at each gap along a row.
-        ... in progress:
-        -find contiguous gaps within rowColRanges
-        -store those as groups of Map<Integer, List<PairInt>>
-        -for each contiguous gap group, visit similarly as below to
-            assert that each gap in a row is bounded above and below
-            if there is any that is not bounded, skip the rest of the group,
-            else include the entire group in the mergeIndexes with row information
-            to condense the values in rowColRanges and possibly
-            return the embedded gap points too
-        */
         
+        -- visit each row in rowColRanges and store the gaps if any:
+           Gap: row, startGap, stopGapInclusive
+           store in a stack so that the last pushed are the smallest rows.
+           * runtime complexity is > O(sqrt(N)) and < O(N).
+           * storage is a stack, inserts are O(1) rt and later pops are O(1) rt
+        -- visit each stack member using a dfs style w/ a push for true neighbors.
+           visit of gap u:
+              neighbors of u are gaps immediately above in row that "connected".
+              for each neighbor v of u:
+                  process the pair as a new group or added to existing group for u or v.
+           * runtime complexity is > O(sqrt(N)) and < O(N).
+           * storage is
+             reverse lookup: Gap -> group number.  needs fast search and insert
+                 so Map<Gap, Integer>
+             forward storage: need to be able to aggregate Gaps for a group,
+                 in a random indexed container.
+                 so List<List<Gap>>
+        -- each contiguous gap is then present in List<List<Gap>> as first 
+           level item
+        
+        -- for each gap:
+              have row and gap.  use the check bounds for a row
+              -- if any are not bounded, this invalidates the entire
+                 group, so skip over it
+                 -- else add the entire group to a List<List<Gap>>
+                    that will be used for merging items in rowColRanges
+           * runtime complexity is < O(N)
+           * storage is a List<List<Gap>>
+        -- visit each item in the gaps List<List<Gap>>
+           condense the affected colRange for the row in rowColRanges
+           * runtime complexity is < O(N)
+        */ 
         
         // now, want to find gaps in the colRanges where there are points
         // in "points" above it and below it (i.e. the gap is completely embedded
         // in "points")
-        //
-        // but we also need to remove the contiguous gap when any of it's 
-        // containing row colRanges is unbounded...
         
         for (int row = minY; row <= maxY; row++) {
             
@@ -406,9 +426,9 @@ public class PerimeterFinder {
         return gapRange.isEmpty();
     }
     
-    LinkedHashSet<Integer> createRange(int start, int stopExclusive) {
+    LinkedHashSet<Integer> createRange(int start, int stopInclusive) {
         
-        int n = stopExclusive - start + 1;
+        int n = stopInclusive - start + 1;
         
         LinkedHashSet<Integer> range = new LinkedHashSet<Integer>(n);
         
