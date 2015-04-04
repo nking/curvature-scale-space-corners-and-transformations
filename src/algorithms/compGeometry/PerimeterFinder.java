@@ -122,101 +122,6 @@ public class PerimeterFinder {
        
         return rowColRange;
     }
-    
-    /**
-     * For the given points, find the ranges of columns that bound the points
-     * that are contiguous and the points that are completely 
-     * enclosed within points but not part of the set.
-     * This returns an outline of the points attempting to correct for
-     * concave portions of the hull, that is, it is roughly a concave hull
-     * that includes embedded PairInts that are not in the set points.
-     * 
-     * @param points
-     * @param outputRowMinMax output populated as the min and max of rows are 
-     * determined.
-     * @return 
-     */
-    public Map<Integer, List<PairInt>> find2(Set<PairInt> points, 
-        int[] outputRowMinMax) {
-        
-        if (points == null) {
-	    	throw new IllegalArgumentException("points cannot be null");
-        }
-        if (outputRowMinMax == null) {
-	    	throw new IllegalArgumentException("outputRowMinMax cannot be null");
-        }
-        
-        //== O(N):
-        int[] minMaxXY = MiscMath.findMinMaxXY(points);
-        int minX = minMaxXY[0];
-        int maxX = minMaxXY[1];
-        int minY = minMaxXY[2];
-        int maxY = minMaxXY[3];
-        
-        outputRowMinMax[0] = minY;
-        outputRowMinMax[1] = maxY;       
-        
-        //== O((maxX-minX+1)*(maxY-minY+1)):
-        // key holds row number
-        // value holds (first column number, last column number) for points in the row
-        Map<Integer, List<PairInt>> rowColRange = findRowColRanges(points, 
-            minX, maxX, minY, maxY);        
-        
-        //== O((maxY-minY+1)*k) where k is the number of contig ranges per row:
-        // now, want to find gaps in the colRanges where there are points
-        // in "points" above it and below it (i.e. the gap is completely embedded
-        // in "points")
-        for (int row = minY; row <= maxY; row++) {
-            
-            Integer key = Integer.valueOf(row);
-            
-            List<PairInt> colRanges = rowColRange.get(key);
-            
-            List<Integer> mergeIndexes = new ArrayList<Integer>();
-            
-            for (int i = 1; i < colRanges.size(); i++) {
-                
-                int gapStart = colRanges.get(i - 1).getY() + 1;
-                int gapStop = colRanges.get(i).getX() - 1;
-                
-                boolean bounded = boundedByPointsInHigherRows(row, gapStart,
-                    gapStop, maxY, rowColRange);
-                
-                if (!bounded) {
-                    continue;
-                }
-                
-                bounded = boundedByPointsInLowerRows(row, gapStart,
-                    gapStop, minY, rowColRange);
-                
-                if (!bounded) {
-                    continue;
-                }
-                
-                // the gap is bounded above and below, so
-                // combine colRange before with current colRange
-                mergeIndexes.add(Integer.valueOf(i));
-            }
-            
-            if (!mergeIndexes.isEmpty()) {
-                
-                for (int i = (mergeIndexes.size() - 1); i > -1; i--) {
-                    
-                    int idx = mergeIndexes.get(i).intValue();
-                    
-                    PairInt edit = colRanges.get(idx - 1);
-                    
-                    PairInt current = colRanges.get(idx);
-                    
-                    edit.setY(current.getY());
-                    
-                    colRanges.remove(idx);
-                }
-            }
-        }
-        
-        return rowColRange;
-    }
    
     /**
      * For the given points, find the ranges of columns that bound the points
@@ -454,7 +359,8 @@ public class PerimeterFinder {
      * for the given points, find the ranges of contiguous columns and return
      * that by row. 
      * runtime complexity is O((maxX-minX+1)*(maxY-minY+1)), so this is
-     * larger than O(N) for datasets less than dense points datasets.
+     * larger than O(N) for points datasets that are less dense than the min
+     * max range.
      * 
      * @param points
      * @param outputRowMinMax output populated as the min and max of rows are 

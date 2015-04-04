@@ -4,7 +4,6 @@ import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -497,8 +496,10 @@ public class PerimeterFinderTest extends TestCase {
 
         int[] outputRowMinMax = new int[2];
 
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
         Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find2(
-            points, outputRowMinMax);
+            points, outputRowMinMax, outputEmbeddedGapPoints);
         assertTrue(rowColRanges.size() == 2);
 
         assertTrue(outputRowMinMax[0] == 0);
@@ -525,8 +526,10 @@ public class PerimeterFinderTest extends TestCase {
 
         int[] outputRowMinMax = new int[2];
 
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
         Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find2(
-            points, outputRowMinMax);
+            points, outputRowMinMax, outputEmbeddedGapPoints);
         assertTrue(rowColRanges.size() == 3);
         
         assertTrue(outputRowMinMax[0] == 0);
@@ -559,8 +562,10 @@ public class PerimeterFinderTest extends TestCase {
 
         int[] outputRowMinMax = new int[2];
 
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
         Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find2(
-            points, outputRowMinMax);
+            points, outputRowMinMax, outputEmbeddedGapPoints);
         assertTrue(rowColRanges.size() == 3);
         
         assertTrue(outputRowMinMax[0] == 0);
@@ -593,8 +598,10 @@ public class PerimeterFinderTest extends TestCase {
 
         int[] outputRowMinMax = new int[2];
 
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
         Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find2(
-            points, outputRowMinMax);
+            points, outputRowMinMax, outputEmbeddedGapPoints);
         assertTrue(rowColRanges.size() == 3);
         
         assertTrue(outputRowMinMax[0] == 0);
@@ -624,8 +631,10 @@ public class PerimeterFinderTest extends TestCase {
 
         int[] outputRowMinMax = new int[2];
 
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
         Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find2(
-            points, outputRowMinMax);
+            points, outputRowMinMax, outputEmbeddedGapPoints);
         assertTrue(rowColRanges.size() == 3);
         
         assertTrue(outputRowMinMax[0] == 0);
@@ -675,11 +684,11 @@ public class PerimeterFinderTest extends TestCase {
         @ @ @ @ @ @ @
 
         @ @ @ @ @ @ @
-    4: group of points missing columns in some places <=== allowed?
+    4: group of points missing columns in some places
         @ @ @ @   @ @
         @ @ @ @   @ @
         @ @ @ @   @ @
-    5: group of points missing intersecting column and row in some places <=== allowed?
+    5: group of points missing intersecting column and row in some places
         @ @ @ @   @ @
 
         @ @ @ @   @ @
