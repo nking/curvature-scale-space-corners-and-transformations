@@ -146,7 +146,7 @@ public class PerimeterFinder {
 	    	throw new IllegalArgumentException("outputRowMinMax cannot be null");
         }
         
-        //O(N):
+        //== O(N):
         int[] minMaxXY = MiscMath.findMinMaxXY(points);
         int minX = minMaxXY[0];
         int maxX = minMaxXY[1];
@@ -156,11 +156,13 @@ public class PerimeterFinder {
         outputRowMinMax[0] = minY;
         outputRowMinMax[1] = maxY;       
         
+        //== O((maxX-minX+1)*(maxY-minY+1)):
         // key holds row number
         // value holds (first column number, last column number) for points in the row
         Map<Integer, List<PairInt>> rowColRange = findRowColRanges(points, 
             minX, maxX, minY, maxY);        
         
+        //== O((maxY-minY+1)*k) where k is the number of contig ranges per row:
         // now, want to find gaps in the colRanges where there are points
         // in "points" above it and below it (i.e. the gap is completely embedded
         // in "points")
@@ -241,7 +243,7 @@ public class PerimeterFinder {
 	    	throw new IllegalArgumentException("outputRowMinMax cannot be null");
         }
         
-        //O(N):
+        //== O(N):
         int[] minMaxXY = MiscMath.findMinMaxXY(points);
         int minX = minMaxXY[0];
         int maxX = minMaxXY[1];
@@ -251,6 +253,7 @@ public class PerimeterFinder {
         outputRowMinMax[0] = minY;
         outputRowMinMax[1] = maxY;       
         
+        //== O((maxX-minX+1)*(maxY-minY+1)):
         // key holds row number
         // value holds (first column number, last column number) for points in the row
         Map<Integer, List<PairInt>> rowColRanges = findRowColRanges(points, 
@@ -259,18 +262,22 @@ public class PerimeterFinder {
         /*
         TODO: alter algorithm to look at whether the contiguous gap pixels
         are unbounded, rather than looking at each gap along a row.
+        TODO: consider where can make changes to iterate over data by
+        point in "points" instead of minX, maxX, minY, maxY to reduce the
+        runtime and keep it easier to make polynomial estimate.
         
         -- visit each row in rowColRanges and store the gaps if any:
            Gap: row, startGap, stopGapInclusive
            store in a stack so that the last pushed are the smallest rows.
-           * runtime complexity is > O(sqrt(N)) and < O(N).
+           * runtime complexity is > O(sqrt(N)) and < O(N).  it is
+             O((maxY-minY+1)*k) where k is the number of contig ranges per row
            * storage is a stack, inserts are O(1) rt and later pops are O(1) rt
         -- visit each stack member using a dfs style w/ a push for true neighbors.
            visit of gap u:
               neighbors of u are gaps immediately above in row that are "connected".
               for each neighbor v of u:
                   process the pair as a new group or add to existing group for u or v.
-           * runtime complexity is > O(sqrt(N)) and < O(N).
+           * runtime complexity is > O(m) where m is the number of contig gap ranges by row
            * storage is
              reverse lookup: Gap -> group number.  needs fast search and insert
                  so Map<Gap, Integer>
@@ -280,23 +287,24 @@ public class PerimeterFinder {
         -- each contiguous gap is then present in List<List<Gap>> as first 
            level item
         
-        -- for each Gap:
+        -- for each Gap in a gap group:
               have row and gap.  use the check bounds for a row
               -- if any are not bounded, this invalidates the entire
                  group, so skip over it
                  -- else add the entire group to a List<List<Gap>>
                     that will be used for merging items in rowColRanges
-           * runtime complexity is < O(N)
+           * runtime complexity is > O(m) where m is the number of contig gap ranges by row
            * storage is a List<List<Gap>>
-        -- visit each item in the gaps List<List<Gap>>
+        -- visit each item in the new gaps List<List<Gap>>
            condense the affected colRange for the row in rowColRanges
-           * runtime complexity is < O(N)
+           * runtime complexity depends on the dataset...still roughly O(m) or less
         */ 
         
         // now, want to find gaps in the colRanges where there are points
         // in "points" above it and below it (i.e. the gap is completely embedded
         // in "points")
         
+        //== O((maxY-minY+1)*k) where k is the number of contig ranges per row:
         for (int row = minY; row <= maxY; row++) {
             
             Integer key = Integer.valueOf(row);
@@ -445,10 +453,14 @@ public class PerimeterFinder {
     /**
      * for the given points, find the ranges of contiguous columns and return
      * that by row. 
+     * runtime complexity is O((maxX-minX+1)*(maxY-minY+1)), so this may be
+     * larger than O(N) for some datasets.
+     * 
      * @param points
      * @param outputRowMinMax output populated as the min and max of rows are 
      * determined.
-     * @return 
+     * @return a map with key = row, value = list of contiguous points in the
+     * row.
      */
     Map<Integer, List<PairInt>> findRowColRanges(Set<PairInt> points, 
         int minX, int maxX, int minY, int maxY) {
