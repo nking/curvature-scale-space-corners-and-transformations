@@ -269,7 +269,7 @@ public class PerimeterFinder {
         -- visit each row in rowColRanges and store the gaps if any:
            Gap: row, startGap, stopGapInclusive
            store in a stack so that the last pushed are the smallest rows.
-           * runtime complexity is > O(sqrt(N)) and < O(N).  it is
+           * runtime complexity is
              O((maxY-minY+1)*k) where k is the number of contig ranges per row
            * storage is a stack, inserts are O(1) rt and later pops are O(1) rt
         -- visit each stack member using a dfs style w/ a push for true neighbors.
@@ -453,8 +453,8 @@ public class PerimeterFinder {
     /**
      * for the given points, find the ranges of contiguous columns and return
      * that by row. 
-     * runtime complexity is O((maxX-minX+1)*(maxY-minY+1)), so this may be
-     * larger than O(N) for some datasets.
+     * runtime complexity is O((maxX-minX+1)*(maxY-minY+1)), so this is
+     * larger than O(N) for datasets less than dense points datasets.
      * 
      * @param points
      * @param outputRowMinMax output populated as the min and max of rows are 
@@ -468,6 +468,12 @@ public class PerimeterFinder {
         if (points == null) {
 	    	throw new IllegalArgumentException("points cannot be null");
         }
+        
+        //TODO: consider whether this needs to have an entry for every row
+        // between minY and maxY, and if not, then note that invoker
+        // needs to check for null, even within expected range,
+        // and change the algorithm here to iterate over points instead of 
+        // row and col.
         
         // key holds row number
         // value holds (first column number, last column number) for points in the row
