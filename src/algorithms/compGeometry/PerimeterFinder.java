@@ -267,9 +267,9 @@ public class PerimeterFinder {
            * storage is a stack, inserts are O(1) rt and later pops are O(1) rt
         -- visit each stack member using a dfs style w/ a push for true neighbors.
            visit of gap u:
-              neighbors of u are gaps immediately above in row that "connected".
+              neighbors of u are gaps immediately above in row that are "connected".
               for each neighbor v of u:
-                  process the pair as a new group or added to existing group for u or v.
+                  process the pair as a new group or add to existing group for u or v.
            * runtime complexity is > O(sqrt(N)) and < O(N).
            * storage is
              reverse lookup: Gap -> group number.  needs fast search and insert
@@ -280,7 +280,7 @@ public class PerimeterFinder {
         -- each contiguous gap is then present in List<List<Gap>> as first 
            level item
         
-        -- for each gap:
+        -- for each Gap:
               have row and gap.  use the check bounds for a row
               -- if any are not bounded, this invalidates the entire
                  group, so skip over it
@@ -511,4 +511,102 @@ public class PerimeterFinder {
         return rowColRange;
     }
 
+    private class Gap {
+        
+        private final int row;
+        
+        private final int start;
+        
+        private final int stopInclusive;
+        
+        public Gap(int rowNumber, int startColumn, int stopColumnInclusive) {
+            row = rowNumber;
+            start = startColumn;
+            stopInclusive = stopColumnInclusive;
+        }
+        
+        /**
+         * @return the row
+         */
+        public int getRow() {
+            return row;
+        }
+
+        /**
+         * @return the start
+         */
+        public int getStart() {
+            return start;
+        }
+
+        /**
+         * @return the stopInclusive
+         */
+        public int getStopInclusive() {
+            return stopInclusive;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            
+            if (!(obj instanceof Gap)) {
+                return false;
+            }
+            
+            Gap other = (Gap)obj;
+            
+            if ((other.getRow() == row) && (other.getStart() == start) &&
+                (other.getStopInclusive() == stopInclusive)) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+
+            int hash = fnvHashCode(this.row, this.start, this.stopInclusive);
+
+            return hash;
+        }
+
+        int fnv321aInit = 0x811c9dc5;
+        int fnv32Prime = 0x01000193;
+
+        protected int fnvHashCode(int i0, int i1, int i2) {
+
+            /*
+             * hash = offset_basis
+             * for each octet_of_data to be hashed
+             *     hash = hash xor octet_of_data
+             *     hash = hash * FNV_prime
+             * return hash
+             *
+             * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+             */
+            int hash = 0;
+
+            int sum = fnv321aInit;
+
+            // xor the bottom with the current octet.
+            sum ^= i0;
+
+            // multiply by the 32 bit FNV magic prime mod 2^32
+            sum *= fnv32Prime;
+
+            sum ^= i1;
+
+            sum *= fnv32Prime;
+            
+            sum ^= i2;
+
+            sum *= fnv32Prime;
+
+            hash = sum;
+
+            return hash;
+        }
+
+    }
 }
