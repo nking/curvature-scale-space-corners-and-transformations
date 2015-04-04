@@ -2259,30 +2259,6 @@ try {
                     }
 
                 } else {
-
-if (
-    //(((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    //((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    //||
-    (((vX + xOffset) >= 70) && ((vX + xOffset) <= 80) &&
-    ((vY + yOffset) >= 180) && ((vY + yOffset) <= 195))
-) {
-log.info(
-"==> (" + (vX + xOffset) + "," + (vY + yOffset) + ")"
-+ " diffCIEX=" + diffCIEX + " diffCIEY=" + diffCIEY
-+ " \nstdDevCIEX=" + localSky.getStdDevCIEX() 
-+ " stdDevCIEY=" + localSky.getStdDevCIEY()
-+ " \ndiff/stdv cieX=" + (diffCIEX/localSky.getStdDevCIEX())
-+ " diff/stdv cieY=" + (diffCIEY/localSky.getStdDevCIEY())
-+ " contrastV=" + contrastV
-+ " contrastV/stdev=" + (Math.abs(contrastV)/skyStDevContrast)
-+ " colorDiffV=" + colorDiffV
-+ " \nclrDiffV/stdev=" + (colorDiffV/skyStDevColorDiff)
-+ " \nskyStDevContrast=" + skyStDevContrast
-+ " skyStDevColorDiff=" + skyStDevColorDiff
-);
-    int z = 1;
-}
                     
                     //blue filters
                     if (
@@ -2300,15 +2276,7 @@ log.info(
                             )
                         )
                         ) {
-/*if (
-    //(((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    //((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    //||
-    (((vX + xOffset) >= 70) && ((vX + xOffset) <= 80) &&
-    ((vY + yOffset) >= 180) && ((vY + yOffset) <= 195))
-) {*/
-log.info("   ==> ADDED");
-//}
+
                     } else if (
                         (
                             (contrastV < 0.05)
@@ -2326,19 +2294,10 @@ log.info("   ==> ADDED");
                             && (Math.abs(0.33 - bPercentV) < 0.3)
                             && (gV > 199) && (bV > 199))
                         ) {
-log.info("   ==> SAME COLOR.  r=" + rV + " g=" + gV + " b=" + bV
-+ " r/V=" + rPercentV + " g/V=" + gPercentV + " b/V=" + bPercentV);
-continue;
+
+                        continue;
+                        
                     } else {
-/*if (
-    //(((vX + xOffset) >= 340) && ((vX + xOffset) <= 360) &&
-    //((vY + yOffset) >= 95) && ((vY + yOffset) <= 120))
-    //||
-    (((vX + xOffset) >= 70) && ((vX + xOffset) <= 80) &&
-    ((vY + yOffset) >= 180) && ((vY + yOffset) <= 195))
-) {*/
-log.info("   ==> EXCLUDED");
-//}
                         continue;
                     }
                 }
@@ -4702,24 +4661,15 @@ debugPlot(set, colorImg, xOffset, yOffset,
         
         PerimeterFinder finder = new PerimeterFinder();
         int[] rowMinMax = new int[2];
-        Map<Integer, List<PairInt>> rowColRange = finder.find2(points, rowMinMax);
-
-        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {            
-            
-            List<PairInt> colRanges = rowColRange.get(Integer.valueOf(row));
-            
-            for (PairInt colRange : colRanges) {
-            
-                for (int col = colRange.getX(); col <= colRange.getY(); col++) {
-
-                    PairInt p = new PairInt(col, row);
-
-                    if (!points.contains(p) && !exclude0.contains(p) && 
-                        !exclude1.contains(p)) {
-                        embeddedPoints.add(p);
-                    }
-                }
-            }
+        Map<Integer, List<PairInt>> rowColRange = finder.find2(points, 
+            rowMinMax, embeddedPoints);
+        
+        for (PairInt exclude : exclude0) {
+            embeddedPoints.remove(exclude);
+        }
+        
+        for (PairInt exclude : exclude1) {
+            embeddedPoints.remove(exclude);
         }
         
         return embeddedPoints;

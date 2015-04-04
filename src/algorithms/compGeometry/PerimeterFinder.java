@@ -177,7 +177,7 @@ public class PerimeterFinder {
            * runtime complexity is
              O((maxY-minY+1)*k) where k is the number of contig ranges per row
            * storage is a stack, inserts are O(1) rt and later pops are O(1) rt
-        -- visit each stack member using a dfs style w/ a push for true neighbors.
+        -- visit each stack member using a DFS style w/ a push for true neighbors.
            visit of gap u:
               neighbors of u are gaps immediately above in row that are "connected".
               for each neighbor v of u:

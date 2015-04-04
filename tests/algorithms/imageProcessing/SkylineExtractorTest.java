@@ -38,7 +38,7 @@ public class SkylineExtractorTest {
     public void testSkyline() throws Exception {
         
         String[] fileNames = new String[] {
-            "brown_lowe_2003_image1.jpg",
+            /*"brown_lowe_2003_image1.jpg",
             //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             "venturi_mountain_j6_0001.png",
@@ -56,9 +56,9 @@ public class SkylineExtractorTest {
             "costa_rica.jpg",
             "new-mexico-sunrise_w725_h490.jpg",
             "arizona-sunrise-1342919937GHz.jpg",
-            "arches_sun_01.jpg", 
+            "arches_sun_01.jpg", */
             "stlouis_arch.jpg", 
-            "contrail.jpg"
+            //"contrail.jpg"
         };
         
         for (String fileName : fileNames) {
@@ -136,6 +136,49 @@ debugPlot(skyPoints, originalColorImage,
 detector.getTheta().getXRelativeOffset(), detector.getTheta().getYRelativeOffset(), 
 "skylinetest_" + fileName + "_after_findClouds");
 
+            GroupPixelColors allSkyColor = new GroupPixelColors(skyPoints,
+                originalColorImage, detector.getTheta().getXRelativeOffset(), 
+                detector.getTheta().getYRelativeOffset());
+
+            boolean skyIsDarkGrey = skylineExtractor.skyIsDarkGrey(allSkyColor);
+
+            Set<PairInt> sunPoints = new HashSet<PairInt>();
+            double[] ellipFitParams = 
+                skylineExtractor.findSunConnectedToSkyPoints(skyPoints, 
+                removedSets.getReflectedSunRemoved(), originalColorImage, 
+                detector.getTheta().getXRelativeOffset(), 
+                detector.getTheta().getYRelativeOffset(), skyIsDarkGrey, sunPoints);
+
+            //TODO: adjust this:
+            if ((ellipFitParams != null) && 
+                (
+                ((ellipFitParams[2]/ellipFitParams[3])> 7)
+                //TODO: reconsider this rule for sun on edge of image
+                || ((ellipFitParams[0] < 0) || (ellipFitParams[1] < 0))
+                )
+                ) {
+                sunPoints.clear();
+            }
+
+            // should not see sun and rainbow in same image
+            Set<PairInt> rainbowPoints = sunPoints.isEmpty() ?
+                skylineExtractor.findRainbowPoints(skyPoints, 
+                    removedSets.getReflectedSunRemoved(), 
+                    originalColorImage, 
+                    detector.getTheta().getXRelativeOffset(), 
+                    detector.getTheta().getYRelativeOffset(),
+                    skyIsDarkGrey) :
+                new HashSet<PairInt>();
+
+            // find remaining embedded points that look like high contrast clouds
+            // (uses a color range to try to avoid including objects that aren't sky)
+            Set<PairInt> embeddedPoints = skylineExtractor.findEmbeddedNonPoints(
+                skyPoints, sunPoints, rainbowPoints);
+
+debugPlot(embeddedPoints, originalColorImage, 
+detector.getTheta().getXRelativeOffset(), detector.getTheta().getYRelativeOffset(), 
+"skylinetest_" + fileName + "_embedded");
+            
             //--------------------------
         }
     }

@@ -535,6 +535,23 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(outputRowMinMax[0] == 0);
         assertTrue(outputRowMinMax[1] == 2);
         
+        /*
+        1: group of points with points all along the perimeter
+        0 1 2 3 4 5 6 7
+        @ @ @ @ @ @ @ @
+        @   @ @     @ @
+        @ @ @ @ @ @ @ @
+        */
+        assertTrue(outputEmbeddedGapPoints.size() == 3);
+        Set<PairInt> expectedEmbedded = new HashSet<PairInt>();
+        expectedEmbedded.add(new PairInt(1, 1));
+        expectedEmbedded.add(new PairInt(4, 1));
+        expectedEmbedded.add(new PairInt(5, 1));
+        for (PairInt embedded : outputEmbeddedGapPoints) {
+            assertTrue(expectedEmbedded.remove(embedded));
+        }
+        assertTrue(expectedEmbedded.isEmpty());
+        
         List<PairInt> colRanges = rowColRanges.get(0);
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
@@ -570,6 +587,17 @@ public class PerimeterFinderTest extends TestCase {
         
         assertTrue(outputRowMinMax[0] == 0);
         assertTrue(outputRowMinMax[1] == 2);
+        
+        
+        assertTrue(outputEmbeddedGapPoints.size() == 2);
+        Set<PairInt> expectedEmbedded = new HashSet<PairInt>();
+        expectedEmbedded.add(new PairInt(1, 1));
+        expectedEmbedded.add(new PairInt(4, 1));
+        for (PairInt embedded : outputEmbeddedGapPoints) {
+            assertTrue(expectedEmbedded.remove(embedded));
+        }
+        assertTrue(expectedEmbedded.isEmpty());
+        
         
         List<PairInt> colRanges = rowColRanges.get(0);
         assertTrue(colRanges.size() == 1);
@@ -640,6 +668,8 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(outputRowMinMax[0] == 0);
         assertTrue(outputRowMinMax[1] == 2);
         
+        assertTrue(outputEmbeddedGapPoints.isEmpty());
+        
         List<PairInt> colRanges = rowColRanges.get(0);
         assertTrue(colRanges.size() == 2);
         PairInt colRange = colRanges.get(0);
@@ -666,6 +696,55 @@ public class PerimeterFinderTest extends TestCase {
         colRange = colRanges.get(1);
         assertTrue(colRange.getX() == 5);
         assertTrue(colRange.getY() == 6);
+    }
+    
+    /*
+    points with gaps, similar to st. louis arch image gaps:
+        0 1 2 3 4 5 6 7 8 9
+     0  @ @ @ @ @ @ @ @ @ @
+     1  @ @ @ @ @ @ @ @ @ @
+     2  @ @ @ @       @ @ @
+     3  @ @ @     @   @ @ @
+     4  @ @     @ @     @ @
+     5  @     @ @ @     @ @
+     6  @   @ @ @ @ @   @ @
+     7      @ @ @ @ @   @ @
+     8      @ @ @ @ @   @ @
+     9      @ @ @ @ @   @ @
+    */
+    public void testFind2_6() throws Exception {
+
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        Set<PairInt> points = getSet6();
+
+        int[] outputRowMinMax = new int[2];
+
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find2(
+            points, outputRowMinMax, outputEmbeddedGapPoints);
+        assertTrue(rowColRanges.size() == 10);
+        
+        assertTrue(outputRowMinMax[0] == 0);
+        assertTrue(outputRowMinMax[1] == 9);
+        
+        assertTrue(outputEmbeddedGapPoints.isEmpty());
+        
+        List<PairInt> colRanges = rowColRanges.get(0);
+        assertTrue(colRanges.size() == 1);
+        PairInt colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 0);
+        assertTrue(colRange.getY() == 9);
+        
+        colRanges = rowColRanges.get(9);
+        assertTrue(colRanges.size() == 2);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 2);
+        assertTrue(colRange.getY() == 6);
+        colRange = colRanges.get(1);
+        assertTrue(colRange.getX() == 8);
+        assertTrue(colRange.getY() == 9);
     }
     
     /*
@@ -731,6 +810,79 @@ public class PerimeterFinderTest extends TestCase {
         }
         return points;
     }
+    
+    /*
+    points with gaps, similar to st. louis arch image gaps:
+        0 1 2 3 4 5 6 7 8 9
+     0  @ @ @ @ @ @ @ @ @ @
+     1  @ @ @ @ @ @ @ @ @ @
+     2  @ @ @ @       @ @ @
+     3  @ @ @     @   @ @ @
+     4  @ @     @ @     @ @
+     5  @     @ @ @     @ @
+     6  @   @ @ @ @ @   @ @
+     7      @ @ @ @ @   @ @
+     8      @ @ @ @ @   @ @
+     9      @ @ @ @ @   @ @
+    */
+    private Set<PairInt> getSet6() {
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int row = 0; row < 2; row++) {
+            for (int col = 0; col < 10; col++) {
+                points.add(new PairInt(col, row));
+            }
+        }
+        points.add(new PairInt(0, 2));
+        points.add(new PairInt(1, 2));
+        points.add(new PairInt(2, 2));
+        points.add(new PairInt(3, 2));
+        points.add(new PairInt(7, 2));
+        points.add(new PairInt(8, 2));
+        points.add(new PairInt(9, 2));
+        
+        points.add(new PairInt(0, 3));
+        points.add(new PairInt(1, 3));
+        points.add(new PairInt(2, 3));
+        points.add(new PairInt(5, 3));
+        points.add(new PairInt(7, 3));
+        points.add(new PairInt(8, 3));
+        points.add(new PairInt(9, 3));
+        
+        points.add(new PairInt(0, 4));
+        points.add(new PairInt(1, 4));
+        points.add(new PairInt(4, 4));
+        points.add(new PairInt(5, 4));
+        points.add(new PairInt(8, 4));
+        points.add(new PairInt(9, 4));
+        
+        points.add(new PairInt(0, 5));
+        points.add(new PairInt(3, 5));
+        points.add(new PairInt(4, 5));
+        points.add(new PairInt(5, 5));
+        points.add(new PairInt(8, 5));
+        points.add(new PairInt(9, 5));
+        
+        points.add(new PairInt(0, 6));
+        points.add(new PairInt(2, 6));
+        points.add(new PairInt(3, 6));
+        points.add(new PairInt(4, 6));
+        points.add(new PairInt(5, 6));
+        points.add(new PairInt(6, 6));
+        points.add(new PairInt(8, 6));
+        points.add(new PairInt(9, 6));
+        
+        for (int row = 7; row < 10; row++) {
+            points.add(new PairInt(2, row));
+            points.add(new PairInt(3, row));
+            points.add(new PairInt(4, row));
+            points.add(new PairInt(5, row));
+            points.add(new PairInt(6, row));
+            points.add(new PairInt(8, row));
+            points.add(new PairInt(9, row));
+        }
+        return points;
+    }
+    
     private Set<PairInt> getSet(int nCols, int nRows) {
         
         Set<PairInt> points = new HashSet<PairInt>();
