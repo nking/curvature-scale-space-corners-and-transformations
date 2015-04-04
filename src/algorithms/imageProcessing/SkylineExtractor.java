@@ -261,17 +261,25 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
                 theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
                 brightnessHistogram);
 
+            //add embedded pixels if they're near existing sky colors
+            addIfSimilarToSky(embeddedPoints, points, 
+                removedSets.getHighContrastRemoved(),
+                originalColorImage, mask,
+                brightnessHistogram, skyPartitionedByBrightness);
+            
+            /*
             findEmbeddedClouds(embeddedPoints, points, 
                 removedSets.getHighContrastRemoved(),
                 originalColorImage, mask,
                 pixelColorsMap, skyColorsMap,
                 brightnessHistogram, skyPartitionedByBrightness);
+            */
 
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_0");
 
 //plotSkyColor(points, colorImg, mask);
-
+/*
             if ((removedSets.getReflectedSunRemoved().size() < 50) &&
                 ((removedSets.getNBeforeHighContrastRemoval()
                 - removedSets.getNAfterHighContrastRemoval()) <= 
@@ -315,9 +323,10 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
 
                 }
             }
+*/
         }
 
-        Set<PairInt> exclude = new HashSet<PairInt>();
+        /*Set<PairInt> exclude = new HashSet<PairInt>();
         exclude.addAll(removedSets.getHighContrastRemoved());
         exclude.addAll(rainbowPoints);
         exclude.addAll(sunPoints);
@@ -341,11 +350,12 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
 "after_2");
 
         }
+        */
 
 log.info("number of sunPoints=" + sunPoints.size() + " "
     + "reflectedSunRemoved.size()=" + removedSets.getReflectedSunRemoved().size());
 
-        if (sunPoints.isEmpty()) {
+        /*if (sunPoints.isEmpty()) {
             
             growForLowContrastLimits(points, exclude, originalColorImage, mask);
         
@@ -357,7 +367,7 @@ log.info("number of sunPoints=" + sunPoints.size() + " "
             reduceToLargestContiguousGroup(points, mask, 1000, 
                 placeholdingPoints);
 
-        }
+        }*/
        
         if (!sunPoints.isEmpty()) {
             correctSkylineForSun(sunPoints, points, originalColorImage, mask, gradientXY);
@@ -4940,6 +4950,76 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         }
         
         return rmvd;
+    }
+
+    private void addIfSimilarToSky(Set<PairInt> embeddedPoints, 
+        Set<PairInt> skyPoints, Set<PairInt> highContrastRemoved, 
+        Image originalColorImage, GreyscaleImage mask, 
+        HistogramHolder[] brightnessHistogram, 
+        GroupPixelColors[] skyPartitionedByBrightness) {
+        
+        Set<PairInt> excludePoints = highContrastRemoved;
+        int xOffset = mask.getXRelativeOffset();
+        int yOffset = mask.getYRelativeOffset();
+        
+        boolean pointsAreEmbeddedInSky = true;
+        
+        double rDivB = skyPartitionedByBrightness[2].getAvgRed() /
+            skyPartitionedByBrightness[2].getAvgBlue();
+
+        boolean skyIsRed = (rDivB > 1);
+
+        boolean skyIsPurple = skyIsRed && (rDivB < 1.5) &&
+            (Math.abs(
+                skyPartitionedByBrightness[2].getAvgGreen() -
+                skyPartitionedByBrightness[2].getAvgBlue())
+                <
+                0.1 * skyPartitionedByBrightness[2].getAvgBlue()
+            );
+        boolean hasDarkGreyClouds = false;
+//only perform k=0 if the sky has a narrow dark section
+        boolean useKEqualsZero =
+            (skyPartitionedByBrightness[0].getStdDevGreen() < 10) &&
+            (skyPartitionedByBrightness[0].getStdDevBlue() < 10) &&
+            (skyPartitionedByBrightness[0].getStdDevContrast() < 10)
+            && (skyPartitionedByBrightness[0].getStdDevColorDiff()
+            < 10);
+        if (useKEqualsZero) {
+            if (skyIsRed) {
+                useKEqualsZero = useKEqualsZero &&
+                (skyPartitionedByBrightness[0].getStdDevRed() < 20);
+            } else {
+                useKEqualsZero = useKEqualsZero &&
+                (skyPartitionedByBrightness[0].getStdDevRed() < 10);
+            }
+        } else {
+            if (!skyIsRed) {
+                // if the sky is grey, may have dark clouds
+                if (skyIsDarkGrey(skyPartitionedByBrightness[0])) {
+                    useKEqualsZero = true;
+                    hasDarkGreyClouds = true;
+                }
+            }
+        }
+        
+        Set<PairInt> outputCloudPoints = new HashSet<PairInt>();
+        Stack<PairInt> outputStack = new java.util.Stack<PairInt>();
+        
+        for (PairInt embeddedPoint : embeddedPoints) {
+
+            if (excludePoints.contains(embeddedPoint)) {
+                continue;
+            }
+
+            filterToAddCloudPixel(excludePoints, skyPoints, 
+                originalColorImage, xOffset, yOffset, embeddedPoint,
+                brightnessHistogram, skyPartitionedByBrightness,
+                skyIsRed, skyIsPurple, hasDarkGreyClouds, useKEqualsZero,
+                pointsAreEmbeddedInSky,
+                outputCloudPoints, outputStack
+            );
+        }
+        skyPoints.addAll(outputCloudPoints);
     }
 
     public class RemovedSets {
