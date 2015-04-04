@@ -174,8 +174,9 @@ public class SkylineExtractor {
 
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         int[] skyRowMinMax = new int[2];
-        Map<Integer, PairInt> skyRowColRange = perimeterFinder.find(points, 
-            skyRowMinMax);
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(points, 
+            skyRowMinMax, outputEmbeddedGapPoints);
         
         rightAndLowerDownSizingSkyPointCorrections(points, binFactor, 
             skyRowColRange, skyRowMinMax, originalColorImage,
@@ -950,22 +951,8 @@ log.info(sb.toString());
             // ==== find contiguous zeros =====  
             
             growZeroValuePoints(skyPoints, excludeThesePoints, gXY2);
-            
-            //TODO: remove this section or move it into an aspect
-                
-            // === count number of embedded groups of non-zeros in skyPoints ===
-            
-            Set<PairInt> embeddedPoints = new HashSet<PairInt>();
-            
-//TODO: these embedded points are not used now!
-// follow up...
-            
-            int nCorrectedEmbeddedGroups = extractEmbeddedGroupPoints(
-                skyPoints, gXY2, embeddedPoints);
-            
+                                        
             log.info("nIter=" + nIter + ")" 
-                + " nCorrectedEmbeddedGroups=" + nCorrectedEmbeddedGroups
-                + " nEmbeddedPixels=" + embeddedPoints.size()
                 + " out of " + skyPoints.size()
                 + " (level=" + ((float)gXYValues.getY(lastHistIdx)/originalMaxValue) 
                 + " subtract=" + subtract + " out of max=" + gXYValues.getX(0)
@@ -1836,65 +1823,6 @@ try {
 
     }
 
-    public int extractEmbeddedGroupPoints(
-        List<Set<PairInt>> embeddedGroups, Map<Integer, PairInt> rowColRange, 
-        int[] rowMinMax, Set<PairInt> outputEmbeddedPoints,
-        int xMinImage, int xMaxImage, int yMinImage, int yMaxImage) {
-        
-        int nCorrectedEmbeddedGroups = 0;
-        
-        PerimeterFinder finder = new PerimeterFinder();
-        
-        for (int gId = 0; gId < embeddedGroups.size(); gId++) {
-
-            Set<PairInt> groupPoints = embeddedGroups.get(gId);
-
-            int[] gRowMinMax = new int[2];
-            Map<Integer, PairInt> gRowColRange = finder.find(groupPoints, 
-                gRowMinMax);
-
-            boolean unbounded = isPerimeterUnbound(gRowColRange, gRowMinMax,
-                rowColRange, rowMinMax, xMinImage, xMaxImage, yMinImage, yMaxImage);
-
-            if (!unbounded) {
-                
-                nCorrectedEmbeddedGroups++;
-                
-                outputEmbeddedPoints.addAll(groupPoints);
-            }
-        }
-        
-        return nCorrectedEmbeddedGroups;
-    }
-    
-    private int extractEmbeddedGroupPoints(Set<PairInt> skyPoints, 
-        GreyscaleImage gXY2, Set<PairInt> outputEmbeddedPoints) {
-        
-        PerimeterFinder finder = new PerimeterFinder();
-        int[] rowMinMax = new int[2];
-        Map<Integer, PairInt> rowColRange = finder.find(skyPoints, rowMinMax);
-        DFSContiguousValueFinder contiguousNonZeroFinder = 
-            new DFSContiguousValueFinder(gXY2);
-        contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0, rowColRange,
-            rowMinMax);
-        int nEmbeddedGroups = contiguousNonZeroFinder.getNumberOfGroups();
-
-        List<Set<PairInt>> embeddedGroups = new ArrayList<Set<PairInt>>();
-        
-        for (int gId = 0; gId < nEmbeddedGroups; gId++) {
-            
-            Set<PairInt> groupPoints = new HashSet<PairInt>();
-
-            contiguousNonZeroFinder.getXY(gId, groupPoints);
-            
-            embeddedGroups.add(groupPoints);
-            
-            outputEmbeddedPoints.addAll(groupPoints);
-        }
-                
-        return nEmbeddedGroups;
-    }
-
     /**
      * make downsizing corrections if any to fill in the rightmost sky points 
      * that would be missing due to down sizing
@@ -1913,7 +1841,7 @@ try {
      * product images from the reference frame of the originalColorImage.
      */
     void rightAndLowerDownSizingSkyPointCorrections(Set<PairInt> skyPoints, 
-        int binFactor, Map<Integer, PairInt> skyRowColRange, int[] skyRowMinMax,
+        int binFactor, Map<Integer, List<PairInt>> skyRowColRange, int[] skyRowMinMax,
         Image originalColorImage, int imageWidth, int imageHeight,
         int xRelativeOffset, int yRelativeOffset) {
         
@@ -1930,78 +1858,64 @@ try {
             final int row = r;
             final Integer rowIndex = Integer.valueOf(row);
             
-            PairInt cRange = skyRowColRange.get(rowIndex);
+            List<PairInt> cRanges = skyRowColRange.get(rowIndex);
+                        
+            for (PairInt cRange : cRanges) {
             
-            int rightCol = cRange.getY();
-            
-            if (rightCol < (lastCol - binFactor + 1)) {
-                continue;
-            }
-            
-            for (int i = 1; i <= binFactor; i++) {
-                
-                int x = rightCol + i;
-                
-                if ((x + xRelativeOffset) > (originalColorImage.getWidth() - 1)) {
-                    break;
+                int rightCol = cRange.getY();
+
+                if (rightCol < (lastCol - binFactor + 1)) {
+                    continue;
                 }
-                
-                PairInt rightPoint = new PairInt(x, row);
-                
-                skyPoints.add(rightPoint);
-                
-                skyRowColRange.put(rowIndex, new PairInt(cRange.getX(), x));
-            }
+
+                for (int i = 1; i <= binFactor; i++) {
+
+                    int x = rightCol + i;
+
+                    if ((x + xRelativeOffset) > (originalColorImage.getWidth() - 1)) {
+                        break;
+                    }
+
+                    PairInt rightPoint = new PairInt(x, row);
+
+                    skyPoints.add(rightPoint);
+
+                    cRange.setY(x);
+                }
+            }            
         }
 
         // lower boundary
         int diff = imageHeight - skyRowMinMax[1];
         if ((diff <= binFactor) && (diff > 0)) {
             
-            PairInt cRange = skyRowColRange.get(Integer.valueOf(skyRowMinMax[1]));
+            Integer rowIndex = Integer.valueOf(skyRowMinMax[1]);
             
-            for (int row = (skyRowMinMax[1] + 1); row < imageHeight; row++) {
-                PairInt colRange = new PairInt(cRange.getX(), cRange.getY());
-                skyRowColRange.put(Integer.valueOf(row), colRange);
-                
-                for (int col = colRange.getX(); col <= colRange.getY(); col++) {
-                    skyPoints.add(new PairInt(col, row));
+            List<PairInt> cRanges = skyRowColRange.get(rowIndex);
+                        
+            for (PairInt cRange : cRanges) {
+            
+                for (int row = (skyRowMinMax[1] + 1); row < imageHeight; row++) {
+                    
+                    PairInt colRange = new PairInt(cRange.getX(), cRange.getY());
+                    
+                    Integer key = Integer.valueOf(row);
+                    
+                    // should be null:
+                    List<PairInt> cLRanges = skyRowColRange.get(key);
+                    if (cLRanges == null) {
+                        cLRanges = new ArrayList<PairInt>();
+                        skyRowColRange.put(key, cLRanges);
+                    }
+                    cLRanges.add(colRange);
+                    
+                    for (int col = colRange.getX(); col <= colRange.getY(); col++) {
+                        skyPoints.add(new PairInt(col, row));
+                    }
                 }
             }
+            skyRowMinMax[1] += diff;
         }
-    }
-
-    private void addPointsAndUpdateRowColRange(Set<PairInt> skyPoints, 
-        Set<PairInt> sunPoints, Map<Integer, PairInt> skyRowColRange, 
-        int[] skyRowMinMax) {
-        
-        if (skyPoints == null) {
-            throw new IllegalArgumentException("skyPoints cannot be null");
-        }
-        if (sunPoints == null) {
-            throw new IllegalArgumentException("sunPoints cannot be null");
-        }
-        if (skyRowColRange == null) {
-            throw new IllegalArgumentException("skyRowColRange cannot be null");
-        }
-        if (skyRowMinMax == null) {
-            throw new IllegalArgumentException("skyRowMinMax cannot be null");
-        }
-        
-        if (sunPoints.isEmpty()) {
-            return;
-        }
-        
-        skyPoints.addAll(sunPoints);
-        
-        PerimeterFinder finder = new PerimeterFinder();
-        Map<Integer, PairInt> skyRowColRange2 = finder.find(skyPoints, 
-            skyRowMinMax);
-        
-        skyRowColRange.clear();
-        
-        skyRowColRange.putAll(skyRowColRange2);
-        
     }
 
     /**
@@ -2809,10 +2723,11 @@ debugPlot(skyPoints, originalColorImage, mask.getXRelativeOffset(),
 int z = 1;
 
                     //TODO: cases where sky is not contiguous at this point?
-                    embeddedPoints = findEmbeddedNonPointsExtendedToImageBounds(
+                    /*embeddedPoints = findEmbeddedNonPointsExtendedToImageBounds(
                         skyPoints, mask, 1);
 
                     skyPoints.addAll(embeddedPoints);
+                    */
 
                     for (PairInt p : embeddedPoints) {
                         int x = p.getX();
@@ -2823,8 +2738,8 @@ int z = 1;
                 
             } else {
                 
-                Set<PairInt> embeddedPoints = findEmbeddedContiguousUnincludedPoints(
-                    skyPoints, mask);
+                Set<PairInt> embeddedPoints = findEmbeddedNonPoints(
+                    skyPoints);
 
                 skyPoints.addAll(embeddedPoints);
 
@@ -4606,52 +4521,16 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return removed;
     }
 
-    private Set<PairInt> findEmbeddedContiguousUnincludedPoints(
-        Set<PairInt> points, GreyscaleImage mask) {
+    private Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points) {
         
-        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
-        
-        // adjust perimeter to enclose the edges that are touching the image
-        // boundaries
-        PerimeterFinder finder = new PerimeterFinder();
-        int[] rowMinMax = new int[2];
-        Map<Integer, PairInt> rowColRange = finder.find(points, rowMinMax);
-       
-        DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
-        contiguousNonZeroFinder.setMinimumNumberInCluster(1);
-        contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0,
-            rowColRange, rowMinMax);
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        int[] skyRowMinMax = new int[2];
 
-        for (int i = 0; i < contiguousNonZeroFinder.getNumberOfGroups(); i++) {
-            contiguousNonZeroFinder.getXY(i, embeddedPoints);
-        }
-        
-        return embeddedPoints;
-    }
-    
-    Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points) {
-        
-        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
-        
-        PerimeterFinder finder = new PerimeterFinder();
-        int[] rowMinMax = new int[2];
-        Map<Integer, PairInt> rowColRange = finder.find(points, rowMinMax);
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(
+            points, skyRowMinMax, outputEmbeddedGapPoints);
 
-        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {            
-            
-            PairInt colRange = rowColRange.get(Integer.valueOf(row));
-            
-            for (int col = colRange.getX(); col <= colRange.getY(); col++) {
-                
-                PairInt p = new PairInt(col, row);
-                
-                if (!points.contains(p)) {
-                    embeddedPoints.add(p);
-                }
-            }
-        }
-        
-        return embeddedPoints;
+        return outputEmbeddedGapPoints;
     }
     
     Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points,
@@ -4661,7 +4540,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
         
         PerimeterFinder finder = new PerimeterFinder();
         int[] rowMinMax = new int[2];
-        Map<Integer, List<PairInt>> rowColRange = finder.find2(points, 
+        Map<Integer, List<PairInt>> rowColRange = finder.find(points, 
             rowMinMax, embeddedPoints);
         
         for (PairInt exclude : exclude0) {
@@ -4675,34 +4554,6 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return embeddedPoints;
     }
     
-    private Set<PairInt> findEmbeddedNonPointsExtendedToImageBounds(
-        Set<PairInt> points, GreyscaleImage mask, int minGroupSize) {
-        
-        // determine the direction towards the skyline from the main sky
-        int[] dSkylineXY = determineChangeTowardsSkyline(points, 
-            mask.getWidth(), mask.getHeight());
-
-        // adjust perimeter to enclose the edges that are touching the image
-        // boundaries
-        PerimeterFinder finder = new PerimeterFinder();
-        int[] rowMinMax = new int[2];
-        Map<Integer, PairInt> rowColRange = finder.find(points, rowMinMax);
-        adjustPerimeterToIncludeImageBoundaries(rowMinMax, rowColRange, 
-            dSkylineXY, mask.getWidth(), mask.getHeight());
-
-        DFSContiguousValueFinder contiguousNonZeroFinder = new DFSContiguousValueFinder(mask);
-        contiguousNonZeroFinder.setMinimumNumberInCluster(minGroupSize);
-        contiguousNonZeroFinder.findEmbeddedGroupsNotThisValue(0,
-            rowColRange, rowMinMax);
-
-        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
-        for (int i = 0; i < contiguousNonZeroFinder.getNumberOfGroups(); i++) {
-            contiguousNonZeroFinder.getXY(i, embeddedPoints);
-        }
-
-        return embeddedPoints;
-    }
-
     private void correctSkylineForSun(Set<PairInt> sunPoints, 
         Set<PairInt> skyPoints, Image colorImg, GreyscaleImage mask, 
         GreyscaleImage gradientXY) {

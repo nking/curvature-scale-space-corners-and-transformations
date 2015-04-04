@@ -20,112 +20,6 @@ import java.util.Stack;
 public class PerimeterFinder {
   
     /**
-     * for the bounds of rows present in points, find the min and max of columns
-     * and return the result as a map with key = row number, value = pair of
-     * ints with x being the start column for that row and y being the stop
-     * column (inclusive) for that row.  note that rows without points were
-     * interpreted from their surrounding rows.
-     * 
-     * @param points
-     * @param outputRowMinMax output populated as the min and max of rows are 
-     * determined.
-     * @return 
-     */
-    public Map<Integer, PairInt> find(Set<PairInt> points, int[] outputRowMinMax) {
-        
-        if (points == null) {
-	    	throw new IllegalArgumentException("points cannot be null");
-        }
-        if (outputRowMinMax == null) {
-	    	throw new IllegalArgumentException("outputRowMinMax cannot be null");
-        }
-      
-        // key holds row number
-        // value holds (first column number, last column number) for points in the row
-        Map<Integer, PairInt> rowColRange = new HashMap<Integer, PairInt>();
-        
-        int minY = Integer.MAX_VALUE;
-        int maxY = Integer.MIN_VALUE;
-            
-        // O(N)
-        for (PairInt p : points) {
-            
-            int x = p.getX();
-            int y = p.getY();
-            if (y < minY) {
-                minY = y;
-            }
-            if (y > maxY) {
-                maxY = y;
-            }
-            
-            Integer key = Integer.valueOf(y);
-            PairInt value = rowColRange.get(key);
-            if (value == null) {
-                value = new PairInt(x, x);
-                rowColRange.put(key, value);
-            } else {
-                if (x < value.getX()) {
-                    value.setX(x);
-                } 
-                if (x > value.getY()) {
-                    value.setY(x);
-                }
-            }
-        }
-        
-        outputRowMinMax[0] = minY;
-        outputRowMinMax[1] = maxY;
-        
-        for (int row = minY; row < maxY; row++) {
-            
-            Integer key = Integer.valueOf(row);
-            PairInt value = rowColRange.get(key);
-                        
-            if ((value != null) && (value.getX() < value.getY())) {
-                continue;
-            }
-            if ((value != null) && (value.getX() == value.getY())
-                && (row == minY)) {
-                continue;
-            }
-            
-            // else, find values from closest previous and next rows
-            Integer prevKey = Integer.valueOf(row - 1);
-            PairInt prevValue = rowColRange.get(prevKey);
-            
-            int nextRow = -1;
-            Integer nextKey = null;
-            PairInt nextValue = null;
-            for (nextRow = row + 1; nextRow <= maxY; nextRow++) {
-                nextKey = Integer.valueOf(nextRow);
-                nextValue = rowColRange.get(nextKey);
-                if (nextValue != null) {
-                    break;
-                }
-            }
-           
-            float dRowX = (float)(nextValue.getX() - prevValue.getX())/
-                (float)(nextRow - prevKey.intValue());
-            
-            float x = (float)prevValue.getX() + 
-                (float)(row - prevKey.intValue()) * dRowX;
-                
-            float dRowY = (float)(nextValue.getY() - prevValue.getY())/
-                (float)(nextRow - prevKey.intValue());
-            
-            float y = (float)prevValue.getY() + 
-                (float)(row - prevKey.intValue()) * dRowY;
-            
-            value = new PairInt(Math.round(x), Math.round(y));
-            
-            rowColRange.put(key, value);
-        }
-       
-        return rowColRange;
-    }
-   
-    /**
      * For the given points, find the ranges of columns that bound the points
      * that are contiguous and the points that are completely 
      * enclosed within points but not part of the set.
@@ -138,9 +32,10 @@ public class PerimeterFinder {
      * determined.
      * @param outputEmbeddedGapPoints a return variable holding the found 
      * embedded points that are not in the "points" set, but are enclosed by it.
-     * @return 
+     * @return map w/ key being row number, value being a list of column ranges
+     * that inclusively bound the points in that row.
      */
-    public Map<Integer, List<PairInt>> find2(Set<PairInt> points, 
+    public Map<Integer, List<PairInt>> find(Set<PairInt> points, 
         int[] outputRowMinMax, Set<PairInt> outputEmbeddedGapPoints) {
         
         if (points == null) {
@@ -159,6 +54,12 @@ public class PerimeterFinder {
         
         outputRowMinMax[0] = minY;
         outputRowMinMax[1] = maxY;       
+        
+        /*
+        TODO: consider where can make changes to iterate over data by
+        point in "points" instead of minX, maxX, minY, maxY to reduce the
+        runtime and keep it easier to make polynomial estimate.
+        */ 
         
         //== O((maxX-minX+1)*(maxY-minY+1)):
         // key holds row number
@@ -201,12 +102,6 @@ public class PerimeterFinder {
                 }
             }    
         }
-        
-        /*
-        TODO: consider where can make changes to iterate over data by
-        point in "points" instead of minX, maxX, minY, maxY to reduce the
-        runtime and keep it easier to make polynomial estimate.
-        */ 
         
         return rowColRanges;
     }
@@ -378,7 +273,7 @@ public class PerimeterFinder {
 
     /**
      * Find the gaps in rowColRanges and put them in same group if they are 
-     * connected.  Note that diagonal pixel are not considered connected
+     * connected.  Note that diagonal pixels are not considered connected
      * (though this may change if test cases show they should be).
      * 
      * @param rowColRanges
@@ -566,14 +461,12 @@ public class PerimeterFinder {
         // stack is lifo, so push in reverse order of desired use
         Stack<Gap> stack = new java.util.Stack<Gap>();
         
-        //for (int row = minY; row <= maxY; row++) {
         for (int row = maxY; row >= minY; row--) {
             
             Integer key = Integer.valueOf(row);
             
             List<PairInt> colRanges = rowColRanges.get(key);
                         
-            //for (int i = 1; i < colRanges.size(); i++) {
             for (int i = (colRanges.size() - 1); i > 0; i--) {
                 
                 int gapStart = colRanges.get(i - 1).getY() + 1;

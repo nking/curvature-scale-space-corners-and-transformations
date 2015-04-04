@@ -7,6 +7,7 @@ import algorithms.util.PairInt;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -58,7 +59,7 @@ public class SkylineExtractorTest {
             "arizona-sunrise-1342919937GHz.jpg",
             "arches_sun_01.jpg",
             "stlouis_arch.jpg", 
-            //"contrail.jpg"
+            "contrail.jpg"
         };
         
         for (String fileName : fileNames) {
@@ -92,8 +93,10 @@ public class SkylineExtractorTest {
 
             PerimeterFinder perimeterFinder = new PerimeterFinder();
             int[] skyRowMinMax = new int[2];
-            Map<Integer, PairInt> skyRowColRange = perimeterFinder.find(
-                skyPoints, skyRowMinMax);
+            
+            Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+            Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(
+                skyPoints, skyRowMinMax, outputEmbeddedGapPoints);
         
             skylineExtractor.rightAndLowerDownSizingSkyPointCorrections(
                 skyPoints, binFactor, 
@@ -101,7 +104,8 @@ public class SkylineExtractorTest {
                 detector.getTheta().getWidth(), detector.getTheta().getHeight(),
                 detector.getTheta().getXRelativeOffset(), 
                 detector.getTheta().getYRelativeOffset());
-
+            
+            
 debugPlot(skyPoints, originalColorImage, 
 detector.getTheta().getXRelativeOffset(), detector.getTheta().getYRelativeOffset(), 
 "skylinetest_" + fileName + "_after_downsize_corrections");            
