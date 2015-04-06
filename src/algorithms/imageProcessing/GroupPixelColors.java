@@ -29,6 +29,8 @@ public class GroupPixelColors {
     private double stdDevCIEX;
     private double stdDevCIEY;
     
+    private Set<PixelColors> pixelColors = null;
+    
     public GroupPixelColors(final Set<PixelColors> colors) {
         
         if (colors == null) {
@@ -72,6 +74,8 @@ public class GroupPixelColors {
         if (colors == null) {
             throw new IllegalArgumentException("colors cannot be null");
         }
+        
+        pixelColors = colors;
         
         float n = colors.size();
         
@@ -210,6 +214,10 @@ public class GroupPixelColors {
         return dist;
     }    
 
+    public Set<PixelColors> getPixelColors() {
+        return pixelColors;
+    }
+    
     /**
      * @return the averageContrast
      */

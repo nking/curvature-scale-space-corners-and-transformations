@@ -436,24 +436,45 @@ public class PointMatcher3Test {
     private void testSkyline() throws Exception {
         
         String[] fileNames = new String[] {
-            /*"brown_lowe_2003_image1.jpg",
+            "brown_lowe_2003_image1.jpg",
             //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             "venturi_mountain_j6_0001.png",
             //"venturi_mountain_j6_0010.png",
             "seattle.jpg",
-            "arches.jpg",*/
+            "arches.jpg",
             "stinson_beach.jpg",
-            /*"cloudy_san_jose.jpg",
-            "30.jpg",          //0.7, 0.4, *1.53, 0.6
+            "cloudy_san_jose.jpg",
+            "30.jpg",
             "sky_with_rainbow.jpg",
-            "stonehenge.jpg", //1.4, 1.07, 1.3, 3.1, 18.3
+            "sky_with_rainbow2.jpg",
+            "stonehenge.jpg",
             "norwegian_mtn_range.jpg",
             "halfdome.jpg",
             "costa_rica.jpg",
             "new-mexico-sunrise_w725_h490.jpg",
-            "arizona-sunrise-1342919937GHz.jpg"*/
+            "arizona-sunrise-1342919937GHz.jpg",
+            "arches_sun_01.jpg",
+            "stlouis_arch.jpg", 
+            "contrail.jpg"
         };
+        /*
+         "brown_lowe_2003_image1.jpg",         fwhm hue=0.14, fwhm saturation=0.16       nsadded=
+         "venturi_mountain_j6_0001.png",       fwhm hue=0.12, fwhm saturation=0.31       nsadded=528 to 118228 points <==== ? contig would revert
+         "seattle.jpg",                        fwhm hue=0.11, fwhm saturation=0.12       nsadded=
+         "arches.jpg",                         fwhm hue=0.11, fwhm saturation=0.29       nsadded=3739 to 217049 points;  contig passes, OK
+         "stinson_beach.jpg",                  fwhm hue=0.11, fwhm saturation=0.37       nsadded=19112 to 63105 points;  contig fixes, OK
+         "cloudy_san_jose.jpg",                fwhm hue=0.11, fwhm saturation=0.15       nsadded=31017 to 163605 points; contig fixes, OK
+         "30.jpg",                             fwhm hue=0.  , fwhm saturation=0.         nsadded=
+         "sky_with_rainbow.jpg",               fwhm hue=0.15, fwhm saturation=0.06,0.46  nsadded=42887 to 117339 points;  contig passes, OK;  other problems
+         "sky_with_rainbow2.jpg",              fwhm hue=0.12, fwhm saturation=0.07       nsadded=547 to 63561 points; contig passes, OK;  other problems
+         "stonehenge.jpg",                     fwhm hue=0.06, fwhm saturation=0.22,0.74  nsadded=178 to 162882 points; contig fixes, OK
+         "norwegian_mtn_range.jpg",            fwhm hue=0.13, fwhm saturation=0.21       nsadded=902 to 124404 points; contig passes, OK;
+         "halfdome.jpg",                       fwhm hue=0.12, fwhm saturation=0.15       nsadded=
+         "costa_rica.jpg",                     fwhm hue=0.06, fwhm saturation=0.33       nsadded=
+         "new-mexico-sunrise_w725_h490.jpg",   fwhm hue=0.16, fwhm saturation=0.15       nsadded=1588 to 295376 points;contig passes, OK;
+         "arizona-sunrise-1342919937GHz.jpg"   fwhm hue=0.11, fwhm saturation=0.21       nsadded=49902 to 231634;contig passes, OK;
+        */
         
         for (String fileName : fileNames) {
             
@@ -464,7 +485,13 @@ public class PointMatcher3Test {
             Image img1 = ImageIOHelper.readImage(filePath1);
             int image1Width = img1.getWidth();
             int image1Height = img1.getHeight();
-
+      /*
+      ImageProcessor ip = new ImageProcessor();
+      ip.testFilter(img1);
+      if (true) {
+          return;
+      }
+      */
             List<PairIntArray> edges1 = null;
             PairIntArray points1 = null;
 

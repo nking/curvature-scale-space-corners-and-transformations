@@ -46,13 +46,13 @@ public class PerimeterFinderTest extends TestCase {
             points, 0, 3, 0, 1);
         assertTrue(rowColRanges.size() == 2);
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 3);
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -69,13 +69,13 @@ public class PerimeterFinderTest extends TestCase {
             points, 0, 7, 0, 2);
         assertTrue(rowColRanges.size() == 3);
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 7);
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 3);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -100,14 +100,14 @@ public class PerimeterFinderTest extends TestCase {
             points, 0, 6, 0, 2);
         assertTrue(rowColRanges.size() == 3);
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 6);
         
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 3);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -122,7 +122,7 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(colRange.getY() == 5);
         
         
-        colRanges = rowColRanges.get(2);
+        colRanges = rowColRanges.get(Integer.valueOf(2));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -139,17 +139,17 @@ public class PerimeterFinderTest extends TestCase {
             points, 0, 6, 0, 2);
         assertTrue(rowColRanges.size() == 3);
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 6);
         
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.isEmpty());
         
-        colRanges = rowColRanges.get(2);
+        colRanges = rowColRanges.get(Integer.valueOf(2));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -166,7 +166,7 @@ public class PerimeterFinderTest extends TestCase {
             points, 0, 6, 0, 2);
         assertTrue(rowColRanges.size() == 3);
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 2);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -176,7 +176,7 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(colRange.getY() == 6);
         
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 2);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -185,7 +185,7 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(colRange.getX() == 5);
         assertTrue(colRange.getY() == 6);
         
-        colRanges = rowColRanges.get(2);
+        colRanges = rowColRanges.get(Integer.valueOf(2));
         assertTrue(colRanges.size() == 2);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -205,7 +205,7 @@ public class PerimeterFinderTest extends TestCase {
             points, 0, 6, 0, 2);
         assertTrue(rowColRanges.size() == 3);
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 2);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -215,10 +215,10 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(colRange.getY() == 6);
         
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 0);
         
-        colRanges = rowColRanges.get(2);
+        colRanges = rowColRanges.get(Integer.valueOf(2));
         assertTrue(colRanges.size() == 2);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -339,13 +339,13 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(outputRowMinMax[0] == 0);
         assertTrue(outputRowMinMax[1] == 1);
 
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 3);
 
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -386,19 +386,19 @@ public class PerimeterFinderTest extends TestCase {
         }
         assertTrue(expectedEmbedded.isEmpty());
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 7);
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 7);
         
-        colRanges = rowColRanges.get(2);
+        colRanges = rowColRanges.get(Integer.valueOf(2));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -433,19 +433,19 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(expectedEmbedded.isEmpty());
         
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 6);
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 5);
         
-        colRanges = rowColRanges.get(2);
+        colRanges = rowColRanges.get(Integer.valueOf(2));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -469,16 +469,16 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(outputRowMinMax[0] == 0);
         assertTrue(outputRowMinMax[1] == 2);
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 6);
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 0);
         
-        colRanges = rowColRanges.get(2);
+        colRanges = rowColRanges.get(Integer.valueOf(2));
         assertTrue(colRanges.size() == 1);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -504,7 +504,7 @@ public class PerimeterFinderTest extends TestCase {
         
         assertTrue(outputEmbeddedGapPoints.isEmpty());
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 2);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -513,7 +513,7 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(colRange.getX() == 5);
         assertTrue(colRange.getY() == 6);
         
-        colRanges = rowColRanges.get(1);
+        colRanges = rowColRanges.get(Integer.valueOf(1));
         assertTrue(colRanges.size() == 2);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -522,7 +522,7 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(colRange.getX() == 5);
         assertTrue(colRange.getY() == 6);
         
-        colRanges = rowColRanges.get(2);
+        colRanges = rowColRanges.get(Integer.valueOf(2));
         assertTrue(colRanges.size() == 2);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
@@ -565,13 +565,13 @@ public class PerimeterFinderTest extends TestCase {
         
         assertTrue(outputEmbeddedGapPoints.isEmpty());
         
-        List<PairInt> colRanges = rowColRanges.get(0);
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(0));
         assertTrue(colRanges.size() == 1);
         PairInt colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 0);
         assertTrue(colRange.getY() == 9);
         
-        colRanges = rowColRanges.get(9);
+        colRanges = rowColRanges.get(Integer.valueOf(9));
         assertTrue(colRanges.size() == 2);
         colRange = colRanges.get(0);
         assertTrue(colRange.getX() == 2);
@@ -737,12 +737,14 @@ public class PerimeterFinderTest extends TestCase {
         
         
         //-----------
-        Set<Gap> boundedGaps = perimeterFinder.findBoundedGaps(
+        List<List<Gap>> boundedGaps = perimeterFinder.findBoundedGaps(
             contiguousGapGroups, minY, maxY, rowColRanges);
         
-        expected = new HashSet<Gap>(expectedGapGroups.get(0));        
-        for (Gap gap : boundedGaps) {
-            assertTrue(expected.remove(gap));
+        expected = new HashSet<Gap>(expectedGapGroups.get(0)); 
+        for (List<Gap> gapGroups : boundedGaps) {
+            for (Gap gap : gapGroups) {
+                assertTrue(expected.remove(gap));
+            }
         }
         assertTrue(expected.isEmpty());
     }
@@ -792,17 +794,309 @@ public class PerimeterFinderTest extends TestCase {
         
         
         //-----------
-        Set<Gap> boundedGaps = perimeterFinder.findBoundedGaps(
+        List<List<Gap>> boundedGaps = perimeterFinder.findBoundedGaps(
             contiguousGapGroups, minY, maxY, rowColRanges);
         
         expected = new HashSet<Gap>(expectedGapGroups.get(0));
         expected.addAll(expectedGapGroups.get(1));
-        for (Gap gap : boundedGaps) {
-            assertTrue(expected.remove(gap));
+        for (List<Gap> contiguousGapGroup : contiguousGapGroups) {
+            for (Gap gap : contiguousGapGroup) {
+                assertTrue(expected.remove(gap));
+            }
         }
         assertTrue(expected.isEmpty());
     }
     
+    public void testUpdateRowColRangesForAddedPoints_0() throws Exception {
+
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        Set<PairInt> points = getSet(4, 2, 5, 5);
+
+        int[] outputRowMinMax = new int[2];
+
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+            points, outputRowMinMax, outputEmbeddedGapPoints);
+        assertTrue(rowColRanges.size() == 2);
+
+        /*
+         4 5 6 7 8 9 
+           @ @ @ @ %  5
+         % @ @ @ @    6
+           %          7
+        */
+        Set<PairInt> add = new HashSet<PairInt>();
+        add.add(new PairInt(4, 6));
+        add.add(new PairInt(5, 7));
+        add.add(new PairInt(9, 5));
+        
+        perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
+            outputRowMinMax, add);
+    
+        assertTrue(outputRowMinMax[0] == 5);
+        assertTrue(outputRowMinMax[1] == 7);
+        
+        assertTrue(rowColRanges.size() == 3);
+        
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(5));
+        assertTrue(colRanges.size() == 1);
+        PairInt colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 5);
+        assertTrue(colRange.getY() == 9);
+
+        colRanges = rowColRanges.get(Integer.valueOf(6));
+        assertTrue(colRanges.size() == 1);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 4);
+        assertTrue(colRange.getY() == 8);
+        
+        colRanges = rowColRanges.get(Integer.valueOf(7));
+        assertTrue(colRanges.size() == 1);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 5);
+        assertTrue(colRange.getY() == 5);
+        
+        /*
+         4 5 6 7 8 9 
+           @ @ @ @ %  5
+         % @ @ @ @    6
+           %          7
+        */
+        
+        int imageMaxColumn = 9;
+        int imageMaxRow = 10;
+        
+        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+            rowColRanges, outputRowMinMax, imageMaxColumn, imageMaxRow);
+        
+        assertTrue(borderPixels.size() == 10);
+        
+        Set<PairInt> expected = new HashSet<PairInt>(points);
+        expected.addAll(add);
+        expected.remove(new PairInt(5, 6));
+        
+        for (PairInt p : borderPixels) {
+            assertTrue(expected.remove(p));
+        }
+        assertTrue(expected.isEmpty());
+    }
+    
+    public void testUpdateRowColRangesForAddedPoints_5() throws Exception {
+
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        /*
+            3 4 5 6 7 8 9
+            @ @ @ @   @ @  2
+                           3
+            @ @ @ @   @ @  4
+        */
+        Set<PairInt> points = getSet(7, 3, 3, 2);
+        for (int col = 3; col < 10; col++) {
+            points.remove(new PairInt(col, 3));
+        }
+        points.remove(new PairInt(7, 2));
+        points.remove(new PairInt(7, 4));
+
+        int[] outputRowMinMax = new int[2];
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+            points, outputRowMinMax, outputEmbeddedGapPoints);
+        assertTrue(rowColRanges.size() == 3);
+        
+        /*
+            3 4 5 6 7 8 9
+            %              1
+            @ @ @ @ % @ @  2
+            %     %        3
+            @ @ @ @ % @ @  4
+        */
+        Set<PairInt> add = new HashSet<PairInt>();
+        add.add(new PairInt(3, 1));
+        add.add(new PairInt(3, 3));
+        add.add(new PairInt(6, 3));
+        add.add(new PairInt(7, 2));
+        add.add(new PairInt(7, 4));
+
+        perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
+            outputRowMinMax, add);
+        
+        assertTrue(outputRowMinMax[0] == 1);
+        assertTrue(outputRowMinMax[1] == 4);
+        
+        assertTrue(rowColRanges.size() == 4);
+        
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(1));
+        assertTrue(colRanges.size() == 1);
+        PairInt colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 3);
+        assertTrue(colRange.getY() == 3);
+
+        colRanges = rowColRanges.get(Integer.valueOf(2));
+        assertTrue(colRanges.size() == 1);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 3);
+        assertTrue(colRange.getY() == 9);
+        
+        colRanges = rowColRanges.get(Integer.valueOf(3));
+        assertTrue(colRanges.size() == 1);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 3);
+        assertTrue(colRange.getY() == 6);
+        
+        colRanges = rowColRanges.get(Integer.valueOf(4));
+        assertTrue(colRanges.size() == 1);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 3);
+        assertTrue(colRange.getY() == 9);
+    }
+    
+    public void testUpdateForAddedPoints_5() throws Exception {
+
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        /*
+            3 4 5 6 7 8 9
+            @ @ @ @   @ @  2
+                           3
+            @ @ @ @   @ @  4
+        */
+        Set<PairInt> points = getSet(7, 3, 3, 2);
+        for (int col = 3; col < 10; col++) {
+            points.remove(new PairInt(col, 3));
+        }
+        points.remove(new PairInt(7, 2));
+        points.remove(new PairInt(7, 4));
+
+        int[] outputRowMinMax = new int[2];
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+            points, outputRowMinMax, outputEmbeddedGapPoints);
+        assertTrue(rowColRanges.size() == 3);
+        
+        /*
+            3 4 5 6 7 8 9
+            %              1
+            @ @ @ @ % @ @  2
+            %     %        3
+            @ @ @ @ % @ @  4
+        */
+        Set<PairInt> add = new HashSet<PairInt>();
+        add.add(new PairInt(3, 1));
+        add.add(new PairInt(3, 3));
+        add.add(new PairInt(6, 3));
+        add.add(new PairInt(7, 2));
+        add.add(new PairInt(7, 4));
+        
+        // ------ this is the intermediate stage, not yet condensed ranges -----
+        boolean allAreWithinExistingRange = 
+            perimeterFinder.updateForAddedPoints(rowColRanges, 
+            outputRowMinMax, add);
+        
+        assertFalse(allAreWithinExistingRange);
+        
+        assertTrue(outputRowMinMax[0] == 1);
+        assertTrue(outputRowMinMax[1] == 4);
+        
+        assertTrue(rowColRanges.size() == 4);
+        
+        /*
+            3 4 5 6 7 8 9
+            %              1
+            @ @ @ @ % @ @  2
+            %     %        3
+            @ @ @ @ % @ @  4
+        */
+        List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(1));
+        assertTrue(colRanges.size() == 1);
+        PairInt colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 3);
+        assertTrue(colRange.getY() == 3);
+
+        colRanges = rowColRanges.get(Integer.valueOf(2));
+        assertTrue(colRanges.size() == 1);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 3);
+        assertTrue(colRange.getY() == 9);
+        
+        colRanges = rowColRanges.get(Integer.valueOf(3));
+        assertTrue(colRanges.size() == 2);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 3);
+        assertTrue(colRange.getY() == 3);
+        colRange = colRanges.get(1);
+        assertTrue(colRange.getX() == 6);
+        assertTrue(colRange.getY() == 6);
+        
+        colRanges = rowColRanges.get(Integer.valueOf(4));
+        assertTrue(colRanges.size() == 1);
+        colRange = colRanges.get(0);
+        assertTrue(colRange.getX() == 3);
+        assertTrue(colRange.getY() == 9);
+    }
+    
+    public void testGetBorderPixels_5() throws Exception {
+
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        /*
+        5: group of points missing intersecting column and row in some places
+        0 1 2 3 4 5 6  
+        @ @ @ @   @ @  0
+          % %     % %  1
+        @ @ @ @   @ @  2
+        
+        TODO:  make a test out of this and make sure that pixels in top 
+        row in cols 0-2 are in borderPixels
+        0 1 2 3 4 5 6  
+        @ @ @ @ @ @ @   0
+              % @   %   1
+        @ @ @ @ @ @ @   2
+        */        
+        Set<PairInt> points = getSet5();
+        points.add(new PairInt(1, 1));
+        points.add(new PairInt(2, 1));
+        points.add(new PairInt(5, 1));
+        points.add(new PairInt(6, 1));
+
+        int[] outputRowMinMax = new int[2];
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+            points, outputRowMinMax, outputEmbeddedGapPoints);
+        assertTrue(rowColRanges.size() == 3);
+        
+        int imageMaxColumn = 10;
+        int imageMaxRow = 10;
+        
+        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+            rowColRanges, outputRowMinMax, imageMaxColumn, imageMaxRow);
+        
+        Set<PairInt> expected = new HashSet<PairInt>();
+        expected.add(new PairInt(1, 1));
+        expected.add(new PairInt(3, 0));
+        expected.add(new PairInt(2, 1));
+        expected.add(new PairInt(3, 2));
+        expected.add(new PairInt(2, 2));
+        expected.add(new PairInt(1, 2));
+        expected.add(new PairInt(0, 2));
+        expected.add(new PairInt(5, 0));
+        expected.add(new PairInt(5, 1));
+        expected.add(new PairInt(5, 2));
+        expected.add(new PairInt(6, 0));
+        expected.add(new PairInt(6, 1));
+        expected.add(new PairInt(6, 2));
+        
+        for (PairInt p : borderPixels) {
+            assertTrue(expected.remove(p));
+        }
+        assertTrue(expected.isEmpty());
+       
+    }
     
     /*
     0: dense group of points w/o gaps
@@ -925,20 +1219,17 @@ public class PerimeterFinderTest extends TestCase {
         return points;
     }
     
-    private class ListSizeComparator implements Comparator< Set<PairInt> > {
-
-        @Override
-        public int compare(Set<PairInt> o1, Set<PairInt> o2) {
-            
-            if (o1 == null && o2 != null) {
-                return 1;
-            } 
-            if (o1 != null && o2 == null) {
-                return -1;
+    private Set<PairInt> getSet(int nCols, int nRows, int xOffset, int yOffset) {
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int row = 0; row < nRows; row++) {
+            for (int col = 0; col < nCols; col++) {
+                points.add(new PairInt(col + xOffset, row + yOffset));
             }
-            
-            return Integer.compare(o1.size(), o2.size());
         }
         
+        return points;
     }
+    
 }

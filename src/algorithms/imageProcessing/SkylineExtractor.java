@@ -16,6 +16,7 @@ import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolynomialFitter;
+import algorithms.util.ResourceFinder;
 import algorithms.util.ScatterPointPlotterPNG;
 import java.awt.Color;
 import java.io.IOException;
@@ -207,7 +208,7 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
         
         populatePixelColorMaps(points, originalColorImage, mask, pixelColorsMap, 
             skyColorsMap);
-        
+            
         findClouds(points, new HashSet<PairInt>(), originalColorImage, mask, 
             pixelColorsMap, skyColorsMap);
 
@@ -246,11 +247,12 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
                 skyIsDarkGrey) :
             new HashSet<PairInt>();
         
-        // find remaining embedded points that look like high contrast clouds
-        // (uses a color range to try to avoid including objects that aren't sky)
-        Set<PairInt> embeddedPoints = findEmbeddedNonPoints(points, sunPoints,
-            rainbowPoints);
-        
+        // find remaining embedded points
+        skyRowMinMax = new int[2];
+        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
+        skyRowColRange = perimeterFinder.find(points, skyRowMinMax, 
+            embeddedPoints);
+
         if (!embeddedPoints.isEmpty()) {
 
             HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
@@ -261,77 +263,44 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
                 theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
                 brightnessHistogram);
 
+            // no need to update rowColRanges as this was not an external "grow"
             //add embedded pixels if they're near existing sky colors
             addIfSimilarToSky(embeddedPoints, points, 
                 removedSets.getHighContrastRemoved(),
                 originalColorImage, mask,
                 brightnessHistogram, skyPartitionedByBrightness);
-            
-            /*
-            findEmbeddedClouds(embeddedPoints, points, 
-                removedSets.getHighContrastRemoved(),
-                originalColorImage, mask,
-                pixelColorsMap, skyColorsMap,
-                brightnessHistogram, skyPartitionedByBrightness);
-            */
 
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
-"after_0");
+"after_add_embedded");
 
-//plotSkyColor(points, colorImg, mask);
-/*
-            if ((removedSets.getReflectedSunRemoved().size() < 50) &&
-                ((removedSets.getNBeforeHighContrastRemoval()
-                - removedSets.getNAfterHighContrastRemoval()) <= 
-                (int)(((float)removedSets.getNBeforeHighContrastRemoval())*0.1f))) {
-            
-                // also, do not perform this if we can tell that the sky is mostly
-                // found except the nBinFactor pixels near the border.
-                // (wanting to avoid overrunning low contrast skylines such as
-                // snow covered peaks under a hazy sky, etc)
-                if (embeddedPoints.size() > 100) {
-            
-                    // histograms of hue and saturation
- 
-                    int nBefore = points.size();
-                    //Set<PairInt> copyOfPoints = new HashSet<PairInt>(points);
-                    //GreynMascaleImage copyOfMask = mask.copyImage();
-
-                    findSeparatedClouds(sunPoints, points, 
-                        removedSets.getHighContrastRemoved(),
-                        originalColorImage, mask,
-                        pixelColorsMap, skyColorsMap,
-                        brightnessHistogram, skyPartitionedByBrightness);
-                    
-                    int nPointsAdded = points.size() - nBefore;
-                    float frac = (float)nPointsAdded/(float)points.size();
-                    log.info("number of points added for separated search=" +
-                        nPointsAdded + " to " + points.size() + " points (" +
-                        frac + "%)");
-                       
-debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
-"after_1");          
-
-                    if (removedSets.getReflectedSunRemoved().size() > 0) {
-                        
-                        reduceToLargestContiguousGroup(points, mask, 10, 
-                            new HashSet<PairInt>());                        
-                    }
-
-debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
-"after_added_separated_clouds");
-
-                }
-            }
-*/
         }
 
-        /*Set<PairInt> exclude = new HashSet<PairInt>();
+        Set<PairInt> exclude = new HashSet<PairInt>();
         exclude.addAll(removedSets.getHighContrastRemoved());
         exclude.addAll(rainbowPoints);
         exclude.addAll(sunPoints);
 
-        if (embeddedPoints.size() > 0) {
+        log.info("number of sunPoints=" + sunPoints.size() + " "
+        + "reflectedSunRemoved.size()=" + removedSets.getReflectedSunRemoved().size());
+
+        if (sunPoints.isEmpty()) {
+                        
+            growForLowContrastLimits(points, exclude, skyRowColRange,
+                skyRowMinMax, originalColorImage, mask);
+        
+            // TODO: might need to expand these a little
+            /*Set<PairInt> placeholdingPoints = new HashSet<PairInt>();
+            placeholdingPoints.addAll(sunPoints);
+            placeholdingPoints.addAll(rainbowPoints);
+
+            reduceToLargestContiguousGroup(points, mask, 1000, 
+                placeholdingPoints);*/
+
+debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+"after_low_contrast_grow");
+        }
+
+        /*if (embeddedPoints.size() > 0) {
 
             HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
 
@@ -349,26 +318,8 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_2");
 
-        }
-        */
-
-log.info("number of sunPoints=" + sunPoints.size() + " "
-    + "reflectedSunRemoved.size()=" + removedSets.getReflectedSunRemoved().size());
-
-        /*if (sunPoints.isEmpty()) {
-            
-            growForLowContrastLimits(points, exclude, originalColorImage, mask);
-        
-            // TODO: might need to expand these a little
-            Set<PairInt> placeholdingPoints = new HashSet<PairInt>();
-            placeholdingPoints.addAll(sunPoints);
-            placeholdingPoints.addAll(rainbowPoints);
-
-            reduceToLargestContiguousGroup(points, mask, 1000, 
-                placeholdingPoints);
-
         }*/
-       
+
         if (!sunPoints.isEmpty()) {
             correctSkylineForSun(sunPoints, points, originalColorImage, mask, gradientXY);
         }/* else if (!rainbowPoints.isEmpty()) {
@@ -1928,6 +1879,13 @@ try {
         }
     }
 
+    private void check(int vX, int xOffset, int vY, int yOffset, String label) {
+        /*if (((vX + xOffset) >= 94) && ((vX + xOffset) <= 102) && ((vY + yOffset) >= 217)
+            && ((vY + yOffset) <= 217)) {
+            System.out.println("**(" + (vX+xOffset) + ", " + (vY+yOffset) +") " + label);
+        }*/
+    }
+    
     /**
      * given seed skyPoints to start from, use conservative limits on contrast
      * and color difference to add neighbors to skyPoints.  The conservative
@@ -1960,9 +1918,6 @@ try {
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
         
-        // TODO: some adjustment should be made for the perimeter of the
-        // sun points to not erode the skyline.  
-                
         for (PairInt skyPoint : skyPoints) {
             
             int x = skyPoint.getX();
@@ -1997,7 +1952,7 @@ try {
                 // skyPoints because those are derived from theta and theta is
                 // the product of 2 gaussian convolutions.  the convolutions
                 // widen features in gradientXY.  see caveat above sunPoints.
-                // it's safe to add these without a color or contrast check:
+                // * it's safe to add these without a color or contrast check:
                 candidateCloudPoints.add(p);
                 
                 cloudStack.add(p);
@@ -2028,7 +1983,9 @@ try {
         //dys = new int[]{ 0, -1, 0, 1};
         
         CIEChromaticity cieC = new CIEChromaticity();
-        
+        PointInPolygon pInPoly = new PointInPolygon();
+        ArrayPair cieGreenPoly = cieC.getGreenThroughYellowGreenPolynomial();
+                
         while (!cloudStack.isEmpty()) {
 
             PairInt uPoint = cloudStack.pop();
@@ -2037,7 +1994,7 @@ try {
             int uY = uPoint.getY();
 
             //(1 + frac)*O(N) where frac is the fraction added back to stack
-                      
+            
             for (int k = 0; k < dxs.length; k++) {
                             
                 int vX = uX + dxs[k];
@@ -2081,9 +2038,6 @@ try {
 
                 double contrastV = localSky.calcContrastToOther(rV, gV, bV);
 
-                //TODO: this should use CIE xy chromaticity instead of rgb for
-                // similar color independent of brightness
-                
                 double colorDiffV = localSky.calcColorDiffToOther(rV, gV, bV);
 
                 double skyStDevContrast = localSky.getStdDevContrast();
@@ -2096,15 +2050,27 @@ try {
                 float rPercentV = (float)rV/totalRGBV;
                 float gPercentV = (float)gV/totalRGBV;
                 float bPercentV = (float)bV/totalRGBV;
+                float gDivR = (float)gV/(float)rV;
                 
                 float[] cieXY = cieC.rgbToXYChromaticity(rV, gV, bV);
                 double diffCIEX = Math.abs(cieXY[0] - localSky.getAverageCIEX());
                 double diffCIEY = Math.abs(cieXY[1] - localSky.getAverageCIEY());
                 
+                // don't include non-sky colors
+                /*if (gDivR > 0.97f) {
+                    if (pInPoly.isInSimpleCurve(cieXY[0], cieXY[1],
+                        cieGreenPoly.getX(), cieGreenPoly.getY(),
+                        cieGreenPoly.getX().length)) {
+                        continue;
+                    }
+                }*/
+                
                 boolean isBrown = (Math.abs(rPercentV - 0.5) < 0.4)
                     && (Math.abs(gPercentV - 0.32) < 0.1)
                     && (Math.abs(bPercentV - 0.17) < 0.1);
-              
+                
+check(vX, xOffset, vY, yOffset, "0 skyIsRed=" + skyIsRed + " isBrown=" + isBrown);
+                
                 if (isBrown) {
                     
                     // trying to skip over foreground such as land or sunset + water
@@ -2128,10 +2094,13 @@ try {
                 }
                 
                 if (Double.isInfinite(skyStDevContrast)) {
+check(vX, xOffset, vY, yOffset, "contrast st dev is inf");
                     continue;
                 }
-              
+
                 if (skyIsRed) {
+                    
+check(vX, xOffset, vY, yOffset, "00");
 
                     // if contrast is '+' and large, may be the skyline boundary
                     if ((skyStDevContrast != 0.)
@@ -2139,6 +2108,8 @@ try {
                             ((contrastV > 1.0) && (Math.abs(contrastV) > 100.*skyStDevContrast))
                         ) {
                         
+check(vX, xOffset, vY, yOffset, "1");
+
                         continue;
                     } else if ((skyStDevContrast != 0.)
                         &&
@@ -2152,6 +2123,8 @@ try {
                             )
                         ) {
                         
+check(vX, xOffset, vY, yOffset, "2");
+
                         continue;
                     } else if ((skyStDevContrast != 0.)
                         &&
@@ -2160,6 +2133,9 @@ try {
                             (!((diffCIEX < 0.02) && (diffCIEY < 0.02)))
                         ) {
                         
+                        //sometimes, sky pixels are found here
+check(vX, xOffset, vY, yOffset, "3");
+
                         continue;
                      
                     } else if ((skyStDevContrast != 0.)
@@ -2167,17 +2143,19 @@ try {
                         (contrastV > 0.01) && (colorDiffV > 15*skyStDevColorDiff)
                         && ((diffCIEX > 0.03) || (diffCIEY > 0.03))
                         ) {
+                        
+check(vX, xOffset, vY, yOffset, "4");
 
                         continue;
                         
                     } else if (skyStDevContrast == 0.) {
-
+check(vX, xOffset, vY, yOffset, "5");
                         if (contrastV >= 0.) {
                             doNotAddToStack = true;
                         }
 
                     } else {
-                        
+check(vX, xOffset, vY, yOffset, "6");
                         //TODO:  if there are sun points, need a zone of
                         // avoidance to not erode the foreground 
                     }
@@ -2200,7 +2178,7 @@ try {
                             )
                         )
                         ) {
-
+check(vX, xOffset, vY, yOffset, "11");
                     } else if (
                         (
                             (contrastV < 0.05)
@@ -2218,14 +2196,17 @@ try {
                             && (Math.abs(0.33 - bPercentV) < 0.3)
                             && (gV > 199) && (bV > 199))
                         ) {
-
+check(vX, xOffset, vY, yOffset, "12");
                         continue;
                         
                     } else {
+check(vX, xOffset, vY, yOffset, "7");
                         continue;
                     }
                 }
                 
+check(vX, xOffset, vY, yOffset, "8");
+
                 candidateCloudPoints.add(vPoint);
 
                 if (!doNotAddToStack) {
@@ -2236,7 +2217,7 @@ try {
                 skyColorsMap.put(vPoint, skyColorsMap.get(uPoint));
             }
         }
-                
+        
         skyPoints.addAll(candidateCloudPoints);
         
         for (PairInt p : skyPoints) {
@@ -2435,7 +2416,7 @@ try {
         return sets;
     }
     
-    private GroupPixelColors[] partitionInto3ByBrightness(
+    protected GroupPixelColors[] partitionInto3ByBrightness(
         Set<PairInt> skyPoints, 
         Image originalColorImage, int xOffset, int yOffset, HistogramHolder[] h) {
          
@@ -3278,18 +3259,21 @@ skyIsRed, hasDarkGreyClouds
     }
 
     private void growForLowContrastLimits(Set<PairInt> points, 
-        Set<PairInt> excludePoints, Image colorImg, GreyscaleImage mask) {
+        Set<PairInt> excludePoints, Map<Integer, List<PairInt>> skyRowColRange,
+        int[] skyRowMinMax, Image colorImg, GreyscaleImage mask) {
         
         // it tries to avoid adding snowy mountain tops to hazy sky pixels,
         // for example.
-                
+
         int cWidth = colorImg.getWidth();
         int cHeight = colorImg.getHeight();
         int mWidth = mask.getWidth();
         int mHeight = mask.getHeight();
         int xOffset = mask.getXRelativeOffset();
         int yOffset = mask.getYRelativeOffset();
-        
+        int imageMaxColumn = cWidth;
+        int imageMaxRow = cHeight;
+            
         GroupPixelColors allSkyColor = new GroupPixelColors(points,
             colorImg, xOffset, yOffset);
         
@@ -3301,6 +3285,7 @@ skyIsRed, hasDarkGreyClouds
         boolean skyIsRed = (rDivB > 1);
         
         CIEChromaticity cieC = new CIEChromaticity();
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
         
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
@@ -3311,6 +3296,9 @@ skyIsRed, hasDarkGreyClouds
         
         while ((nIter == 0) || ((nIter < nMaxIter) && (nAdded > 0))) {
 
+            Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+                skyRowColRange, skyRowMinMax, imageMaxColumn, imageMaxRow);
+            
             nAdded = 0;
             
             Map<PairInt, List<Double>> localSkyCIEXY = new 
@@ -3319,12 +3307,13 @@ skyIsRed, hasDarkGreyClouds
             Map<PairInt, List<Double>> localSkyRGB = new HashMap<PairInt,
                 List<Double>>();
 
-            Set<PairInt> borderPixels = new HashSet<PairInt>();
-
-            for (PairInt uPoint : points) {
+            for (PairInt uPoint : borderPixels) {
 
                 int uX = uPoint.getX() + xOffset;
                 int uY = uPoint.getY() + yOffset;
+                
+                // for each u, aggregate it's neighbors colors if they are 
+                // in the "points" set
 
                 for (int k = 0; k < dxs.length; k++) {
 
@@ -3337,20 +3326,12 @@ skyIsRed, hasDarkGreyClouds
                     }
 
                     PairInt vPoint = new PairInt(vX - xOffset, vY - yOffset);
-
-                    if (uPoint.equals(vPoint) || borderPixels.contains(uPoint) ||
-                        points.contains(vPoint) || excludePoints.contains(vPoint)) {
+                    
+                    if (uPoint.equals(vPoint) || !points.contains(vPoint) ||
+                        excludePoints.contains(vPoint)) {
                         continue;
                     }
                     
-                    // these vPoint pixels are not currently in points
-
-                    borderPixels.add(uPoint);
-
-if ((vX >= 308) && (vX <= 310) && (vY >= 181) && (vY <= 182)) {
-int z  = 1;
-}
-
                     if (!localSkyCIEXY.containsKey(uPoint)) {
 
                         Set<PairInt> neighbors = getThe8NeighborPixelsWithin(
@@ -3411,23 +3392,27 @@ int z  = 1;
                     }        
                 }
             }
-             
-            nAdded = growForLowContrastLimits(points, 
+
+            Set<PairInt> addedPixels = growForLowContrastLimits(points, 
                 excludePoints, colorImg, mask, skyIsRed, borderPixels, 
                 localSkyRGB, foregroundColor);
-        
+
+            perimeterFinder.updateRowColRangesForAddedPoints(skyRowColRange, 
+                skyRowMinMax, addedPixels);
+
+            nAdded = addedPixels.size();
+
             nIter++;
         }
-      
     }
         
-    private int growForLowContrastLimits(Set<PairInt> points, 
+    private Set<PairInt> growForLowContrastLimits(Set<PairInt> points, 
         Set<PairInt> excludePoints, Image colorImg, GreyscaleImage mask,
         boolean skyIsRed, Set<PairInt> borderPixels,
         Map<PairInt, List<Double>> localSkyRGB, PixelColors foregroundColor) {
         
         if (borderPixels.isEmpty()) {
-            return 0;
+            return new HashSet<PairInt>();
         }
         
         Set<PixelColors> clrs = new HashSet<PixelColors>();
@@ -3476,7 +3461,9 @@ int z  = 1;
         
         int nAdded = 0;
         
-        Stack<PairInt> addedSky = new Stack<PairInt>();
+        //Stack<PairInt> addedSky = new Stack<PairInt>();
+        Set<PairInt> addedSky = new HashSet<PairInt>();
+        
         Stack<PixelColors> addedSkyColorToAdd = new Stack<PixelColors>();
         
         while (!stack.isEmpty()) {
@@ -3500,9 +3487,6 @@ int z  = 1;
 
                 PairInt vPoint = new PairInt(vX - xOffset, vY - yOffset);
 
-if ((vX >= 308) && (vX <= 310) && (vY >= 181) && (vY <= 182)) {
-int z  = 1;
-}
                 if (uPoint.equals(vPoint) || visited.contains(vPoint) ||
                     excludePoints.contains(vPoint) || points.contains(vPoint)
                     || borderPixels.contains(vPoint)) {
@@ -3568,16 +3552,15 @@ int z  = 1;
                     addedSky.add(vPoint);
                     addedSkyColorToAdd.add(new PixelColors(r, g, b));
                 }
-                
-if ((vX >= 308) && (vX <= 310) && (vY >= 181) && (vY <= 182)) {
-int z  = 1;
-}                
                
             }
         }
         
+        return addedSky;
+        
+        /*
         if (addedSky.isEmpty()) {
-            return nAdded;
+            return addedSky;
         }
         
         // search the neighbors of the just added sky points and add them if
@@ -3662,191 +3645,7 @@ int z  = 1;
         log.info("nAdded=" + nAdded);
         
         return nAdded;
-    }
-
-    private void adjustPerimeterToIncludeImageBoundaries(int[] rowMinMax, 
-        Map<Integer, PairInt> rowColRange, int[] dSkylineXY, int imageWidth,
-        int imageHeight) {
-         
-        if ((dSkylineXY[0] == 0) && (dSkylineXY[1] == 1)) {
-            
-            // this is most common. skyline is horizontal and below sky in image
-            
-            // set all colRange.x to 0 and all colRange.y to imageWidth-1
-            // add rows from min y to 0 to the map   
-            Iterator<Map.Entry<Integer, PairInt> > iter = rowColRange.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, PairInt> entry = iter.next();
-                entry.getValue().setX(0);
-                entry.getValue().setY(imageWidth - 1);
-            }
-            
-            for (int row = 0; row < rowMinMax[1]; row++) {
-                PairInt colRange = new PairInt(0, imageWidth - 1);
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-            
-        } else if ((dSkylineXY[0] == 0) && (dSkylineXY[1] == -1)) {
-          
-            // upside down image
-            
-            // set all colRange.x to 0 and all colRange.y to imageWidth-1
-            // add rows from max y to imageHeight - 1 to the map 
-        
-            // set all colRange.x to 0 and all colRange.y to imageWidth-1
-            // add rows from max y to imageHeight to the map   
-            Iterator<Map.Entry<Integer, PairInt> > iter = rowColRange.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, PairInt> entry = iter.next();
-                entry.getValue().setX(0);
-                entry.getValue().setY(imageWidth - 1);
-            }
-            
-            for (int row = (rowMinMax[0] + 1); row < imageHeight; row++) {
-                PairInt colRange = new PairInt(0, imageWidth - 1);
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-            
-        } else if ((dSkylineXY[0] == 1) && (dSkylineXY[1] == -1)) {
-            
-            // main sky is lower left
-            Iterator<Map.Entry<Integer, PairInt> > iter = rowColRange.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, PairInt> entry = iter.next();
-                entry.getValue().setX(0);
-            }
-            
-            PairInt maxRowColRange = rowColRange.get(Integer.valueOf(rowMinMax[1]));
-            for (int row = (rowMinMax[1] + 1); row < imageHeight; row++) {
-                PairInt colRange = new PairInt(maxRowColRange.getX(), 
-                    maxRowColRange.getY());
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-            
-        } else if ((dSkylineXY[0] == 1) && (dSkylineXY[1] == 0)) {
-          
-            // landscape, w/ sky leftward
-            
-            // set all colRange.x to 0
-            // add rows from min y to 0 to the map
-            // add rows from max y to imageHeight to the map
-            Iterator<Map.Entry<Integer, PairInt>> iter = rowColRange.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, PairInt> entry = iter.next();
-                entry.getValue().setX(0);
-            }
-            
-            PairInt minRowColRange = rowColRange.get(Integer.valueOf(rowMinMax[0]));
-            for (int row = 0; row < rowMinMax[1]; row++) {
-                PairInt colRange = new PairInt(minRowColRange.getX(), 
-                    minRowColRange.getY());
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-            for (int row = (rowMinMax[0] + 1); row < imageHeight; row++) {
-                PairInt colRange = new PairInt(minRowColRange.getX(), 
-                    minRowColRange.getY());
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-            
-        } else if ((dSkylineXY[0] == 1) && (dSkylineXY[1] == 1)) {
-          
-            // skyline is upper right to main sky
-            // (main sky is lower left)
-            
-            Iterator<Map.Entry<Integer, PairInt> > iter = rowColRange.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, PairInt> entry = iter.next();
-                entry.getValue().setX(0);
-            }
-            PairInt maxRowColRange = rowColRange.get(Integer.valueOf(rowMinMax[1]));
-            for (int row = (rowMinMax[1] + 1); row < imageHeight; row++) {
-                PairInt colRange = new PairInt(maxRowColRange.getX(), 
-                    maxRowColRange.getY());
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }    
-            
-        } else if ((dSkylineXY[0] == -1) && (dSkylineXY[1] == -1)) {
-            
-            // skyline is upper left to main sky
-            // (main sky is lower right)
-            
-            Iterator<Map.Entry<Integer, PairInt> > iter = rowColRange.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, PairInt> entry = iter.next();
-                entry.getValue().setY(imageWidth - 1);
-            }
-            
-            PairInt maxRowColRange = rowColRange.get(Integer.valueOf(rowMinMax[1]));
-            for (int row = (rowMinMax[1] + 1); row < imageHeight; row++) {
-                PairInt colRange = new PairInt(maxRowColRange.getX(), 
-                    maxRowColRange.getY());
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-                   
-        } else if ((dSkylineXY[0] == -1) && (dSkylineXY[1] == 0)) {
-            
-            // landscape, w/ sky rightward
-            
-            Iterator<Map.Entry<Integer, PairInt> > iter = rowColRange.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, PairInt> entry = iter.next();
-                entry.getValue().setY(imageWidth - 1);
-            }
-            
-            PairInt minRowColRange = rowColRange.get(Integer.valueOf(rowMinMax[0]));
-            for (int row = 0; row < rowMinMax[1]; row++) {
-                PairInt colRange = new PairInt(minRowColRange.getX(), 
-                    minRowColRange.getY());
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-            for (int row = (rowMinMax[0] - 1); row < imageHeight; row++) {
-                PairInt colRange = new PairInt(minRowColRange.getX(), 
-                    minRowColRange.getY());
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-       
-        } else if ((dSkylineXY[0] == -1) && (dSkylineXY[1] == 1)) {
-            
-            // main sky is upper right
-            
-            Iterator<Map.Entry<Integer, PairInt> > iter = rowColRange.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry<Integer, PairInt> entry = iter.next();
-                entry.getValue().setY(imageWidth - 1);
-            }
-            
-            PairInt minRowColRange = rowColRange.get(Integer.valueOf(rowMinMax[0]));
-            for (int row = 0; row < rowMinMax[0]; row++) {
-                PairInt colRange = new PairInt(minRowColRange.getX(), 
-                    minRowColRange.getY());
-                rowColRange.put(Integer.valueOf(row), colRange);
-            }
-            
-        } else if ((dSkylineXY[0] == 0) && (dSkylineXY[1] == 0)) {
-            
-            // the image may be tilted and sky might be filling
-            // most of the image
-            
-            /*
-            sky              sky
-            sky              sky
-            sky             ....   
-            sky            .   .
-            ....          .    .
-            .   .        .     .
-            .....sky    ........
-            
-            fill in bounds for sky to sky along boundaries of the
-            corners that are determined to be sky.
-            
-            need to avoid doing that for the foreground, non-sky features.
-            
-            -- will average the color from corner to corner, and if it's
-            cloud like rather than foreground like, will add those
-            to boundaries?
-            */
-            
-        }        
+        */
     }
 
     /**
@@ -4069,6 +3868,40 @@ debugPlot(set, colorImg, xOffset, yOffset,
                 PairInt vPoint = new PairInt(vX, vY);
                 
                 if (uPoint.equals(vPoint) || !points.contains(vPoint)) {
+                    continue;
+                }
+                
+                set.add(vPoint);
+            }
+        }
+        
+        return set;
+    }
+
+    private Set<PairInt> getThe8NeighborPixelsWithin(PairInt uPoint, 
+        Set<PairInt> points, Set<PairInt> points2, int width, int height) {
+        
+        int uX = uPoint.getX();
+        int uY = uPoint.getY();
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        
+        for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
+
+            if ((vX < 0) || (vX > (width - 1))) {
+                continue;
+            }
+
+            for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
+                
+                if ((vY < 0) || (vY > (height - 1))) {
+                    continue;
+                }
+                
+                PairInt vPoint = new PairInt(vX, vY);
+                
+                if (uPoint.equals(vPoint) || !points.contains(vPoint)
+                    || !points2.contains(vPoint)) {
                     continue;
                 }
                 
@@ -4413,9 +4246,8 @@ debugPlot(set, colorImg, xOffset, yOffset,
                 mask.setValue(x, y, 0);
             }
         }
-
     }
-
+                    
     private Set<PairInt> removeSetsWithNonCloudColors(List<PairIntArray> 
         zeroPointLists, Image originalColorImage, GreyscaleImage theta,
         boolean addAlongX, int addAmount) {
@@ -4952,7 +4784,7 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         return rmvd;
     }
 
-    private void addIfSimilarToSky(Set<PairInt> embeddedPoints, 
+    protected void addIfSimilarToSky(Set<PairInt> embeddedPoints, 
         Set<PairInt> skyPoints, Set<PairInt> highContrastRemoved, 
         Image originalColorImage, GreyscaleImage mask, 
         HistogramHolder[] brightnessHistogram, 

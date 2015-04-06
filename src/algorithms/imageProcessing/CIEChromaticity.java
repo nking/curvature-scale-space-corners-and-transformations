@@ -39,6 +39,27 @@ public class CIEChromaticity {
         return p;
     }
     
+    public ArrayPair getGreenThroughYellowGreenPolynomial() {
+        /*
+        0.0125, 0.4827
+        0.3, 0.35
+        0.36,  0.35
+        0.45, 0.55
+        0.2, 0.8
+        0.1, 0.84
+        0.0, 0.8
+        0.0, 0.4827
+        0.0125, 0.4827
+        */
+        
+        ArrayPair p = new ArrayPair(
+            new float[]{.0125f, .3f, .36f, .45f, .2f, .1f, 0.f, 0.f, .0125f},
+            new float[]{.4827f, .35f, .35f, .55f, .8f, .84f, .8f, .4827f, .4827f}
+        );
+        
+        return p;
+    }
+    
     public ArrayPair getYellowThroughOrangePolynomial() {
         
         /*
