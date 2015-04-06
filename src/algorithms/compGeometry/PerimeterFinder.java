@@ -783,8 +783,10 @@ public class PerimeterFinder {
            -- find top border pixels
            -- find bottom border pixels
            -- find unbounded embedded border pixels
-           -- find exterior pixels for each row and add if they are not at
-              the image bundaries
+           -- for each row, look at row above and below and if they
+                begin at a later pixel, make the current row's pixels up to
+                that point border pixels.
+                -- do the same for the rightmost end of each row.
         */
         
         //TODO: calc the runtime estimates here
@@ -813,7 +815,8 @@ public class PerimeterFinder {
             if (tc < imageMaxColumn) {
                 borderPixels.add(new PairInt(tc, row));
             }
-            
+                        
+            // find min and max of columns
             tc = colRanges.get(0).getX();
             if (tc < minX) {
                 minX = tc;
@@ -882,8 +885,77 @@ public class PerimeterFinder {
             }
         }
         
-        // ----- TODO: find exterior pixels for each row and add if they are not at
-        // ----- the image boundaries
+        // ----- for each row, find start of columns in rows above and below
+        //       and if those are larger than the current row's start column
+        //       the leading pixels become border pixels.
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
+            
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            
+            if ((colRanges == null) || colRanges.isEmpty()) {
+                continue;
+            }
+            
+            int col0 = colRanges.get(0).getX();
+            
+            List<PairInt> prevColRanges = rowColRanges.get(
+                Integer.valueOf(row - 1));
+            List<PairInt> nextColRanges = rowColRanges.get(
+                Integer.valueOf(row + 1));
+            
+            int colAdj = -1;
+            if ((prevColRanges != null) && !prevColRanges.isEmpty()) {
+                colAdj = prevColRanges.get(0).getX();
+            }
+            if ((nextColRanges != null) && !nextColRanges.isEmpty()) {
+                int tmp = nextColRanges.get(0).getX();
+                if (tmp > colAdj) {
+                    colAdj = tmp;
+                }
+            }
+            
+            if (col0 < colAdj) {
+                for (int c = col0; c < colAdj; c++) {
+                    borderPixels.add(new PairInt(c, row));
+                }
+            }
+        }
+        
+        // ----- for each row, find end of columns in rows above and below
+        //       and if those are less than the current row's end column
+        //       the lagging pixels become border pixels.
+        for (int row = (rowMinMax[0] + 1); row < rowMinMax[1]; row++) {
+            
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            
+            if ((colRanges == null) || colRanges.isEmpty()) {
+                continue;
+            }
+            
+            int col0 = colRanges.get(colRanges.size() - 1).getY();
+            
+            List<PairInt> prevColRanges = rowColRanges.get(
+                Integer.valueOf(row - 1));
+            List<PairInt> nextColRanges = rowColRanges.get(
+                Integer.valueOf(row + 1));
+            
+            int colAdj = -1;
+            if ((prevColRanges != null) && !prevColRanges.isEmpty()) {
+                colAdj = prevColRanges.get(prevColRanges.size() - 1).getY();
+            }
+            if ((nextColRanges != null) && !nextColRanges.isEmpty()) {
+                int tmp = nextColRanges.get(nextColRanges.size() - 1).getY();
+                if (tmp > colAdj) {
+                    colAdj = tmp;
+                }
+            }
+            
+            if (col0 > colAdj) {
+                for (int c = (colAdj + 1); c <= col0; c++) {
+                    borderPixels.add(new PairInt(c, row));
+                }
+            }
+        }
         
         
         // -------- embedded pixels or gaps which are not bounded ---------

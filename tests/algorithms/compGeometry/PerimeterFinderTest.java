@@ -1049,13 +1049,6 @@ public class PerimeterFinderTest extends TestCase {
         @ @ @ @   @ @  0
           % %     % %  1
         @ @ @ @   @ @  2
-        
----> TODO:  make a test out of this and make sure that pixels in top 
-        row in cols 0-2 are in borderPixels and the bottom row.
-        0 1 2 3 4 5 6  
-        @ @ @ @ @ @ @   0
-              % @   %   1
-        @ @ @ @ @ @ @   2
         */        
         Set<PairInt> points = getSet5();
         points.add(new PairInt(1, 1));
@@ -1076,7 +1069,14 @@ public class PerimeterFinderTest extends TestCase {
         Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
             rowColRanges, outputRowMinMax, imageMaxColumn, imageMaxRow);
         
+        /*
+        0 1 2 3 4 5 6  
+        . @ @ .   . .  0
+          . .     . .  1
+        . . . .   . .  2
+        */
         Set<PairInt> expected = new HashSet<PairInt>();
+        expected.add(new PairInt(0, 0));
         expected.add(new PairInt(1, 1));
         expected.add(new PairInt(3, 0));
         expected.add(new PairInt(2, 1));
@@ -1090,6 +1090,48 @@ public class PerimeterFinderTest extends TestCase {
         expected.add(new PairInt(6, 0));
         expected.add(new PairInt(6, 1));
         expected.add(new PairInt(6, 2));
+        
+        for (PairInt p : borderPixels) {
+            assertTrue(expected.remove(p));
+        }
+        assertTrue(expected.isEmpty());
+       
+    }
+    
+    public void testGetBorderPixels_6() throws Exception {
+
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        /*
+        0 1 2 3 4 5 6  
+        @ @ @ @ @ @ @   0
+              % @   %   1
+        @ @ @ @ @ @ @   2
+        */        
+        Set<PairInt> points = getSet(7, 3);
+        points.remove(new PairInt(0, 1));
+        points.remove(new PairInt(1, 1));
+        points.remove(new PairInt(2, 1));
+        points.remove(new PairInt(5, 1));
+
+        int[] outputRowMinMax = new int[2];
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+            points, outputRowMinMax, outputEmbeddedGapPoints);
+        assertTrue(rowColRanges.size() == 3);
+        
+        int imageMaxColumn = 10;
+        int imageMaxRow = 10;
+        
+        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+            rowColRanges, outputRowMinMax, imageMaxColumn, imageMaxRow);
+        
+        Set<PairInt> expected = new HashSet<PairInt>(points);
+        expected.remove(new PairInt(3, 0));
+        expected.remove(new PairInt(4, 0));
+        expected.remove(new PairInt(5, 0));
+        expected.remove(new PairInt(4, 1));
         
         for (PairInt p : borderPixels) {
             assertTrue(expected.remove(p));
