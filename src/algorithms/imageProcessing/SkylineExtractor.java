@@ -157,6 +157,28 @@ public class SkylineExtractor {
         log.info("binFactor=" + binFactor);
         
         Set<PairInt> points = new HashSet<PairInt>();
+        
+        /*TODO:  
+        adjust this algorithm to allow alternate ways of determining the seed 
+        sky points (and excluded points that should not be re-added).  
+        Example case where this is needed here:
+            an image with a foreground large smooth snow field and dark mountain 
+            ranges under a cloudy structured sky.
+            The edge detector w/o changes would probably find the mountain 
+            ranges best in this case, but one would still not know "sky" without 
+            GPS or external sensors or assumption of horizontal.
+            **The sun’s position however is learnable from some images and 
+            that would help determine the location of seed sky points correctly.
+            **The scattered and reflected light from the sun and water might be 
+            hard to distinguish. 
+            Will look for a pattern in solar light as a function of distance
+            along the increasing brightness axis.
+            Note that when the sun is near the horizon, the light reaching the
+            camera has been scattered less and so one might be able to make 
+            a simple model of scattering of solar light off of
+            optically thick water w/ consideration for mie and rayleigh 
+            scattering in the atmosphere altering the received source light.
+        */
                 
         RemovedSets removedSets = filterAndExtractSkyFromGradient(
             originalColorImage, theta, gradientXY, binFactor, points);
@@ -3176,86 +3198,6 @@ skyIsRed, hasDarkGreyClouds
         }
         
         return new HashSet<PairInt>();
-    }
-
-    private int[] determineChangeTowardsSkyline(Set<PairInt> points, 
-        int imgWidth, int imgHeight) {
-        
-        int[] skyMinMaxXY = MiscMath.findMinMaxXY(points);
-        int dSkylineX = 0;
-        int dSkylineY = 0;
-        if ((skyMinMaxXY[0] == 0) && 
-            (skyMinMaxXY[1] == (imgWidth - 1)) &&
-            (skyMinMaxXY[2] == 0) && 
-            (skyMinMaxXY[3] < (imgHeight - 1))
-        ) {
-            // this is most common. skyline is horizontal and below
-            // sky in image
-            dSkylineY = 1;
-            
-        } else if ((skyMinMaxXY[0] > 0) && 
-            (skyMinMaxXY[1] == (imgWidth - 1)) &&
-            (skyMinMaxXY[2] == 0) && 
-            (skyMinMaxXY[3] == (imgHeight - 1))
-        ) {
-            // upside down image
-            dSkylineY = -1;
-          
-        } else if ((skyMinMaxXY[0] == 0) && 
-            (skyMinMaxXY[1] < (imgWidth - 1)) &&
-            (skyMinMaxXY[2] == 0) && 
-            (skyMinMaxXY[3] == (imgHeight - 1))
-        ) {
-            // landscape, w/ sky leftward
-            dSkylineX = 1;
-              
-        } else if ((skyMinMaxXY[0] > 0) && 
-            (skyMinMaxXY[1] == (imgWidth - 1)) &&
-            (skyMinMaxXY[2] == 0) && 
-            (skyMinMaxXY[3] == (imgHeight - 1))
-        ) {
-            // landscape, w/ sky rightward
-            dSkylineX = -1;
-            
-        } else if ((skyMinMaxXY[0] > 0) && 
-            (skyMinMaxXY[1] == (imgWidth - 1)) &&
-            (skyMinMaxXY[2] == 0) && 
-            (skyMinMaxXY[3] < (imgHeight - 1))
-        ) {
-            // skyline is lower left to main sky
-            dSkylineX = -1;
-            dSkylineY = 1;
-            
-        } else if ((skyMinMaxXY[0] > 0) && 
-            (skyMinMaxXY[1] == (imgWidth - 1)) &&
-            (skyMinMaxXY[2] > 0) && 
-            (skyMinMaxXY[3] == (imgHeight - 1))
-        ) {
-            // skyline is upper left to main sky
-            dSkylineX = -1;
-            dSkylineY = -1;
-            
-        } else if ((skyMinMaxXY[0] == 0) && 
-            (skyMinMaxXY[1] < (imgWidth - 1)) &&
-            (skyMinMaxXY[2] > 0) && 
-            (skyMinMaxXY[3] == (imgHeight - 1))
-        ) {
-            // skyline is upper right to main sky
-            dSkylineX = 1;
-            dSkylineY = -1;
-            
-        } else if ((skyMinMaxXY[0] == 0) && 
-            (skyMinMaxXY[1] < (imgWidth - 1)) &&
-            (skyMinMaxXY[2] == 0) && 
-            (skyMinMaxXY[3] < (imgHeight - 1))
-        ) {
-            // skyline is lower right to main sky
-            dSkylineX = 1;
-            dSkylineY = 1;
-            
-        }
-        
-        return new int[]{dSkylineX, dSkylineY};
     }
 
     private void growForLowContrastLimits(Set<PairInt> points, 

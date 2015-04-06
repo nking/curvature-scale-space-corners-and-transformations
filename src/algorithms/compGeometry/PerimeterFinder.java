@@ -783,6 +783,8 @@ public class PerimeterFinder {
            -- find top border pixels
            -- find bottom border pixels
            -- find unbounded embedded border pixels
+           -- find exterior pixels for each row and add if they are not at
+              the image bundaries
         */
         
         //TODO: calc the runtime estimates here
@@ -879,6 +881,10 @@ public class PerimeterFinder {
                 }
             }
         }
+        
+        // ----- TODO: find exterior pixels for each row and add if they are not at
+        // ----- the image boundaries
+        
         
         // -------- embedded pixels or gaps which are not bounded ---------
         // runtime complexity is > O(m) where m is the number of contig gap ranges by row
