@@ -1050,8 +1050,8 @@ public class PerimeterFinderTest extends TestCase {
           % %     % %  1
         @ @ @ @   @ @  2
         
-        TODO:  make a test out of this and make sure that pixels in top 
-        row in cols 0-2 are in borderPixels
+---> TODO:  make a test out of this and make sure that pixels in top 
+        row in cols 0-2 are in borderPixels and the bottom row.
         0 1 2 3 4 5 6  
         @ @ @ @ @ @ @   0
               % @   %   1

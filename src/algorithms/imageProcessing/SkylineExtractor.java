@@ -3296,6 +3296,12 @@ skyIsRed, hasDarkGreyClouds
         
         while ((nIter == 0) || ((nIter < nMaxIter) && (nAdded > 0))) {
 
+            //TODO: change the iteration pattern to use a DFS style w/ an insert
+            //      at process the point (same as in the DFS classes)
+            //      to avoid revisiting some of the same border pixels.
+            //      this first set of borderPixels should initialize the
+            //      stack.
+            
             Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
                 skyRowColRange, skyRowMinMax, imageMaxColumn, imageMaxRow);
             

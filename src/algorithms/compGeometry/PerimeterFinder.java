@@ -14,7 +14,12 @@ import java.util.Stack;
 
 /**
  * class to create a map of rows with start and stop column bounds (inclusive)
- * for each row that bounding the area occupied by given points.
+ * for each row to bound the area occupied by given points while including also
+ * groups of points that are completely embedded in the point set though not
+ * part of the point set.  Those embedded points are retrievable separately.
+ * The data structure is somewhat like a concave hull.  It's used to help
+ * quickly scan a region and not include the tops of mountains that the sky
+ * concave hull is bent around, for example.
  * 
  * @author nichole
  */
