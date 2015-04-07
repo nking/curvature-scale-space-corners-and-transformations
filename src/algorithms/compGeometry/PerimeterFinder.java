@@ -855,7 +855,7 @@ public class PerimeterFinder {
                 }
             }
         }
-   
+
         // ------ find bottom border pixels
        
         allCols = new LinkedHashSet<Integer>();
@@ -884,7 +884,7 @@ public class PerimeterFinder {
                 }
             }
         }
-        
+
         // ----- for each row, find start of columns in rows above and below
         //       and if those are larger than the current row's start column
         //       the leading pixels become border pixels.
@@ -916,7 +916,13 @@ public class PerimeterFinder {
             
             if (col0 < colAdj) {
                 for (int c = col0; c < colAdj; c++) {
-                    borderPixels.add(new PairInt(c, row));
+                    // only add to border if c is in row above 
+                    //TODO: improve this.  it's a quick approx.  check prevColRange's subsequent ranges too?
+                    if ((prevColRanges != null) && !prevColRanges.isEmpty()) {
+                        if ((c >=  prevColRanges.get(0).getX()) && (c <=  prevColRanges.get(0).getY())) {
+                            borderPixels.add(new PairInt(c, row));
+                        }
+                    }
                 }
             }
         }
@@ -952,12 +958,17 @@ public class PerimeterFinder {
             
             if (col0 > colAdj) {
                 for (int c = (colAdj + 1); c <= col0; c++) {
-                    borderPixels.add(new PairInt(c, row));
+                    // only add to border if c is in row above 
+                    //TODO: improve this.  it's a quick approx.  check nextColRange's prior ranges too?
+                    if ((nextColRanges != null) && !nextColRanges.isEmpty()) {
+                        if ((c >=  nextColRanges.get(nextColRanges.size() - 1).getX()) && (c <=  nextColRanges.get(nextColRanges.size() - 1).getY())) {
+                            borderPixels.add(new PairInt(c, row));
+                        }
+                    }
                 }
             }
         }
-        
-        
+
         // -------- embedded pixels or gaps which are not bounded ---------
         // runtime complexity is > O(m) where m is the number of contig gap ranges by row
         List<List<Gap>> contiguousGaps = findContiguousGaps(rowColRanges,
@@ -1027,7 +1038,7 @@ public class PerimeterFinder {
                 }
             }
         }
-        
+
         return borderPixels;
     }
 

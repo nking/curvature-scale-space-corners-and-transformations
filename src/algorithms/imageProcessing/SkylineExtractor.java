@@ -165,7 +165,7 @@ public class SkylineExtractor {
             an image with a foreground large smooth snow field and dark mountain 
             ranges under a cloudy structured sky.
             The edge detector w/o changes would probably find the mountain 
-            ranges best in this case, but one would still not know "sky" without 
+            ranges best in this case, but one would still not know "sky" without
             GPS or external sensors or assumption of horizontal.
             **The sun’s position however is learnable from some images and 
             that would help determine the location of seed sky points correctly.
@@ -320,6 +320,7 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
 
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_low_contrast_grow");
+
         }
 
         /*if (embeddedPoints.size() > 0) {
@@ -3216,8 +3217,8 @@ skyIsRed, hasDarkGreyClouds
         int imageMaxColumn = cWidth;
         int imageMaxRow = cHeight;
             
-        GroupPixelColors allSkyColor = new GroupPixelColors(points,
-            colorImg, xOffset, yOffset);
+        GroupPixelColors allSkyColor = new GroupPixelColors(points, colorImg, 
+            xOffset, yOffset);
         
         PixelColors foregroundColor = getAveragedColorOfDifference(points,
             colorImg, xOffset, yOffset);
@@ -3234,26 +3235,18 @@ skyIsRed, hasDarkGreyClouds
        
         int nAdded = 0;
         int nIter = 0;
-        int nMaxIter = 10;
+        int nMaxIter = 100;
         
+        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+            skyRowColRange, skyRowMinMax, imageMaxColumn, imageMaxRow);
+
+        Map<PairInt, List<Double>> localSkyCIEXY = new HashMap<PairInt, List<Double>>();
+
+        Map<PairInt, List<Double>> localSkyRGB = new HashMap<PairInt, List<Double>>();
+
         while ((nIter == 0) || ((nIter < nMaxIter) && (nAdded > 0))) {
-
-            //TODO: change the iteration pattern to use a DFS style w/ an insert
-            //      at process the point (same as in the DFS classes)
-            //      to avoid revisiting some of the same border pixels.
-            //      this first set of borderPixels should initialize the
-            //      stack.
             
-            Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
-                skyRowColRange, skyRowMinMax, imageMaxColumn, imageMaxRow);
-            
-            nAdded = 0;
-            
-            Map<PairInt, List<Double>> localSkyCIEXY = new 
-                HashMap<PairInt, List<Double>>();
-
-            Map<PairInt, List<Double>> localSkyRGB = new HashMap<PairInt,
-                List<Double>>();
+            nAdded = 0;            
 
             for (PairInt uPoint : borderPixels) {
 
@@ -3345,11 +3338,10 @@ skyIsRed, hasDarkGreyClouds
                 excludePoints, colorImg, mask, skyIsRed, borderPixels, 
                 localSkyRGB, foregroundColor);
 
-            perimeterFinder.updateRowColRangesForAddedPoints(skyRowColRange, 
-                skyRowMinMax, addedPixels);
+            borderPixels = addedPixels;
 
             nAdded = addedPixels.size();
-
+System.out.println("nADDED in growforLowContrastLimits=" + nAdded + " nIter=" + nIter);
             nIter++;
         }
     }
@@ -3388,6 +3380,8 @@ skyIsRed, hasDarkGreyClouds
         int width = mask.getWidth();
         int height = mask.getHeight();
         
+        //int[] dxs = new int[]{-1,  0, 1, 0};
+        //int[] dys = new int[]{ 0, -1, 0, 1};
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
         
@@ -3505,95 +3499,7 @@ skyIsRed, hasDarkGreyClouds
         }
         
         return addedSky;
-        
-        /*
-        if (addedSky.isEmpty()) {
-            return addedSky;
-        }
-        
-        // search the neighbors of the just added sky points and add them if
-        // similar in color.  
-        // TODO: this doesn't use a contrast check so needs more testing.
-        
-        Set<PixelColors> tmpColors = new HashSet<PixelColors>(addedSkyColorToAdd);
-        
-        visited.clear();
-        visited.add(addedSky.peek());
-        
-        while (!addedSky.isEmpty()) {
 
-            PairInt uPoint = addedSky.pop();
-
-            int uX = uPoint.getX() + xOffset;
-            int uY = uPoint.getY() + yOffset;
-
-            PixelColors uColor = addedSkyColorToAdd.pop();
-            
-            for (int k = 0; k < dxs.length; k++) {
-
-                int vX = uX + dxs[k];
-                int vY = uY + dys[k];
-
-                if ((vX < 0) || (vX > (width - 1)) || (vY < 0) || 
-                    (vY > (height - 1))) {
-                    continue;
-                }
-
-                PairInt vPoint = new PairInt(vX - xOffset, vY - yOffset);
-
-                if (uPoint.equals(vPoint) || visited.contains(vPoint) ||
-                    excludePoints.contains(vPoint) || points.contains(vPoint)
-                    || borderPixels.contains(vPoint)) {
-                    continue;
-                }
-
-                visited.add(vPoint);
-                
-                int r = colorImg.getR(vX, vY);
-                int g = colorImg.getG(vX, vY);
-                int b = colorImg.getB(vX, vY);
-                
-                if ((Math.abs(r - uColor.getRed()) < firstSubtrTol) 
-                    && (Math.abs(g - uColor.getGreen()) < firstSubtrTol) &&
-                    (Math.abs(b - uColor.getBlue()) < firstSubtrTol)) {
-                        
-                    nAdded++;
-                        
-                    points.add(vPoint);
-                        
-                    mask.setValue(vX - xOffset, vY - yOffset, 0);
-                    
-                    addedSky.add(vPoint);
-                    addedSkyColorToAdd.add(uColor);
-                    
-                } else {
-                    
-                    for (PixelColors c : tmpColors) {
-                        
-                        if ((Math.abs(r - c.getRed()) < secondSubtrTol)
-                            && (Math.abs(g - c.getGreen()) < secondSubtrTol)
-                            && (Math.abs(b - c.getBlue()) < secondSubtrTol)) {
-
-                            nAdded++;
-
-                            points.add(vPoint);
-
-                            mask.setValue(vX - xOffset, vY - yOffset, 0);
-
-                            addedSky.add(vPoint);
-                            addedSkyColorToAdd.add(c);
-                            
-                            break;
-                        }
-                    }
-                }                
-            }
-        }
-        
-        log.info("nAdded=" + nAdded);
-        
-        return nAdded;
-        */
     }
 
     /**
