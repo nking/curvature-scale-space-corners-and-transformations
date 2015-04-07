@@ -433,7 +433,8 @@ public class PointMatcher3Test {
         System.out.println("test done");
     }
     
-    private void testSkyline() throws Exception {
+    @Test
+    public void testSkyline() throws Exception {
         
         String[] fileNames = new String[] {
             "brown_lowe_2003_image1.jpg",
