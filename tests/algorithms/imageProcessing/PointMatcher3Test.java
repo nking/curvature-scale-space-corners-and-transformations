@@ -816,8 +816,8 @@ public class PointMatcher3Test {
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
   
-    @Test
-    public void test1() throws Exception {
+    //@Test
+    public void est1() throws Exception {
 
         // test for dataset which already matches exactly
         
@@ -841,8 +841,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 1);
     }
     
-    @Test
-    public void test2() throws Exception {
+    //@Test
+    public void est2() throws Exception {
 
         // test for exact match plus noise
         
@@ -866,8 +866,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 2);
     }
     
-    @Test
-    public void test3() throws Exception {
+    //@Test
+    public void est3() throws Exception {
 
         // test for exact match translated in X
         
@@ -894,8 +894,8 @@ public class PointMatcher3Test {
         
     }
     
-    @Test
-    public void test4() throws Exception {
+    //@Test
+    public void est4() throws Exception {
 
         // test for exact match translated in X plus random points
         
@@ -919,8 +919,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 4);
     }
     
-    @Test
-    public void test5() throws Exception {
+    //@Test
+    public void est5() throws Exception {
 
         // test for exact match translated in X
         
@@ -947,8 +947,8 @@ public class PointMatcher3Test {
         
     }
     
-    @Test
-    public void test6() throws Exception {
+    //@Test
+    public void est6() throws Exception {
 
         // test for exact match translated in X plus random points
         
@@ -972,8 +972,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 6);
     }
     
-    @Test
-    public void test7() throws Exception {
+    //@Test
+    public void est7() throws Exception {
 
         // test for exact match rotated by 30 degrees
         
@@ -1000,8 +1000,8 @@ public class PointMatcher3Test {
         
     }
   
-    @Test
-    public void test8() throws Exception {
+    //@Test
+    public void est8() throws Exception {
 
         // test for rotation plus random points
         
@@ -1025,8 +1025,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 8);
     }
     
-    @Test
-    public void test9() throws Exception {
+    //@Test
+    public void est9() throws Exception {
 
         // test for scale plus random points
         
@@ -1051,8 +1051,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 9);
     }
     
-    @Test
-    public void test10() throws Exception {
+    //@Test
+    public void est10() throws Exception {
 
         // test for scale smaller than 1, plus random points
         
@@ -1078,8 +1078,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 10);
     }
     
-    @Test
-    public void test11() throws Exception {
+    //@Test
+    public void est11() throws Exception {
 
         // test for rotation and translation, plus random points
        
@@ -1105,8 +1105,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 11);
     }
 
-    @Test
-    public void test12() throws Exception {
+    //@Test
+    public void est12() throws Exception {
 
         // test for scale, rotation and translation, plus random points
        
@@ -1132,8 +1132,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 12);
     }
     
-    @Test
-    public void test13() throws Exception {
+    //@Test
+    public void est13() throws Exception {
 
         // test for scale, rotation and translation, plus random points
        
@@ -1159,8 +1159,8 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 13);
     }
     
-    @Test
-    public void test14() throws Exception {
+    //@Test
+    public void est14() throws Exception {
 
         // test for scale close to 1
        
@@ -1185,8 +1185,8 @@ public class PointMatcher3Test {
         runTest(sr, nScenePoints, nModelPoints, xRange, yRange,
             scale, rotation, translateX, translateY, 13);
     }
-    @Test
-    public void test155() throws Exception {
+    //@Test
+    public void est155() throws Exception {
 
         PairIntArray scene = new PairIntArray();
         PairIntArray model = new PairIntArray();
@@ -1219,8 +1219,8 @@ public class PointMatcher3Test {
         
     }
     
-    @Test
-    public void test156() throws Exception {
+    //@Test
+    public void est156() throws Exception {
 
         PairIntArray scene = new PairIntArray();
         PairIntArray model = new PairIntArray();

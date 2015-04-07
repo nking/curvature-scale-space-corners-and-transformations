@@ -199,7 +199,7 @@ public class SkylineExtractor {
         int[] skyRowMinMax = new int[2];
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
         Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(points, 
-            skyRowMinMax, outputEmbeddedGapPoints);
+            skyRowMinMax, originalColorImage.getWidth(), outputEmbeddedGapPoints);
         
         rightAndLowerDownSizingSkyPointCorrections(points, binFactor, 
             skyRowColRange, skyRowMinMax, originalColorImage,
@@ -273,9 +273,11 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
         skyRowMinMax = new int[2];
         Set<PairInt> embeddedPoints = new HashSet<PairInt>();
         skyRowColRange = perimeterFinder.find(points, skyRowMinMax, 
-            embeddedPoints);
-
+            originalColorImage.getWidth(), embeddedPoints);
+        
         if (!embeddedPoints.isEmpty()) {
+debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+"before_add_embedded");
 
             HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
 
@@ -290,7 +292,7 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
             addIfSimilarToSky(embeddedPoints, points, 
                 removedSets.getHighContrastRemoved(),
                 originalColorImage, mask,
-                brightnessHistogram, skyPartitionedByBrightness);
+                brightnessHistogram, skyPartitionedByBrightness);        
 
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_add_embedded");
@@ -309,7 +311,7 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
                         
             growForLowContrastLimits(points, exclude, skyRowColRange,
                 skyRowMinMax, originalColorImage, mask);
-        
+
             // TODO: might need to expand these a little
             /*Set<PairInt> placeholdingPoints = new HashSet<PairInt>();
             placeholdingPoints.addAll(sunPoints);
@@ -2722,7 +2724,7 @@ debugPlot(skyPoints, originalColorImage, mask.getXRelativeOffset(),
  
                     // one more round of search for embedded but only in the new points
                     Set<PairInt> embeddedPoints = findEmbeddedNonPoints(
-                        cloudPoints);
+                        cloudPoints, (mask.getWidth() + xOffset));
 
                     skyPoints.addAll(embeddedPoints);
 
@@ -2753,7 +2755,7 @@ int z = 1;
             } else {
                 
                 Set<PairInt> embeddedPoints = findEmbeddedNonPoints(
-                    skyPoints);
+                    skyPoints, (mask.getWidth() + xOffset));
 
                 skyPoints.addAll(embeddedPoints);
 
@@ -2956,8 +2958,6 @@ int z = 1;
         
         // because of Rayleigh scattered illumination, need large tolerance
         int limit = 55;
-        boolean isGrey = (Math.abs(r - g) < limit) && (Math.abs(g - b) < limit) 
-            && (Math.abs(r - b) < 1.8*limit);
 
         float[] hsb = new float[3];
         Color.RGBtoHSB(r, g, b, hsb);
@@ -2990,51 +2990,8 @@ int z = 1;
                 diffB *= -1;
             }
 
-if (((p.getX() + xOffset) >= 518) && ((p.getX() + xOffset) <= 518) && ((p.getY() + yOffset) >= 245) && ((p.getY() + yOffset) <= 245)) {
-CIEChromaticity cieC = new CIEChromaticity();
-float[] xychr = cieC.rgbToXYChromaticity(r, g, b);  //0.3136, 0.33;     0.3136, 0.33
-float[] xychrsky = cieC.rgbToXYChromaticity(        //0.3039, 0.3136;   0.3130, 0.3218
-    Math.round(skyBinsByBrightness[k].getAvgRed()),
-    Math.round(skyBinsByBrightness[k].getAvgGreen()),
-    Math.round(skyBinsByBrightness[k].getAvgBlue()));
-
-boolean t1 = (pointIsEmbeddedInSky);
-boolean t2 = (diffR <= skyBinsByBrightness[k].getStdDevRed());
-boolean t3 = (skyIsRed && (r > skyBinsByBrightness[k].getAvgRed()));
-boolean t4 = (skyIsRed && (r > 155) && (diffR <= 3.5*skyBinsByBrightness[k].getStdDevRed()));
-boolean t5 = (!skyIsRed  && (diffR <= 2.0*skyBinsByBrightness[k].getStdDevRed()));
-                 
-boolean t6 = (diffG <= 1.5*skyBinsByBrightness[k].getStdDevGreen());
-boolean t7 = (skyIsRed && (contrast < 0.) && (g > 130) && (diffG <= 2.0*skyBinsByBrightness[k].getStdDevGreen()));
-boolean t8 = ((skyIsPurple || skyIsRed) && (contrast > 0.) && (g < 130) && 
-                        (diffG <= 2.0*skyBinsByBrightness[k].getStdDevGreen()));
-boolean t9 = (!skyIsRed && hasDarkGreyClouds && 
-                        (diffG <= 2.0*skyBinsByBrightness[k].getStdDevGreen()));
-boolean t10 = (diffB <= 1.2*skyBinsByBrightness[k].getStdDevBlue());
-                    
-boolean t11 = (skyIsPurple && (contrast > 0.) && (b < 130) && 
-                        (diffB <= 2.5*skyBinsByBrightness[k].getStdDevBlue()));
-boolean t12 = (!skyIsRed && 
-                        (diffB <= 1.5*skyBinsByBrightness[k].getStdDevBlue()));
-log.info(String.format("(%d,%d) t1=%b, t2=%b, t3=%b, t4=%b, t5=%b", col, row, t1, t2, t3, t4, t5));
-log.info(String.format("t6=%b, t7=%b, t8=%b, t9=%b, t10=%b", t6, t7, t8, t9, t10));
-log.info(String.format("t11=%b, t12=%b", t11, t12));
-
-log.info(String.format("r,g,b=(%d,%d,%d) R/G=%f R/B=%f, G/B=%f  contrast=%f  diffRGB=(%f,%f,%f) stdDevRGB=(%f,%f,%f)  skyIsRed=%b hasDarkGreyClouds=%b", 
-r, g, b,
-(float)r/(float)g, (float)r/(float)b, (float)g/(float)b,
-contrast,
-diffR, diffG, diffB, 
-skyBinsByBrightness[k].getStdDevRed(),
-skyBinsByBrightness[k].getStdDevGreen(),
-skyBinsByBrightness[k].getStdDevBlue(),
-skyIsRed, hasDarkGreyClouds
-));
-
-}
-
             if (
-                (pointIsEmbeddedInSky /*&& isGrey*/) ||
+                (pointIsEmbeddedInSky) ||
                 (
                 (
                     (diffR <= skyBinsByBrightness[k].getStdDevRed())
@@ -3235,7 +3192,7 @@ skyIsRed, hasDarkGreyClouds
        
         int nAdded = 0;
         int nIter = 0;
-        int nMaxIter = 100;
+        int nMaxIter = 1;
         
         Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
             skyRowColRange, skyRowMinMax, imageMaxColumn, imageMaxRow);
@@ -3333,15 +3290,14 @@ skyIsRed, hasDarkGreyClouds
                     }        
                 }
             }
-
+            
             Set<PairInt> addedPixels = growForLowContrastLimits(points, 
                 excludePoints, colorImg, mask, skyIsRed, borderPixels, 
                 localSkyRGB, foregroundColor);
-
+            
             borderPixels = addedPixels;
 
             nAdded = addedPixels.size();
-System.out.println("nADDED in growforLowContrastLimits=" + nAdded + " nIter=" + nIter);
             nIter++;
         }
     }
@@ -4217,27 +4173,28 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return removed;
     }
 
-    private Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points) {
+    private Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points, 
+        int imageMaxColumn) {
         
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         int[] skyRowMinMax = new int[2];
 
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
         Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(
-            points, skyRowMinMax, outputEmbeddedGapPoints);
+            points, skyRowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
 
         return outputEmbeddedGapPoints;
     }
     
     Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points,
-        Set<PairInt> exclude0, Set<PairInt> exclude1) {
+        Set<PairInt> exclude0, Set<PairInt> exclude1, int imageMaxColumn) {
         
         Set<PairInt> embeddedPoints = new HashSet<PairInt>();
         
         PerimeterFinder finder = new PerimeterFinder();
         int[] rowMinMax = new int[2];
         Map<Integer, List<PairInt>> rowColRange = finder.find(points, 
-            rowMinMax, embeddedPoints);
+            rowMinMax, imageMaxColumn, embeddedPoints);
         
         for (PairInt exclude : exclude0) {
             embeddedPoints.remove(exclude);
@@ -4694,6 +4651,7 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         for (PairInt embeddedPoint : embeddedPoints) {
 
             if (excludePoints.contains(embeddedPoint)) {
+
                 continue;
             }
 

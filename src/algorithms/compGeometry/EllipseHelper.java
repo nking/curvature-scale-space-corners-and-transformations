@@ -311,7 +311,7 @@ public class EllipseHelper {
         }
         if (kmin == -1) {
             // not an ellipse, or my port to java is wrong
-            log.severe("not an ellipse, or error in my port to java?");
+            log.severe("not an ellipse, or error in my port to java?  need more tests for this");
             return null;
         }
         

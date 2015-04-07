@@ -36,13 +36,16 @@ public class PerimeterFinder {
      * @param points
      * @param outputRowMinMax output populated as the min and max of rows are 
      * determined.
+     * @param imageMaxColumn maximum column index of image (used to understand
+     * when a pixel is in the last column)
      * @param outputEmbeddedGapPoints a return variable holding the found 
      * embedded points that are not in the "points" set, but are enclosed by it.
      * @return map w/ key being row number, value being a list of column ranges
      * that inclusively bound the points in that row.
      */
     public Map<Integer, List<PairInt>> find(Set<PairInt> points, 
-        int[] outputRowMinMax, Set<PairInt> outputEmbeddedGapPoints) {
+        int[] outputRowMinMax, int imageMaxColumn, 
+        Set<PairInt> outputEmbeddedGapPoints) {
         
         if (points == null) {
 	    	throw new IllegalArgumentException("points cannot be null");
@@ -72,36 +75,39 @@ public class PerimeterFinder {
         // value holds (first column number, last column number) for points in the row
         Map<Integer, List<PairInt>> rowColRanges = findRowColRanges(points, 
             minX, maxX, minY, maxY);        
-        
+       
         // runtime complexity is > O(m) where m is the number of contig gap ranges by row
         List<List<Gap>> contiguousGaps = findContiguousGaps(rowColRanges,
             minX, maxX, minY, maxY);
-        
+
         //runtime complexity is > O(m) where m is the number of contig gap ranges by row
-        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, minY, maxY, 
-            rowColRanges);
-        
+        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, 
+            minY, maxY, imageMaxColumn, rowColRanges);
+
         // update the rowColRanges to encapsulate the truly embedded points too
         for (List<Gap> embeddedGroup : embeddedGapGroups) {
             
             updateRowColRangesForVerifiedEmbedded(rowColRanges, 
-                embeddedGroup, outputEmbeddedGapPoints);      
+                embeddedGroup, outputEmbeddedGapPoints);
+
         }
-        
+
         return rowColRanges;
     }
     
     boolean boundedByPointsInHigherRows(int row, int gapStart, int gapStop,
-        int maxRow, Map<Integer, List<PairInt>> rowColRange) {
+        int maxRow, int imageMaxColumn, Map<Integer, List<PairInt>> rowColRange) {
         
         LinkedHashSet<Integer> gapRange = createRange(gapStart, gapStop);
+        
         List<Integer> remove = new ArrayList<Integer>();
         
         for (int r = (row + 1); r <= maxRow; r++) {
             
             List<PairInt> colRanges = rowColRange.get(Integer.valueOf(r));
             
-            boolean bounded = boundedByPoints(colRanges, gapRange, remove);
+            boolean bounded = boundedByPoints(colRanges, imageMaxColumn,
+                gapRange, remove);
             
             if (bounded) {
                 return true;
@@ -112,16 +118,18 @@ public class PerimeterFinder {
     }
     
     boolean boundedByPointsInLowerRows(int row, int gapStart, int gapStop,
-        int minRow, Map<Integer, List<PairInt>> rowColRanges) {
+        int minRow, int imageMaxColumn,
+        Map<Integer, List<PairInt>> rowColRanges) {
         
         LinkedHashSet<Integer> gapRange = createRange(gapStart, gapStop);
         List<Integer> remove = new ArrayList<Integer>();
-        
+    
         for (int r = (row - 1); r >= minRow; r--) {
             
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(r));
 
-            boolean bounded = boundedByPoints(colRanges, gapRange, remove);
+            boolean bounded = boundedByPoints(colRanges, imageMaxColumn,
+                gapRange, remove);
             
             if (bounded) {
                 return true;
@@ -131,7 +139,7 @@ public class PerimeterFinder {
         return gapRange.isEmpty();
     }
     
-    private boolean boundedByPoints(List<PairInt> colRanges, 
+    private boolean boundedByPoints(List<PairInt> colRanges, int imageMaxColumn,
         LinkedHashSet<Integer> gapRange, List<Integer> remove) {
                             
         for (PairInt colRange : colRanges) {
@@ -144,6 +152,7 @@ public class PerimeterFinder {
                 int col = gapColumn.intValue();
 
                 if ((col >= col0) && (col <= col1)) {
+                    
                     remove.add(gapColumn);
                 }
             }
@@ -472,32 +481,76 @@ public class PerimeterFinder {
      * @param contiguousGapGroups
      * @param minY the minimum row of the points set used to construct rowColRanges
      * @param maxY the maximum row of the points set used to construct rowColRanges
+     * @param imageMaxColumn the maximum column index of the image
      * @param rowColRanges map with key = row number and value = list of column
      * ranges for the presence of points.
      * @return subset of contiguousGapGroups that are completely bounded by 
      * rowColRanges
      */
     protected List<List<Gap>> findBoundedGaps(List<List<Gap>> contiguousGapGroups, 
-        int minY, int maxY, Map<Integer, List<PairInt>> rowColRanges) {
+        int minY, int maxY, int imageMaxColumn,
+        Map<Integer, List<PairInt>> rowColRanges) {
         
         List<List<Gap>> contiguousBoundedGapGroups = new ArrayList<List<Gap>>();
-                
+
+        /* need a data structure to access all Gaps by row by number.
+        Will use a Map with key=integer and value = set of Gaps.
+        Since there are not usually very many Gaps per row, will not use
+        a sorted list of Gaps as the value, but that might be something to
+        consider in the future with stats of the total number of gaps in 
+        contiguousBoundedGapGroups compared to the number of pixels in sky.
+        */
+        Map<Integer, Set<Gap>> rowGapsMap = createRowMap(contiguousGapGroups);
+
         for (List<Gap> contiguousGap : contiguousGapGroups) {
             
             boolean notBounded = false;
             
             for (Gap gap : contiguousGap) {
+
+                int row = gap.getRow();
                 
-                boolean bounded = boundedByPointsInHigherRows(gap.getRow(), 
-                    gap.getStart(), gap.getStopInclusive(), maxY, rowColRanges);
+                /*
+                 check that the gap above it if any is not in a gap that 
+                 continues to the image boundary
+                */
+                boolean adjRowGapIsUnbounded = 
+                    adjacentGapIsConnectedToImageBoundary(gap.getStart(), 
+                        gap.getStopInclusive(), 
+                        rowGapsMap.get(Integer.valueOf(row + 1)),
+                        rowColRanges.get(Integer.valueOf(row + 1)),
+                        imageMaxColumn);
+                
+                if (adjRowGapIsUnbounded) {
+                    notBounded = true;
+                    break;
+                }
+                
+                /*
+                 same check for row below
+                */
+                adjRowGapIsUnbounded = adjacentGapIsConnectedToImageBoundary(
+                    gap.getStart(), gap.getStopInclusive(), 
+                    rowGapsMap.get(Integer.valueOf(row - 1)), 
+                    rowColRanges.get(Integer.valueOf(row - 1)),
+                    imageMaxColumn);
+                
+                if (adjRowGapIsUnbounded) {
+                    notBounded = true;
+                    break;
+                }
+                
+                boolean bounded = boundedByPointsInHigherRows(row, 
+                    gap.getStart(), gap.getStopInclusive(), maxY, 
+                    imageMaxColumn, rowColRanges);
                 
                 if (!bounded) {
                     notBounded = true;
                     break;
                 }
                 
-                bounded = boundedByPointsInLowerRows(gap.getRow(), 
-                    gap.getStart(), gap.getStopInclusive(), minY, rowColRanges);
+                bounded = boundedByPointsInLowerRows(row, gap.getStart(), 
+                    gap.getStopInclusive(), minY, imageMaxColumn, rowColRanges);
                 
                 if (!bounded) {
                     notBounded = true;
@@ -505,11 +558,11 @@ public class PerimeterFinder {
                 }
             }
             
-            if (!notBounded) {
+            if (!notBounded) {                
                 contiguousBoundedGapGroups.add(contiguousGap);
             }
         }
-                
+       
         return contiguousBoundedGapGroups;
     }
 
@@ -668,7 +721,7 @@ public class PerimeterFinder {
 
     public void updateRowColRangesForAddedPoints(
         Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax, 
-        Collection<PairInt> addedPoints) {
+        int imageMaxColumn, Collection<PairInt> addedPoints) {
        
         /*
         - update rowColRanges and rowMinMax for individual pixels.
@@ -723,7 +776,7 @@ public class PerimeterFinder {
         
         //runtime complexity is > O(m) where m is the number of contig gap ranges by row
         List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, minY, 
-            maxY, rowColRanges);
+            maxY, imageMaxColumn, rowColRanges);
         
         // update the rowColRanges to encapsulate the truly embedded points too
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
@@ -760,7 +813,7 @@ public class PerimeterFinder {
 
                     colRanges.remove(i);
 
-                    for (int cIdx = gapStart; cIdx <= gapStop; cIdx++) {
+                    for (int cIdx = gapStart; cIdx <= gapStop; cIdx++) {                     
                         outputEmbeddedGapPoints.add(new PairInt(cIdx, row));
                     }
                 }
@@ -805,7 +858,7 @@ public class PerimeterFinder {
             // ---- see if first columnRange is a border
             int tc = colRanges.get(0).getX();
             if (tc > 0) {
-                borderPixels.add(new PairInt(tc, row));
+                borderPixels.add(new PairInt(tc, row));  
             }
             
             int n = colRanges.size();
@@ -849,7 +902,7 @@ public class PerimeterFinder {
                         continue;
                     }
                     if (!((row == rowMinMax[0]) && (row == 0))) {                        
-                        borderPixels.add(new PairInt(col, row));
+                        borderPixels.add(new PairInt(col, row));                       
                     }
                     allCols.remove(Integer.valueOf(col));
                 }
@@ -878,7 +931,7 @@ public class PerimeterFinder {
                         continue;
                     }
                     if (!((row == rowMinMax[1]) && (row == imageMaxRow))) {                        
-                        borderPixels.add(new PairInt(col, row));
+                        borderPixels.add(new PairInt(col, row)); 
                     }
                     allCols.remove(Integer.valueOf(col));
                 }
@@ -896,35 +949,48 @@ public class PerimeterFinder {
                 continue;
             }
             
-            int col0 = colRanges.get(0).getX();
+            PairInt colRange = colRanges.get(0);
+            int col0 = colRange.getX();
             
             List<PairInt> prevColRanges = rowColRanges.get(
                 Integer.valueOf(row - 1));
             List<PairInt> nextColRanges = rowColRanges.get(
                 Integer.valueOf(row + 1));
             
-            int colAdj = -1;
-            if ((prevColRanges != null) && !prevColRanges.isEmpty()) {
-                colAdj = prevColRanges.get(0).getX();
+            // this will be -1 if no overlapping range
+            int prevCol = findIndexOfOverlappingRange(prevColRanges, colRange);
+            int nextCol = findIndexOfOverlappingRange(nextColRanges, colRange);
+            if (prevCol == 0) {
+                prevCol = prevColRanges.get(0).getX();
+            } else {
+                prevCol = -1;
             }
-            if ((nextColRanges != null) && !nextColRanges.isEmpty()) {
-                int tmp = nextColRanges.get(0).getX();
-                if (tmp > colAdj) {
-                    colAdj = tmp;
-                }
+            if (nextCol == 0) {
+                nextCol = nextColRanges.get(0).getX();
+            } else {
+                nextCol = -1;
             }
+            /*
             
-            if (col0 < colAdj) {
-                for (int c = col0; c < colAdj; c++) {
-                    // only add to border if c is in row above 
-                    //TODO: improve this.  it's a quick approx.  check prevColRange's subsequent ranges too?
-                    if ((prevColRanges != null) && !prevColRanges.isEmpty()) {
-                        if ((c >=  prevColRanges.get(0).getX()) && (c <=  prevColRanges.get(0).getY())) {
-                            borderPixels.add(new PairInt(c, row));
-                        }
+    232--233    236--237     242-----------249
+                                   246
+                                    @
+                                                  410--421   440-430 ...
+            */
+            if (nextCol > prevCol) {
+                if (col0 < nextCol) {
+                    for (int c = col0; c < nextCol; c++) {
+                        borderPixels.add(new PairInt(c, row));
+                    }
+                }
+            } else if (prevCol > -1) {
+                if (col0 < prevCol) {
+                    for (int c = col0; c < nextCol; c++) {
+                        borderPixels.add(new PairInt(c, row));
                     }
                 }
             }
+            
         }
         
         // ----- for each row, find end of columns in rows above and below
@@ -938,35 +1004,53 @@ public class PerimeterFinder {
                 continue;
             }
             
-            int col0 = colRanges.get(colRanges.size() - 1).getY();
+            PairInt colRange = colRanges.get(colRanges.size() - 1);
+            int col0 = colRange.getY();
             
             List<PairInt> prevColRanges = rowColRanges.get(
                 Integer.valueOf(row - 1));
             List<PairInt> nextColRanges = rowColRanges.get(
                 Integer.valueOf(row + 1));
             
-            int colAdj = -1;
-            if ((prevColRanges != null) && !prevColRanges.isEmpty()) {
-                colAdj = prevColRanges.get(prevColRanges.size() - 1).getY();
+            // this will be -1 if no overlapping range
+            int prevCol = findIndexOfOverlappingRange(prevColRanges, colRange);
+            int nextCol = findIndexOfOverlappingRange(nextColRanges, colRange);
+            if (prevCol > -1) {
+                int n = prevColRanges.size();
+                if (prevCol == (n - 1)) {
+                    prevCol = prevColRanges.get(prevCol).getY();
+                } else {
+                    prevCol = -1;
+                }
             }
-            if ((nextColRanges != null) && !nextColRanges.isEmpty()) {
-                int tmp = nextColRanges.get(nextColRanges.size() - 1).getY();
-                if (tmp > colAdj) {
-                    colAdj = tmp;
+            if (nextCol > -1) {
+                int n = nextColRanges.size();
+                if (nextCol == (n - 1)) {
+                    nextCol = nextColRanges.get(nextCol).getY();
+                } else {
+                    nextCol = -1;
                 }
             }
             
-            if (col0 > colAdj) {
-                for (int c = (colAdj + 1); c <= col0; c++) {
-                    // only add to border if c is in row above 
-                    //TODO: improve this.  it's a quick approx.  check nextColRange's prior ranges too?
-                    if ((nextColRanges != null) && !nextColRanges.isEmpty()) {
-                        if ((c >=  nextColRanges.get(nextColRanges.size() - 1).getX()) && (c <=  nextColRanges.get(nextColRanges.size() - 1).getY())) {
-                            borderPixels.add(new PairInt(c, row));
-                        }
+            if (nextCol > prevCol) {
+                if (col0 > nextCol) {
+                    for (int c = (nextCol + 1); c <= col0; c++) {
+                        borderPixels.add(new PairInt(c, row));
+                    }
+                }
+            } else if (prevCol > -1) {
+                if (col0 > prevCol) {
+                    for (int c = (prevCol + 1); c <= col0; c++) {
+                        borderPixels.add(new PairInt(c, row));
                     }
                 }
             }
+        /*
+                    521---------------570     574--574
+                                *543-----571*
+                                    @
+                                  550--570
+            */
         }
 
         // -------- embedded pixels or gaps which are not bounded ---------
@@ -975,7 +1059,7 @@ public class PerimeterFinder {
             minX, maxX, rowMinMax[0], rowMinMax[1]);
         
         List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, 
-            rowMinMax[0], rowMinMax[1], rowColRanges);
+            rowMinMax[0], rowMinMax[1], imageMaxColumn, rowColRanges);
         
         // unbounded are the contiguous minus embedded
         for (List<Gap> gapGroup : embeddedGapGroups) {
@@ -997,7 +1081,7 @@ public class PerimeterFinder {
                 borderPixels.add(new PairInt(pPrev, row));
                 
                 borderPixels.add(new PairInt(pNext, row));
-                
+
                 //-- for each pixel in gap find the nearest pixel above it  
                 //   within rowColRanges and if exists, add it to border pixels
                 for (int c = unboundedGap.getStart(); 
@@ -1040,6 +1124,155 @@ public class PerimeterFinder {
         }
 
         return borderPixels;
+    }
+    
+    protected Gap findLastGap(Set<Gap> gaps) {
+        Gap lastGap = null;
+        for (Gap gap : gaps) {
+            if (lastGap == null) {
+                lastGap = gap;
+            } else {
+                if (gap.getStopInclusive() > lastGap.getStopInclusive()) {
+                    lastGap = gap;
+                }
+            }
+        }
+        return lastGap;
+    }
+    
+    protected Gap findFirstGap(Set<Gap> gaps) {
+        Gap firstGap = null;
+        for (Gap gap : gaps) {
+            if (firstGap == null) {
+                firstGap = gap;
+            } else {
+                if (gap.getStart() < firstGap.getStart()) {
+                    firstGap = gap;
+                }
+            }
+        }
+        return firstGap;
+    }
+
+    protected boolean adjacentGapIsConnectedToImageBoundary(
+        int startGap, int stopGapInclusive, Set<Gap> adjacentGaps,
+        List<PairInt> adjacentColRanges, int imageMaxColumn) {
+        
+        if ((adjacentColRanges == null) || adjacentColRanges.isEmpty()) {
+            return true;
+        }
+        
+        /*
+        check to see if the startGap:stopGapInclusive is adjacent to a
+        row which has a leading or trailing gap which is connected to the image
+        boundaries.
+        */
+        /*
+        0123456789012345678902345678901234567#
+                |lastGap|lastColRange
+        */
+        PairInt lastColRange = adjacentColRanges.get(adjacentColRanges.size() - 1);
+        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {
+            if (lastColRange.getY() < imageMaxColumn) {
+                if (stopGapInclusive >= (lastColRange.getY() + 1)) {
+                    return true;
+                }
+            } 
+        } else {
+            Gap lastGap = findLastGap(adjacentGaps);
+            if (lastColRange.getX() > lastGap.getStopInclusive()) {
+                if (lastColRange.getY() < imageMaxColumn) {
+                    if (stopGapInclusive >= (lastColRange.getY() + 1)) {
+                        return true;
+                    }
+                } 
+            }
+        }
+        /*
+        0123456789012345678902345678901234567#
+            firstColRange|firstGap|
+        ....
+        */
+        PairInt firstColRange = adjacentColRanges.get(0);
+        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {
+            if (firstColRange.getX() > 0) {
+                if (startGap <= (firstColRange.getX() - 1)) {
+                    return true;
+                }
+            }
+        } else {
+            Gap firstGap = findFirstGap(adjacentGaps);
+            if (firstColRange.getY() < firstGap.getStart()) {
+                if (firstColRange.getX() > 0) {
+                    if (startGap <= (firstColRange.getX() - 1)) {
+                        return true;
+                    }
+                } 
+            }
+        }
+        
+        if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {
+            return false;
+        }
+        
+        for (int col = startGap; col <= stopGapInclusive; col++) {
+            for (Gap gap : adjacentGaps) {
+                if ((col >= gap.getStart()) && (col <= gap.getStopInclusive())) {
+                    if ((gap.getStart() == 0) || (gap.getStopInclusive() == imageMaxColumn)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    protected Map<Integer, Set<Gap>> createRowMap(List<List<Gap>> gapLists) {
+        
+        Map<Integer, Set<Gap>> rowSetsMap = new HashMap<Integer, Set<Gap>>();
+        
+        for (List<Gap> gaps : gapLists) {
+            
+            for (Gap gap : gaps) {
+                
+                Integer row = Integer.valueOf(gap.getRow());
+                
+                Set<Gap> set = rowSetsMap.get(row);
+                
+                if (set == null) {
+                    set = new HashSet<Gap>();
+                    rowSetsMap.put(row, set);
+                }
+                
+                set.add(gap);
+            }
+        }
+        
+        return rowSetsMap;
+    }
+
+    protected int findIndexOfOverlappingRange(List<PairInt> colRanges, 
+        PairInt findColRange) {
+        
+        if ((colRanges == null) || colRanges.isEmpty()) {
+            return -1;
+        }
+        int fc0 = findColRange.getX();
+        int fc1 = findColRange.getY();
+        
+        for (int i = 0; i < colRanges.size(); i++) {
+            PairInt colRange = colRanges.get(i);
+            int c0 = colRange.getX();
+            int c1 = colRange.getY();
+            
+            if ((fc0 <= c0) && (fc1 >= c0)) {
+                return i;
+            } else if ((fc0 >= c0) && (fc0 <= c1)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     static class Gap {
