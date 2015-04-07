@@ -234,9 +234,6 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
         findClouds(points, new HashSet<PairInt>(), originalColorImage, mask, 
             pixelColorsMap, skyColorsMap);
 
-        //TODO: these should be reincluded for some sets
-        //points.addAll(removedSets.getRemovedNonCloudColors());
-
         GroupPixelColors allSkyColor = new GroupPixelColors(points,
             originalColorImage, theta.getXRelativeOffset(), 
             theta.getYRelativeOffset());
@@ -2181,16 +2178,15 @@ try {
                             continue;
                         }
                         
-                        continue;
-
                     } else if (skyStDevContrast == 0.) {
                         if (contrastV >= 0.) {
                             doNotAddToStack = true;
                         }
-
+                        
                     } else {
                         //TODO:  if there are sun points, need a zone of
                         // avoidance to not erode the foreground 
+                        
                     }
 
                 } else {
