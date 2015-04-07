@@ -970,13 +970,7 @@ public class PerimeterFinder {
             } else {
                 nextCol = -1;
             }
-            /*
             
-    232--233    236--237     242-----------249
-                                   246
-                                    @
-                                                  410--421   440-430 ...
-            */
             if (nextCol > prevCol) {
                 if (col0 < nextCol) {
                     for (int c = col0; c < nextCol; c++) {
@@ -1045,12 +1039,6 @@ public class PerimeterFinder {
                     }
                 }
             }
-        /*
-                    521---------------570     574--574
-                                *543-----571*
-                                    @
-                                  550--570
-            */
         }
 
         // -------- embedded pixels or gaps which are not bounded ---------
@@ -1167,10 +1155,6 @@ public class PerimeterFinder {
         row which has a leading or trailing gap which is connected to the image
         boundaries.
         */
-        /*
-        0123456789012345678902345678901234567#
-                |lastGap|lastColRange
-        */
         PairInt lastColRange = adjacentColRanges.get(adjacentColRanges.size() - 1);
         if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {
             if (lastColRange.getY() < imageMaxColumn) {
@@ -1188,11 +1172,6 @@ public class PerimeterFinder {
                 } 
             }
         }
-        /*
-        0123456789012345678902345678901234567#
-            firstColRange|firstGap|
-        ....
-        */
         PairInt firstColRange = adjacentColRanges.get(0);
         if ((adjacentGaps == null) || adjacentGaps.isEmpty()) {
             if (firstColRange.getX() > 0) {

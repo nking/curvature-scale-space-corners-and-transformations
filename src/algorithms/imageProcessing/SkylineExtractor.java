@@ -1904,13 +1904,6 @@ try {
         }
     }
 
-    private void check(int vX, int xOffset, int vY, int yOffset, String label) {
-        /*if (((vX + xOffset) >= 94) && ((vX + xOffset) <= 102) && ((vY + yOffset) >= 217)
-            && ((vY + yOffset) <= 217)) {
-            System.out.println("**(" + (vX+xOffset) + ", " + (vY+yOffset) +") " + label);
-        }*/
-    }
-    
     /**
      * given seed skyPoints to start from, use conservative limits on contrast
      * and color difference to add neighbors to skyPoints.  The conservative
@@ -1960,7 +1953,7 @@ try {
                 }
                 
                 PairInt p = new PairInt(xx, yy);
-                
+                          
                 if (skyPoints.contains(p) || excludePoints.contains(p)) {
                     continue;
                 }
@@ -2094,8 +2087,6 @@ try {
                     && (Math.abs(gPercentV - 0.32) < 0.1)
                     && (Math.abs(bPercentV - 0.17) < 0.1);
                 
-check(vX, xOffset, vY, yOffset, "0 skyIsRed=" + skyIsRed + " isBrown=" + isBrown);
-                
                 if (isBrown) {
                     
                     // trying to skip over foreground such as land or sunset + water
@@ -2119,22 +2110,17 @@ check(vX, xOffset, vY, yOffset, "0 skyIsRed=" + skyIsRed + " isBrown=" + isBrown
                 }
                 
                 if (Double.isInfinite(skyStDevContrast)) {
-check(vX, xOffset, vY, yOffset, "contrast st dev is inf");
                     continue;
                 }
 
                 if (skyIsRed) {
                     
-check(vX, xOffset, vY, yOffset, "00");
-
                     // if contrast is '+' and large, may be the skyline boundary
                     if ((skyStDevContrast != 0.)
                         &&
                             ((contrastV > 1.0) && (Math.abs(contrastV) > 100.*skyStDevContrast))
                         ) {
                         
-check(vX, xOffset, vY, yOffset, "1");
-
                         continue;
                     } else if ((skyStDevContrast != 0.)
                         &&
@@ -2148,9 +2134,21 @@ check(vX, xOffset, vY, yOffset, "1");
                             )
                         ) {
                         
-check(vX, xOffset, vY, yOffset, "2");
-
-                        continue;
+                        ArrayPair orange = cieC.getOrangePolynomial();
+                        ArrayPair yellow = cieC.getYellowPolynomial();
+                        ArrayPair yellowGreenOrange = cieC.getYellowishGreenThroughOrangePolynomial();
+                        if (pInPoly.isInSimpleCurve(cieXY[0], cieXY[1],
+                            orange.getX(), orange.getY(),orange.getX().length)) {
+                        } else if (pInPoly.isInSimpleCurve(cieXY[0], cieXY[1],
+                            yellow.getX(), yellow.getY(),
+                            yellow.getX().length)) {
+                        } else if (pInPoly.isInSimpleCurve(cieXY[0], cieXY[1],
+                            yellowGreenOrange.getX(), yellowGreenOrange.getY(),
+                            yellowGreenOrange.getX().length)) {
+                        } else {
+                            continue;
+                        }
+                        
                     } else if ((skyStDevContrast != 0.)
                         &&
                             ((contrastV > 0.1) && (Math.abs(contrastV) > 3.*skyStDevContrast))
@@ -2159,28 +2157,38 @@ check(vX, xOffset, vY, yOffset, "2");
                         ) {
                         
                         //sometimes, sky pixels are found here
-check(vX, xOffset, vY, yOffset, "3");
 
                         continue;
-                     
+
                     } else if ((skyStDevContrast != 0.)
                         &&
                         (contrastV > 0.01) && (colorDiffV > 15*skyStDevColorDiff)
                         && ((diffCIEX > 0.03) || (diffCIEY > 0.03))
                         ) {
                         
-check(vX, xOffset, vY, yOffset, "4");
-
-                        continue;
+                        ArrayPair orange = cieC.getOrangePolynomial();
+                        ArrayPair yellow = cieC.getYellowPolynomial();
+                        ArrayPair yellowGreenOrange = cieC.getYellowishGreenThroughOrangePolynomial();
+                        if (pInPoly.isInSimpleCurve(cieXY[0], cieXY[1],
+                            yellowGreenOrange.getX(), yellowGreenOrange.getY(),yellowGreenOrange.getX().length)) {
+                        } else if (pInPoly.isInSimpleCurve(cieXY[0], cieXY[1],
+                            yellow.getX(), yellow.getY(),
+                            yellow.getX().length)) {
+                        } else if (pInPoly.isInSimpleCurve(cieXY[0], cieXY[1],
+                            orange.getX(), orange.getY(),
+                            orange.getX().length)) {
+                        } else {
+                            continue;
+                        }
                         
+                        continue;
+
                     } else if (skyStDevContrast == 0.) {
-check(vX, xOffset, vY, yOffset, "5");
                         if (contrastV >= 0.) {
                             doNotAddToStack = true;
                         }
 
                     } else {
-check(vX, xOffset, vY, yOffset, "6");
                         //TODO:  if there are sun points, need a zone of
                         // avoidance to not erode the foreground 
                     }
@@ -2203,7 +2211,6 @@ check(vX, xOffset, vY, yOffset, "6");
                             )
                         )
                         ) {
-check(vX, xOffset, vY, yOffset, "11");
                     } else if (
                         (
                             (contrastV < 0.05)
@@ -2221,17 +2228,13 @@ check(vX, xOffset, vY, yOffset, "11");
                             && (Math.abs(0.33 - bPercentV) < 0.3)
                             && (gV > 199) && (bV > 199))
                         ) {
-check(vX, xOffset, vY, yOffset, "12");
                         continue;
                         
                     } else {
-check(vX, xOffset, vY, yOffset, "7");
                         continue;
                     }
                 }
                 
-check(vX, xOffset, vY, yOffset, "8");
-
                 candidateCloudPoints.add(vPoint);
 
                 if (!doNotAddToStack) {

@@ -25,8 +25,8 @@ public class CIEChromaticity {
     public ArrayPair getYellowPolynomial() {
         /*
         516, 486
-        488,512  
-        436,450
+        488, 512  
+        436, 450
         327, 340 <=== 346, 360
         466, 444
         */
@@ -92,7 +92,7 @@ public class CIEChromaticity {
         */
         
         ArrayPair p = new ArrayPair(
-            new float[]{.685f, .456f, .393f, .340f, .342f, .420f, .550f, .685f},
+            new float[]{.685f, .456f, .39f, .340f, .342f, .420f, .550f, .685f},
             new float[]{.312f, .544f, .448f, .373f, .344f, .340f, .349f, .312f}
         );
         
