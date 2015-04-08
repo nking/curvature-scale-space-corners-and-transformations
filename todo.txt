@@ -1,6 +1,34 @@
 note, this is a precursor step to the agile story and tasks to gather notes 
 on needed features, bugs, etc.
 
+-- color data structure and low contrast grow of border pixels:
+
+   Need a data structure that I keep each pixel's r,g,b, cieXY, and hsb in,
+   but populated on demand.  space complexity is not conserved, but runtime
+   is at least a little by not performing transcendental operations on all
+   pixels, only on those whose color information is needed.
+   Note that when a pixel's color is needed and not present, it's 8 or 24
+   neighbors should probably be populated also.
+
+   During findClouds or after, this data structure could be used to examine
+   the border pixels to learn whether the foreground has a large color difference
+   and contrast from sky.  Currently, "grow for low contrast limit" uses a
+   small contrast limit for growing sky so that images with small contrast
+   skylines are not overrun (e.g. snowy mountain peaks under hazy or cloudy skies).
+   For images with large contrasting foreground features, could use a larger limit.
+   *Note that such a step seems like it would be more expensive computationally 
+   to use within findClouds at certain intervals, but placing the logic there instead
+   of after the sky is nearly completely "grown" makes it possible for findClouds to
+   be a single method with fittable parameters, usable in a harness using LDA and
+   neural networks to learn the best combination of parameters.
+
+   So, the data structure should be made next, and the code cleaned up to use it
+   over all methods in SkylineExtractor.
+
+   And then the border pixels vs foreground pixels (== current exterior pixels adjacent
+   to border) determination of the normally low contrast limit should be considered
+   and made modular.
+
 -- the rainbow points can be found before findClouds because it is a search over
    the entire image.
 
@@ -8,12 +36,10 @@ on needed features, bugs, etc.
       and make the plot
 
    then consider:
-      -- expanding the rainbow by a factor of 1.5 or 2 (if haven't expanded the color
-         match to find all of the brightest part of the rainbow, else keep at same size).
-         -- this encapsulation of the rainbow points can be accomplished with a 
-            convex hull.  then the maximum or mode width perpendicular to the ellipse
-            can be the width that the hull should be expanded to fill all along the hull.
-      -- interpolating over that hull region with left and right samples surrounding it
+      -- encapsulation of the rainbow points can be accomplished with a 
+         convex hull.  then the maximum or mode width perpendicular to the ellipse
+         can be the width that the hull should be expanded to fill all along the hull.
+      -- interpolation over that hull region with left and right samples surrounding it
          making sure that the same amount of color and brightness variation is present
          so that later use of the method findClouds interprets the pixels as sky.
 
