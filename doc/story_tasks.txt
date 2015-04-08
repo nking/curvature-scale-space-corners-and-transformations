@@ -2,7 +2,7 @@ Lacking an app to keep these in, making a temporary file while
 implementing...
 
 =====================================================================
-Story: Image w/ CIE + HSB populate on demand
+Story: Image w/ CIE + HSB populated on demand
  
     summary: Image extension w/ cieXY and HSB populated on demand
       created and replacing color use in SkylineExtractor.
@@ -17,21 +17,29 @@ Story: Image w/ CIE + HSB populate on demand
 
     comments regarding state:
 
---------------------------------------------------------
+    comments:
+        result is the source code and tests.  UML should not be
+        necessary for this story.
+        coverage reports should be updated exterior to this at
+        some point in the near future along w/ other QA metrics.
+
+---------------------------------------------------------------------
 Task 1:
     goal: create and test the data structure.
 
-    details:  ImageWithCIE should be refactored to include hsb and
+    details:  ImageWithCIE should be refactored to include HSB and
               to include a flag of whether a pixel's extra color
-              has been populated.
-              (choosing inheritance over composition for the additional
-              fields that Image.java needs.)
-              call the new class ImageExt.
+              has been populated.  The cieXY, and HSB data should be
+              calculated on demand when they don't exist.
 
-              would be nice to have a convenience method to populate
+              (For class, choosing inheritance over composition for 
+              the additional fields that Image.java needs.)
+              Call the new class ImageExt.
+
+              Would be nice to have a convenience method to populate
               the 8 neighborhood or 24 neighborhood area too.
 
-              tests should cover retrieving color information accurately.
+              Tests should cover retrieving color information accurately.
 
    time estimate: minimum 1 hour, maximum half day
   
@@ -41,7 +49,7 @@ Task 1:
 
    comments:
               
-=====================================================================
+---------------------------------------------------------------------
 Task 2:
     goal: ImageIOHelper needs to return an ImageExt object
 
@@ -59,7 +67,7 @@ Task 2:
 
    comments:
               
-=====================================================================
+---------------------------------------------------------------------
 Task 3:
     goal: replace use of image pixel color in SkylineExtractor w/
           ImageExt
