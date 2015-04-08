@@ -48,6 +48,7 @@ Task 1:
    state of completion: complete
 
    comments:
+      re-opened to include yuv because y, that is luma, is useful for contrasts.
               
 ---------------------------------------------------------------------
 Task 2:

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MatrixUtil;
 import java.awt.Color;
 
 /**
@@ -23,11 +24,25 @@ public class ImageExt extends Image {
     protected float[] saturation;
     protected float[] brightness;
     
+    /**
+     * luma is the y of yuv.
+     */
+    protected float[] luma;
+    
     //TODO: this could be a bit vector instead
     private boolean[] extPopulated;
     
     private int radiusForPopulateOnDemand = 1;
     
+    static public final double[][] rgbToLumaMatrix = new double[3][];
+    static {
+        rgbToLumaMatrix[0] = new double[]{0.256, 0.504, 0.098};
+        rgbToLumaMatrix[1] = new double[]{-0.148, -0.291, 0.439};
+        rgbToLumaMatrix[2] = new double[]{0.439, -0.368, -0.072};
+    }
+    
+    protected CIEChromaticity cieC = new CIEChromaticity();
+        
     /**
      * @param theWidth
      * @param theHeight
@@ -44,6 +59,8 @@ public class ImageExt extends Image {
         this.hue = new float[nPixels];
         this.saturation = new float[nPixels];
         this.brightness = new float[nPixels];
+        this.luma = new float[nPixels];
+        
         this.extPopulated = new boolean[nPixels];
         
     }
@@ -95,6 +112,13 @@ public class ImageExt extends Image {
         int idx = getInternalIndex(col, row);
        
         return getBrightness(idx);
+    }
+    
+    public float getLuma(int col, int row) {
+        
+        int idx = getInternalIndex(col, row);
+       
+        return getLuma(idx);
     }
     
     public float getCIEX(int internalIndex) {
@@ -171,11 +195,24 @@ public class ImageExt extends Image {
        
         return brightness[internalIndex];
     }
+    
+    public float getLuma(int internalIndex) {
+                
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
+        if (!extPopulated[internalIndex]) {
+            calculateColorIncludingNeighbors(internalIndex, 
+                radiusForPopulateOnDemand);
+        }
+       
+        return luma[internalIndex];
+    }
   
     protected void calculateColor(int idx) {
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        
+                
         int rPix = r[idx];
         int gPix = g[idx];
         int bPix = b[idx];
@@ -191,6 +228,11 @@ public class ImageExt extends Image {
         hue[idx] = hsb[0];
         saturation[idx] = hsb[1];
         brightness[idx] = hsb[2];
+        
+        double[] yuv = MatrixUtil.multiply(rgbToLumaMatrix, 
+            new double[]{rPix, gPix, bPix});
+        
+        luma[idx] = (float)yuv[0];
         
         extPopulated[idx] = true;
     }
@@ -234,6 +276,7 @@ public class ImageExt extends Image {
         System.arraycopy(hue, 0, img2.hue, 0, nPixels);
         System.arraycopy(saturation, 0, img2.saturation, 0, nPixels);
         System.arraycopy(brightness, 0, img2.brightness, 0, nPixels);
+        System.arraycopy(luma, 0, img2.luma, 0, nPixels);
         System.arraycopy(extPopulated, 0, img2.extPopulated, 0, nPixels);
        
         return img2;
@@ -262,6 +305,7 @@ public class ImageExt extends Image {
             nPixels);
         System.arraycopy(((ImageExt)copyThis).brightness, 0, brightness, 0, 
             nPixels);
+        System.arraycopy(((ImageExt)copyThis).luma, 0, luma, 0, nPixels);
         System.arraycopy(((ImageExt)copyThis).extPopulated, 0, extPopulated, 0, 
             nPixels);
     }

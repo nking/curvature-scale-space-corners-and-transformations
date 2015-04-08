@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import static algorithms.imageProcessing.ImageExt.rgbToLumaMatrix;
+import algorithms.imageProcessing.util.MatrixUtil;
 import java.awt.Color;
 import java.security.SecureRandom;
 import junit.framework.TestCase;
@@ -30,6 +32,7 @@ public class ImageExtTest extends TestCase {
         assertTrue(img.hue.length == n);
         assertTrue(img.saturation.length == n);
         assertTrue(img.brightness.length == n);
+        assertTrue(img.luma.length == n);
         
     }
 
@@ -58,6 +61,7 @@ public class ImageExtTest extends TestCase {
             assertTrue(img.hue[idx] == 0.);
             assertTrue(img.saturation[idx] == 0.);
             assertTrue(img.brightness[idx] == 0.);
+            assertTrue(img.luma[idx] == 0.);
         }
         
         img.setRadiusForPopulateOnDemand(5);
@@ -68,6 +72,7 @@ public class ImageExtTest extends TestCase {
             assertTrue(img.hue[idx] > 0.);
             assertTrue(img.saturation[idx] > 0.);
             assertTrue(img.brightness[idx] > 0.);
+            assertTrue(img.luma[idx] > 0.);
         }
         
         // ------ same test but w/ radius = 0 ------
@@ -97,12 +102,14 @@ public class ImageExtTest extends TestCase {
                     assertTrue(img.hue[idx] > 0.);
                     assertTrue(img.saturation[idx] > 0.);
                     assertTrue(img.brightness[idx] > 0.);
+                    assertTrue(img.luma[idx] > 0.);
                 } else {
                     assertTrue(img.cieX[idx] == 0.);
                     assertTrue(img.cieY[idx] == 0.);
                     assertTrue(img.hue[idx] == 0.);
                     assertTrue(img.saturation[idx] == 0.);
                     assertTrue(img.brightness[idx] == 0.);
+                    assertTrue(img.luma[idx] == 0.);
                 }
             }
         }
@@ -182,6 +189,13 @@ public class ImageExtTest extends TestCase {
             float[] cieXY = cieC.rgbToXYChromaticity(r, g, b);
             float[] hsb = new float[3];
             Color.RGBtoHSB(r, g, b, hsb);
+            
+            double[][] rgbToLumaMatrix = new double[3][];
+            rgbToLumaMatrix[0] = new double[]{0.256, 0.504, 0.098};
+            rgbToLumaMatrix[1] = new double[]{-0.148, -0.291, 0.439};
+            rgbToLumaMatrix[2] = new double[]{0.439, -0.368, -0.072};
+            double[] yuv = MatrixUtil.multiply(rgbToLumaMatrix, 
+                new double[]{r, g, b});
 
             assertTrue(Math.abs(img.getCIEX(x, y) - cieXY[0]) < 0.01);
             assertTrue(Math.abs(img.getCIEX(idx) - cieXY[0]) < 0.01);
@@ -198,6 +212,8 @@ public class ImageExtTest extends TestCase {
             assertTrue(Math.abs(img.getBrightness(x, y) - hsb[2]) < 0.01);
             assertTrue(Math.abs(img.getBrightness(idx) - hsb[2]) < 0.01);
             
+            assertTrue(Math.abs(img.getLuma(x, y) - yuv[0]) < 0.01);
+            assertTrue(Math.abs(img.getLuma(idx) - yuv[0]) < 0.01);
         }
         
     }
@@ -259,13 +275,21 @@ public class ImageExtTest extends TestCase {
                     float[] expectedHSB = new float[3];
                     Color.RGBtoHSB(expectedR, expectedG, expectedB, 
                         expectedHSB);
-                        
+                   
+                    double[][] rgbToLumaMatrix = new double[3][];
+                    rgbToLumaMatrix[0] = new double[]{0.256, 0.504, 0.098};
+                    rgbToLumaMatrix[1] = new double[]{-0.148, -0.291, 0.439};
+                    rgbToLumaMatrix[2] = new double[]{0.439, -0.368, -0.072};
+                    double[] expectedYUV = MatrixUtil.multiply(rgbToLumaMatrix,
+                        new double[]{expectedR, expectedG, expectedB});
+
                     assertTrue(Math.abs(img.cieX[index] - expectedCIEXY[0]) < 0.01);
                     assertTrue(Math.abs(img.cieY[index] - expectedCIEXY[1]) < 0.01);
             
                     assertTrue(Math.abs(img.hue[index] - expectedHSB[0]) < 0.01);
                     assertTrue(Math.abs(img.saturation[index] - expectedHSB[1]) < 0.01);
                     assertTrue(Math.abs(img.brightness[index] - expectedHSB[2]) < 0.01);
+                    assertTrue(Math.abs(img.luma[index] - expectedYUV[0]) < 0.01);
                 }
             }
         }
@@ -320,6 +344,7 @@ public class ImageExtTest extends TestCase {
             assertTrue(Math.abs(image2.hue[idx] - img.hue[idx]) < 0.01);
             assertTrue(Math.abs(image2.saturation[idx] - img.saturation[idx]) < 0.01);
             assertTrue(Math.abs(image2.brightness[idx] - img.brightness[idx]) < 0.01);
+            assertTrue(Math.abs(image2.luma[idx] - img.luma[idx]) < 0.01);
         }
     }
 
@@ -343,8 +368,11 @@ public class ImageExtTest extends TestCase {
             assertTrue(Math.abs(image2.cieX[idx] - img.cieX[idx]) < 0.01);
             assertTrue(Math.abs(image2.cieY[idx] - img.cieY[idx]) < 0.01);
             assertTrue(Math.abs(image2.hue[idx] - img.hue[idx]) < 0.01);
-            assertTrue(Math.abs(image2.saturation[idx] - img.saturation[idx]) < 0.01);
-            assertTrue(Math.abs(image2.brightness[idx] - img.brightness[idx]) < 0.01);
+            assertTrue(Math.abs(image2.saturation[idx] - img.saturation[idx]) 
+                < 0.01);
+            assertTrue(Math.abs(image2.brightness[idx] - img.brightness[idx]) 
+                < 0.01);
+            assertTrue(Math.abs(image2.luma[idx] - img.luma[idx]) < 0.01);
         }
         
     }
