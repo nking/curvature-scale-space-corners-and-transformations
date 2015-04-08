@@ -18,7 +18,7 @@ on needed features, bugs, etc.
    For images with large contrasting foreground features, could use a larger limit.
    *Note that such a step seems like it would be more expensive computationally 
    to use within findClouds at certain intervals, but placing the logic there instead
-   of after the sky is nearly completely "grown" makes it possible for findClouds to
+   of after the sky is nearly completely "grown", makes it possible for findClouds to
    be a single method with fittable parameters, usable in a harness using LDA and
    neural networks to learn the best combination of parameters.
 
@@ -29,6 +29,20 @@ on needed features, bugs, etc.
    to border) determination of the normally low contrast limit should be considered
    and made modular.
 
+   An example of filter usable on high contrast only:
+       Note, this is just for blue skies.  it's estimated from the arches image.
+
+       (contrastV < 0.05) 
+       &&
+       ((diffCIEX < 0.015) && (diffCIEY < 0.015))
+       &&  
+          ((Math.abs(0.33 - rPercentV) < 0.075) 
+          && (Math.abs(0.33 - gPercentV) < 0.075) 
+          && (Math.abs(0.33 - bPercentV) < 0.075)
+          && (gV > 127) && (bV > 127))
+       ) {
+          to skip bright white clouds
+
 -- the rainbow points can be found before findClouds because it is a search over
    the entire image.
 
@@ -37,8 +51,10 @@ on needed features, bugs, etc.
 
    then consider:
       -- encapsulation of the rainbow points can be accomplished with a 
-         convex hull.  then the maximum or mode width perpendicular to the ellipse
-         can be the width that the hull should be expanded to fill all along the hull.
+         convex hull.  then to include all rainbow pixels, would want to find the
+         maximum width or the mode of the width (where width is the dimension of the
+         rainbow perperdicular to the half ellipse) and expand the hull to that width
+         all along the main axis.
       -- interpolation over that hull region with left and right samples surrounding it
          making sure that the same amount of color and brightness variation is present
          so that later use of the method findClouds interprets the pixels as sky.
@@ -210,5 +226,4 @@ http://homepages.inf.ed.ac.uk/rbf/CVonline/Imagedbase.htm#segmentation
 
 http://dev.ipol.im/~morel/Dossier_MVA_2011_Cours_Transparents_Documents/2011_Cours7_Document3_hartley.pdf
 -- a hartley paper suggests rectifying images to evaluate point transformations.
-
 
