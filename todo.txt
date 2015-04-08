@@ -1,0 +1,188 @@
+note, this is a precursor step to the agile story and tasks to gather notes 
+on needed features, bugs, etc.
+
+-- the rainbow points can be found before findClouds because it is a search over
+   the entire image.
+
+   -- keep the current steps to store the ellipse parameters and rainbow points 
+      and make the plot
+
+   then consider:
+      -- expanding the rainbow by a factor of 1.5 or 2 (if haven't expanded the color
+         match to find all of the brightest part of the rainbow, else keep at same size).
+         -- this encapsulation of the rainbow points can be accomplished with a 
+            convex hull.  then the maximum or mode width perpendicular to the ellipse
+            can be the width that the hull should be expanded to fill all along the hull.
+      -- interpolating over that hull region with left and right samples surrounding it
+         making sure that the same amount of color and brightness variation is present
+         so that later use of the method findClouds interprets the pixels as sky.
+
+   then the rest of the sky extraction can proceed normally.
+      should not need to correct for rainbow intersection at skyline, but if so,
+      can use method similar to used in sun corrections, that is, follow the skyline
+      match in the theta image, and in this case, interpolate between left and right
+      of rainbow.
+
+-- include other atmospheric optically visible features:  sun dogs and moon dogs.
+-- consider more images which are near evening or evening, but there is enough illumination
+   to see a skyline.
+
+-- consider revisiting solveForBestFittingContiguousSubSamples in PolynomialFitter to
+   make more tests.  walk through the method and check the math.
+
+-- if there are still more stragglers of clouds connected to the boundaries of the image, 
+   consider something
+   like the spur removal, but only for pixels the same color as the sky...
+   have to make sure only use such an algorithm when the image boundary pixels are sky on either side
+   to avoid growing the foreground.
+
+-- see the NM image.  is the last valley which is not included in the sky contained within one
+   of the removed sets of points? (e.g. removed by color or contrast in first stage?)
+
+-- consider simplest ways to find solar reflected light in the images:
+     -- already have a method which finds visible sun's photosphere
+     -- create a separate method for reflected from water (see earlier code... depending upon sun location,
+        the light might be orange to white...)... can use a source function of the sun
+        and mie and rayliegh scattering if more formal methods are needed and reflection off of optically
+        thick H_2O.
+     -- refracted and reflected from clouds that are thick enough to provide a surface of reflected light
+        that has a pattern of brightness due to illumination by sun...
+     -- consider whether the location of the sun when photosphere is not in image is learnable
+        by gradient of brightness.
+
+-- consider how to use human identified skylines and this algorithm to fit
+   parameters for color space, color difference, and contrast of the center pixel
+   to its neighbors and with respect to standard deviation of the parameters.
+   -- define a format for the human determined skyline (presumably, just pairs of x,y points)
+   The total algorithm searches for sun and rainbows as separate steps.
+   The other steps are the sky grow methods:
+     -- starts w/ seed sky points and grows by color and contrast limits dependent upon blue or red sky.
+     -- captures all embedded points not yet in sky set, and if they resemble sky, add them to the sky pixels.
+     -- gathers the border pixels and grows them for low contrast limits and color limits.
+   In order to automate the fitting of the color and contrast limits, would need to condense all
+   3 steps to the 1st step only.
+   Note that the "skyline" supplied by the user might also need "non-sky" embedded objects defined
+   so that the algorithm excludes them and fits for the rest at first, 
+   then the code can be re-run after a good solution to see if it excludes the non-sky objects or whether they
+   affect the resulting solution.  In that case, a revision to the code may need to be made.
+   One would think that an obvious non-sky object has a large contrast, so would already be 
+   excluded correctly by the algorithm.
+   This could be turned into an LDA problem...
+
+   just needs specialization for rainbows and sun, etc.
+
+-- add more tests when have a working solution for skyline extraction
+   -- test by resolution too.  the seed sky points probably have some resolution dependence at this point.
+-- consider black and white image logic
+
+-- junction corners should be handled in edge extractor.  for large number of edges, might have
+   more fractured lines, hence missing corners at junctions.
+
+
+--in the RANSAC stage, for a threshold for matching, consider using
+   0.6% of maximum image dimension
+   (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
+
+-- revisit my RANSAC methods and consider characteristics from various
+   descriptions of implementations.  recalculating the number of iterations
+   as the number of inliers and outliers are determined.
+
+-- there's a 5-point method:
+   Nister, D.: An efficient solution to the five-point relative pose problem. Trans.
+   PAMI 26, 756–770 (2004)
+
+-- one day, put in my algorithms toolbox, deconvolution methods:
+   weiner filter deconvolution
+   Tikhonov regularization
+   Richardson-Lucy
+
+-- find image with naturally occuring skew for tests
+
+-- for ways to reduce the corner list, consider reading:
+   Shi, J., and C. Tomasi. "Good Features to Track." 
+   Conference on Computer Vision and Pattern Recognition, 1994.
+
+   journals to browse:
+
+   CVGIP  Graphical Models /graphical Models and Image Processing /computer Vision, Graphics, and Image Processing
+   CVIU  Computer Vision and Image Understanding
+   IJCV  International Journal of Computer Vision
+   IVC  Image and Vision Computing
+   JMIV  Journal of Mathematical Imaging and Vision
+   MVA  Machine Vision and Applications
+   TMI - IEEE  Transactions on Medical Imaging
+
+   http://pointclouds.org/documentation/
+
+-- read:
+    http://proquest.safaribooksonline.com.ezproxy.spl.org:2048/book/illustration-and-graphics/9780133373721
+
+-- revisit the matrix math, especially where there's multiplication.
+   did I replace dot operation with multiplication anywhere?
+   needs tests...
+
+-- reconsider later some properties.
+   hue for blue skies.
+   eucl dist of color = sqrt((r-r)^2 + (g-g)^2 + (b-b)^2)
+   
+another test image?
+   http://www.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/segbench/BSDS300/html/dataset/images/color/260058.html
+
+-- read more on segmentation... lots of comparisons on the benchmark site.
+   note the skyline extractor here is only partial segmentation and specific to a task.
+
+   http://www.cs.berkeley.edu/~arbelaez/publications/amfm_pami2011.pdf
+
+-- test datasets
+http://sipi.usc.edu/database/database.php?volume=misc
+http://homepages.inf.ed.ac.uk/rbf/CVonline/Imagedbase.htm#segmentation
+
+-- make a line filter test for erosion filter
+   which extends from left to right of image.
+
+-- suddenly, the brown & lowe are not well matched, so return to this
+   after the higher priority tasks.
+
+-- consider changing canny edge iteratively to iteratively if over critical limit
+   ... I think this is comment made when I added ability to increase the convolution
+       radius in order to reduce the number of corners when requested.
+
+-- when everything is working correctly in point matcher,
+   consider speeding it up with a quick extremely rough grid
+   search to narrow further search space.
+   rot=0, 90, 180, 270 and scale=1, 2, and 4
+
+-- finish the method converting from fundamental matrix to essential matrix.
+
+-- consider following the implementation of disparity maps for stereo images
+   and 3d modelling.  see notes in the docs directory.
+   -- see http://vision.middlebury.edu/stereo/code/
+
+-- consider implementing the LM-ICP from fitz-gibbons?
+   did i look at this already and decide otherwise?
+   does is handle projective transformations?
+
+-- ** read: https://www.graphics.rwth-aachen.de/person/21/
+
+-- for tests, make sure the projective point matcher can handle images like the
+    ones in this tutorial:
+    http://www.robots.ox.ac.uk/~az/tutorials/tutorialb.pdf
+
+-- to the corner list makin',
+   -- add a removal of redundant points
+
+-- test for degenerate camera conditions:
+   -- parallel camera motion w/o rotation 
+-- test for degenerate scene structure configurations
+   -- all points lying on a plane or nearly lying on a plane (?)
+-- test for point sets containing noise
+-- error estimate in fundamental matrix:
+   6.5.3
+   -- Gold Standard algorithm?  (need camera details...)
+      summation over i( d(x_i, x_hat_i)^2 + d(x_prime_i, x_prime_hat_i)^2 ) 
+   -- Sampson distance?
+
+http://dev.ipol.im/~morel/Dossier_MVA_2011_Cours_Transparents_Documents/2011_Cours7_Document3_hartley.pdf
+-- a hartley paper suggests rectifying images to evaluate point transformations.
+
+

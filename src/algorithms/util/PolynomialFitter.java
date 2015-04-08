@@ -307,6 +307,8 @@ public class PolynomialFitter {
 
     public float[] solveForBestFittingContiguousSubSamples(Set<PairInt> points, 
         Set<PairInt> outputPoints, int imageWidth, int imageHeight) {
+    
+        //TODO: revisit this one day to add tests and look for ways to improve it
         
         DFSConnectedGroupsFinder groupsFinder = new DFSConnectedGroupsFinder();
         groupsFinder.setMinimumNumberInCluster(100);

@@ -1416,10 +1416,14 @@ try {
     }
     
     /**
-     * this assumes findSunConnectedToSkyPoints has been run to populate
-     * sunPoints and that those have not been filtered for a non-circular or
-     * elliptical shape.  If there are no points in sunPoints (which are bright
-     * yellow), then this method will not search for a rainbow.
+     * search for rainbow colored points over the entire image then fits an
+     * ellipse to them and asserts that the points have certain colors in
+     * them.  If the original fit to an ellipse is not good, the
+     * method divides the rainbow points by contiguous subsamples to find best
+     * and similar fits.  The last step of color requirement helps to rule
+     * out half ellipse patterns in rocks for instance that have only rock
+     * colors in them. 
+     * 
      * @param skyPoints
      * @param reflectedSunRemoved
      * @param colorImg
@@ -2224,10 +2228,15 @@ try {
                             && (Math.abs(0.33 - bPercentV) < 0.3)
                             && (gV > 199) && (bV > 199))
                         ) {
+int z = 1;
                         continue;
-                        
+     
                     } else {
+int z = 1;//rV=170,gV=192,bV=239,rPercV=0.28,gPercV=0.32,bPercV=0.4,vContr=0.0105
                         continue;
+// should be skipped:
+//r,g,b>200, %V=0.32,0.34,0.34, contrV=-0.058,skyStDev=0.001,skyStDevColor=0.58
+//
                     }
                 }
                 
@@ -3500,6 +3509,17 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return set;
     }
 
+    /**
+     * search over the entire image for pixels that are rainbow colored.
+     * 
+     * @param colorImg
+     * @param reflectedSunRemoved
+     * @param xOffset
+     * @param yOffset
+     * @param skyIsDarkGrey
+     * @return rainbowPoints pixels from the entire image containing rainbow 
+     * colors.
+     */
     Set<PairInt> findRainbowColoredPoints(Image colorImg, 
         Set<PairInt> reflectedSunRemoved,
         int xOffset, int yOffset, boolean skyIsDarkGrey) {
@@ -3512,8 +3532,9 @@ debugPlot(set, colorImg, xOffset, yOffset,
         for (int col = 0; col < colorImg.getWidth(); col++) {
             for (int row = 0; row < colorImg.getHeight(); row++) {
                 
-                if (reflectedSunRemoved.contains(new PairInt(col - xOffset,
-                    row - yOffset))) {
+                PairInt p = new PairInt(col - xOffset, row - yOffset);
+                
+                if (reflectedSunRemoved.contains(p)) {
                     continue;
                 }
                 
@@ -3523,16 +3544,15 @@ debugPlot(set, colorImg, xOffset, yOffset,
                 
                 if (colors.isInRedThroughPurplishRed(r, g, b)) {
                     
-                    set.add(new PairInt(col - xOffset, row - yOffset));
+                    set.add(p);
 
                 } else if (colors.isInOrangeRed(r, g, b)) {
                     
-                    set.add(new PairInt(col - xOffset, row - yOffset));
+                    set.add(p);
                 
                 } else if (colors.isInGreenishYellowOrange(r, g, b)) {
                  
-                    set.add(new PairInt(col - xOffset, row - yOffset));
-
+                    set.add(p);
                 }
             }
         }
