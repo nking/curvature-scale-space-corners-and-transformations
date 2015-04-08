@@ -41,7 +41,7 @@ on needed features, bugs, etc.
           && (Math.abs(0.33 - bPercentV) < 0.075)
           && (gV > 127) && (bV > 127))
        ) {
-          to skip bright white clouds
+          to include bright white clouds in sky pixels
 
 -- the rainbow points can be found before findClouds because it is a search over
    the entire image.
