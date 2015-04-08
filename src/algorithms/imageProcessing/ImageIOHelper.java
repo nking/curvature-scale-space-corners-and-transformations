@@ -44,19 +44,8 @@ public class ImageIOHelper {
             int w = img.getWidth();
             
             Image image = new Image(w, h);
-            for (int i = 0; i < w; i++) {
-                for (int j = 0; j < h; j++) {
-                    
-                    //TYPE_INT_ARGB) and default sRGB colorspace
-                    int rgb = img.getRGB(i, j);
-                    
-                    int r = (rgb >> 16) & 0xFF;
-                    int g = (rgb >> 8) & 0xFF;
-                    int b = rgb & 0xFF;
-                    
-                    image.setRGB(i, j, r, g, b);
-                }
-            }
+            
+            convertImage(img, image);
             
             return image;
             
@@ -64,6 +53,62 @@ public class ImageIOHelper {
         }
         
         return null;
+    }
+    
+    public static ImageExt readImageExt(String filePath) throws Exception {
+     
+        if (filePath == null) {
+            throw new IllegalStateException("filePath cannot be null");
+        }
+                
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                throw new IllegalStateException(filePath + " does not exist");
+            }
+            
+            BufferedImage img = ImageIO.read(file);
+            
+            //System.out.println("imageType=" + img.getType());
+            
+            int h = img.getHeight();
+            int w = img.getWidth();
+            
+            ImageExt image = new ImageExt(w, h);
+            
+            convertImage(img, image);
+            
+            return image;
+            
+        } catch (IOException e) {
+        }
+        
+        return null;
+    }
+    
+    private static void convertImage(BufferedImage fromImage, Image toImage) 
+        throws Exception {
+     
+        if (fromImage == null) {
+            return;
+        }
+                
+        int h = fromImage.getHeight();
+        int w = fromImage.getWidth();
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+
+                //TYPE_INT_ARGB) and default sRGB colorspace
+                int rgb = fromImage.getRGB(i, j);
+
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+
+                toImage.setRGB(i, j, r, g, b);
+            }
+        }
     }
     
     /**

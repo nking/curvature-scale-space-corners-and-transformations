@@ -61,9 +61,9 @@ Task 2:
 
    time estimate: minimum half hour, maximum 2 hours
   
-   amount of time used:
+   amount of time used:  < half hour
 
-   state of completion:
+   state of completion: completed
 
    comments:
               

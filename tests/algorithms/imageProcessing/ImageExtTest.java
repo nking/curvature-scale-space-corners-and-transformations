@@ -3,7 +3,6 @@ package algorithms.imageProcessing;
 import java.awt.Color;
 import java.security.SecureRandom;
 import junit.framework.TestCase;
-import org.junit.Test;
 
 
 /**

@@ -2,29 +2,15 @@ package algorithms.imageProcessing;
 
 import algorithms.util.ResourceFinder;
 import java.io.File;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
 /**
  *
  * @author nichole
  */
-public class ImageIOHelperTest {
+public class ImageIOHelperTest extends TestCase {
     
-    public ImageIOHelperTest() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-
-    @Test
     public void testReadImage() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
@@ -42,7 +28,23 @@ public class ImageIOHelperTest {
         
     }
     
-    @Test
+    public void testReadImageExt() throws Exception {
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "small_test.png");
+        
+        ImageExt result = ImageIOHelper.readImageExt(filePath);
+        
+        assertTrue(result.getR(0, 0) == 255);
+        assertTrue(result.getG(1, 0) == 255);
+        assertTrue(result.getB(1, 1) == 255);
+        
+        assertTrue(result.getR(0, 1) == 255);
+        assertTrue(result.getG(0, 1) == 255);
+        assertTrue(result.getB(0, 1) == 255);
+        
+    }
+    
     public void testReadImage_indexed() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
@@ -60,7 +62,23 @@ public class ImageIOHelperTest {
         
     }
     
-    @Test
+    public void testReadImageExt_indexed() throws Exception {
+        
+        String filePath = ResourceFinder.findFileInTestResources(
+            "small_test_indexed.png");
+        
+        ImageExt result = ImageIOHelper.readImageExt(filePath);
+        
+        assertTrue(result.getR(0, 0) == 255);
+        assertTrue(result.getG(1, 0) == 255);
+        assertTrue(result.getB(1, 1) == 255);
+        
+        assertTrue(result.getR(0, 1) == 255);
+        assertTrue(result.getG(0, 1) == 255);
+        assertTrue(result.getB(0, 1) == 255);
+        
+    }
+    
     public void testReadImage_grayscale() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
@@ -82,7 +100,6 @@ public class ImageIOHelperTest {
             (result.getB(1, 0) > 0));
     }
 
-    @Test
     public void testReadImageAsGrayScaleG() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
@@ -99,7 +116,6 @@ public class ImageIOHelperTest {
         
     }
 
-    @Test
     public void testReadImageAsGrayScaleAvgRGB() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources(
@@ -116,7 +132,6 @@ public class ImageIOHelperTest {
         assertTrue(result.getValue(0, 1) > 0);
     }
 
-    @Test
     public void testWriteOutputImage_String_Image() throws Exception {
         
         String dirPath = ResourceFinder.findDirectory("bin");
@@ -139,7 +154,6 @@ public class ImageIOHelperTest {
         assertTrue(result.getB(0, 0) == 0);
     }
 
-    @Test
     public void testWriteOutputImage_String_GreyscaleImage() throws Exception {
         
         String dirPath = ResourceFinder.findDirectory("bin");

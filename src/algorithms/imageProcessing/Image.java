@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 
 /**
