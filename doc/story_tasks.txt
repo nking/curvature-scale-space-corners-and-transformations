@@ -1,0 +1,84 @@
+Lacking an app to keep these in, making a temporary file while
+implementing...
+
+=====================================================================
+Story: Image w/ CIE + HSB populate on demand
+ 
+    summary: Image extension w/ cieXY and HSB populated on demand
+      created and replacing color use in SkylineExtractor.
+
+    time estimate: 
+        minimum: < 1 day
+        maximum: < 1.5 days
+
+    amount of time used:
+
+    state of completion:
+
+    comments regarding state:
+
+--------------------------------------------------------
+Task 1:
+    goal: create and test the data structure.
+
+    details:  ImageWithCIE should be refactored to include hsb and
+              to include a flag of whether a pixel's extra color
+              has been populated.
+              (choosing inheritance over composition for the additional
+              fields that Image.java needs.)
+              call the new class ImageExt.
+
+              would be nice to have a convenience method to populate
+              the 8 neighborhood or 24 neighborhood area too.
+
+              tests should cover retrieving color information accurately.
+
+   time estimate: minimum 1 hour, maximum half day
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              
+=====================================================================
+Task 2:
+    goal: ImageIOHelper needs to return an ImageExt object
+
+    details:  ImageExt should be the loaded image in SkylineExtractor
+              so ImageIOHelper needs methods to create one.
+
+              tests should be similar to the other ImageIOHelper tests
+              for Image
+
+   time estimate: minimum half hour, maximum 2 hours
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              
+=====================================================================
+Task 3:
+    goal: replace use of image pixel color in SkylineExtractor w/
+          ImageExt
+
+    details:  ImageExt should be the loaded image in SkylineExtractor
+              and should be replacing all use of color within that class.
+
+              tests should be that similar results are obtained as
+              currently by same tests.
+              this will be improved in the near future, but for now,
+              just need to assert same current results which are
+              admittedly, not yet robust testing. 
+
+   time estimate: minimum half day, maximum 1 day
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              
+=====================================================================
