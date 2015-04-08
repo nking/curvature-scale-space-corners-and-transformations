@@ -43,9 +43,9 @@ Task 1:
 
    time estimate: minimum 1 hour, maximum half day
   
-   amount of time used:
+   amount of time used: 3 hours
 
-   state of completion:
+   state of completion: complete
 
    comments:
               

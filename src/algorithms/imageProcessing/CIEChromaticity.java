@@ -193,6 +193,13 @@ public class CIEChromaticity {
      */
     public float[] rgbToXYChromaticity(int r, int g, int b) {
         
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            // not really defined on the diagram since chromaticity is color
+            // without intensity.  since all 0's is the lack of all color
+            // will return 0,0, but it's N/A
+            return new float[]{0, 0};
+        }
+        
         float[] capXYZ = rgbToCIEXYZ(r, g, b);
         
         float x = capXYZ[0]/(capXYZ[0] + capXYZ[1] + capXYZ[2]);

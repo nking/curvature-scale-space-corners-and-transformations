@@ -10,6 +10,11 @@ import java.awt.image.BufferedImage;
 public class Image {
     
     //TODO:  add alpha when needed
+    
+    //TODO: consider more compact representation of the data.
+    // since r,g,and b are less than 256, can put 4 indexed values into
+    // an integer with shift and add techiniques.
+    
     final int[] r;
     final int[] g;
     final int[] b;
@@ -45,6 +50,10 @@ public class Image {
         // not used for base class
     }
     
+    int getInternalIndex(int col, int row) {
+        return (row * width) + col;
+    }
+  
     public void setRGB(int col, int row, int rPix, int gPix, int bPix) {
         
         /*if ((col < 0) || (col > (width - 1))) {
@@ -56,7 +65,7 @@ public class Image {
                 "row is out of bounds");
         }*/
         
-        int idx = (row * getWidth()) + col;
+        int idx = getInternalIndex(col, row);
        
         /*if ((idx < 0) || (idx > (r.length - 1))) {
             throw new IllegalArgumentException(
@@ -66,11 +75,12 @@ public class Image {
         r[idx] = rPix;
         g[idx] = gPix;
         b[idx] = bPix;
+        
     }
     
     public void setRGB(int col, int row, int rgb) {
         
-        int idx = (row * getWidth()) + col;
+        int idx = getInternalIndex(col, row);
         
         if ((idx < 0) || (idx > (r.length - 1))) {
             throw new IllegalArgumentException(
@@ -88,28 +98,28 @@ public class Image {
         
     public int getR(int col, int row) {
         
-        int idx = (row * getWidth()) + col;
+        int idx = getInternalIndex(col, row);
        
         return r[idx];
     }
     
     public int getB(int col, int row) {
         
-        int idx = (row * getWidth()) + col;
+        int idx = getInternalIndex(col, row);
        
         return b[idx];
     }
     
     public int getG(int col, int row) {
         
-        int idx = (row * getWidth()) + col;
+        int idx = getInternalIndex(col, row);
        
         return g[idx];
     }
     
     public int getRGB(int col, int row) {
     
-        int idx = (row * getWidth()) + col;
+        int idx = getInternalIndex(col, row);
         
         int rgb = (((r[idx] & 0x0ff) << 16) 
             | ((g[idx] & 0x0ff) << 8) | (b[idx] & 0x0ff));
@@ -263,5 +273,31 @@ public class Image {
      */
     public int getNPixels() {
         return nPixels;
+    }
+    
+    public int getCol(int internalIndex) {
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+   
+        int row = internalIndex/width;
+        
+        int col = internalIndex - (row * width);
+        
+        return col;
+    }
+    
+    public int getRow(int internalIndex) {
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+   
+        int row = internalIndex/width;
+        
+        return row;
     }
 }
