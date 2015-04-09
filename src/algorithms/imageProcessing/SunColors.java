@@ -54,6 +54,48 @@ public class SunColors {
         
         return false;
     }
+    
+    public boolean isSunCenterColor(ImageExt colorImg, int pixelCol, int pixelRow) {
+        
+        int idx = colorImg.getInternalIndex(pixelCol, pixelRow);
+        
+        return isSunCenterColor(colorImg, idx);
+    }
+    
+    public boolean isSunCenterColor(ImageExt colorImg, int pixelIndex) {
+                
+        float saturation = colorImg.getSaturation(pixelIndex);
+        float brightness = colorImg.getBrightness(pixelIndex);
+        
+        if (useDarkSkiesLogic) {
+            
+            if ((saturation > 0.1f) && (brightness > 0.25)) {
+
+                float cieX = colorImg.getCIEX(pixelIndex);
+                float cieY = colorImg.getCIEY(pixelIndex);
+                
+                if (pInPoly.isInSimpleCurve(cieX, cieY, yellowBounds.getX(), 
+                    yellowBounds.getY(), yellowBounds.getX().length)) {
+
+                    return true;
+                }
+            }
+            
+        } else {
+            
+            float r = colorImg.getR(pixelIndex);
+            float g = colorImg.getG(pixelIndex);
+            float b = colorImg.getB(pixelIndex);
+            
+            if ((r >= 240) && (brightness >= 0.87) && (saturation < .30)
+                && ((r + g + b) > totRGBLimit)) {
+
+                return true;
+            }
+        }
+        
+        return false;
+    }
      
     public void useDarkSkiesLogic() {
         

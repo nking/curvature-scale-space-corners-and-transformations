@@ -62,7 +62,7 @@ public class CurvatureScaleSpaceImageMakerTest {
         String filePath = ResourceFinder.findFileInTestResources(
             "closed_curve.png");
         
-        Image img = ImageIOHelper.readImage(filePath);
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
             new CurvatureScaleSpaceImageMaker(img);
@@ -175,7 +175,7 @@ public class CurvatureScaleSpaceImageMakerTest {
             //"closed_curve.png");
             "closed_curve_translate_scale_rotate.png");
         
-        Image img = ImageIOHelper.readImage(filePath);
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
             new CurvatureScaleSpaceImageMaker(img);
@@ -308,7 +308,7 @@ public class CurvatureScaleSpaceImageMakerTest {
             //"closed_curve.png");
             "closed_curve_translate_scale_rotate.png");
         
-        Image img = ImageIOHelper.readImage(filePath);
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceImageMaker instance = 
             new CurvatureScaleSpaceImageMaker(img);

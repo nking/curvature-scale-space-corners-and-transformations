@@ -85,9 +85,12 @@ Task 3:
    time estimate: minimum half day, maximum 1 day
   
    amount of time used:
+       so far, 3.5 hours
 
-   state of completion:
+   state of completion: in progress
 
-   comments:
+   comments:  fixing a bug in GroupPixelColors means the current color
+      filters SkylineExtractor need to be adjusted to achieve results
+      similar or better than before the bug fix.
               
 =====================================================================

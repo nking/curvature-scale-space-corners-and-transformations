@@ -20,8 +20,8 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
     protected boolean useLineDrawingMode = false;
     protected boolean doRefineTransformations = false;
     protected boolean initialized = false;
-    protected final Image image1;
-    protected final Image image2;
+    protected final ImageExt image1;
+    protected final ImageExt image2;
     // for debugging, keeping a reference of originals
     protected final Image originalImage1;
     protected final Image originalImage2;
@@ -71,14 +71,14 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
     protected int offsetImageY2 = 0;
     protected boolean useOutdoorMode = false;
 
-    public AbstractCurvatureScaleSpaceInflectionMapper(Image image1, 
-        Image image2) {
+    public AbstractCurvatureScaleSpaceInflectionMapper(ImageExt image1, 
+        ImageExt image2) {
                 
         this.image1 = image1;
         this.image2 = image2;
         
-        originalImage1 = image1.copyImage();
-        originalImage2 = image2.copyImage();
+        originalImage1 = (ImageExt)image1.copyImage();
+        originalImage2 = (ImageExt)image2.copyImage();
         
         image1OriginalWidth = image1.getWidth();
         image1OriginalHeight = image1.getHeight();

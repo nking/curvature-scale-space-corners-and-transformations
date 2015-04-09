@@ -39,7 +39,7 @@ public class CurvatureScaleSpaceCornerDetectorTest extends TestCase {
         
         String filePath = ResourceFinder.findFileInTestResources("africa2.png");
         
-        Image img = ImageIOHelper.readImage(filePath);
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         Kernel1DHelper kernelDHelper = new Kernel1DHelper();
         
@@ -113,7 +113,7 @@ public class CurvatureScaleSpaceCornerDetectorTest extends TestCase {
         // Two-Dimensional Shapes by FARZIN MOKHTARIAN AND ALAN MACKWORTH
         String filePath = ResourceFinder.findFileInTestResources("africa2.png");
         
-        Image img = ImageIOHelper.readImage(filePath);
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);
@@ -247,7 +247,7 @@ public class CurvatureScaleSpaceCornerDetectorTest extends TestCase {
         // Two-Dimensional Shapes by FARZIN MOKHTARIAN AND ALAN MACKWORTH
         String filePath = ResourceFinder.findFileInTestResources("africa2.png");
         
-        Image img = ImageIOHelper.readImage(filePath);
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
         
         CurvatureScaleSpaceImageMaker imgMaker
             = new CurvatureScaleSpaceImageMaker(img);

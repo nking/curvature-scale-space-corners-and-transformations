@@ -62,8 +62,8 @@ public class InflectionMapperTwoObjectTest {
                 String filePath2 = ResourceFinder.findFileInTestResources(
                     fileName2);
                 
-                Image img1 = ImageIOHelper.readImage(filePath1);
-                Image img2 = ImageIOHelper.readImage(filePath2);
+                ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+                ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
                 
                 double centroidX1 = img1.getWidth() >> 1;
                 double centroidY1 = img1.getHeight() >> 1;
@@ -96,7 +96,7 @@ public class InflectionMapperTwoObjectTest {
                     transformer.applyTransformation(transformationParams, 
                         edges1, centroidX1, centroidY1);
 
-                img2 = ImageIOHelper.readImage(filePath2);
+                img2 = ImageIOHelper.readImageExt(filePath2);
 
                 debugDisplay(transformedEdges, img2, 
                     list1[i] + "->" + list2[j]);

@@ -36,12 +36,12 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         
         String fileName1 = "closed_curve.png";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImage(filePath1);
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
 
         String fileName2 = "closed_curve_translate_scale_rotate225.png";
 
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImage(filePath2);
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);;
 
         CurvatureScaleSpaceInflectionMapper mapper = new 
             CurvatureScaleSpaceInflectionMapper(img1, img2);
@@ -72,7 +72,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
 
         Transformer transformer = new Transformer();
         
-        img2 = ImageIOHelper.readImage(filePath2);
+        img2 = ImageIOHelper.readImageExt(filePath2);
         GreyscaleImage img2Masked = img2.copyToGreyscale();
         for (int i = 180; i < img2Masked.getWidth(); i++) {
             for (int j = 0; j < img2Masked.getHeight(); j++) {
@@ -80,7 +80,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             }
         }
         
-        img1 = ImageIOHelper.readImage(filePath1);
+        img1 = ImageIOHelper.readImageExt(filePath1);
         
         GreyscaleImage img1Transformed = transformer.applyTransformation(
             img1.copyToGreyscale(), transformationParams, img2.getWidth(), img2.getHeight());
@@ -177,12 +177,12 @@ public class CurvatureScaleSpaceInflectionMapperTest {
         
         String fileName1 = "closed_curve.png";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImage(filePath1);
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
 
         String fileName2 = "closed_curve_translate_scale_rotate225.png";
 
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImage(filePath2);
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
         CurvatureScaleSpaceInflectionMapper mapper = new 
             CurvatureScaleSpaceInflectionMapper(img1, img2);
@@ -211,7 +211,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
 
         Transformer transformer = new Transformer();
         
-        img2 = ImageIOHelper.readImage(filePath2);
+        img2 = ImageIOHelper.readImageExt(filePath2);
             
         Image img2Masked = img2.copyImage();
         for (int i = 180; i < img2Masked.getWidth(); i++) {
@@ -220,7 +220,7 @@ public class CurvatureScaleSpaceInflectionMapperTest {
             }
         }
         
-        img1 = ImageIOHelper.readImage(filePath1);
+        img1 = ImageIOHelper.readImageExt(filePath1);
         
         Image img1Transformed = transformer.applyTransformation(
             img1.copyImage(), transformationParams, 

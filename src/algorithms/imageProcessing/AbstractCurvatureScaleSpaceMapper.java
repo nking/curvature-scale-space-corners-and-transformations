@@ -25,7 +25,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     protected GreyscaleImage img;
     
-    protected final Image originalImg;
+    protected final ImageExt originalImg;
     
     /**
      * edges extracted from image.  if an instance of PairIntArrayWithColor
@@ -74,13 +74,13 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * 
      * @param input 
      */
-    public AbstractCurvatureScaleSpaceMapper(Image input) {
+    public AbstractCurvatureScaleSpaceMapper(ImageExt input) {
         
         img = input.copyToGreyscale();
         
         ImageProcessor ImageProcessor = new ImageProcessor();
         
-        originalImg = input.copyImage();
+        originalImg = (ImageExt)input.copyImage();
             
         int[] offsetXY = ImageProcessor.shrinkImageToFirstNonZeros(img);
         
@@ -96,14 +96,14 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * @param input
      * @param theEdges 
      */
-    public AbstractCurvatureScaleSpaceMapper(Image input, 
+    public AbstractCurvatureScaleSpaceMapper(ImageExt input, 
         List<PairIntArray> theEdges) {
         
         img = input.copyToGreyscale();
         
         ImageProcessor ImageProcessor = new ImageProcessor();
         
-        originalImg = input.copyImage();
+        originalImg = (ImageExt)input.copyImage();
         
         int[] offsetXY = ImageProcessor.shrinkImageToFirstNonZeros(img);
         

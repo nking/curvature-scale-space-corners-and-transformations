@@ -303,7 +303,7 @@ public class NextContourTest {
 
         String filePath = ResourceFinder.findFileInTestResources(fileName);
 
-        Image img = ImageIOHelper.readImage(filePath);
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
 
         CurvatureScaleSpaceImageMaker instance
             = new CurvatureScaleSpaceImageMaker(img);

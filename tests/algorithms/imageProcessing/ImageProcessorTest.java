@@ -497,6 +497,57 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
+    public void testBinImageExt() throws Exception {
+                
+        int w0 = 4;
+        int h0 = 6;
+        
+        int binFactor = 2;
+        
+        ImageExt img = new ImageExt(w0, h0);
+        
+        /*
+        @ 1 2 3 4
+        1
+        2
+        3
+        4   @
+        5
+        */
+        for (int col = 0; col < img.getWidth(); col++) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                if ((col == 0) && (row == 0)) {
+                    img.setRGB(col, row, 0, 0, 0);
+                } else if ((col == 2) && (row == 4)) {
+                    img.setRGB(col, row, 0, 0, 0);
+                } else {
+                    img.setRGB(col, row, 4, 0, 0);
+                }
+            }
+        }
+        
+        ImageProcessor ImageProcessor = new ImageProcessor();
+        ImageExt out = ImageProcessor.binImage(img, binFactor);
+        
+        assertTrue(out.getWidth() == w0/binFactor);
+        assertTrue(out.getHeight() == h0/binFactor);
+        
+        for (int col = 0; col < out.getWidth(); col++) {
+            for (int row = 0; row < out.getHeight(); row++) {
+                int r = out.getR(col, row);
+                if ((col == 0) && (row == 0)) {
+                    assertTrue(r == 3);
+                } else if ((col == 1) && (row == 2)) {
+                    assertTrue(r == 3);
+                } else {
+                    assertTrue(r == 4);
+                }
+                assertTrue(out.getG(col, row) == 0);
+                assertTrue(out.getB(col, row) == 0);
+            }
+        }
+    }
+    
     public void testUnbinMask() throws Exception {
        
         int w0 = 4;

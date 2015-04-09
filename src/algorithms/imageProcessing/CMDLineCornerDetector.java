@@ -149,11 +149,12 @@ public class CMDLineCornerDetector {
             (new File(filePath)).toPath().getFileName().toString();
         imageFileName = imageFileName.substring(0, imageFileName.length() -4);
         
-        Image img = null;
+        ImageExt img = null;
         try {
-             img = ImageIOHelper.readImage(filePath);
+             img = ImageIOHelper.readImageExt(filePath);
              
-             CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(img);
+             CurvatureScaleSpaceCornerDetector detector = new 
+                 CurvatureScaleSpaceCornerDetector(img);
                
              if (useLineDrawingMode) {
                  detector.useLineDrawingMode();

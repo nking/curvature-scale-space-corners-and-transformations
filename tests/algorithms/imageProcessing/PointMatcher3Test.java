@@ -183,13 +183,13 @@ public class PointMatcher3Test {
         // revisit infl points.  is there a threshold removing points?
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath1Inv = ResourceFinder.findFileInTestResources(fileName1Inv);
-        Image img1 = ImageIOHelper.readImage(filePath1);
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         Image img1Inv = ImageIOHelper.readImage(filePath1Inv);
         int image1Width = img1.getWidth();
         int image1Height = img1.getHeight();
        
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImage(filePath2);
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
         String filePath2Inv = ResourceFinder.findFileInTestResources(fileName2Inv);
         Image img2Inv = ImageIOHelper.readImage(filePath2Inv);
         int image2Width = img2.getWidth();
@@ -437,14 +437,14 @@ public class PointMatcher3Test {
     public void testSkyline() throws Exception {
         
         String[] fileNames = new String[] {
-            "brown_lowe_2003_image1.jpg",
+            //"brown_lowe_2003_image1.jpg",
             //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             "venturi_mountain_j6_0001.png",
             //"venturi_mountain_j6_0010.png",
             "seattle.jpg",
             "arches.jpg",
-            "stinson_beach.jpg",
+            /*"stinson_beach.jpg",
             "cloudy_san_jose.jpg",
             "30.jpg",
             "sky_with_rainbow.jpg",
@@ -457,7 +457,7 @@ public class PointMatcher3Test {
             "arizona-sunrise-1342919937GHz.jpg",
             "arches_sun_01.jpg",
             "stlouis_arch.jpg", 
-            "contrail.jpg"
+            "contrail.jpg"*/
         };
         /*
          "brown_lowe_2003_image1.jpg",         fwhm hue=0.14, fwhm saturation=0.16       nsadded=
@@ -483,7 +483,7 @@ public class PointMatcher3Test {
             
             // revisit infl points.  is there a threshold removing points?
             String filePath1 = ResourceFinder.findFileInTestResources(fileName);
-            Image img1 = ImageIOHelper.readImage(filePath1);
+            ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
             int image1Width = img1.getWidth();
             int image1Height = img1.getHeight();
       /*
@@ -538,12 +538,12 @@ public class PointMatcher3Test {
         
         // revisit infl points.  is there a threshold removing points?
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImage(filePath1);
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         int image1Width = img1.getWidth();
         int image1Height = img1.getHeight();
        
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImage(filePath2);
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         
@@ -679,12 +679,12 @@ public class PointMatcher3Test {
         String fileName2 = "brown_lowe_2003_image2.jpg";
         // revisit infl points.  is there a threshold removing points?
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImage(filePath1);
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         int image1Width = img1.getWidth();
         int image1Height = img1.getHeight();
        
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImage(filePath2);
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         

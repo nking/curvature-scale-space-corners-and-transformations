@@ -1262,6 +1262,42 @@ public class ImageProcessor {
       
         Image out = new Image(w1, h1);
         
+        binImage(img, binFactor, out);
+        
+        return out;
+    }
+
+    public ImageExt binImage(ImageExt img,  int binFactor) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+        
+        int w0 = img.getWidth();
+        int h0 = img.getHeight();
+        
+        int w1 = w0/binFactor;
+        int h1 = h0/binFactor;
+      
+        ImageExt out = new ImageExt(w1, h1);
+        
+        binImage(img, binFactor, out);
+        
+        return out;
+    }
+    
+    private void binImage(Image inputImg,  int binFactor, Image outputImg) {
+        
+        if (inputImg == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+        
+        int w0 = inputImg.getWidth();
+        int h0 = inputImg.getHeight();
+        
+        int w1 = outputImg.getWidth();
+        int h1 = outputImg.getHeight();
+              
         for (int i = 0; i < w1; i++) {
                         
             for (int j = 0; j < h1; j++) {
@@ -1282,7 +1318,7 @@ public class ImageProcessor {
                             continue;
                         }
                         
-                        int rgb = img.getRGB(ii, jj);
+                        int rgb = inputImg.getRGB(ii, jj);
                         
                         int r = (rgb >> 16) & 0xFF;
                         int g = (rgb >> 8) & 0xFF;
@@ -1302,13 +1338,11 @@ public class ImageProcessor {
                     bSum = Math.round((float)bSum/(float)count);
                 }
                 
-                out.setRGB(i, j, (int)rSum, (int)gSum, (int)bSum);
+                outputImg.setRGB(i, j, (int)rSum, (int)gSum, (int)bSum);
             }
-        }
-        
-        return out;
+        }        
     }
-
+    
     public GreyscaleImage unbinMask(GreyscaleImage mask, int binFactor, 
         GreyscaleImage originalTheta) {
         

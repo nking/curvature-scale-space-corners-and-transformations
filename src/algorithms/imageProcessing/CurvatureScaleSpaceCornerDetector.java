@@ -50,12 +50,12 @@ public class CurvatureScaleSpaceCornerDetector extends
      */
     protected PairIntArray cornersForMatching = new PairIntArray();
             
-    public CurvatureScaleSpaceCornerDetector(final Image input) {
+    public CurvatureScaleSpaceCornerDetector(final ImageExt input) {
                 
         super(input);
     }
     
-    public CurvatureScaleSpaceCornerDetector(final Image input, 
+    public CurvatureScaleSpaceCornerDetector(final ImageExt input, 
         List<PairIntArray> theEdges) {
         
         super(input, theEdges);

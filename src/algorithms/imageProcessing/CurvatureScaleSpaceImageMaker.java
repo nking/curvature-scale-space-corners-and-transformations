@@ -37,15 +37,15 @@ public final class CurvatureScaleSpaceImageMaker extends
     protected List<PairIntArray> closedCurves = 
         new ArrayList<PairIntArray>();
     
-    public CurvatureScaleSpaceImageMaker(Image input) {
+    public CurvatureScaleSpaceImageMaker(ImageExt input) {
         
         super(input);        
     }
     
-    public CurvatureScaleSpaceImageMaker(Image input, 
+    public CurvatureScaleSpaceImageMaker(ImageExt input, 
         List<PairIntArray> theEdges) {
         
-        super(input, theEdges);          
+        super(input, theEdges);
     }
     
     @Override
@@ -76,7 +76,7 @@ public final class CurvatureScaleSpaceImageMaker extends
            X(t,sigma), Y(t,sigma), k(t, sigma) and t 
               where t is the indexes normalized to the range 0 to 1.
         */
-                    
+
         Map<PairIntArray, Map<Float, ScaleSpaceCurve> > scaleSpaceMaps
             = new HashMap<PairIntArray, Map<Float, ScaleSpaceCurve> >();
                 

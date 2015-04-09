@@ -32,20 +32,43 @@ public abstract class AbstractSkyRainbowColors {
         
         float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);
 
-        int totRGB = r + g + b;
-
         float[] hsb = new float[3];
-        Color.RGBtoHSB(r, b, b, hsb);
+        Color.RGBtoHSB(r, g, b, hsb);
+        
+        return isInRedThroughPurplishRed(r, g, b, pixCIEXY[0], pixCIEXY[1], 
+            hsb[1], hsb[2]);
+    }
+    
+    public boolean isInRedThroughPurplishRed(ImageExt clrImg, int pixelIndex) {
+        
+        float cieX = clrImg.getCIEX(pixelIndex);
+        float cieY = clrImg.getCIEY(pixelIndex);
+        
+        int r = clrImg.getR(pixelIndex);
+        int g = clrImg.getG(pixelIndex);
+        int b = clrImg.getB(pixelIndex);
+        
+        float saturation = clrImg.getSaturation(pixelIndex);
+        float brightness = clrImg.getBrightness(pixelIndex);
+
+        return isInRedThroughPurplishRed(r, g, b, cieX, cieY, saturation, 
+            brightness);
+    }
+    
+    public boolean isInRedThroughPurplishRed(int r, int g, int b, 
+        float cieX, float cieY, float saturation, float brightness) {
+        
+        int totRGB = r + g + b;
         
         PointInPolygon pInPoly = new PointInPolygon();
          
         if ((r > 15) && (g > 15) && (b > 15)) {
                     
             if (
-                (hsb[1] > redPurpleSLimit)
-                && (hsb[2] > 0.25)
+                (saturation > redPurpleSLimit)
+                && (brightness > 0.25)
                 && (totRGB > totRGBLimit)
-                && (pInPoly.isInSimpleCurve(pixCIEXY[0], pixCIEXY[1],
+                && (pInPoly.isInSimpleCurve(cieX, cieY,
                 redPurplishBounds.getX(), redPurplishBounds.getY(), 
                 redPurplishBounds.getX().length))) {
                 
@@ -56,24 +79,45 @@ public abstract class AbstractSkyRainbowColors {
         return false;
     }
     
+    public boolean isInOrangeRed(ImageExt clrImg, int pixelIndex) {
+        
+        float cieX = clrImg.getCIEX(pixelIndex);
+        float cieY = clrImg.getCIEY(pixelIndex);
+        
+        int r = clrImg.getR(pixelIndex);
+        int g = clrImg.getG(pixelIndex);
+        int b = clrImg.getB(pixelIndex);
+        
+        float saturation = clrImg.getSaturation(pixelIndex);
+        float brightness = clrImg.getBrightness(pixelIndex);
+        
+        return isInOrangeRed(r, g, b, cieX, cieY, saturation, brightness);
+    }
+    
     public boolean isInOrangeRed(int r, int g, int b) {
         
         float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);
 
+        float[] hsb = new float[3];
+        Color.RGBtoHSB(r, g, b, hsb);
+        
+        return isInOrangeRed(r, g, b, pixCIEXY[0], pixCIEXY[1], hsb[1], hsb[2]);
+    }
+    
+    public boolean isInOrangeRed(int r, int g, int b, 
+        float cieX, float cieY, float saturation, float brightness) {
+        
         int totRGB = r + g + b;
 
-        float[] hsb = new float[3];
-        Color.RGBtoHSB(r, b, b, hsb);
-        
         PointInPolygon pInPoly = new PointInPolygon();
          
         if ((r > 15) && (g > 15) && (b > 15)) {
                     
             if (
-                (hsb[1] > orangeSLimit)
-                && (hsb[2] > 0.25)
+                (saturation > orangeSLimit)
+                && (brightness > 0.25)
                 && (totRGB > totRGBLimit)
-                && (pInPoly.isInSimpleCurve(pixCIEXY[0], pixCIEXY[1],
+                && (pInPoly.isInSimpleCurve(cieX, cieY,
                 orangeBounds.getX(), orangeBounds.getY(), 
                 orangeBounds.getX().length))) {
                 
@@ -84,24 +128,47 @@ public abstract class AbstractSkyRainbowColors {
         return false;
     }
     
+    public boolean isInGreenishYellowOrange(ImageExt clrImg, int pixelIndex) {
+        
+        float cieX = clrImg.getCIEX(pixelIndex);
+        float cieY = clrImg.getCIEY(pixelIndex);
+        
+        int r = clrImg.getR(pixelIndex);
+        int g = clrImg.getG(pixelIndex);
+        int b = clrImg.getB(pixelIndex);
+        
+        float saturation = clrImg.getSaturation(pixelIndex);
+        float brightness = clrImg.getBrightness(pixelIndex);
+        
+        return isInGreenishYellowOrange(r, g, b, cieX, cieY, saturation, 
+            brightness);
+    }
+    
     public boolean isInGreenishYellowOrange(int r, int g, int b) {
         
         float[] pixCIEXY = cieC.rgbToXYChromaticity(r, g, b);
 
+        float[] hsb = new float[3];
+        Color.RGBtoHSB(r, g, b, hsb);
+        
+        return isInGreenishYellowOrange(r, g, b, pixCIEXY[0], pixCIEXY[1], 
+            hsb[1], hsb[2]);
+    }
+    
+    public boolean isInGreenishYellowOrange(int r, int g, int b, 
+        float cieX, float cieY, float saturation, float brightness) {
+        
         int totRGB = r + g + b;
 
-        float[] hsb = new float[3];
-        Color.RGBtoHSB(r, b, b, hsb);
-        
         PointInPolygon pInPoly = new PointInPolygon();
-         
+                  
         if ((r > 15) && (g > 15) && (b > 15)) {
                     
             if (
-                (hsb[1] > greenishYellowOrangeSLimit)
-                && (hsb[2] > 0.25)
+                (saturation > greenishYellowOrangeSLimit)
+                && (brightness > 0.25)
                 && (totRGB > totRGBLimit)
-                && (pInPoly.isInSimpleCurve(pixCIEXY[0], pixCIEXY[1],
+                && (pInPoly.isInSimpleCurve(cieX, cieY,
                 greenishYellowOrangeBounds.getX(), 
                 greenishYellowOrangeBounds.getY(), 
                 greenishYellowOrangeBounds.getX().length))) {

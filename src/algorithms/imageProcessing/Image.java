@@ -116,6 +116,21 @@ public class Image {
         return g[idx];
     }
     
+    public int getR(int internalIndex) {
+               
+        return r[internalIndex];
+    }
+    
+    public int getB(int internalIndex) {
+               
+        return b[internalIndex];
+    }
+    
+    public int getG(int internalIndex) {
+               
+        return g[internalIndex];
+    }
+    
     public int getRGB(int col, int row) {
     
         int idx = getInternalIndex(col, row);

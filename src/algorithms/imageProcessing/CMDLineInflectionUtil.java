@@ -309,11 +309,11 @@ public class CMDLineInflectionUtil {
             (new File(filePath2)).toPath().getFileName().toString();
         imageFileName2 = imageFileName2.substring(0, imageFileName2.length() -4);
         
-        Image img1 = null;
-        Image img2 = null;
+        ImageExt img1 = null;
+        ImageExt img2 = null;
         try {
-            img1 = ImageIOHelper.readImage(filePath1);
-            img2 = ImageIOHelper.readImage(filePath2);
+            img1 = ImageIOHelper.readImageExt(filePath1);
+            img2 = ImageIOHelper.readImageExt(filePath2);
             
             double centroidX1 = img1.getWidth() >> 1;
             double centroidY1 = img1.getHeight() >> 1;

@@ -212,7 +212,11 @@ public class ImageExt extends Image {
     }
   
     protected void calculateColor(int idx) {
-                
+        
+        if (extPopulated[idx]) {
+            return;
+        }
+        
         int rPix = r[idx];
         int gPix = g[idx];
         int bPix = b[idx];
@@ -237,7 +241,7 @@ public class ImageExt extends Image {
         extPopulated[idx] = true;
     }
     
-    protected void calculateColorIncludingNeighbors(int idx, int neighborRadius) {
+    public void calculateColorIncludingNeighbors(int idx, int neighborRadius) {
         
         int col0 = this.getCol(idx);
         int row0 = this.getRow(idx);
