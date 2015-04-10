@@ -86,9 +86,15 @@ on needed features, bugs, etc.
                     use findClouds w/ given coefficients.
                     the result is a set of sky points.
                     calculate the residual difference between result and the expected sky set.
-                    store the best result. 
+                    store the best result for the image for the equation. 
                 improve the coefficients based upon each image's best solution.
                 this is done in the Nelder-Mead algorithm.
+                evaluate whether has converged
+        having stored the best result for each image for each equation, combine and compare
+           the best results for each equation over all images and choose the
+           best or combine the solutions to make the best solution for each equation.
+        then the solution is the best among the equations' solutions.
+
 
 -- improvement in design of SkylineExtractor:
    consider retaining the pixels which do not get added to sky in
