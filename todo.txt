@@ -95,6 +95,8 @@ on needed features, bugs, etc.
            best or combine the solutions to make the best solution for each equation.
         then the solution is the best among the equations' solutions.
 
+        note that the fitness function should probably be weighted by the expected number of
+        sky points so that it's actually measuring the fraction found as sky
 
 -- improvement in design of SkylineExtractor:
    consider retaining the pixels which do not get added to sky in
