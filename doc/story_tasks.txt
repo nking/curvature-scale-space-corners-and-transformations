@@ -16,6 +16,9 @@ Story: Image w/ CIE + HSB populated on demand
     state of completion:
 
     comments regarding state:
+        blocked while adapting color and contrast filters that
+        need to be changed because they were tailored to values
+        set for an incorrect hsb, and a different calculated contrast.
 
     comments:
         result is the source code and tests.  UML should not be
@@ -89,8 +92,9 @@ Task 3:
 
    state of completion: in progress
 
-   comments:  fixing a bug in GroupPixelColors means the current color
-      filters SkylineExtractor need to be adjusted to achieve results
-      similar or better than before the bug fix.
+   comments:  
+       blocked while adapting color and contrast filters that
+       need to be changed because they were tailored to values
+       set for an incorrect hsb, and a different calculated contrast.
               
 =====================================================================

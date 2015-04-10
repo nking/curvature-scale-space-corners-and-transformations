@@ -100,6 +100,7 @@ public class GroupPixelRGB {
         
         stdDevGreen = (n > 1) ? 
             (float)Math.sqrt(sumStdDevGreen/(n - 1)) : Float.POSITIVE_INFINITY;
+        
         stdDevBlue = (n > 1) ? 
             (float)Math.sqrt(sumStdDevBlue/(n - 1)) : Float.POSITIVE_INFINITY;
         

@@ -85,7 +85,7 @@ public class GroupPixelColors extends GroupPixelRGB {
             sumStdDevCIEY += (diffCIEY * diffCIEY);
             sumStdDevLuma += (diffLuma * diffLuma);
             
-            contrast[i] = (luma - avgLuma)/avgLuma;
+            contrast[i] = (avgLuma - luma)/luma;
             sumContrast += contrast[i];
             
             i++;

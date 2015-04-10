@@ -85,5 +85,14 @@ public class PairInt {
 
         return hash;
     }
+
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder("x=");
+        sb.append(Integer.toString(x)).append(" y=").append(Integer.toString(y));
+        
+        return sb.toString();
+    }
     
 }
