@@ -22,8 +22,8 @@ on needed features, bugs, etc.
        diffCIEX                            Y                (param < coeff), ((param/stdev) < coeff)
                                                                 ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
                                                                 because cie is a radial polynomial, might actually need
-                                                                something like polar coords theta should be the 
-                                                                most important measure of the difference is **theta**.
+                                                                something like polar coords. **theta** should be the 
+                                                                most important measure of the difference
                                                                 diffCIEXY = sqrt(diffCIEX*diffCIEX + diffCIEY*diffCIEY)
                                                                 theta = 2*arctan(diffCIEY/(diffCIEX + diffCIEXY))
 
@@ -38,9 +38,9 @@ on needed features, bugs, etc.
        skyStDevCIEX                        Y                see above
        skyStDevCIEY                        Y                see above
        isSolarYellowGreenOrange            Y                (param == true), (param == false)
-       rDivTotal                           Y                Math.abs(coeff - rDivTotal) < coeff
-       gDivTotal                           Y                Math.abs(coeff - gDivTotal) < coeff
-       bDivTotal                           Y                Math.abs(coeff - bDivTotal) < coeff
+       rDivTotal                           Y                Math.abs(coeff - rDivTotal) < coeff2
+       gDivTotal                           Y                Math.abs(coeff - gDivTotal) < coeff2
+       bDivTotal                           Y                Math.abs(coeff - bDivTotal) < coeff2
 
 
        If each pameter can be in one of m states, the number of possible combinations for one
@@ -80,10 +80,11 @@ on needed features, bugs, etc.
      -- do a quick plot to assert that they are border and embedded pixels.
      -- for the subsequent stage of finding embedded pixels, shoud be able
         to reduce the number of operations, by finding the contiguous
-        pixels only among those border pixels in PerimeterFinder's methods.
-        check this... still need the approx concave hull for the check
+        pixels only among those border pixels, but still using PerimeterFinder's methods 
+        on these alternately derived border pixels.
+        follow up: still need the approx concave hull for the check
         whether the contiguous pixels are bounded... **might only be saving
-        steps in the small block where gaps are iterated over to write pixels.
+        steps in the small block where gaps are iterated over to write embedded pixels.
         -- the result is the embedded pixels.
         -- the true border pixels will take the border pixels just mentioned
            and subtract the embedded subset from them.
@@ -136,9 +137,6 @@ on needed features, bugs, etc.
    have to make sure only use such an algorithm when the image boundary pixels are sky on either side
    to avoid growing the foreground.
 
--- see the NM image.  is the last valley which is not included in the sky contained within one
-   of the removed sets of points? (e.g. removed by color or contrast in first stage?)
-
 -- consider simplest ways to find solar reflected light in the images:
      -- already have a method which finds visible sun's photosphere
      -- create a separate method for reflected from water (see earlier code... depending upon sun location,
@@ -150,30 +148,16 @@ on needed features, bugs, etc.
      -- consider whether the location of the sun when photosphere is not in image is learnable
         by gradient of brightness.
 
--- consider how to use human identified skylines and this algorithm to fit
-   parameters for color space, color difference, and contrast of the center pixel
-   to its neighbors and with respect to standard deviation of the parameters.
-   -- define a format for the human determined skyline (presumably, just pairs of x,y points)
-   The total algorithm searches for sun and rainbows as separate steps.
-   The other steps are the sky grow methods:
-     -- starts w/ seed sky points and grows by color and contrast limits dependent upon blue or red sky.
-     -- captures all embedded points not yet in sky set, and if they resemble sky, add them to the sky pixels.
-     -- gathers the border pixels and grows them for low contrast limits and color limits.
-   In order to automate the fitting of the color and contrast limits, would need to condense all
-   3 steps to the 1st step only.
-   Note that the "skyline" supplied by the user might also need "non-sky" embedded objects defined
-   so that the algorithm excludes them and fits for the rest at first, 
-   then the code can be re-run after a good solution to see if it excludes the non-sky objects or whether they
-   affect the resulting solution.  In that case, a revision to the code may need to be made.
-   One would think that an obvious non-sky object has a large contrast, so would already be 
-   excluded correctly by the algorithm.
-   This could be turned into an LDA problem...
-
-   just needs specialization for rainbows and sun, etc.
-
 -- add more tests when have a working solution for skyline extraction
    -- test by resolution too.  the seed sky points probably have some resolution dependence at this point.
--- consider black and white image logic
+   -- find test images for:
+         -- structured cloudy sky and smooth white foreground
+         -- structured cloudy sky and smooth dark foreground
+         Neither of those will be solved as well as the NM test image which had non-sky foreground colors.
+         Need additional information to understand what is sky without external sensors
+         or assumption of horizontal.  In ambiguous cases, might need to make the assumption of
+         skyline being horizontal in the image and sky near the top of the image...would like to avoid
+         that assumption if at all possible.
 
 -- junction corners should be handled in edge extractor.  for large number of edges, might have
    more fractured lines, hence missing corners at junctions.
