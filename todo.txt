@@ -74,6 +74,22 @@ on needed features, bugs, etc.
            so the comparison is probably just a minimum factor above the standard deviation 
            of that property for the sky.
 
+    Once all of the equations of clauses are calculated, can solve for the parameters 
+    using many test images.
+    Because there are so many parameters, a gradient approach is less appealing than a heuristic
+    approach such as the Nelder-Mead downhill simplex method.   
+        set the initial coefficients with a good approximation such as is currently in the code 
+        so that this is a local search.
+        for each equation (where an equation is the set of clauses of parameters and coefficients):
+            iterate until convergence or maxIter:
+                for each test image: 
+                    use findClouds w/ given coefficients.
+                    the result is a set of sky points.
+                    calculate the residual difference between result and the expected sky set.
+                    store the best result. 
+                improve the coefficients based upon each image's best solution.
+                this is done in the Nelder-Mead algorithm.
+
 -- improvement in design of SkylineExtractor:
    consider retaining the pixels which do not get added to sky in
    findClouds as border pixels.
