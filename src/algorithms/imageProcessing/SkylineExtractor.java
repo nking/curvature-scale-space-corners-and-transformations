@@ -1591,104 +1591,6 @@ try {
         return map;
     }
 
-    private float[] calculateAvgAndStDevOfDiffs(Map<PairInt, PairFloat> 
-        contrastAndColorMap) {
-        
-        // average difference from neighbors
-        double avgContrast = 0;
-        
-        double avgColor = 0;
-        
-        int count = 0;
-        
-        Iterator<Map.Entry<PairInt, PairFloat> > iter = 
-            contrastAndColorMap.entrySet().iterator();
-        
-        while (iter.hasNext()) {
-            
-            Map.Entry<PairInt, PairFloat> entry = iter.next();
-            
-            PairInt i = entry.getKey();
-            int x = i.getX();
-            int y = i.getY();
-            
-            for (int xx = (x - 1); xx <= (x + 1); xx++) {
-                for (int yy = (y - 1); yy <= (y + 1); yy++) {
-                    
-                    PairInt j = new PairInt(xx, yy);
-                    
-                    if (contrastAndColorMap.containsKey(j)) {
-                        
-                        PairFloat iCC = entry.getValue();
-                        
-                        PairFloat jCC = contrastAndColorMap.get(j);
-                        
-                        float diffContrast = Math.abs(iCC.getX() - jCC.getX());
-                        
-                        float diffColor = Math.abs(iCC.getY() - jCC.getY());
-                        
-                        avgContrast += diffContrast;
-                        
-                        avgColor += diffColor;
-                        
-                        count++;
-                    }
-                }
-            }            
-        }
-        
-        avgContrast /= (double)count;
-        
-        avgColor /= (double)count;
-        
-        // standard deviation of avg difference from neighbors
-        double stDevContrast = 0;
-        
-        double stDevColor = 0;
-        
-        iter = contrastAndColorMap.entrySet().iterator();
-        
-        while (iter.hasNext()) {
-            
-            Map.Entry<PairInt, PairFloat> entry = iter.next();
-            
-            PairInt i = entry.getKey();
-            int x = i.getX();
-            int y = i.getY();
-            
-            for (int xx = (x - 1); xx <= (x + 1); xx++) {
-                for (int yy = (y - 1); yy <= (y + 1); yy++) {
-                    
-                    PairInt j = new PairInt(xx, yy);
-                    
-                    if (contrastAndColorMap.containsKey(j)) {
-                        
-                        PairFloat iCC = entry.getValue();
-                        
-                        PairFloat jCC = contrastAndColorMap.get(j);
-                        
-                        float diffContrast = Math.abs(iCC.getX() - jCC.getX());
-                        diffContrast -= avgContrast;
-                        
-                        float diffColor = Math.abs(iCC.getY() - jCC.getY());
-                        diffColor -= avgColor;
-                        
-                        stDevContrast += (diffContrast * diffContrast);
-                        
-                        stDevColor += (diffColor * diffColor);
-                    }
-                }
-            } 
-        }
-        
-        stDevContrast = Math.sqrt(stDevContrast/((double)count - 1));
-        
-        stDevColor = Math.sqrt(stDevColor/((double)count - 1));
-        
-        return new float[]{(float)avgContrast, (float)stDevContrast, 
-            (float)avgColor, (float)stDevColor};
-    }
-
     private void subtractWithCorrectForNegative(GreyscaleImage gXY2, int subtract) {
 
         int nz = 0;
@@ -1899,9 +1801,10 @@ try {
                 float totalRGBV = rV + gV + bV;
                 
                 float localSkyLuma = localSky.getAverageLuma();
+                
+                float lumaV = originalColorImage.getLuma(vIdx);
         
-                double contrastV = (localSkyLuma - 
-                    originalColorImage.getLuma(vIdx))/originalColorImage.getLuma(vIdx);
+                double contrastV = (localSkyLuma - lumaV)/lumaV;
 
                 double colorDiffV = localSky.calcColorDiffToOther(rV, gV, bV);
 
@@ -1949,7 +1852,7 @@ log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
 log.info("FILTER 00");
                             continue;
                         }
-                        if ((saturation <= 0.4) && 
+                         if ((saturation <= 0.4) && 
                             (Math.abs(contrastV) > 10.*Math.abs(skyStDevContrast))
                             ) {
 log.info("FILTER 01");                                                        
@@ -1961,7 +1864,7 @@ log.info("FILTER 01");
                 if ( // no contrast or color change, should be sky
                     (Math.abs(contrastV) < 0.015)
                     && (colorDiffV < 10)
-                    && (diffCIEX < 0.005) && (diffCIEY < 0.005)) {
+                    && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
 
 log.info("FILTER 02");
 
@@ -2035,6 +1938,14 @@ log.info("FILTER 09");
                     (skyStDevContrast != 0.)
                     && (Math.abs(contrastV) > 5.*skyStDevContrast)
                     && (Math.abs(colorDiffV) > 5.*skyStDevColorDiff)
+                    && 
+                    // if cieXY diffs are zero and within stdev, these are sky,
+                    // so test for opposite for boundary pixel
+                    (!((diffCIEX < 0.001) && (diffCIEX < 1.5*localSky.getStdDevCIEX())
+                    && (diffCIEY < 0.001) && (diffCIEY < 1.5*localSky.getStdDevCIEY())))
+                    
+                    && (skyStDevContrast > 0.005)
+                    && (skyStDevColorDiff > 1.)
                     ) {
 
 log.info("FILTER 10");
@@ -2157,6 +2068,9 @@ log.info("FILTER 21");
                         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 1.1)
                         && (diffCIEX > 2.5*localSky.getStdDevCIEX())
                         && (diffCIEY > 2.5*localSky.getStdDevCIEY())
+                        
+                        && (skyStDevContrast > 0.005)
+                        && (skyStDevColorDiff > 1.)
                     ){
 
 log.info("FILTER 22");
@@ -2166,7 +2080,7 @@ log.info("FILTER 22");
                         && (Math.abs(contrastV) < 0.05)
                         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 3.0)
                         && (diffCIEX > 1.5*localSky.getStdDevCIEX())
-                        && (diffCIEY > 1.5*localSky.getStdDevCIEY())
+                        && (diffCIEY > 1.5*localSky.getStdDevCIEY())                        
                     ) {
 
 log.info("FILTER 23");
@@ -2193,21 +2107,32 @@ log.info("FILTER 25");
 
 log.info("FILTER 26");
                     } else if (
-                    // bright white clouds
-                    (contrastV < 0.05)
-                    && (diffCIEX < 0.005) && (diffCIEY < 0.005)
+                    // bright grey clouds
+                    (Math.abs(contrastV) < 0.04)
+                    && (diffCIEX < 0.002) && (diffCIEY < 0.003) 
                     &&
-                        !((Math.abs(0.33 - rPercentV) < 0.3) 
-                        && (Math.abs(0.33 - gPercentV) < 0.3) 
-                        && (Math.abs(0.33 - bPercentV) < 0.3)
-                        && (gV > 199) && (bV > 199))
+                        ((Math.abs(0.30 - rPercentV) < 0.07) 
+                        && (Math.abs(0.33 - gPercentV) < 0.03) 
+                        && (Math.abs(0.36 - bPercentV) < 0.06)
+                        && (gV > 170) && (bV > 170))
                     ) {
 
 log.info("FILTER 27");
+                    } else if (
+                    (contrastV < 0.05)
+                    && (diffCIEX < 0.005) && (diffCIEY < 0.005)
+                    &&
+                        !((Math.abs(0.33 - rPercentV) < 0.08) 
+                        && (Math.abs(0.33 - gPercentV) < 0.03) 
+                        && (Math.abs(0.33 - bPercentV) < 0.06)
+                        && (gV > 199) && (bV > 199))
+                    ) {
+
+log.info("FILTER 28");
                         continue; 
                     } else {
 
-log.info("FILTER 28");
+log.info("FILTER 29");
                         continue;
 
                     }
@@ -2447,10 +2372,9 @@ try {
             
             float skyLuma = skyBinsByBrightness[k].getAverageLuma();
             
-            float contrast = (luma - skyLuma)/skyLuma;
+            float contrast = (skyLuma - luma)/luma;
 
-            double diffContrast = contrast - 
-                skyBinsByBrightness[k].getAvgContrast();
+            double diffContrast = contrast - skyLuma;
             
             if (skyIsRed && (diffContrast > 0) && !pointIsEmbeddedInSky) {
                 continue;

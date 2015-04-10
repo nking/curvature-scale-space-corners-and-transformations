@@ -1,47 +1,105 @@
-note, this is a precursor step to the agile story and tasks to gather notes 
+Note, this is a precursor step to the agile story and tasks to gather notes 
 on needed features, bugs, etc.
 
--- color data structure and low contrast grow of border pixels:
+-- organizing the SkylineExtractor's findClouds parameters for consideration of optimization.
 
-   Need a data structure that I keep each pixel's r,g,b, cieXY, and hsb in,
-   but populated on demand.  space complexity is not conserved, but runtime
-   is at least a little by not performing transcendental operations on all
-   pixels, only on those whose color information is needed.
-   Note that when a pixel's color is needed and not present, it's 8 or 24
-   neighbors should probably be populated also.
+   For algorithm filter parameters note that diff is between pixel and it's 8 neighbor sky-only-pixels.
 
-   During findClouds or after, this data structure could be used to examine
-   the border pixels to learn whether the foreground has a large color difference
-   and contrast from sky.  Currently, "grow for low contrast limit" uses a
-   small contrast limit for growing sky so that images with small contrast
-   skylines are not overrun (e.g. snowy mountain peaks under hazy or cloudy skies).
-   For images with large contrasting foreground features, could use a larger limit.
-   *Note that such a step seems like it would be more expensive computationally 
-   to use within findClouds at certain intervals, but placing the logic there instead
-   of after the sky is nearly completely "grown", makes it possible for findClouds to
-   be a single method with fittable parameters, usable in a harness using LDA and
-   neural networks to learn the best combination of parameters.
+   All of the clauses should evaluate to 'T' is a sky pixel else 'F' is not a sky pixel.
 
-   So, the data structure should be made next, and the code cleaned up to use it
-   over all methods in SkylineExtractor.
+       ----------------------------------------------------------------------------------------------------------------------
+       parameter                     should be present      first look at clauses to fit
+       ----------------------------------------------------------------------------------------------------------------------
+       diffRed                             Y                (param < coeff), ((param/stdev) < coeff)
+                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
+       diffBlue                            Y                (param < coeff), ((param/stdev) < coeff)
+                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
+       skyIsBlue                           Y                (param == true), (param == false), param not used in clause
+       skyIsRed                            N                this is the same as the opposite of skyIsBlue
+       skyIsBrown                          Y                (param == true), (param == false)
+       contrast                            Y                (param < coeff), ((param/stdev) < coeff), 
+                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
+       diffCIEX                            Y                (param < coeff), ((param/stdev) < coeff)
+                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
+                                                                because cie is a radial polynomial, might actually need
+                                                                something like polar coords theta should be the 
+                                                                most important measure of the difference is **theta**.
+                                                                diffCIEXY = sqrt(diffCIEX*diffCIEX + diffCIEY*diffCIEY)
+                                                                theta = 2*arctan(diffCIEY/(diffCIEX + diffCIEXY))
 
-   And then the border pixels vs foreground pixels (== current exterior pixels adjacent
-   to border) determination of the normally low contrast limit should be considered
-   and made modular.
+       diffCIEY                            Y                (param < coeff), ((param/stdev) < coeff)
+                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
+                                                                
+       colorDiff                           Y                (param < coeff), ((param/stdev) < coeff)
+                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
+                                                                note, this is defined using r, g, and b
+       skyStDevContrast                    Y                see above
+       skyStDevColorDiff                   Y                see above
+       skyStDevCIEX                        Y                see above
+       skyStDevCIEY                        Y                see above
+       isSolarYellowGreenOrange            Y                (param == true), (param == false)
+       rDivTotal                           Y                Math.abs(coeff - rDivTotal) < coeff
+       gDivTotal                           Y                Math.abs(coeff - gDivTotal) < coeff
+       bDivTotal                           Y                Math.abs(coeff - bDivTotal) < coeff
 
-   An example of filter usable on high contrast only:
-       Note, this is just for blue skies.  it's estimated from the arches image.
 
-       (contrastV < 0.05) 
-       &&
-       ((diffCIEX < 0.015) && (diffCIEY < 0.015))
-       &&  
-          ((Math.abs(0.33 - rPercentV) < 0.075) 
-          && (Math.abs(0.33 - gPercentV) < 0.075) 
-          && (Math.abs(0.33 - bPercentV) < 0.075)
-          && (gV > 127) && (bV > 127))
-       ) {
-          to include bright white clouds in sky pixels
+       If each pameter can be in one of m states, the number of possible combinations for one
+       parameter is m_states^(1 parameter).  And combining parameters is multiplication.
+       For example, if we had 3 parameters and we knew each could be in one of 2 states, the
+       number of possible combinations is 2^3.  Combining them separately is (2^1)*(2^1)*(2^1).
+       That means that for 3 parameters with 2 states each, one would be running 8 separate
+       total equations of clauses to optimize separately (and afterwards decide between the results of).
+
+       Note that the logic of the problem itself is specialization of segmentation that is very specific
+       to sky, land, and foreground.  For that reason, some of the logic is best applied in an order.
+       More specifically, a filter for brown land is performed before the other
+       operations to quickly exclude land.
+       Also, filter for large contrast should be applied early on to rule out 'sky' as a pixel.
+       And there is a trend for blue sky and red sky that should be applied, that is for blue
+       sky, the difference in contrast and difference in blue make a jump at skyline boundaries,
+       while for red skies, the skyline is remarkable in the difference in contrast and the
+       difference in red color.
+           Note, for this color diff and contrast diff relationship, no simple coefficient fit
+           a trend usable for all of them, that is a simple linear relationship was not correct.
+           one can see from the plots that the contrast scales with the difference in color, 
+           which must be because contrast is built from luma, so roughly an intensity difference 
+           and the difference in color is a difference in intensity.
+           *Note that I didn't plot a difference in CIE XY chromaticity in the same way, but one 
+           would expect cases where that might fail? especially for snowy mountain peaks under 
+           hazy skies... CIE XY is color without luminosity dependency.
+           *Note also that strength of the contrast is different for every object because it's
+           dependent upon it's light scattering properties such as index of refraction for its
+           materials.
+           so the comparison is probably just a factor above the standard deviation of that property
+           for the sky.
+
+
+-- improvement in design of SkylineExtractor:
+   consider retaining the pixels which do not get added to sky in
+   findClouds as border pixels.
+     -- do a quick plot to assert that they are border and embedded pixels.
+     -- for the subsequent stage of finding embedded pixels, shoud be able
+        to reduce the number of operations, by finding the contiguous
+        pixels only among those border pixels in PerimeterFinder's methods.
+        check this... still need the approx concave hull for the check
+        whether the contiguous pixels are bounded... **might only be saving
+        steps in the small block where gaps are iterated over to write pixels.
+        -- the result is the embedded pixels.
+        -- the true border pixels will take the border pixels just mentioned
+           and subtract the embedded subset from them.
+
+
+-- when sun is found, such as in the NM image, might try to fit a
+   radial profile (1/r^2) from it over the image.
+   can wait until sky pixels are mostly found and then fit over
+   that and extend that pattern to the rest of the image?
+   that is, in the NM image, can see that the sky varies smoothly
+   but there are clouds that are in the sky too. 
+   ** what happens when one knows the sun is in the image,
+   one fits a gradient to the least bright pixels and then divides
+   the image by that gradient?  presumably, the skyline stands out
+   even more.   cie XY are independent of illumination in any case,
+   so this step probably isn't useful and not always possible...
 
 -- the rainbow points can be found before findClouds because it is a search over
    the entire image.
