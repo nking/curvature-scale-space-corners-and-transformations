@@ -11,9 +11,9 @@ Story: Image w/ CIE + HSB populated on demand
         minimum: < 1 day
         maximum: < 1.5 days
 
-    amount of time used:
+    amount of time used: < 1 day
 
-    state of completion:
+    state of completion: complete
 
     comments regarding state:
         blocked while adapting color and contrast filters that
@@ -87,14 +87,15 @@ Task 3:
 
    time estimate: minimum half day, maximum 1 day
   
-   amount of time used:
-       so far, 3.5 hours
+   amount of time used: 3.5 hours
 
-   state of completion: in progress
+   state of completion: complete
 
    comments:  
        blocked while adapting color and contrast filters that
        need to be changed because they were tailored to values
        set for an incorrect hsb, and a different calculated contrast.
+       The adaptation took more than a day, but is not added to this
+       task or story.
               
 =====================================================================
