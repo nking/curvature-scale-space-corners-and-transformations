@@ -14,6 +14,8 @@ on needed features, bugs, etc.
                                                                 ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
        diffBlue                            Y                (param < coeff), ((param/stdev) < coeff)
                                                                 ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
+                                                            NOTE that some pre-logic could be used to use only diffBlue or
+                                                            diffRed depending on sky color to make a parameter diffBorR
        skyIsBlue                           Y                (param == true), (param == false), param not used in clause
        skyIsRed                            N                this is the same as the opposite of skyIsBlue
        skyIsBrown                          Y                (param == true), (param == false)
@@ -42,7 +44,6 @@ on needed features, bugs, etc.
        gDivTotal                           Y                Math.abs(coeff - gDivTotal) < coeff2
        bDivTotal                           Y                Math.abs(coeff - bDivTotal) < coeff2
 
-
        If each pameter can be in one of m states, the number of possible combinations for one
        parameter is m_states^(1 parameter).  And combining parameters is multiplication.
        For example, if we had 3 parameters and we knew each could be in one of 2 states, the
@@ -70,9 +71,8 @@ on needed features, bugs, etc.
            *Note also that strength of the contrast is different for every object because it's
            dependent upon it's light scattering properties such as index of refraction for its
            materials.
-           so the comparison is probably just a factor above the standard deviation of that property
-           for the sky.
-
+           so the comparison is probably just a minimum factor above the standard deviation 
+           of that property for the sky.
 
 -- improvement in design of SkylineExtractor:
    consider retaining the pixels which do not get added to sky in
@@ -161,7 +161,6 @@ on needed features, bugs, etc.
 
 -- junction corners should be handled in edge extractor.  for large number of edges, might have
    more fractured lines, hence missing corners at junctions.
-
 
 --in the RANSAC stage, for a threshold for matching, consider using
    0.6% of maximum image dimension
