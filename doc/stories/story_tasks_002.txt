@@ -41,7 +41,7 @@ Story: Near optimization of SkylineExtractor's findClouds method.
       for each equation and test image is needed.
 
       A pattern of determining the best fitting coefficients 
-      among each equation and test is needed.
+      among each equation and test is needed within the harness.
 
       A means of making the expected results for the test images is
       needed.
@@ -89,7 +89,8 @@ Task 1:
           Also needs a run target in the build script to run the class,
           but not as a regular part of tests.
 
-   time estimate: 15 min + (16 * 15 min).  minimum = 4 hours, maximum 8 hours
+   time estimate: 
+       15 min + (16 * 15 min).  minimum = 4 hours, maximum 8 hours
   
    amount of time used:
        5.5 hours
@@ -100,6 +101,118 @@ Task 1:
               
 ---------------------------------------------------------------------
 Task 2:
+    goal: explore the parameters to be fit to identify the border.
+          for example to examine contrast change at the border:
+             (1)a. calculate for all sky pixels the standard 
+                   deviation from the mean for contrast
+                b. calculate for sky pixels in blocks of 25, the standard 
+                   deviation from the mean for contrast
+                   and then take the average and standard
+                   deviation of that
+                c. calculate for sky pixels in blocks of 9, the standard 
+                   deviation from the mean for contrast
+                   and then take the average and standard
+                   deviation of that
+             (2)a. calculate the contrast for the for border pixels singly.
+                   Here the border pixels are the non-sky pixels 
+                   adjacent to the sky.
+                   Since the algorithm looks for border pixels one by
+                   one, an aggregation is not determined here.
+             The plots to make would be:
+                   1. ((all sky contrast) - (border contrast))/(all sky standard deviation) VS other parameter
+                   2. ((avg 25 block sky contrast) - (border contrast))/(standard deviation of 25 block sky contrast) VS other parameter
+                   3. ((avg 8 block sky contrast) - (border contrast))/(standard deviation of 8 block sky contrast) VS other parameter
+
+             If wanted to use LDA here, could label those groups of points as "border" and then
+             make another group of points called "not border" that are single sky points located 
+             at least 2 pixels from the border.
+
+             Then LDA would be used to find the best descriptive set of parameters and more...
+[paused writing here]
+
+   details:  
+
+   time estimate: 
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              
+------------------------------------------------------------------------
+Task 3:
+    goal: design the passing and use of the clause coefficients and 
+          clauses.
+
+    details:  
+       findClouds needs to accept as arguments the coefficients of
+       clauses and the clauses. 
+       A complete clause fitting all needed is:
+           ((param1/param2)  LTorGT coeff)  where param2 can be a '1'
+
+       It also needs a way of knowing that param1 is color_point - color_sky,
+       for example.  the parameter number and the intended parameters
+       will be hard wired into the method and documented.
+
+       The logic needed should be possible as ANDs of the clauses, but
+       there may be an OR needed for blue and red skies.  
+[paused writing here...]
+
+       since blue vs red skies is the only conditional logic, may need
+       to separate the red and blue sky tests because trying to improve 
+       parameters in the downhill simplex would not be correct if the
+       parameters don't affect the solution.
+
+       initial look at parameters did not show any other 'OR' logic.
+
+       note that this isn't a constraint satisfaction problem because 
+       the coefficients need to be determined and refined.
+
+    time estimate: 
+  
+    amount of time used:
+
+    state of completion:
+
+    comments:
+              
+---------------------------------------------------------------------
+Task 4:
+    goal: implement the overloaded findClouds that accepts the clauses
+          and coefficients.
+
+    details:  
+          copy findClouds to adapt the method to use the given clauses 
+          and coefficients.
+
+          write a simple test for the new method.
+
+   time estimate: 
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              
+---------------------------------------------------------------------
+Task 5:
+    goal: implement the harness to run findClouds over multiple images
+          for all equations and return the best fitting coefficients.
+
+    details:  
+
+   time estimate: 
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              
+---------------------------------------------------------------------
+Task 6:
     goal: 
 
     details:  
