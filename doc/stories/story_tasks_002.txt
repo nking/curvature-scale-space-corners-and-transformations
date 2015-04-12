@@ -1,0 +1,113 @@
+Lacking an app to keep these in, making a temporary file while
+implementing...
+
+=====================================================================
+Story: Near optimization of SkylineExtractor's findClouds method.
+ 
+    summary: findClouds needs to be changed to make it possible to
+      find the best fitting or nearly best fitting combinations
+      of color and contrast clauses.  The clauses are the conditional
+      logic to learn whether a pixel is sky or not and hence added
+      to the sky points (or not) in a BFS visitor pattern.
+      
+      findClouds is currently given a set of seed sky points
+      and the original color image and gradient images from which
+      it applies various color and contrast clauses to grow the
+      seed sky points until they reach the skyline or close to the
+      skyline.  
+      findClouds needs to be refactored to also accept as arguments,
+      the clauses and coefficients for the clauses.
+      The SkylineExtractor may need additional changes to make sure
+      that member variables don't change state upon running findClouds
+      so it can be re-used with the same images and a fresh set of
+      sky points, clauses, and clause coefficients.
+
+      A fitness function is needed to estimate how close the result
+      is to the expected result.
+         This involves defining the skyline and sky points accurately
+      for the tests.  The penalty for overrunning the skyline boundary
+      should be very large.
+
+      An algorithm is needed to use the fitness function to determine
+      the next set of improved coefficients to be tried w/ findClouds.
+      Because there are so many parameters, a gradient approach is 
+      less appealing than a heuristic approach such as the 
+      Nelder-Mead downhill simplex method, so will use that.
+
+      A harness that accepts image files and runs the findClouds
+      method over all of the possible combinations of clauses,
+      called equations and uses the downhill simplex method to
+      find the nearly best fitting or best fitting coefficients
+      for each equation and test image is needed.
+
+      A pattern of determining the best fitting coefficients 
+      among each equation and test is needed.
+
+      A means of making the expected results for the test images is
+      needed.
+
+    possible complications: 
+       unknown existing bugs found in the process that may need to
+          be fixed (usually not a problem, but have delayed better
+          testing habits while exploring how to implement most of 
+          this and related code.)
+       some test images not yet included will require a change in 
+          the methods preceding the use of findClouds to find the
+          sky seed points.  those images are not included and the
+          method doesn't exist yet, but the images could be included
+          with guesstimated seed sky points given to findClouds 
+          (but this would not be a robust long term solution).
+
+      notes still in todo.txt should be moved here to create targets...
+
+    time estimate: 
+        minimum: 
+        maximum: 
+
+    amount of time used: 
+
+    state of completion: 
+
+    comments regarding state:
+
+    comments:
+
+---------------------------------------------------------------------
+Task 1:
+    goal: Create the expected sky-only images from the test images to
+          compare the results with.
+
+    details:  
+          This could be done by starting with the thresholding part of
+          the SkylineExtractor algorithm and then correcting for binning
+          and manually extracting the skyline to make a mask using a 
+          tool like Gimp.
+
+          requires making a class in tests directory to use the needed
+          part of SkylineExtractor and read in and write images.
+
+          Also needs a run target in the build script to run the class,
+          but not as a regular part of tests.
+
+   time estimate: 15 min + (16 * 15 min).  minimum = 4 hours, maximum 8 hours
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              
+---------------------------------------------------------------------
+Task 2:
+    goal: 
+
+    details:  
+
+   time estimate: 
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              

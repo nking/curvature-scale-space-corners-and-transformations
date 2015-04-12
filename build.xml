@@ -77,6 +77,7 @@
         <echo message="runTestWithAspects:         run test with aspects, use -Dtest=fqn"/>
         <echo message="debugTestWithAspects:       debug a test with aspects"/>
         <echo message="runEmma                     run code coverage for non-third party classes"/>
+        <echo message="runThresh                   run code to create thresholded image to help make skyline test comparison images"/>
         <echo message="package                     create a standalone executable in dist/scalespace.jar"/>
     </target>
 
@@ -525,5 +526,46 @@
         <copy file="${classes.dir}/scalespace_${TS}.jar" 
             tofile="dist/scalespace.jar" />
     </target>
+
+    <target name="runThresh" depends="clean,debug,compile" 
+        description="run code to make thresholded gradient image to help make test comparisons" >
+        
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <echo message="COMPILE debug=${compile.debug}"/>
+        
+        <javac srcdir="${src.dir}"
+            destdir="${src.out.dir}"
+            source="${compile.target}"
+            debug="${compile.debug}"
+            deprecation="${compile.deprecation}"
+            includeAntRuntime="false"
+            optimize="${compile.optimize}" >
+    	    <classpath refid="test.classpath"/>
+            <src path="${tests.dir}"/>
+            <src path="${src.dir}"/>
+            <include name="**/*SkylineTestImageMaker.java"/>
+        </javac>
+
+        <java classname="algorithms.imageProcessing.SkylineTestImageMaker" fork="true" failonerror="true">
+            <jvmarg value="-Xms512m"/>
+            <jvmarg value="-Xmx1024m"/>
+            <jvmarg value="-XX:-UseSplitVerifier" />
+
+            <!--
+                <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+            -->
+
+            <sysproperty key="java.util.logging.config.file" 
+                value="${classes.dir}/classes/logging.properties"/>
+            <classpath>
+            	<pathelement location="${src.out.dir}"/>
+                <pathelement location="${basedir}/res/META-INF/"/>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+        </java>
+    </target>
+    
 
 </project>

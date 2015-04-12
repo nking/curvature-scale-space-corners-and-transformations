@@ -43,6 +43,7 @@ on needed features, bugs, etc.
        rDivTotal                           Y                Math.abs(coeff - rDivTotal) < coeff2
        gDivTotal                           Y                Math.abs(coeff - gDivTotal) < coeff2
        bDivTotal                           Y                Math.abs(coeff - bDivTotal) < coeff2
+       saturation                          Y                (saturation < coeff)
 
        If each pameter can be in one of m states, the number of possible combinations for one
        parameter is m_states^(1 parameter).  And combining parameters is multiplication.
@@ -93,10 +94,28 @@ on needed features, bugs, etc.
         having stored the best result for each image for each equation, combine and compare
            the best results for each equation over all images and choose the
            best or combine the solutions to make the best solution for each equation.
+        Do the same for the best result for each image just to compare while implementing.
+
         then the solution is the best among the equations' solutions.
 
         note that the fitness function should probably be weighted by the expected number of
         sky points so that it's actually measuring the fraction found as sky
+
+   tasks:
+     (1) for each test image, need a quick easy way to outline sky pixels very accurately.
+         -- edge detector product if I correct for t-junctions?
+         -- thresholding using what is in the algorithm already, but then displaying the
+            results and letting the user select the segments that highlight the sky?
+         -- once have the skyline, need a method to gather the sky pixels.
+     (2) plot the main parameter clauses before implementing in findClouds.
+         -- for each test image, would like 3 plots for each pair of clause parameters:
+            one plot for pixels in the sky further than 2 pixels from the border,
+            another other plot for the skyline points only, and another plot for the
+            sky points that are 1 point away from the skyline.
+     (3) design and implement the equations of clauses
+     (4) design and implement the solver that will use the Nelder-Mead downhill 
+         simplex to choose improving coefficients with each iteration.
+
 
 -- improvement in design of SkylineExtractor:
    consider retaining the pixels which do not get added to sky in
