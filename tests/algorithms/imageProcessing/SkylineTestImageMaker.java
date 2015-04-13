@@ -11,6 +11,7 @@ import algorithms.util.PairIntArray;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -140,8 +141,10 @@ public class SkylineTestImageMaker {
 
         PerimeterFinder perimeterFinder = new PerimeterFinder();
 
-        int imageMaxColumn = skyMask.getWidth();
-        int imageMaxRow = skyMask.getHeight();
+        int width = skyMask.getWidth();
+        int height = skyMask.getHeight();
+        int imageMaxColumn = width - 1;
+        int imageMaxRow = height - 1;
 
         Map<Integer, List<PairInt>> skyRowColRanges = perimeterFinder.find(
             skyPoints, skyRowMinMax, imageMaxColumn, 
@@ -154,7 +157,7 @@ public class SkylineTestImageMaker {
 
         ImageExt img = ImageIOHelper.readImageExt(filePath1);
         
-        if (img.getWidth() != imageMaxColumn || img.getHeight() != imageMaxRow) {
+        if (img.getWidth() != width || img.getHeight() != height) {
             throw new IllegalStateException(
                 "sky mask is not the same size a the test image");
         }
@@ -212,6 +215,9 @@ public class SkylineTestImageMaker {
 
         FileWriter fw = null;
         BufferedWriter writer = null;
+        
+Set<PairInt> inSkyPoints = new HashSet<PairInt>();
+Set<PairInt> nonSkyBorderPoints = new HashSet<PairInt>();
 
         try {
             File file = new File(outFilePath);
@@ -226,7 +232,7 @@ public class SkylineTestImageMaker {
             for (PairInt p : borderPixels) {
                 
                 int x = p.getX();
-                int y = p.getX();
+                int y = p.getY();
 
                 int xNonSkyBorder = x;
                 int yNonSkyBorder = y + 1;
@@ -238,6 +244,8 @@ public class SkylineTestImageMaker {
                 if (skyPoints.contains(new PairInt(xNonSkyBorder, yNonSkyBorder))) {
                     continue;
                 }
+                
+nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
 
                 Set<PairInt> neighbors24 = skylineExtractor.getTheNeighborPixels(
                     p, skyPoints, imageMaxColumn, imageMaxRow, 2);
@@ -350,9 +358,11 @@ public class SkylineTestImageMaker {
                 if (ySkyNearby < 0) {
                     continue;
                 }
-                if (skyPoints.contains(new PairInt(xSkyNearby, ySkyNearby))) {
+                if (!skyPoints.contains(new PairInt(xSkyNearby, ySkyNearby))) {
                     continue;
                 }
+                
+inSkyPoints.add(new PairInt(xSkyNearby, ySkyNearby));
 
                 float skyNearbyLuma = img.getLuma(xSkyNearby, ySkyNearby);
                 float skyNearbyRed = img.getR(xSkyNearby, ySkyNearby);
@@ -456,7 +466,17 @@ public class SkylineTestImageMaker {
                 fw.close();
             }
         }
-            
+       
+try {
+    ImageExt clr = (ImageExt)img.copyImage();
+    ImageIOHelper.addToImage(inSkyPoints,        0, 0, clr, 0, 0, 255);
+    ImageIOHelper.addToImage(nonSkyBorderPoints, 0, 0, clr, 255, 0, 0);
+    ImageIOHelper.writeOutputImage(
+        dirPath + "/tmp_border_" + fileNameRoot + ".png", clr);
+} catch (IOException e) {
+    System.err.println("ERROR: " + e.getMessage());
+}       
+        
     }
     
     public static void main(String[] args) {
