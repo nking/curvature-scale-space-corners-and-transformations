@@ -2988,7 +2988,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return getTheNeighborPixels(uPoint, points, width, height, 2);
     }
 
-    private Set<PairInt> getTheNeighborPixels(PairInt uPoint, 
+    Set<PairInt> getTheNeighborPixels(PairInt uPoint, 
         Set<PairInt> points, int width, int height, int radius) {
         
         int uX = uPoint.getX();

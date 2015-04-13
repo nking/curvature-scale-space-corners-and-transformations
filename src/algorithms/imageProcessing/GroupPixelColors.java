@@ -21,6 +21,15 @@ public class GroupPixelColors extends GroupPixelRGB {
     protected float avgCIEY;
     protected float stdDevCIEY;
     
+    /**
+     * calculate average colors and standard deviations of the average for
+     * the points in the colorImage.  The xOffset and yOffset are the offsets
+     * of the points from the colorImage reference frame.
+     * @param points
+     * @param colorImage
+     * @param xOffset
+     * @param yOffset 
+     */
     public GroupPixelColors(final Set<PairInt> points, ImageExt colorImage,
         int xOffset, int yOffset) {
         
