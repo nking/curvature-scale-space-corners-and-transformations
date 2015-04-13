@@ -8,6 +8,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.awt.Color;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -91,7 +92,7 @@ public class SkylineTestImageMaker {
         
         String[] fileNames = new String[] {
             "brown_lowe_2003_image1.jpg",
-            //"brown_lowe_2003_image1_rot.jpg",
+            /*//"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             "venturi_mountain_j6_0001.png",
             //"venturi_mountain_j6_0010.png",
@@ -106,7 +107,7 @@ public class SkylineTestImageMaker {
             "new-mexico-sunrise_w725_h490.jpg",
             "arizona-sunrise-1342919937GHz.jpg",
             "sky_with_rainbow.jpg",
-            "sky_with_rainbow2.jpg",
+            "sky_with_rainbow2.jpg",*/
             //"30.jpg",
             //"arches_sun_01.jpg",
             //"stlouis_arch.jpg", 
@@ -260,6 +261,7 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                 float nonSkyBorderBlue = img.getB(xNonSkyBorder, yNonSkyBorder);
                 float nonSkyBorderCIEX = img.getCIEX(xNonSkyBorder, yNonSkyBorder);
                 float nonSkyBorderCIEY = img.getCIEY(xNonSkyBorder, yNonSkyBorder);
+                float nonSkyBorderHue = img.getHue(xNonSkyBorder, yNonSkyBorder);
 
                 GroupPixelColors colors24 = new GroupPixelColors(neighbors24, img, 0, 0);
           
@@ -280,10 +282,6 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                     (img.getLuma(x, y) - nonSkyBorderLuma)/nonSkyBorderLuma;                    
                 borderDiff1Contrast /= allSkyColor.getStdDevContrast();
 
-                sb.append(Float.toString(borderDiff24Contrast)).append(",")
-                    .append(Float.toString(borderDiff8Contrast)).append(",")
-                    .append(Float.toString(borderDiff1Contrast)).append(",");
-
                 if (skyIsRed) {
 
                     borderDiff24BlueOrRed = (colors24.getAvgRed()
@@ -298,6 +296,13 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                         - nonSkyBorderRed);
                     borderDiff1BlueOrRed /= allSkyColor.getStdDevRed();
 
+                    if (colors24.getStdDevRed() == 0) {
+                        continue; 
+                    }
+                    if (colors8.getStdDevRed() == 0) {
+                        continue; 
+                    }
+
                 } else {
 
                     borderDiff24BlueOrRed = (colors24.getAvgBlue()
@@ -311,12 +316,28 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                     borderDiff1BlueOrRed = (img.getR(x, y)
                         - nonSkyBorderBlue);
                     borderDiff1BlueOrRed /= allSkyColor.getStdDevBlue();
+
+                    if (colors24.getStdDevBlue() == 0) {
+                        continue; 
+                    }
+                    if (colors8.getStdDevBlue() == 0) {
+                        continue; 
+                    }
                 }
-
-                sb.append(Float.toString(borderDiff24BlueOrRed)).append(",")
-                    .append(Float.toString(borderDiff24BlueOrRed)).append(",")
-                    .append(Float.toString(borderDiff24BlueOrRed)).append(",");
-
+                
+                float[] hsb24 = new float[3];
+                Color.RGBtoHSB((int)colors24.getAvgRed(), (int)colors24.getAvgGreen(), 
+                    (int)colors24.getAvgBlue(), hsb24);
+                float[] hsb8 = new float[3];
+                Color.RGBtoHSB((int)colors8.getAvgRed(), (int)colors8.getAvgGreen(), 
+                    (int)colors8.getAvgBlue(), hsb8);
+                float[] hsb1 = new float[3];
+                Color.RGBtoHSB(img.getR(x, y), img.getG(x, y), img.getB(x, y), hsb1);
+                
+                borderDiff24Hue = hsb24[0] - nonSkyBorderHue;
+                borderDiff8Hue = hsb8[0] - nonSkyBorderHue;
+                borderDiff1Hue = hsb1[0] - nonSkyBorderHue;
+                
                 /*
                  diffCIEXY = sqrt(diffCIEX*diffCIEX + diffCIEY*diffCIEY)
                  theta = 2*arctan(diffCIEY/(diffCIEX + diffCIEXY))
@@ -341,11 +362,35 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                 borderDiff8CIETheta = (float)diffTheta8;
                 borderDiff1CIETheta = (float)diffTheta1;
 
-                sb.append(Float.toString(borderDiff24CIETheta)).append(",")
-                    .append(Float.toString(borderDiff24CIETheta)).append(",")
-                    .append(Float.toString(borderDiff24CIETheta)).append(",");
+                /*
+                sb.append("border,");
 
-                sb.append("border\n");
+                sb.append(Float.toString(borderDiff24Contrast)).append(",")
+                    .append(Float.toString(borderDiff8Contrast)).append(",")
+                    .append(Float.toString(borderDiff1Contrast)).append(",");
+                
+                sb.append(Float.toString(borderDiff24Hue)).append(",")
+                    .append(Float.toString(borderDiff8Hue)).append(",")
+                    .append(Float.toString(borderDiff1Hue)).append(",");
+
+                sb.append(Float.toString(borderDiff24BlueOrRed)).append(",")
+                    .append(Float.toString(borderDiff8BlueOrRed)).append(",")
+                    .append(Float.toString(borderDiff1BlueOrRed)).append(",");
+
+                sb.append(Float.toString(borderDiff24CIETheta)).append(",")
+                    .append(Float.toString(borderDiff8CIETheta)).append(",")
+                    .append(Float.toString(borderDiff1CIETheta)).append(",");
+                */
+sb.append("1,");
+sb.append(Float.toString(borderDiff24Contrast));
+sb.append(",");
+sb.append(Float.toString(borderDiff24Hue));
+sb.append(",");
+sb.append(Float.toString(borderDiff24BlueOrRed));
+//sb.append(",");
+//sb.append(Float.toString(borderDiff24CIETheta));
+
+                sb.append("\n");
 
                 writer.write(sb.toString());
 
@@ -369,6 +414,7 @@ inSkyPoints.add(new PairInt(xSkyNearby, ySkyNearby));
                 float skyNearbyBlue = img.getB(xSkyNearby, ySkyNearby);
                 float skyNearbyCIEX = img.getCIEX(xSkyNearby, ySkyNearby);
                 float skyNearbyCIEY = img.getCIEY(xSkyNearby, ySkyNearby);
+                float skyNearbyHue = img.getHue(xSkyNearby, ySkyNearby);
 
                 sb = new StringBuilder();
 
@@ -383,10 +429,6 @@ inSkyPoints.add(new PairInt(xSkyNearby, ySkyNearby));
                 borderDiff1Contrast =
                     (img.getLuma(x, y) - skyNearbyLuma)/skyNearbyLuma;                    
                 borderDiff1Contrast /= allSkyColor.getStdDevContrast();
-
-                sb.append(Float.toString(borderDiff24Contrast)).append(",")
-                    .append(Float.toString(borderDiff8Contrast)).append(",")
-                    .append(Float.toString(borderDiff1Contrast)).append(",");
 
                 if (skyIsRed) {
 
@@ -416,10 +458,10 @@ inSkyPoints.add(new PairInt(xSkyNearby, ySkyNearby));
 
                 }
 
-                sb.append(Float.toString(borderDiff24BlueOrRed)).append(",")
-                    .append(Float.toString(borderDiff24BlueOrRed)).append(",")
-                    .append(Float.toString(borderDiff24BlueOrRed)).append(",");
-
+                borderDiff24Hue = hsb24[0] - skyNearbyHue;
+                //borderDiff8Hue = hsb8[0] - skyNearbyHue;
+                //borderDiff1Hue = hsb1[0] - skyNearbyHue;
+                
                 /*
                  diffCIEXY = sqrt(diffCIEX*diffCIEX + diffCIEY*diffCIEY)
                  theta = 2*arctan(diffCIEY/(diffCIEX + diffCIEXY))
@@ -444,11 +486,34 @@ inSkyPoints.add(new PairInt(xSkyNearby, ySkyNearby));
                 borderDiff8CIETheta = (float)diffTheta8;
                 borderDiff1CIETheta = (float)diffTheta1;
 
-                sb.append(Float.toString(borderDiff24CIETheta)).append(",")
-                    .append(Float.toString(borderDiff24CIETheta)).append(",")
-                    .append(Float.toString(borderDiff24CIETheta)).append(",");
+                /*
+                sb.append("sky,");
+                sb.append(Float.toString(borderDiff24Contrast)).append(",")
+                    .append(Float.toString(borderDiff8Contrast)).append(",")
+                    .append(Float.toString(borderDiff1Contrast)).append(",");
 
-                sb.append("sky\n");
+                sb.append(Float.toString(borderDiff24Hue)).append(",")
+                    .append(Float.toString(borderDiff8Hue)).append(",")
+                    .append(Float.toString(borderDiff1Hue)).append(",");
+
+                sb.append(Float.toString(borderDiff24BlueOrRed)).append(",")
+                    .append(Float.toString(borderDiff8BlueOrRed)).append(",")
+                    .append(Float.toString(borderDiff1BlueOrRed)).append(",");
+                sb.append(Float.toString(borderDiff24CIETheta)).append(",")
+                    .append(Float.toString(borderDiff8CIETheta)).append(",")
+                    .append(Float.toString(borderDiff1CIETheta)).append(",");
+                */
+
+sb.append("2,");
+sb.append(Float.toString(borderDiff24Contrast));
+sb.append(",");
+sb.append(Float.toString(borderDiff24Hue));
+sb.append(",");
+sb.append(Float.toString(borderDiff24BlueOrRed));
+//sb.append(",");
+//sb.append(Float.toString(borderDiff14CIETheta));
+
+                sb.append("\n");
                 
                 writer.write(sb.toString());
                 
