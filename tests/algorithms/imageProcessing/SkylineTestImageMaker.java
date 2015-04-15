@@ -28,7 +28,7 @@ public class SkylineTestImageMaker {
     public void makeThresholdedGradientXYImages() throws Exception {
         
         String[] fileNames = new String[] {
-            //"brown_lowe_2003_image1.jpg",
+            "brown_lowe_2003_image1.jpg",
             //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             "venturi_mountain_j6_0001.png",
@@ -36,7 +36,7 @@ public class SkylineTestImageMaker {
             "seattle.jpg",
             "arches.jpg",
             "stinson_beach.jpg",
-            "cloudy_san_jose.jpg",            
+            "cloudy_san_jose.jpg",
             "stonehenge.jpg",
             "norwegian_mtn_range.jpg",
             "halfdome.jpg",
@@ -88,11 +88,49 @@ public class SkylineTestImageMaker {
         }
     }
     
+    
+    /*
+    also making subsets.  can see from vertical scans of the image that
+    both contrast and sky color make a large change at the skyline border.
+    So making a subset of points among known "sky" that all have
+    ((diff contrast)/stdev) <= 1 and ((diff color)/stdev) <= 1
+    which is already true for most of the sky,
+    then a subset of points among known non-sky border pixels that have
+    ((diff contrast)/stdev) > 1 and ((diff color)/stdev) > 1.
+    These subsets will include aggregate points from all blue skies 
+    and all red skies.
+    */
+        
+    private FileWriter fw0 = null;
+    private FileWriter fw1 = null;
+    private BufferedWriter redSkiesSubsetWriter = null;
+    private BufferedWriter blueSkiesSubsetWriter = null;
+    
     public void makeLDAInputFiles() throws Exception {
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String outFilePath = dirPath + "/tmp_lda_border_redskies_subset.csv";
+        File file = new File(outFilePath);
+        if (file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        fw0 = new FileWriter(file);
+        redSkiesSubsetWriter = new BufferedWriter(fw0);
+        
+        outFilePath = dirPath + "/tmp_lda_border_blueskies_subset.csv";
+        file = new File(outFilePath);
+        if (file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        fw1 = new FileWriter(file);
+        blueSkiesSubsetWriter = new BufferedWriter(fw1);
+        
         
         String[] fileNames = new String[] {
             "brown_lowe_2003_image1.jpg",
-            /*//"brown_lowe_2003_image1_rot.jpg",
+            //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             "venturi_mountain_j6_0001.png",
             //"venturi_mountain_j6_0010.png",
@@ -107,7 +145,7 @@ public class SkylineTestImageMaker {
             "new-mexico-sunrise_w725_h490.jpg",
             "arizona-sunrise-1342919937GHz.jpg",
             "sky_with_rainbow.jpg",
-            "sky_with_rainbow2.jpg",*/
+            //"sky_with_rainbow2.jpg",
             //"30.jpg",
             //"arches_sun_01.jpg",
             //"stlouis_arch.jpg", 
@@ -119,11 +157,16 @@ public class SkylineTestImageMaker {
             writeLDADataFile(fileName);
             
         }
+        
+        redSkiesSubsetWriter.close();
+        blueSkiesSubsetWriter.close();
+        fw0.close();
+        fw1.close();
     }
     
     private void writeLDADataFile(String fileName) throws Exception {
-                        
-        // revisit infl points.  is there a threshold removing points?
+        
+        boolean write24Neighbors = false;                        
 
         int idx = fileName.lastIndexOf(".");
         String fileNameRoot = fileName.substring(0, idx);
@@ -217,8 +260,8 @@ public class SkylineTestImageMaker {
         FileWriter fw = null;
         BufferedWriter writer = null;
         
-Set<PairInt> inSkyPoints = new HashSet<PairInt>();
-Set<PairInt> nonSkyBorderPoints = new HashSet<PairInt>();
+        Set<PairInt> inSkyPoints = new HashSet<PairInt>();
+        Set<PairInt> nonSkyBorderPoints = new HashSet<PairInt>();
 
         try {
             File file = new File(outFilePath);
@@ -246,7 +289,7 @@ Set<PairInt> nonSkyBorderPoints = new HashSet<PairInt>();
                     continue;
                 }
                 
-nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
+                nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
 
                 Set<PairInt> neighbors24 = skylineExtractor.getTheNeighborPixels(
                     p, skyPoints, imageMaxColumn, imageMaxRow, 2);
@@ -263,7 +306,8 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                 float nonSkyBorderCIEY = img.getCIEY(xNonSkyBorder, yNonSkyBorder);
                 float nonSkyBorderHue = img.getHue(xNonSkyBorder, yNonSkyBorder);
 
-                GroupPixelColors colors24 = new GroupPixelColors(neighbors24, img, 0, 0);
+                GroupPixelColors colors24 = new GroupPixelColors(neighbors24, 
+                    img, 0, 0);
           
                 GroupPixelColors colors8 = new GroupPixelColors(neighbors8,
                     img, 0, 0);
@@ -296,10 +340,10 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                         - nonSkyBorderRed);
                     borderDiff1BlueOrRed /= allSkyColor.getStdDevRed();
 
-                    if (colors24.getStdDevRed() == 0) {
+                    if (write24Neighbors && colors24.getStdDevRed() == 0) {
                         continue; 
                     }
-                    if (colors8.getStdDevRed() == 0) {
+                    if (!write24Neighbors && colors8.getStdDevRed() == 0) {
                         continue; 
                     }
 
@@ -317,10 +361,10 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                         - nonSkyBorderBlue);
                     borderDiff1BlueOrRed /= allSkyColor.getStdDevBlue();
 
-                    if (colors24.getStdDevBlue() == 0) {
+                    if (write24Neighbors && colors24.getStdDevBlue() == 0) {
                         continue; 
                     }
-                    if (colors8.getStdDevBlue() == 0) {
+                    if (!write24Neighbors && colors8.getStdDevBlue() == 0) {
                         continue; 
                     }
                 }
@@ -381,18 +425,53 @@ nonSkyBorderPoints.add(new PairInt(xNonSkyBorder, yNonSkyBorder));
                     .append(Float.toString(borderDiff8CIETheta)).append(",")
                     .append(Float.toString(borderDiff1CIETheta)).append(",");
                 */
-sb.append("1,");
-sb.append(Float.toString(borderDiff24Contrast));
-sb.append(",");
-sb.append(Float.toString(borderDiff24Hue));
-sb.append(",");
-sb.append(Float.toString(borderDiff24BlueOrRed));
-//sb.append(",");
-//sb.append(Float.toString(borderDiff24CIETheta));
+                
+                sb.append("1,");
+                
+                if (write24Neighbors) {
+                    sb.append(Float.toString(borderDiff24Contrast));
+                    sb.append(",");
+                    sb.append(Float.toString(borderDiff24Hue));
+                    sb.append(",");
+                    sb.append(Float.toString(borderDiff24BlueOrRed));
+                    //sb.append(",");
+                    //sb.append(Float.toString(borderDiff24CIETheta));
+                } else {
+                    sb.append(Float.toString(borderDiff8Contrast));
+                    sb.append(",");
+                    sb.append(Float.toString(borderDiff8Hue));
+                    sb.append(",");
+                    sb.append(Float.toString(borderDiff8BlueOrRed));
+                    //sb.append(",");
+                    //sb.append(Float.toString(borderDiff8CIETheta));
+                }
 
                 sb.append("\n");
 
                 writer.write(sb.toString());
+                
+                // write the aggregated subset
+                if (write24Neighbors) {
+                    if (Math.abs(borderDiff24Contrast) < 10) {
+                        if ((Math.abs(borderDiff24Contrast) > 1) && (Math.abs(borderDiff24BlueOrRed) > 1)) {
+                            if (skyIsRed) {
+                                redSkiesSubsetWriter.write(sb.toString());
+                            } else {
+                                blueSkiesSubsetWriter.write(sb.toString());
+                            }
+                        }
+                    }
+                } else {
+                    if (Math.abs(borderDiff8Contrast) < 10) {
+                        if ((Math.abs(borderDiff8Contrast) > 1) && (Math.abs(borderDiff8BlueOrRed) > 1)) {
+                            if (skyIsRed) {
+                                redSkiesSubsetWriter.write(sb.toString());
+                            } else {
+                                blueSkiesSubsetWriter.write(sb.toString());
+                            }
+                        }
+                    }
+                }
 
                 // --------- do same for a comparison to a sky pixel ---
                 // for simplicity, looking 3 pixels above current pixel
@@ -403,11 +482,12 @@ sb.append(Float.toString(borderDiff24BlueOrRed));
                 if (ySkyNearby < 0) {
                     continue;
                 }
-                if (!skyPoints.contains(new PairInt(xSkyNearby, ySkyNearby))) {
+                PairInt p2 = new PairInt(xSkyNearby, ySkyNearby);
+                if (!skyPoints.contains(p2)) {
                     continue;
                 }
                 
-inSkyPoints.add(new PairInt(xSkyNearby, ySkyNearby));
+                inSkyPoints.add(p2);
 
                 float skyNearbyLuma = img.getLuma(xSkyNearby, ySkyNearby);
                 float skyNearbyRed = img.getR(xSkyNearby, ySkyNearby);
@@ -459,8 +539,8 @@ inSkyPoints.add(new PairInt(xSkyNearby, ySkyNearby));
                 }
 
                 borderDiff24Hue = hsb24[0] - skyNearbyHue;
-                //borderDiff8Hue = hsb8[0] - skyNearbyHue;
-                //borderDiff1Hue = hsb1[0] - skyNearbyHue;
+                borderDiff8Hue = hsb8[0] - skyNearbyHue;
+                borderDiff1Hue = hsb1[0] - skyNearbyHue;
                 
                 /*
                  diffCIEXY = sqrt(diffCIEX*diffCIEX + diffCIEY*diffCIEY)
@@ -504,20 +584,56 @@ inSkyPoints.add(new PairInt(xSkyNearby, ySkyNearby));
                     .append(Float.toString(borderDiff1CIETheta)).append(",");
                 */
 
-sb.append("2,");
-sb.append(Float.toString(borderDiff24Contrast));
-sb.append(",");
-sb.append(Float.toString(borderDiff24Hue));
-sb.append(",");
-sb.append(Float.toString(borderDiff24BlueOrRed));
-//sb.append(",");
-//sb.append(Float.toString(borderDiff14CIETheta));
+                sb.append("2,");
+                
+                if (write24Neighbors) {
+                    sb.append(Float.toString(borderDiff24Contrast));
+                    sb.append(",");
+                    sb.append(Float.toString(borderDiff24Hue));
+                    sb.append(",");
+                    sb.append(Float.toString(borderDiff24BlueOrRed));
+                    //sb.append(",");
+                    //sb.append(Float.toString(borderDiff24CIETheta));
+                } else {
+                    sb.append(Float.toString(borderDiff8Contrast));
+                    sb.append(",");
+                    sb.append(Float.toString(borderDiff8Hue));
+                    sb.append(",");
+                    sb.append(Float.toString(borderDiff8BlueOrRed));
+                    //sb.append(",");
+                    //sb.append(Float.toString(borderDiff8CIETheta));
+                }
 
                 sb.append("\n");
                 
                 writer.write(sb.toString());
-                
+   
+                // write the aggregated subset
+                if (write24Neighbors) {
+                    if (Math.abs(borderDiff24Contrast) < 10) {
+                        if (!((Math.abs(borderDiff24Contrast) > 1) && (Math.abs(borderDiff24BlueOrRed) > 1))) {
+                            if (skyIsRed) {
+                                redSkiesSubsetWriter.write(sb.toString());
+                            } else {
+                                blueSkiesSubsetWriter.write(sb.toString());
+                            }
+                        }
+                    }
+                } else {
+                    if (Math.abs(borderDiff8Contrast) < 10) {
+                        if (!((Math.abs(borderDiff8Contrast) > 1) && (Math.abs(borderDiff8BlueOrRed) > 1))) {
+                            if (skyIsRed) {
+                                redSkiesSubsetWriter.write(sb.toString());
+                            } else {
+                                blueSkiesSubsetWriter.write(sb.toString());
+                            }
+                        }
+                    }
+                }
+
                 writer.flush();
+                redSkiesSubsetWriter.flush();
+                blueSkiesSubsetWriter.flush();
             }
 
             System.out.println("wrote to file " + outFilePath);
@@ -532,15 +648,17 @@ sb.append(Float.toString(borderDiff24BlueOrRed));
             }
         }
        
-try {
-    ImageExt clr = (ImageExt)img.copyImage();
-    ImageIOHelper.addToImage(inSkyPoints,        0, 0, clr, 0, 0, 255);
-    ImageIOHelper.addToImage(nonSkyBorderPoints, 0, 0, clr, 255, 0, 0);
-    ImageIOHelper.writeOutputImage(
-        dirPath + "/tmp_border_" + fileNameRoot + ".png", clr);
-} catch (IOException e) {
-    System.err.println("ERROR: " + e.getMessage());
-}       
+        try {
+            System.out.println("inSkyPoints.size()=" + inSkyPoints.size());
+            System.out.println("nonSkyBorderPoints.size()=" + nonSkyBorderPoints.size());
+            ImageExt clr = (ImageExt) img.copyImage();
+            ImageIOHelper.addToImage(inSkyPoints, 0, 0, clr, 255, 0, 0);
+            ImageIOHelper.addToImage(nonSkyBorderPoints, 0, 0, clr, 0, 0, 255);
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/tmp_border_" + fileNameRoot + ".png", clr);
+        } catch (IOException e) {
+            System.err.println("ERROR: " + e.getMessage());
+        }   
         
     }
     
