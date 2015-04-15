@@ -166,7 +166,7 @@ public class SkylineTestImageMaker {
     
     private void writeLDADataFile(String fileName) throws Exception {
         
-        boolean write24Neighbors = false;                        
+        boolean write24Neighbors = true;                        
 
         int idx = fileName.lastIndexOf(".");
         String fileNameRoot = fileName.substring(0, idx);

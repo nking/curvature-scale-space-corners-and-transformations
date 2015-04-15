@@ -93,52 +93,59 @@ Task 1:
        15 min + (16 * 15 min).  minimum = 4 hours, maximum 8 hours
   
    amount of time used:
-       5.5 hours
+       1 day
 
    state of completion: complete
 
    comments:
+      re-opened to make very detailed corrections
               
 ---------------------------------------------------------------------
 Task 2:
-    goal: explore the parameters to be fit to identify the border.
-          for example to examine contrast change at the border:
-             (1)a. calculate for all sky pixels the standard 
-                   deviation from the mean for contrast
-                b. calculate for sky pixels in blocks of 25, the standard 
-                   deviation from the mean for contrast
-                   and then take the average and standard
-                   deviation of that
-                c. calculate for sky pixels in blocks of 9, the standard 
-                   deviation from the mean for contrast
-                   and then take the average and standard
-                   deviation of that
-             (2)a. calculate the contrast for the for border pixels singly.
-                   Here the border pixels are the non-sky pixels 
-                   adjacent to the sky.
-                   Since the algorithm looks for border pixels one by
-                   one, an aggregation is not determined here.
-             The plots to make would be:
-                   1. ((all sky contrast) - (border contrast))/(all sky standard deviation) VS other parameter
-                   2. ((avg 25 block sky contrast) - (border contrast))/(standard deviation of 25 block sky contrast) VS other parameter
-                   3. ((avg 8 block sky contrast) - (border contrast))/(standard deviation of 8 block sky contrast) VS other parameter
-
-             If wanted to use LDA here, could label those groups of points as "border" and then
-             make another group of points called "not border" that are single sky points located 
-             at least 2 pixels from the border.
-
-             Then LDA would be used to find the best descriptive set of parameters and more...
-[paused writing here]
+    goal: Explore the parameters to be fit to identify the border.
+          Use LDA to find the best separability and to see if there
+          is a multiplicative relationship between variables.
 
    details:  
+          For the skyline, making 2 sets of data points: those
+          about 3 pixels above the skyline and those 1 pixel below
+          in order to look at the contrast and color of
+          the sky versus non-sky pixels.
+          Note that the test image do not have images with sky at
+          the bottom and foreground on the top of the image, so using
+          the general y-3 and y+1 is fine.
 
-   time estimate: 
+          Parameters that appear to be the strongest changing at the
+          skyline are contrast, hue and blue or red depending on
+          whether the sky is blue or red.
+
+          The properties to explore are constructed similarly to how 
+          they are constructed during the growing of pixels in findClouds.
+          For a sky pixel in which a neighbor is being tested for
+          contrast and color which indicates that it is also sky
+          or is a border skyline pixel, the property tested for 
+          contrast is 
+          ((average contrast of its neighbor sky pixels) 
+              - (contrast of candidate pixel)) /
+              (standard deviation of contrast in the neighbor sky pixels)
+          where neighbors is defined as the surrounding 8 sky pixels or 
+          surrounding 24.
+
+   time estimate: roughly max of 2 days.
   
    amount of time used:
+       2 days
 
-   state of completion:
+   state of completion: complete
 
    comments:
+       can clearly see separation for red skies using contrast and hue
+       though using contrast and red would be nearly as good.
+       can clearly see separation for blue skies using contrast and hue
+       though using contrast and blue would be nearly as good.
+       both methods require the condition that contrast and color diff
+       be larger than the standard deviations in order to be a candidate
+       border pixel.
               
 ------------------------------------------------------------------------
 Task 3:
