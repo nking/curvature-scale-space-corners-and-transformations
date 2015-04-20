@@ -2,7 +2,7 @@ package algorithms;
 
 /**
  * a sort for integers in range 0 to k that has an O(N) runtime at the expense 
- * of space.
+ * of space where N is the maximum of (size of array to be sorted, maximum value in array).
  * To use this algorithm:
  *    (1) numbers must be positive.
  *    (2) the maximum number in the array should probably not be much greater

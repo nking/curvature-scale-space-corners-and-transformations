@@ -74,7 +74,7 @@ Story: Near optimization of SkylineExtractor's findClouds method.
 
 ---------------------------------------------------------------------
 Task 1:
-    goal: Create the expected sky-only images from the test images to
+    goal: Create the expected sky-only masks from the test images to
           compare the results with.
 
     details:  
@@ -102,7 +102,7 @@ Task 1:
               
 ---------------------------------------------------------------------
 Task 2:
-    goal: Explore the parameters to be fit to identify the border.
+   goal:  Explore the parameters to be fit to identify the border.
           Use LDA to find the best separability and to see if there
           is a multiplicative relationship between variables.
 
@@ -139,17 +139,27 @@ Task 2:
    state of completion: complete
 
    comments:
-       can clearly see separation for red skies using contrast and hue
-       though using contrast and red would be nearly as good.
-       can clearly see separation for blue skies using contrast and hue
-       though using contrast and blue would be nearly as good.
-       both methods require the condition that contrast and color diff
-       be larger than the standard deviations in order to be a candidate
-       border pixel.
-              
+       LDA shows that neither the blue nor the red are separable by
+       the chosen features as a single global filter to apply to either
+       any red sky image or any blue sky image.
+
+       One can see in the images that there is a jump in contrast and
+       in blue or red depending on sky color at the boundary of the
+       skyline, but the amount of change in the contrast or color is
+       not easily seen as a single constant coefficient times other 
+       properties.  That's understandable as the sky illumination 
+       from the sun and the subsequent color dependent illumination 
+       of the foreground horizon is not a simple function of intensity 
+       (or even exponential of the intensity or power of the intensity 
+       because of multiple scatterings and the albedo (index of 
+       refraction) of the foreground skyline).
+
+       Therefore, the existing approach and its refinement in Task 3
+       is the better way to proceed.
+
 ------------------------------------------------------------------------
 Task 3:
-    goal: design the passing and use of the clause coefficients and 
+    goal: Design the passing and use of the clause coefficients and 
           clauses.
 
     details:  
@@ -166,10 +176,10 @@ Task 3:
        there may be an OR needed for blue and red skies.  
 [paused writing here...]
 
-       since blue vs red skies is the only conditional logic, may need
+       Since blue vs red skies is the only conditional logic, may need
        to separate the red and blue sky tests because trying to improve 
        parameters in the downhill simplex would not be correct if the
-       parameters don't affect the solution.
+       parameters don't affect the other solution.
 
        initial look at parameters did not show any other 'OR' logic.
 

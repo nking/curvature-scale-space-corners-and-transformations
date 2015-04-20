@@ -415,10 +415,10 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(),
             }
         }
         
-        if (nMaxGroupN > 10000000) {
+        int maxValue = MiscMath.findMax(groupN);
+        if ((maxValue > groupN.length) || (nMaxGroupN > 10000000)) {
             MultiArrayMergeSort.sortByDecr(groupN, groupIndexes);
         } else {
-            int maxValue = MiscMath.findMax(groupN);
             CountingSort.sortByDecr(groupN, groupIndexes, maxValue);
         }
         

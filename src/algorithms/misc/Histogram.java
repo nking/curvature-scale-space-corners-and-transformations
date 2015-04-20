@@ -766,7 +766,7 @@ public class Histogram {
             idx++;
         }
         
-        if (cMax > 10000000) {
+        if ((cMax > c.length) || (cMax > 10000000)) {
             MultiArrayMergeSort.sortByDecr(c, v);
         } else {
             CountingSort.sortByDecr(c, v, cMax);
@@ -811,7 +811,7 @@ public class Histogram {
             idx++;
         }
         
-        if (cMax > 10000000) {
+        if ((cMax > c.length) || (cMax > 10000000)) {
             MultiArrayMergeSort.sortByDecr(c, v);
         } else {
             CountingSort.sortByDecr(c, v, cMax);
@@ -855,7 +855,7 @@ public class Histogram {
             idx++;
         }
         
-        if (vMax > 10000000) {
+        if ((vMax > v.length) || (vMax > 10000000)) {
             MultiArrayMergeSort.sortByDecr(v, c);
         } else {
             CountingSort.sortByDecr(v, c, vMax);
@@ -900,7 +900,7 @@ public class Histogram {
             idx++;
         }
         
-        if (vMax > 10000000) {
+        if ((vMax > v.length) || (vMax > 10000000)) {
             MultiArrayMergeSort.sortByDecr(v, c);
         } else {
             CountingSort.sortByDecr(v, c, vMax);
