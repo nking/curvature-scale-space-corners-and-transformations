@@ -2196,6 +2196,9 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
      *        ((Math.abs(contrast)/skyStDevContrast) > 1.5*coeff0*coeff1) &&
      *        ((Math.abs(colorDiff)/1.0) > coeff3) && 
      *        ((Math.abs(colorDiff)/skyStDevcolorDiff) > 1.5*coeff3*coeff4))
+     *    (Note though that the use of 'coeff0*coeff1' has to be handled by the
+     *    invoking code.  The ANDedClauses would actually just receive a
+     *    coeff2, unaware that is it 'coeff0*coeff1' to the invoker).
      * 
      * Then each ANDedClauses is 'OR'-ed with one another, trying to quickly
      * act if an ANDedClauses[i] evaluates to 'T'.  This is disjunctive 
@@ -2209,7 +2212,6 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
      *      break
      *   
      *  a pixel making it to here looks like a sky pixel.
-     * 
      * </pre>
      * 
      * @param skyPoints
@@ -2355,9 +2357,11 @@ log.fine("FILTER 01");
                         && (colorDiffV > 15*skyStDevColorDiff)
                         && ((diffCIEX > 0.03) || (diffCIEY > 0.03))
                         ) {
-                        ArrayPair yellowGreenOrange = cieC.getYellowishGreenThroughOrangePolynomial();
+                        ArrayPair yellowGreenOrange = 
+                            cieC.getYellowishGreenThroughOrangePolynomial();
                         if (pInPoly.isInSimpleCurve(cieX, cieY,
-                            yellowGreenOrange.getX(), yellowGreenOrange.getY(),yellowGreenOrange.getX().length)) {
+                            yellowGreenOrange.getX(), yellowGreenOrange.getY(),
+                            yellowGreenOrange.getX().length)) {
                             isSolarYellow = true;
                         }
                     }
@@ -2381,6 +2385,8 @@ log.fine("FILTER 02");
 log.fine("FILTER 03");
                 } else {
                     
+                    // evaluate clauses that evaluate to 'T' when the pixel 
+                    // looks like a border (non-sky) pixel
                     boolean isNotSky = false;
                     
                     for (ANDedClauses clause : clauses) {
