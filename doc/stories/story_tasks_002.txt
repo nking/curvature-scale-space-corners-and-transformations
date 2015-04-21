@@ -183,6 +183,21 @@ Task 3:
        note that this isn't a constraint satisfaction problem because 
        the coefficients need to be determined and refined.
 
+       If the simplest of AND only clauses does not fit well, will use
+       Disjunctive Normal Form, that is ORs of ANDs in order to rewrite
+       and simplify the logic currently in findClouds() conditional logic.
+       A class such as ANDedClauses could contain
+          SKYCONDITIONAL[] skyConditional
+          PARAM[] param1
+          PARAM[] param2
+          COMPARISON[] comp
+          float[] coefficients
+          holding all of the logic needed for the and clause using structure
+          (((param1[i]/param2[i]) lt or gt coeff[i]) 
+              && ((param1[i+1]/param2[i+1]) lt or gt coeff[i+1]))
+      Then, findClouds2() would use the given ANDedClauses[] clauses in an || chain.
+
+
     time estimate: 
   
     amount of time used:
