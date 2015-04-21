@@ -5,7 +5,6 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
 import algorithms.misc.MiscMath;
-import algorithms.util.ArrayPair;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -14,7 +13,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -139,13 +138,13 @@ public class SkylineTestImageMaker {
             "arches.jpg",
             "stinson_beach.jpg",
             "cloudy_san_jose.jpg",            
-            /*"stonehenge.jpg",
+            "stonehenge.jpg",
             "norwegian_mtn_range.jpg",
             "halfdome.jpg",
             "costa_rica.jpg",
             "new-mexico-sunrise_w725_h490.jpg",
             "arizona-sunrise-1342919937GHz.jpg",
-            "sky_with_rainbow.jpg",*/
+            "sky_with_rainbow.jpg",
             //"sky_with_rainbow2.jpg",
             //"30.jpg",
             "arches_sun_01.jpg",
@@ -223,17 +222,17 @@ public class SkylineTestImageMaker {
             (contrast of adjacent non border pixel)
             /(standard deviation of 24 neighbor contrast)
         */
-        float borderDiff24Contrast;
+        float contrast24;
 
         /*
         same, but for the 8 surrounding sky pixel neighbors)
         */
-        float borderDiff8Contrast;
+        float contrast8;
 
         /*
         same, but for the border sky pixel alone)
         */
-        float borderDiff1Contrast;
+        float contrast1;
 
         double rDivB = allSkyColor.getAvgRed() / allSkyColor.getAvgBlue();
         boolean skyIsRed = (rDivB > 1);
@@ -323,17 +322,15 @@ public class SkylineTestImageMaker {
 
                 StringBuilder sb = new StringBuilder();
 
-                borderDiff24Contrast = (colors24.getAvgContrast() - 
-                    colors24.calcContrastToOther(nonSkyBorderLuma));
-                borderDiff24Contrast /= colors24.getStdDevContrast();
+                contrast24 = colors24.calcContrastToOther(nonSkyBorderLuma);
+                contrast24 /= colors24.getStdDevContrast();
 
-                borderDiff8Contrast = (colors8.getAvgContrast() - 
-                    colors8.calcContrastToOther(nonSkyBorderLuma));
-                borderDiff8Contrast /= colors8.getStdDevContrast();
+                contrast8 = colors8.calcContrastToOther(nonSkyBorderLuma);
+                contrast8 /= colors8.getStdDevContrast();
 
-                borderDiff1Contrast =
+                contrast1 =
                     (img.getLuma(x, y) - nonSkyBorderLuma)/nonSkyBorderLuma;                    
-                borderDiff1Contrast /= allSkyColor.getStdDevContrast();
+                contrast1 /= allSkyColor.getStdDevContrast();
 
                 // use the LDA1 and LDA2 transformations and a filter to remove
                 // points in the sky region of LDA plot and plot later to
@@ -446,40 +443,40 @@ public class SkylineTestImageMaker {
                 sb.append("1,");
                 
                 if (write24Neighbors) {
-                    sb.append(Float.toString(borderDiff24Contrast));
+                    sb.append(Float.toString(contrast24));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff24Hue));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff24BlueOrRed));
                     
-                    sb.append(",");
+                    /*sb.append(",");
                     sb.append(Float.toString((float)diffCIEX24));
                     sb.append(",");
                     sb.append(Float.toString((float)diffCIEY24));
                     sb.append(",");
-                    sb.append(Float.toString(borderDiff24CIETheta));                    
+                    sb.append(Float.toString(borderDiff24CIETheta));*/                    
                 } else {
-                    sb.append(Float.toString(borderDiff8Contrast));
+                    sb.append(Float.toString(contrast8));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff8Hue));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff8BlueOrRed));
                     
-                    sb.append(",");
+                    /*sb.append(",");
                     sb.append(Float.toString((float)diffCIEX8));
                     sb.append(",");
                     sb.append(Float.toString((float)diffCIEY8));
                     sb.append(",");
-                    sb.append(Float.toString(borderDiff8CIETheta));
+                    sb.append(Float.toString(borderDiff8CIETheta));*/
                 }
-                sb.append(",");
+                /*sb.append(",");
                 sb.append(Float.toString(nonSkyBorderBlue));
                 sb.append(",");
                 sb.append(Float.toString(nonSkyBorderRed));
                 sb.append(",");
                 sb.append(Float.toString(nonSkyBorderHue));
                 sb.append(",");
-                sb.append(Float.toString(nonSkyBorderLuma));
+                sb.append(Float.toString(nonSkyBorderLuma));*/
 
                 sb.append("\n");
 
@@ -487,7 +484,7 @@ public class SkylineTestImageMaker {
                 
                 // write the aggregated subset
                 if (write24Neighbors) {
-                    if (Math.abs(borderDiff24Contrast) < 10) {
+                    if (Math.abs(contrast24) < 10) {
                         //if ((Math.abs(borderDiff24Contrast) > 1) && (Math.abs(borderDiff24BlueOrRed) > 1)) {
                             if (skyIsRed) {
                                 redSkiesSubsetWriter.write(sb.toString());
@@ -497,7 +494,7 @@ public class SkylineTestImageMaker {
                         //}
                     }
                 } else {
-                    if (Math.abs(borderDiff8Contrast) < 10) {
+                    if (Math.abs(contrast8) < 10) {
                         //if ((Math.abs(borderDiff8Contrast) > 1) && (Math.abs(borderDiff8BlueOrRed) > 1)) {
                             if (skyIsRed) {
                                 redSkiesSubsetWriter.write(sb.toString());
@@ -533,17 +530,15 @@ public class SkylineTestImageMaker {
 
                 sb = new StringBuilder();
 
-                borderDiff24Contrast = (colors24.getAvgContrast() - 
-                    colors24.calcContrastToOther(skyNearbyLuma));
-                borderDiff24Contrast /= colors24.getStdDevContrast();
+                contrast24 = colors24.calcContrastToOther(skyNearbyLuma);
+                contrast24 /= colors24.getStdDevContrast();
 
-                borderDiff8Contrast = (colors8.getAvgContrast() - 
-                    colors8.calcContrastToOther(skyNearbyLuma));
-                borderDiff8Contrast /= colors8.getStdDevContrast();
+                contrast8 = colors8.calcContrastToOther(skyNearbyLuma);
+                contrast8 /= colors8.getStdDevContrast();
 
-                borderDiff1Contrast =
+                contrast1 =
                     (img.getLuma(x, y) - skyNearbyLuma)/skyNearbyLuma;                    
-                borderDiff1Contrast /= allSkyColor.getStdDevContrast();
+                contrast1 /= allSkyColor.getStdDevContrast();
 
                 if (skyIsRed) {
 
@@ -622,34 +617,36 @@ public class SkylineTestImageMaker {
                 sb.append("2,");
                 
                 if (write24Neighbors) {
-                    sb.append(Float.toString(borderDiff24Contrast));
+                    sb.append(Float.toString(contrast24));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff24Hue));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff24BlueOrRed));
                     
+                    /*
                     sb.append(",");
                     sb.append(Float.toString((float) diffCIEX24));
                     sb.append(",");
                     sb.append(Float.toString((float) diffCIEY24));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff24CIETheta));
-    
+                    */
                 } else {
-                    sb.append(Float.toString(borderDiff8Contrast));
+                    sb.append(Float.toString(contrast8));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff8Hue));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff8BlueOrRed));
-                    
+                    /*
                     sb.append(",");
                     sb.append(Float.toString((float) diffCIEX8));
                     sb.append(",");
                     sb.append(Float.toString((float) diffCIEY8));
                     sb.append(",");
                     sb.append(Float.toString(borderDiff8CIETheta));
-                    
+                    */
                 }
+                /*
                 sb.append(",");
                 sb.append(Float.toString(skyNearbyBlue));
                 sb.append(",");
@@ -658,7 +655,7 @@ public class SkylineTestImageMaker {
                 sb.append(Float.toString(skyNearbyHue));
                 sb.append(",");
                 sb.append(Float.toString(skyNearbyLuma));
-
+                */
                 sb.append("\n");
                 
                 writer.write(sb.toString());
@@ -666,7 +663,7 @@ public class SkylineTestImageMaker {
                 
                 // write the aggregated subset
                 if (write24Neighbors) {
-                    if (Math.abs(borderDiff24Contrast) < 10) {
+                    if (Math.abs(contrast24) < 10) {
                         //if (!((Math.abs(borderDiff24Contrast) > 1) && (Math.abs(borderDiff24BlueOrRed) > 1))) {
                             if (skyIsRed) {
                                 redSkiesSubsetWriter.write(sb.toString());
@@ -676,7 +673,7 @@ public class SkylineTestImageMaker {
                         //}
                     }
                 } else {
-                    if (Math.abs(borderDiff8Contrast) < 10) {
+                    if (Math.abs(contrast8) < 10) {
                         //if (!((Math.abs(borderDiff8Contrast) > 1) && (Math.abs(borderDiff8BlueOrRed) > 1))) {
                             if (skyIsRed) {
                                 redSkiesSubsetWriter.write(sb.toString());

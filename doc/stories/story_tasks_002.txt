@@ -160,7 +160,7 @@ Task 2:
 ------------------------------------------------------------------------
 Task 3:
     goal: Design the passing and use of the clause coefficients and 
-          clauses.
+       clauses.
 
     details:  
        findClouds needs to accept as arguments the coefficients of
@@ -174,14 +174,11 @@ Task 3:
 
        The logic needed should be possible as ANDs of the clauses, but
        there may be an OR needed for blue and red skies.  
-[paused writing here...]
-
-       Since blue vs red skies is the only conditional logic, may need
-       to separate the red and blue sky tests because trying to improve 
-       parameters in the downhill simplex would not be correct if the
-       parameters don't affect the other solution.
-
-       initial look at parameters did not show any other 'OR' logic.
+    
+       For now, will plan to pass all coefficients to findClouds, include 
+       an 'or' within it for blue or red skies, and then use 2 different
+       downhill simplexes to select the coefficients depending upon
+       whether the sky is primarily red or blue.
 
        note that this isn't a constraint satisfaction problem because 
        the coefficients need to be determined and refined.
@@ -230,7 +227,9 @@ Task 5:
               
 ---------------------------------------------------------------------
 Task 6:
-    goal: 
+    goal: find more test images, especially those described as current
+          caveats that would need an alternate way of finding the seed
+          sky points.
 
     details:  
 

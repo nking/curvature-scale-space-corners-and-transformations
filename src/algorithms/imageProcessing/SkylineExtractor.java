@@ -1885,14 +1885,13 @@ log.fine("FILTER 01");
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
 
 log.fine("FILTER 02");
-
                 } else if (
                     (skyStDevContrast != 0.)
                     && (Math.abs(contrastV) > 30.*skyStDevContrast)
                     ) {
  
 log.fine("FILTER 03");
-                        continue;
+                    continue;
                 } else if (
                     (skyStDevContrast != 0.)
                     && ((Math.abs(contrastV) > 0.5) && (Math.abs(contrastV) > 1.5*skyStDevContrast))
@@ -2172,11 +2171,358 @@ log.fine("FILTER 29");
     }
 
 private boolean check(int vX, int xOffset, int vY, int yOffset) {
-    if (((vX + xOffset)>=97) && ((vX + xOffset)<=97) && ((vY + yOffset)==172)) {
+    /*if (((vX + xOffset)>=97) && ((vX + xOffset)<=97) && ((vY + yOffset)==172)) {
         return true;
-    }
+    }*/
     return false;
 }
+
+    public enum PARAMS {
+        ABSOLUTE_CONTRAST,
+        ABSOLUTE_DIFF_BLUE_OR_RED,
+        STDEV_CONTRAST,
+        STDEV_BLUE_OR_RED,
+        DIFF_CIEX,
+        DIFF_CIEY,
+        STDEV_CIEX,
+        STDEV_CIEY,
+        INT_ONE,
+        
+        /*ABSOLUTE_BLUE_OR_RED,
+        ABSOLUTE_DIFF_HUE,
+        ABSOLUTE_DIFF_CIEX,
+        ABSOLUTE_DIFF_CIEY,
+        CONTRAST,
+        BLUE_OR_RED,
+        HUE,
+        CIEX,
+        CIEY,
+        DIFF_BLUE_OR_RED,
+        DIFF_HUE,
+        STDEV_HUE,*/
+    }
+    
+    public enum COMPARISON {
+        LESS_THAN,
+        GREATER_THAN
+    }
+    
+    public enum SKYCONDITIONAL {
+        ALL, BLUE, RED
+    }
+    
+    /**
+     * given seed skyPoints to start from, use conservative limits on contrast
+     * and color difference to add neighbors to skyPoints.  The conservative
+     * limits are meant to help avoid overrunning the skyline for low
+     * contrast such as a hazy sky and snow covered peaks, for example.
+     * The conservative limits do not necessarily find all sky points.
+     * 
+     * <pre>
+     * The contrast and color filters are supplied by params1, params2, gtOrLT,
+     * and coefficients of format:
+     *   (params1[i]/params2[i]) gtOrLT[i] coefficients[i]
+     * </pre>
+     * 
+     * @param skyPoints
+     * @param originalColorImage
+     * @param mask
+     */
+    void findClouds2(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
+        ImageExt originalColorImage, GreyscaleImage mask, 
+        PARAMS[] params1, PARAMS[] params2, COMPARISON[] gtOrLT, 
+        float[] coefficients, SKYCONDITIONAL[] skyConditional) {
+        
+        int maskWidth = mask.getWidth();
+        int maskHeight = mask.getHeight();
+        
+        ArrayDeque<PairInt> cloudQueue = new ArrayDeque<PairInt>(skyPoints.size());
+        for (PairInt skyPoint : skyPoints) {
+            cloudQueue.add(skyPoint);
+        }
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        visited.add(cloudQueue.peek());
+              
+        int xOffset = mask.getXRelativeOffset();
+        int yOffset = mask.getYRelativeOffset();
+        
+        GroupPixelColors allSkyColor = new GroupPixelColors(skyPoints,
+            originalColorImage, xOffset, yOffset);
+        
+        double rDivB = allSkyColor.getAvgRed() / allSkyColor.getAvgBlue();
+        boolean skyIsRed = (rDivB > 1);
+       
+        log.info("==> r/b=" + rDivB
+            + " redStdev=" + allSkyColor.getStdDevRed()
+            + " blueStDev=" + allSkyColor.getStdDevBlue());
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        PointInPolygon pInPoly = new PointInPolygon();
+        
+        int[] dxs = new int[]{-1,  0, 1, 0};
+        int[] dys = new int[]{ 0, -1, 0, 1};
+                
+        while (!cloudQueue.isEmpty()) {
+
+            PairInt uPoint = cloudQueue.poll();
+                        
+            int uX = uPoint.getX();
+            int uY = uPoint.getY();
+        
+            //(1 + frac)*O(N) where frac is the fraction added back to stack
+            for (int k = 0; k < dxs.length; k++) {
+                            
+                int vX = uX + dxs[k];
+                int vY = uY + dys[k];
+                
+                if ((vX < 0) || (vX > (maskWidth - 1)) || (vY < 0) || 
+                    (vY > (maskHeight - 1))) {
+                    continue;
+                }
+            
+                PairInt vPoint = new PairInt(vX, vY);
+                
+                if (visited.contains(vPoint) || skyPoints.contains(vPoint) ||
+                    excludePoints.contains(vPoint)) {
+                    continue;
+                }
+
+                visited.add(vPoint);
+                
+                Set<PairInt> neighbors = getThe8NeighborPixelsWithin(
+                    uPoint, skyPoints, maskWidth, maskHeight);             
+                
+                neighbors.add(uPoint);
+                
+                GroupPixelColors localSky = new GroupPixelColors(neighbors, 
+                    originalColorImage, xOffset, yOffset);
+                
+                int vIdx = originalColorImage.getInternalIndex(vX + xOffset, 
+                    vY + yOffset);
+
+                int rV = originalColorImage.getR(vIdx);
+                int gV = originalColorImage.getG(vIdx);
+                int bV = originalColorImage.getB(vIdx);
+
+                float totalRGBV = rV + gV + bV;
+                
+                float localSkyLuma = localSky.getAverageLuma();
+                
+                float lumaV = originalColorImage.getLuma(vIdx);
+        
+                double contrastV = (localSkyLuma - lumaV)/lumaV;
+
+                double colorDiffV = localSky.calcColorDiffToOther(rV, gV, bV);
+
+                double skyStDevContrast = localSky.getStdDevContrast();
+
+                double skyStDevColorDiff = localSky.getStdDevColorDiff();
+                 
+ //TODO: this needs adjustments...
+                float rPercentV = (float)rV/totalRGBV;
+                float gPercentV = (float)gV/totalRGBV;
+                float bPercentV = (float)bV/totalRGBV;
+                
+                float cieX = originalColorImage.getCIEX(vIdx);
+                float cieY = originalColorImage.getCIEY(vIdx);
+                double diffCIEX = Math.abs(cieX - localSky.getAverageCIEX());
+                double diffCIEY = Math.abs(cieY - localSky.getAverageCIEY());
+                
+                float saturation = originalColorImage.getSaturation(vIdx);
+                
+                boolean isBrown = (Math.abs(rPercentV - 0.5) < 0.4)
+                    && (Math.abs(gPercentV - 0.32) < 0.1)
+                    && (Math.abs(bPercentV - 0.17) < 0.1);
+
+if (check(vX, xOffset, vY, yOffset)) {
+log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
++ " colordiff=" + colorDiffV + " div=" + (colorDiffV/skyStDevColorDiff)
++ " diffciex=" + diffCIEX + " div=" + (diffCIEX/localSky.getStdDevCIEX())
++ " diffciey=" + diffCIEY + " div=" + (diffCIEY/localSky.getStdDevCIEY())
++ " r=" + rV + " g=" + gV + " b=" + bV + " bPercentV=" + bPercentV
+);
+     
+}
+
+                if (isBrown) {
+                    
+                    // trying to skip over foreground such as land or sunset + water
+                    
+                    if ((colorDiffV > 15*skyStDevColorDiff) && (saturation < 0.5)) {
+                        
+                        if ((saturation <= 0.4) && (colorDiffV > 50*skyStDevColorDiff) 
+                            ) {
+log.fine("FILTER 00");
+                            continue;
+                        }
+                         if ((saturation <= 0.4) && 
+                            (Math.abs(contrastV) > 10.*Math.abs(skyStDevContrast))
+                            ) {
+log.fine("FILTER 01");                                                        
+                            continue;
+                        }
+                    }
+                }
+                
+                boolean isSolarYellow = false;
+                if (skyIsRed) {
+                    if ((skyStDevContrast != 0.) && (contrastV > 0.01) 
+                        && (colorDiffV > 15*skyStDevColorDiff)
+                        && ((diffCIEX > 0.03) || (diffCIEY > 0.03))
+                        ) {
+                        ArrayPair yellowGreenOrange = cieC.getYellowishGreenThroughOrangePolynomial();
+                        if (pInPoly.isInSimpleCurve(cieX, cieY,
+                            yellowGreenOrange.getX(), yellowGreenOrange.getY(),yellowGreenOrange.getX().length)) {
+                            isSolarYellow = true;
+                        }
+                    }
+                }
+                
+                if ( // no contrast or color change, should be sky
+                    (Math.abs(contrastV) < 0.015)
+                    && (colorDiffV < 10)
+                    && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
+                    // this is a sky point
+                    
+log.fine("FILTER 02");
+                } else if (isSolarYellow) {
+                    // this is a sky point
+log.fine("FILTER 03");
+                } else {
+                    
+                    boolean isNotSky = false;
+                    
+                    for (int i = 0; i < params1.length; i++) {
+                        
+                        float param1;
+                        
+                        switch(params1[i]) {
+                            case ABSOLUTE_CONTRAST:
+                                param1 = (float)Math.abs(contrastV);
+                                break;
+                            case ABSOLUTE_DIFF_BLUE_OR_RED:
+                                param1 = (float)Math.abs(colorDiffV);
+                                break;
+                            case STDEV_CONTRAST:
+                                param1 = (float)skyStDevContrast;
+                                break;
+                            case STDEV_BLUE_OR_RED:
+                                param1 = (float)skyStDevColorDiff;
+                                break;
+                            case DIFF_CIEX:
+                                param1 = (float)diffCIEX;
+                                break;
+                            case DIFF_CIEY:
+                                param1 = (float)diffCIEY;
+                                break;
+                            case STDEV_CIEX:
+                                param1 = localSky.stdDevCIEX;
+                                break;
+                            case STDEV_CIEY:
+                                param1 = localSky.stdDevCIEY;
+                                break;
+                            case INT_ONE:
+                                param1 = 1.0f;
+                                break;
+                            default:
+                                param1 = 1.0f;
+                        }
+                        
+                        float param2;
+                        
+                        switch(params2[i]) {
+                            case ABSOLUTE_CONTRAST:
+                                param2 = (float)Math.abs(contrastV);
+                                break;
+                            case ABSOLUTE_DIFF_BLUE_OR_RED:
+                                param2 = (float)Math.abs(colorDiffV);
+                                break;
+                            case STDEV_CONTRAST:
+                                param2 = (float)skyStDevContrast;
+                                break;
+                            case STDEV_BLUE_OR_RED:
+                                param2 = (float)skyStDevColorDiff;
+                                break;
+                            case DIFF_CIEX:
+                                param2 = (float)diffCIEX;
+                                break;
+                            case DIFF_CIEY:
+                                param2 = (float)diffCIEY;
+                                break;
+                            case STDEV_CIEX:
+                                param2 = localSky.stdDevCIEX;
+                                break;
+                            case STDEV_CIEY:
+                                param2 = localSky.stdDevCIEY;
+                                break;
+                            case INT_ONE:
+                                param2 = 1.0f;
+                                break;
+                            default:
+                                param2 = 1.0f;
+                        }
+                               
+                        float coeff = coefficients[i];
+                        
+                        if (skyConditional[i].ordinal() == SKYCONDITIONAL.ALL.ordinal()) {
+                            if (gtOrLT[i].ordinal() == COMPARISON.GREATER_THAN.ordinal()) {
+                                if ((param1 / param2) > coeff) {
+                                    isNotSky = true;
+                                    break;
+                                }
+                            } else {
+                                if ((param1 / param2) < coeff) {
+                                    isNotSky = true;
+                                    break;
+                                }
+                            }
+                        } else if ((skyConditional[i].ordinal() == 
+                            SKYCONDITIONAL.RED.ordinal()) && skyIsRed) {
+                            if (gtOrLT[i].ordinal() == COMPARISON.GREATER_THAN.ordinal()) {
+                                if ((param1 / param2) > coeff) {
+                                    isNotSky = true;
+                                    break;
+                                }
+                            } else {
+                                if ((param1 / param2) < coeff) {
+                                    isNotSky = true;
+                                    break;
+                                }
+                            }
+                        } else if ((skyConditional[i].ordinal() == 
+                            SKYCONDITIONAL.BLUE.ordinal()) && !skyIsRed) {
+                            if (gtOrLT[i].ordinal() == COMPARISON.GREATER_THAN.ordinal()) {
+                                if ((param1 / param2) > coeff) {
+                                    isNotSky = true;
+                                    break;
+                                }
+                            } else {
+                                if ((param1 / param2) < coeff) {
+                                    isNotSky = true;
+                                    break;
+                                }
+                            }
+                        }                        
+                    }
+                    
+                    if (isNotSky) {
+                        continue;
+                    }
+                }
+                
+                skyPoints.add(vPoint);
+
+                cloudQueue.add(vPoint);
+            }
+        }
+ 
+        for (PairInt p : skyPoints) {
+            int x = p.getX();
+            int y = p.getY();
+            mask.setValue(x, y, 0);
+        }
+    }
    
     private GroupPixelColors[] partitionInto3ByColorDifference(Set<PairInt> skyPoints, 
         ImageExt originalColorImage, int xOffset, int yOffset, int[] outputCounts) {
