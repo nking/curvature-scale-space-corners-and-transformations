@@ -155,7 +155,8 @@ Task 2:
        refraction) of the foreground skyline).
 
        Therefore, the existing approach and its refinement in Task 3
-       is the better way to proceed.
+       is the better way to proceed, though this can be revisited when
+       refined features have been derived.
 
 ------------------------------------------------------------------------
 Task 3:
@@ -165,7 +166,7 @@ Task 3:
     details:  
        findClouds needs to accept as arguments the coefficients of
        clauses and the clauses. 
-       A complete clause fitting all needed is:
+       A complete clause can be:
            ((param1/param2)  LTorGT coeff)  where param2 can be a '1'
 
        It also needs a way of knowing that param1 is color_point - color_sky,
@@ -173,36 +174,40 @@ Task 3:
        will be hard wired into the method and documented.
 
        The logic needed should be possible as ANDs of the clauses, but
-       there may be an OR needed for blue and red skies.  
+       there may be an OR needed for blue and red skies, for example, or
+       cluster of logic to create filters.
     
-       For now, will plan to pass all coefficients to findClouds, include 
-       an 'or' within it for blue or red skies, and then use 2 different
-       downhill simplexes to select the coefficients depending upon
-       whether the sky is primarily red or blue.
-
        note that this isn't a constraint satisfaction problem because 
        the coefficients need to be determined and refined.
 
-       If the simplest of AND only clauses does not fit well, will use
-       Disjunctive Normal Form, that is ORs of ANDs in order to rewrite
-       and simplify the logic currently in findClouds() conditional logic.
-       A class such as ANDedClauses could contain
+       A group of AND logic statements are set into an instance of the class:
+       ANDedClauses:
           SKYCONDITIONAL[] skyConditional
           PARAM[] param1
           PARAM[] param2
           COMPARISON[] comp
           float[] coefficients
-          holding all of the logic needed for the and clause using structure
+       representing for example:
           (((param1[i]/param2[i]) lt or gt coeff[i]) 
               && ((param1[i+1]/param2[i+1]) lt or gt coeff[i+1]))
-      Then, findClouds2() would use the given ANDedClauses[] clauses in an || chain.
 
+       Then the adapted findClouds2 should ue disjunctive normal form logic to
+       process the ANDedClauses[] from an array as 'OR's.
 
-    time estimate: 
+       The summary looks like this:
+           if (is border pix)
+               break
+           else if (is border pix)
+               break
+           else if (is border pix)
+               break
+           a pixel making it to here looks like a sky pixel
+
+    time estimate: max 3 days (including unanticipated changes)
   
-    amount of time used:
+    amount of time used: 2 days so far
 
-    state of completion:
+    state of completion: in progress
 
     comments:
               
@@ -219,7 +224,7 @@ Task 4:
 
    time estimate: 
   
-   amount of time used:
+   amount of time used: half hour so far
 
    state of completion:
 
