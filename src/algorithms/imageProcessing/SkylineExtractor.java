@@ -2198,7 +2198,7 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
      *        ((Math.abs(colorDiff)/skyStDevcolorDiff) > 1.5*coeff3*coeff4))
      *    (Note though that the use of 'coeff0*coeff1' has to be handled by the
      *    invoking code.  The ANDedClauses would actually just receive a
-     *    coeff2, unaware that is it 'coeff0*coeff1' to the invoker).
+     *    coeff2, unaware that is it '1.5*coeff0*coeff1' to the invoker).
      * 
      * Then each ANDedClauses is 'OR'-ed with one another, trying to quickly
      * act if an ANDedClauses[i] evaluates to 'T'.  This is disjunctive 
