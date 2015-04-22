@@ -150,42 +150,14 @@ public class SkylineExtractor {
         if (theta == null) {
             throw new IllegalArgumentException("theta cannot be null");
         }
-        
-        int binFactor = determineBinFactorForSkyMask(theta.getNPixels());
-
-        log.info("binFactor=" + binFactor);
-        
-        Set<PairInt> points = new HashSet<PairInt>();
-        
-        /*TODO:  
-        adjust this algorithm to allow alternate ways of determining the seed 
-        sky points (and excluded points that should not be re-added).  
-        Example case where this is needed here:
-            an image with a foreground large smooth snow field and dark mountain 
-            ranges under a cloudy structured sky.
-            The edge detector w/o changes would probably find the mountain 
-            ranges best in this case, but one would still not know "sky" without
-            GPS or external sensors or assumption of horizontal.
-            **The sun’s position however is learnable from some images and 
-            that would help determine the location of seed sky points correctly.
-            **The scattered and reflected light from the sun and water might be 
-            hard to distinguish. 
-            Will look for a pattern in solar light as a function of distance
-            along the increasing brightness axis.
-            Note that when the sun is near the horizon, the light reaching the
-            camera has been scattered less and so one might be able to make 
-            a simple model of scattering of solar light off of
-            optically thick water w/ consideration for mie and rayleigh 
-            scattering in the atmosphere altering the received source light.
-        */
-        
+       
         RemovedSets removedSets = new RemovedSets();
         
-        GreyscaleImage threshholdedGXY = filterAndExtractSkyFromGradient(
-            originalColorImage, theta, gradientXY, binFactor, points,
+        Set<PairInt> points = createBestSkyMaskPt1(theta, gradientXY, 
+            originalColorImage, edgeSettings, outputSkyCentroid,
             removedSets);
-        
-        if (removedSets == null) {
+       
+        if (points.isEmpty()) {
             
             GreyscaleImage mask = theta.createWithDimensions();
                
@@ -194,23 +166,11 @@ public class SkylineExtractor {
             
             return mask;
         }
+                
+        int nSkyPointsBeforeFindClouds = points.size();
+                    
+        findClouds(points, new HashSet<PairInt>(), originalColorImage, theta);
         
-        //now the coordinates in zeroPointLists are w.r.t. thetaImg
-
-        PerimeterFinder perimeterFinder = new PerimeterFinder();
-        int[] skyRowMinMax = new int[2];
-        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
-        Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(points, 
-            skyRowMinMax, originalColorImage.getWidth(), outputEmbeddedGapPoints);
-        
-        rightAndLowerDownSizingSkyPointCorrections(points, binFactor, 
-            skyRowColRange, skyRowMinMax, originalColorImage,
-            theta.getWidth(), theta.getHeight(),
-            theta.getXRelativeOffset(), theta.getYRelativeOffset());
-
-debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
-"after_downsize_corrections_2");
-
         GreyscaleImage mask = gradientXY.createWithDimensions();
         mask.fill(1);
         for (PairInt p : points) {
@@ -218,17 +178,12 @@ debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRela
             int y = p.getY(); 
             mask.setValue(x, y, 0);
         }
-                
-        int nSkyPointsBeforeFindClouds = points.size();
-        
-        populatePixelExtColors(points, originalColorImage, mask);
-            
-        findClouds(points, new HashSet<PairInt>(), originalColorImage, mask);
 
 try {
     String dirPath = ResourceFinder.findDirectory("bin");
     ImageExt clr = (ImageExt)originalColorImage.copyImage();
-    ImageIOHelper.addToImage(points, mask.getXRelativeOffset(), mask.getYRelativeOffset(), clr);
+    ImageIOHelper.addToImage(points, theta.getXRelativeOffset(), 
+        theta.getYRelativeOffset(), clr);
     ImageIOHelper.writeOutputImage(
         dirPath + "/sky_after_find_clouds_" + outImgNum + ".png", clr);
     outImgNum++;
@@ -270,11 +225,13 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
                 skyIsDarkGrey) :
             new HashSet<PairInt>();
         
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
         // find remaining embedded points
-        skyRowMinMax = new int[2];
+        int[] skyRowMinMax = new int[2];
         Set<PairInt> embeddedPoints = new HashSet<PairInt>();
-        skyRowColRange = perimeterFinder.find(points, skyRowMinMax, 
-            originalColorImage.getWidth(), embeddedPoints);
+        Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(
+            points, skyRowMinMax, originalColorImage.getWidth(), 
+            embeddedPoints);
         
         if (!embeddedPoints.isEmpty()) {
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
@@ -352,6 +309,73 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(),
         imageProcessor.removeSpurs(mask);
    
         return mask;
+    }
+    
+    protected Set<PairInt> createBestSkyMaskPt1(final GreyscaleImage theta,
+        GreyscaleImage gradientXY, ImageExt originalColorImage, 
+        CannyEdgeFilterSettings edgeSettings, PairIntArray outputSkyCentroid,
+        RemovedSets removedSets) {
+        
+        if (theta == null) {
+            throw new IllegalArgumentException("theta cannot be null");
+        }
+        
+        int binFactor = determineBinFactorForSkyMask(theta.getNPixels());
+
+        log.info("binFactor=" + binFactor);
+        
+        /*TODO:  
+        adjust this algorithm to allow alternate ways of determining the seed 
+        sky points (and excluded points that should not be re-added).  
+        Example case where this is needed here:
+            an image with a foreground large smooth snow field and dark mountain 
+            ranges under a cloudy structured sky.
+            The edge detector w/o changes would probably find the mountain 
+            ranges best in this case, but one would still not know "sky" without
+            GPS or external sensors or assumption of horizontal.
+            **The sun’s position however is learnable from some images and 
+            that would help determine the location of seed sky points correctly.
+            **The scattered and reflected light from the sun and water might be 
+            hard to distinguish. 
+            Will look for a pattern in solar light as a function of distance
+            along the increasing brightness axis.
+            Note that when the sun is near the horizon, the light reaching the
+            camera has been scattered less and so one might be able to make 
+            a simple model of scattering of solar light off of
+            optically thick water w/ consideration for mie and rayleigh 
+            scattering in the atmosphere altering the received source light.
+        */
+       
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        GreyscaleImage threshholdedGXY = filterAndExtractSkyFromGradient(
+            originalColorImage, theta, gradientXY, binFactor, points,
+            removedSets);
+        
+        if (threshholdedGXY == null) {
+            
+            return new HashSet<PairInt>();
+        }
+        
+        //now the coordinates in zeroPointLists are w.r.t. thetaImg
+
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        int[] skyRowMinMax = new int[2];
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(points, 
+            skyRowMinMax, originalColorImage.getWidth(), outputEmbeddedGapPoints);
+        
+        rightAndLowerDownSizingSkyPointCorrections(points, binFactor, 
+            skyRowColRange, skyRowMinMax, originalColorImage,
+            theta.getWidth(), theta.getHeight(),
+            theta.getXRelativeOffset(), theta.getYRelativeOffset());
+
+debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"after_downsize_corrections_2");
+           
+        populatePixelExtColors(points, originalColorImage, theta);
+        
+        return points;
     }
     
     public Set<PairInt> combine(List<PairIntArray> points) {
@@ -1739,10 +1763,10 @@ static int outImgNum=0;
      * @param mask
      */
     void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
-        ImageExt originalColorImage, GreyscaleImage mask) {
+        ImageExt originalColorImage, GreyscaleImage thetaImg) {
         
-        int maskWidth = mask.getWidth();
-        int maskHeight = mask.getHeight();
+        int maskWidth = thetaImg.getWidth();
+        int maskHeight = thetaImg.getHeight();
         
         ArrayDeque<PairInt> cloudQueue = new ArrayDeque<PairInt>(skyPoints.size());
         for (PairInt skyPoint : skyPoints) {
@@ -1752,8 +1776,8 @@ static int outImgNum=0;
         Set<PairInt> visited = new HashSet<PairInt>();
         visited.add(cloudQueue.peek());
               
-        int xOffset = mask.getXRelativeOffset();
-        int yOffset = mask.getYRelativeOffset();
+        int xOffset = thetaImg.getXRelativeOffset();
+        int yOffset = thetaImg.getYRelativeOffset();
         
         GroupPixelColors allSkyColor = new GroupPixelColors(skyPoints,
             originalColorImage, xOffset, yOffset);
@@ -2162,12 +2186,7 @@ log.fine("FILTER 29");
                 }
             }
         }
-                
-        for (PairInt p : skyPoints) {
-            int x = p.getX();
-            int y = p.getY();
-            mask.setValue(x, y, 0);
-        }
+         
     }
 
 private boolean check(int vX, int xOffset, int vY, int yOffset) {
@@ -2218,7 +2237,7 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
      * @param originalColorImage
      * @param mask
      */
-    void findClouds2(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
+    void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
         ImageExt originalColorImage, GreyscaleImage mask, 
         ANDedClauses[] clauses) {
         

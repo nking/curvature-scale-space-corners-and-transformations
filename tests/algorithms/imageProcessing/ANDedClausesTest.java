@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import javax.swing.text.html.HTML;
 import junit.framework.TestCase;
 
 /**

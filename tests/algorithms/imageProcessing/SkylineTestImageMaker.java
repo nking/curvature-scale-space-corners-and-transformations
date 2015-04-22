@@ -716,6 +716,85 @@ public class SkylineTestImageMaker {
         
     }
     
+    
+    private void temporaryStartToFindCloudsRefinement() throws Exception {
+        
+        String[] fileNames = new String[] {
+            "brown_lowe_2003_image1.jpg",
+            //"brown_lowe_2003_image1_rot.jpg",
+            //"brown_lowe_2003_image2.jpg",
+            "venturi_mountain_j6_0001.png",
+            //"venturi_mountain_j6_0010.png",
+            "seattle.jpg",
+            "arches.jpg",
+            "stinson_beach.jpg",
+            "cloudy_san_jose.jpg",            
+            "stonehenge.jpg",
+            "norwegian_mtn_range.jpg",
+            "halfdome.jpg",
+            "costa_rica.jpg",
+            "new-mexico-sunrise_w725_h490.jpg",
+            "arizona-sunrise-1342919937GHz.jpg",
+            "sky_with_rainbow.jpg",
+            //"sky_with_rainbow2.jpg",
+            //"30.jpg",
+            "arches_sun_01.jpg",
+            //"stlouis_arch.jpg", 
+            //"contrail.jpg"
+        };
+        
+        for (String fileName : fileNames) {                    
+            temporaryStartToFindCloudsRefinement(fileName);
+        }
+        
+    }
+    
+    private void temporaryStartToFindCloudsRefinement(String fileName) throws 
+        Exception {
+        
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
+        
+        /*
+        int idx = fileName.lastIndexOf(".");
+        String fileNameRoot = fileName.substring(0, idx);
+
+        String filePathSkyMask = ResourceFinder.findFileInTestResources(
+            fileNameRoot + "_sky.png");
+
+        GreyscaleImage skyMask = ImageIOHelper.readImageAsBinary(
+            filePathSkyMask);
+        */
+        
+        int width = img.getWidth();
+        int height = img.getHeight();
+
+        if (img.getWidth() != width || img.getHeight() != height) {
+            throw new IllegalStateException(
+                "sky mask is not the same size a the test image");
+        }
+        
+        CurvatureScaleSpaceCornerDetector detector = new
+                CurvatureScaleSpaceCornerDetector(img);
+        detector.useOutdoorModeAndExtractSkyline();
+        detector.findCorners();
+            
+        SkylineExtractor skylineExtractor = new SkylineExtractor();
+        
+        RemovedSets removedSets = skylineExtractor.new RemovedSets();
+        PairIntArray outputSkyCentroid = new PairIntArray();
+        
+        Set<PairInt> points = skylineExtractor.createBestSkyMaskPt1(
+            detector.getTheta(), detector.getGradientXY(), 
+            img, detector.getCannyEdgeFilterSettings(), outputSkyCentroid,
+            removedSets);
+        
+        // ---- ready to use findClouds -----
+        
+    }
+    
+    
     public static void main(String[] args) {
         
         try {
@@ -723,7 +802,9 @@ public class SkylineTestImageMaker {
 
             //runner.makeThresholdedGradientXYImages();
             
-            runner.makeLDAInputFiles();
+            //runner.makeLDAInputFiles();
+            
+            runner.temporaryStartToFindCloudsRefinement();
         
         } catch(Exception e) {
             e.printStackTrace();
@@ -769,5 +850,5 @@ public class SkylineTestImageMaker {
         
         return skyPoints;
     }
-    
+
 }
