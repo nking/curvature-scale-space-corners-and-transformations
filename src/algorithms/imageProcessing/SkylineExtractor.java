@@ -1795,9 +1795,6 @@ static int outImgNum=0;
         int[] dxs = new int[]{-1,  0, 1, 0};
         int[] dys = new int[]{ 0, -1, 0, 1};
         
-        //int[] dxs = new int[]{-1, -1,-1,  0, 0, 1,  1, 1};
-        //int[] dys = new int[]{ -1, 0, 1, -1, 1, -1, 0, 1};
-        
         while (!cloudQueue.isEmpty()) {
 
             PairInt uPoint = cloudQueue.poll();
@@ -1887,207 +1884,90 @@ log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
                     
                     // trying to skip over foreground such as land or sunset + water
                     
-                    if ((colorDiffV > 15*skyStDevColorDiff) && (saturation < 0.5)) {
+                    if (((colorDiffV/skyStDevColorDiff) > 15) && (saturation < 0.5)) {
                         
-                        if ((saturation <= 0.4) && (colorDiffV > 50*skyStDevColorDiff) 
+                        if ((saturation <= 0.4) && ((colorDiffV/skyStDevColorDiff) > 50) 
                             ) {
-log.fine("FILTER 00");
+log.info("FILTER 00");
                             continue;
                         }
                          if ((saturation <= 0.4) && 
-                            (Math.abs(contrastV) > 10.*Math.abs(skyStDevContrast))
+                            ((Math.abs(contrastV)/Math.abs(skyStDevContrast)) > 10.)
                             ) {
-log.fine("FILTER 01");                                                        
+log.info("FILTER 01");                                                        
                             continue;
                         }
                     }
                 }
                 
                 if ( // no contrast or color change, should be sky
-                    (Math.abs(contrastV) < 0.015)
+                    (Math.abs(contrastV) < 0.01)
                     && (colorDiffV < 10)
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
-
-log.fine("FILTER 02");
+log.info("FILTER 02");
                 } else if (
                     (skyStDevContrast != 0.)
-                    && (Math.abs(contrastV) > 30.*skyStDevContrast)
+                    && ((Math.abs(contrastV)/skyStDevContrast) > 10.)
                     ) {
- 
-log.fine("FILTER 03");
+log.info("FILTER 03");
                     continue;
-                } else if (
-                    (skyStDevContrast != 0.)
-                    && ((Math.abs(contrastV) > 0.5) && (Math.abs(contrastV) > 1.5*skyStDevContrast))
-                    && (Math.abs(colorDiffV) > 2.5*skyStDevColorDiff)
-                    ) {
-
-log.fine("FILTER 04");
-                    continue; 
-                } else if (
-                    (skyStDevContrast != 0.)
-                    && ((Math.abs(contrastV) > 0.4) && (Math.abs(contrastV) > 2.0*skyStDevContrast))
-                    && (Math.abs(colorDiffV) > 5.*skyStDevColorDiff)
-                    && (!((diffCIEX < 0.02) && (diffCIEY < 0.02)))
-                    ) {
-
-log.fine("FILTER 05");
-                    continue;
-                    
-                } else if (
-                    (skyStDevContrast != 0.)
-                    && ((Math.abs(contrastV) > 0.25) && (Math.abs(contrastV) > 2.0*skyStDevContrast))
-                    && (Math.abs(colorDiffV) > 3.5*skyStDevColorDiff)
-                    ) {
-
-log.fine("FILTER 06");
-                    continue;
-                    
-                } else if (
-                    (skyStDevContrast != 0.)
-                    && (Math.abs(contrastV) > 0.19) 
-                    && (Math.abs(contrastV) > 3.5*skyStDevContrast)
-                    && (Math.abs(colorDiffV) > 3.5*skyStDevColorDiff)
-                    && (diffCIEX > 2.*localSky.getStdDevCIEX())
-                    ) {
-log.fine("FILTER 07");
-                    continue;
-                } else if (
-                    (skyStDevContrast != 0.)
-                    && (Math.abs(contrastV) > 0.19) 
-                    && (Math.abs(contrastV) > 3.5*skyStDevContrast)
-                    && (Math.abs(colorDiffV) > 3.5*skyStDevColorDiff)
-                    && (diffCIEY > 2.*localSky.getStdDevCIEY())
-                    ) {
-
-log.fine("FILTER 08");
-                    continue;
-
                 } else if (
                     (skyStDevContrast != 0.)
                     && ((Math.abs(contrastV) > 0.1) 
-                    && (Math.abs(contrastV) > 2.5*skyStDevContrast))
-                    && (!((diffCIEX < 0.02) && (diffCIEY < 0.02)))
+                    && ((Math.abs(contrastV)/skyStDevContrast) > (1.5 + (Math.abs(contrastV)-0.5)*(-2.0))))
+                    && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 2.5)
                     ) {
-
-                    //sometimes, sky pixels are found here
-
-log.fine("FILTER 09");
-                    continue;
-                       
+log.info("FILTER 04");
+                    continue;                     
                 } else if (
                     (skyStDevContrast != 0.)
-                    && (Math.abs(contrastV) > 5.*skyStDevContrast)
-                    && (Math.abs(colorDiffV) > 5.*skyStDevColorDiff)
+                    && ((Math.abs(contrastV)/skyStDevContrast) > 5.)
+                    && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)
                     && 
                     // if cieXY diffs are zero and within stdev, these are sky,
                     // so test for opposite for boundary pixel
-                    (!((diffCIEX < 0.001) && (diffCIEX < 1.5*localSky.getStdDevCIEX())
-                    && (diffCIEY < 0.001) && (diffCIEY < 1.5*localSky.getStdDevCIEY())))
+                    (((diffCIEX > 0.001) 
+                        || ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)
+                        || (diffCIEY > 0.001) 
+                        || ((diffCIEY/localSky.getStdDevCIEY()) > 1.5)))
                     
                     && (skyStDevContrast > 0.005)
                     && (skyStDevColorDiff > 1.)
                     ) {
-
-log.fine("FILTER 10");
+log.info("FILTER 05");
                     continue;
-                    
                 } else if (skyIsRed) {
                     
                     if (
                         // contrast is defined by luma, so might be weak near
                         // skyline near sun for example
                         (skyStDevContrast != 0.)
-                        && (Math.abs(colorDiffV) > 3.*skyStDevColorDiff)
-                        && (diffCIEX > 0.03) && (diffCIEX > 3.*localSky.getStdDevCIEX())
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 15.*diffCIEX)
+                        && (diffCIEX > 0.03) 
+                        && ((diffCIEX/localSky.getStdDevCIEX()) > 15.*diffCIEX)
                         ) {
-
-log.fine("FILTER 11");
+log.info("FILTER 06");
                         continue;
                     } else if (
                         // contrast is defined by luma, so might be weak near
                         // skyline near sun for example
                         (skyStDevContrast != 0.)
-                        && (Math.abs(colorDiffV) > 3.*skyStDevColorDiff)
-                        && (diffCIEY > 0.03) && (diffCIEY > 3.*localSky.getStdDevCIEY())
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 15.*diffCIEY)
+                        && (diffCIEY > 0.03) 
+                        && ((diffCIEY/localSky.getStdDevCIEY()) > 15.*diffCIEY)
                         ) {
-
-log.fine("FILTER 12");
+log.info("FILTER 07");
                         continue;
-                    } else if (
-                        // contrast is defined by luma, so might be weak near
-                        // skyline near sun for example
-                        (skyStDevContrast != 0.)
-                        && (Math.abs(colorDiffV) > 1.1*skyStDevColorDiff)
-                        && ((diffCIEX > 0.065) 
-                        && (diffCIEX > 1.1*localSky.getStdDevCIEX()))
-                        ) {
-
-log.fine("FILTER 13");
-                        continue;
-                    } else if (
-                        // contrast is defined by luma, so might be weak near
-                        // skyline near sun for example
-                        (skyStDevContrast != 0.)
-                        && (Math.abs(colorDiffV) > 1.1*skyStDevColorDiff)
-                        && ((diffCIEY > 0.03) 
-                        && (diffCIEY > 3.*localSky.getStdDevCIEY()))
-                        ) {
-
-log.fine("FILTER 14");
-                        continue;
-                        
-                    } else if (
-                        // contrast is defined by luma, so might be weak near
-                        // skyline near sun for example
-                        (skyStDevContrast != 0.)
-                        && (Math.abs(colorDiffV) > 10.*skyStDevColorDiff)
-                        && ((diffCIEX > 0.02) 
-                        && (diffCIEX > 1.5*localSky.getStdDevCIEX()))
-                        ) {
-
-log.fine("FILTER 15");
-                        continue;
-                    } else if (
-                        // contrast is defined by luma, so might be weak near
-                        // skyline near sun for example
-                        (skyStDevContrast != 0.)
-                        && (Math.abs(colorDiffV) > 10.*skyStDevColorDiff)
-                        && ((diffCIEY > 0.02) 
-                        && (diffCIEY > 1.5*localSky.getStdDevCIEY()))
-                        ) {
-
-log.fine("FILTER 16");
-                        continue;
-                 
-                    } else if (
-                        (skyStDevContrast != 0.)
-                        && (contrastV > 0.01) 
-                        && (colorDiffV > 15*skyStDevColorDiff)
-                        && ((diffCIEX > 0.03) || (diffCIEY > 0.03))
-                        ) {
-                        
-                        ArrayPair yellowGreenOrange = cieC.getYellowishGreenThroughOrangePolynomial();
-                        if (pInPoly.isInSimpleCurve(cieX, cieY,
-                            yellowGreenOrange.getX(), yellowGreenOrange.getY(),yellowGreenOrange.getX().length)) {
-log.fine("FILTER 17");
-                        } else {
-
-log.fine("FILTER 18");
-                            continue;
-                        }
-                    
                     } else if (skyStDevContrast == 0.) {
                         if (contrastV >= 0.) {
-log.fine("FILTER 19");
+log.info("FILTER 08");
                             doNotAddToStack = true;
                         }
                         
                     } else {
                         //TODO:  if there are sun points, need a zone of
                         // avoidance to not erode the foreground 
-
-log.fine("FILTER 20");
+log.info("FILTER 09");
                     }
 
                 } else {
@@ -2097,85 +1977,34 @@ log.fine("FILTER 20");
                         && (contrastV < 0.05) 
                         && ((Math.abs(contrastV)/skyStDevContrast) > 1.5)
                         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 3.0)
-                        && (diffCIEX < 0.01) && (diffCIEY < 0.01)
-                        && (!(bPercentV > 0.37) && (bV > 199) && (gV > 199))
+                        && ((bPercentV < 0.37) && (bV > 199) && (gV > 199))
                         ) {
-
-log.fine("FILTER 21");
+log.info("FILTER 10");
                         continue;
                     } else if (
                         (skyStDevContrast > 0.0)
-                        && (contrastV < 0.05) 
-                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 1.1)
-                        && (diffCIEX > 2.5*localSky.getStdDevCIEX())
-                        && (diffCIEY > 2.5*localSky.getStdDevCIEY())
-                        
-                        && (skyStDevContrast > 0.005)
-                        && (skyStDevColorDiff > 1.)
+                        && (Math.abs(contrastV) > 0.05)
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 1.5)
+                        && ((diffCIEX/localSky.getStdDevCIEX()) > 0.9) // ?
+                        && ((diffCIEY/localSky.getStdDevCIEY()) > 0.9) // ?                       
+                        && (skyStDevColorDiff > 0.)
                     ){
-
-log.fine("FILTER 22");
+log.info("FILTER 11");
                         continue;
-                    } else if (
-                        (skyStDevContrast > 0.0)
-                        && (Math.abs(contrastV) < 0.05)
-                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 3.0)
-                        && (diffCIEX > 1.5*localSky.getStdDevCIEX())
-                        && (diffCIEY > 1.5*localSky.getStdDevCIEY())                        
-                    ) {
-
-log.fine("FILTER 23");
-                        continue;
-                    } else if (
-                        (contrastV < 0.05) 
-                        && (colorDiffV < 16)
-                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) < 2.5)
-                        ) {
-
-log.fine("FILTER 24");
-                    } else if (
-                        (skyStDevContrast > 0.0)
-                        && (contrastV > 0.0) 
-                        && ((Math.abs(contrastV)/skyStDevContrast) < 2.5)
-                        && (diffCIEX < 0.01) && (diffCIEY < 0.01)
-                        ) {
-
-log.fine("FILTER 25");
-                   } else if (
-                        (skyStDevContrast == 0.0) && (skyStDevColorDiff == 0.0)
-                        && (contrastV < 0.01) && (colorDiffV < 16)
-                        ) {
-
-log.fine("FILTER 26");
-                    } else if (
-                    // bright grey clouds
-                    (Math.abs(contrastV) < 0.04)
-                    && (diffCIEX < 0.002) && (diffCIEY < 0.003) 
-                    &&
-                        ((Math.abs(0.30 - rPercentV) < 0.07) 
-                        && (Math.abs(0.33 - gPercentV) < 0.03) 
-                        && (Math.abs(0.36 - bPercentV) < 0.06)
-                        && (gV > 170) && (bV > 170))
-                    ) {
-
-log.fine("FILTER 27");
                     } else if (
                     (contrastV < 0.05)
                     && (diffCIEX < 0.005) && (diffCIEY < 0.005)
                     &&
-                        !((Math.abs(0.33 - rPercentV) < 0.08) 
-                        && (Math.abs(0.33 - gPercentV) < 0.03) 
-                        && (Math.abs(0.33 - bPercentV) < 0.06)
-                        && (gV > 199) && (bV > 199))
+                        ((Math.abs(0.33 - rPercentV) > 0.08)
+                        || (Math.abs(0.33 - gPercentV) > 0.03) 
+                        || (Math.abs(0.33 - bPercentV) > 0.03)
+                        || (gV > 199) || (bV > 199))
                     ) {
-
-log.fine("FILTER 28");
-                        continue; 
-                    } else {
-
-log.fine("FILTER 29");
+log.info("FILTER 12");
                         continue;
-
+                    } else {
+log.info("FILTER 13");
+                        continue;
                     }
                 }
                 
@@ -2190,7 +2019,7 @@ log.fine("FILTER 29");
     }
 
 private boolean check(int vX, int xOffset, int vY, int yOffset) {
-    /*if (((vX + xOffset)>=97) && ((vX + xOffset)<=97) && ((vY + yOffset)==172)) {
+    /*if (((vX + xOffset)>=377) && ((vX + xOffset)<=377) && ((vY + yOffset)==191)) {
         return true;
     }*/
     return false;
@@ -2238,11 +2067,11 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
      * @param mask
      */
     void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
-        ImageExt originalColorImage, GreyscaleImage mask, 
+        ImageExt originalColorImage, GreyscaleImage thetaImage, 
         ANDedClauses[] clauses) {
         
-        int maskWidth = mask.getWidth();
-        int maskHeight = mask.getHeight();
+        int maskWidth = thetaImage.getWidth();
+        int maskHeight = thetaImage.getHeight();
         
         ArrayDeque<PairInt> cloudQueue = new ArrayDeque<PairInt>(skyPoints.size());
         for (PairInt skyPoint : skyPoints) {
@@ -2252,8 +2081,8 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
         Set<PairInt> visited = new HashSet<PairInt>();
         visited.add(cloudQueue.peek());
               
-        int xOffset = mask.getXRelativeOffset();
-        int yOffset = mask.getYRelativeOffset();
+        int xOffset = thetaImage.getXRelativeOffset();
+        int yOffset = thetaImage.getYRelativeOffset();
         
         GroupPixelColors allSkyColor = new GroupPixelColors(skyPoints,
             originalColorImage, xOffset, yOffset);
@@ -2358,13 +2187,13 @@ log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
                     if ((colorDiffV > 15*skyStDevColorDiff) && (saturation < 0.5)) {
                         if ((saturation <= 0.4) && (colorDiffV > 50*skyStDevColorDiff) 
                             ) {
-log.fine("FILTER 00");
+log.info("FILTER 00");
                             continue;
                         }
                          if ((saturation <= 0.4) && 
                             (Math.abs(contrastV) > 10.*Math.abs(skyStDevContrast))
                             ) {
-log.fine("FILTER 01");                                                        
+log.info("FILTER 01");                                                        
                             continue;
                         }
                     }
@@ -2398,10 +2227,10 @@ log.fine("FILTER 01");
                     && (Math.abs(colorDiffV) < 10)
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
                     // this is a sky point
-log.fine("FILTER 02");
+log.info("FILTER 02");
                 } else if (isSolarYellow) {
                     // this is a sky point
-log.fine("FILTER 03");
+log.info("FILTER 03");
                 } else {
                     
                     // evaluate clauses that evaluate to 'T' when the pixel 
@@ -2424,12 +2253,7 @@ log.fine("FILTER 03");
                 cloudQueue.add(vPoint);
             }
         }
- 
-        for (PairInt p : skyPoints) {
-            int x = p.getX();
-            int y = p.getY();
-            mask.setValue(x, y, 0);
-        }
+
     }
    
     private GroupPixelColors[] partitionInto3ByColorDifference(Set<PairInt> skyPoints, 
@@ -3625,7 +3449,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
                 }
             }
             
-            log.fine(gId + ") nBelowLimit=" + nBelowLimit
+            log.info(gId + ") nBelowLimit=" + nBelowLimit
                 + " (" + ((double)nBelowLimit/(double)points.getN()) + ")");
          
             if (((double)nBelowLimit/(double)points.getN()) > 0.5) {
