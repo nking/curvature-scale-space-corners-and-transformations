@@ -1,5 +1,8 @@
 package algorithms.imageProcessing;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *
  * @author nichole
@@ -13,8 +16,10 @@ public class ANDedClauses {
     protected final SKYCONDITIONAL[] skyConditional;
     protected final int n;
     
+    protected Map<Integer, CustomCoeff> customCoefficients = 
+        new HashMap<Integer, CustomCoeff>();
+    
     public ANDedClauses(int nClauses) {
-        
         this.n = nClauses;
         params1 = new PARAM[n];
         params2 = new PARAM[n];
@@ -86,6 +91,11 @@ public class ANDedClauses {
         coefficients[index] = c;
     }
     
+    public void setACustomCoefficient(int index, CustomCoeff cCoeff) {
+        
+        customCoefficients.put(Integer.valueOf(index), cCoeff);
+    }
+    
     public float getCoefficients(int index) {
         
         if ((index < 0) || (index > (n - 1))) {
@@ -149,6 +159,11 @@ public class ANDedClauses {
             double param1 = data.getParameter(params1[i]);
             double param2 = data.getParameter(params2[i]);
             double coeff = coefficients[i];
+            
+            CustomCoeff cCoeff = customCoefficients.get(Integer.valueOf(i));
+            if (cCoeff != null) {
+                coeff = cCoeff.evaluate(data, coefficients);
+            }
             
             if ((skyConditional[i].ordinal() == 
                 SKYCONDITIONAL.RED.ordinal()) && !data.skyIsRed()) {

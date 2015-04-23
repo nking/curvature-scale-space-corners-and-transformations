@@ -15,12 +15,16 @@ public class ColorData {
     protected final double diffCIEY;
     protected final double skyStdDevCIEX;
     protected final double skyStdDevCIEY;
+    protected final int red;
+    protected final int green;
+    protected final int blue;
+    protected final double rgbTot;
     
     public ColorData(boolean skyIsRed,
         double pixContrast, double pixBlueOrRedDiff, 
         double pixCIEXDiff, double pixCIEYDiff, 
         double skyStDevContrast, double skyStDevBlueOrRedDiff,
-        double skyStDevCIEX, double skyStDevCIEY) {
+        double skyStDevCIEX, double skyStDevCIEY, int r, int g, int b) {
         
         this.skyIsRed = skyIsRed;
         this.contrast = pixContrast;
@@ -31,6 +35,10 @@ public class ColorData {
         this.diffCIEY = pixCIEYDiff;
         this.skyStdDevCIEX = skyStDevCIEX;
         this.skyStdDevCIEY = skyStDevCIEY;
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.rgbTot = (r + g + b);
     }
     
     public double getParameter(PARAM parameter) {
@@ -38,6 +46,9 @@ public class ColorData {
         double param;
         
         switch (parameter) {
+            case CONTRAST:
+                param = contrast;
+                break;
             case ABSOLUTE_CONTRAST:
                 param = Math.abs(contrast);
                 break;
@@ -61,6 +72,33 @@ public class ColorData {
                 break;
             case STDEV_CIEY:
                 param = skyStdDevCIEY;
+                break;
+            case RED:
+                param = red;
+                break;
+            case GREEN:
+                param = green;
+                break;
+            case BLUE:
+                param = blue;
+                break;
+            case R_DIV_TOT:
+                param = (double)red/rgbTot;
+                break;
+            case G_DIV_TOT:
+                param = (double)green/rgbTot;
+                break;
+            case B_DIV_TOT:
+                param = (double)blue/rgbTot;
+                break;
+            case DIFF_R_DIV_TOT_ONE_THIRD:
+                param = Math.abs((1./3.) - ((double)red/rgbTot));
+                break;
+            case DIFF_G_DIV_TOT_ONE_THIRD:
+                param = Math.abs((1./3.) - ((double)green/rgbTot));
+                break;
+            case DIFF_B_DIV_TOT_ONE_THIRD:
+                param = Math.abs((1./3.) - ((double)blue/rgbTot));
                 break;
             case INT_ONE:
                 param = 1.0;

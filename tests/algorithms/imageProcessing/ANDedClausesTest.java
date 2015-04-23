@@ -22,12 +22,15 @@ public class ANDedClausesTest extends TestCase {
         double skyStDevBlueOrRedDiff = 3.0;
         double skyStDevCIEX = 1;
         double skyStDevCIEY = 1;
+        int red = 127;
+        int green = 127;
+        int blue = 127;
         
         ColorData data = new ColorData(skyIsRed,
             pixContrast, pixBlueOrRedDiff, 
             pixCIEXDiff, pixCIEYDiff, 
             skyStDevContrast, skyStDevBlueOrRedDiff,
-            skyStDevCIEX, skyStDevCIEY);
+            skyStDevCIEX, skyStDevCIEY, red, green, blue);
         
         //8/2 > 2
         
@@ -95,12 +98,15 @@ public class ANDedClausesTest extends TestCase {
         double skyStDevBlueOrRedDiff = 3.0;
         double skyStDevCIEX = 1;
         double skyStDevCIEY = 1;
+        int red = 127;
+        int green = 127;
+        int blue = 127;
         
         ColorData data = new ColorData(skyIsRed,
             pixContrast, pixBlueOrRedDiff, 
             pixCIEXDiff, pixCIEYDiff, 
             skyStDevContrast, skyStDevBlueOrRedDiff,
-            skyStDevCIEX, skyStDevCIEY);
+            skyStDevCIEX, skyStDevCIEY, red, green, blue);
         
         //8/2 < 7
         
@@ -167,12 +173,15 @@ public class ANDedClausesTest extends TestCase {
         double skyStDevBlueOrRedDiff = 3.0;
         double skyStDevCIEX = 1;
         double skyStDevCIEY = 1;
+        int red = 127;
+        int green = 127;
+        int blue = 127;
         
         ColorData data = new ColorData(skyIsRed,
             pixContrast, pixBlueOrRedDiff, 
             pixCIEXDiff, pixCIEYDiff, 
             skyStDevContrast, skyStDevBlueOrRedDiff,
-            skyStDevCIEX, skyStDevCIEY);
+            skyStDevCIEX, skyStDevCIEY, red, green, blue);
         
         //8/2 > 2
         
@@ -252,12 +261,15 @@ public class ANDedClausesTest extends TestCase {
         double skyStDevBlueOrRedDiff = 3.0;
         double skyStDevCIEX = 1;
         double skyStDevCIEY = 1;
+        int red = 127;
+        int green = 127;
+        int blue = 127;
         
         ColorData data = new ColorData(skyIsRed,
             pixContrast, pixBlueOrRedDiff, 
             pixCIEXDiff, pixCIEYDiff, 
             skyStDevContrast, skyStDevBlueOrRedDiff,
-            skyStDevCIEX, skyStDevCIEY);
+            skyStDevCIEX, skyStDevCIEY, red, green, blue);
         
         //8/2 < 7
         
@@ -335,12 +347,15 @@ public class ANDedClausesTest extends TestCase {
         double skyStDevBlueOrRedDiff = 1.5;
         double skyStDevCIEX = 1;
         double skyStDevCIEY = 1;
+        int red = 127;
+        int green = 127;
+        int blue = 127;
         
         ColorData data = new ColorData(skyIsRed,
             pixContrast, pixBlueOrRedDiff, 
             pixCIEXDiff, pixCIEYDiff, 
             skyStDevContrast, skyStDevBlueOrRedDiff,
-            skyStDevCIEX, skyStDevCIEY);
+            skyStDevCIEX, skyStDevCIEY, red, green, blue);
         
         //contr/stdev > 3.5 and clrdiff/stdv > 2.5
         

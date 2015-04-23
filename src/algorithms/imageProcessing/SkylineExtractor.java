@@ -1920,7 +1920,7 @@ log.info("FILTER 03");
 log.info("FILTER 04");
                     continue;                     
                 } else if (
-                    (skyStDevContrast != 0.)
+                    (skyStDevContrast > 0.005)
                     && ((Math.abs(contrastV)/skyStDevContrast) > 5.)
                     && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)
                     && 
@@ -1929,9 +1929,7 @@ log.info("FILTER 04");
                     (((diffCIEX > 0.001) 
                         || ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)
                         || (diffCIEY > 0.001) 
-                        || ((diffCIEY/localSky.getStdDevCIEY()) > 1.5)))
-                    
-                    && (skyStDevContrast > 0.005)
+                        || ((diffCIEY/localSky.getStdDevCIEY()) > 1.5)))                    
                     && (skyStDevColorDiff > 1.)
                     ) {
 log.info("FILTER 05");
@@ -2219,7 +2217,8 @@ log.info("FILTER 01");
                     contrastV, colorDiffV,
                     diffCIEX, diffCIEY,
                     skyStDevContrast, skyStDevColorDiff,
-                    localSky.getStdDevCIEX(), localSky.getStdDevCIEY()
+                    localSky.getStdDevCIEX(), localSky.getStdDevCIEY(), 
+                    rV, gV, bV
                 );
                 
                 if ( // no contrast or color change, should be sky

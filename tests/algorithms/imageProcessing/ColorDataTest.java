@@ -22,12 +22,15 @@ public class ColorDataTest extends TestCase {
         double skyStDevBlueOrRedDiff = 6;
         double skyStDevCIEX = 7;
         double skyStDevCIEY = 8;
+        int r = 127;
+        int g = 127;
+        int b = 127;
         
         ColorData data = new ColorData(skyIsRed,
             pixContrast, pixBlueOrRedDiff, 
             pixCIEXDiff, pixCIEYDiff, 
             skyStDevContrast, skyStDevBlueOrRedDiff,
-            skyStDevCIEX, skyStDevCIEY);
+            skyStDevCIEX, skyStDevCIEY, r, g, b);
         
         assertFalse(data.skyIsRed());
         assertTrue(data.getParameter(PARAM.ABSOLUTE_CONTRAST) == pixContrast);
@@ -43,5 +46,13 @@ public class ColorDataTest extends TestCase {
         assertTrue(data.getParameter(PARAM.STDEV_CIEY) == skyStDevCIEY);
         
         assertTrue(data.getParameter(PARAM.INT_ONE) == 1);
+        
+        assertTrue(Math.abs(data.getParameter(PARAM.R_DIV_TOT) - (1./3.)) < 0.01);
+        assertTrue(Math.abs(data.getParameter(PARAM.G_DIV_TOT) - (1./3.)) < 0.01);
+        assertTrue(Math.abs(data.getParameter(PARAM.B_DIV_TOT) - (1./3.)) < 0.01);
+        
+        assertTrue(data.getParameter(PARAM.DIFF_R_DIV_TOT_ONE_THIRD) < 0.01);
+        assertTrue(data.getParameter(PARAM.DIFF_G_DIV_TOT_ONE_THIRD) < 0.01);
+        assertTrue(data.getParameter(PARAM.DIFF_B_DIV_TOT_ONE_THIRD) < 0.01);
     }
 }

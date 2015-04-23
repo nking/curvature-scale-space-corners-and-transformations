@@ -6,6 +6,7 @@ package algorithms.imageProcessing;
  */
 public enum PARAM {
     
+    CONTRAST,
     ABSOLUTE_CONTRAST,
     ABSOLUTE_DIFF_BLUE_OR_RED,
     STDEV_CONTRAST,
@@ -15,6 +16,11 @@ public enum PARAM {
     STDEV_CIEX,
     STDEV_CIEY,
     INT_ONE,
+    RED, GREEN, BLUE,
+    R_DIV_TOT, G_DIV_TOT, B_DIV_TOT,
+    DIFF_R_DIV_TOT_ONE_THIRD, 
+    DIFF_G_DIV_TOT_ONE_THIRD, 
+    DIFF_B_DIV_TOT_ONE_THIRD
 
     /*ABSOLUTE_BLUE_OR_RED,
      ABSOLUTE_DIFF_HUE,
