@@ -30,7 +30,24 @@ public class SkylineANDedClauses {
         //13   14      15      16     17     18     19   20
         0.05f, 0.005f, 0.005f, 0.08f, 0.03f, 0.03f, 199, 199
     };
-         
+     
+    public ANDedClauses[] getAllClauses() {
+        
+        ANDedClauses[] a0 = getForAllSkies();
+        ANDedClauses[] a1 = getForBlueSkies();
+        ANDedClauses[] a2 = getForRedSkies();
+        
+        int n = a0.length + a1.length + a2.length;
+    
+        ANDedClauses[] a = new ANDedClauses[n];
+        
+        System.arraycopy(a0, 0, a, 0, a0.length);
+        System.arraycopy(a1, 0, a, a0.length, a1.length);
+        System.arraycopy(a2, 0, a, (a0.length + a1.length), a2.length);
+        
+        return a;
+    }
+    
     public ANDedClauses[] getForAllSkies() {
     
         /*

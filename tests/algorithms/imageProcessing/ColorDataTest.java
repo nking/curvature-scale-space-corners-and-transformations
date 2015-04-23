@@ -34,6 +34,7 @@ public class ColorDataTest extends TestCase {
         
         assertFalse(data.skyIsRed());
         assertTrue(data.getParameter(PARAM.ABSOLUTE_CONTRAST) == pixContrast);
+        assertTrue(data.getParameter(PARAM.CONTRAST) == pixContrast);
         assertTrue(data.getParameter(PARAM.ABSOLUTE_DIFF_BLUE_OR_RED) == 
             pixBlueOrRedDiff);
         assertTrue(data.getParameter(PARAM.DIFF_CIEX) == pixCIEXDiff);
@@ -47,6 +48,10 @@ public class ColorDataTest extends TestCase {
         
         assertTrue(data.getParameter(PARAM.INT_ONE) == 1);
         
+        assertTrue(data.getParameter(PARAM.RED) == r);
+        assertTrue(data.getParameter(PARAM.GREEN) == g);
+        assertTrue(data.getParameter(PARAM.BLUE) == b);
+         
         assertTrue(Math.abs(data.getParameter(PARAM.R_DIV_TOT) - (1./3.)) < 0.01);
         assertTrue(Math.abs(data.getParameter(PARAM.G_DIV_TOT) - (1./3.)) < 0.01);
         assertTrue(Math.abs(data.getParameter(PARAM.B_DIV_TOT) - (1./3.)) < 0.01);

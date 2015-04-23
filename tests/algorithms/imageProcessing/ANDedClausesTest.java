@@ -379,4 +379,71 @@ public class ANDedClausesTest extends TestCase {
         
         assertFalse(clauses.evaluate(data));
     }
+    
+    public void testEvaluate11() throws Exception {
+        
+        boolean skyIsRed = false;
+        double pixContrast = 8;
+        double pixBlueOrRedDiff = 7;
+        double pixCIEXDiff = 6;
+        double pixCIEYDiff = 5;
+        double skyStDevContrast = 2.0;
+        double skyStDevBlueOrRedDiff = 1.5;
+        double skyStDevCIEX = 1;
+        double skyStDevCIEY = 1;
+        int red = 127;
+        int green = 127;
+        int blue = 127;
+        
+        ColorData data = new ColorData(skyIsRed, pixContrast, pixBlueOrRedDiff, 
+            pixCIEXDiff, pixCIEYDiff, skyStDevContrast, skyStDevBlueOrRedDiff,
+            skyStDevCIEX, skyStDevCIEY, red, green, blue);
+        
+        //contr/stdev > 3.5
+        
+        CustomCoeff cc = new CustomCoeff() {
+            @Override
+            public double evaluate(ColorData data, float[] c) {
+                return 2.5;
+            }
+        };
+        
+        ANDedClauses clauses = new ANDedClauses(
+            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL}, 
+            new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
+            new PARAM[]{PARAM.STDEV_CONTRAST}, 
+            new COMPARISON[]{COMPARISON.GREATER_THAN}, 
+            new float[]{3.5f});
+        
+        clauses.setACustomCoefficient(0, cc);
+        
+        assertTrue(clauses.evaluate(data));
+        
+        
+        // ---- same except make custom coefficient result in a high value ----
+        
+        data = new ColorData(skyIsRed, pixContrast, pixBlueOrRedDiff, 
+            pixCIEXDiff, pixCIEYDiff, skyStDevContrast, skyStDevBlueOrRedDiff,
+            skyStDevCIEX, skyStDevCIEY, red, green, blue);
+        
+        //contr/stdev > 3.5
+        
+        cc = new CustomCoeff() {
+            @Override
+            public double evaluate(ColorData data, float[] c) {
+                return 100;
+            }
+        };
+        
+        clauses = new ANDedClauses(
+            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL}, 
+            new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
+            new PARAM[]{PARAM.STDEV_CONTRAST}, 
+            new COMPARISON[]{COMPARISON.GREATER_THAN}, 
+            new float[]{3.5f});
+        
+        clauses.setACustomCoefficient(0, cc);
+        
+        assertFalse(clauses.evaluate(data));
+    }
 }
