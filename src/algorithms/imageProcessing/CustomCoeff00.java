@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import java.util.Map;
+
 /**
  *
  * @author nichole
@@ -17,13 +19,20 @@ public class CustomCoeff00 implements CustomCoeff {
      * 
      * @param data
      * @param coefficients
+     * @param customCoefficients
      * @return 
      */
-    public double evaluate(ColorData data, float[] coefficients) {
+    @Override
+    public double evaluate(ColorData data, float[] coefficients,
+        Map<Integer, Float> customCoefficients) {
         
         double absContr = data.getParameter(PARAM.ABSOLUTE_CONTRAST);
         
-        double r = coefficients[4] + (absContr - coefficients[5]) * (coefficients[6]);
+        float coeff4 = customCoefficients.get(Integer.valueOf(4));
+        float coeff5 = customCoefficients.get(Integer.valueOf(5));
+        float coeff6 = customCoefficients.get(Integer.valueOf(6));
+        
+        double r = coeff4 + ((absContr - coeff5) * coeff6);
         
         // 1.5 = cofficients[4]
         // 0.5 = cofficients[5]

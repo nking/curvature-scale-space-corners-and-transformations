@@ -71,9 +71,16 @@ public class SkylineANDedClauses {
         ANDedClauses c1 = new ANDedClauses(4);
         c1.set(0, SKYCONDITIONAL.ALL, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[2]);
-        c1.set(1, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.INT_ONE, 
+        c1.set(1, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[3]);
-        c1.setACustomCoefficient(2, new CustomCoeff00());
+        
+        c1.set(2, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+            COMPARISON.GREATER_THAN, allSkiesCoeff[4]);
+        c1.setACustomCoefficient(2, new CustomCoeff00()); 
+        c1.setCustomCoefficientVariable(4, Float.valueOf(allSkiesCoeff[4]));
+        c1.setCustomCoefficientVariable(5, Float.valueOf(allSkiesCoeff[5]));
+        c1.setCustomCoefficientVariable(6, Float.valueOf(allSkiesCoeff[6]));
+        
         c1.set(3, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[7]);
           

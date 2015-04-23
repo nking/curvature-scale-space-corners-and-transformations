@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import java.util.Map;
 import junit.framework.TestCase;
 
 /**
@@ -403,8 +404,17 @@ public class ANDedClausesTest extends TestCase {
         
         CustomCoeff cc = new CustomCoeff() {
             @Override
-            public double evaluate(ColorData data, float[] c) {
-                return 2.5;
+            public double evaluate(ColorData data, float[] c, 
+                Map<Integer, Float> cc) {
+                
+                Float coeff1 = cc.get(Integer.valueOf(1));
+                Float coeff2 = cc.get(Integer.valueOf(2));
+                
+                float a = coeff1.floatValue() - 
+                    (float)data.getParameter(PARAM.CONTRAST)
+                    * coeff2.floatValue();
+                
+                return 2.5f;
             }
         };
         
@@ -416,6 +426,8 @@ public class ANDedClausesTest extends TestCase {
             new float[]{3.5f});
         
         clauses.setACustomCoefficient(0, cc);
+        clauses.setCustomCoefficientVariable(1, Float.valueOf(2.5f));
+        clauses.setCustomCoefficientVariable(2, Float.valueOf(-2.f));
         
         assertTrue(clauses.evaluate(data));
         
@@ -430,7 +442,9 @@ public class ANDedClausesTest extends TestCase {
         
         cc = new CustomCoeff() {
             @Override
-            public double evaluate(ColorData data, float[] c) {
+            public double evaluate(ColorData data, float[] c, 
+                Map<Integer, Float> cc) {
+                
                 return 100;
             }
         };

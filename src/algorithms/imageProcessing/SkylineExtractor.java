@@ -2013,7 +2013,6 @@ log.info("FILTER 13");
                 }
             }
         }
-         
     }
 
 private boolean check(int vX, int xOffset, int vY, int yOffset) {
@@ -2235,13 +2234,14 @@ log.info("FILTER 03");
                     // evaluate clauses that evaluate to 'T' when the pixel 
                     // looks like a border (non-sky) pixel
                     boolean isNotSky = false;
-                    
+            
                     for (ANDedClauses clause : clauses) {
                         if (clause.evaluate(data)) {
                             isNotSky = true;
                             break;
                         }
                     }
+            
                     if (isNotSky) {
                         continue;
                     }
@@ -2249,7 +2249,9 @@ log.info("FILTER 03");
                 
                 skyPoints.add(vPoint);
 
-                cloudQueue.add(vPoint);
+                if (!(skyIsRed && (skyStDevContrast == 0.) && (contrastV >= 0.))) {
+                    cloudQueue.add(vPoint);
+                }
             }
         }
 

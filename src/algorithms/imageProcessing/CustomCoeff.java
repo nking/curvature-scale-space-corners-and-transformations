@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import java.util.Map;
+
 /**
  * a custom coefficient built specifically for a statement within
  * an ANDedClauses instance.
@@ -8,6 +10,7 @@ package algorithms.imageProcessing;
  */
 public interface CustomCoeff {
     
-    public double evaluate(ColorData data, float[] coefficients);
+    public double evaluate(ColorData data, float[] coefficients,
+        Map<Integer, Float> customCoefficients);
   
 }

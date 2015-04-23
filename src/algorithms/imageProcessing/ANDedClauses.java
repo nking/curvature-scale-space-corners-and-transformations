@@ -19,6 +19,15 @@ public class ANDedClauses {
     protected Map<Integer, CustomCoeff> customCoefficients = 
         new HashMap<Integer, CustomCoeff>();
     
+    /**
+     * these are coefficients not present in float[] coefficients
+     * that are needed for customCoefficients.  
+     * The invoker of the constructor is responsible for keeping track of 
+     * filling both.
+     */
+    protected Map<Integer, Float> customCoefficientVariables = 
+        new HashMap<Integer, Float>();
+    
     public ANDedClauses(int nClauses) {
         this.n = nClauses;
         params1 = new PARAM[n];
@@ -96,6 +105,17 @@ public class ANDedClauses {
         customCoefficients.put(Integer.valueOf(index), cCoeff);
     }
     
+    /**
+     * Set a coefficient needed by an instance of CustomCoeff.
+     * 
+     * @param coeffNumber
+     * @param coefficient 
+     */
+    public void setCustomCoefficientVariable(int coeffNumber, Float coefficient) {
+        
+        customCoefficientVariables.put(Integer.valueOf(coeffNumber), coefficient);
+    }
+    
     public float getCoefficients(int index) {
         
         if ((index < 0) || (index > (n - 1))) {
@@ -162,7 +182,8 @@ public class ANDedClauses {
             
             CustomCoeff cCoeff = customCoefficients.get(Integer.valueOf(i));
             if (cCoeff != null) {
-                coeff = cCoeff.evaluate(data, coefficients);
+                coeff = cCoeff.evaluate(data, coefficients, 
+                    customCoefficientVariables);
             }
             
             if ((skyConditional[i].ordinal() == 

@@ -769,7 +769,7 @@ public class SkylineTestImageMaker {
 
         GreyscaleImage skyMask = ImageIOHelper.readImageAsBinary(
             filePathSkyMask);
-        */
+*/
         
         int width = img.getWidth();
         int height = img.getHeight();
@@ -780,12 +780,10 @@ public class SkylineTestImageMaker {
         }
         
         CurvatureScaleSpaceCornerDetector detector = new
-                CurvatureScaleSpaceCornerDetector(img);
+            CurvatureScaleSpaceCornerDetector(img);
         detector.useOutdoorModeAndExtractSkyline();
         detector.findCorners();
         
-if (true) {return;} 
-
         SkylineExtractor skylineExtractor = new SkylineExtractor();
         
         RemovedSets removedSets = skylineExtractor.new RemovedSets();
@@ -797,9 +795,7 @@ if (true) {return;}
             removedSets);
         
         // ---- ready to use findClouds -----
-        
-//this *has* to rebuild the clauses as currently in the code.
-        
+
         Set<PairInt> excludePoints = new HashSet<PairInt>();
         
         SkylineANDedClauses skylineANDedClauses = new SkylineANDedClauses();
@@ -821,7 +817,6 @@ if (true) {return;}
             System.err.println("ERROR: " + e.getMessage());
         }
     }
-    
     
     public static void main(String[] args) {
         
