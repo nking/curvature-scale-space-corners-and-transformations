@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import junit.framework.TestCase;
-import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
@@ -39,12 +38,12 @@ public class SkylineANDedClausesTest extends TestCase {
         ANDedClauses[] a0 = instance.getForAllSkies();
         for (int i = 0; i < a0.length; i++) {
             ANDedClauses c = a0[i];
+            assertNotNull(c.getSKYCONDITIONAL());
             for (int ii = 0; ii < c.n; ii++) {
                 assertNotNull(c.getParams1(ii));
                 assertNotNull(c.getParams2(ii));
                 assertNotNull(c.getCoefficients(ii));
                 assertNotNull(c.getGtOrLT(ii));
-                assertNotNull(c.getSKYCONDITIONAL(ii));
             }
             c.evaluate(data);
         }
@@ -52,12 +51,12 @@ public class SkylineANDedClausesTest extends TestCase {
         ANDedClauses[] a1 = instance.getForBlueSkies();
         for (int i = 0; i < a1.length; i++) {
             ANDedClauses c = a1[i];
+            assertNotNull(c.getSKYCONDITIONAL());
             for (int ii = 0; ii < c.n; ii++) {
                 assertNotNull(c.getParams1(ii));
                 assertNotNull(c.getParams2(ii));
                 assertNotNull(c.getCoefficients(ii));
                 assertNotNull(c.getGtOrLT(ii));
-                assertNotNull(c.getSKYCONDITIONAL(ii));
             }
             c.evaluate(data);
         }
@@ -65,12 +64,12 @@ public class SkylineANDedClausesTest extends TestCase {
         ANDedClauses[] a2 = instance.getForRedSkies();
         for (int i = 0; i < a2.length; i++) {
             ANDedClauses c = a2[i];
+            assertNotNull(c.getSKYCONDITIONAL());
             for (int ii = 0; ii < c.n; ii++) {
                 assertNotNull(c.getParams1(ii));
                 assertNotNull(c.getParams2(ii));
                 assertNotNull(c.getCoefficients(ii));
                 assertNotNull(c.getGtOrLT(ii));
-                assertNotNull(c.getSKYCONDITIONAL(ii));
             }
             c.evaluate(data);
         }
@@ -83,6 +82,7 @@ public class SkylineANDedClausesTest extends TestCase {
         
         for (ANDedClauses ac : a) {
             assertNotNull(ac);
+            assertNotNull(ac.getSKYCONDITIONAL());
             ac.evaluate(data);
         }
 

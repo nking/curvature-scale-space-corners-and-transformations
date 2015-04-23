@@ -35,25 +35,25 @@ public class ANDedClausesTest extends TestCase {
         
         //8/2 > 2
         
-        ANDedClauses clauses = new ANDedClauses(1);
+        ANDedClauses clauses = new ANDedClauses(1, SKYCONDITIONAL.ALL);
         
-        clauses.set(0, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, 2.0f);
         
         assertTrue(clauses.evaluate(data));
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.BLUE);
         
-        clauses.set(0, SKYCONDITIONAL.BLUE, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, 2.0f);
         
         // sky is blue and conditionals are true
         assertTrue(clauses.evaluate(data));
         
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.RED);
         
-        clauses.set(0, SKYCONDITIONAL.RED, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, 2.0f);
         
         // sky is not red
@@ -63,25 +63,25 @@ public class ANDedClausesTest extends TestCase {
         // ----- assert opposite for coefficient 10. -------
         //8/2 > 10
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.ALL);
         
-        clauses.set(0, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, 10.0f);
         
         assertFalse(clauses.evaluate(data));
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.BLUE);
         
-        clauses.set(0, SKYCONDITIONAL.BLUE, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, 10.0f);
         
         // sky is blue and conditionals are not true
         assertFalse(clauses.evaluate(data));
         
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.RED);
         
-        clauses.set(0, SKYCONDITIONAL.RED, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, 10.0f);
         
         // sky is not red
@@ -111,25 +111,25 @@ public class ANDedClausesTest extends TestCase {
         
         //8/2 < 7
         
-        ANDedClauses clauses = new ANDedClauses(1);
+        ANDedClauses clauses = new ANDedClauses(1, SKYCONDITIONAL.ALL);
         
-        clauses.set(0, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.LESS_THAN, 7.0f);
         
         assertTrue(clauses.evaluate(data));
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.BLUE);
         
-        clauses.set(0, SKYCONDITIONAL.BLUE, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.LESS_THAN, 7.0f);
         
         // sky is blue and conditionals are true
         assertTrue(clauses.evaluate(data));
         
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.RED);
         
-        clauses.set(0, SKYCONDITIONAL.RED, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.LESS_THAN, 7.0f);
         
         // sky is not red
@@ -138,25 +138,25 @@ public class ANDedClausesTest extends TestCase {
         
         // ----- assert opposite for coefficient 2. -------
         //8/2 < 2
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.ALL);
         
-        clauses.set(0, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.LESS_THAN, 2.0f);
         
         assertFalse(clauses.evaluate(data));
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.BLUE);
         
-        clauses.set(0, SKYCONDITIONAL.BLUE, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.LESS_THAN, 2.0f);
         
         // sky is blue and conditionals are false
         assertFalse(clauses.evaluate(data));
         
         
-        clauses = new ANDedClauses(1);
+        clauses = new ANDedClauses(1, SKYCONDITIONAL.RED);
         
-        clauses.set(0, SKYCONDITIONAL.RED, PARAM.ABSOLUTE_CONTRAST, 
+        clauses.set(0, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.LESS_THAN, 2.0f);
         
         // sky is not red
@@ -187,7 +187,7 @@ public class ANDedClausesTest extends TestCase {
         //8/2 > 2
         
         ANDedClauses clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL}, 
+            SKYCONDITIONAL.ALL, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN}, 
@@ -196,7 +196,7 @@ public class ANDedClausesTest extends TestCase {
         assertTrue(clauses.evaluate(data));
                 
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.BLUE}, 
+            SKYCONDITIONAL.BLUE, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN}, 
@@ -207,7 +207,7 @@ public class ANDedClausesTest extends TestCase {
         
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.RED}, 
+            SKYCONDITIONAL.RED, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN}, 
@@ -221,7 +221,7 @@ public class ANDedClausesTest extends TestCase {
         //8/2 > 10
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL}, 
+            SKYCONDITIONAL.ALL, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN}, 
@@ -230,7 +230,7 @@ public class ANDedClausesTest extends TestCase {
         assertFalse(clauses.evaluate(data));
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.BLUE}, 
+            SKYCONDITIONAL.BLUE, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN}, 
@@ -241,7 +241,7 @@ public class ANDedClausesTest extends TestCase {
         
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.RED}, 
+            SKYCONDITIONAL.RED, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN}, 
@@ -275,7 +275,7 @@ public class ANDedClausesTest extends TestCase {
         //8/2 < 7
         
         ANDedClauses clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL}, 
+            SKYCONDITIONAL.ALL, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.LESS_THAN}, 
@@ -284,7 +284,7 @@ public class ANDedClausesTest extends TestCase {
         assertTrue(clauses.evaluate(data));
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.BLUE}, 
+            SKYCONDITIONAL.BLUE, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.LESS_THAN}, 
@@ -294,7 +294,7 @@ public class ANDedClausesTest extends TestCase {
         assertTrue(clauses.evaluate(data));
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.RED}, 
+            SKYCONDITIONAL.RED, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.LESS_THAN}, 
@@ -308,7 +308,7 @@ public class ANDedClausesTest extends TestCase {
         //8/2 < 2
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL}, 
+            SKYCONDITIONAL.ALL, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.LESS_THAN}, 
@@ -317,7 +317,7 @@ public class ANDedClausesTest extends TestCase {
         assertFalse(clauses.evaluate(data));
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.BLUE}, 
+            SKYCONDITIONAL.BLUE, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.LESS_THAN}, 
@@ -327,7 +327,7 @@ public class ANDedClausesTest extends TestCase {
         assertFalse(clauses.evaluate(data));
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.RED}, 
+            SKYCONDITIONAL.RED, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.LESS_THAN}, 
@@ -361,7 +361,7 @@ public class ANDedClausesTest extends TestCase {
         //contr/stdev > 3.5 and clrdiff/stdv > 2.5
         
         ANDedClauses clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL, SKYCONDITIONAL.ALL}, 
+            SKYCONDITIONAL.ALL, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED}, 
             new PARAM[]{PARAM.STDEV_CONTRAST, PARAM.STDEV_BLUE_OR_RED}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN, COMPARISON.GREATER_THAN}, 
@@ -372,7 +372,7 @@ public class ANDedClausesTest extends TestCase {
         //contr/stdev > 3.5 and clrdiff/stdv > 5.5
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL, SKYCONDITIONAL.ALL}, 
+            SKYCONDITIONAL.ALL, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED}, 
             new PARAM[]{PARAM.STDEV_CONTRAST, PARAM.STDEV_BLUE_OR_RED}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN, COMPARISON.GREATER_THAN}, 
@@ -419,7 +419,7 @@ public class ANDedClausesTest extends TestCase {
         };
         
         ANDedClauses clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL}, 
+            SKYCONDITIONAL.ALL, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN}, 
@@ -450,7 +450,7 @@ public class ANDedClausesTest extends TestCase {
         };
         
         clauses = new ANDedClauses(
-            new SKYCONDITIONAL[]{SKYCONDITIONAL.ALL}, 
+            SKYCONDITIONAL.ALL, 
             new PARAM[]{PARAM.ABSOLUTE_CONTRAST}, 
             new PARAM[]{PARAM.STDEV_CONTRAST}, 
             new COMPARISON[]{COMPARISON.GREATER_THAN}, 

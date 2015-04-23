@@ -55,10 +55,10 @@ public class SkylineANDedClauses {
             00         (skyStDevContrast > 0.)
             01         && ((Math.abs(contrastV)/skyStDevContrast) > 10.)
         */
-        ANDedClauses c0 = new ANDedClauses(2);
-        c0.set(0, SKYCONDITIONAL.ALL, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c0 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
+        c0.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[0]);
-        c0.set(1, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+        c0.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[1]);
         
         /*
@@ -68,20 +68,20 @@ public class SkylineANDedClauses {
             04,05,06   && ((Math.abs(contrastV)/skyStDevContrast) > (1.5 + (Math.abs(contrastV)-0.5)*(-2.0))))  <-------
             07         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 2.5)
         */
-        ANDedClauses c1 = new ANDedClauses(4);
-        c1.set(0, SKYCONDITIONAL.ALL, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c1 = new ANDedClauses(4, SKYCONDITIONAL.ALL);
+        c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[2]);
-        c1.set(1, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+        c1.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[3]);
         
-        c1.set(2, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+        c1.set(2, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[4]);
         c1.setACustomCoefficient(2, new CustomCoeff00()); 
         c1.setCustomCoefficientVariable(4, Float.valueOf(allSkiesCoeff[4]));
         c1.setCustomCoefficientVariable(5, Float.valueOf(allSkiesCoeff[5]));
         c1.setCustomCoefficientVariable(6, Float.valueOf(allSkiesCoeff[6]));
         
-        c1.set(3, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
+        c1.set(3, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[7]);
           
         /* 
@@ -98,52 +98,52 @@ public class SkylineANDedClauses {
                     14             || ((diffCIEY/localSky.getStdDevCIEY()) > 1.5)))
                     15         && (skyStDevColorDiff > 1.)
         */
-        ANDedClauses c2 = new ANDedClauses(5);
-        c2.set(0, SKYCONDITIONAL.ALL, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c2 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
+        c2.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
-        c2.set(1, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+        c2.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[9]);
-        c2.set(2, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
+        c2.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[10]);
-    c2.set(3, SKYCONDITIONAL.ALL, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
+    c2.set(3, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[11]);
-        c2.set(4, SKYCONDITIONAL.ALL, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
+        c2.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
         
-        ANDedClauses c3 = new ANDedClauses(5);
-        c3.set(0, SKYCONDITIONAL.ALL, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c3 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
+        c3.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
-        c3.set(1, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+        c3.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[9]);
-        c3.set(2, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
+        c3.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[10]);
-    c3.set(3, SKYCONDITIONAL.ALL, PARAM.DIFF_CIEX, PARAM.STDEV_CIEX, 
+    c3.set(3, PARAM.DIFF_CIEX, PARAM.STDEV_CIEX, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[12]);
-        c3.set(4, SKYCONDITIONAL.ALL, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
+        c3.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
         
-        ANDedClauses c4 = new ANDedClauses(5);
-        c4.set(0, SKYCONDITIONAL.ALL, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c4 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
+        c4.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
-        c4.set(1, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+        c4.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[9]);
-        c4.set(2, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
+        c4.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[10]);
-    c4.set(3, SKYCONDITIONAL.ALL, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
+    c4.set(3, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[13]);
-        c4.set(4, SKYCONDITIONAL.ALL, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
+        c4.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
         
-        ANDedClauses c5 = new ANDedClauses(5);
-        c5.set(0, SKYCONDITIONAL.ALL, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c5 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
+        c5.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
-        c5.set(1, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+        c5.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[9]);
-        c5.set(2, SKYCONDITIONAL.ALL, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
+        c5.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[10]);
-    c5.set(3, SKYCONDITIONAL.ALL, PARAM.DIFF_CIEY, PARAM.STDEV_CIEY, 
+    c5.set(3, PARAM.DIFF_CIEY, PARAM.STDEV_CIEY, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[14]);
-        c5.set(4, SKYCONDITIONAL.ALL, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
+        c5.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
         
         /* 
@@ -176,18 +176,18 @@ c3,c4,c5,c6
         02         && (diffCIEX > 0.03)
         03         && ((diffCIEX/localSky.getStdDevCIEX()) > 15.*diffCIEX) <---
         */
-        ANDedClauses c0 = new ANDedClauses(4);
-        c0.set(0, SKYCONDITIONAL.RED, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c0 = new ANDedClauses(4, SKYCONDITIONAL.RED);
+        c0.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, redSkiesCoeff[0]);
-        c0.set(1, SKYCONDITIONAL.RED, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
+        c0.set(1, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
             PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, redSkiesCoeff[1]);
         
         c0.setACustomCoefficient(1, new CustomCoeff01());
         c0.setCustomCoefficientVariable(1, Float.valueOf(redSkiesCoeff[1]));
         
-        c0.set(2, SKYCONDITIONAL.RED, PARAM.DIFF_CIEX, 
+        c0.set(2, PARAM.DIFF_CIEX, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, redSkiesCoeff[2]);
-        c0.set(3, SKYCONDITIONAL.RED, PARAM.DIFF_CIEX, 
+        c0.set(3, PARAM.DIFF_CIEX, 
             PARAM.STDEV_CIEX, COMPARISON.GREATER_THAN, redSkiesCoeff[3]);
         c0.setACustomCoefficient(3, new CustomCoeff02());
         c0.setCustomCoefficientVariable(3, Float.valueOf(redSkiesCoeff[3]));
@@ -198,18 +198,18 @@ c3,c4,c5,c6
         06         && (diffCIEY > 0.03)
         07         && ((diffCIEY/localSky.getStdDevCIEY()) > 15.*diffCIEY) <---
         */
-        ANDedClauses c1 = new ANDedClauses(4);
-        c1.set(0, SKYCONDITIONAL.RED, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c1 = new ANDedClauses(4, SKYCONDITIONAL.RED);
+        c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, redSkiesCoeff[4]);
-        c1.set(1, SKYCONDITIONAL.RED, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
+        c1.set(1, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
             PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, redSkiesCoeff[5]);
         
         c1.setACustomCoefficient(1, new CustomCoeff03());
         c1.setCustomCoefficientVariable(5, Float.valueOf(redSkiesCoeff[5]));
         
-        c1.set(2, SKYCONDITIONAL.RED, PARAM.DIFF_CIEY, 
+        c1.set(2, PARAM.DIFF_CIEY, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, redSkiesCoeff[6]);
-        c1.set(3, SKYCONDITIONAL.RED, PARAM.DIFF_CIEY, 
+        c1.set(3, PARAM.DIFF_CIEY, 
             PARAM.STDEV_CIEY, COMPARISON.GREATER_THAN, redSkiesCoeff[7]);
         
         c1.setACustomCoefficient(3, new CustomCoeff04());
@@ -233,25 +233,25 @@ c3,c4,c5,c6
         05         && (bV > 199)
         06         && (gV > 199))
         */
-        ANDedClauses c0 = new ANDedClauses(7);
-        c0.set(0, SKYCONDITIONAL.BLUE, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c0 = new ANDedClauses(7, SKYCONDITIONAL.BLUE);
+        c0.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, blueSkiesCoeff[0]);
-        c0.set(1, SKYCONDITIONAL.BLUE, PARAM.CONTRAST, 
+        c0.set(1, PARAM.CONTRAST, 
             PARAM.INT_ONE, COMPARISON.LESS_THAN, blueSkiesCoeff[1]);
         
-        c0.set(2, SKYCONDITIONAL.BLUE, PARAM.ABSOLUTE_CONTRAST, 
+        c0.set(2, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, blueSkiesCoeff[2]);
         
-        c0.set(3, SKYCONDITIONAL.BLUE, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
+        c0.set(3, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
             PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, blueSkiesCoeff[3]);
         
-        c0.set(4, SKYCONDITIONAL.BLUE, PARAM.B_DIV_TOT, 
+        c0.set(4, PARAM.B_DIV_TOT, 
             PARAM.INT_ONE, COMPARISON.LESS_THAN, blueSkiesCoeff[4]);
         
-        c0.set(5, SKYCONDITIONAL.BLUE, PARAM.BLUE, 
+        c0.set(5, PARAM.BLUE, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[5]);
         
-        c0.set(6, SKYCONDITIONAL.BLUE, PARAM.GREEN, 
+        c0.set(6, PARAM.GREEN, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[6]);
        
         /*
@@ -262,23 +262,23 @@ c3,c4,c5,c6
         11         && ((diffCIEY/localSky.getStdDevCIEY()) > 0.9) // ?
         12         && (skyStDevColorDiff > 0.)
         */
-        ANDedClauses c1 = new ANDedClauses(6);
-        c1.set(0, SKYCONDITIONAL.BLUE, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c1 = new ANDedClauses(6, SKYCONDITIONAL.BLUE);
+        c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, blueSkiesCoeff[7]);
         
-        c1.set(1, SKYCONDITIONAL.BLUE, PARAM.ABSOLUTE_CONTRAST, 
+        c1.set(1, PARAM.ABSOLUTE_CONTRAST, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[8]);
         
-        c1.set(2, SKYCONDITIONAL.BLUE, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
+        c1.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
             PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, blueSkiesCoeff[9]);
         
-        c1.set(3, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEX, 
+        c1.set(3, PARAM.DIFF_CIEX, 
             PARAM.STDEV_CIEX, COMPARISON.GREATER_THAN, blueSkiesCoeff[10]);
         
-        c1.set(4, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEY, 
+        c1.set(4, PARAM.DIFF_CIEY, 
             PARAM.STDEV_CIEY, COMPARISON.GREATER_THAN, blueSkiesCoeff[11]);
         
-        c1.set(5, SKYCONDITIONAL.BLUE, PARAM.STDEV_BLUE_OR_RED, 
+        c1.set(5, PARAM.STDEV_BLUE_OR_RED, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[12]);
        
         /*
@@ -292,73 +292,73 @@ c3,c4,c5,c6
         19         || (gV > 199)
         20         || (bV > 199))
         */
-        ANDedClauses c2 = new ANDedClauses(4);
-        c2.set(0, SKYCONDITIONAL.BLUE, PARAM.CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c2 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
+        c2.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
         
-        c2.set(1, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
+        c2.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
         
-        c2.set(2, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
+        c2.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
         
-        c2.set(3, SKYCONDITIONAL.BLUE, PARAM.DIFF_R_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
+        c2.set(3, PARAM.DIFF_R_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, blueSkiesCoeff[16]);
        
         
-        ANDedClauses c3 = new ANDedClauses(4);
-        c3.set(0, SKYCONDITIONAL.BLUE, PARAM.CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c3 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
+        c3.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
         
-        c3.set(1, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
+        c3.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
         
-        c3.set(2, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
+        c3.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
         
-        c3.set(3, SKYCONDITIONAL.BLUE, PARAM.DIFF_G_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
+        c3.set(3, PARAM.DIFF_G_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, blueSkiesCoeff[17]);
         
         
-        ANDedClauses c4 = new ANDedClauses(4);
-        c4.set(0, SKYCONDITIONAL.BLUE, PARAM.CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c4 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
+        c4.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
         
-        c4.set(1, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
+        c4.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
         
-        c4.set(2, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
+        c4.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
         
-        c4.set(3, SKYCONDITIONAL.BLUE, PARAM.DIFF_B_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
+        c4.set(3, PARAM.DIFF_B_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, blueSkiesCoeff[18]);
         
    
-        ANDedClauses c5 = new ANDedClauses(4);
-        c5.set(0, SKYCONDITIONAL.BLUE, PARAM.CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c5 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
+        c5.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
         
-        c5.set(1, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
+        c5.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
         
-        c5.set(2, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
+        c5.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
         
-        c5.set(3, SKYCONDITIONAL.BLUE, PARAM.GREEN, PARAM.INT_ONE, 
+        c5.set(3, PARAM.GREEN, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, blueSkiesCoeff[19]);
         
         
-        ANDedClauses c6 = new ANDedClauses(4);
-        c6.set(0, SKYCONDITIONAL.BLUE, PARAM.CONTRAST, PARAM.INT_ONE, 
+        ANDedClauses c6 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
+        c6.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
         
-        c6.set(1, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
+        c6.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
         
-        c6.set(2, SKYCONDITIONAL.BLUE, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
+        c6.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
             COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
         
-        c6.set(3, SKYCONDITIONAL.BLUE, PARAM.BLUE, PARAM.INT_ONE, 
+        c6.set(3, PARAM.BLUE, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, blueSkiesCoeff[20]);
         
         return new ANDedClauses[]{c0, c1, c2, c3, c4, c5, c6};

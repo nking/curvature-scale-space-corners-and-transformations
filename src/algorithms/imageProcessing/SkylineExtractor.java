@@ -2101,6 +2101,9 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
      *      break
      *   
      *  a pixel making it to here looks like a sky pixel.
+     * 
+     * Note that internally, if the sky is red, the blue rules are removed
+     * from the clauses and vice versa for blue skies.
      * </pre>
      * 
      * @param skyPoints
@@ -2130,6 +2133,8 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
         
         double rDivB = allSkyColor.getAvgRed() / allSkyColor.getAvgBlue();
         boolean skyIsRed = (rDivB > 1);
+        
+        clauses = filterForSkyColor(clauses, skyIsRed);
        
         log.info("==> r/b=" + rDivB
             + " redStdev=" + allSkyColor.getStdDevRed()
@@ -2270,18 +2275,15 @@ log.info("FILTER 01");
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
                     // this is a sky point
 log.info("FILTER 02");
-                } else if (isSolarYellow) {
+                //} else if (isSolarYellow) {
                     // this is a sky point
-log.info("FILTER 03");
+//log.info("FILTER 03");
                 } else {
                     
                     // evaluate clauses that evaluate to 'T' when the pixel 
                     // looks like a border (non-sky) pixel
                     boolean isNotSky = false;
-            /* TODO:        
-            if its red and passes, what happens when it gets to blue rules?
-            need to separate into running all + red else all + blue
-            */    
+               
                     for (ANDedClauses clause : clauses) {
                         if (clause.evaluate(data)) {
                             isNotSky = true;
@@ -2297,10 +2299,8 @@ log.info("FILTER 03");
                 skyPoints.add(vPoint);
 
                 boolean doNotAddToStack = false;
-                if (skyIsRed) { 
-                    if ((skyStDevContrast == 0.) && (contrastV >= 0.)) {
-                        doNotAddToStack = true;
-                    }
+                if (skyIsRed && (skyStDevContrast == 0.) && (contrastV >= 0.)) {
+                    doNotAddToStack = true;
                 }
                 if (!doNotAddToStack) {
                     cloudQueue.add(vPoint);
@@ -4022,6 +4022,48 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
             );
         }
         skyPoints.addAll(outputCloudPoints);
+    }
+
+    private ANDedClauses[] filterForSkyColor(ANDedClauses[] clauses, 
+        boolean skyIsRed) {
+        
+        int n = 0;
+        for (int i = 0; i < clauses.length; i++) {
+            
+            ANDedClauses c = clauses[i];
+            
+            if (c.getSKYCONDITIONAL().ordinal() == SKYCONDITIONAL.ALL.ordinal()) {
+                n++;
+            } else if (skyIsRed && (c.getSKYCONDITIONAL().ordinal() == 
+                SKYCONDITIONAL.RED.ordinal())) {
+                n++;
+            } else if (!skyIsRed && (c.getSKYCONDITIONAL().ordinal() == 
+                SKYCONDITIONAL.BLUE.ordinal())) {
+                n++;
+            }
+        }
+        
+        ANDedClauses[] filtered = new ANDedClauses[n];
+        int ii = 0;
+        for (int i = 0; i < clauses.length; i++) {
+            
+            ANDedClauses c = clauses[i];
+            
+            if (c.getSKYCONDITIONAL().ordinal() == SKYCONDITIONAL.ALL.ordinal()) {
+                filtered[ii] = c;
+                ii++;
+            } else if (skyIsRed && (c.getSKYCONDITIONAL().ordinal() == 
+                SKYCONDITIONAL.RED.ordinal())) {
+                filtered[ii] = c;
+                ii++;
+            } else if (!skyIsRed && (c.getSKYCONDITIONAL().ordinal() == 
+                SKYCONDITIONAL.BLUE.ordinal())) {
+                filtered[ii] = c;
+                ii++;
+            }
+        }
+        
+        return filtered;
     }
 
     public class RemovedSets {

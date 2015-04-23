@@ -13,7 +13,7 @@ public class ANDedClauses {
     protected final PARAM[] params2;
     protected final COMPARISON[] gtOrLT;
     protected final float[] coefficients;
-    protected final SKYCONDITIONAL[] skyConditional;
+    protected final SKYCONDITIONAL skyConditional;
     protected final int n;
     
     protected Map<Integer, CustomCoeff> customCoefficients = 
@@ -28,16 +28,17 @@ public class ANDedClauses {
     protected Map<Integer, Float> customCoefficientVariables = 
         new HashMap<Integer, Float>();
     
-    public ANDedClauses(int nClauses) {
+    public ANDedClauses(int nClauses, SKYCONDITIONAL skyC) {
+        
         this.n = nClauses;
+        skyConditional = skyC;
         params1 = new PARAM[n];
         params2 = new PARAM[n];
         gtOrLT = new COMPARISON[n];
         coefficients = new float[n];
-        skyConditional = new SKYCONDITIONAL[n];
     }
     
-    public ANDedClauses(SKYCONDITIONAL[] skyC, PARAM[] p1, PARAM[] p2, 
+    public ANDedClauses(SKYCONDITIONAL skyC, PARAM[] p1, PARAM[] p2, 
         COMPARISON[] comp, float[] c) {
         
         if (skyC == null) {
@@ -56,12 +57,7 @@ public class ANDedClauses {
             throw new IllegalArgumentException("c cannot be null");
         }
         
-        this.n = skyC.length;
-        
-        if (p1.length != n) {
-            throw new IllegalArgumentException(
-                "p1 is not the same length as skyC");
-        }
+        this.n = p1.length;
         
         if (p2.length != n) {
             throw new IllegalArgumentException(
@@ -85,15 +81,13 @@ public class ANDedClauses {
         coefficients = c;
     }
     
-    public void set(int index, SKYCONDITIONAL skyC, PARAM p1, PARAM p2, 
-        COMPARISON comp, float c) {
+    public void set(int index, PARAM p1, PARAM p2, COMPARISON comp, float c) {
         
         if ((index < 0) || (index > (n - 1))) {
             throw new IllegalArgumentException(
             "index is out of bounds of arrays size n");
         }
         
-        skyConditional[index] = skyC;
         params1[index] = p1;
         params2[index] = p2;
         gtOrLT[index] = comp;
@@ -156,14 +150,9 @@ public class ANDedClauses {
         return params2[index];
     }
     
-    public SKYCONDITIONAL getSKYCONDITIONAL(int index) {
+    public SKYCONDITIONAL getSKYCONDITIONAL() {
         
-        if ((index < 0) || (index > (n - 1))) {
-            throw new IllegalArgumentException(
-            "index is out of bounds of arrays size n");
-        }
-        
-        return skyConditional[index];
+        return skyConditional;
     }
     
     /**
@@ -174,6 +163,14 @@ public class ANDedClauses {
      */
     public boolean evaluate(ColorData data) {
               
+        if ((skyConditional.ordinal() == SKYCONDITIONAL.RED.ordinal()) 
+            && !data.skyIsRed()) {        
+            return false;
+        } else if ((skyConditional.ordinal() == SKYCONDITIONAL.BLUE.ordinal()) 
+            && data.skyIsRed()) {
+            return false;
+        }
+        
         for (int i = 0; i < n; i++) {
             
             double param1 = data.getParameter(params1[i]);
@@ -186,54 +183,15 @@ public class ANDedClauses {
                     customCoefficientVariables);
             }
             
-            if ((skyConditional[i].ordinal() == 
-                SKYCONDITIONAL.RED.ordinal()) && !data.skyIsRed()) {
-                
-                return false;
-             
-            } else if ((skyConditional[i].ordinal() == 
-                SKYCONDITIONAL.BLUE.ordinal()) && data.skyIsRed()) {
-                
-                return false;
-                
-            } if (skyConditional[i].ordinal() == SKYCONDITIONAL.ALL.ordinal()) {
-                
-                if (gtOrLT[i].ordinal() == COMPARISON.GREATER_THAN.ordinal()) {
-                    if (!((param1 / param2) > coeff)) {
-                        return false;
-                    }
-                } else {
-                    if (!((param1 / param2) < coeff)) {
-                        return false;
-                    }
+            if (gtOrLT[i].ordinal() == COMPARISON.GREATER_THAN.ordinal()) {
+                if (!((param1 / param2) > coeff)) {
+                    return false;
                 }
-                
-            } else if ((skyConditional[i].ordinal() == 
-                SKYCONDITIONAL.RED.ordinal()) && data.skyIsRed()) {
-                
-                if (gtOrLT[i].ordinal() == COMPARISON.GREATER_THAN.ordinal()) {
-                    if (!((param1 / param2) > coeff)) {
-                        return false;
-                    }
-                } else {
-                    if (!((param1 / param2) < coeff)) {
-                        return false;
-                    }
+            } else {
+                if (!((param1 / param2) < coeff)) {
+                    return false;
                 }
-                
-            } else if ((skyConditional[i].ordinal() == 
-                SKYCONDITIONAL.BLUE.ordinal()) && !data.skyIsRed()) {
-                
-                if (gtOrLT[i].ordinal() == COMPARISON.GREATER_THAN.ordinal()) {
-                    if (!((param1 / param2) > coeff)) {
-                        return false;
-                    }
-                } else {
-                    if (!((param1 / param2) < coeff)) {
-                        return false;
-                    }
-                }
-            }
+            }            
         }
         
         return true;
