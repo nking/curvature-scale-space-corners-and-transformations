@@ -2278,7 +2278,10 @@ log.info("FILTER 03");
                     // evaluate clauses that evaluate to 'T' when the pixel 
                     // looks like a border (non-sky) pixel
                     boolean isNotSky = false;
-            
+            /* TODO:        
+            if its red and passes, what happens when it gets to blue rules?
+            need to separate into running all + red else all + blue
+            */    
                     for (ANDedClauses clause : clauses) {
                         if (clause.evaluate(data)) {
                             isNotSky = true;
