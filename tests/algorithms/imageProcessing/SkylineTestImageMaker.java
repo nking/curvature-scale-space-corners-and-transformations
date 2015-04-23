@@ -733,7 +733,7 @@ public class SkylineTestImageMaker {
             "seattle.jpg",
             "arches.jpg",
             "stinson_beach.jpg",
-            "cloudy_san_jose.jpg",            
+            "cloudy_san_jose.jpg",       
             "stonehenge.jpg",
             "norwegian_mtn_range.jpg",
             "halfdome.jpg",

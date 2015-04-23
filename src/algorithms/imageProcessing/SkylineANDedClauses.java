@@ -172,35 +172,48 @@ c3,c4,c5,c6
     
         /*
         00         (skyStDevContrast > 0.)
-        01         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 15.*diffCIEX)
+        01         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 15.*diffCIEX) <---
         02         && (diffCIEX > 0.03)
-        03         && ((diffCIEX/localSky.getStdDevCIEX()) > 15.*diffCIEX)
+        03         && ((diffCIEX/localSky.getStdDevCIEX()) > 15.*diffCIEX) <---
         */
         ANDedClauses c0 = new ANDedClauses(4);
         c0.set(0, SKYCONDITIONAL.RED, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, redSkiesCoeff[0]);
         c0.set(1, SKYCONDITIONAL.RED, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
             PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, redSkiesCoeff[1]);
+        
+        c0.setACustomCoefficient(1, new CustomCoeff01());
+        c0.setCustomCoefficientVariable(1, Float.valueOf(redSkiesCoeff[1]));
+        
         c0.set(2, SKYCONDITIONAL.RED, PARAM.DIFF_CIEX, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, redSkiesCoeff[2]);
         c0.set(3, SKYCONDITIONAL.RED, PARAM.DIFF_CIEX, 
             PARAM.STDEV_CIEX, COMPARISON.GREATER_THAN, redSkiesCoeff[3]);
+        c0.setACustomCoefficient(3, new CustomCoeff02());
+        c0.setCustomCoefficientVariable(3, Float.valueOf(redSkiesCoeff[3]));
        
         /*
         04         (skyStDevContrast > 0.)
-        05         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 15.*diffCIEY)
+        05         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 15.*diffCIEY) <---
         06         && (diffCIEY > 0.03)
-        07         && ((diffCIEY/localSky.getStdDevCIEY()) > 15.*diffCIEY)
+        07         && ((diffCIEY/localSky.getStdDevCIEY()) > 15.*diffCIEY) <---
         */
         ANDedClauses c1 = new ANDedClauses(4);
         c1.set(0, SKYCONDITIONAL.RED, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, redSkiesCoeff[4]);
         c1.set(1, SKYCONDITIONAL.RED, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
             PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, redSkiesCoeff[5]);
+        
+        c1.setACustomCoefficient(1, new CustomCoeff03());
+        c1.setCustomCoefficientVariable(5, Float.valueOf(redSkiesCoeff[5]));
+        
         c1.set(2, SKYCONDITIONAL.RED, PARAM.DIFF_CIEY, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, redSkiesCoeff[6]);
         c1.set(3, SKYCONDITIONAL.RED, PARAM.DIFF_CIEY, 
             PARAM.STDEV_CIEY, COMPARISON.GREATER_THAN, redSkiesCoeff[7]);
+        
+        c1.setACustomCoefficient(3, new CustomCoeff04());
+        c1.setCustomCoefficientVariable(7, Float.valueOf(redSkiesCoeff[7]));
         
         return new ANDedClauses[]{c0, c1};
     }

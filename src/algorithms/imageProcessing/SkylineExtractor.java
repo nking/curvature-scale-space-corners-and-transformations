@@ -1936,6 +1936,50 @@ log.info("FILTER 05");
                     continue;
                 } else if (skyIsRed) {
                     
+                    /* TODO:
+                    The original filters have been replaced by a simpler
+                    relationship which may need to be returned to this
+                    after adding more tests.
+                    if ((skyStDevContrast > 0.)
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 3.)
+                        && (diffCIEX > 0.03) 
+                        && ((diffCIEX/localSky.getStdDevCIEX()) > 3.)
+                        ) {
+                        continue;
+                    } else if ((skyStDevContrast > 0.)
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 1.1)
+                        && ((diffCIEX > 0.065) 
+                        && ((diffCIEX/localSky.getStdDevCIEX()) > 1.1))
+                        ) {
+                        continue;
+                     } else if ((skyStDevContrast > 0.)
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 10.)
+                        && ((diffCIEX > 0.02) 
+                        && ((diffCIEX/localSky.getStdDevCIEX()) > 1.5))
+                        ) {
+                        continue;
+                    } else if ((skyStDevContrast > 0.)
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 3.)
+                        && (diffCIEY > 0.03) 
+                        && ((diffCIEY/localSky.getStdDevCIEY()) > 3.)
+                        ) {
+                        continue;
+                    } else if ((skyStDevContrast > 0.)
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 1.1)
+                        && ((diffCIEY > 0.03) 
+                        && ((diffCIEY/localSky.getStdDevCIEY()) > 3.))
+                        ) {
+                        continue;                        
+                    } else if ((skyStDevContrast > 0.)
+                        && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 10.)
+                        && ((diffCIEY > 0.02) 
+                        && ((diffCIEY/localSky.getStdDevCIEY()) > 1.5))
+                        ) {
+                        continue;
+                     ...
+                    */
+                    
+                    
                     if (
                         // contrast is defined by luma, so might be weak near
                         // skyline near sun for example
@@ -2249,7 +2293,13 @@ log.info("FILTER 03");
                 
                 skyPoints.add(vPoint);
 
-                if (!(skyIsRed && (skyStDevContrast == 0.) && (contrastV >= 0.))) {
+                boolean doNotAddToStack = false;
+                if (skyIsRed) { 
+                    if ((skyStDevContrast == 0.) && (contrastV >= 0.)) {
+                        doNotAddToStack = true;
+                    }
+                }
+                if (!doNotAddToStack) {
                     cloudQueue.add(vPoint);
                 }
             }
