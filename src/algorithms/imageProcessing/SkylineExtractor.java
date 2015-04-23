@@ -2269,7 +2269,7 @@ log.info("FILTER 01");
                     rV, gV, bV
                 );
                 
-                if ( // no contrast or color change, should be sky
+                if (// no contrast or color change, should be sky
                     (Math.abs(contrastV) < 0.015)
                     && (Math.abs(colorDiffV) < 10)
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
@@ -2302,9 +2302,9 @@ log.info("FILTER 02");
                 if (skyIsRed && (skyStDevContrast == 0.) && (contrastV >= 0.)) {
                     doNotAddToStack = true;
                 }
-                if (!doNotAddToStack) {
+                //if (!doNotAddToStack) {
                     cloudQueue.add(vPoint);
-                }
+                //}
             }
         }
 

@@ -71,7 +71,7 @@ public class SkylineANDedClauses {
         ANDedClauses c1 = new ANDedClauses(4, SKYCONDITIONAL.ALL);
         c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[2]);
-        c1.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
+        c1.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[3]);
         
         c1.set(2, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
@@ -145,22 +145,7 @@ public class SkylineANDedClauses {
             COMPARISON.GREATER_THAN, allSkiesCoeff[14]);
         c5.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
-        
-        /* 
-c3,c4,c5,c6        
-        08         (skyStDevContrast > 0.005)
-        09         && ((Math.abs(contrastV)/skyStDevContrast) > 5.)
-        10         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)
-                   &&
-                   // if cieXY diffs are zero and within stdev, these are sky,
-                   // so test for opposite for boundary pixel
-        11         (((diffCIEX > 0.001)
-        12             || ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)
-        13             || (diffCIEY > 0.001)
-        14             || ((diffCIEY/localSky.getStdDevCIEY()) > 1.5)))
-        15         && (skyStDevColorDiff > 1.)
-        */
-        
+      
         return new ANDedClauses[]{c0, c1, c2, c3, c4, c5};
     }
     
