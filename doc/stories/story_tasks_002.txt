@@ -238,8 +238,9 @@ Task 4:
         
 ---------------------------------------------------------------------
 Task 5:
-    goal: implement the harness to run findClouds over multiple images
-          for all equations and return the best fitting coefficients.
+    goal: write the fitness function that evaluates the result of
+          finClouds() by comparison with points for the test image's
+          sky mask.
 
     details:  
         (1) write the fitness function that evaluates the resulting
@@ -251,7 +252,22 @@ Task 5:
             -- the penalty for missing points on the sky side of
                the sky line should be small.
             ==> this function should be written and tested
-        (2) write a general downhill simplex for handling an array 
+
+   time estimate: minimum half day, maximum 2 days
+  
+   amount of time used:
+
+   state of completion:
+
+   comments:
+              
+---------------------------------------------------------------------
+Task 6:
+    goal: implement the harness to run findClouds over multiple images
+         for all equations and return the best fitting coefficients.
+
+    details:  
+        (1) write a general downhill simplex for handling an array 
             of coefficients and an array of suggested step sizes 
             and possibly 2 arrays of boundaries for each 
             coefficient.
@@ -270,7 +286,7 @@ Task 5:
                   run on any test image from current set of coefficients
                   results in improved coefficients where improved is
                   evaluated by the fitness function mentioned above.
-        (3) create the method that is a wrapper for using the heuristics
+        (2) create the method that is a wrapper for using the heuristics
             to improve the coefficients. need to operate on all 
             images as a set to get their individual fitness function
             results and use the totals of those to let the
@@ -294,7 +310,7 @@ Task 5:
    comments:
               
 ---------------------------------------------------------------------
-Task 6:
+Task 7:
     goal: find more test images, especially those described as current
           caveats that would need an alternate way of finding the seed
           sky points.
