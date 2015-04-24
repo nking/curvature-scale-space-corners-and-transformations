@@ -203,13 +203,15 @@ Task 3:
                break
            a pixel making it to here looks like a sky pixel
 
-    time estimate: max 3 days (including unanticipated changes)
+    time estimate: max 2 days
   
-    amount of time used: 2 days so far
+    amount of time used: 2 + days 
 
-    state of completion: in progress
+    state of completion: complete
 
     comments:
+        this in combination with Task 4 showed that custom coeeficients
+        were needed fo some clauses.
               
 ---------------------------------------------------------------------
 Task 4:
@@ -222,20 +224,66 @@ Task 4:
 
           write a simple test for the new method.
 
-   time estimate: 
+   time estimate: (unestimated)
   
-   amount of time used: half hour so far
+   amount of time used: 2 days
 
-   state of completion:
+   state of completion: complete
 
    comments:
-              
+       An overloaded findClouds accepting the clause has been implemented
+       and produces results very close to the original findClouds()
+       and should be a set of coefficients that is possible to fit and 
+       improve in Task 5.
+        
 ---------------------------------------------------------------------
 Task 5:
     goal: implement the harness to run findClouds over multiple images
           for all equations and return the best fitting coefficients.
 
     details:  
+        (1) write the fitness function that evaluates the resulting
+            sky points from findClouds(clauses) for a test image 
+            and compares that to the test image mask points.
+            -- the fitness function needs a very high penalty for
+               overrunning the boundary, that is points found as
+               sky that are outside of the sky.
+            -- the penalty for missing points on the sky side of
+               the sky line should be small.
+            ==> this function should be written and tested
+        (2) write a general downhill simplex for handling an array 
+            of coefficients and an array of suggested step sizes 
+            and possibly 2 arrays of boundaries for each 
+            coefficient.
+            ==> test the downhill simplex
+                the downhill simplex starter points are most important
+                for good results.  for problems that are not actually
+                local search, the starter points help provide a rough
+                range search from which the remaining algorithm
+                can then find improved coefficients.
+                so testing has to focus on creating the starter points
+                using the given boundaries, and the algorithm's use of
+                step size has to be learned by testing too.
+                -- presumably, will need to use real test images on 
+                  this rather than making simpler test images.
+               -- the test results should show that the simplex
+                  run on any test image from current set of coefficients
+                  results in improved coefficients where improved is
+                  evaluated by the fitness function mentioned above.
+        (3) create the method that is a wrapper for using the heuristics
+            to improve the coefficients. need to operate on all 
+            images as a set to get their individual fitness function
+            results and use the totals of those to let the
+            downhill simplex improve the coefficients.
+[paused writing here...]
+            -- use 3 instances of the downhill simplex, one for fitting
+               the clauses for all skies, the second for blue skies
+               and the third for red skies OR
+               2 instances for all + red and all + blue...
+            ==> the tests should be to assert that the results for
+               each image are closer to the expected from the mask images.
+               -- a reasonable convergence should be considered and learned
+                  empirically.
 
    time estimate: 
   
