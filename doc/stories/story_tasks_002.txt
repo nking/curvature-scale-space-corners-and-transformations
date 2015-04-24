@@ -234,24 +234,65 @@ Task 4:
        An overloaded findClouds accepting the clause has been implemented
        and produces results very close to the original findClouds()
        and should be a set of coefficients that is possible to fit and 
-       improve in Task 5.
+       improve in Task 6.
         
 ---------------------------------------------------------------------
 Task 5:
     goal: write the fitness function that evaluates the result of
-          finClouds() by comparison with points for the test image's
+          findClouds() by comparison with points for the test image's
           sky mask.
 
     details:  
         (1) write the fitness function that evaluates the resulting
             sky points from findClouds(clauses) for a test image 
             and compares that to the test image mask points.
-            -- the fitness function needs a very high penalty for
-               overrunning the boundary, that is points found as
-               sky that are outside of the sky.
-            -- the penalty for missing points on the sky side of
-               the sky line should be small.
+            -- there should be a high penalty for overrunning the
+               boundary by including non-sky points and the
+               subsequent comparison should be for the highest frction
+               of matches to expected.
             ==> this function should be written and tested
+
+        Need to make decisions about the embedded non-sky points
+           -- not necessarily concerned about fitting for these
+              because they may be mostly clouds that are better
+              recognized in a subsequent step (embedded pixels which
+              look like clouds).
+           -- the masks already remove those.  
+              -- so the results from findClouds have to have
+                 a following step which includes the embedded points.
+           -- then the algorithm is completely focused on fitting the
+              boundary.  It can be changed later if it's found that
+              it's necessary to consider embedded points and gaps
+              similarly.  would need to alter the test masks for that
+              and add more test images.  that would be another task...
+
+        Then the comparison of expected sky points (these are given
+            by the masks) can be directly compared to the
+            results of findClouds() + add emebedded.
+
+            Need to keep 2 characteristics to evaluate them:
+               keep:  -- the number of points overrunning the boundary divided by the
+                         total number of expecte sky points.
+               keep:  -- the number of points matched divided by the total number expected.
+
+            comparison:
+               better is smaller number of normalized overrun points
+               ties and zero are then evaluated:
+                   better is higher normalized number of matches to expected. 
+
+        The comparison point sets:
+            have from test sky mask:
+                Set<PairInt> expectedSkyPoints = readSkyPixels(skyMask);
+            have from test image findClouds results:
+                Set<PairInt> skyPoints 
+                ...
+                // find embedded points
+                PerimeterFinder perimeterFinder = new PerimeterFinder();
+                int[] skyRowMinMax = new int[2];
+                Set<PairInt> embeddedPoints = new HashSet<PairInt>();
+                Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(
+                    points, skyRowMinMax, originalColorImage.getWidth(), 
+                    embeddedPoints);
 
    time estimate: minimum half day, maximum 2 days
   
