@@ -2060,7 +2060,7 @@ log.info("FILTER 13");
     }
 
 private boolean check(int vX, int xOffset, int vY, int yOffset) {
-    /*if (((vX + xOffset)>=377) && ((vX + xOffset)<=377) && ((vY + yOffset)==191)) {
+    /*if (((vX + xOffset)>=461) && ((vX + xOffset)<=461) && ((vY + yOffset)==198)) {
         return true;
     }*/
     return false;
@@ -2302,9 +2302,9 @@ log.info("FILTER 02");
                 if (skyIsRed && (skyStDevContrast == 0.) && (contrastV >= 0.)) {
                     doNotAddToStack = true;
                 }
-                //if (!doNotAddToStack) {
+                if (!doNotAddToStack) {
                     cloudQueue.add(vPoint);
-                //}
+                }
             }
         }
 

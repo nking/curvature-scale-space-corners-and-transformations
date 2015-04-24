@@ -26,7 +26,9 @@ public class SkylineANDedClauses {
         //00  01     02    03    04     05   06
         0.0f, 0.05f, 1.5f, 3.0f, 0.37f, 199, 199,
         //07   08     09   10    11    12
-        0.0f, 0.05f, 1.5f, 0.9f, 0.9f, 0.0f,
+        //0.0f, 0.05f, 1.5f, 0.9f, 0.9f, 0.0f,
+        0.0f, 0.05f, 1.5f, 0.6f, 0.9f, 0.0f,
+        
         //13   14      15      16     17     18     19   20
         0.05f, 0.005f, 0.005f, 0.08f, 0.03f, 0.03f, 199, 199
     };
@@ -243,7 +245,8 @@ public class SkylineANDedClauses {
         07         (skyStDevContrast > 0.0)
         08         && (Math.abs(contrastV) > 0.05)
         09         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 1.5)
-        10         && ((diffCIEX/localSky.getStdDevCIEX()) > 0.9) // ?
+        10         //&& ((diffCIEX/localSky.getStdDevCIEX()) > 0.9) // ?
+                   ((diffCIEX/localSky.getStdDevCIEX()) > 0.6)
         11         && ((diffCIEY/localSky.getStdDevCIEY()) > 0.9) // ?
         12         && (skyStDevColorDiff > 0.)
         */

@@ -740,10 +740,10 @@ public class SkylineTestImageMaker {
             "costa_rica.jpg",
             "new-mexico-sunrise_w725_h490.jpg",
             "arizona-sunrise-1342919937GHz.jpg",
-            "sky_with_rainbow.jpg",
+            //"sky_with_rainbow.jpg",
             //"sky_with_rainbow2.jpg",
             //"30.jpg",
-            "arches_sun_01.jpg",
+            //"arches_sun_01.jpg",
             //"stlouis_arch.jpg", 
             //"contrail.jpg"
         };
