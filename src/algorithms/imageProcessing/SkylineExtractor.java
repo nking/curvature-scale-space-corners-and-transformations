@@ -699,9 +699,8 @@ debugPlot(outputRemovedPoints, originalColorImage, xOffset, yOffset, "filtered_o
 
     }
 
-     
     /**
-     * if the range of contrast is large, return a contrast histogram,
+     * If the range of contrast is large, return a contrast histogram,
      * else return null.  
      * TODO: refactor to move the logic to return null to the invoker. 
      * For now, the only use of this method is simpler if it does not
@@ -3563,6 +3562,22 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return embeddedPoints;
     }
     
+    public Set<PairInt> findEmbeddedNonPoints(Set<PairInt> points, 
+        int imageMaxColumn) {
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        int[] skyRowMinMax = new int[2];
+        
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        Map<Integer, List<PairInt>> skyRowColRange = 
+            perimeterFinder.find(points, 
+            skyRowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        
+        return outputEmbeddedGapPoints;
+    }
+    
     private void correctSkylineForSun(Set<PairInt> sunPoints, 
         Set<PairInt> skyPoints, Image colorImg, GreyscaleImage mask, 
         GreyscaleImage gradientXY) {
@@ -4023,7 +4038,7 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         }
         skyPoints.addAll(outputCloudPoints);
     }
-
+    
     private ANDedClauses[] filterForSkyColor(ANDedClauses[] clauses, 
         boolean skyIsRed) {
         
