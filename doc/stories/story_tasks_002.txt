@@ -305,15 +305,15 @@ Task 5:
 ---------------------------------------------------------------------
 Task 6:
     goal: implement the harness to run findClouds over multiple images
-         for all equations and return the best fitting coefficients.
+        for all equations and return the best fitting coefficients.
 
     details:  
-        (1) write a general downhill simplex for handling an array 
+        (1) Write a general downhill simplex for handling an array 
             of coefficients and an array of suggested step sizes 
             and possibly 2 arrays of boundaries for each 
             coefficient.
-            ==> test the downhill simplex
-                the downhill simplex starter points are most important
+            ==> Test the downhill simplex.
+                The downhill simplex starter points are most important
                 for good results.  for problems that are not actually
                 local search, the starter points help provide a rough
                 range search from which the remaining algorithm
@@ -327,7 +327,7 @@ Task 6:
                   run on any test image from current set of coefficients
                   results in improved coefficients where improved is
                   evaluated by the fitness function mentioned above.
-        (2) create the method that is a wrapper for using the heuristics
+        (2) Create the method that is a wrapper for using the heuristics
             to improve the coefficients. need to operate on all 
             images as a set to get their individual fitness function
             results and use the totals of those to let the

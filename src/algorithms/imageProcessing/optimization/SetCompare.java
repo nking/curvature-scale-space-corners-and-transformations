@@ -1,4 +1,4 @@
-package algorithms.imageProcessing.util;
+package algorithms.imageProcessing.optimization;
 
 import algorithms.util.PairInt;
 import java.util.Set;

@@ -4,6 +4,8 @@ import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
+import algorithms.imageProcessing.optimization.ANDedClauses;
+import algorithms.imageProcessing.optimization.SkylineANDedClauses;
 import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairInt;
@@ -720,7 +722,6 @@ public class SkylineTestImageMaker {
         }   
         
     }
-    
     
     private void temporaryStartToFindCloudsRefinement() throws Exception {
         

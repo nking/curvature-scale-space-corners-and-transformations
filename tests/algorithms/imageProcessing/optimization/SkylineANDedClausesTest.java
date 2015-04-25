@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.imageProcessing.optimization;
 
 import junit.framework.TestCase;
 import static org.junit.Assert.*;

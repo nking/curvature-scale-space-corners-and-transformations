@@ -1,4 +1,4 @@
-package algorithms.imageProcessing.util;
+package algorithms.imageProcessing.optimization;
 
 import java.util.List;
 
@@ -18,6 +18,29 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
             (float) nOverrun / (float) nExpected : Float.POSITIVE_INFINITY;
         this.numberMatchedDivExpected = (nExpected > 0) ? 
             (float) nMatched / (float) nExpected : Float.POSITIVE_INFINITY;
+    }
+    
+    public SetComparisonResults(List<SetComparisonResults> results) {
+        
+        int nTotal = 0;
+        for (SetComparisonResults result : results) {
+            nTotal += result.nExpectedPoints;
+        }
+        this.nExpectedPoints = nTotal;
+        
+        float sumOverrunFraction = 0;
+        for (SetComparisonResults result : results) {
+            double fraction = result.numberOverrunDivExpected;
+            sumOverrunFraction += fraction;
+        }
+        this.numberOverrunDivExpected = sumOverrunFraction/(float)results.size();
+        
+        float sumnMatchedFraction = 0;
+        for (SetComparisonResults result : results) {
+            double fraction = result.numberMatchedDivExpected;
+            sumnMatchedFraction += fraction;
+        }
+        this.numberMatchedDivExpected = sumnMatchedFraction/(float)results.size();
     }
     
     public SetComparisonResults(List<Integer> nExpected, List<Integer> nOverrun, 

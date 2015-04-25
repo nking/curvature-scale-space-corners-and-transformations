@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.imageProcessing.optimization;
 
 import java.util.HashMap;
 import java.util.Map;

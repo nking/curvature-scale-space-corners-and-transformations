@@ -1,4 +1,4 @@
-package algorithms.imageProcessing;
+package algorithms.imageProcessing.optimization;
 
 import java.util.Map;
 
@@ -6,16 +6,16 @@ import java.util.Map;
  *
  * @author nichole
  */
-public class CustomCoeff04 implements CustomCoeff {
+public class CustomCoeff01 implements CustomCoeff {
     
     /**
      * <pre>
      * evaluates 
      *     
-     *     coefficients[7] + diffCIEY;
+     *     coefficients[1] + diffCIEX;
      * 
      * where it's expected that the equation is near
-     *     15 * diffCIEY
+     *     15 * diffCIEX
      * </pre>
      * 
      * @param data
@@ -27,11 +27,11 @@ public class CustomCoeff04 implements CustomCoeff {
     public double evaluate(ColorData data, float[] coefficients,
         Map<Integer, Float> customCoefficients) {
         
-        double diffCIEY = data.getParameter(PARAM.DIFF_CIEY);
+        double diffCIEX = data.getParameter(PARAM.DIFF_CIEX);
         
-        float coeff = customCoefficients.get(Integer.valueOf(7));
+        float coeff = customCoefficients.get(Integer.valueOf(1));
        
-        return coeff * diffCIEY;
+        return coeff * diffCIEX;
     }
     
 }

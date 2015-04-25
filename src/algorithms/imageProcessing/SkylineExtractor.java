@@ -5,6 +5,9 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.EllipseHelper;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.PointInPolygon;
+import algorithms.imageProcessing.optimization.ANDedClauses;
+import algorithms.imageProcessing.optimization.ColorData;
+import algorithms.imageProcessing.optimization.SKYCONDITIONAL;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -2109,7 +2112,7 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
      * @param originalColorImage
      * @param mask
      */
-    void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
+    public void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
         ImageExt originalColorImage, GreyscaleImage thetaImage, 
         ANDedClauses[] clauses) {
         
