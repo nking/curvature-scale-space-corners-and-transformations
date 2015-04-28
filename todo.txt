@@ -12,6 +12,9 @@ Task 6 in story 002:
           function.
       (2) attempt to match all of the border pixels (and count the expected
           number of them)
+      (3) when there are no overrun pixels, and no border pixels yet matched, 
+          the better fitness will be the instance with higher fraction of 
+          expected matches of all sky pixels.
    -- is there just one or two pixels in the mask that are too far away
       from the real skyline that are making the solution remain that 
       "distance" in terms of contrast and color?
