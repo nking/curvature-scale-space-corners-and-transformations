@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.optimization;
 
+import algorithms.compGeometry.PerimeterFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.SkylineExtractor;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -27,7 +29,6 @@ public class SkylineDownhillSimplex {
     private final ANDedClauses[] clauses;
     private final float[][] coeffLowerLimits;
     private final float[][] coeffUpperLimits;
-    private final float[][] coeffStepSizes;
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -35,8 +36,7 @@ public class SkylineDownhillSimplex {
         List<GreyscaleImage> thetaImages, 
         List<Set<PairInt>> seedPoints, List<Set<PairInt>> excludePoints, 
         List<Set<PairInt>> expectedPoints, ANDedClauses[] clauses,
-        float[][] coeffLowerLimits, float[][] coeffUpperLimits,
-        float[][] coeffStepSizes) {
+        float[][] coeffLowerLimits, float[][] coeffUpperLimits) {
         
         if (images == null) {
             throw new IllegalArgumentException("images cannot be null");
@@ -65,7 +65,6 @@ public class SkylineDownhillSimplex {
         this.clauses = clauses;
         this.coeffLowerLimits = coeffLowerLimits;
         this.coeffUpperLimits = coeffUpperLimits;
-        this.coeffStepSizes = coeffStepSizes;
     }
     
     protected SkylineFits process(SkylineExtractor skylineExtractor,
@@ -85,6 +84,25 @@ public class SkylineDownhillSimplex {
         return fit;
     }
     
+    protected Set<PairInt> getEmbedded(Set<PairInt> skyPoints,
+        int width, int height) {
+        
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        int imageMaxColumn = width - 1;
+        int imageMaxRow = height - 1;
+       
+        int[] skyRowMinMax = new int[2];
+        
+        Map<Integer, List<PairInt>> skyRowColRanges = perimeterFinder.find(
+            skyPoints, skyRowMinMax, imageMaxColumn, 
+            outputEmbeddedGapPoints);
+        
+        return outputEmbeddedGapPoints;
+    }
+    
     protected SkylineFits process(SkylineExtractor skylineExtractor,
         ANDedClauses[] clauses, int imageIndex) {
 
@@ -96,6 +114,8 @@ public class SkylineDownhillSimplex {
 
         skylineExtractor.findClouds(skyPoints, exclude, img, thetaImg,
             clauses);
+        
+        //skyPoints.addAll(getEmbedded(skyPoints, thetaImg.getWidth(), thetaImg.getHeight()));
 
         SetCompare setCompare = new SetCompare();
         
@@ -115,7 +135,7 @@ public class SkylineDownhillSimplex {
         //TODO: edit convergence.  it's the fraction of matched to expected matches.
         float convergence = 0.98f;
       
-        int nStarterPoints = 10;
+        int nStarterPoints = 100;
         
         SkylineFits[] fits = createStarterPoints(skylineExtractor,
             nStarterPoints);
@@ -130,7 +150,7 @@ public class SkylineDownhillSimplex {
         SetComparisonResults lastBest = null;
         int nIterSameMin = 0;
         
-        float alpha = 1;   // > 0
+        float alpha = 0.9f;//1   // > 0
         float gamma = 2;   // > 1
         float beta = -0.5f; 
         float tau = 0.5f;
@@ -141,6 +161,13 @@ public class SkylineDownhillSimplex {
 
             // best matches should be at smaller indexes
             Arrays.sort(fits, 0, (fits.length - 1));
+            
+            if (nIter == 0) {
+                nStarterPoints = 10;
+                fits = Arrays.copyOf(fits, nStarterPoints);
+                worstFitIdx = nStarterPoints - 1;
+                secondWorstFitIdx = worstFitIdx - 1;
+            }
             
             if ((lastBest != null) && 
                 (lastBest.compareTo(fits[bestFitIdx].results) == 0)) {
@@ -242,6 +269,8 @@ public class SkylineDownhillSimplex {
             }
         }
         
+        System.out.println("NITER=" + nIter);
+        
         return fits[bestFitIdx];
     }
 
@@ -274,15 +303,19 @@ public class SkylineDownhillSimplex {
         */
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
+        sr.setSeed(System.nanoTime());
         
         ANDedClauses[][] starterPointClauses = new ANDedClauses[nStarterPoints][];
-        starterPointClauses[0] = Arrays.copyOf(clauses, clauses.length);
+        starterPointClauses[0] = copy(clauses);
         
         for (int i = 1; i < nStarterPoints; i++) {
-            starterPointClauses[i] = Arrays.copyOf(clauses, clauses.length);
-            for (int ii = 0; ii < starterPointClauses.length; ii++) {
+            
+            starterPointClauses[i] = copy(clauses);
+            
+            for (int ii = 0; ii < starterPointClauses[i].length; ii++) {
+                
                 ANDedClauses clause = starterPointClauses[i][ii];
+                
                 for (int jj = 0; jj < clause.coefficients.length; jj++) {
                     float coeff = clause.coefficients[jj];
                     // pick randomly between low bounds, high bounds, center,
@@ -404,7 +437,7 @@ public class SkylineDownhillSimplex {
     }
     
     /**
-     * perform "contraction" to change each coefficient using pattern
+     * perform "reduction" to change each coefficient using pattern
      *    bestFit + (tau * (indivFit - bestFit)).
      * @param skylineFits
      * @param averagedCoeff
@@ -491,10 +524,20 @@ public class SkylineDownhillSimplex {
 
     private boolean fitIsBetter(SkylineFits fit, SkylineFits compareToFit) {
         
-        // -1 is fit is bettern than compareToFit
+        // -1 is fit is better than compareToFit
         int comp = fit.compareTo(compareToFit);
         
         return (comp > 0);
+    }
+
+    private ANDedClauses[] copy(ANDedClauses[] clauses) {
+        
+        ANDedClauses[] t = new ANDedClauses[clauses.length];
+        for (int i = 0; i < clauses.length; i++) {
+            t[i] = clauses[i].copy();
+        }
+        
+        return t;
     }
 
 }

@@ -80,15 +80,15 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
         }
         SetComparisonResults other = (SetComparisonResults) obj;
         
-        // 1 pixel in 1024x104:
-        double eps = 0;//0.536e-7;
+        double eps0 = 0.99 * (1./(double)nExpectedPoints);
+        double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:
         
         if (Math.abs(numberOverrunDivExpected - other.numberOverrunDivExpected)
-            > eps) {
+            > eps0) {
             return false;
         }
         if (Math.abs(numberMatchedDivExpected - other.numberMatchedDivExpected)
-            > eps) {
+            > eps1) {
             return false;
         }
         return true;
@@ -110,18 +110,20 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
     @Override
     public int compareTo(SetComparisonResults other) {
 
-        // 1 pixel in 1024x104:
-        double eps = 0;//0.536e-7;
+        // cannot have even 1 pixel overrun, so eps0 should be 0,
+        // but will consider precision  
+        double eps0 = 0.99 * (1./(double)nExpectedPoints);
+        double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:
 
         float diff0 = Math.abs(numberOverrunDivExpected
             - other.numberOverrunDivExpected);
 
-        if (diff0 <= eps) {
+        if (diff0 <= eps0) {
 
             float diff1 = Math.abs(numberMatchedDivExpected
                 - other.numberMatchedDivExpected);
 
-            if (diff1 <= eps) {
+            if (diff1 <= eps1) {
                 return 0;
             } else {
                 if (numberMatchedDivExpected < other.numberMatchedDivExpected) {

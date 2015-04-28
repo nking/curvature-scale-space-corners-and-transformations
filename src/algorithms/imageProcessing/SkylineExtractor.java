@@ -314,7 +314,7 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(),
         return mask;
     }
     
-    protected Set<PairInt> createBestSkyMaskPt1(final GreyscaleImage theta,
+    public Set<PairInt> createBestSkyMaskPt1(final GreyscaleImage theta,
         GreyscaleImage gradientXY, ImageExt originalColorImage, 
         CannyEdgeFilterSettings edgeSettings, PairIntArray outputSkyCentroid,
         RemovedSets removedSets) {
@@ -1890,13 +1890,13 @@ log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
                         
                         if ((saturation <= 0.4) && ((colorDiffV/skyStDevColorDiff) > 50) 
                             ) {
-log.info("FILTER 00");
+log.fine("FILTER 00");
                             continue;
                         }
                          if ((saturation <= 0.4) && 
                             ((Math.abs(contrastV)/Math.abs(skyStDevContrast)) > 10.)
                             ) {
-log.info("FILTER 01");                                                        
+log.fine("FILTER 01");                                                        
                             continue;
                         }
                     }
@@ -1906,12 +1906,12 @@ log.info("FILTER 01");
                     (Math.abs(contrastV) < 0.01)
                     && (colorDiffV < 10)
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
-log.info("FILTER 02");
+log.fine("FILTER 02");
                 } else if (
                     (skyStDevContrast != 0.)
                     && ((Math.abs(contrastV)/skyStDevContrast) > 10.)
                     ) {
-log.info("FILTER 03");
+log.fine("FILTER 03");
                     continue;
                 } else if (
                     (skyStDevContrast != 0.)
@@ -1919,7 +1919,7 @@ log.info("FILTER 03");
                     && ((Math.abs(contrastV)/skyStDevContrast) > (1.5 + (Math.abs(contrastV)-0.5)*(-2.0))))
                     && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 2.5)
                     ) {
-log.info("FILTER 04");
+log.fine("FILTER 04");
                     continue;                     
                 } else if (
                     (skyStDevContrast > 0.005)
@@ -1934,7 +1934,7 @@ log.info("FILTER 04");
                         || ((diffCIEY/localSky.getStdDevCIEY()) > 1.5)))                    
                     && (skyStDevColorDiff > 1.)
                     ) {
-log.info("FILTER 05");
+log.fine("FILTER 05");
                     continue;
                 } else if (skyIsRed) {
                     
@@ -1990,7 +1990,7 @@ log.info("FILTER 05");
                         && (diffCIEX > 0.03) 
                         && ((diffCIEX/localSky.getStdDevCIEX()) > 15.*diffCIEX)
                         ) {
-log.info("FILTER 06");
+log.fine("FILTER 06");
                         continue;
                     } else if (
                         // contrast is defined by luma, so might be weak near
@@ -2000,18 +2000,18 @@ log.info("FILTER 06");
                         && (diffCIEY > 0.03) 
                         && ((diffCIEY/localSky.getStdDevCIEY()) > 15.*diffCIEY)
                         ) {
-log.info("FILTER 07");
+log.fine("FILTER 07");
                         continue;
                     } else if (skyStDevContrast == 0.) {
                         if (contrastV >= 0.) {
-log.info("FILTER 08");
+log.fine("FILTER 08");
                             doNotAddToStack = true;
                         }
                         
                     } else {
                         //TODO:  if there are sun points, need a zone of
                         // avoidance to not erode the foreground 
-log.info("FILTER 09");
+log.fine("FILTER 09");
                     }
 
                 } else {
@@ -2023,7 +2023,7 @@ log.info("FILTER 09");
                         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 3.0)
                         && ((bPercentV < 0.37) && (bV > 199) && (gV > 199))
                         ) {
-log.info("FILTER 10");
+log.fine("FILTER 10");
                         continue;
                     } else if (
                         (skyStDevContrast > 0.0)
@@ -2033,7 +2033,7 @@ log.info("FILTER 10");
                         && ((diffCIEY/localSky.getStdDevCIEY()) > 0.9) // ?                       
                         && (skyStDevColorDiff > 0.)
                     ){
-log.info("FILTER 11");
+log.fine("FILTER 11");
                         continue;
                     } else if (
                     (contrastV < 0.05)
@@ -2044,10 +2044,10 @@ log.info("FILTER 11");
                         || (Math.abs(0.33 - bPercentV) > 0.03)
                         || (gV > 199) || (bV > 199))
                     ) {
-log.info("FILTER 12");
+log.fine("FILTER 12");
                         continue;
                     } else {
-log.info("FILTER 13");
+log.fine("FILTER 13");
                         continue;
                     }
                 }
@@ -2235,13 +2235,13 @@ log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
                     if ((colorDiffV > 15*skyStDevColorDiff) && (saturation < 0.5)) {
                         if ((saturation <= 0.4) && (colorDiffV > 50*skyStDevColorDiff) 
                             ) {
-log.info("FILTER 00");
+log.fine("FILTER 00");
                             continue;
                         }
                          if ((saturation <= 0.4) && 
                             (Math.abs(contrastV) > 10.*Math.abs(skyStDevContrast))
                             ) {
-log.info("FILTER 01");                                                        
+log.fine("FILTER 01");                                                        
                             continue;
                         }
                     }
@@ -2276,10 +2276,10 @@ log.info("FILTER 01");
                     && (Math.abs(colorDiffV) < 10)
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
                     // this is a sky point
-log.info("FILTER 02");
+log.fine("FILTER 02");
                 //} else if (isSolarYellow) {
                     // this is a sky point
-//log.info("FILTER 03");
+//log.fine("FILTER 03");
                 } else {
                     
                     // evaluate clauses that evaluate to 'T' when the pixel 

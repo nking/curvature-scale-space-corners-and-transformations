@@ -312,7 +312,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         }
     }
     
-    protected CannyEdgeFilterSettings getCannyEdgeFilterSettings() {
+    public CannyEdgeFilterSettings getCannyEdgeFilterSettings() {
     
         CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
         
@@ -534,11 +534,11 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         return trimmedYOffset;
     }
    
-    GreyscaleImage getTheta() {
+    public GreyscaleImage getTheta() {
         return theta;
     }
     
-    GreyscaleImage getGradientXY() {
+    public GreyscaleImage getGradientXY() {
         return gradientXY;
     }
     

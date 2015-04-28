@@ -89,6 +89,35 @@ public class SkylineANDedClausesTest extends TestCase {
         assertNotNull(instance.getFittableCoefficientsForAllSkies());
         assertNotNull(instance.getFittableCoefficientsForBlueSkies());
         assertNotNull(instance.getFittableCoefficientsForRedSkies());
+        
+        boolean useBlueSkyImages = true;
+        for (int idx = 0; idx < 2; idx++) {
+            if (idx == 1) {
+                useBlueSkyImages = false;
+            }
+            ANDedClauses[] clauses;
+            float[][] coeffLowerLimits;
+            float[][] coeffUpperLimits;
+            if (useBlueSkyImages) {
+                clauses = instance.getAllAndBlueClauses();
+                coeffLowerLimits = instance.getAllAndBlueCoeffLowerLimits();
+                coeffUpperLimits = instance.getAllAndBlueCoeffUpperLimits();
+            } else {
+                clauses = instance.getAllAndRedClauses();
+                coeffLowerLimits = instance.getAllAndRedCoeffLowerLimits();
+                coeffUpperLimits = instance.getAllAndRedCoeffUpperLimits();
+            }
+            assertTrue(clauses.length == coeffLowerLimits.length);
+            assertTrue(clauses.length == coeffUpperLimits.length);
+            for (int clauseIdx = 0; clauseIdx < clauses.length; clauseIdx++) {
+                float[] c0 = clauses[clauseIdx].coefficients;
+                float[] c1 = coeffLowerLimits[clauseIdx];
+                float[] c2 = coeffUpperLimits[clauseIdx];//4
+                assertTrue(c0.length == c1.length);
+                assertTrue(c0.length == c2.length);
+            }
+        }
+        
     }
 
 }

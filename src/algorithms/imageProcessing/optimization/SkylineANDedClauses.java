@@ -1,5 +1,7 @@
 package algorithms.imageProcessing.optimization;
 
+import java.util.Arrays;
+
 /**
  *
  * @author nichole
@@ -32,7 +34,79 @@ public class SkylineANDedClauses {
         //13   14      15      16     17     18     19   20
         0.05f, 0.005f, 0.005f, 0.08f, 0.03f, 0.03f, 199, 199
     };
-     
+    
+    static protected final float[][] allLowerLimits = new float[6][];
+    static protected final float[][] allUpperLimits = new float[6][];
+    
+    static protected final float[][] redLowerLimits = new float[2][];
+    static protected final float[][] redUpperLimits = new float[2][];
+    
+    static protected final float[][] blueLowerLimits = new float[7][];
+    static protected final float[][] blueUpperLimits = new float[7][];
+    
+    public SkylineANDedClauses() {
+        
+        //                                00       01           
+        allLowerLimits[0] = new float[]{0.00001f, 2.5f};
+        allUpperLimits[0] = new float[]{0.2f,     30.f};
+        //                                02       03     custom  07
+        allLowerLimits[1] = new float[]{0.00001f, 0.01f, -14.5f,  1.1f};
+        allUpperLimits[1] = new float[]{0.2f,     0.5f,   1.001f, 5.0f};
+        
+        //                                08       09     10    11         15
+        allLowerLimits[2] = new float[]{0.00001f, 1.1f, 1.1f,  0.00001f,   0.2f};
+        allUpperLimits[2] = new float[]{0.5f,     10.f, 10.0f, 0.05f,     100.f};
+        
+        //                                08       09     10     12   15
+        allLowerLimits[3] = new float[]{0.00001f, 1.1f, 1.1f,   1.1f, 0.2f};
+        allUpperLimits[3] = new float[]{0.5f,     10.f, 10.0f,  5.0f, 100.f};
+        
+         //                                08       09     10      13      15
+        allLowerLimits[4] = new float[]{0.00001f, 1.1f, 1.1f,  0.00001f, 0.2f};
+        allUpperLimits[4] = new float[]{0.5f,     10.f, 10.0f,  0.05f,   100.f};
+        
+        //                                08       09     10    14    15
+        allLowerLimits[5] = new float[]{0.00001f, 1.1f, 1.1f,  1.1f, 0.2f};
+        allUpperLimits[5] = new float[]{0.5f,     10.f, 10.0f,  5.0f, 100.f};
+        
+        
+        //                                00       01    02        03
+        redLowerLimits[0] = new float[]{0.00001f, 0.01f, 0.00001f, 1.5f};
+        redUpperLimits[0] = new float[]{0.2f,     30.f,  0.2f,     30.0f};
+        //                                04       05    06        07
+        redLowerLimits[1] = new float[]{0.00001f, 0.01f, 0.00001f, 1.5f};
+        redUpperLimits[1] = new float[]{0.2f,     30.f,  0.2f,     30.0f};
+        
+        
+        //                                00       01       02    03     04    05   06
+        blueLowerLimits[0] = new float[]{0.00001f, 0.0000f, 1.5f, 1.5f,  0.3f, 100, 100};
+        blueUpperLimits[0] = new float[]{0.2f,     0.5f,    30.f, 30.0f, 0.4f, 250, 250};
+        //                                07       08       09    10     11     12
+        blueLowerLimits[1] = new float[]{0.00001f, 0.0000f, 1.5f, 0.75f, 0.75f, 0.00001f};
+        blueUpperLimits[1] = new float[]{0.2f,     0.5f,    30.f, 2.0f,  2.0f,  3.0f};
+        
+        //                                13       14       15       16   
+        blueLowerLimits[2] = new float[]{0.00001f, 0.0000f, 0.0000f, 0.01f};
+        blueUpperLimits[2] = new float[]{0.2f,     0.5f,    0.5f,    0.30f};
+        
+        //                                13       14       15        17  
+        blueLowerLimits[3] = new float[]{0.00001f, 0.0000f, 0.0000f, 0.01f};
+        blueUpperLimits[3] = new float[]{0.2f,     0.5f,    0.5f,    0.30f};
+        
+        //                                13       14       15         18  
+        blueLowerLimits[4] = new float[]{0.00001f, 0.0000f, 0.0000f, 0.01f};
+        blueUpperLimits[4] = new float[]{0.2f,     0.5f,    0.5f,    0.30f};
+        
+        //                                13       14       15        19 
+        blueLowerLimits[5] = new float[]{0.00001f, 0.0000f, 0.0000f, 100};
+        blueUpperLimits[5] = new float[]{0.2f,     0.5f,    0.5f,    250};
+        
+        //                                13       14       15       20
+        blueLowerLimits[6] = new float[]{0.00001f, 0.0000f, 0.0000f, 100};
+        blueUpperLimits[6] = new float[]{0.2f,     0.5f,    0.5f,    250};
+  
+    }
+    
     public ANDedClauses[] getAllClauses() {
         
         ANDedClauses[] a0 = getForAllSkies();
@@ -46,6 +120,36 @@ public class SkylineANDedClauses {
         System.arraycopy(a0, 0, a, 0, a0.length);
         System.arraycopy(a1, 0, a, a0.length, a1.length);
         System.arraycopy(a2, 0, a, (a0.length + a1.length), a2.length);
+        
+        return a;
+    }
+    
+    public ANDedClauses[] getAllAndRedClauses() {
+        
+        ANDedClauses[] a0 = getForAllSkies();
+        ANDedClauses[] a2 = getForRedSkies();
+        
+        int n = a0.length + a2.length;
+    
+        ANDedClauses[] a = new ANDedClauses[n];
+        
+        System.arraycopy(a0, 0, a, 0, a0.length);
+        System.arraycopy(a2, 0, a, a0.length, a2.length);
+        
+        return a;
+    }
+    
+    public ANDedClauses[] getAllAndBlueClauses() {
+        
+        ANDedClauses[] a0 = getForAllSkies();
+        ANDedClauses[] a2 = getForBlueSkies();
+        
+        int n = a0.length + a2.length;
+    
+        ANDedClauses[] a = new ANDedClauses[n];
+        
+        System.arraycopy(a0, 0, a, 0, a0.length);
+        System.arraycopy(a2, 0, a, a0.length, a2.length);
         
         return a;
     }
@@ -85,7 +189,7 @@ public class SkylineANDedClauses {
         
         c1.set(3, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[7]);
-          
+       
         /* 
         c3,c4,c5,c6        
                     08         (skyStDevContrast > 0.005)
@@ -135,7 +239,7 @@ public class SkylineANDedClauses {
             COMPARISON.GREATER_THAN, allSkiesCoeff[13]);
         c4.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
-        
+       
         ANDedClauses c5 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
         c5.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
@@ -268,7 +372,7 @@ public class SkylineANDedClauses {
         
         c1.set(5, PARAM.STDEV_BLUE_OR_RED, 
             PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[12]);
-       
+               
         /*
         13         (contrastV < 0.05)
         14         && (diffCIEX < 0.005)
@@ -355,6 +459,142 @@ public class SkylineANDedClauses {
     public float[] getFittableCoefficientsForBlueSkies() {
         return blueSkiesCoeff;
     }
+   
+    public float[][] getAllCoeffLowerLimits() {
+        
+        float[][] a0 = allLowerLimits;
+        float[][] a1 = blueLowerLimits;
+        float[][] a2 = redLowerLimits;
+        
+        int n = a0.length + a1.length + a2.length;
+    
+        int count = 0;
+        float[][] a = new float[n][];
+        for (int i = 0; i < a0.length; i++) {
+            a[count] = Arrays.copyOf(a0[i], a0[i].length);
+            count++;
+        }
+        for (int i = 0; i < a1.length; i++) {
+            a[count] = Arrays.copyOf(a1[i], a1[i].length);
+            count++;
+        }
+        for (int i = 0; i < a2.length; i++) {
+            a[count] = Arrays.copyOf(a2[i], a2[i].length);
+            count++;
+        }
+        
+        return a;
+    }
+    
+    public float[][] getAllCoeffUpperLimits() {
+        
+        float[][] a0 = allUpperLimits;
+        float[][] a1 = blueUpperLimits;
+        float[][] a2 = redUpperLimits;
+        
+        int n = a0.length + a1.length + a2.length;
+    
+        int count = 0;
+        float[][] a = new float[n][];
+        for (int i = 0; i < a0.length; i++) {
+            a[count] = Arrays.copyOf(a0[i], a0[i].length);
+            count++;
+        }
+        for (int i = 0; i < a1.length; i++) {
+            a[count] = Arrays.copyOf(a1[i], a1[i].length);
+            count++;
+        }
+        for (int i = 0; i < a2.length; i++) {
+            a[count] = Arrays.copyOf(a2[i], a2[i].length);
+            count++;
+        }
+        
+        return a;
+    }
+    
+    public float[][] getAllAndRedCoeffLowerLimits() {
+        
+        float[][] a0 = allLowerLimits;
+        float[][] a1 = redLowerLimits;
+        
+        int n = a0.length + a1.length;
+    
+        int count = 0;
+        float[][] a = new float[n][];
+        for (int i = 0; i < a0.length; i++) {
+            a[count] = Arrays.copyOf(a0[i], a0[i].length);
+            count++;
+        }
+        for (int i = 0; i < a1.length; i++) {
+            a[count] = Arrays.copyOf(a1[i], a1[i].length);
+            count++;
+        }
+        
+        return a;
+    }
+    
+    public float[][] getAllAndRedCoeffUpperLimits() {
+        
+        float[][] a0 = allUpperLimits;
+        float[][] a1 = redUpperLimits;
+        
+        int n = a0.length + a1.length;
+    
+        int count = 0;
+        float[][] a = new float[n][];
+        for (int i = 0; i < a0.length; i++) {
+            a[count] = Arrays.copyOf(a0[i], a0[i].length);
+            count++;
+        }
+        for (int i = 0; i < a1.length; i++) {
+            a[count] = Arrays.copyOf(a1[i], a1[i].length);
+            count++;
+        }
+        
+        return a;
+    }
+    
+    public float[][] getAllAndBlueCoeffLowerLimits() {
+        
+        float[][] a0 = allLowerLimits;
+        float[][] a1 = blueLowerLimits;
+        
+        int n = a0.length + a1.length;
+    
+        int count = 0;
+        float[][] a = new float[n][];
+        for (int i = 0; i < a0.length; i++) {
+            a[count] = Arrays.copyOf(a0[i], a0[i].length);
+            count++;
+        }
+        for (int i = 0; i < a1.length; i++) {
+            a[count] = Arrays.copyOf(a1[i], a1[i].length);
+            count++;
+        }
+        
+        return a;
+    }
+    
+    public float[][] getAllAndBlueCoeffUpperLimits() {
+        
+        float[][] a0 = allUpperLimits;
+        float[][] a1 = blueUpperLimits;
+        
+        int n = a0.length + a1.length;
+    
+        int count = 0;
+        float[][] a = new float[n][];
+        for (int i = 0; i < a0.length; i++) {
+            a[count] = Arrays.copyOf(a0[i], a0[i].length);
+            count++;
+        }
+        for (int i = 0; i < a1.length; i++) {
+            a[count] = Arrays.copyOf(a1[i], a1[i].length);
+            count++;
+        }
+        
+        return a;
+    }
     
     /*
     =================
@@ -399,7 +639,7 @@ public class SkylineANDedClauses {
         if (contrastV >= 0.) {
             doNotAddToStack = true; <====== this is not handled.  if it's necessary, hard code it back in
         }
-
+    
     =================
     BLUE:
     =================
@@ -427,5 +667,6 @@ public class SkylineANDedClauses {
     18         || (Math.abs(0.33 - bPercentV) > 0.03)
     19         || (gV > 199)
     20         || (bV > 199))
+    
     */
 }

@@ -1,13 +1,16 @@
 package algorithms.imageProcessing.optimization;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  *
  * @author nichole
  */
-public class ANDedClauses {
+public class ANDedClauses implements Cloneable {
 
     protected final PARAM[] params1;
     protected final PARAM[] params2;
@@ -195,5 +198,39 @@ public class ANDedClauses {
         }
         
         return true;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return copy();
+    }
+        
+    public ANDedClauses copy() {
+        
+        ANDedClauses c = new ANDedClauses(skyConditional, 
+            Arrays.copyOf(params1, params1.length), 
+            Arrays.copyOf(params2, params2.length),
+            Arrays.copyOf(gtOrLT, gtOrLT.length), 
+            Arrays.copyOf(coefficients, coefficients.length));
+        
+        if (!customCoefficients.isEmpty()) {
+            Iterator<Entry<Integer, CustomCoeff>> iter = 
+                customCoefficients.entrySet().iterator();
+            while (iter.hasNext()) {
+                Entry<Integer, CustomCoeff> entry = iter.next();
+                c.setACustomCoefficient(entry.getKey(), entry.getValue());
+            }
+        }
+        
+        if (!customCoefficientVariables.isEmpty()) {
+            Iterator<Entry<Integer, Float>> iter = 
+                customCoefficientVariables.entrySet().iterator();
+            while (iter.hasNext()) {
+                Entry<Integer, Float> entry = iter.next();
+                c.setCustomCoefficientVariable(entry.getKey(), entry.getValue());
+            }
+        }
+        
+        return c;
     }
 }
