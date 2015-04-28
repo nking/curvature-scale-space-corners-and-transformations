@@ -1,49 +1,43 @@
 Note, this is a precursor step to the agile story and tasks to gather notes 
 on needed features, bugs, etc.
 
+Task 6 in story 002:
+-- the optimization appears to be working except for the last small 
+   amount near the borders.
+   -- change the cost function to care about matching the border pixels.
+      (1) penalize overrunning the border.
+          this means that if sky mask includes points that are likely to
+          be embedded sky like a moon or star, then the mask having sky
+          values at the embedded location does no harm for the fitness
+          function.
+      (2) attempt to match all of the border pixels (and count the expected
+          number of them)
+   -- is there just one or two pixels in the mask that are too far away
+      from the real skyline that are making the solution remain that 
+      "distance" in terms of contrast and color?
+      -- make a copy of the masks for venturi and brown & lee and look for
+         such pixels and retry if they are found
+   -- are the steps small enough to get to a more precise solution?
+   -- is there a lower or upper limit that is set too high or low to allow the last
+      pixels to be included as sky?  probably not considering it starts with overrun for some.
+      -- could note those pixels and log when they are falsely found as
+         boundary pixels...
+   -- are the clauses composed of the right combination of parameters that 
+      would lead to a more precise result?
+      consider each unique combination of parameters and
+      consider trying to fit them in a more methodical manner.
+      as subsequent filters seems to be necessary, so that complicates the logic...
+         -- could start w/ only the unique combination of the parameters to make
+            relationships to try.
+            linear, multiplicative and differential combinations of them, and
+            consider combinations such as red intensity combined with contrast or color diff
+            such as is current present in a custom coefficient.
+            the custom coefficients need more starter points.
+         -- ** if the above changing of the cost function improves the results,
+            consider simplifying these relationships. start w/ smallest number that
+            includes every used clause.
+
 -- organizing the SkylineExtractor's findClouds parameters for consideration of optimization.
-
-   For algorithm filter parameters note that diff is between pixel and it's 8 neighbor sky-only-pixels.
-
-   All of the clauses should evaluate to 'T' is a sky pixel else 'F' is not a sky pixel.
-
-       ----------------------------------------------------------------------------------------------------------------------
-       parameter                     should be present      first look at clauses to fit
-       ----------------------------------------------------------------------------------------------------------------------
-       diffRed                             Y                (param < coeff), ((param/stdev) < coeff)
-                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
-       diffBlue                            Y                (param < coeff), ((param/stdev) < coeff)
-                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
-                                                            NOTE that some pre-logic could be used to use only diffBlue or
-                                                            diffRed depending on sky color to make a parameter diffBorR
-       skyIsBlue                           Y                (param == true), (param == false), param not used in clause
-       skyIsRed                            N                this is the same as the opposite of skyIsBlue
-       skyIsBrown                          Y                (param == true), (param == false)
-       contrast                            Y                (param < coeff), ((param/stdev) < coeff), 
-                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
-       diffCIEX                            Y                (param < coeff), ((param/stdev) < coeff)
-                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
-                                                                because cie is a radial polynomial, might actually need
-                                                                something like polar coords. **theta** should be the 
-                                                                most important measure of the difference
-                                                                diffCIEXY = sqrt(diffCIEX*diffCIEX + diffCIEY*diffCIEY)
-                                                                theta = 2*arctan(diffCIEY/(diffCIEX + diffCIEXY))
-
-       diffCIEY                            Y                (param < coeff), ((param/stdev) < coeff)
-                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
-                                                                
-       colorDiff                           Y                (param < coeff), ((param/stdev) < coeff)
-                                                                ((Math.abs(param) < coeff), ((Math.abs(param)/stdev) < coeff)
-                                                                note, this is defined using r, g, and b
-       skyStDevContrast                    Y                see above
-       skyStDevColorDiff                   Y                see above
-       skyStDevCIEX                        Y                see above
-       skyStDevCIEY                        Y                see above
-       isSolarYellowGreenOrange            Y                (param == true), (param == false)
-       rDivTotal                           Y                Math.abs(coeff - rDivTotal) < coeff2
-       gDivTotal                           Y                Math.abs(coeff - gDivTotal) < coeff2
-       bDivTotal                           Y                Math.abs(coeff - bDivTotal) < coeff2
-       saturation                          Y                (saturation < coeff)
 
        If each pameter can be in one of m states, the number of possible combinations for one
        parameter is m_states^(1 parameter).  And combining parameters is multiplication.
@@ -100,37 +94,6 @@ on needed features, bugs, etc.
 
         note that the fitness function should probably be weighted by the expected number of
         sky points so that it's actually measuring the fraction found as sky
-
-   tasks:
-     (1) for each test image, need a quick easy way to outline sky pixels very accurately.
-         -- edge detector product if I correct for t-junctions?
-         -- thresholding using what is in the algorithm already, but then displaying the
-            results and letting the user select the segments that highlight the sky?
-         -- once have the skyline, need a method to gather the sky pixels.
-     (2) plot the main parameter clauses before implementing in findClouds.
-         -- for each test image, would like 3 plots for each pair of clause parameters:
-            one plot for pixels in the sky further than 2 pixels from the border,
-            another other plot for the skyline points only, and another plot for the
-            sky points that are 1 point away from the skyline.
-     (3) design and implement the equations of clauses
-     (4) design and implement the solver that will use the Nelder-Mead downhill 
-         simplex to choose improving coefficients with each iteration.
-
-
--- improvement in design of SkylineExtractor:
-   consider retaining the pixels which do not get added to sky in
-   findClouds as border pixels.
-     -- do a quick plot to assert that they are border and embedded pixels.
-     -- for the subsequent stage of finding embedded pixels, shoud be able
-        to reduce the number of operations, by finding the contiguous
-        pixels only among those border pixels, but still using PerimeterFinder's methods 
-        on these alternately derived border pixels.
-        follow up: still need the approx concave hull for the check
-        whether the contiguous pixels are bounded... **might only be saving
-        steps in the small block where gaps are iterated over to write embedded pixels.
-        -- the result is the embedded pixels.
-        -- the true border pixels will take the border pixels just mentioned
-           and subtract the embedded subset from them.
 
 
 -- when sun is found, such as in the NM image, might try to fit a
