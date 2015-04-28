@@ -1,6 +1,8 @@
 package algorithms.imageProcessing.optimization;
 
+import algorithms.imageProcessing.SkylineExtractor;
 import algorithms.util.PairInt;
+import algorithms.misc.MiscMath;
 import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,16 +18,13 @@ public class SetCompareTest extends TestCase {
     }
     
     public void testCompare() throws Exception {
-        /*
-        public SetComparisonResults compare(Set<PairInt> expectedPoints,
-        Set<PairInt> points) {
-        */
         
         SecureRandom sr = new SecureRandom();
         long seed = System.currentTimeMillis();
         sr.setSeed(seed);
         
         int nExpected = 1000;
+        int maxDimension = 2000;
         
         Set<PairInt> expectedPoints = new HashSet<PairInt>();
         
@@ -33,12 +32,12 @@ public class SetCompareTest extends TestCase {
         
         while (expectedPoints.size() < nExpected) {
             
-            int x = sr.nextInt();
-            int y = sr.nextInt();
+            int x = sr.nextInt(maxDimension);
+            int y = sr.nextInt(maxDimension);
             PairInt p = new PairInt(x, y);
             while (expectedPoints.contains(p)) {
-                x = sr.nextInt();
-                y = sr.nextInt();
+                x = sr.nextInt(maxDimension);
+                y = sr.nextInt(maxDimension);
                 p = new PairInt(x, y);
             }
             
@@ -54,26 +53,37 @@ public class SetCompareTest extends TestCase {
             }
         }
         
+        //--- find the border points (consider them all found) ---
+        //xMin, xMax, yMin, yMax
+        int[] imgMinMaxXY = MiscMath.findMinMaxXY(points);
+        int imgWidth = imgMinMaxXY[1] + 1;
+        int imgHeight = imgMinMaxXY[3] + 1;                
+        Set<PairInt> embedded = new HashSet<PairInt>();
+        Set<PairInt> borderPoints = new HashSet<PairInt>();
+        SkylineExtractor.getEmbeddedAndBorderPoints(points,
+            imgWidth, imgHeight, embedded, borderPoints);        
+                
         int nInside = points.size();
         
         int nOutside = (int)(sr.nextFloat()*(float)nExpected);
         
         for (int i = 0; i < nOutside; i++) {
             
-            int x = sr.nextInt();
-            int y = sr.nextInt();
+            int x = sr.nextInt(maxDimension);
+            int y = sr.nextInt(maxDimension);
             PairInt p = new PairInt(x, y);
             while (expectedPoints.contains(p)) {
-                x = sr.nextInt();
-                y = sr.nextInt();
-                 p = new PairInt(x, y);
+                x = sr.nextInt(maxDimension);
+                y = sr.nextInt(maxDimension);
+                p = new PairInt(x, y);
             }  
             
             points.add(p);
         }
-        
+       
         SetCompare s = new SetCompare();
-        SetComparisonResults scr = s.compare(expectedPoints, points);
+        SetComparisonResults scr = s.compare(expectedPoints, points, 
+            borderPoints, borderPoints);
         
         assertTrue(scr.nExpectedPoints == nExpected);
         assertTrue(Math.abs(
@@ -83,6 +93,10 @@ public class SetCompareTest extends TestCase {
         assertTrue(Math.abs(
             scr.numberOverrunDivExpected - (float)nOutside/(float)nExpected)
             < 0.0000001);
+        
+        assertTrue(scr.nExpectedBorderPoints == borderPoints.size());
+        assertTrue(Math.abs(
+            scr.numberMatchedBorderDivExpected - 1)< 0.0000001);
         
     }
 }

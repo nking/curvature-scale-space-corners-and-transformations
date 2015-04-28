@@ -2312,6 +2312,32 @@ log.fine("FILTER 02");
 
     }
    
+    public static void getEmbeddedAndBorderPoints(Set<PairInt> skyPoints,
+        int width, int height, Set<PairInt> outputEmbeddedGapPoints,
+        Set<PairInt> outputBorderPoints) {
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        int imageMaxColumn = width - 1;
+        int imageMaxRow = height - 1;
+       
+        int[] skyRowMinMax = new int[2];
+        
+        Map<Integer, List<PairInt>> skyRowColRanges = perimeterFinder.find(
+            skyPoints, skyRowMinMax, imageMaxColumn, 
+            outputEmbeddedGapPoints);
+        
+        // update the perimeter for "filling in" embedded points
+        perimeterFinder.updateRowColRangesForAddedPoints(skyRowColRanges, 
+            skyRowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        
+        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+            skyRowColRanges, skyRowMinMax, imageMaxColumn, imageMaxRow);
+        
+        outputBorderPoints.addAll(borderPixels);
+        
+    }
+    
     private GroupPixelColors[] partitionInto3ByColorDifference(Set<PairInt> skyPoints, 
         ImageExt originalColorImage, int xOffset, int yOffset, int[] outputCounts) {
          

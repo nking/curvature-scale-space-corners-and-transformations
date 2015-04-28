@@ -59,6 +59,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
         List<Set<PairInt>> seedPoints = new ArrayList<Set<PairInt>>();
         List<Set<PairInt>> excludePoints = new ArrayList<Set<PairInt>>();
         List<Set<PairInt>> expectedSky = new ArrayList<Set<PairInt>>();
+        List<Set<PairInt>> expectedBorderPoints = new ArrayList<Set<PairInt>>();
         List<String> fileNameRoots = new ArrayList<String>();
         
         for (String fileName : fileNames) {
@@ -104,6 +105,14 @@ public class SkylineDownhillSimplexTest extends TestCase {
         
             seedPoints.add(points);
             
+            Set<PairInt> embedded = new HashSet<PairInt>();
+            Set<PairInt> borderPoints = new HashSet<PairInt>();
+            SkylineExtractor.getEmbeddedAndBorderPoints(points,
+                detector.getTheta().getWidth(), 
+                detector.getTheta().getHeight(), embedded, borderPoints);
+            
+            expectedBorderPoints.add(borderPoints);
+            
             excludePoints.add(removedSets.getHighContrastRemoved());
             
         }
@@ -130,6 +139,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
         for (int i = 0; i < seedPoints.size(); i++) {
             Set<PairInt> points0 = new HashSet<PairInt>(seedPoints.get(i));
             Set<PairInt> exclude = excludePoints.get(i);
+            Set<PairInt> expectedBorder = expectedBorderPoints.get(i);
             ImageExt img = images.get(i);
             GreyscaleImage thetaImg = thetaImages.get(i);
          
@@ -137,9 +147,15 @@ public class SkylineDownhillSimplexTest extends TestCase {
             skylineExtractor.findClouds(points0, exclude, img, thetaImg,
                 clauses);
               
+            Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+            Set<PairInt> outputBorderPoints = new HashSet<PairInt>();
+            SkylineExtractor.getEmbeddedAndBorderPoints(points0,
+                thetaImg.getWidth(), thetaImg.getHeight(), 
+                outputEmbeddedGapPoints, outputBorderPoints);
+            
             SetCompare setCompare = new SetCompare();
             SetComparisonResults results = setCompare.compare(
-                expectedSky.get(i), points0);
+                expectedSky.get(i), points0, expectedBorder, outputBorderPoints);
                             
             resultsBeforeList.add(results);
             
@@ -159,12 +175,17 @@ public class SkylineDownhillSimplexTest extends TestCase {
         }        
        
         // ---- get the comparison of points after refinement ----
+        
+        // initialize list that will hold final sky points
         List<Set<PairInt>> finalSkyPoints = new ArrayList<Set<PairInt>>();
-        finalSkyPoints.addAll(seedPoints);
+        for (Set<PairInt> set : seedPoints) {
+            finalSkyPoints.add(new HashSet<PairInt>(set));
+        }        
         
         SkylineDownhillSimplex nelderMaed = new SkylineDownhillSimplex(images, 
-            thetaImages, finalSkyPoints, excludePoints, expectedSky, clauses,
-            coeffLowerLimits, coeffUpperLimits);
+            thetaImages, finalSkyPoints, excludePoints, expectedSky, 
+            expectedBorderPoints,
+            clauses, coeffLowerLimits, coeffUpperLimits);
         
         SkylineFits fit = nelderMaed.fit();
         
@@ -181,12 +202,23 @@ public class SkylineDownhillSimplexTest extends TestCase {
             
             String fileNameRoot = fileNameRoots.get(i);
             
+            // to get the found border points, need to re-run the 
+            // perimeter finder
+            Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+            Set<PairInt> outputBorderPoints = new HashSet<PairInt>();
+            SkylineExtractor.getEmbeddedAndBorderPoints(points,
+                thetaImg.getWidth(), thetaImg.getHeight(), 
+                outputEmbeddedGapPoints, outputBorderPoints);
+            
             try {
                 String dirPath = ResourceFinder.findDirectory("bin");
                 ImageExt clr = (ImageExt) img.copyImage();
                 ImageIOHelper.addToImage(points, 
                     thetaImg.getXRelativeOffset(),
                     thetaImg.getYRelativeOffset(), clr);
+                ImageIOHelper.addToImage(outputBorderPoints, 
+                    thetaImg.getXRelativeOffset(), 
+                    thetaImg.getYRelativeOffset(), clr, 255, 0, 0);
                 ImageIOHelper.writeOutputImage(
                     dirPath + "/sky_after_optimization_" + fileNameRoot + ".png", clr);
             } catch (IOException e) {

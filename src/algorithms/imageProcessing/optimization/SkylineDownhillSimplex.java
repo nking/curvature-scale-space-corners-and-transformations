@@ -26,6 +26,7 @@ public class SkylineDownhillSimplex {
     private final List<Set<PairInt>> seedPoints;
     private final List<Set<PairInt>> excludePoints;
     private final List<Set<PairInt>> expectedPoints;
+    private final List<Set<PairInt>> expectedBorderPoints;
     private final ANDedClauses[] clauses;
     private final float[][] coeffLowerLimits;
     private final float[][] coeffUpperLimits;
@@ -35,7 +36,9 @@ public class SkylineDownhillSimplex {
     public SkylineDownhillSimplex(List<ImageExt> images, 
         List<GreyscaleImage> thetaImages, 
         List<Set<PairInt>> seedPoints, List<Set<PairInt>> excludePoints, 
-        List<Set<PairInt>> expectedPoints, ANDedClauses[] clauses,
+        List<Set<PairInt>> expectedPoints, 
+        List<Set<PairInt>> expectedBorderPoints,
+        ANDedClauses[] clauses,
         float[][] coeffLowerLimits, float[][] coeffUpperLimits) {
         
         if (images == null) {
@@ -53,6 +56,10 @@ public class SkylineDownhillSimplex {
         if (expectedPoints == null) {
             throw new IllegalArgumentException("expectedPoints cannot be null");
         }
+        if (expectedBorderPoints == null) {
+            throw new IllegalArgumentException(
+                "expectedBorderPoints cannot be null");
+        }
         if (clauses == null) {
             throw new IllegalArgumentException("clauses cannot be null");
         }
@@ -62,6 +69,7 @@ public class SkylineDownhillSimplex {
         this.seedPoints = seedPoints;
         this.excludePoints = excludePoints;
         this.expectedPoints = expectedPoints;
+        this.expectedBorderPoints = expectedBorderPoints;
         this.clauses = clauses;
         this.coeffLowerLimits = coeffLowerLimits;
         this.coeffUpperLimits = coeffUpperLimits;
@@ -84,25 +92,6 @@ public class SkylineDownhillSimplex {
         return fit;
     }
     
-    protected Set<PairInt> getEmbedded(Set<PairInt> skyPoints,
-        int width, int height) {
-        
-        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
-
-        PerimeterFinder perimeterFinder = new PerimeterFinder();
-
-        int imageMaxColumn = width - 1;
-        int imageMaxRow = height - 1;
-       
-        int[] skyRowMinMax = new int[2];
-        
-        Map<Integer, List<PairInt>> skyRowColRanges = perimeterFinder.find(
-            skyPoints, skyRowMinMax, imageMaxColumn, 
-            outputEmbeddedGapPoints);
-        
-        return outputEmbeddedGapPoints;
-    }
-    
     protected SkylineFits process(SkylineExtractor skylineExtractor,
         ANDedClauses[] clauses, int imageIndex) {
 
@@ -111,15 +100,21 @@ public class SkylineDownhillSimplex {
         Set<PairInt> skyPoints = new HashSet<PairInt>(seedPoints.get(imageIndex));
         Set<PairInt> exclude = excludePoints.get(imageIndex);
         Set<PairInt> expected = expectedPoints.get(imageIndex);
+        Set<PairInt> expectedBorder = expectedBorderPoints.get(imageIndex);
 
         skylineExtractor.findClouds(skyPoints, exclude, img, thetaImg,
             clauses);
         
-        //skyPoints.addAll(getEmbedded(skyPoints, thetaImg.getWidth(), thetaImg.getHeight()));
-
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        Set<PairInt> outputBorderPoints = new HashSet<PairInt>();
+        SkylineExtractor.getEmbeddedAndBorderPoints(skyPoints,
+            thetaImg.getWidth(), thetaImg.getHeight(), 
+            outputEmbeddedGapPoints, outputBorderPoints);
+        
         SetCompare setCompare = new SetCompare();
         
-        SetComparisonResults results = setCompare.compare(expected, skyPoints);
+        SetComparisonResults results = setCompare.compare(expected, skyPoints,
+            expectedBorder, outputBorderPoints);
 
         SkylineFits fit = new SkylineFits();
         fit.results = results;
@@ -135,7 +130,7 @@ public class SkylineDownhillSimplex {
         //TODO: edit convergence.  it's the fraction of matched to expected matches.
         float convergence = 0.98f;
       
-        int nStarterPoints = 100;
+        int nStarterPoints = 30;
         
         SkylineFits[] fits = createStarterPoints(skylineExtractor,
             nStarterPoints);

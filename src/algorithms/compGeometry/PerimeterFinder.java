@@ -670,9 +670,15 @@ public class PerimeterFinder {
 
                     PairInt current = colRanges.get(i);
                     
+                    PairInt prev = colRanges.get(i - 1);
+                    
                     //case: point is within range in colRanges
-                    if ((col >= current.getX()) && (col >= current.getX())) {
+                    if ((col >= current.getX()) && (col <= current.getY())) {
                         // no need to change range
+                        added = true;
+                        break;
+                    } else if ((i == 1) && 
+                        (col >= prev.getX()) && (col <= prev.getY())) {
                         added = true;
                         break;
                     }
@@ -680,9 +686,7 @@ public class PerimeterFinder {
                     //case: point is between ranges in colRanges
                     
                     allAreWithinExistingRange = false;
-                    
-                    PairInt prev = colRanges.get(i - 1);
-                    
+                                        
                     if ((col >= prev.getY()) && (col <= current.getX())) {
                         
                         if (col == (prev.getY() + 1)) {
@@ -710,8 +714,24 @@ public class PerimeterFinder {
                     }
                 }
                 if (!added) {
+                    
+                    // find min and max of ranges:
+                    int[] minMaxCols = findMinMaxColumns(rowColRanges, 
+                        rowMinMax);
+                    
+                     List<PairInt> colRanges0 = rowColRanges.get(
+                         Integer.valueOf(p.getY()));
+                     StringBuffer sb = new StringBuffer();
+                     for (PairInt cr : colRanges0) {
+                         sb.append("colRange=" + cr.getX() + ":" + cr.getY());
+                         sb.append("\n");
+                     }
+                    
                     throw new IllegalStateException("point " + p.toString() + 
-                        " was not added to a colRange");
+                        " was not added to a colRange. " +
+                        " colRanges minX=" + minMaxCols[0] + 
+                        " maxX=" + minMaxCols[1] + " minRow=" + rowMinMax[0] +
+                        " maxRow=" + rowMinMax[1] + " " + sb.toString());
                 }
             }
         }
@@ -1252,6 +1272,34 @@ public class PerimeterFinder {
             }
         }
         return -1;
+    }
+
+    private int[] findMinMaxColumns(Map<Integer, List<PairInt>> rowColRanges,
+        int[] rowMinMax) {
+        
+        // runtime is O(rowColRanges.size)
+        int minY = rowMinMax[0];
+        int maxY = rowMinMax[1];
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        for (int row = minY; row <= maxY; row++) {
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            if ((colRanges == null) || colRanges.isEmpty()) {
+                continue;
+            }
+            int n = colRanges.size();
+            PairInt cr = colRanges.get(0);
+            if (cr.getX() < minX) {
+                minX = cr.getX();
+            } 
+            if (n > 1) {
+                cr = colRanges.get(n - 1);
+            }
+            if (cr.getY() > maxX) {
+                maxX = cr.getY();
+            }
+        }
+        return new int[]{minX, maxX};
     }
 
     static class Gap {
