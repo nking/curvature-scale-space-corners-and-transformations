@@ -861,9 +861,6 @@ public class ImageProcessor {
                 int vorig = input2.getValue(i, j);
                 if (v != 0) {
                     float r = (float)vorig/(float)v;
-                    if ((i==250) && (j >= 50) && (j <= 150)) {
-                        log.info(Float.toString(r));
-                    }
                     input.setValue(i, j, (int)(100*r));
                 }
             }
@@ -978,7 +975,7 @@ public class ImageProcessor {
                 }
             }
             
-            log.info("numRemoved=" + numRemoved + " nIter=" + nIter);
+            log.fine("numRemoved=" + numRemoved + " nIter=" + nIter);
             
             nIter++;
         }
