@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.optimization;
 
-import algorithms.compGeometry.PerimeterFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.SkylineExtractor;
@@ -11,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -128,7 +126,7 @@ public class SkylineDownhillSimplex {
         SkylineExtractor skylineExtractor = new SkylineExtractor();
                 
         //TODO: edit convergence.  it's the fraction of matched to expected matches.
-        float convergence = 0.98f;
+        float convergence = 1.0f;
       
         int nStarterPoints = 30;
         
@@ -145,7 +143,7 @@ public class SkylineDownhillSimplex {
         SetComparisonResults lastBest = null;
         int nIterSameMin = 0;
         
-        float alpha = 0.9f;//1   // > 0
+        float alpha = 1.0f;//1   // > 0
         float gamma = 2;   // > 1
         float beta = -0.5f; 
         float tau = 0.5f;
@@ -157,7 +155,7 @@ public class SkylineDownhillSimplex {
             // best matches should be at smaller indexes
             Arrays.sort(fits, 0, (fits.length - 1));
             
-            if (nIter == 0) {
+            if ((nIter == 0) && (nStarterPoints > 10)) {
                 nStarterPoints = 10;
                 fits = Arrays.copyOf(fits, nStarterPoints);
                 worstFitIdx = nStarterPoints - 1;
@@ -249,19 +247,17 @@ public class SkylineDownhillSimplex {
                 }
             }
 
-            log.finest("best fit so far: " + 
+            log.info("best fit so far: " + 
                 fits[bestFitIdx].results.numberMatchedDivExpected);
             
             nIter++;
             
-            //TODO: test the bounds of the best answer
-
             // convergence is when overrun is zero and number matched is within
             // some limit
-            if ((fits[bestFitIdx].results.numberOverrunDivExpected == 0) &&
+            /*if ((fits[bestFitIdx].results.numberOverrunDivExpected == 0) &&
                 (fits[bestFitIdx].results.numberMatchedDivExpected == convergence)) {
                 go = false;
-            }
+            }*/
         }
         
         System.out.println("NITER=" + nIter);
@@ -316,6 +312,7 @@ public class SkylineDownhillSimplex {
                     // pick randomly between low bounds, high bounds, center,
                     // or random between bounds
                     int type = sr.nextInt(4);
+                    type = 3;
                     switch(type) {
                         case 0:
                             clause.coefficients[jj] = coeffLowerLimits[ii][jj];
@@ -329,11 +326,11 @@ public class SkylineDownhillSimplex {
                         default: {
                             float range = coeffUpperLimits[ii][jj] -
                                 coeffLowerLimits[ii][jj];
-                            // dividing the range by 3 and choosing randomly
-                            // between those 2 middle marks
-                            int d = sr.nextInt(3);
+                            // dividing the range by 100 and choosing randomly
+                            // between those marks
+                            int d = sr.nextInt(10);
                             clause.coefficients[jj] = (float)(coeffLowerLimits[ii][jj] +
-                                ((float)(d + 1.))*(range/3.));
+                                ((float)d)*(range/10.));
                             break;
                         }
                     }
@@ -392,6 +389,8 @@ public class SkylineDownhillSimplex {
     private ANDedClauses[] reflect(SkylineFits fit, float[][] averagedCoeff, 
         float alpha) {
         
+ System.out.println("reflect");
+ 
         ANDedClauses[] tClauses = performAction(fit, averagedCoeff, alpha);
         
         return tClauses;
@@ -408,7 +407,9 @@ public class SkylineDownhillSimplex {
      */
     private ANDedClauses[] expand(SkylineFits fit, 
         float[][] averagedCoeff, float gamma) {
-        
+       
+System.out.println("expand");
+
         ANDedClauses[] tClauses = performAction(fit, averagedCoeff, gamma);
         
         return tClauses;
@@ -426,6 +427,8 @@ public class SkylineDownhillSimplex {
     private ANDedClauses[] contract(SkylineFits fit, 
         float[][] averagedCoeff, float beta) {
         
+System.out.println("contract");
+        
         ANDedClauses[] tClauses = performAction(fit, averagedCoeff, beta);
         
         return tClauses;
@@ -442,8 +445,9 @@ public class SkylineDownhillSimplex {
     private ANDedClauses[] reduce(SkylineFits bestFit, SkylineFits fitI, 
         float tau) {
         
-        ANDedClauses[] bestClauses = Arrays.copyOf(bestFit.clauses, 
-            bestFit.clauses.length);
+System.out.println("reduce");
+
+        ANDedClauses[] bestClauses = copy(bestFit.clauses);
          
         for (int clauseIdx = 0; clauseIdx < bestClauses.length; clauseIdx++) {
             
@@ -470,7 +474,7 @@ public class SkylineDownhillSimplex {
     private ANDedClauses[] performAction(SkylineFits fit, float[][] averagedCoeff, 
         float factor) {
         
-        ANDedClauses[] tClauses = Arrays.copyOf(fit.clauses, fit.clauses.length);
+        ANDedClauses[] tClauses = copy(fit.clauses);
          
         for (int clauseIdx = 0; clauseIdx < tClauses.length; clauseIdx++) {
             
@@ -483,7 +487,7 @@ public class SkylineDownhillSimplex {
                 
                 float coeffM = coeff + (factor * 
                     (coeff - fit.clauses[clauseIdx].coefficients[clauseCoeffIdx]));
-                
+System.out.println("   before=" + coeff + "  modified=" + coeffM);
                 tClauses[clauseIdx].coefficients[clauseCoeffIdx] = coeffM;
             }
         }

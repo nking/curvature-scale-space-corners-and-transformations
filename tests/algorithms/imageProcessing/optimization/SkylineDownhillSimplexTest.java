@@ -38,10 +38,10 @@ public class SkylineDownhillSimplexTest extends TestCase {
             fileNames = new String[]{
                 "brown_lowe_2003_image1.jpg", 
                 "venturi_mountain_j6_0001.png",
-                /*"seattle.jpg",
+                "seattle.jpg",
                 "arches.jpg",
                 "stinson_beach.jpg",
-                "cloudy_san_jose.jpg"*/
+                "cloudy_san_jose.jpg"
             };
         } else {
             fileNames = new String[]{
@@ -135,6 +135,8 @@ public class SkylineDownhillSimplexTest extends TestCase {
         
         List<SetComparisonResults> resultsBeforeList = new ArrayList<SetComparisonResults>();
         
+        SkylineExtractor skylineExtractor = new SkylineExtractor();
+        
         // ---- get the comparison of points before refinement ----
         for (int i = 0; i < seedPoints.size(); i++) {
             Set<PairInt> points0 = new HashSet<PairInt>(seedPoints.get(i));
@@ -143,7 +145,6 @@ public class SkylineDownhillSimplexTest extends TestCase {
             ImageExt img = images.get(i);
             GreyscaleImage thetaImg = thetaImages.get(i);
          
-            SkylineExtractor skylineExtractor = new SkylineExtractor();
             skylineExtractor.findClouds(points0, exclude, img, thetaImg,
                 clauses);
               
@@ -175,15 +176,9 @@ public class SkylineDownhillSimplexTest extends TestCase {
         }        
        
         // ---- get the comparison of points after refinement ----
-        
-        // initialize list that will hold final sky points
-        List<Set<PairInt>> finalSkyPoints = new ArrayList<Set<PairInt>>();
-        for (Set<PairInt> set : seedPoints) {
-            finalSkyPoints.add(new HashSet<PairInt>(set));
-        }        
-        
+       
         SkylineDownhillSimplex nelderMaed = new SkylineDownhillSimplex(images, 
-            thetaImages, finalSkyPoints, excludePoints, expectedSky, 
+            thetaImages, seedPoints, excludePoints, expectedSky, 
             expectedBorderPoints,
             clauses, coeffLowerLimits, coeffUpperLimits);
         
@@ -194,9 +189,17 @@ public class SkylineDownhillSimplexTest extends TestCase {
         
         SetComparisonResults resultsAfter = fit.results;
         
+        // using the best fit, re-do the processing to see the results
+        
         for (int i = 0; i < images.size(); i++) {
             
-            Set<PairInt> points = finalSkyPoints.get(i);
+            SkylineANDedClauses skylineANDedClauses2 = new SkylineANDedClauses();
+            ANDedClauses[] clauses2 = skylineANDedClauses2.getAllClauses();
+        
+            skylineExtractor.findClouds(seedPoints.get(i), 
+                excludePoints.get(i), images.get(i), thetaImages.get(i),
+                clauses2/*fit.clauses*/);
+            
             ImageExt img = images.get(i);
             GreyscaleImage thetaImg = thetaImages.get(i);
             
@@ -206,14 +209,14 @@ public class SkylineDownhillSimplexTest extends TestCase {
             // perimeter finder
             Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
             Set<PairInt> outputBorderPoints = new HashSet<PairInt>();
-            SkylineExtractor.getEmbeddedAndBorderPoints(points,
+            SkylineExtractor.getEmbeddedAndBorderPoints(seedPoints.get(i),
                 thetaImg.getWidth(), thetaImg.getHeight(), 
                 outputEmbeddedGapPoints, outputBorderPoints);
             
             try {
                 String dirPath = ResourceFinder.findDirectory("bin");
                 ImageExt clr = (ImageExt) img.copyImage();
-                ImageIOHelper.addToImage(points, 
+                ImageIOHelper.addToImage(seedPoints.get(i), 
                     thetaImg.getXRelativeOffset(),
                     thetaImg.getYRelativeOffset(), clr);
                 ImageIOHelper.addToImage(outputBorderPoints, 

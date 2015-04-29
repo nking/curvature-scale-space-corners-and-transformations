@@ -14,7 +14,8 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
     
     protected final int nExpectedBorderPoints;
     protected final float numberMatchedBorderDivExpected;
-
+    public final double eps0;
+    
     public SetComparisonResults(int nExpected, int nOverrun, int nMatched,
         int nExpectedBorder, int nMatchedBorder) {
         
@@ -27,6 +28,9 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
         this.numberMatchedBorderDivExpected = (nExpected > 0) ? 
             (float) nMatchedBorder / (float) nExpectedBorder 
             : Float.POSITIVE_INFINITY;
+        
+        this.eps0 = 0.99 * (1./(double)nExpectedPoints);
+        //this.eps0 = 0.001;
     }
     
     public SetComparisonResults(List<SetComparisonResults> results) {
@@ -62,6 +66,8 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
             sumnMatchedFraction += fraction;
         }
         this.numberMatchedBorderDivExpected = sumnMatchedFraction/(float)results.size();
+        
+        this.eps0 = 0.99 * (1./(double)nExpectedPoints);
     }
     
     public SetComparisonResults(List<Integer> nExpected, List<Integer> nOverrun, 
@@ -108,6 +114,8 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
         }
         this.numberMatchedBorderDivExpected = 
             sumnMatchedFraction/(float)nMatchedBorder.size();
+        
+        this.eps0 = 0.99 * (1./(double)nExpectedPoints);
     }
 
     @Override
@@ -118,7 +126,6 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
         }
         SetComparisonResults other = (SetComparisonResults) obj;
         
-        double eps0 = 0.99 * (1./(double)nExpectedPoints);
         double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:
         
         if (Math.abs(numberOverrunDivExpected - other.numberOverrunDivExpected)
@@ -157,7 +164,7 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
 
         // cannot have even 1 pixel overrun, so eps0 should be 0,
         // but will consider precision  
-        double eps0 = 0.99 * (1./(double)nExpectedPoints);
+        
         double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:
         
         float diff0 = Math.abs(numberOverrunDivExpected
