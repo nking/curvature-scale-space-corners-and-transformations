@@ -14,8 +14,10 @@ import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -122,15 +124,21 @@ public class SkylineDownhillSimplexTest extends TestCase {
          
         float[][] coeffLowerLimits;
         float[][] coeffUpperLimits;
+        final Map<Integer, Map<Integer, Float>> customCoeffLowerLimits;
+        final Map<Integer, Map<Integer, Float>> customCoeffUpperLimits;
         
         if (useBlueSkyImages) {
             clauses = skylineANDedClauses.getAllAndBlueClauses();
             coeffLowerLimits = skylineANDedClauses.getAllAndBlueCoeffLowerLimits();
             coeffUpperLimits = skylineANDedClauses.getAllAndBlueCoeffUpperLimits();
+            customCoeffLowerLimits = skylineANDedClauses.getAllAndBlueCustomCoeffLowerLimits();
+            customCoeffUpperLimits = skylineANDedClauses.getAllAndBlueCustomCoeffUpperLimits();
         } else {
             clauses = skylineANDedClauses.getAllAndRedClauses();
             coeffLowerLimits = skylineANDedClauses.getAllAndRedCoeffLowerLimits();
             coeffUpperLimits = skylineANDedClauses.getAllAndRedCoeffUpperLimits();
+            customCoeffLowerLimits = skylineANDedClauses.getAllAndRedCustomCoeffLowerLimits();
+            customCoeffUpperLimits = skylineANDedClauses.getAllAndRedCustomCoeffUpperLimits();
         }
         
         List<SetComparisonResults> resultsBeforeList = new ArrayList<SetComparisonResults>();
@@ -180,9 +188,13 @@ public class SkylineDownhillSimplexTest extends TestCase {
         SkylineDownhillSimplex nelderMaed = new SkylineDownhillSimplex(images, 
             thetaImages, seedPoints, excludePoints, expectedSky, 
             expectedBorderPoints,
-            clauses, coeffLowerLimits, coeffUpperLimits);
+            clauses, coeffLowerLimits, coeffUpperLimits,
+            customCoeffLowerLimits, customCoeffUpperLimits
+        );
         
         SkylineFits fit = nelderMaed.fit();
+        
+        printFit(fit);
         
         SetComparisonResults resultsBefore = new SetComparisonResults(
             resultsBeforeList);
@@ -278,6 +290,17 @@ public class SkylineDownhillSimplexTest extends TestCase {
         }
         
         return skyPoints;
+    }
+
+    private void printFit(SkylineFits fit) {
+        
+        System.out.println("fit coefficients =");
+        for (int i = 0; i < fit.clauses.length; i++) {
+            ANDedClauses clause = fit.clauses[i];
+            float[] coeff = clause.coefficients;
+            System.out.println("clause " + i + ") " + Arrays.toString(coeff));
+        }
+        System.out.println("fit results=" + fit.results.toString());
     }
 
 }

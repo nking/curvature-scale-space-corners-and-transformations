@@ -1,5 +1,8 @@
 package algorithms.imageProcessing.optimization;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -84,7 +87,19 @@ public class SkylineANDedClausesTest extends TestCase {
             assertNotNull(ac);
             assertNotNull(ac.getSKYCONDITIONAL());
             ac.evaluate(data);
+            
+            Map<Integer, CustomCoeff> cc = ac.customCoefficients;
+            Iterator<Entry<Integer, CustomCoeff>> iter = cc.entrySet().iterator();
+            while (iter.hasNext()) {
+                Entry<Integer, CustomCoeff> clauseNumber = iter.next();
+                Map<Integer, Map<Integer, Float>> map = instance.getAllCustomCoeffLowerLimits();
+                assertNotNull(map);
+                if (map.get(clauseNumber) != null) {
+                    assertTrue(ac.customCoefficientVariables.size() == map.size());
+                }
+            }
         }
+        
 
         assertNotNull(instance.getFittableCoefficientsForAllSkies());
         assertNotNull(instance.getFittableCoefficientsForBlueSkies());
@@ -115,9 +130,25 @@ public class SkylineANDedClausesTest extends TestCase {
                 float[] c2 = coeffUpperLimits[clauseIdx];//4
                 assertTrue(c0.length == c1.length);
                 assertTrue(c0.length == c2.length);
+                
+                Map<Integer, CustomCoeff> cc = clauses[clauseIdx].customCoefficients;
+                Iterator<Entry<Integer, CustomCoeff>> iter = cc.entrySet().iterator();
+                while (iter.hasNext()) {
+                    Entry<Integer, CustomCoeff> clauseNumber = iter.next();
+                    
+                    Map<Integer, Map<Integer, Float>> map = null;
+                    if (useBlueSkyImages) {
+                        map = instance.getAllAndBlueCustomCoeffLowerLimits();
+                    } else {
+                        map = instance.getAllAndRedCustomCoeffLowerLimits();
+                    }
+                    assertNotNull(map);
+                    if (map.get(clauseNumber) != null) {
+                        assertTrue(clauses[clauseIdx].customCoefficientVariables.size() == map.size());
+                    }
+                }
             }
         }
         
     }
-
 }

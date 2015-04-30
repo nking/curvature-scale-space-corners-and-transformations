@@ -205,4 +205,18 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("nExpectedPoints=").append(Integer.toString(nExpectedPoints));
+        sb.append(" numberOverrunDivExpected=").append(Float.toString(numberOverrunDivExpected));
+        sb.append(" numberMatchedDivExpected=").append(Float.toString(numberMatchedDivExpected));
+        sb.append(" nExpectedBorderPoints=").append(Integer.toString(nExpectedBorderPoints));
+        sb.append(" numberMatchedBorderDivExpected=").append(Float.toString(numberMatchedBorderDivExpected));
+       
+        return sb.toString();
+    }
+    
 }

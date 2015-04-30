@@ -8,8 +8,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -28,6 +32,8 @@ public class SkylineDownhillSimplex {
     private final ANDedClauses[] clauses;
     private final float[][] coeffLowerLimits;
     private final float[][] coeffUpperLimits;
+    private final Map<Integer, Map<Integer, Float>> customCoeffLowerLimits;
+    private final Map<Integer, Map<Integer, Float>> customCoeffUpperLimits;
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -37,7 +43,9 @@ public class SkylineDownhillSimplex {
         List<Set<PairInt>> expectedPoints, 
         List<Set<PairInt>> expectedBorderPoints,
         ANDedClauses[] clauses,
-        float[][] coeffLowerLimits, float[][] coeffUpperLimits) {
+        float[][] coeffLowerLimits, float[][] coeffUpperLimits,
+        Map<Integer, Map<Integer, Float>> customCoeffLowerLimits,
+        Map<Integer, Map<Integer, Float>> customCoeffUpperLimits) {
         
         if (images == null) {
             throw new IllegalArgumentException("images cannot be null");
@@ -61,6 +69,18 @@ public class SkylineDownhillSimplex {
         if (clauses == null) {
             throw new IllegalArgumentException("clauses cannot be null");
         }
+        if (coeffLowerLimits == null) {
+            throw new IllegalArgumentException("coeffLowerLimits cannot be null");
+        }
+        if (coeffUpperLimits == null) {
+            throw new IllegalArgumentException("coeffUpperLimits cannot be null");
+        }
+        if (customCoeffLowerLimits == null) {
+            throw new IllegalArgumentException("customCoeffLowerLimits cannot be null");
+        }
+        if (customCoeffUpperLimits == null) {
+            throw new IllegalArgumentException("customCoeffUpperLimits cannot be null");
+        }
         
         this.images = images; 
         this.thetaImages = thetaImages;
@@ -71,6 +91,8 @@ public class SkylineDownhillSimplex {
         this.clauses = clauses;
         this.coeffLowerLimits = coeffLowerLimits;
         this.coeffUpperLimits = coeffUpperLimits;
+        this.customCoeffLowerLimits = customCoeffLowerLimits;
+        this.customCoeffUpperLimits = customCoeffUpperLimits;
     }
     
     protected SkylineFits process(SkylineExtractor skylineExtractor,
@@ -128,7 +150,7 @@ public class SkylineDownhillSimplex {
         //TODO: edit convergence.  it's the fraction of matched to expected matches.
         float convergence = 1.0f;
       
-        int nStarterPoints = 30;
+        int nStarterPoints = 10;
         
         SkylineFits[] fits = createStarterPoints(skylineExtractor,
             nStarterPoints);
@@ -335,6 +357,38 @@ public class SkylineDownhillSimplex {
                         }
                     }
                 }
+                
+                if (!clause.customCoefficientVariables.isEmpty()) {
+                
+                    Iterator<Entry<Integer, Float>> iter = 
+                        clause.customCoefficientVariables.entrySet().iterator();
+
+                    Map<Integer, Float> tMap = new HashMap<Integer, Float>(
+                        clause.customCoefficientVariables);
+
+                    while (iter.hasNext()) {
+
+                        Entry<Integer, Float> entry = iter.next();
+
+                        Integer coeffIndex = entry.getKey();
+                
+                        //Map<Integer, Map<Integer, Float>> customCoeffLowerLimits
+                        //has key=clause index, value = map w/ key=coeff index and val = coeff
+                        
+                        float lower = customCoeffUpperLimits.get(ii).get(coeffIndex).floatValue();
+                        float range = lower -
+                            customCoeffLowerLimits.get(ii).get(coeffIndex).floatValue();
+                        
+                        // dividing the range by 100 and choosing randomly
+                        // between those marks
+                        int d = sr.nextInt(10);
+                        float coeffM = (float)(lower + ((float)d)*(range/10.));
+
+                        tMap.put(coeffIndex, Float.valueOf(coeffM));
+                    }
+
+                    clause.customCoefficientVariables.putAll(tMap);
+                }
             }
         }        
         
@@ -388,9 +442,7 @@ public class SkylineDownhillSimplex {
      */
     private ANDedClauses[] reflect(SkylineFits fit, float[][] averagedCoeff, 
         float alpha) {
-        
- System.out.println("reflect");
- 
+         
         ANDedClauses[] tClauses = performAction(fit, averagedCoeff, alpha);
         
         return tClauses;
@@ -408,8 +460,6 @@ public class SkylineDownhillSimplex {
     private ANDedClauses[] expand(SkylineFits fit, 
         float[][] averagedCoeff, float gamma) {
        
-System.out.println("expand");
-
         ANDedClauses[] tClauses = performAction(fit, averagedCoeff, gamma);
         
         return tClauses;
@@ -426,9 +476,7 @@ System.out.println("expand");
      */
     private ANDedClauses[] contract(SkylineFits fit, 
         float[][] averagedCoeff, float beta) {
-        
-System.out.println("contract");
-        
+                
         ANDedClauses[] tClauses = performAction(fit, averagedCoeff, beta);
         
         return tClauses;
@@ -445,8 +493,6 @@ System.out.println("contract");
     private ANDedClauses[] reduce(SkylineFits bestFit, SkylineFits fitI, 
         float tau) {
         
-System.out.println("reduce");
-
         ANDedClauses[] bestClauses = copy(bestFit.clauses);
          
         for (int clauseIdx = 0; clauseIdx < bestClauses.length; clauseIdx++) {
@@ -466,6 +512,34 @@ System.out.println("reduce");
                 
                 bestClauses[clauseIdx].coefficients[clauseCoeffIdx] = coeffM;
             }
+            
+            if (!clauseI.customCoefficientVariables.isEmpty()) {
+                
+                Iterator<Entry<Integer, Float>> iter = 
+                    clauseI.customCoefficientVariables.entrySet().iterator();
+                
+                Map<Integer, Float> tMap = new HashMap<Integer, Float>(
+                    clauseI.customCoefficientVariables);
+                
+                while (iter.hasNext()) {
+                    
+                    Entry<Integer, Float> entry = iter.next();
+                    
+                    Integer coeffIndex = entry.getKey();
+                    
+                    float coeffI = entry.getValue().floatValue();
+                    
+                    float coeffBest = clauseBest.customCoefficientVariables.get(
+                        coeffIndex);
+                    
+                    float coeffM = coeffBest + (tau * (coeffI - coeffBest));
+                    
+                    tMap.put(coeffIndex, Float.valueOf(coeffM));
+                }
+                
+                bestClauses[clauseIdx].customCoefficientVariables.putAll(tMap);
+            }
+            
         }
         
         return bestClauses;
@@ -487,8 +561,33 @@ System.out.println("reduce");
                 
                 float coeffM = coeff + (factor * 
                     (coeff - fit.clauses[clauseIdx].coefficients[clauseCoeffIdx]));
-System.out.println("   before=" + coeff + "  modified=" + coeffM);
+                
                 tClauses[clauseIdx].coefficients[clauseCoeffIdx] = coeffM;
+            }
+            
+            if (!clause.customCoefficientVariables.isEmpty()) {
+                
+                Iterator<Entry<Integer, Float>> iter = 
+                    clause.customCoefficientVariables.entrySet().iterator();
+                
+                Map<Integer, Float> tMap = new HashMap<Integer, Float>(
+                    clause.customCoefficientVariables);
+                
+                while (iter.hasNext()) {
+                    
+                    Entry<Integer, Float> entry = iter.next();
+                    
+                    Integer coeffIndex = entry.getKey();
+                    
+                    float coeff = entry.getValue().floatValue();
+                    
+                    float coeffM = coeff + (factor * 
+                        (coeff - fit.clauses[clauseIdx].customCoefficientVariables.get(coeffIndex)));
+                    
+                    tMap.put(coeffIndex, Float.valueOf(coeffM));
+                }
+                
+                fit.clauses[clauseIdx].customCoefficientVariables.putAll(tMap);
             }
         }
         

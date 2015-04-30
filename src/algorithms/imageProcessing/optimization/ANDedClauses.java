@@ -28,7 +28,7 @@ public class ANDedClauses implements Cloneable {
      * The invoker of the constructor is responsible for keeping track of 
      * filling both.
      */
-    protected Map<Integer, Float> customCoefficientVariables = 
+    protected final Map<Integer, Float> customCoefficientVariables = 
         new HashMap<Integer, Float>();
     
     public ANDedClauses(int nClauses, SKYCONDITIONAL skyC) {
