@@ -83,20 +83,54 @@ public class SkylineANDedClausesTest extends TestCase {
         
         assertTrue(a.length == nTot);
         
-        for (ANDedClauses ac : a) {
+        Map<Integer, Map<Integer, Map<Integer, Float>>> lowerCustom = 
+            instance.getAllCustomCoeffLowerLimits();
+        
+        Map<Integer, Map<Integer, Map<Integer, Float>>> upperCustom = 
+            instance.getAllCustomCoeffUpperLimits();
+        
+        for (int outerClauseIndex = 0; outerClauseIndex < a.length; outerClauseIndex++) {
+            
+            ANDedClauses ac = a[outerClauseIndex];
+            
             assertNotNull(ac);
             assertNotNull(ac.getSKYCONDITIONAL());
             ac.evaluate(data);
             
             Map<Integer, CustomCoeff> cc = ac.customCoefficients;
-            Iterator<Entry<Integer, CustomCoeff>> iter = cc.entrySet().iterator();
-            while (iter.hasNext()) {
-                Entry<Integer, CustomCoeff> clauseNumber = iter.next();
-                Map<Integer, Map<Integer, Float>> map = instance.getAllCustomCoeffLowerLimits();
-                assertNotNull(map);
-                if (map.get(clauseNumber) != null) {
-                    assertTrue(ac.customCoefficientVariables.size() == map.size());
+            
+            if (cc.isEmpty()) {
+                assertNull(lowerCustom.get(Integer.valueOf(outerClauseIndex))); 
+                assertNull(upperCustom.get(Integer.valueOf(outerClauseIndex))); 
+            } else {
+            
+                Integer outerClauseIdx = Integer.valueOf(outerClauseIndex);
+                                
+                int nCustomCoeffs = 0;
+                Map<Integer, Map<Integer, Float>> cMap = lowerCustom.get(outerClauseIdx);
+                assertNotNull(cMap);            
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = cMap.entrySet().iterator();
+                while (iter2.hasNext()) {                
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    Integer innerClauseIndex = entry2.getKey();
+                    assertNotNull(cc.get(innerClauseIndex));
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    nCustomCoeffs += coeffIdxAndValue.size();
                 }
+                assertTrue(ac.customCoefficientVariables.size() == nCustomCoeffs);
+
+                nCustomCoeffs = 0;
+                cMap = upperCustom.get(outerClauseIdx);
+                assertNotNull(cMap);            
+                iter2 = cMap.entrySet().iterator();
+                while (iter2.hasNext()) {                
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    Integer innerClauseIndex = entry2.getKey();
+                    assertNotNull(cc.get(innerClauseIndex));
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    nCustomCoeffs += coeffIdxAndValue.size();
+                }
+                assertTrue(ac.customCoefficientVariables.size() == nCustomCoeffs);
             }
         }
         
@@ -113,39 +147,63 @@ public class SkylineANDedClausesTest extends TestCase {
             ANDedClauses[] clauses;
             float[][] coeffLowerLimits;
             float[][] coeffUpperLimits;
+            
             if (useBlueSkyImages) {
                 clauses = instance.getAllAndBlueClauses();
                 coeffLowerLimits = instance.getAllAndBlueCoeffLowerLimits();
                 coeffUpperLimits = instance.getAllAndBlueCoeffUpperLimits();
+                lowerCustom = instance.getAllAndBlueCustomCoeffLowerLimits();
+                upperCustom = instance.getAllAndBlueCustomCoeffUpperLimits();
             } else {
                 clauses = instance.getAllAndRedClauses();
                 coeffLowerLimits = instance.getAllAndRedCoeffLowerLimits();
                 coeffUpperLimits = instance.getAllAndRedCoeffUpperLimits();
+                lowerCustom = instance.getAllAndRedCustomCoeffLowerLimits();
+                upperCustom = instance.getAllAndRedCustomCoeffUpperLimits();
             }
             assertTrue(clauses.length == coeffLowerLimits.length);
             assertTrue(clauses.length == coeffUpperLimits.length);
             for (int clauseIdx = 0; clauseIdx < clauses.length; clauseIdx++) {
                 float[] c0 = clauses[clauseIdx].coefficients;
                 float[] c1 = coeffLowerLimits[clauseIdx];
-                float[] c2 = coeffUpperLimits[clauseIdx];//4
+                float[] c2 = coeffUpperLimits[clauseIdx];
                 assertTrue(c0.length == c1.length);
                 assertTrue(c0.length == c2.length);
                 
                 Map<Integer, CustomCoeff> cc = clauses[clauseIdx].customCoefficients;
-                Iterator<Entry<Integer, CustomCoeff>> iter = cc.entrySet().iterator();
-                while (iter.hasNext()) {
-                    Entry<Integer, CustomCoeff> clauseNumber = iter.next();
+                                    
+                Integer outerClauseIdx = Integer.valueOf(clauseIdx);
+            
+                if (cc.isEmpty()) {
+                    assertNull(lowerCustom.get(outerClauseIdx)); 
+                    assertNull(upperCustom.get(outerClauseIdx)); 
+                } else {
+                                
+                    int nCustomCoeffs = 0;
+                    Map<Integer, Map<Integer, Float>> cMap = lowerCustom.get(outerClauseIdx);
+                    assertNotNull(cMap);            
+                    Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = cMap.entrySet().iterator();
+                    while (iter2.hasNext()) {                
+                        Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                        Integer innerClauseIndex = entry2.getKey();
+                        assertNotNull(cc.get(innerClauseIndex));
+                        Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                        nCustomCoeffs += coeffIdxAndValue.size();
+                    }
+                    assertTrue(clauses[clauseIdx].customCoefficientVariables.size() == nCustomCoeffs);
                     
-                    Map<Integer, Map<Integer, Float>> map = null;
-                    if (useBlueSkyImages) {
-                        map = instance.getAllAndBlueCustomCoeffLowerLimits();
-                    } else {
-                        map = instance.getAllAndRedCustomCoeffLowerLimits();
+                    nCustomCoeffs = 0;
+                    upperCustom.get(outerClauseIdx);
+                    assertNotNull(cMap);            
+                    iter2 = cMap.entrySet().iterator();
+                    while (iter2.hasNext()) {                
+                        Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                        Integer innerClauseIndex = entry2.getKey();
+                        assertNotNull(cc.get(innerClauseIndex));
+                        Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                        nCustomCoeffs += coeffIdxAndValue.size();
                     }
-                    assertNotNull(map);
-                    if (map.get(clauseNumber) != null) {
-                        assertTrue(clauses[clauseIdx].customCoefficientVariables.size() == map.size());
-                    }
+                    assertTrue(clauses[clauseIdx].customCoefficientVariables.size() == nCustomCoeffs);
                 }
             }
         }

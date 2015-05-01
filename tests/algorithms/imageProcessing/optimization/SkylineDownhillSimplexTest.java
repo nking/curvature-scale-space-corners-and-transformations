@@ -9,6 +9,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.SkylineExtractor;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -16,8 +17,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -124,8 +127,8 @@ public class SkylineDownhillSimplexTest extends TestCase {
          
         float[][] coeffLowerLimits;
         float[][] coeffUpperLimits;
-        final Map<Integer, Map<Integer, Float>> customCoeffLowerLimits;
-        final Map<Integer, Map<Integer, Float>> customCoeffUpperLimits;
+        final Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffLowerLimits;
+        final Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffUpperLimits;
         
         if (useBlueSkyImages) {
             clauses = skylineANDedClauses.getAllAndBlueClauses();
@@ -184,7 +187,6 @@ public class SkylineDownhillSimplexTest extends TestCase {
         }        
        
         // ---- get the comparison of points after refinement ----
-       
         SkylineDownhillSimplex nelderMaed = new SkylineDownhillSimplex(images, 
             thetaImages, seedPoints, excludePoints, expectedSky, 
             expectedBorderPoints,
@@ -299,6 +301,20 @@ public class SkylineDownhillSimplexTest extends TestCase {
             ANDedClauses clause = fit.clauses[i];
             float[] coeff = clause.coefficients;
             System.out.println("clause " + i + ") " + Arrays.toString(coeff));
+        }
+        System.out.println("fit custom coefficients =");
+        for (int i = 0; i < fit.clauses.length; i++) {
+            ANDedClauses clause = fit.clauses[i];
+            Map<Integer, Float> map = clause.customCoefficientVariables;
+            if (!map.isEmpty()) {
+                Iterator<Entry<Integer, Float>> iter = map.entrySet().iterator();
+                while (iter.hasNext()) {
+                    Entry<Integer, Float> entry = iter.next();
+                    System.out.println("   clauseIndex=" + i + " coeffIndex=" 
+                        + entry.getKey().toString() 
+                        + " coeff=" + entry.getValue().toString());
+                }
+            }
         }
         System.out.println("fit results=" + fit.results.toString());
     }

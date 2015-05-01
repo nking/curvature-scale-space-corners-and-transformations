@@ -3,6 +3,7 @@ package algorithms.imageProcessing.optimization;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.SkylineExtractor;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -32,8 +33,8 @@ public class SkylineDownhillSimplex {
     private final ANDedClauses[] clauses;
     private final float[][] coeffLowerLimits;
     private final float[][] coeffUpperLimits;
-    private final Map<Integer, Map<Integer, Float>> customCoeffLowerLimits;
-    private final Map<Integer, Map<Integer, Float>> customCoeffUpperLimits;
+    private final Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffLowerLimits;
+    private final Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffUpperLimits;
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -44,8 +45,8 @@ public class SkylineDownhillSimplex {
         List<Set<PairInt>> expectedBorderPoints,
         ANDedClauses[] clauses,
         float[][] coeffLowerLimits, float[][] coeffUpperLimits,
-        Map<Integer, Map<Integer, Float>> customCoeffLowerLimits,
-        Map<Integer, Map<Integer, Float>> customCoeffUpperLimits) {
+        Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffLowerLimits,
+        Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffUpperLimits) {
         
         if (images == null) {
             throw new IllegalArgumentException("images cannot be null");
@@ -150,7 +151,7 @@ public class SkylineDownhillSimplex {
         //TODO: edit convergence.  it's the fraction of matched to expected matches.
         float convergence = 1.0f;
       
-        int nStarterPoints = 10;
+        int nStarterPoints = 1000;
         
         SkylineFits[] fits = createStarterPoints(skylineExtractor,
             nStarterPoints);
@@ -365,26 +366,44 @@ public class SkylineDownhillSimplex {
 
                     Map<Integer, Float> tMap = new HashMap<Integer, Float>(
                         clause.customCoefficientVariables);
+                    
+                    Integer outerClauseIndex = Integer.valueOf(ii);
 
                     while (iter.hasNext()) {
 
                         Entry<Integer, Float> entry = iter.next();
 
-                        Integer coeffIndex = entry.getKey();
+                        Integer innerClauseIndex = entry.getKey();
                 
                         //Map<Integer, Map<Integer, Float>> customCoeffLowerLimits
-                        //has key=clause index, value = map w/ key=coeff index and val = coeff
+                        //has key=outer clause index, 
+                        //   value = map w/ key=inner clause index 
+                        //       and val = Map w/ key=coefficient index and value = coefficient
                         
-                        float lower = customCoeffUpperLimits.get(ii).get(coeffIndex).floatValue();
-                        float range = lower -
-                            customCoeffLowerLimits.get(ii).get(coeffIndex).floatValue();
+                        Map<Integer, Float> lowerCoeffIndexAndValue =
+                            customCoeffLowerLimits.get(outerClauseIndex).get(innerClauseIndex);
                         
-                        // dividing the range by 100 and choosing randomly
-                        // between those marks
-                        int d = sr.nextInt(10);
-                        float coeffM = (float)(lower + ((float)d)*(range/10.));
+                        Map<Integer, Float> upperCoeffIndexAndValue =
+                            customCoeffLowerLimits.get(outerClauseIndex).get(innerClauseIndex);
+                        
+                        Iterator<Entry<Integer, Float>> iter2 
+                            = lowerCoeffIndexAndValue.entrySet().iterator();
+                        
+                        while (iter2.hasNext()) {
+                            Entry<Integer, Float> entry2 = iter2.next();
+                            Integer coeffIndex = entry2.getKey();
+                            float lower = entry2.getValue().floatValue();
+                            
+                            float upper = upperCoeffIndexAndValue.get(coeffIndex).floatValue();
+                            
+                            float range = upper - lower;
+                            // dividing the range by 100 and choosing randomly
+                            // between those marks
+                            int d = sr.nextInt(10);
+                            float coeffM = (float)(lower + ((float)d)*(range/10.));
 
-                        tMap.put(coeffIndex, Float.valueOf(coeffM));
+                            tMap.put(coeffIndex, Float.valueOf(coeffM));
+                        }
                     }
 
                     clause.customCoefficientVariables.putAll(tMap);

@@ -1554,7 +1554,7 @@ try {
             float cieXRange = maxCIEX - minCIEX;
             float cieYRange = maxCIEY - minCIEY;
     
-            log.info("nGTX=" + nGTX + " nLTY=" + nLTY + " n=" 
+            log.fine("nGTX=" + nGTX + " nLTY=" + nLTY + " n=" 
                 + bestFittingPoints.size() + " "
                 + " CIE: minx=" + minCIEX + " maxx=" + maxCIEX
                 + " miny=" + minCIEY + " maxy=" + maxCIEY
@@ -3531,7 +3531,7 @@ debugPlot(set, colorImg, xOffset, yOffset,
                 }
             }
             
-            log.info(gId + ") nBelowLimit=" + nBelowLimit
+            log.fine(gId + ") nBelowLimit=" + nBelowLimit
                 + " (" + ((double)nBelowLimit/(double)points.getN()) + ")");
          
             if (((double)nBelowLimit/(double)points.getN()) > 0.5) {

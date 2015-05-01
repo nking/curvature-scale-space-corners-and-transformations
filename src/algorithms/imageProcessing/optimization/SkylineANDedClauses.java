@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.optimization;
 
+import algorithms.util.PairFloat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -48,21 +49,27 @@ public class SkylineANDedClauses {
     static protected final float[][] blueLowerLimits = new float[7][];
     static protected final float[][] blueUpperLimits = new float[7][];
     
-    static protected final Map<Integer, Map<Integer, Float>>  allCustomCoeffLowerLimits 
-        = new HashMap<Integer, Map<Integer, Float>>();
-    static protected final Map<Integer, Map<Integer, Float>>  allCustomCoeffUpperLimits 
-        = new HashMap<Integer, Map<Integer, Float>>();
+    static protected final Map<Integer, Map<Integer, 
+        Map<Integer, Float>>>  allCustomCoeffLowerLimits 
+        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
+    static protected final Map<Integer, Map<Integer, 
+        Map<Integer, Float>>>  allCustomCoeffUpperLimits 
+        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
     
     //key = clause number, value = map of coefficient number, and value=coeff
-    static protected final Map<Integer, Map<Integer, Float>> redCustomCoeffLowerLimits 
-        = new HashMap<Integer, Map<Integer, Float>>();
-    static protected final Map<Integer, Map<Integer, Float>> redCustomCoeffUpperLimits 
-        = new HashMap<Integer, Map<Integer, Float>>();
+    static protected final Map<Integer, Map<Integer, 
+        Map<Integer, Float>>> redCustomCoeffLowerLimits 
+        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
+    static protected final Map<Integer, Map<Integer, 
+        Map<Integer, Float>>> redCustomCoeffUpperLimits 
+        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
     
-    static protected final Map<Integer, Map<Integer, Float>> blueCustomCoeffLowerLimits 
-        = new HashMap<Integer, Map<Integer, Float>>();
-    static protected final Map<Integer, Map<Integer, Float>> blueCustomCoeffUpperLimits 
-        = new HashMap<Integer, Map<Integer, Float>>();
+    static protected final Map<Integer, Map<Integer, 
+        Map<Integer, Float>>> blueCustomCoeffLowerLimits 
+        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
+    static protected final Map<Integer, Map<Integer, 
+        Map<Integer, Float>>> blueCustomCoeffUpperLimits 
+        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
     
     public SkylineANDedClauses() {
         
@@ -73,16 +80,32 @@ public class SkylineANDedClauses {
         allLowerLimits[1] = new float[]{0.00001f, 0.01f, -14.5f,  1.1f};
         allUpperLimits[1] = new float[]{0.2f,     0.5f,   1.001f, 5.0f};
         
+        // custom coefficient limits are stored by outerClauseIndex 
+        //    (same as used by allLowerLimits for example)
+        //    then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
         allCustomCoeffLowerLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Float>());
+            new HashMap<Integer, Map<Integer, Float>>());
         allCustomCoeffUpperLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Float>());
-        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).put(Integer.valueOf(4), Float.valueOf(0.2f));
-        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).put(Integer.valueOf(4), Float.valueOf(10.0f));
-        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).put(Integer.valueOf(5), Float.valueOf(0.05f));
-        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).put(Integer.valueOf(5), Float.valueOf(0.95f));
-        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).put(Integer.valueOf(6), Float.valueOf(-0.5f));
-        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).put(Integer.valueOf(6), Float.valueOf(-10.0f));
+            new HashMap<Integer, Map<Integer, Float>>());
+        allCustomCoeffLowerLimits.get(Integer.valueOf(1))
+            .put(Integer.valueOf(2), new HashMap<Integer, Float>());
+        allCustomCoeffUpperLimits.get(Integer.valueOf(1))
+            .put(Integer.valueOf(2), new HashMap<Integer, Float>());
+        
+        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
+            .put(Integer.valueOf(4), 0.2f);
+        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
+            .put(Integer.valueOf(4), 10.0f);
+        
+        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
+            .put(Integer.valueOf(5), 0.05f);
+        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
+            .put(Integer.valueOf(5), 0.95f);
+        
+        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
+            .put(Integer.valueOf(6), -0.5f);
+        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
+            .put(Integer.valueOf(6), -10.0f);
         
         //                                08       09     10    11         15
         allLowerLimits[2] = new float[]{0.00001f, 1.1f, 1.1f,  0.00001f,   0.2f};
@@ -105,38 +128,60 @@ public class SkylineANDedClauses {
         redLowerLimits[0] = new float[]{0.00001f, 0.01f, 0.00001f, 1.5f};
         redUpperLimits[0] = new float[]{0.2f,     30.f,  0.2f,     30.0f};
         
+        // clauses 0, 
         redCustomCoeffLowerLimits.put(Integer.valueOf(0), 
-            new HashMap<Integer, Float>());
+            new HashMap<Integer, Map<Integer, Float>>());
         redCustomCoeffUpperLimits.put(Integer.valueOf(0), 
-            new HashMap<Integer, Float>());
-        redCustomCoeffLowerLimits.get(Integer.valueOf(0)).put(Integer.valueOf(1), Float.valueOf(4.0f));
-        redCustomCoeffUpperLimits.get(Integer.valueOf(0)).put(Integer.valueOf(1), Float.valueOf(30.0f));
+            new HashMap<Integer, Map<Integer, Float>>());
         
-        redCustomCoeffLowerLimits.put(Integer.valueOf(0), 
-            new HashMap<Integer, Float>());
-        redCustomCoeffUpperLimits.put(Integer.valueOf(0), 
-            new HashMap<Integer, Float>());
-        redCustomCoeffLowerLimits.get(Integer.valueOf(0)).put(Integer.valueOf(3), Float.valueOf(4.0f));
-        redCustomCoeffUpperLimits.get(Integer.valueOf(0)).put(Integer.valueOf(3), Float.valueOf(30.0f));
+        redCustomCoeffLowerLimits.get(Integer.valueOf(0))
+            .put(Integer.valueOf(1), new HashMap<Integer, Float>());
+        redCustomCoeffUpperLimits.get(Integer.valueOf(0))
+            .put(Integer.valueOf(1), new HashMap<Integer, Float>());
+        redCustomCoeffLowerLimits.get(Integer.valueOf(0))
+            .put(Integer.valueOf(3), new HashMap<Integer, Float>());
+        redCustomCoeffUpperLimits.get(Integer.valueOf(0))
+            .put(Integer.valueOf(3), new HashMap<Integer, Float>());
+        
+        redCustomCoeffLowerLimits.get(Integer.valueOf(0)).get(Integer.valueOf(1))
+            .put(Integer.valueOf(1), 4.0f);
+        redCustomCoeffUpperLimits.get(Integer.valueOf(0)).get(Integer.valueOf(1))
+            .put(Integer.valueOf(1), 30.0f);
+        
+        redCustomCoeffLowerLimits.get(Integer.valueOf(0)).get(Integer.valueOf(3))
+            .put(Integer.valueOf(3), 4.0f);
+        
+        redCustomCoeffUpperLimits.get(Integer.valueOf(0)).get(Integer.valueOf(3))
+            .put(Integer.valueOf(3), 30.0f);
         
         //                                04       05    06        07
         redLowerLimits[1] = new float[]{0.00001f, 0.01f, 0.00001f, 1.5f};
         redUpperLimits[1] = new float[]{0.2f,     30.f,  0.2f,     30.0f};
         
         redCustomCoeffLowerLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Float>());
+            new HashMap<Integer, Map<Integer, Float>>());
         redCustomCoeffUpperLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Float>());
-        redCustomCoeffLowerLimits.get(Integer.valueOf(1)).put(Integer.valueOf(5), Float.valueOf(4.0f));
-        redCustomCoeffUpperLimits.get(Integer.valueOf(1)).put(Integer.valueOf(5), Float.valueOf(30.0f));
+            new HashMap<Integer, Map<Integer, Float>>());
         
-        redCustomCoeffLowerLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Float>());
-        redCustomCoeffUpperLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Float>());
-        redCustomCoeffLowerLimits.get(Integer.valueOf(1)).put(Integer.valueOf(7), Float.valueOf(4.0f));
-        redCustomCoeffUpperLimits.get(Integer.valueOf(1)).put(Integer.valueOf(7), Float.valueOf(30.0f));
+        redCustomCoeffLowerLimits.get(Integer.valueOf(1))
+            .put(Integer.valueOf(1), new HashMap<Integer, Float>());
+        redCustomCoeffUpperLimits.get(Integer.valueOf(1))
+            .put(Integer.valueOf(1), new HashMap<Integer, Float>());
         
+        redCustomCoeffLowerLimits.get(Integer.valueOf(1))
+            .put(Integer.valueOf(3), new HashMap<Integer, Float>());
+        redCustomCoeffUpperLimits.get(Integer.valueOf(1))
+            .put(Integer.valueOf(3), new HashMap<Integer, Float>());
+        
+        redCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(1))
+            .put(Integer.valueOf(5), 4.0f);
+        redCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(1))
+            .put(Integer.valueOf(5), 30.0f);
+        
+        redCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(3))
+            .put(Integer.valueOf(7), 4.0f);
+        redCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(3))
+            .put(Integer.valueOf(7), 30.0f);
         
         //                                00       01       02    03     04    05   06
         blueLowerLimits[0] = new float[]{0.00001f, 0.0000f, 1.5f, 1.5f,  0.3f, 100, 100};
@@ -614,129 +659,496 @@ public class SkylineANDedClauses {
         return a;
     }
     
-    public Map<Integer, Map<Integer, Float>> getAllCustomCoeffLowerLimits() {
+    /**
+     * custom coefficient limits are stored by outerClauseIndex 
+       (same as used by allLowerLimits for example)
+       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
+      
+     * @return 
+     */
+    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllCustomCoeffLowerLimits() {
         
         int nAllCoeff = allLowerLimits.length;
         int nBlueCoeff = blueLowerLimits.length;
         
         // combine the maps, but any blue clause indexes will need nAllCoeff added
         
-        Map<Integer, Map<Integer, Float>> combined = new HashMap<Integer, Map<Integer, Float>>();
+        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
+            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
         
         if (!allCustomCoeffLowerLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = allCustomCoeffLowerLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(key, new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndex, cMap);
+                }
+                
+                while (iter2.hasNext()) {
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+                    
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
         if (!blueCustomCoeffLowerLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = blueCustomCoeffLowerLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(Integer.valueOf(key.intValue() + nAllCoeff), 
-                    new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                Integer outerClauseIndexForList = Integer.valueOf(
+                    outerClauseIndex.intValue() + nAllCoeff);
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndexForList, cMap);
+                }
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+
+                while (iter2.hasNext()) {
+                    
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
         if (!redCustomCoeffLowerLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = redCustomCoeffLowerLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(Integer.valueOf(key.intValue() + nAllCoeff + nBlueCoeff), 
-                    new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                Integer outerClauseIndexForList = Integer.valueOf(
+                    outerClauseIndex.intValue() + nAllCoeff + nBlueCoeff);
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndexForList, cMap);
+                }
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+
+                while (iter2.hasNext()) {
+                    
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
         return combined;
     }
     
-    public Map<Integer, Map<Integer, Float>> getAllAndRedCustomCoeffLowerLimits() {
-        
-        int nAllCoeff = allLowerLimits.length;
-        
-        // combine the maps, but any blue clause indexes will need nAllCoeff added
-        
-        Map<Integer, Map<Integer, Float>> combined = new HashMap<Integer, Map<Integer, Float>>();
-        
-        if (!allCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
-                = allCustomCoeffLowerLimits.entrySet().iterator();
-            while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
-                
-                combined.put(key, new HashMap<Integer, Float>(value));
-            }
-        }
-        
-        if (!redCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
-                = redCustomCoeffLowerLimits.entrySet().iterator();
-            while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
-                
-                combined.put(Integer.valueOf(key.intValue() + nAllCoeff), 
-                    new HashMap<Integer, Float>(value));
-            }
-        }
-        
-        return combined;
-    }
-    
-    public Map<Integer, Map<Integer, Float>> getAllAndRedCustomCoeffUpperLimits() {
+    /**
+     * custom coefficient limits are stored by outerClauseIndex 
+       (same as used by allLowerLimits for example)
+       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
+      
+     * @return 
+     */
+    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllCustomCoeffUpperLimits() {
         
         int nAllCoeff = allUpperLimits.length;
+        int nBlueCoeff = blueUpperLimits.length;
         
         // combine the maps, but any blue clause indexes will need nAllCoeff added
         
-        Map<Integer, Map<Integer, Float>> combined = new HashMap<Integer, Map<Integer, Float>>();
+        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
+            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
         
         if (!allCustomCoeffUpperLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = allCustomCoeffUpperLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(key, new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndex, cMap);
+                }
+                
+                while (iter2.hasNext()) {
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+                    
+                    cMap2.putAll(coeffIdxAndValue);
+                }
+            }
+        }
+        
+        if (!blueCustomCoeffUpperLimits.isEmpty()) {
+            
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
+                = blueCustomCoeffUpperLimits.entrySet().iterator();
+            
+            while (iter.hasNext()) {
+                
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                Integer outerClauseIndexForList = Integer.valueOf(
+                    outerClauseIndex.intValue() + nAllCoeff);
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndexForList, cMap);
+                }
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+
+                while (iter2.hasNext()) {
+                    
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
         if (!redCustomCoeffUpperLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = redCustomCoeffUpperLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(Integer.valueOf(key.intValue() + nAllCoeff), 
-                    new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                Integer outerClauseIndexForList = Integer.valueOf(
+                    outerClauseIndex.intValue() + nAllCoeff + nBlueCoeff);
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndexForList, cMap);
+                }
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+
+                while (iter2.hasNext()) {
+                    
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+
+                    cMap2.putAll(coeffIdxAndValue);
+                }
+            }
+        }
+        
+        return combined;
+    }
+    
+    /**
+     * custom coefficient limits are stored by outerClauseIndex 
+       (same as used by allLowerLimits for example)
+       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
+      
+     * @return 
+     */
+    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllAndRedCustomCoeffLowerLimits() {
+        
+        int nAllCoeff = allLowerLimits.length;
+        
+        // combine the maps, but any blue clause indexes will need nAllCoeff added
+        
+        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
+            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
+        
+        if (!allCustomCoeffLowerLimits.isEmpty()) {
+            
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
+                = allCustomCoeffLowerLimits.entrySet().iterator();
+            
+            while (iter.hasNext()) {
+                
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndex, cMap);
+                }
+                
+                while (iter2.hasNext()) {
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+                    
+                    cMap2.putAll(coeffIdxAndValue);
+                }
+            }
+        }
+        
+        if (!redCustomCoeffLowerLimits.isEmpty()) {
+            
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
+                = redCustomCoeffLowerLimits.entrySet().iterator();
+            
+            while (iter.hasNext()) {
+                
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                Integer outerClauseIndexForList = Integer.valueOf(
+                    outerClauseIndex.intValue() + nAllCoeff);
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndexForList, cMap);
+                }
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+
+                while (iter2.hasNext()) {
+                    
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+
+                    cMap2.putAll(coeffIdxAndValue);
+                }
+            }
+        }
+        
+        return combined;
+    }
+    
+    /**
+     * custom coefficient limits are stored by outerClauseIndex 
+       (same as used by allLowerLimits for example)
+       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
+      
+     * @return 
+     */
+    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllAndRedCustomCoeffUpperLimits() {
+        
+        int nAllCoeff = allUpperLimits.length;
+        
+        // combine the maps, but any blue clause indexes will need nAllCoeff added
+        
+        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
+            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
+        
+        if (!allCustomCoeffUpperLimits.isEmpty()) {
+            
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
+                = allCustomCoeffUpperLimits.entrySet().iterator();
+            
+            while (iter.hasNext()) {
+                
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndex, cMap);
+                }
+                
+                while (iter2.hasNext()) {
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+                    
+                    cMap2.putAll(coeffIdxAndValue);
+                }
+            }
+        }
+        
+        if (!redCustomCoeffUpperLimits.isEmpty()) {
+            
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
+                = redCustomCoeffUpperLimits.entrySet().iterator();
+            
+            while (iter.hasNext()) {
+                
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                Integer outerClauseIndexForList = Integer.valueOf(
+                    outerClauseIndex.intValue() + nAllCoeff);
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndexForList, cMap);
+                }
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+
+                while (iter2.hasNext()) {
+                    
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
@@ -785,83 +1197,209 @@ public class SkylineANDedClauses {
         return a;
     }
     
-    public Map<Integer, Map<Integer, Float>> getAllAndBlueCustomCoeffLowerLimits() {
+    /**
+     * custom coefficient limits are stored by outerClauseIndex 
+       (same as used by allLowerLimits for example)
+       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
+      
+     * @return 
+     */
+    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllAndBlueCustomCoeffLowerLimits() {
         
         int nAllCoeff = allLowerLimits.length;
         //int nBlueCoeff = blueLowerLimits.length;
         
         // combine the maps, but any blue clause indexes will need nAllCoeff added
-        
-        Map<Integer, Map<Integer, Float>> combined = new HashMap<Integer, Map<Integer, Float>>();
+        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
+            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
         
         if (!allCustomCoeffLowerLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = allCustomCoeffLowerLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(key, new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndex, cMap);
+                }
+                
+                while (iter2.hasNext()) {
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+                    
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
         if (!blueCustomCoeffLowerLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = blueCustomCoeffLowerLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(Integer.valueOf(key.intValue() + nAllCoeff), 
-                    new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                Integer outerClauseIndexForList = Integer.valueOf(
+                    outerClauseIndex.intValue() + nAllCoeff);
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndexForList, cMap);
+                }
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+
+                while (iter2.hasNext()) {
+                    
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
         return combined;
     }
     
-    public Map<Integer, Map<Integer, Float>> getAllAndBlueCustomCoeffUpperLimits() {
+    /**
+     * custom coefficient limits are stored by outerClauseIndex 
+       (same as used by allLowerLimits for example)
+       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
+      
+     * @return 
+     */
+    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllAndBlueCustomCoeffUpperLimits() {
         
-        int nAllCoeff = allUpperLimits.length;
+        int nAllCoeff = allLowerLimits.length;
         //int nBlueCoeff = blueLowerLimits.length;
         
         // combine the maps, but any blue clause indexes will need nAllCoeff added
-        
-        Map<Integer, Map<Integer, Float>> combined = new HashMap<Integer, Map<Integer, Float>>();
+        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
+            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
         
         if (!allCustomCoeffUpperLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = allCustomCoeffUpperLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(key, new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndex, cMap);
+                }
+                
+                while (iter2.hasNext()) {
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+                    
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
         if (!blueCustomCoeffUpperLimits.isEmpty()) {
             
-            Iterator<Entry<Integer, Map<Integer, Float>>> iter 
+            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
                 = blueCustomCoeffUpperLimits.entrySet().iterator();
+            
             while (iter.hasNext()) {
-                Entry<Integer, Map<Integer, Float>> entry = iter.next();
-                Integer key = entry.getKey();
-                Map<Integer, Float> value = entry.getValue();
                 
-                combined.put(Integer.valueOf(key.intValue() + nAllCoeff), 
-                    new HashMap<Integer, Float>(value));
+                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
+                
+                Integer outerClauseIndex = entry.getKey();
+                Integer outerClauseIndexForList = Integer.valueOf(
+                    outerClauseIndex.intValue() + nAllCoeff);
+                
+                Map<Integer, Map<Integer, Float>> value = entry.getValue();
+                
+                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
+                if (cMap == null) {
+                    cMap = new HashMap<Integer, Map<Integer, Float>>();
+                    combined.put(outerClauseIndexForList, cMap);
+                }
+                
+                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
+
+                while (iter2.hasNext()) {
+                    
+                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
+                    
+                    Integer innerClauseIndex = entry2.getKey();
+                    
+                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
+                    
+                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
+                    
+                    if (cMap2 == null) {
+                        cMap2 = new HashMap<Integer, Float>();
+                        cMap.put(innerClauseIndex, cMap2);
+                    }
+
+                    cMap2.putAll(coeffIdxAndValue);
+                }
             }
         }
         
         return combined;
-    }
+    } 
     
     /*
     =================

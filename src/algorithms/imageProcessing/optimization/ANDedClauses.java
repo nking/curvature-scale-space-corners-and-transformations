@@ -174,6 +174,7 @@ public class ANDedClauses implements Cloneable {
             return false;
         }
         
+        // iterate over each clause
         for (int i = 0; i < n; i++) {
             
             double param1 = data.getParameter(params1[i]);
