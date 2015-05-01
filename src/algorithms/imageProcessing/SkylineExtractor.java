@@ -1787,7 +1787,7 @@ static int outImgNum=0;
         double rDivB = allSkyColor.getAvgRed() / allSkyColor.getAvgBlue();
         boolean skyIsRed = (rDivB > 1);
        
-        log.info("==> r/b=" + rDivB
+        log.fine("==> r/b=" + rDivB
             + " redStdev=" + allSkyColor.getStdDevRed()
             + " blueStDev=" + allSkyColor.getStdDevBlue());
         

@@ -726,13 +726,13 @@ public class SkylineTestImageMaker {
     private void temporaryStartToFindCloudsRefinement() throws Exception {
         
         String[] fileNames = new String[] {
-            "brown_lowe_2003_image1.jpg",
+            /*"brown_lowe_2003_image1.jpg",
             //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
-            "venturi_mountain_j6_0001.png",
+            "venturi_mountain_j6_0001.png",*/
             //"venturi_mountain_j6_0010.png",
             "seattle.jpg",
-            "arches.jpg",
+           /* "arches.jpg",
             "stinson_beach.jpg",
             "cloudy_san_jose.jpg",       
             "stonehenge.jpg",
@@ -740,7 +740,7 @@ public class SkylineTestImageMaker {
             "halfdome.jpg",
             "costa_rica.jpg",
             "new-mexico-sunrise_w725_h490.jpg",
-            "arizona-sunrise-1342919937GHz.jpg",
+            "arizona-sunrise-1342919937GHz.jpg",*/
             //"sky_with_rainbow.jpg",
             //"sky_with_rainbow2.jpg",
             //"30.jpg",

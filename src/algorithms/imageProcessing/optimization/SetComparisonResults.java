@@ -29,7 +29,7 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
             (float) nMatchedBorder / (float) nExpectedBorder 
             : Float.POSITIVE_INFINITY;
         
-        this.eps0 = 0.99 * (1./(double)nExpectedPoints);
+        this.eps0 = 0;//0.99 * (1./(double)nExpectedPoints);
         //this.eps0 = 0.001;
     }
     

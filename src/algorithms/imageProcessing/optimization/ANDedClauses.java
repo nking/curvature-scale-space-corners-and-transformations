@@ -19,12 +19,12 @@ public class ANDedClauses implements Cloneable {
     protected final SKYCONDITIONAL skyConditional;
     protected final int n;
     
+    // key = inner clause index
     protected Map<Integer, CustomCoeff> customCoefficients = 
         new HashMap<Integer, CustomCoeff>();
     
     /**
-     * these are coefficients not present in float[] coefficients
-     * that are needed for customCoefficients.  
+     * these are coefficients needed for customCoefficients.  
      * The invoker of the constructor is responsible for keeping track of 
      * filling both.
      */

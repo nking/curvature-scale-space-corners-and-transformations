@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.optimization;
 
-import algorithms.util.PairFloat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -13,254 +12,108 @@ import java.util.Map.Entry;
  */
 public class SkylineANDedClauses {
     
-    private float[] allSkiesCoeff = new float[] {
-        //00   01
-        0.0f, 10.0f,
-        //02   03     04    05     06     07
-        0.0f, 0.1f,  1.5f,  0.5f, -2.0f,  2.5f,
-        //08    09     10    11       12     13    14    15
-        0.005f, 5.0f, 5.0f,  0.001f, 1.5f, 0.001f, 1.5f, 1.0f
-    };
+    private ANDedClauses[] generalClauses = null;
     
-    private float[] redSkiesCoeff = new float[] {
-        //00  01     02     03
-        0.0f, 15.0f, 0.03f, 15.0f,
-        //04  05     06     07
-        0.0f, 15.0f, 0.03f, 15.0f
-    };
-        
-    private float[] blueSkiesCoeff = new float[] {
-        //00  01     02    03    04     05   06
-        0.0f, 0.05f, 1.5f, 3.0f, 0.37f, 199, 199,
-        //07   08     09   10    11    12
-        //0.0f, 0.05f, 1.5f, 0.9f, 0.9f, 0.0f,
-        0.0f, 0.05f, 1.5f, 0.6f, 0.9f, 0.0f,
-        
-        //13   14      15      16     17     18     19   20
-        0.05f, 0.005f, 0.005f, 0.08f, 0.03f, 0.03f, 199, 199
-    };
+    private ANDedClauses[] redOnlyClauses = null;
     
-    static protected final float[][] allLowerLimits = new float[6][];
-    static protected final float[][] allUpperLimits = new float[6][];
+    private ANDedClauses[] blueOnlyClauses = null;
+   
+    private ANDedClauses[] generalClausesLowerLimits = null;
+    private ANDedClauses[] generalClausesUpperLimits = null;
     
-    static protected final float[][] redLowerLimits = new float[2][];
-    static protected final float[][] redUpperLimits = new float[2][];
+    private ANDedClauses[] redOnlyClausesLowerLimits = null;
+    private ANDedClauses[] redOnlyClausesUpperLimits = null;
     
-    static protected final float[][] blueLowerLimits = new float[7][];
-    static protected final float[][] blueUpperLimits = new float[7][];
-    
-    static protected final Map<Integer, Map<Integer, 
-        Map<Integer, Float>>>  allCustomCoeffLowerLimits 
-        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-    static protected final Map<Integer, Map<Integer, 
-        Map<Integer, Float>>>  allCustomCoeffUpperLimits 
-        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-    
-    //key = clause number, value = map of coefficient number, and value=coeff
-    static protected final Map<Integer, Map<Integer, 
-        Map<Integer, Float>>> redCustomCoeffLowerLimits 
-        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-    static protected final Map<Integer, Map<Integer, 
-        Map<Integer, Float>>> redCustomCoeffUpperLimits 
-        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-    
-    static protected final Map<Integer, Map<Integer, 
-        Map<Integer, Float>>> blueCustomCoeffLowerLimits 
-        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-    static protected final Map<Integer, Map<Integer, 
-        Map<Integer, Float>>> blueCustomCoeffUpperLimits 
-        = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
+    private ANDedClauses[] blueOnlyClausesLowerLimits = null;
+    private ANDedClauses[] blueOnlyClausesUpperLimits = null;
     
     public SkylineANDedClauses() {
         
-        //                                00       01           
-        allLowerLimits[0] = new float[]{0.00001f, 2.5f};
-        allUpperLimits[0] = new float[]{0.2f,     30.f};
-        //                                02       03     custom  07
-        allLowerLimits[1] = new float[]{0.00001f, 0.01f, -14.5f,  1.1f};
-        allUpperLimits[1] = new float[]{0.2f,     0.5f,   1.001f, 5.0f};
+        initGeneralClauses();
         
-        // custom coefficient limits are stored by outerClauseIndex 
-        //    (same as used by allLowerLimits for example)
-        //    then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
-        allCustomCoeffLowerLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Map<Integer, Float>>());
-        allCustomCoeffUpperLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Map<Integer, Float>>());
-        allCustomCoeffLowerLimits.get(Integer.valueOf(1))
-            .put(Integer.valueOf(2), new HashMap<Integer, Float>());
-        allCustomCoeffUpperLimits.get(Integer.valueOf(1))
-            .put(Integer.valueOf(2), new HashMap<Integer, Float>());
+        initRedOnlyClauses();
         
-        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
-            .put(Integer.valueOf(4), 0.2f);
-        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
-            .put(Integer.valueOf(4), 10.0f);
-        
-        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
-            .put(Integer.valueOf(5), 0.05f);
-        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
-            .put(Integer.valueOf(5), 0.95f);
-        
-        allCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
-            .put(Integer.valueOf(6), -0.5f);
-        allCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(2))
-            .put(Integer.valueOf(6), -10.0f);
-        
-        //                                08       09     10    11         15
-        allLowerLimits[2] = new float[]{0.00001f, 1.1f, 1.1f,  0.00001f,   0.2f};
-        allUpperLimits[2] = new float[]{0.5f,     10.f, 10.0f, 0.05f,     100.f};
-        
-        //                                08       09     10     12   15
-        allLowerLimits[3] = new float[]{0.00001f, 1.1f, 1.1f,   1.1f, 0.2f};
-        allUpperLimits[3] = new float[]{0.5f,     10.f, 10.0f,  5.0f, 100.f};
-        
-         //                                08       09     10      13      15
-        allLowerLimits[4] = new float[]{0.00001f, 1.1f, 1.1f,  0.00001f, 0.2f};
-        allUpperLimits[4] = new float[]{0.5f,     10.f, 10.0f,  0.05f,   100.f};
-        
-        //                                08       09     10    14    15
-        allLowerLimits[5] = new float[]{0.00001f, 1.1f, 1.1f,  1.1f, 0.2f};
-        allUpperLimits[5] = new float[]{0.5f,     10.f, 10.0f,  5.0f, 100.f};
-        
-        
-        //                                00       01    02        03
-        redLowerLimits[0] = new float[]{0.00001f, 0.01f, 0.00001f, 1.5f};
-        redUpperLimits[0] = new float[]{0.2f,     30.f,  0.2f,     30.0f};
-        
-        // clauses 0, 
-        redCustomCoeffLowerLimits.put(Integer.valueOf(0), 
-            new HashMap<Integer, Map<Integer, Float>>());
-        redCustomCoeffUpperLimits.put(Integer.valueOf(0), 
-            new HashMap<Integer, Map<Integer, Float>>());
-        
-        redCustomCoeffLowerLimits.get(Integer.valueOf(0))
-            .put(Integer.valueOf(1), new HashMap<Integer, Float>());
-        redCustomCoeffUpperLimits.get(Integer.valueOf(0))
-            .put(Integer.valueOf(1), new HashMap<Integer, Float>());
-        redCustomCoeffLowerLimits.get(Integer.valueOf(0))
-            .put(Integer.valueOf(3), new HashMap<Integer, Float>());
-        redCustomCoeffUpperLimits.get(Integer.valueOf(0))
-            .put(Integer.valueOf(3), new HashMap<Integer, Float>());
-        
-        redCustomCoeffLowerLimits.get(Integer.valueOf(0)).get(Integer.valueOf(1))
-            .put(Integer.valueOf(1), 4.0f);
-        redCustomCoeffUpperLimits.get(Integer.valueOf(0)).get(Integer.valueOf(1))
-            .put(Integer.valueOf(1), 30.0f);
-        
-        redCustomCoeffLowerLimits.get(Integer.valueOf(0)).get(Integer.valueOf(3))
-            .put(Integer.valueOf(3), 4.0f);
-        
-        redCustomCoeffUpperLimits.get(Integer.valueOf(0)).get(Integer.valueOf(3))
-            .put(Integer.valueOf(3), 30.0f);
-        
-        //                                04       05    06        07
-        redLowerLimits[1] = new float[]{0.00001f, 0.01f, 0.00001f, 1.5f};
-        redUpperLimits[1] = new float[]{0.2f,     30.f,  0.2f,     30.0f};
-        
-        redCustomCoeffLowerLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Map<Integer, Float>>());
-        redCustomCoeffUpperLimits.put(Integer.valueOf(1), 
-            new HashMap<Integer, Map<Integer, Float>>());
-        
-        redCustomCoeffLowerLimits.get(Integer.valueOf(1))
-            .put(Integer.valueOf(1), new HashMap<Integer, Float>());
-        redCustomCoeffUpperLimits.get(Integer.valueOf(1))
-            .put(Integer.valueOf(1), new HashMap<Integer, Float>());
-        
-        redCustomCoeffLowerLimits.get(Integer.valueOf(1))
-            .put(Integer.valueOf(3), new HashMap<Integer, Float>());
-        redCustomCoeffUpperLimits.get(Integer.valueOf(1))
-            .put(Integer.valueOf(3), new HashMap<Integer, Float>());
-        
-        redCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(1))
-            .put(Integer.valueOf(5), 4.0f);
-        redCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(1))
-            .put(Integer.valueOf(5), 30.0f);
-        
-        redCustomCoeffLowerLimits.get(Integer.valueOf(1)).get(Integer.valueOf(3))
-            .put(Integer.valueOf(7), 4.0f);
-        redCustomCoeffUpperLimits.get(Integer.valueOf(1)).get(Integer.valueOf(3))
-            .put(Integer.valueOf(7), 30.0f);
-        
-        //                                00       01       02    03     04    05   06
-        blueLowerLimits[0] = new float[]{0.00001f, 0.0000f, 1.5f, 1.5f,  0.3f, 100, 100};
-        blueUpperLimits[0] = new float[]{0.2f,     0.5f,    30.f, 30.0f, 0.4f, 250, 250};
-        //                                07       08       09    10     11     12
-        blueLowerLimits[1] = new float[]{0.00001f, 0.0000f, 1.5f, 0.75f, 0.75f, 0.00001f};
-        blueUpperLimits[1] = new float[]{0.2f,     0.5f,    30.f, 2.0f,  2.0f,  3.0f};
-        
-        //                                13       14       15       16   
-        blueLowerLimits[2] = new float[]{0.00001f, 0.0000f, 0.0000f, 0.01f};
-        blueUpperLimits[2] = new float[]{0.2f,     0.5f,    0.5f,    0.30f};
-        
-        //                                13       14       15        17  
-        blueLowerLimits[3] = new float[]{0.00001f, 0.0000f, 0.0000f, 0.01f};
-        blueUpperLimits[3] = new float[]{0.2f,     0.5f,    0.5f,    0.30f};
-        
-        //                                13       14       15         18  
-        blueLowerLimits[4] = new float[]{0.00001f, 0.0000f, 0.0000f, 0.01f};
-        blueUpperLimits[4] = new float[]{0.2f,     0.5f,    0.5f,    0.30f};
-        
-        //                                13       14       15        19 
-        blueLowerLimits[5] = new float[]{0.00001f, 0.0000f, 0.0000f, 100};
-        blueUpperLimits[5] = new float[]{0.2f,     0.5f,    0.5f,    250};
-        
-        //                                13       14       15       20
-        blueLowerLimits[6] = new float[]{0.00001f, 0.0000f, 0.0000f, 100};
-        blueUpperLimits[6] = new float[]{0.2f,     0.5f,    0.5f,    250};
-  
+        initBlueOnlyClauses();
+       
     }
     
     public ANDedClauses[] getAllClauses() {
         
-        ANDedClauses[] a0 = getForAllSkies();
-        ANDedClauses[] a1 = getForBlueSkies();
-        ANDedClauses[] a2 = getForRedSkies();
+        return copyAndAppend(generalClauses, blueOnlyClauses, redOnlyClauses);
+    }
+    
+    public ANDedClauses[] getGeneralAndRedClauses() {
+        
+        return copyAndAppend(generalClauses, redOnlyClauses);
+    }
+    
+    public ANDedClauses[] getGeneralAndRedClausesLowerLimits() {
+        
+        return copyAndAppend(generalClausesLowerLimits, redOnlyClausesLowerLimits);
+    }
+    
+    public ANDedClauses[] getGeneralAndRedClausesUpperLimits() {
+        
+        return copyAndAppend(generalClausesUpperLimits, redOnlyClausesUpperLimits);
+    }
+    
+    public ANDedClauses[] getGeneralAndBlueClauses() {
+        
+        return copyAndAppend(generalClauses, blueOnlyClauses);
+    }
+    
+    public ANDedClauses[] getGeneralAndBlueClausesLowerLimits() {
+        
+        return copyAndAppend(generalClausesLowerLimits, blueOnlyClausesLowerLimits);
+    }
+    
+    public ANDedClauses[] getGeneralAndBlueClausesUpperLimits() {
+        
+        return copyAndAppend(generalClausesUpperLimits, blueOnlyClausesUpperLimits);
+    }
+    
+    private ANDedClauses[] copyAndAppend(ANDedClauses[] a0, ANDedClauses[] a1) {
+        
+        int n = a0.length + a1.length;
+    
+        ANDedClauses[] a = new ANDedClauses[n];
+        for (int i = 0; i < a0.length; i++) {
+            a[i] = a0[i].copy();
+        }
+        
+        for (int i = 0; i < a1.length; i++) {
+            a[i + a0.length] = a1[i].copy();
+        }
+        
+        return a;
+    }
+    
+    private ANDedClauses[] copyAndAppend(ANDedClauses[] a0, ANDedClauses[] a1,
+        ANDedClauses[] a2) {
         
         int n = a0.length + a1.length + a2.length;
     
         ANDedClauses[] a = new ANDedClauses[n];
         
-        System.arraycopy(a0, 0, a, 0, a0.length);
-        System.arraycopy(a1, 0, a, a0.length, a1.length);
-        System.arraycopy(a2, 0, a, (a0.length + a1.length), a2.length);
+        for (int i = 0; i < a0.length; i++) {
+            a[i] = a0[i].copy();
+        }
+        
+        for (int i = 0; i < a1.length; i++) {
+            a[i + a0.length] = a1[i].copy();
+        }
+        
+        for (int i = 0; i < a2.length; i++) {
+            a[i + a0.length + a1.length] = a2[i].copy();
+        }
         
         return a;
     }
     
-    public ANDedClauses[] getAllAndRedClauses() {
+    private void initGeneralClauses() {
         
-        ANDedClauses[] a0 = getForAllSkies();
-        ANDedClauses[] a2 = getForRedSkies();
+        float customCoeffPlaceHolder = Float.MAX_VALUE;
         
-        int n = a0.length + a2.length;
-    
-        ANDedClauses[] a = new ANDedClauses[n];
-        
-        System.arraycopy(a0, 0, a, 0, a0.length);
-        System.arraycopy(a2, 0, a, a0.length, a2.length);
-        
-        return a;
-    }
-    
-    public ANDedClauses[] getAllAndBlueClauses() {
-        
-        ANDedClauses[] a0 = getForAllSkies();
-        ANDedClauses[] a2 = getForBlueSkies();
-        
-        int n = a0.length + a2.length;
-    
-        ANDedClauses[] a = new ANDedClauses[n];
-        
-        System.arraycopy(a0, 0, a, 0, a0.length);
-        System.arraycopy(a2, 0, a, a0.length, a2.length);
-        
-        return a;
-    }
-    
-    public ANDedClauses[] getForAllSkies() {
-    
         /*
         c0:
             00         (skyStDevContrast > 0.)
@@ -268,9 +121,16 @@ public class SkylineANDedClauses {
         */
         ANDedClauses c0 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c0.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[0]);
+            COMPARISON.GREATER_THAN, 0.0f);
         c0.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[1]);
+            COMPARISON.GREATER_THAN, 10.0f);
+        
+        ANDedClauses c0Lower = c0.copy();
+        ANDedClauses c0Upper = c0.copy();
+        c0Lower.coefficients[0] = 0.00001f;
+        c0Upper.coefficients[0] = 0.2f;
+        c0Lower.coefficients[1] = 2.5f;
+        c0Upper.coefficients[1] = 30.0f;
         
         /*
         c1      
@@ -281,20 +141,40 @@ public class SkylineANDedClauses {
         */
         ANDedClauses c1 = new ANDedClauses(4, SKYCONDITIONAL.ALL);
         c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[2]);
+            COMPARISON.GREATER_THAN, 0.0f);
         c1.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[3]);
+            COMPARISON.GREATER_THAN, 0.1f);
         
+        // this is replaced by the custom coefficient
         c1.set(2, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[4]);
+            COMPARISON.GREATER_THAN, customCoeffPlaceHolder);
         c1.setACustomCoefficient(2, new CustomCoeff00()); 
-        c1.setCustomCoefficientVariable(4, Float.valueOf(allSkiesCoeff[4]));
-        c1.setCustomCoefficientVariable(5, Float.valueOf(allSkiesCoeff[5]));
-        c1.setCustomCoefficientVariable(6, Float.valueOf(allSkiesCoeff[6]));
+        c1.setCustomCoefficientVariable(4, Float.valueOf(1.5f));
+        c1.setCustomCoefficientVariable(5, Float.valueOf(0.5f));
+        c1.setCustomCoefficientVariable(6, Float.valueOf(-2.0f));
         
         c1.set(3, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[7]);
-       
+            COMPARISON.GREATER_THAN, 2.5f);
+    
+        ANDedClauses c1Lower = c1.copy();
+        ANDedClauses c1Upper = c1.copy();
+        c1Lower.coefficients[0] = 0.00001f;
+        c1Upper.coefficients[0] = 0.2f;
+        c1Lower.coefficients[1] = 0.01f;
+        c1Upper.coefficients[1] = 0.5f;
+        c1Lower.customCoefficientVariables.put(Integer.valueOf(4), 
+            Float.valueOf(0.2f));
+        c1Upper.customCoefficientVariables.put(Integer.valueOf(4), 
+            Float.valueOf(10.0f));
+        c1Lower.customCoefficientVariables.put(Integer.valueOf(5), 
+            Float.valueOf(0.05f));
+        c1Upper.customCoefficientVariables.put(Integer.valueOf(5), 
+            Float.valueOf(0.95f));
+        c1Lower.customCoefficientVariables.put(Integer.valueOf(6), 
+            Float.valueOf(-10.0f));
+        c1Upper.customCoefficientVariables.put(Integer.valueOf(6), 
+            Float.valueOf(-0.5f));
+        
         /* 
         c3,c4,c5,c6        
                     08         (skyStDevContrast > 0.005)
@@ -311,61 +191,115 @@ public class SkylineANDedClauses {
         */
         ANDedClauses c2 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
         c2.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
+            COMPARISON.GREATER_THAN, 0.005f);
         c2.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[9]);
+            COMPARISON.GREATER_THAN, 5.0f);
         c2.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[10]);
-    c2.set(3, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[11]);
+            COMPARISON.GREATER_THAN, 5.0f);
+        c2.set(3, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
+            COMPARISON.GREATER_THAN, 0.001f);
         c2.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
+            COMPARISON.GREATER_THAN, 1.0f);
+       
+        ANDedClauses c2Lower = c2.copy();
+        ANDedClauses c2Upper = c2.copy();
+        c2Lower.coefficients[0] = 0.00001f;
+        c2Upper.coefficients[0] = 0.5f;
+        c2Lower.coefficients[1] = 1.1f;
+        c2Upper.coefficients[1] = 10.0f;
+        c2Lower.coefficients[2] = 0.00001f;
+        c2Upper.coefficients[2] = 0.05f;
+        c2Lower.coefficients[3] = 0.2f;
+        c2Upper.coefficients[3] = 100.0f;
         
         ANDedClauses c3 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
         c3.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
+            COMPARISON.GREATER_THAN, 0.005f);
         c3.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[9]);
+            COMPARISON.GREATER_THAN, 5.0f);
         c3.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[10]);
-    c3.set(3, PARAM.DIFF_CIEX, PARAM.STDEV_CIEX, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[12]);
+            COMPARISON.GREATER_THAN, 5.0f);
+        c3.set(3, PARAM.DIFF_CIEX, PARAM.STDEV_CIEX, 
+            COMPARISON.GREATER_THAN, 1.5f);
         c3.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
+            COMPARISON.GREATER_THAN, 1.0f);
+        
+        ANDedClauses c3Lower = c3.copy();
+        ANDedClauses c3Upper = c3.copy();
+        c3Lower.coefficients[0] = 0.00001f;
+        c3Upper.coefficients[0] = 0.5f;
+        c3Lower.coefficients[1] = 1.1f;
+        c3Upper.coefficients[1] = 10.0f;
+        c3Lower.coefficients[2] = 1.1f;
+        c3Upper.coefficients[2] = 10.0f;
+        c3Lower.coefficients[3] = 1.1f;
+        c3Upper.coefficients[3] = 5.0f;
+        c3Lower.coefficients[4] = 0.2f;
+        c3Upper.coefficients[4] = 100.0f;
         
         ANDedClauses c4 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
         c4.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
+            COMPARISON.GREATER_THAN, 0.005f);
         c4.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[9]);
+            COMPARISON.GREATER_THAN, 5.0f);
         c4.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[10]);
-    c4.set(3, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[13]);
+            COMPARISON.GREATER_THAN, 5.0f);
+        c4.set(3, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
+            COMPARISON.GREATER_THAN, 0.001f);
         c4.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
+            COMPARISON.GREATER_THAN, 1.0f);
        
+        ANDedClauses c4Lower = c4.copy();
+        ANDedClauses c4Upper = c4.copy();
+        c4Lower.coefficients[0] = 0.00001f;
+        c4Upper.coefficients[0] = 0.5f;
+        c4Lower.coefficients[1] = 1.1f;
+        c4Upper.coefficients[1] = 10.0f;
+        c4Lower.coefficients[2] = 1.1f;
+        c4Upper.coefficients[2] = 10.0f;
+        c4Lower.coefficients[3] = 0.00001f;
+        c4Upper.coefficients[3] = 0.05f;
+        c4Lower.coefficients[4] = 0.2f;
+        c4Upper.coefficients[4] = 100.0f;
+        
         ANDedClauses c5 = new ANDedClauses(5, SKYCONDITIONAL.ALL);
         c5.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[8]);
+            COMPARISON.GREATER_THAN, 0.005f);
         c5.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[9]);
+            COMPARISON.GREATER_THAN, 5.0f);
         c5.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[10]);
-    c5.set(3, PARAM.DIFF_CIEY, PARAM.STDEV_CIEY, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[14]);
+            COMPARISON.GREATER_THAN, 5.0f);
+        c5.set(3, PARAM.DIFF_CIEY, PARAM.STDEV_CIEY, 
+            COMPARISON.GREATER_THAN, 1.5f);
         c5.set(4, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, allSkiesCoeff[15]);
-      
-        return new ANDedClauses[]{c0, c1, c2, c3, c4, c5};
+            COMPARISON.GREATER_THAN, 1.0f);
+        
+        ANDedClauses c5Lower = c5.copy();
+        ANDedClauses c5Upper = c5.copy();
+        c5Lower.coefficients[0] = 0.00001f;
+        c5Upper.coefficients[0] = 0.5f;
+        c5Lower.coefficients[1] = 1.1f;
+        c5Upper.coefficients[1] = 10.0f;
+        c5Lower.coefficients[2] = 1.1f;
+        c5Upper.coefficients[2] = 10.0f;
+        c5Lower.coefficients[3] = 1.1f;
+        c5Upper.coefficients[3] = 5.0f;
+        c5Lower.coefficients[4] = 0.2f;
+        c5Upper.coefficients[4] = 100.0f;
+        
+        generalClausesLowerLimits = new ANDedClauses[]{
+            c0Lower, c1Lower, c2Lower, c3Lower, c4Lower, c5Lower};
+        
+        generalClausesUpperLimits = new ANDedClauses[]{
+            c0Upper, c1Upper, c2Upper, c3Upper, c4Upper, c5Upper};
+    
+        generalClauses = new ANDedClauses[]{c0, c1, c2, c3, c4, c5};
     }
     
-    public float[] getFittableCoefficientsForAllSkies() {
-        return allSkiesCoeff;
-    }
+    private void initRedOnlyClauses() {
     
-    public ANDedClauses[] getForRedSkies() {
-    
+        float customCoeffPlaceHolder = Float.MAX_VALUE;
+        
         /*
         00         (skyStDevContrast > 0.)
         01         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 15.*diffCIEX) <---
@@ -374,20 +308,38 @@ public class SkylineANDedClauses {
         */
         ANDedClauses c0 = new ANDedClauses(4, SKYCONDITIONAL.RED);
         c0.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, redSkiesCoeff[0]);
-        c0.set(1, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
-            PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, redSkiesCoeff[1]);
+            COMPARISON.GREATER_THAN, 0.0f);
         
+        c0.set(1, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
+            PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, customCoeffPlaceHolder);
         c0.setACustomCoefficient(1, new CustomCoeff01());
-        c0.setCustomCoefficientVariable(1, Float.valueOf(redSkiesCoeff[1]));
+        c0.setCustomCoefficientVariable(1, Float.valueOf(15.0f));
         
         c0.set(2, PARAM.DIFF_CIEX, 
-            PARAM.INT_ONE, COMPARISON.GREATER_THAN, redSkiesCoeff[2]);
+            PARAM.INT_ONE, COMPARISON.GREATER_THAN, 0.03f);
+        
         c0.set(3, PARAM.DIFF_CIEX, 
-            PARAM.STDEV_CIEX, COMPARISON.GREATER_THAN, redSkiesCoeff[3]);
+            PARAM.STDEV_CIEX, COMPARISON.GREATER_THAN, customCoeffPlaceHolder);
         c0.setACustomCoefficient(3, new CustomCoeff02());
-        c0.setCustomCoefficientVariable(3, Float.valueOf(redSkiesCoeff[3]));
-       
+        c0.setCustomCoefficientVariable(3, Float.valueOf(15.0f));
+        
+        ANDedClauses c0Lower = c0.copy();
+        ANDedClauses c0Upper = c0.copy();
+        c0Lower.coefficients[0] = 0.00001f;
+        c0Upper.coefficients[0] = 0.2f;
+        c0Lower.coefficients[1] = 0.01f;
+        c0Upper.coefficients[1] = 0.5f;
+        c0Lower.coefficients[2] = 0.00001f;
+        c0Upper.coefficients[2] = 0.2f;
+        c0Lower.customCoefficientVariables.put(Integer.valueOf(1), 
+            Float.valueOf(4.0f));
+        c0Upper.customCoefficientVariables.put(Integer.valueOf(1), 
+            Float.valueOf(30.0f));
+        c0Lower.customCoefficientVariables.put(Integer.valueOf(3), 
+            Float.valueOf(4.0f));
+        c0Upper.customCoefficientVariables.put(Integer.valueOf(3), 
+            Float.valueOf(30.0f));
+        
         /*
         04         (skyStDevContrast > 0.)
         05         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 15.*diffCIEY) <---
@@ -396,29 +348,47 @@ public class SkylineANDedClauses {
         */
         ANDedClauses c1 = new ANDedClauses(4, SKYCONDITIONAL.RED);
         c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, redSkiesCoeff[4]);
-        c1.set(1, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
-            PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, redSkiesCoeff[5]);
+            COMPARISON.GREATER_THAN, 0.0f);
         
+        c1.set(1, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
+            PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, customCoeffPlaceHolder);
         c1.setACustomCoefficient(1, new CustomCoeff03());
-        c1.setCustomCoefficientVariable(5, Float.valueOf(redSkiesCoeff[5]));
+        c1.setCustomCoefficientVariable(5, Float.valueOf(15.f));
         
         c1.set(2, PARAM.DIFF_CIEY, 
-            PARAM.INT_ONE, COMPARISON.GREATER_THAN, redSkiesCoeff[6]);
+            PARAM.INT_ONE, COMPARISON.GREATER_THAN, 0.03f);
+        
         c1.set(3, PARAM.DIFF_CIEY, 
-            PARAM.STDEV_CIEY, COMPARISON.GREATER_THAN, redSkiesCoeff[7]);
-        
+            PARAM.STDEV_CIEY, COMPARISON.GREATER_THAN, customCoeffPlaceHolder);
         c1.setACustomCoefficient(3, new CustomCoeff04());
-        c1.setCustomCoefficientVariable(7, Float.valueOf(redSkiesCoeff[7]));
+        c1.setCustomCoefficientVariable(7, Float.valueOf(15.0f));
         
-        return new ANDedClauses[]{c0, c1};
+        ANDedClauses c1Lower = c1.copy();
+        ANDedClauses c1Upper = c1.copy();
+        c1Lower.coefficients[0] = 0.00001f;
+        c1Upper.coefficients[0] = 0.2f;
+        c1Lower.coefficients[1] = 0.01f;
+        c1Upper.coefficients[1] = 30.0f;
+        c1Lower.coefficients[2] = 0.00001f;
+        c1Upper.coefficients[2] = 0.2f;
+        c1Lower.customCoefficientVariables.put(Integer.valueOf(5), 
+            Float.valueOf(4.0f));
+        c1Upper.customCoefficientVariables.put(Integer.valueOf(5), 
+            Float.valueOf(30.0f));
+        c1Lower.customCoefficientVariables.put(Integer.valueOf(7), 
+            Float.valueOf(4.0f));
+        c1Upper.customCoefficientVariables.put(Integer.valueOf(7), 
+            Float.valueOf(30.0f));
+        
+        redOnlyClausesLowerLimits = new ANDedClauses[]{c0Lower, c1Lower};
+        
+        redOnlyClausesUpperLimits = new ANDedClauses[]{c0Upper, c1Upper};
+    
+        redOnlyClauses = new ANDedClauses[]{c0, c1};
+   
     }
     
-    public float[] getFittableCoefficientsForRedSkies() {
-        return redSkiesCoeff;
-    }
-    
-    public ANDedClauses[] getForBlueSkies() {
+    private void initBlueOnlyClauses() {
         
         /*
         00         (skyStDevContrast > 0.0)
@@ -431,25 +401,38 @@ public class SkylineANDedClauses {
         */
         ANDedClauses c0 = new ANDedClauses(7, SKYCONDITIONAL.BLUE);
         c0.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, blueSkiesCoeff[0]);
+            COMPARISON.GREATER_THAN, 0.0f);
         c0.set(1, PARAM.CONTRAST, 
-            PARAM.INT_ONE, COMPARISON.LESS_THAN, blueSkiesCoeff[1]);
-        
+            PARAM.INT_ONE, COMPARISON.LESS_THAN, 0.05f);
         c0.set(2, PARAM.ABSOLUTE_CONTRAST, 
-            PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, blueSkiesCoeff[2]);
-        
+            PARAM.STDEV_CONTRAST, COMPARISON.GREATER_THAN, 1.5f);
         c0.set(3, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
-            PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, blueSkiesCoeff[3]);
-        
+            PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, 3.0f);
         c0.set(4, PARAM.B_DIV_TOT, 
-            PARAM.INT_ONE, COMPARISON.LESS_THAN, blueSkiesCoeff[4]);
+            PARAM.INT_ONE, COMPARISON.LESS_THAN, 0.37f);
         
         c0.set(5, PARAM.BLUE, 
-            PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[5]);
-        
+            PARAM.INT_ONE, COMPARISON.GREATER_THAN, 199);
         c0.set(6, PARAM.GREEN, 
-            PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[6]);
-       
+            PARAM.INT_ONE, COMPARISON.GREATER_THAN, 199);
+    
+        ANDedClauses c0Lower = c0.copy();
+        ANDedClauses c0Upper = c0.copy();
+        c0Lower.coefficients[0] = 0.00001f;
+        c0Upper.coefficients[0] = 0.2f;
+        c0Lower.coefficients[1] = 0.0000f;
+        c0Upper.coefficients[1] = 0.5f;
+        c0Lower.coefficients[2] = 1.5f;
+        c0Upper.coefficients[2] = 30.0f;
+        c0Lower.coefficients[3] = 1.5f;
+        c0Upper.coefficients[3] = 30.0f;
+        c0Lower.coefficients[4] = 0.3f;
+        c0Upper.coefficients[4] = 0.4f;
+        c0Lower.coefficients[5] = 100.f;
+        c0Upper.coefficients[5] = 250.f;
+        c0Lower.coefficients[6] = 100.f;
+        c0Upper.coefficients[6] = 250.f;
+        
         /*
         07         (skyStDevContrast > 0.0)
         08         && (Math.abs(contrastV) > 0.05)
@@ -461,23 +444,35 @@ public class SkylineANDedClauses {
         */
         ANDedClauses c1 = new ANDedClauses(6, SKYCONDITIONAL.BLUE);
         c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, blueSkiesCoeff[7]);
-        
+            COMPARISON.GREATER_THAN, 0.0f);
         c1.set(1, PARAM.ABSOLUTE_CONTRAST, 
-            PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[8]);
-        
+            PARAM.INT_ONE, COMPARISON.GREATER_THAN, 0.05f);
         c1.set(2, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, 
-            PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, blueSkiesCoeff[9]);
-        
+            PARAM.STDEV_BLUE_OR_RED, COMPARISON.GREATER_THAN, 1.5f);
         c1.set(3, PARAM.DIFF_CIEX, 
-            PARAM.STDEV_CIEX, COMPARISON.GREATER_THAN, blueSkiesCoeff[10]);
+            PARAM.STDEV_CIEX, COMPARISON.GREATER_THAN, 0.6f);
         
         c1.set(4, PARAM.DIFF_CIEY, 
-            PARAM.STDEV_CIEY, COMPARISON.GREATER_THAN, blueSkiesCoeff[11]);
+            PARAM.STDEV_CIEY, COMPARISON.GREATER_THAN, 0.9f);
         
         c1.set(5, PARAM.STDEV_BLUE_OR_RED, 
-            PARAM.INT_ONE, COMPARISON.GREATER_THAN, blueSkiesCoeff[12]);
+            PARAM.INT_ONE, COMPARISON.GREATER_THAN, 0.0f);
                
+        ANDedClauses c1Lower = c1.copy();
+        ANDedClauses c1Upper = c1.copy();
+        c1Lower.coefficients[0] = 0.00001f;
+        c1Upper.coefficients[0] = 0.2f;
+        c1Lower.coefficients[1] = 0.0000f;
+        c1Upper.coefficients[1] = 0.5f;
+        c1Lower.coefficients[2] = 1.5f;
+        c1Upper.coefficients[2] = 30.0f;
+        c1Lower.coefficients[3] = 0.75f;
+        c1Upper.coefficients[3] = 2.0f;
+        c1Lower.coefficients[4] = 0.75f;
+        c1Upper.coefficients[4] = 2.0f;
+        c1Lower.coefficients[5] = 0.00001f;
+        c1Upper.coefficients[5] = 3.0f;
+        
         /*
         13         (contrastV < 0.05)
         14         && (diffCIEX < 0.005)
@@ -491,915 +486,133 @@ public class SkylineANDedClauses {
         */
         ANDedClauses c2 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
         c2.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
+            COMPARISON.LESS_THAN, 0.05f);
         
         c2.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c2.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c2.set(3, PARAM.DIFF_R_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, blueSkiesCoeff[16]);
+            COMPARISON.GREATER_THAN, 0.08f);
        
+        ANDedClauses c2Lower = c2.copy();
+        ANDedClauses c2Upper = c2.copy();
+        c2Lower.coefficients[0] = 0.00001f;
+        c2Upper.coefficients[0] = 0.2f;
+        c2Lower.coefficients[1] = 0.0000f;
+        c2Upper.coefficients[1] = 0.5f;
+        c2Lower.coefficients[2] = 0.0000f;
+        c2Upper.coefficients[2] = 0.5f;
+        c2Lower.coefficients[3] = 0.01f;
+        c2Upper.coefficients[3] = 0.3f;
         
         ANDedClauses c3 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
         c3.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
+            COMPARISON.LESS_THAN, 0.05f);
         
         c3.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c3.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c3.set(3, PARAM.DIFF_G_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, blueSkiesCoeff[17]);
-        
+            COMPARISON.GREATER_THAN, 0.03f);
+      
+        ANDedClauses c3Lower = c3.copy();
+        ANDedClauses c3Upper = c3.copy();
+        c3Lower.coefficients[0] = 0.00001f;
+        c3Upper.coefficients[0] = 0.2f;
+        c3Lower.coefficients[1] = 0.0000f;
+        c3Upper.coefficients[1] = 0.5f;
+        c3Lower.coefficients[2] = 0.0000f;
+        c3Upper.coefficients[2] = 0.5f;
+        c3Lower.coefficients[3] = 0.01f;
+        c3Upper.coefficients[3] = 0.3f;
         
         ANDedClauses c4 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
         c4.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
+            COMPARISON.LESS_THAN, 0.05f);
         
         c4.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c4.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c4.set(3, PARAM.DIFF_B_DIV_TOT_ONE_THIRD, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, blueSkiesCoeff[18]);
+            COMPARISON.GREATER_THAN, 0.03f);
         
-   
+        ANDedClauses c4Lower = c4.copy();
+        ANDedClauses c4Upper = c4.copy();
+        c4Lower.coefficients[0] = 0.00001f;
+        c4Upper.coefficients[0] = 0.2f;
+        c4Lower.coefficients[1] = 0.0000f;
+        c4Upper.coefficients[1] = 0.5f;
+        c4Lower.coefficients[2] = 0.0000f;
+        c4Upper.coefficients[2] = 0.5f;
+        c4Lower.coefficients[3] = 0.01f;
+        c4Upper.coefficients[3] = 0.3f;
+        
         ANDedClauses c5 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
         c5.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
+            COMPARISON.LESS_THAN, 0.05f);
         
         c5.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c5.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c5.set(3, PARAM.GREEN, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, blueSkiesCoeff[19]);
+            COMPARISON.GREATER_THAN, 199);
         
+        ANDedClauses c5Lower = c5.copy();
+        ANDedClauses c5Upper = c5.copy();
+        c5Lower.coefficients[0] = 0.00001f;
+        c5Upper.coefficients[0] = 0.2f;
+        c5Lower.coefficients[1] = 0.0000f;
+        c5Upper.coefficients[1] = 0.5f;
+        c5Lower.coefficients[2] = 0.0000f;
+        c5Upper.coefficients[2] = 0.5f;
+        c5Lower.coefficients[3] = 100;
+        c5Upper.coefficients[3] = 250;
         
         ANDedClauses c6 = new ANDedClauses(4, SKYCONDITIONAL.BLUE);
         c6.set(0, PARAM.CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[13]);
+            COMPARISON.LESS_THAN, 0.05f);
         
         c6.set(1, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[14]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c6.set(2, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
-            COMPARISON.LESS_THAN, blueSkiesCoeff[15]);
+            COMPARISON.LESS_THAN, 0.005f);
         
         c6.set(3, PARAM.BLUE, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, blueSkiesCoeff[20]);
+            COMPARISON.GREATER_THAN, 199);
         
-        return new ANDedClauses[]{c0, c1, c2, c3, c4, c5, c6};
-    }
-    
-    public float[] getFittableCoefficientsForBlueSkies() {
-        return blueSkiesCoeff;
-    }
+        ANDedClauses c6Lower = c6.copy();
+        ANDedClauses c6Upper = c6.copy();
+        c6Lower.coefficients[0] = 0.00001f;
+        c6Upper.coefficients[0] = 0.2f;
+        c6Lower.coefficients[1] = 0.0000f;
+        c6Upper.coefficients[1] = 0.5f;
+        c6Lower.coefficients[2] = 0.0000f;
+        c6Upper.coefficients[2] = 0.5f;
+        c6Lower.coefficients[3] = 100;
+        c6Upper.coefficients[3] = 250;
+        
+        blueOnlyClausesLowerLimits = new ANDedClauses[]{c0Lower, c1Lower, 
+            c2Lower, c3Lower, c4Lower, c5Lower, c6Lower};
+        
+        blueOnlyClausesUpperLimits = new ANDedClauses[]{c0Upper, c1Upper, 
+            c2Upper, c3Upper, c4Upper, c5Upper, c6Upper};
+        
+        blueOnlyClauses = new ANDedClauses[]{c0, c1, c2, c3, c4, c5, c6};
    
-    public float[][] getAllCoeffLowerLimits() {
-        
-        float[][] a0 = allLowerLimits;
-        float[][] a1 = blueLowerLimits;
-        float[][] a2 = redLowerLimits;
-        
-        int n = a0.length + a1.length + a2.length;
-    
-        int count = 0;
-        float[][] a = new float[n][];
-        for (int i = 0; i < a0.length; i++) {
-            a[count] = Arrays.copyOf(a0[i], a0[i].length);
-            count++;
-        }
-        for (int i = 0; i < a1.length; i++) {
-            a[count] = Arrays.copyOf(a1[i], a1[i].length);
-            count++;
-        }
-        for (int i = 0; i < a2.length; i++) {
-            a[count] = Arrays.copyOf(a2[i], a2[i].length);
-            count++;
-        }
-        
-        return a;
     }
-    
-    public float[][] getAllCoeffUpperLimits() {
-        
-        float[][] a0 = allUpperLimits;
-        float[][] a1 = blueUpperLimits;
-        float[][] a2 = redUpperLimits;
-        
-        int n = a0.length + a1.length + a2.length;
-    
-        int count = 0;
-        float[][] a = new float[n][];
-        for (int i = 0; i < a0.length; i++) {
-            a[count] = Arrays.copyOf(a0[i], a0[i].length);
-            count++;
-        }
-        for (int i = 0; i < a1.length; i++) {
-            a[count] = Arrays.copyOf(a1[i], a1[i].length);
-            count++;
-        }
-        for (int i = 0; i < a2.length; i++) {
-            a[count] = Arrays.copyOf(a2[i], a2[i].length);
-            count++;
-        }
-        
-        return a;
-    }
-    
-    public float[][] getAllAndRedCoeffLowerLimits() {
-        
-        float[][] a0 = allLowerLimits;
-        float[][] a1 = redLowerLimits;
-        
-        int n = a0.length + a1.length;
-    
-        int count = 0;
-        float[][] a = new float[n][];
-        for (int i = 0; i < a0.length; i++) {
-            a[count] = Arrays.copyOf(a0[i], a0[i].length);
-            count++;
-        }
-        for (int i = 0; i < a1.length; i++) {
-            a[count] = Arrays.copyOf(a1[i], a1[i].length);
-            count++;
-        }
-        
-        return a;
-    }
-    
-    public float[][] getAllAndRedCoeffUpperLimits() {
-        
-        float[][] a0 = allUpperLimits;
-        float[][] a1 = redUpperLimits;
-        
-        int n = a0.length + a1.length;
-    
-        int count = 0;
-        float[][] a = new float[n][];
-        for (int i = 0; i < a0.length; i++) {
-            a[count] = Arrays.copyOf(a0[i], a0[i].length);
-            count++;
-        }
-        for (int i = 0; i < a1.length; i++) {
-            a[count] = Arrays.copyOf(a1[i], a1[i].length);
-            count++;
-        }
-        
-        return a;
-    }
-    
-    /**
-     * custom coefficient limits are stored by outerClauseIndex 
-       (same as used by allLowerLimits for example)
-       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
-      
-     * @return 
-     */
-    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllCustomCoeffLowerLimits() {
-        
-        int nAllCoeff = allLowerLimits.length;
-        int nBlueCoeff = blueLowerLimits.length;
-        
-        // combine the maps, but any blue clause indexes will need nAllCoeff added
-        
-        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
-            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-        
-        if (!allCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = allCustomCoeffLowerLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndex, cMap);
-                }
-                
-                while (iter2.hasNext()) {
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-                    
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        if (!blueCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = blueCustomCoeffLowerLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                Integer outerClauseIndexForList = Integer.valueOf(
-                    outerClauseIndex.intValue() + nAllCoeff);
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndexForList, cMap);
-                }
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-
-                while (iter2.hasNext()) {
-                    
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        if (!redCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = redCustomCoeffLowerLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                Integer outerClauseIndexForList = Integer.valueOf(
-                    outerClauseIndex.intValue() + nAllCoeff + nBlueCoeff);
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndexForList, cMap);
-                }
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-
-                while (iter2.hasNext()) {
-                    
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        return combined;
-    }
-    
-    /**
-     * custom coefficient limits are stored by outerClauseIndex 
-       (same as used by allLowerLimits for example)
-       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
-      
-     * @return 
-     */
-    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllCustomCoeffUpperLimits() {
-        
-        int nAllCoeff = allUpperLimits.length;
-        int nBlueCoeff = blueUpperLimits.length;
-        
-        // combine the maps, but any blue clause indexes will need nAllCoeff added
-        
-        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
-            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-        
-        if (!allCustomCoeffUpperLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = allCustomCoeffUpperLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndex, cMap);
-                }
-                
-                while (iter2.hasNext()) {
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-                    
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        if (!blueCustomCoeffUpperLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = blueCustomCoeffUpperLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                Integer outerClauseIndexForList = Integer.valueOf(
-                    outerClauseIndex.intValue() + nAllCoeff);
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndexForList, cMap);
-                }
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-
-                while (iter2.hasNext()) {
-                    
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        if (!redCustomCoeffUpperLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = redCustomCoeffUpperLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                Integer outerClauseIndexForList = Integer.valueOf(
-                    outerClauseIndex.intValue() + nAllCoeff + nBlueCoeff);
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndexForList, cMap);
-                }
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-
-                while (iter2.hasNext()) {
-                    
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        return combined;
-    }
-    
-    /**
-     * custom coefficient limits are stored by outerClauseIndex 
-       (same as used by allLowerLimits for example)
-       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
-      
-     * @return 
-     */
-    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllAndRedCustomCoeffLowerLimits() {
-        
-        int nAllCoeff = allLowerLimits.length;
-        
-        // combine the maps, but any blue clause indexes will need nAllCoeff added
-        
-        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
-            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-        
-        if (!allCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = allCustomCoeffLowerLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndex, cMap);
-                }
-                
-                while (iter2.hasNext()) {
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-                    
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        if (!redCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = redCustomCoeffLowerLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                Integer outerClauseIndexForList = Integer.valueOf(
-                    outerClauseIndex.intValue() + nAllCoeff);
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndexForList, cMap);
-                }
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-
-                while (iter2.hasNext()) {
-                    
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        return combined;
-    }
-    
-    /**
-     * custom coefficient limits are stored by outerClauseIndex 
-       (same as used by allLowerLimits for example)
-       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
-      
-     * @return 
-     */
-    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllAndRedCustomCoeffUpperLimits() {
-        
-        int nAllCoeff = allUpperLimits.length;
-        
-        // combine the maps, but any blue clause indexes will need nAllCoeff added
-        
-        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
-            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-        
-        if (!allCustomCoeffUpperLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = allCustomCoeffUpperLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndex, cMap);
-                }
-                
-                while (iter2.hasNext()) {
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-                    
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        if (!redCustomCoeffUpperLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = redCustomCoeffUpperLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                Integer outerClauseIndexForList = Integer.valueOf(
-                    outerClauseIndex.intValue() + nAllCoeff);
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndexForList, cMap);
-                }
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-
-                while (iter2.hasNext()) {
-                    
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        return combined;
-    }
-    
-    public float[][] getAllAndBlueCoeffLowerLimits() {
-        
-        float[][] a0 = allLowerLimits;
-        float[][] a1 = blueLowerLimits;
-        
-        int n = a0.length + a1.length;
-    
-        int count = 0;
-        float[][] a = new float[n][];
-        for (int i = 0; i < a0.length; i++) {
-            a[count] = Arrays.copyOf(a0[i], a0[i].length);
-            count++;
-        }
-        for (int i = 0; i < a1.length; i++) {
-            a[count] = Arrays.copyOf(a1[i], a1[i].length);
-            count++;
-        }
-        
-        return a;
-    }
-    
-    public float[][] getAllAndBlueCoeffUpperLimits() {
-        
-        float[][] a0 = allUpperLimits;
-        float[][] a1 = blueUpperLimits;
-        
-        int n = a0.length + a1.length;
-    
-        int count = 0;
-        float[][] a = new float[n][];
-        for (int i = 0; i < a0.length; i++) {
-            a[count] = Arrays.copyOf(a0[i], a0[i].length);
-            count++;
-        }
-        for (int i = 0; i < a1.length; i++) {
-            a[count] = Arrays.copyOf(a1[i], a1[i].length);
-            count++;
-        }
-        
-        return a;
-    }
-    
-    /**
-     * custom coefficient limits are stored by outerClauseIndex 
-       (same as used by allLowerLimits for example)
-       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
-      
-     * @return 
-     */
-    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllAndBlueCustomCoeffLowerLimits() {
-        
-        int nAllCoeff = allLowerLimits.length;
-        //int nBlueCoeff = blueLowerLimits.length;
-        
-        // combine the maps, but any blue clause indexes will need nAllCoeff added
-        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
-            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-        
-        if (!allCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = allCustomCoeffLowerLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndex, cMap);
-                }
-                
-                while (iter2.hasNext()) {
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-                    
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        if (!blueCustomCoeffLowerLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = blueCustomCoeffLowerLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                Integer outerClauseIndexForList = Integer.valueOf(
-                    outerClauseIndex.intValue() + nAllCoeff);
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndexForList, cMap);
-                }
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-
-                while (iter2.hasNext()) {
-                    
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        return combined;
-    }
-    
-    /**
-     * custom coefficient limits are stored by outerClauseIndex 
-       (same as used by allLowerLimits for example)
-       then by innerClauseIndex, then by coefficentIndex as the x in PairFloat
-      
-     * @return 
-     */
-    public Map<Integer, Map<Integer, Map<Integer, Float>>> getAllAndBlueCustomCoeffUpperLimits() {
-        
-        int nAllCoeff = allLowerLimits.length;
-        //int nBlueCoeff = blueLowerLimits.length;
-        
-        // combine the maps, but any blue clause indexes will need nAllCoeff added
-        Map<Integer, Map<Integer, Map<Integer, Float>>> combined 
-            = new HashMap<Integer, Map<Integer, Map<Integer, Float>>>();
-        
-        if (!allCustomCoeffUpperLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = allCustomCoeffUpperLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndex);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndex, cMap);
-                }
-                
-                while (iter2.hasNext()) {
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-                    
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        if (!blueCustomCoeffUpperLimits.isEmpty()) {
-            
-            Iterator<Entry<Integer, Map<Integer, Map<Integer, Float>>>> iter 
-                = blueCustomCoeffUpperLimits.entrySet().iterator();
-            
-            while (iter.hasNext()) {
-                
-                Entry<Integer, Map<Integer, Map<Integer, Float>>> entry = iter.next();
-                
-                Integer outerClauseIndex = entry.getKey();
-                Integer outerClauseIndexForList = Integer.valueOf(
-                    outerClauseIndex.intValue() + nAllCoeff);
-                
-                Map<Integer, Map<Integer, Float>> value = entry.getValue();
-                
-                Map<Integer, Map<Integer, Float>> cMap = combined.get(outerClauseIndexForList);
-                if (cMap == null) {
-                    cMap = new HashMap<Integer, Map<Integer, Float>>();
-                    combined.put(outerClauseIndexForList, cMap);
-                }
-                
-                Iterator<Entry<Integer, Map<Integer, Float>>> iter2 = value.entrySet().iterator();
-
-                while (iter2.hasNext()) {
-                    
-                    Entry<Integer, Map<Integer, Float>> entry2 = iter2.next();
-                    
-                    Integer innerClauseIndex = entry2.getKey();
-                    
-                    Map<Integer, Float> coeffIdxAndValue = entry2.getValue();
-                    
-                    Map<Integer, Float> cMap2 = cMap.get(innerClauseIndex);
-                    
-                    if (cMap2 == null) {
-                        cMap2 = new HashMap<Integer, Float>();
-                        cMap.put(innerClauseIndex, cMap2);
-                    }
-
-                    cMap2.putAll(coeffIdxAndValue);
-                }
-            }
-        }
-        
-        return combined;
-    } 
     
     /*
     =================

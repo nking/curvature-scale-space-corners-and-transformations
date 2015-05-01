@@ -3,7 +3,6 @@ package algorithms.imageProcessing.optimization;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.SkylineExtractor;
-import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -31,10 +30,8 @@ public class SkylineDownhillSimplex {
     private final List<Set<PairInt>> expectedPoints;
     private final List<Set<PairInt>> expectedBorderPoints;
     private final ANDedClauses[] clauses;
-    private final float[][] coeffLowerLimits;
-    private final float[][] coeffUpperLimits;
-    private final Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffLowerLimits;
-    private final Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffUpperLimits;
+    private final ANDedClauses[] coeffLowerLimits;
+    private final ANDedClauses[] coeffUpperLimits;
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -44,9 +41,7 @@ public class SkylineDownhillSimplex {
         List<Set<PairInt>> expectedPoints, 
         List<Set<PairInt>> expectedBorderPoints,
         ANDedClauses[] clauses,
-        float[][] coeffLowerLimits, float[][] coeffUpperLimits,
-        Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffLowerLimits,
-        Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffUpperLimits) {
+        ANDedClauses[] coeffLowerLimits, ANDedClauses[] coeffUpperLimits) {
         
         if (images == null) {
             throw new IllegalArgumentException("images cannot be null");
@@ -76,12 +71,6 @@ public class SkylineDownhillSimplex {
         if (coeffUpperLimits == null) {
             throw new IllegalArgumentException("coeffUpperLimits cannot be null");
         }
-        if (customCoeffLowerLimits == null) {
-            throw new IllegalArgumentException("customCoeffLowerLimits cannot be null");
-        }
-        if (customCoeffUpperLimits == null) {
-            throw new IllegalArgumentException("customCoeffUpperLimits cannot be null");
-        }
         
         this.images = images; 
         this.thetaImages = thetaImages;
@@ -92,8 +81,6 @@ public class SkylineDownhillSimplex {
         this.clauses = clauses;
         this.coeffLowerLimits = coeffLowerLimits;
         this.coeffUpperLimits = coeffUpperLimits;
-        this.customCoeffLowerLimits = customCoeffLowerLimits;
-        this.customCoeffUpperLimits = customCoeffUpperLimits;
     }
     
     protected SkylineFits process(SkylineExtractor skylineExtractor,
@@ -151,7 +138,7 @@ public class SkylineDownhillSimplex {
         //TODO: edit convergence.  it's the fraction of matched to expected matches.
         float convergence = 1.0f;
       
-        int nStarterPoints = 1000;
+        int nStarterPoints = 10;
         
         SkylineFits[] fits = createStarterPoints(skylineExtractor,
             nStarterPoints);
@@ -330,6 +317,10 @@ public class SkylineDownhillSimplex {
                 
                 ANDedClauses clause = starterPointClauses[i][ii];
                 
+                ANDedClauses clauseLowerLimits = coeffLowerLimits[ii];
+                
+                ANDedClauses clauseUpperLimits = coeffUpperLimits[ii];
+                
                 for (int jj = 0; jj < clause.coefficients.length; jj++) {
                     float coeff = clause.coefficients[jj];
                     // pick randomly between low bounds, high bounds, center,
@@ -338,21 +329,22 @@ public class SkylineDownhillSimplex {
                     type = 3;
                     switch(type) {
                         case 0:
-                            clause.coefficients[jj] = coeffLowerLimits[ii][jj];
+                            clause.coefficients[jj] = clauseLowerLimits.coefficients[jj];
                             break;
                         case 1:
-                            clause.coefficients[jj] = coeffUpperLimits[ii][jj];
+                            clause.coefficients[jj] = clauseUpperLimits.coefficients[jj];
                             break;
                         case 2:
                             //remain the same
                             break;
                         default: {
-                            float range = coeffUpperLimits[ii][jj] -
-                                coeffLowerLimits[ii][jj];
+                            float range = clauseUpperLimits.coefficients[jj] -
+                                clauseLowerLimits.coefficients[jj];
                             // dividing the range by 100 and choosing randomly
                             // between those marks
                             int d = sr.nextInt(10);
-                            clause.coefficients[jj] = (float)(coeffLowerLimits[ii][jj] +
+                            clause.coefficients[jj] = 
+                                (float)(clauseLowerLimits.coefficients[jj] +
                                 ((float)d)*(range/10.));
                             break;
                         }
@@ -361,54 +353,35 @@ public class SkylineDownhillSimplex {
                 
                 if (!clause.customCoefficientVariables.isEmpty()) {
                 
-                    Iterator<Entry<Integer, CustomCoeff>> iter0 = 
-                        clause.customCoefficients.entrySet().iterator();
+                    Iterator<Entry<Integer, Float>> iter0 = 
+                        clause.customCoefficientVariables.entrySet().iterator();
                     
                     Map<Integer, Float> tMap = new HashMap<Integer, Float>(
                         clause.customCoefficientVariables);
-                    
-                    Integer outerClauseIndex = Integer.valueOf(ii);
-                    
+                                        
                     while (iter0.hasNext()) {
 
-                        Entry<Integer, CustomCoeff> entry = iter0.next();
+                        Entry<Integer, Float> entry = iter0.next();
 
-                        Integer innerClauseIndex = entry.getKey();
-                
-                        //Map<Integer, Map<Integer, Float>> customCoeffLowerLimits
-                        //has key=outer clause index, 
-                        //   value = map w/ key=inner clause index 
-                        //       and val = Map w/ key=coefficient index and value = coefficient
+                        Integer coeffIndex = entry.getKey();
+                                       
+                        float coeff = entry.getValue().floatValue();
                         
-                        Map<Integer, Float> lowerCoeffIndexAndValue =
-                            customCoeffLowerLimits
-                                .get(outerClauseIndex).get(innerClauseIndex);
+                        float lower = 
+                            clauseLowerLimits.customCoefficientVariables
+                                .get(coeffIndex);
                         
-                        Map<Integer, Float> upperCoeffIndexAndValue =
-                            customCoeffUpperLimits
-                                .get(outerClauseIndex).get(innerClauseIndex);
-                    
-                        assert(lowerCoeffIndexAndValue != null);
-                        assert(upperCoeffIndexAndValue != null);
+                        float upper = 
+                            clauseUpperLimits.customCoefficientVariables
+                                .get(coeffIndex);
                         
-                        Iterator<Entry<Integer, Float>> iter2 
-                            = lowerCoeffIndexAndValue.entrySet().iterator();
-                        
-                        while (iter2.hasNext()) {
-                            Entry<Integer, Float> entry2 = iter2.next();
-                            Integer coeffIndex = entry2.getKey();
-                            float lower = entry2.getValue().floatValue();
-                            
-                            float upper = upperCoeffIndexAndValue.get(coeffIndex).floatValue();
-                            
-                            float range = upper - lower;
-                            // dividing the range by 100 and choosing randomly
-                            // between those marks
-                            int d = sr.nextInt(10);
-                            float coeffM = (float)(lower + ((float)d)*(range/10.));
+                        float range = upper - lower;
+                        // dividing the range by 100 and choosing randomly
+                        // between those marks
+                        int d = sr.nextInt(10);
+                        float coeffM = (float)(lower + ((float)d)*(range/10.));
 
-                            tMap.put(coeffIndex, Float.valueOf(coeffM));
-                        }
+                        tMap.put(coeffIndex, Float.valueOf(coeffM));
                     }
 
                     clause.customCoefficientVariables.putAll(tMap);
@@ -626,14 +599,18 @@ public class SkylineDownhillSimplex {
             
             ANDedClauses clause = tClauses[clauseIdx];
             
+            ANDedClauses clauseLowerLimits = coeffLowerLimits[clauseIdx];
+            
+            ANDedClauses clauseUpperLimits = coeffUpperLimits[clauseIdx];
+            
             for (int clauseCoeffIdx = 0; clauseCoeffIdx < 
                 clause.coefficients.length; clauseCoeffIdx++) {
                 
                 float coeff = clause.coefficients[clauseCoeffIdx];
                 
-                float upper = this.coeffUpperLimits[clauseIdx][clauseCoeffIdx];
+                float upper = clauseLowerLimits.coefficients[clauseCoeffIdx];
                 
-                float lower = this.coeffLowerLimits[clauseIdx][clauseCoeffIdx];
+                float lower = clauseUpperLimits.coefficients[clauseCoeffIdx];
                 
                 if ((coeff < lower) || (coeff > upper)) {
                     return false;

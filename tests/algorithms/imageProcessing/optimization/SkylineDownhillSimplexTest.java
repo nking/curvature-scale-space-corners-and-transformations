@@ -35,7 +35,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
     
     public void test0() throws Exception {
         
-        boolean useBlueSkyImages = true;
+        boolean useBlueSkyImages = false;
         
         String[] fileNames;
         
@@ -124,24 +124,17 @@ public class SkylineDownhillSimplexTest extends TestCase {
         
         SkylineANDedClauses skylineANDedClauses = new SkylineANDedClauses();
         ANDedClauses[] clauses;
+        ANDedClauses[] coeffLowerLimits;
+        ANDedClauses[] coeffUpperLimits;
          
-        float[][] coeffLowerLimits;
-        float[][] coeffUpperLimits;
-        final Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffLowerLimits;
-        final Map<Integer, Map<Integer, Map<Integer, Float>>> customCoeffUpperLimits;
-        
         if (useBlueSkyImages) {
-            clauses = skylineANDedClauses.getAllAndBlueClauses();
-            coeffLowerLimits = skylineANDedClauses.getAllAndBlueCoeffLowerLimits();
-            coeffUpperLimits = skylineANDedClauses.getAllAndBlueCoeffUpperLimits();
-            customCoeffLowerLimits = skylineANDedClauses.getAllAndBlueCustomCoeffLowerLimits();
-            customCoeffUpperLimits = skylineANDedClauses.getAllAndBlueCustomCoeffUpperLimits();
+            clauses = skylineANDedClauses.getGeneralAndBlueClauses();
+            coeffLowerLimits = skylineANDedClauses.getGeneralAndBlueClausesLowerLimits();
+            coeffUpperLimits = skylineANDedClauses.getGeneralAndBlueClausesUpperLimits();
         } else {
-            clauses = skylineANDedClauses.getAllAndRedClauses();
-            coeffLowerLimits = skylineANDedClauses.getAllAndRedCoeffLowerLimits();
-            coeffUpperLimits = skylineANDedClauses.getAllAndRedCoeffUpperLimits();
-            customCoeffLowerLimits = skylineANDedClauses.getAllAndRedCustomCoeffLowerLimits();
-            customCoeffUpperLimits = skylineANDedClauses.getAllAndRedCustomCoeffUpperLimits();
+            clauses = skylineANDedClauses.getGeneralAndRedClauses();
+            coeffLowerLimits = skylineANDedClauses.getGeneralAndRedClausesLowerLimits();
+            coeffUpperLimits = skylineANDedClauses.getGeneralAndRedClausesUpperLimits();
         }
         
         List<SetComparisonResults> resultsBeforeList = new ArrayList<SetComparisonResults>();
@@ -158,7 +151,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
          
             skylineExtractor.findClouds(points0, exclude, img, thetaImg,
                 clauses);
-              
+            
             Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
             Set<PairInt> outputBorderPoints = new HashSet<PairInt>();
             SkylineExtractor.getEmbeddedAndBorderPoints(points0,
@@ -190,8 +183,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
         SkylineDownhillSimplex nelderMaed = new SkylineDownhillSimplex(images, 
             thetaImages, seedPoints, excludePoints, expectedSky, 
             expectedBorderPoints,
-            clauses, coeffLowerLimits, coeffUpperLimits,
-            customCoeffLowerLimits, customCoeffUpperLimits
+            clauses, coeffLowerLimits, coeffUpperLimits
         );
         
         SkylineFits fit = nelderMaed.fit();
