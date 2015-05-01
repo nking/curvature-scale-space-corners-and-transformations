@@ -361,17 +361,17 @@ public class SkylineDownhillSimplex {
                 
                 if (!clause.customCoefficientVariables.isEmpty()) {
                 
-                    Iterator<Entry<Integer, Float>> iter = 
-                        clause.customCoefficientVariables.entrySet().iterator();
-
+                    Iterator<Entry<Integer, CustomCoeff>> iter0 = 
+                        clause.customCoefficients.entrySet().iterator();
+                    
                     Map<Integer, Float> tMap = new HashMap<Integer, Float>(
                         clause.customCoefficientVariables);
                     
                     Integer outerClauseIndex = Integer.valueOf(ii);
+                    
+                    while (iter0.hasNext()) {
 
-                    while (iter.hasNext()) {
-
-                        Entry<Integer, Float> entry = iter.next();
+                        Entry<Integer, CustomCoeff> entry = iter0.next();
 
                         Integer innerClauseIndex = entry.getKey();
                 
@@ -381,10 +381,15 @@ public class SkylineDownhillSimplex {
                         //       and val = Map w/ key=coefficient index and value = coefficient
                         
                         Map<Integer, Float> lowerCoeffIndexAndValue =
-                            customCoeffLowerLimits.get(outerClauseIndex).get(innerClauseIndex);
+                            customCoeffLowerLimits
+                                .get(outerClauseIndex).get(innerClauseIndex);
                         
                         Map<Integer, Float> upperCoeffIndexAndValue =
-                            customCoeffLowerLimits.get(outerClauseIndex).get(innerClauseIndex);
+                            customCoeffUpperLimits
+                                .get(outerClauseIndex).get(innerClauseIndex);
+                    
+                        assert(lowerCoeffIndexAndValue != null);
+                        assert(upperCoeffIndexAndValue != null);
                         
                         Iterator<Entry<Integer, Float>> iter2 
                             = lowerCoeffIndexAndValue.entrySet().iterator();
