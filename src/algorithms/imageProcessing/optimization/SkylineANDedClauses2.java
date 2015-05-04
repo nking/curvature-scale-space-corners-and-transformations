@@ -126,9 +126,9 @@ public class SkylineANDedClauses2 {
         */        
         ANDedClauses c0 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c0.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, 0.0f);
+            COMPARISON.GREATER_THAN, 0.04f);
         c0.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
-            COMPARISON.GREATER_THAN, 10.0f);
+            COMPARISON.GREATER_THAN, 7.03f);
         
         ANDedClauses c0Lower = c0.copy();
         ANDedClauses c0Upper = c0.copy();
@@ -147,17 +147,17 @@ public class SkylineANDedClauses2 {
         */
         ANDedClauses c1 = new ANDedClauses(3, SKYCONDITIONAL.ALL);
         c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, 0.0f);
+            COMPARISON.GREATER_THAN, 0.12f);
         c1.set(1, PARAM.ABSOLUTE_CONTRAST, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, 0.1f);
+            COMPARISON.GREATER_THAN, 0.406f);
         
         // this is replaced by the custom coefficient
         c1.set(2, PARAM.ABSOLUTE_CONTRAST, PARAM.STDEV_CONTRAST, 
             COMPARISON.GREATER_THAN, customCoeffPlaceHolder);
         c1.setACustomCoefficient(2, new CustomCoeff00()); 
-        c1.setCustomCoefficientVariable(4, Float.valueOf(1.5f));
-        c1.setCustomCoefficientVariable(5, Float.valueOf(0.5f));
-        c1.setCustomCoefficientVariable(6, Float.valueOf(-2.0f));
+        c1.setCustomCoefficientVariable(4, Float.valueOf(1.55f));
+        c1.setCustomCoefficientVariable(5, Float.valueOf(0.55f));
+        c1.setCustomCoefficientVariable(6, Float.valueOf(-1.8f));
         
         ANDedClauses c1Lower = c1.copy();
         ANDedClauses c1Upper = c1.copy();
@@ -185,9 +185,9 @@ public class SkylineANDedClauses2 {
         */
         ANDedClauses c2 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c2.set(0, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, 0.005f);
+            COMPARISON.GREATER_THAN, 0.15f);
         c2.set(1, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
-            COMPARISON.GREATER_THAN, 5.0f);
+            COMPARISON.GREATER_THAN, 3.65f);
        
         ANDedClauses c2Lower = c2.copy();
         ANDedClauses c2Upper = c2.copy();
@@ -204,9 +204,9 @@ public class SkylineANDedClauses2 {
         
         ANDedClauses c3 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c3.set(0, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, 0.005f);
+            COMPARISON.GREATER_THAN, 0.4f);
         c3.set(1, PARAM.DIFF_CIEX, PARAM.STDEV_CIEX, 
-            COMPARISON.GREATER_THAN, 1.5f);
+            COMPARISON.GREATER_THAN, 2.75f);
         
         ANDedClauses c3Lower = c3.copy();
         ANDedClauses c3Upper = c3.copy();
@@ -222,9 +222,9 @@ public class SkylineANDedClauses2 {
         */
         ANDedClauses c4 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c4.set(0, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, 0.001f);
+            COMPARISON.GREATER_THAN, 1.E-5f);
         c4.set(1, PARAM.DIFF_CIEY, PARAM.STDEV_CIEY, 
-            COMPARISON.GREATER_THAN, 1.5f);
+            COMPARISON.GREATER_THAN, 0.5f);
        
         ANDedClauses c4Lower = c4.copy();
         ANDedClauses c4Upper = c4.copy();

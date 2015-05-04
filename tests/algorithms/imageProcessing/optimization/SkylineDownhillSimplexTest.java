@@ -258,12 +258,8 @@ public class SkylineDownhillSimplexTest extends TestCase {
             }
         }
         
-        System.out.println("before: matched=" 
-            + resultsBefore.numberMatchedDivExpected 
-            + " overrun=" + resultsBefore.numberOverrunDivExpected);
-        System.out.println("after : matched=" 
-            + resultsAfter.numberMatchedDivExpected 
-            + " overrun=" + resultsAfter.numberOverrunDivExpected);
+        System.out.println("before: " + resultsBefore.toString());
+        System.out.println("after : " + resultsAfter.toString());
         
         assertTrue(resultsAfter.numberMatchedDivExpected >= 
             resultsBefore.numberMatchedDivExpected);
