@@ -122,7 +122,7 @@ public class SkylineANDedClauses2 {
         
         /*
         00         (skyStDevContrast > 0.)
-        01         && ((Math.abs(contrastV)/skyStDevContrast) > 10.)   RANGE 0.1 to 15.
+        01         && ((Math.abs(contrastV)/skyStDevContrast) > 10.)   RANGE 0.1 to 10.
         */        
         ANDedClauses c0 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c0.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
@@ -135,7 +135,7 @@ public class SkylineANDedClauses2 {
         c0Lower.coefficients[0] = 0.00001f;
         c0Upper.coefficients[0] = 0.2f;
         c0Lower.coefficients[1] = 0.1f;
-        c0Upper.coefficients[1] = 15.0f;
+        c0Upper.coefficients[1] = 10.0f;
         
         /*
         } else if (
@@ -181,7 +181,7 @@ public class SkylineANDedClauses2 {
         /* 
         } else if (
         07         (colorDiffV > 0.0)
-        08         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)  RANGE 0.5 to 10.
+        08         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)  RANGE 0.5 to 5.
         */
         ANDedClauses c2 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c2.set(0, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.INT_ONE, 
@@ -194,12 +194,12 @@ public class SkylineANDedClauses2 {
         c2Lower.coefficients[0] = 0.00001f;
         c2Upper.coefficients[0] = 0.5f;
         c2Lower.coefficients[1] = 0.5f;
-        c2Upper.coefficients[1] = 10.0f;
+        c2Upper.coefficients[1] = 5.0f;
         
         /*
         } else if (
         08         (diffCIEX > 0.005)
-        09         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 10.
+        09         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 5.
         */
         
         ANDedClauses c3 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
@@ -213,12 +213,12 @@ public class SkylineANDedClauses2 {
         c3Lower.coefficients[0] = 0.00001f;
         c3Upper.coefficients[0] = 0.5f;
         c3Lower.coefficients[1] = 0.5f;
-        c3Upper.coefficients[1] = 10.0f;
+        c3Upper.coefficients[1] = 5.0f;
         
         /*
         } else if (
         10         (diffCIEX > 0.005)
-        11         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 10.
+        11         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 5.
         */
         ANDedClauses c4 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c4.set(0, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
@@ -231,7 +231,7 @@ public class SkylineANDedClauses2 {
         c4Lower.coefficients[0] = 0.00001f;
         c4Upper.coefficients[0] = 0.5f;
         c4Lower.coefficients[1] = 0.5f;
-        c4Upper.coefficients[1] = 10.0f;
+        c4Upper.coefficients[1] = 5.0f;
         
         generalClausesLowerLimits = new ANDedClauses[]{
             c0Lower, c1Lower, c2Lower, c3Lower, c4Lower};
@@ -277,18 +277,20 @@ public class SkylineANDedClauses2 {
                                                                  3.5                        1.0   +1
         } else if (
         07         (colorDiffV > 0.0)
-        08         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)  RANGE 0.5 to 10.
+        08         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)  RANGE 0.5 to 5.
         } else if (
         08         (diffCIEX > 0.005)
-        09         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 10.
+        09         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 5.
         } else if (
         10         (diffCIEY > 0.005)
-        11         ((diffCIEY/localSky.getStdDevCIEY()) > 1.5)         RANGE 0.5 to 10.
+        11         ((diffCIEY/localSky.getStdDevCIEY()) > 1.5)         RANGE 0.5 to 5.
     
     If choose starter points as low, mid, high, there would need to be
     3^12 starter points for a proper range search = 531,441 starter points.
     
     If only had 6 coefficients, a range search would be complete with 729 starter points.
     
+    The range search using starter points is then local search thereafter. The top
+    10 fits' coefficients are retained and the others discarded.
     */
 }
