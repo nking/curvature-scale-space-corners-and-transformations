@@ -1,11 +1,5 @@
 package algorithms.imageProcessing.optimization;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
 /**
  *
  * @author nichole
@@ -40,6 +34,18 @@ public class SkylineANDedClauses {
     public ANDedClauses[] getAllClauses() {
         
         return copyAndAppend(generalClauses, blueOnlyClauses, redOnlyClauses);
+    }
+    
+    public ANDedClauses[] getAllClausesLowerLimits() {
+        
+        return copyAndAppend(generalClausesLowerLimits, 
+            blueOnlyClausesLowerLimits, redOnlyClausesLowerLimits);
+    }
+    
+    public ANDedClauses[] getAllClausesUpperLimits() {
+        
+        return copyAndAppend(generalClausesUpperLimits, 
+            blueOnlyClausesUpperLimits, redOnlyClausesUpperLimits);
     }
     
     public ANDedClauses[] getGeneralAndRedClauses() {

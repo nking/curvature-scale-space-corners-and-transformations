@@ -138,7 +138,7 @@ public class SkylineDownhillSimplex {
         //TODO: edit convergence.  it's the fraction of matched to expected matches.
         float convergence = 1.0f;
       
-        int nStarterPoints = 10;
+        int nStarterPoints = 1000;
         
         SkylineFits[] fits = createStarterPoints(skylineExtractor,
             nStarterPoints);
@@ -364,9 +364,7 @@ public class SkylineDownhillSimplex {
                         Entry<Integer, Float> entry = iter0.next();
 
                         Integer coeffIndex = entry.getKey();
-                                       
-                        float coeff = entry.getValue().floatValue();
-                        
+                                                
                         float lower = 
                             clauseLowerLimits.customCoefficientVariables
                                 .get(coeffIndex);

@@ -7,9 +7,9 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class SkylineANDedClausesTest extends TestCase {
+public class SkylineANDedClauses2Test extends TestCase {
     
-    public SkylineANDedClausesTest() {
+    public SkylineANDedClauses2Test() {
     }
 
     public void testGetForAllSkies() {
@@ -33,7 +33,7 @@ public class SkylineANDedClausesTest extends TestCase {
             skyStDevContrast, skyStDevBlueOrRedDiff,
             skyStDevCIEX, skyStDevCIEY, r, g, b);
         
-        SkylineANDedClauses instance = new SkylineANDedClauses();
+        SkylineANDedClauses2 instance = new SkylineANDedClauses2();
         
         for (int type = 0; type < 9; type++) {
             

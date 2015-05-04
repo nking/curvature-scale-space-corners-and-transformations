@@ -1877,9 +1877,7 @@ log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
 + " colordiff=" + colorDiffV + " div=" + (colorDiffV/skyStDevColorDiff)
 + " diffciex=" + diffCIEX + " div=" + (diffCIEX/localSky.getStdDevCIEX())
 + " diffciey=" + diffCIEY + " div=" + (diffCIEY/localSky.getStdDevCIEY())
-+ " r=" + rV + " g=" + gV + " b=" + bV + " bPercentV=" + bPercentV
-);
-     
++ " r=" + rV + " g=" + gV + " b=" + bV + " bPercentV=" + bPercentV);
 }
 
                 if (isBrown) {
@@ -2138,7 +2136,7 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
         
         clauses = filterForSkyColor(clauses, skyIsRed);
        
-        log.info("==> r/b=" + rDivB
+        log.fine("==> r/b=" + rDivB
             + " redStdev=" + allSkyColor.getStdDevRed()
             + " blueStDev=" + allSkyColor.getStdDevBlue());
         

@@ -35,28 +35,45 @@ public class SkylineDownhillSimplexTest extends TestCase {
     
     public void test0() throws Exception {
         
-        boolean useBlueSkyImages = false;
+        boolean useAllImages = true;
+        boolean useBlueSkyImages = true;
         
         String[] fileNames;
         
-        if (useBlueSkyImages) {
+        if (useAllImages) {
             fileNames = new String[]{
-                "brown_lowe_2003_image1.jpg", 
+                "brown_lowe_2003_image1.jpg",
                 "venturi_mountain_j6_0001.png",
                 "seattle.jpg",
                 "arches.jpg",
                 "stinson_beach.jpg",
-                "cloudy_san_jose.jpg"
+                "cloudy_san_jose.jpg",
+                "stonehenge.jpg",
+                "norwegian_mtn_range.jpg",
+                "halfdome.jpg",
+                "costa_rica.jpg",
+                "new-mexico-sunrise_w725_h490.jpg",
+                "arizona-sunrise-1342919937GHz.jpg"
             };
         } else {
-            fileNames = new String[]{
-                 "stonehenge.jpg",
-                 "norwegian_mtn_range.jpg",
-                 "halfdome.jpg",
-                 "costa_rica.jpg",
-                 "new-mexico-sunrise_w725_h490.jpg",
-                 "arizona-sunrise-1342919937GHz.jpg"
-            };
+            if (useBlueSkyImages) {
+                fileNames = new String[]{
+                    "brown_lowe_2003_image1.jpg",
+                    "venturi_mountain_j6_0001.png",
+                    "seattle.jpg",
+                    "arches.jpg",
+                    "stinson_beach.jpg",
+                    "cloudy_san_jose.jpg"};
+            } else {
+                fileNames = new String[]{
+                    "stonehenge.jpg",
+                    "norwegian_mtn_range.jpg",
+                    "halfdome.jpg",
+                    "costa_rica.jpg",
+                    "new-mexico-sunrise_w725_h490.jpg",
+                    "arizona-sunrise-1342919937GHz.jpg"
+                };
+            }
         }
                 
         List<ImageExt> images = new ArrayList<ImageExt>();
@@ -122,19 +139,25 @@ public class SkylineDownhillSimplexTest extends TestCase {
             
         }
         
-        SkylineANDedClauses skylineANDedClauses = new SkylineANDedClauses();
+        SkylineANDedClauses2 skylineANDedClauses = new SkylineANDedClauses2();
         ANDedClauses[] clauses;
         ANDedClauses[] coeffLowerLimits;
         ANDedClauses[] coeffUpperLimits;
          
-        if (useBlueSkyImages) {
-            clauses = skylineANDedClauses.getGeneralAndBlueClauses();
-            coeffLowerLimits = skylineANDedClauses.getGeneralAndBlueClausesLowerLimits();
-            coeffUpperLimits = skylineANDedClauses.getGeneralAndBlueClausesUpperLimits();
+        if (useAllImages) {
+            clauses = skylineANDedClauses.getAllClauses();
+            coeffLowerLimits = skylineANDedClauses.getAllClausesLowerLimits();
+            coeffUpperLimits = skylineANDedClauses.getAllClausesUpperLimits();
         } else {
-            clauses = skylineANDedClauses.getGeneralAndRedClauses();
-            coeffLowerLimits = skylineANDedClauses.getGeneralAndRedClausesLowerLimits();
-            coeffUpperLimits = skylineANDedClauses.getGeneralAndRedClausesUpperLimits();
+            if (useBlueSkyImages) {
+                clauses = skylineANDedClauses.getGeneralAndBlueClauses();
+                coeffLowerLimits = skylineANDedClauses.getGeneralAndBlueClausesLowerLimits();
+                coeffUpperLimits = skylineANDedClauses.getGeneralAndBlueClausesUpperLimits();                
+            } else {
+                clauses = skylineANDedClauses.getGeneralAndRedClauses();
+                coeffLowerLimits = skylineANDedClauses.getGeneralAndRedClausesLowerLimits();
+                coeffUpperLimits = skylineANDedClauses.getGeneralAndRedClausesUpperLimits();
+            }
         }
         
         List<SetComparisonResults> resultsBeforeList = new ArrayList<SetComparisonResults>();
