@@ -42,10 +42,10 @@ public class SkylineDownhillSimplexTest extends TestCase {
         
         if (useAllImages) {
             fileNames = new String[]{
-                "brown_lowe_2003_image1.jpg",
-                "venturi_mountain_j6_0001.png",
+                /*"brown_lowe_2003_image1.jpg",
+                "venturi_mountain_j6_0001.png",*/
                 "seattle.jpg",
-                "arches.jpg",
+                /*"arches.jpg",
                 "stinson_beach.jpg",
                 "cloudy_san_jose.jpg",
                 "stonehenge.jpg",
@@ -53,7 +53,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
                 "halfdome.jpg",
                 "costa_rica.jpg",
                 "new-mexico-sunrise_w725_h490.jpg",
-                "arizona-sunrise-1342919937GHz.jpg"
+                "arizona-sunrise-1342919937GHz.jpg"*/
             };
         } else {
             if (useBlueSkyImages) {
@@ -201,7 +201,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
                 System.err.println("ERROR: " + e.getMessage());
             }
         }        
-       
+System.out.println("SIMPLEX");       
         // ---- get the comparison of points after refinement ----
         SkylineDownhillSimplex nelderMaed = new SkylineDownhillSimplex(images, 
             thetaImages, seedPoints, excludePoints, expectedSky, 
@@ -222,12 +222,12 @@ public class SkylineDownhillSimplexTest extends TestCase {
         
         for (int i = 0; i < images.size(); i++) {
             
-            SkylineANDedClauses skylineANDedClauses2 = new SkylineANDedClauses();
-            ANDedClauses[] clauses2 = skylineANDedClauses2.getAllClauses();
+            //SkylineANDedClauses skylineANDedClauses2 = new SkylineANDedClauses();
+            //ANDedClauses[] clauses2 = skylineANDedClauses2.getAllClauses();
         
             skylineExtractor.findClouds(seedPoints.get(i), 
                 excludePoints.get(i), images.get(i), thetaImages.get(i),
-                clauses2/*fit.clauses*/);
+                fit.clauses);
             
             ImageExt img = images.get(i);
             GreyscaleImage thetaImg = thetaImages.get(i);
@@ -251,6 +251,11 @@ public class SkylineDownhillSimplexTest extends TestCase {
                 ImageIOHelper.addToImage(outputBorderPoints, 
                     thetaImg.getXRelativeOffset(), 
                     thetaImg.getYRelativeOffset(), clr, 255, 0, 0);
+                
+                /*ImageIOHelper.addToImage(excludePoints.get(i), 
+                    thetaImg.getXRelativeOffset(), 
+                    thetaImg.getYRelativeOffset(), clr, 0, 255, 0);
+                */
                 ImageIOHelper.writeOutputImage(
                     dirPath + "/sky_after_optimization_" + fileNameRoot + ".png", clr);
             } catch (IOException e) {
@@ -258,7 +263,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
             }
         }
         
-        System.out.println("before: " + resultsBefore.toString());
+        System.out.println("before : " + resultsBefore.toString());
         System.out.println("after : " + resultsAfter.toString());
         
         assertTrue(resultsAfter.numberMatchedDivExpected >= 

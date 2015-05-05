@@ -591,7 +591,7 @@ try {
                 float f = (float)h.getYHist()[i]/yPeak;
                 dy = Math.abs(h.getYHist()[i] - h.getYHist()[i - 1]);
                 
-                //System.out.println("x=" + h.getXHist()[i] + " f=" + f + " dy=" + dy);
+ System.out.println("x=" + h.getXHist()[i] + " f=" + f + " dy=" + dy);
                 
                 if (f < crit) {
                     tailXIdx = i;
@@ -653,30 +653,7 @@ try {
                     pointsSet.remove(pi0);
                     
                     if (outputRemovedPoints != null) {
-                        outputRemovedPoints.add(pi0);
-                    }
-
-                    for (int xx = (x - 1); xx <= (x + 1); xx++) {
-                        if ((xx < 0) || (xx > (theta.getWidth() - 1))) {
-                            continue;
-                        }
-                        for (int yy = (y - 1); yy <= (y + 1); yy++) {
-                            if ((yy < 0) || (yy > (theta.getHeight() - 1))) {
-                                continue;
-                            }
-                            if ((xx == x) && (yy == y)) {
-                                continue;
-                            }
-                            
-                            PairInt pi1 = new PairInt(xx, yy);
-                            
-                            if (pointsSet.contains(pi1)) {
-                                pointsSet.remove(pi1);
-                                if (outputRemovedPoints != null) {
-                                    outputRemovedPoints.add(pi1);
-                                }
-                            }
-                        }
+                        outputRemovedPoints.add(pi0);                    
                     }
                 }
             }
@@ -1458,8 +1435,8 @@ try {
             return new HashSet<PairInt>();
         }
         
-        log.info("rainbow polynomial coefficients = " + Arrays.toString(coef));
-        log.info("image dimensions are " + colorImg.getWidth() + " X " + 
+        log.fine("rainbow polynomial coefficients = " + Arrays.toString(coef));
+        log.fine("image dimensions are " + colorImg.getWidth() + " X " + 
             colorImg.getHeight() + " pixels^2");
          
         polyFitter.plotFit(coef, rainbowPoints, colorImg.getWidth(),
@@ -1873,7 +1850,8 @@ static int outImgNum=0;
                     && (Math.abs(bPercentV - 0.17) < 0.1);
 
 if (check(vX, xOffset, vY, yOffset)) {
-log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
+System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") "
++   "contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
 + " colordiff=" + colorDiffV + " div=" + (colorDiffV/skyStDevColorDiff)
 + " diffciex=" + diffCIEX + " div=" + (diffCIEX/localSky.getStdDevCIEX())
 + " diffciey=" + diffCIEY + " div=" + (diffCIEY/localSky.getStdDevCIEY())
@@ -2034,7 +2012,8 @@ log.fine("FILTER 10");
 log.fine("FILTER 11");
                         continue;
                     } else if (
-                    (contrastV < 0.05)
+                    //(contrastV < 0.05)
+                    (Math.abs(contrastV) < 0.05)
                     && (diffCIEX < 0.005) && (diffCIEY < 0.005)
                     &&
                         ((Math.abs(0.33 - rPercentV) > 0.08)
@@ -2060,9 +2039,9 @@ log.fine("FILTER 13");
     }
 
 private boolean check(int vX, int xOffset, int vY, int yOffset) {
-    /*if (((vX + xOffset)>=461) && ((vX + xOffset)<=461) && ((vY + yOffset)==198)) {
+    if (((vX + xOffset)>=281) && ((vX + xOffset)<=285) && ((vY + yOffset)==73)) {
         return true;
-    }*/
+    }
     return false;
 }
 
@@ -2121,7 +2100,7 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
         for (PairInt skyPoint : skyPoints) {
             cloudQueue.add(skyPoint);
         }
-        
+
         Set<PairInt> visited = new HashSet<PairInt>();
         visited.add(cloudQueue.peek());
               
@@ -2166,8 +2145,14 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
             
                 PairInt vPoint = new PairInt(vX, vY);
                 
-                if (visited.contains(vPoint) || skyPoints.contains(vPoint) ||
+                if (visited.contains(vPoint) || /*skyPoints.contains(vPoint) ||*/
                     excludePoints.contains(vPoint)) {
+if (check(vX, xOffset, vY, yOffset)) {
+System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") "
++  "isVisited=" + visited.contains(vPoint) 
++ " isExcluded=" + excludePoints.contains(vPoint));
+int z = 1;
+}
                     continue;
                 }
 
@@ -2219,13 +2204,14 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
                     && (Math.abs(bPercentV - 0.17) < 0.1);
 
 if (check(vX, xOffset, vY, yOffset)) {
-log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
+System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") "
++   "contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
 + " colordiff=" + colorDiffV + " div=" + (colorDiffV/skyStDevColorDiff)
 + " diffciex=" + diffCIEX + " div=" + (diffCIEX/localSky.getStdDevCIEX())
 + " diffciey=" + diffCIEY + " div=" + (diffCIEY/localSky.getStdDevCIEY())
-+ " r=" + rV + " g=" + gV + " b=" + bV + " bPercentV=" + bPercentV
-);
-     
++ " r=" + rV + " g=" + gV + " b=" + bV + " bPercentV=" + bPercentV 
++ " isBrown=" + isBrown + " skyIsRes=" + skyIsRed);
+int z = 1;
 }
 
                 if (isBrown) {
@@ -2234,12 +2220,18 @@ log.info("contrastV=" + contrastV + " div=" + (contrastV/skyStDevContrast)
                         if ((saturation <= 0.4) && (colorDiffV > 50*skyStDevColorDiff) 
                             ) {
 log.fine("FILTER 00");
+if (check(vX, xOffset, vY, yOffset)) {
+System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") rejected by filter00");
+}
                             continue;
                         }
                          if ((saturation <= 0.4) && 
                             (Math.abs(contrastV) > 10.*Math.abs(skyStDevContrast))
                             ) {
-log.fine("FILTER 01");                                                        
+log.fine("FILTER 01"); 
+if (check(vX, xOffset, vY, yOffset)) {
+System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") rejected by filter01 ");
+}
                             continue;
                         }
                     }
@@ -2275,6 +2267,9 @@ log.fine("FILTER 01");
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
                     // this is a sky point
 log.fine("FILTER 02");
+if (check(vX, xOffset, vY, yOffset)) {
+System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") is sky ");
+}
                 //} else if (isSolarYellow) {
                     // this is a sky point
 //log.fine("FILTER 03");
@@ -2283,19 +2278,26 @@ log.fine("FILTER 02");
                     // evaluate clauses that evaluate to 'T' when the pixel 
                     // looks like a border (non-sky) pixel
                     boolean isNotSky = false;
-               
+int cn=0;
                     for (ANDedClauses clause : clauses) {
                         if (clause.evaluate(data)) {
                             isNotSky = true;
+if (check(vX, xOffset, vY, yOffset)) {
+System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") rejected by clause " + cn);
+}
                             break;
                         }
+cn++;
                     }
             
                     if (isNotSky) {
                         continue;
                     }
                 }
-                
+
+if (check(vX, xOffset, vY, yOffset)) {
+System.out.println(" add to sky points: (" + (vX + xOffset) + "," + (vY + yOffset) + ") ");
+}                
                 skyPoints.add(vPoint);
 
                 boolean doNotAddToStack = false;

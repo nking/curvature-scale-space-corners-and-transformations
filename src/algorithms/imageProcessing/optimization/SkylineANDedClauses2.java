@@ -138,13 +138,14 @@ public class SkylineANDedClauses2 {
         c0Upper.coefficients[1] = 10.0f;
         
         /*
-        } else if (
+        } else if (// 1.5 + (0.006911656819283962 - 0.72999996)*(-1.8))
         02         (skyStDevContrast > 0.)
         03         && ((Math.abs(contrastV) > 0.1)                     RANGE 0.01 to 1.0
         04,05,06   && ((Math.abs(contrastV)/skyStDevContrast) > (1.5 + (Math.abs(contrastV)-0.5)*(-2.0))))
                                                                  0.5                        0.1   -3
                                                                  3.5                        1.0   +1
         */
+        
         ANDedClauses c1 = new ANDedClauses(3, SKYCONDITIONAL.ALL);
         c1.set(0, PARAM.STDEV_CONTRAST, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, 0.12f);
@@ -178,14 +179,12 @@ public class SkylineANDedClauses2 {
         c1Upper.customCoefficientVariables.put(Integer.valueOf(6), 
             Float.valueOf(1.0f));
         
-        /* 
-        } else if (
-        07         (colorDiffV > 0.0)
-        08         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)  RANGE 0.5 to 5.
-        */
+        //} else if (
+        //07         (skyStDevColorDiff > 0.0)
+        //08         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)  RANGE 0.5 to 5.
         ANDedClauses c2 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
-        c2.set(0, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.INT_ONE, 
-            COMPARISON.GREATER_THAN, 0.15f);
+        c2.set(0, PARAM.STDEV_BLUE_OR_RED, PARAM.INT_ONE, 
+            COMPARISON.GREATER_THAN, 0.0f);
         c2.set(1, PARAM.ABSOLUTE_DIFF_BLUE_OR_RED, PARAM.STDEV_BLUE_OR_RED, 
             COMPARISON.GREATER_THAN, 3.65f);
        
@@ -197,10 +196,9 @@ public class SkylineANDedClauses2 {
         c2Upper.coefficients[1] = 5.0f;
         
         /*
-        } else if (
-        08         (diffCIEX > 0.005)
-        09         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 5.
-        */
+        //} else if (
+        //08         (diffCIEX > 0.005)
+        //09         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 5.
         
         ANDedClauses c3 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c3.set(0, PARAM.DIFF_CIEX, PARAM.INT_ONE, 
@@ -215,11 +213,9 @@ public class SkylineANDedClauses2 {
         c3Lower.coefficients[1] = 0.5f;
         c3Upper.coefficients[1] = 5.0f;
         
-        /*
-        } else if (
-        10         (diffCIEX > 0.005)
-        11         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 5.
-        */
+        //} else if (
+        //10         (diffCIEX > 0.005)
+        //11         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 5.
         ANDedClauses c4 = new ANDedClauses(2, SKYCONDITIONAL.ALL);
         c4.set(0, PARAM.DIFF_CIEY, PARAM.INT_ONE, 
             COMPARISON.GREATER_THAN, 1.E-5f);
@@ -232,14 +228,18 @@ public class SkylineANDedClauses2 {
         c4Upper.coefficients[0] = 0.5f;
         c4Lower.coefficients[1] = 0.5f;
         c4Upper.coefficients[1] = 5.0f;
+        */
         
         generalClausesLowerLimits = new ANDedClauses[]{
-            c0Lower, c1Lower, c2Lower, c3Lower, c4Lower};
+            c0Lower, c1Lower, c2Lower/*, c3Lower, c4Lower*/
+        };
         
         generalClausesUpperLimits = new ANDedClauses[]{
-            c0Upper, c1Upper, c2Upper, c3Upper, c4Upper};
+            c0Upper, c1Upper, c2Upper/*, c3Upper, c4Upper*/
+        };
     
-        generalClauses = new ANDedClauses[]{c0, c1, c2, c3, c4};
+        generalClauses = new ANDedClauses[]{c0, c1, c2/*, c3, c4*/
+        };
     }
     
     private void initRedOnlyClauses() {        
@@ -276,7 +276,7 @@ public class SkylineANDedClauses2 {
                                                                  0.5                        0.1   -3
                                                                  3.5                        1.0   +1
         } else if (
-        07         (colorDiffV > 0.0)
+        07         (skyStDevColorDiff > 0.0)
         08         && ((Math.abs(colorDiffV)/skyStDevColorDiff) > 5.)  RANGE 0.5 to 5.
         } else if (
         08         (diffCIEX > 0.005)
