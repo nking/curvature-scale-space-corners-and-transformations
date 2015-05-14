@@ -119,6 +119,24 @@ public class FFT {
         return r;
     }
     
+    protected static double[] bitReverseCopy(int[] x) {
+        
+        int n = x.length;
+        
+        int nBits = MiscMath.numberOfBits(n - 1);
+                        
+        double[] r = new double[n];
+        
+        for (int k = 0; k < n; k++) {
+            
+            int idx = MiscMath.bitReverse(k, nBits);
+            
+            r[idx] = x[k];
+        }
+        
+        return r;
+    }
+    
     protected static Complex[] bitReverseCopy(Complex[] x) {
         
         int n = x.length;
@@ -137,4 +155,84 @@ public class FFT {
         return r;
     }
     
+    /**
+     * perform FFT on x using the Cormen et al. pseudocode for iterative FFT
+     */
+    protected double[] fft(int[] x) {
+
+        if (x == null || x.length == 0) {
+            throw new IllegalArgumentException("xReal cannot be null or empty");
+        }
+     
+        int n = x.length;
+
+        if (n == 1) {
+            return new double[]{x[0]};
+        }
+        
+        if (!MiscMath.isAPowerOf2(n)) {
+            throw new IllegalArgumentException("xReal's length has to be a power of 2");
+        }
+        
+        double[] a = bitReverseCopy(x);
+        
+        double norm = Math.sqrt(n);
+        
+        int end = (int)(Math.log(n)/Math.log(2));
+        
+        for (int s = 1; s <= end; s++) {
+            
+            int m = 1 << s;
+            
+            double eCoeff = 2. * Math.PI/(double)m;
+            double wnReal = Math.cos(eCoeff);
+            double wnImag = Math.sin(eCoeff);
+        
+            for (int k = 0; k < n; k+=m) {
+                
+                double wReal = 1;
+                double wImag = 0;
+                
+                for (int j = 0; j < (m/2); j++) {
+                    
+                    //complex multiplication:
+                    double tReal = wReal * a[k + j + (m/2)];
+                    double tImag = wImag * a[k + j + (m/2)];
+                    double tAbs = Math.hypot(tReal, tImag);;
+                    
+                    double u = a[k + j];
+                    a[k + j] = (u + tAbs);
+                    a[k + j + (m/2)] = (u - tAbs);
+                    
+                    //complex multiplication:
+                    wReal = wReal * wnReal - (wImag * wnImag);
+                    wImag = wReal * wnImag + (wImag * wnReal);
+                }
+            }
+        }
+        
+        for (int i = 0; i < a.length; i++) {
+            a[i] /= norm;
+        }
+        
+        /*
+        bit-reverse-copy(a,A)
+        for s=1 to lg n {
+            m = 2^s
+            wm = exp^(i*2*PI/m)
+            for k=0 to n-1 by m {
+                w=1
+                for j=0 to ((m/2)-1) {
+                    do t=w*A[k + j + (m/2)]
+                    u = A[k + j]
+                    A[k + j] = u + t
+                    A[k + j + (m/2)] = u - t
+                    w = w * wm
+                }
+            }
+        }
+        */
+        
+        return a;
+    }
 }
