@@ -6,6 +6,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PairInt;
+import algorithms.misc.Complex;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -52,6 +53,16 @@ public class ImageProcessor {
         float normY = kernel.getNormalizationFactor();
        
         applyKernels(input, kernelX, kernelY, normX, normY);
+    }
+    
+    public void applyLaplacianKernel(GreyscaleImage input) {
+        
+        IKernel kernel = new Laplacian();
+        Kernel kernelXY = kernel.getKernel();
+        
+        float norm = kernel.getNormalizationFactor();
+        
+        applyKernel(input, kernelXY, norm);
     }
     
     protected void applyKernels(Image input, Kernel kernelX, Kernel kernelY, 
@@ -1720,5 +1731,93 @@ public class ImageProcessor {
         
         return new double[]{avgY, avgR, avgG, avgB};
     }
+    
+    /**
+     * 
+     * @param input
+     * @param forward if true, apply FFT transform, else inverse FFT transform
+     */
+    public void apply2DFFT(GreyscaleImage input, boolean forward) {
+        
+        //TODO: apply padding to nearest power of 2
+        
+        // initialize matrix of complex numbers as real numbers from image
+        Complex[][] cc = convertImage(input);
+                
+        Complex[][] ccOut = apply2DFFT(cc, forward);
+        
+        writeToImage(input, ccOut);
+    }
+    
+    protected Complex[][] apply2DFFT(Complex[][] cc, boolean forward) {
+              
+        // perform FFT by column
+        for (int col = 0; col < cc.length; col++) {
+            if (forward) {
+                cc[col] = FFT.fft(cc[col]);
+            } else {
+                cc[col] = FFT.ifft(cc[col]);
+            }
+        }
+        
+        /*
+        //transpose the matrix
+        cc = MatrixUtil.transpose(cc);
+                
+        // perform FFT by column (originally rows)
+        for (int col = 0; col < cc[0].length; col++) {
+            if (forward) {
+                cc[col] = FFT.fft(cc[col]);
+            } else {
+                cc[col] = FFT.ifft(cc[col]);
+            }
+        }
+        
+        //transpose the matrix
+        cc = MatrixUtil.transpose(cc);
+        */
+        
+        return cc;
+    }
+    
+    /**
+     * 
+     * @param cc
+     */
+    public void writeToImage(GreyscaleImage img, Complex[][] cc) {
+
+        img.fill(0);
+        
+        // write back to original image
+        for (int col = 0; col < img.getWidth(); col++) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                double re = cc[col][row].re();
+                double a = cc[col][row].abs();
+                double p = cc[col][row].phase();
+                img.setValue(col, row, (int)re);
+            }
+        }
+        
+    }
+    
+    /**
+     * write a 2-D complex array from the image
+     * 
+     * @param input
+     */
+    protected Complex[][] convertImage(GreyscaleImage input) {
+              
+        // initialize matrix of complex numbers as real numbers from image
+        Complex[][] cc = new Complex[input.getHeight()][];        
+        for (int col = 0; col < input.getWidth(); col++) {
+            cc[col] = new Complex[input.getHeight()];     
+            for (int row = 0; row < input.getHeight(); row++) {
+                cc[col][row] = new Complex(input.getValue(col, row), 0);
+            }
+        }
+        
+        return cc;
+    }
    
+    
 }

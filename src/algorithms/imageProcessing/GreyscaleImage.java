@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
 
@@ -42,6 +43,39 @@ public class GreyscaleImage {
      */
     public void fill(int value) {
         Arrays.fill(a, value);
+    }
+    
+    public void multiply(int factor) {
+        
+        for (int i = 0; i < nPixels; i++) {
+            a[i] *= factor;
+        }
+    }
+    
+    public void divide(int number) {
+        
+        for (int i = 0; i < nPixels; i++) {
+            a[i] /= number;
+        }
+    }
+    
+    public void normalizeToMax255() {
+        
+        int max = MiscMath.findMax(a);
+        if (max == 0) {
+            return;
+        }
+        int maxIdx = MiscMath.findYMaxIndex(a);
+        int c = getCol(maxIdx);
+        int r = getRow(maxIdx);
+        
+        double factor = 255./max;
+        
+        for (int i = 0; i < nPixels; i++) {
+            double v = a[i] * factor;
+            a[i] = (int)v;
+        }
+        
     }
     
     public void setValue(int col, int row, int value) {

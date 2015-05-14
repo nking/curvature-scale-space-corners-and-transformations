@@ -206,4 +206,39 @@ public class MatrixUtilTest {
         
         assertTrue(Arrays.equals(expected, c));
     }
+    
+    @Test
+    public void testTranspose() throws Exception {
+        
+        /*
+        100  101  1    100  200
+        200  201  1    101  201
+                        1    1
+        */
+        float[][] bb = new float[2][];
+        bb[0] = new float[]{100, 101, 1};
+        bb[1] = new float[]{200, 201, 1};
+        
+        float[][] expected = new float[3][];
+        expected[0] = new float[]{100, 200};
+        expected[1] = new float[]{101, 201};
+        expected[2] = new float[]{1, 1};
+        
+        float[][] cc = MatrixUtil.transpose(bb);
+        
+        for (int i = 0; i < cc.length; i++) {
+            for (int j = 0; j < cc[i].length; j++) {
+                assertTrue(expected[i][j] == cc[i][j]);
+            }
+        }
+        
+        float[][] dd = MatrixUtil.transpose(cc);
+        
+        for (int i = 0; i < dd.length; i++) {
+            for (int j = 0; j < dd[i].length; j++) {
+                assertTrue(bb[i][j] == dd[i][j]);
+            }
+        }
+        
+    }
 }

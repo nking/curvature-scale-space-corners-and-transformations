@@ -457,46 +457,65 @@ public class MiscMathTest extends TestCase {
         }
     }
     
-    /**
-     * Test of findMax method, of class MiscMath.
-     */
-    public void testFindMax_floatArr() {
+    public void testNumberOfBits() throws Exception {
+        
+        for (int i = -256; i >= 0; i--) {
+            String bitstring = Integer.toBinaryString(i);
+            int expected = bitstring.length();
+            int result = MiscMath.numberOfBits(i);
+            assertTrue(expected == result);
+        }
+        
+        for (int i = 0; i <= 256; i++) {
+            String bitstring = Integer.toBinaryString(i);
+            int expected = bitstring.length();
+            int result = MiscMath.numberOfBits(i);
+            assertTrue(expected == result);
+        }
+    }
+    
+    public void testBitReverse() throws Exception {
+                
+        int max = 1 << 4;
+        int nBits = MiscMath.numberOfBits(max);
+        
+        for (int i = 0; i <= max; i++) {
+            
+            String bitstring = Integer.toBinaryString(i);
+            while (bitstring.length() < nBits) {
+                bitstring = "0" + bitstring;
+            }
+            char[] revBitstring = bitstring.toCharArray();
+            for (int ii = 0; ii < (bitstring.length()/2); ii++) {
+                int idx2 = bitstring.length() - ii - 1;
+                char swap = revBitstring[ii];
+                revBitstring[ii] = revBitstring[idx2];
+                revBitstring[idx2] = swap;
+            }
+            
+            String rBitstring = String.valueOf(revBitstring);
+            
+            int rev = Integer.parseInt(rBitstring, 2);
+            
+            int result = MiscMath.bitReverse(i, nBits);
+            
+            assertTrue(rev == result);
+        }
+        
+    }
+    
+    public void testIsAPowerOf2() throws Exception {
 
+        assertTrue(MiscMath.isAPowerOf2(2));
+        
+        assertTrue(MiscMath.isAPowerOf2(1<<2));
+        
+        assertTrue(MiscMath.isAPowerOf2(1<<7));
+        
+        assertFalse(MiscMath.isAPowerOf2(71));
+        
+        assertFalse(MiscMath.isAPowerOf2(17));
     }
 
-    /**
-     * Test of findMax method, of class MiscMath.
-     */
-    public void testFindMax_intArr() {
 
-    }
-
-    /**
-     * Test of findMin method, of class MiscMath.
-     */
-    public void testFindMin() {
-
-    }
-
-    /**
-     * Test of findYMinIndex method, of class MiscMath.
-     */
-    public void testFindYMinIndex() {
-
-    }
-
-    /**
-     * Test of findYMaxIndex method, of class MiscMath.
-     */
-    public void testFindYMaxIndex_floatArr() {
-
-    }
-
-    /**
-     * Test of findYMaxIndex method, of class MiscMath.
-     */
-    public void testFindYMaxIndex_floatArr_int() {
-
-    }
-   
 }

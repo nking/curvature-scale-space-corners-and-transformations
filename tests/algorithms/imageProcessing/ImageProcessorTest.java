@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Complex;
+import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;
 import junit.framework.TestCase;
@@ -668,5 +670,87 @@ public class ImageProcessorTest extends TestCase {
         
         ImageProcessor.printImageColorContrastStats(img, 161, 501);
         
+    }
+    
+    public void testFFT2D() throws Exception {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage checkerboard = getCheckboard(8);
+        int result;
+        
+        /*
+        ImageDisplayer.displayImage("checkerboard", checkerboard);
+        
+        result = imageProcessor.FFT2D(checkerboard, 1);
+        
+        assertTrue(result == 1);
+        
+        ImageDisplayer.displayImage("FFT of checkerboard", checkerboard);
+        
+        result = imageProcessor.FFT2D(checkerboard, -1);
+        
+        assertTrue(result == 1);
+        
+        ImageDisplayer.displayImage("FFT^-1 of FFT checkerboard", checkerboard);
+        
+        GreyscaleImage expected = getCheckboard(8);
+        
+        for (int col = 0; col < checkerboard.getWidth(); col++) {
+            for (int row = 0; row < checkerboard.getHeight(); row++) {
+                int v = checkerboard.getValue(col, row);
+                int vExpected = expected.getValue(col, row);
+                assertTrue(v == vExpected);
+            }
+        }
+        */
+        
+        String filePath = ResourceFinder.findFileInTestResources("lena.jpg");        
+        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        
+        int w = img2.getWidth();
+        int h = img2.getHeight();
+        
+        ImageDisplayer.displayImage("lena", img2);
+        
+        Complex[][] cc = imageProcessor.convertImage(img2);
+                
+        Complex[][] ccOut = imageProcessor.apply2DFFT(cc, true);
+        
+        GreyscaleImage img3 = img2.createWithDimensions();
+        
+        imageProcessor.writeToImage(img3, ccOut);
+                           
+        ImageDisplayer.displayImage("FFT of lena", img3);
+        
+        ccOut = imageProcessor.apply2DFFT(ccOut, false);
+        
+        imageProcessor.writeToImage(img3, ccOut);
+        
+        ImageDisplayer.displayImage("FFT^-1 of FFT lena", img3);
+
+        int z = 1;
+        
+    }
+    
+    private GreyscaleImage getCheckboard(int width) {
+        
+        GreyscaleImage checkerboard = new GreyscaleImage(width, width);
+        
+        for (int i = 0; i < checkerboard.getWidth(); i++) {
+            if ((i & 1) == 1) {
+                // odd
+                for (int j = 1; j < checkerboard.getHeight(); j+=2) {
+                    checkerboard.setValue(i, j, 250);
+                }
+            } else {
+                // even
+                for (int j = 0; j < checkerboard.getHeight(); j+=2) {
+                    checkerboard.setValue(i, j, 250);
+                }
+            }
+        }
+        
+        return checkerboard;
     }
 }

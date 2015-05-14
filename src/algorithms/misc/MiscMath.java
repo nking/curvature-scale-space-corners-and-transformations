@@ -878,4 +878,46 @@ public class MiscMath {
         return new int[]{xMin, xMax, yMin, yMax};
     }
 
+    public static int numberOfBits(long i) {
+        
+        if (i == 0) {
+            return 1;
+        }
+        
+        if (i < 0) {
+            i *= -1;
+        }
+        
+        int count = 0;
+        while (i > 0) {
+            i >>= 1L;
+            count++;
+        }
+        return count;
+        
+    }
+    
+    /**
+     * 
+     * @param v
+     * @return 
+     */
+    public static int bitReverse(int v, int nBits) {
+
+        int r = v;
+                
+        int rev = 0;
+        for (int i = 0; i < nBits; i++) {
+            rev = (rev << 1) | (r & 1);
+            r >>= 1;
+        }
+        
+        return rev;
+        
+    }
+    
+    public static boolean isAPowerOf2(int n) {
+        // n XOR n-1
+        return ((n == 0) || ((n & (n - 1)) == 0));
+    }
 }

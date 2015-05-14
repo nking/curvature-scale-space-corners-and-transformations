@@ -91,7 +91,7 @@ public class SetCompareTest extends TestCase {
             < 0.0000001);
         
         assertTrue(Math.abs(
-            scr.numberOverrunDivExpected - (float)nOutside/(float)nExpected)
+            scr.numberOverrunDivExpectedMatchedPoints - (float)nOutside/(float)nExpected)
             < 0.0000001);
         
         assertTrue(scr.nExpectedBorderPoints == borderPoints.size());

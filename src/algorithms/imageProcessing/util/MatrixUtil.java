@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.misc.Complex;
 import org.ejml.simple.*;
 
 /**
@@ -308,6 +309,29 @@ public class MatrixUtil {
         float[][] t = new float[mCols][];
         for (int i = 0; i < mCols; i++) {
             t[i] = new float[mRows];
+        }
+        
+        for (int i = 0; i < mRows; i++) {
+            for (int j = 0; j < mCols; j++) {
+                t[j][i] = m[i][j];
+            }
+        }
+        
+        return t;
+    }
+    
+    public static Complex[][] transpose(Complex[][] m) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        
+        int mRows = m.length;
+        int mCols = m[0].length;
+        
+        Complex[][] t = new Complex[mCols][];
+        for (int i = 0; i < mCols; i++) {
+            t[i] = new Complex[mRows];
         }
         
         for (int i = 0; i < mRows; i++) {
