@@ -1760,12 +1760,12 @@ public class ImageProcessor {
             }
         }
         
-        /*
+        
         //transpose the matrix
         cc = MatrixUtil.transpose(cc);
                 
         // perform FFT by column (originally rows)
-        for (int col = 0; col < cc[0].length; col++) {
+        for (int col = 0; col < cc.length; col++) {
             if (forward) {
                 cc[col] = FFT.fft(cc[col]);
             } else {
@@ -1775,7 +1775,7 @@ public class ImageProcessor {
         
         //transpose the matrix
         cc = MatrixUtil.transpose(cc);
-        */
+        
         
         return cc;
     }
@@ -1800,6 +1800,24 @@ public class ImageProcessor {
         
     }
     
+    public void writePositiveRealToImage(GreyscaleImage img, Complex[][] cc) {
+
+        img.fill(0);
+        
+        // write back to original image
+        for (int col = 0; col < img.getWidth(); col++) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                double re = cc[col][row].re();
+                double a = cc[col][row].abs();
+                double p = cc[col][row].phase();
+                if (re > 0) {
+                    img.setValue(col, row, (int)re);
+                }
+            }
+        }
+        
+    }
+    
     /**
      * write a 2-D complex array from the image
      * 
@@ -1808,9 +1826,12 @@ public class ImageProcessor {
     protected Complex[][] convertImage(GreyscaleImage input) {
               
         // initialize matrix of complex numbers as real numbers from image
-        Complex[][] cc = new Complex[input.getHeight()][];        
+        Complex[][] cc = new Complex[input.getWidth()][];        
+        
         for (int col = 0; col < input.getWidth(); col++) {
-            cc[col] = new Complex[input.getHeight()];     
+            
+            cc[col] = new Complex[input.getHeight()];
+            
             for (int row = 0; row < input.getHeight(); row++) {
                 cc[col][row] = new Complex(input.getValue(col, row), 0);
             }
@@ -1819,5 +1840,223 @@ public class ImageProcessor {
         return cc;
     }
    
+    /**
+     * NOT READY FOR USE YET
+     * 
+     * @param input 
+     */
+    public void applyDeconvolution(GreyscaleImage input) throws IOException {
+        
+        //TODO NOT READY FOR USE YET... 
+        
+        CannyEdgeFilter cef = new CannyEdgeFilter();
+        
+        // note, this is not scaled for total sum = 1 yet
+        GreyscaleImage psf = cef.createGradientPSFForTesting();
+        double sum = 0;
+        for (int col = 0; col < psf.getWidth(); col++) {
+            for (int row = 0; row < psf.getHeight(); row++) {
+                int v = psf.getValue(col, row);
+                sum += v;
+            }
+        }
+        psf = padToNearestPowerOf2Dimensions(psf);
+        Complex[][] psfNorm = new Complex[psf.getWidth()][];
+        for (int col = 0; col < psf.getWidth(); col++) {
+            psfNorm[col] = new Complex[psf.getHeight()];
+            for (int row = 0; row < psf.getHeight(); row++) {
+                int v = psf.getValue(col, row);
+                double vn = v / sum;
+                psfNorm[col][row] = new Complex(vn, 0);
+            }
+        }
+        psfNorm = apply2DFFT(psfNorm, true);
+        
+        // filter out low values?
+        for (int i = 0; i < psfNorm.length; i++) {
+            for (int j = 0; j < psfNorm[0].length; j++) {
+                double r = psfNorm[i][j].re();
+                if (r < 0.1) {
+                    psfNorm[i][j] = new Complex(0, 0);
+                }
+            }
+        }
+        
+        GreyscaleImage img0 = padToNearestPowerOf2Dimensions(input);
+                
+        ImageDisplayer.displayImage("before deconv", img0);
+        
+        Complex[][] imgCC = convertImage(img0);
+                
+        Complex[][] imgFFT = apply2DFFT(imgCC, true);
+        
+        /*
+        complex division:
+           a times reciprocal of b
+        
+        reciprocal:
+            double scale = re*re + im*im;
+            r = Complex(re / scale, -im / scale);
+        
+        times:
+            real = a.re * b.re - a.im * b.im;
+            imag = a.re * b.im + a.im * b.re;
+        */
+        
+        Complex[][] ccDeconv = new Complex[imgFFT.length][];
+        int pXH =  psfNorm.length >> 1;
+        int pYH =  psfNorm[0].length >> 1;
+        for (int col = 0; col < imgFFT.length; col++) {
+            
+            ccDeconv[col] = new Complex[imgFFT[0].length];
+            
+            for (int row = 0; row < imgFFT[0].length; row++) {
+                
+                Complex v = imgFFT[col][row];
+                
+                // for convolution, each element of kernel and neighboring
+                // pixel (including center pixel) were multiplied and result
+                // is given to center pixel.
+                
+                // for deconvolution, the sums of the division are calculated
+                
+                Complex pixSum = new Complex(v.re(), v.im());
+                
+                for (int pXIdx = 0; pXIdx < psfNorm.length; pXIdx++) {
+                    int pixXIdx = col + (pXIdx - pXH);
+                    
+                    // correct for out of bounds of image
+                    if (pixXIdx < 0) {
+                        // replicate
+                        pixXIdx = -1*pixXIdx - 1;
+                        if (pixXIdx > (img0.getWidth() - 1)) {
+                            pixXIdx = img0.getWidth() - 1;
+                        }
+                    } else if (pixXIdx >= img0.getWidth()) {
+                        int diff = pixXIdx - img0.getWidth();
+                        pixXIdx = img0.getWidth() - diff - 1;
+                        if (pixXIdx < 0) {
+                            pixXIdx = 0;
+                        }
+                    }
+                    
+                    for (int pYIdx = 0; pYIdx < psfNorm.length; pYIdx++) {
+                        
+                        if (psfNorm[pXIdx][pYIdx].abs() == 0) {
+                            continue;
+                        }                        
+                        
+                        int pixYIdx = row + (pYIdx - pYH);
+        
+                        // correct for out of bounds of image
+                        if (pixYIdx < 0) {
+                            // replicate
+                            pixYIdx = -1*pixYIdx - 1;
+                            if (pixYIdx > (img0.getHeight() - 1)) {
+                                pixYIdx = img0.getHeight() - 1;
+                            }
+                        } else if (pixYIdx >= img0.getHeight()) {
+                            int diff = pixYIdx - img0.getHeight();
+                            pixYIdx = img0.getHeight() - diff - 1;
+                            if (pixYIdx < 0) {
+                                pixYIdx = 0;
+                            }
+                        }
+                        
+                        Complex vk = imgFFT[pixXIdx][pixYIdx];
+                        
+                        if (vk.abs() == 0) {
+                            continue;
+                        }
+                                                
+                        Complex kRecip = psfNorm[pXIdx][pYIdx].reciprocal();
+
+                        Complex vDivPSF = vk.times(kRecip);
+                                                            
+                        pixSum = pixSum.plus(vDivPSF);                                                                        
+                    }
+                }
+       
+               
+                ccDeconv[col][row] = pixSum;
+            }
+        }
+        
+        GreyscaleImage img2 = img0.createWithDimensions();
+        
+        writePositiveRealToImage(img2, ccDeconv);
+        
+        ImageDisplayer.displayImage("FFT(img0)/FFT(PSF)", img2);
+        
+        
+        Complex[][] inverse = apply2DFFT(ccDeconv, false);
+        
+        GreyscaleImage img4 = img0.createWithDimensions();
+        
+        writePositiveRealToImage(img4, inverse);
+        
+        ImageDisplayer.displayImage("ifft of FFT(img0)/FFT(PSF)", img4);  
+       
+        
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                double r = inverse[i][j].re();
+                int v = input.getValue(i, j);
+                if (v > 0 && r > 0) {
+                    // apply it to the original image?  r*v or v?
+                    
+                    input.setValue(i, j, (int)r);
+                } else {
+                    input.setValue(i, j, 0);
+                }
+            }
+        }        
+    }
     
+    public GreyscaleImage padToNearestPowerOf2Dimensions(GreyscaleImage img) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        boolean xIsPowerOf2 = MiscMath.isAPowerOf2(w);
+        boolean yIsPowerOf2 = MiscMath.isAPowerOf2(h);
+        if (xIsPowerOf2 && yIsPowerOf2) {
+            return img;
+        }
+        
+        int w2 = w;
+        int h2 = h;
+        if (!xIsPowerOf2) {
+            double p2X = Math.ceil(Math.log(w)/Math.log(2));
+            w2 = (1 << (int)p2X);
+        }
+        if (!yIsPowerOf2) {
+            double p2Y = Math.ceil(Math.log(h)/Math.log(2));
+            h2 = (1 << (int)p2Y);
+        }
+        
+        GreyscaleImage img2 = new GreyscaleImage(w2, h2);
+            
+        for (int col = 0; col < w; col++) {
+            for (int row = 0; row < h; row++) {
+                int v = img.getValue(col, row);
+                img2.setValue(col, row, v);
+            }
+            if (h2 > h) {
+                for (int row = h; row < h2; row++) {
+                    img2.setValue(col, row, 0);
+                }
+            }
+        }
+                    
+        if (!xIsPowerOf2) {
+            for (int col = w; col < w2; col++) {
+                for (int row = 0; row < h2; row++) {
+                    img2.setValue(col, row, 0);
+                }
+            }
+        }
+            
+        return img2;
+    }
 }

@@ -36,16 +36,16 @@ public class SkylineDownhillSimplexTest extends TestCase {
     public void test0() throws Exception {
         
         boolean useAllImages = true;
-        boolean useBlueSkyImages = true;
+        boolean useBlueSkyImages = false;
         
         String[] fileNames;
         
         if (useAllImages) {
             fileNames = new String[]{
-                /*"brown_lowe_2003_image1.jpg",
-                "venturi_mountain_j6_0001.png",*/
+                "brown_lowe_2003_image1.jpg",
+                "venturi_mountain_j6_0001.png",
                 "seattle.jpg",
-                /*"arches.jpg",
+                "arches.jpg",
                 "stinson_beach.jpg",
                 "cloudy_san_jose.jpg",
                 "stonehenge.jpg",
@@ -53,7 +53,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
                 "halfdome.jpg",
                 "costa_rica.jpg",
                 "new-mexico-sunrise_w725_h490.jpg",
-                "arizona-sunrise-1342919937GHz.jpg"*/
+                "arizona-sunrise-1342919937GHz.jpg"
             };
         } else {
             if (useBlueSkyImages) {
@@ -139,7 +139,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
             
         }
         
-        SkylineANDedClauses2 skylineANDedClauses = new SkylineANDedClauses2();
+        SkylineANDedClauses skylineANDedClauses = new SkylineANDedClauses();
         ANDedClauses[] clauses;
         ANDedClauses[] coeffLowerLimits;
         ANDedClauses[] coeffUpperLimits;
@@ -186,8 +186,11 @@ public class SkylineDownhillSimplexTest extends TestCase {
                 expectedSky.get(i), points0, expectedBorder, outputBorderPoints);
                             
             resultsBeforeList.add(results);
-            
+                        
             String fileNameRoot = fileNameRoots.get(i);
+            
+            System.out.println(fileNameRoot + " before optimization: " 
+                + results.toString());
             
             try {
                 String dirPath = ResourceFinder.findDirectory("bin");
@@ -222,9 +225,6 @@ System.out.println("SIMPLEX");
         
         for (int i = 0; i < images.size(); i++) {
             
-            //SkylineANDedClauses skylineANDedClauses2 = new SkylineANDedClauses();
-            //ANDedClauses[] clauses2 = skylineANDedClauses2.getAllClauses();
-        
             skylineExtractor.findClouds(seedPoints.get(i), 
                 excludePoints.get(i), images.get(i), thetaImages.get(i),
                 fit.clauses);

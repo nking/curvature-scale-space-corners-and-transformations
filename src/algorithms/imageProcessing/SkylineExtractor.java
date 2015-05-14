@@ -8,6 +8,7 @@ import algorithms.compGeometry.PointInPolygon;
 import algorithms.imageProcessing.optimization.ANDedClauses;
 import algorithms.imageProcessing.optimization.ColorData;
 import algorithms.imageProcessing.optimization.SKYCONDITIONAL;
+import algorithms.imageProcessing.optimization.SkylineANDedClauses;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -1744,6 +1745,16 @@ static int outImgNum=0;
     void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
         ImageExt originalColorImage, GreyscaleImage thetaImg) {
         
+        if (true) {
+            
+            SkylineANDedClauses skylineANDedClauses = new SkylineANDedClauses();
+            
+            findClouds(skyPoints, excludePoints, originalColorImage, 
+                thetaImg, skylineANDedClauses.getAllClauses());
+            
+            return;
+        }
+        
         int maskWidth = thetaImg.getWidth();
         int maskHeight = thetaImg.getHeight();
         
@@ -2039,9 +2050,9 @@ log.fine("FILTER 13");
     }
 
 private boolean check(int vX, int xOffset, int vY, int yOffset) {
-    if (((vX + xOffset)>=281) && ((vX + xOffset)<=285) && ((vY + yOffset)==73)) {
-        return true;
-    }
+    //if (((vX + xOffset)>=281) && ((vX + xOffset)<=285) && ((vY + yOffset)==73)) {
+    //    return true;
+    //}
     return false;
 }
 
@@ -2087,7 +2098,6 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
      * 
      * @param skyPoints
      * @param originalColorImage
-     * @param mask
      */
     public void findClouds(Set<PairInt> skyPoints, Set<PairInt> excludePoints,
         ImageExt originalColorImage, GreyscaleImage thetaImage, 
@@ -2147,12 +2157,7 @@ private boolean check(int vX, int xOffset, int vY, int yOffset) {
                 
                 if (visited.contains(vPoint) || /*skyPoints.contains(vPoint) ||*/
                     excludePoints.contains(vPoint)) {
-if (check(vX, xOffset, vY, yOffset)) {
-System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") "
-+  "isVisited=" + visited.contains(vPoint) 
-+ " isExcluded=" + excludePoints.contains(vPoint));
-int z = 1;
-}
+
                     continue;
                 }
 
@@ -2267,9 +2272,7 @@ System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") rejected by 
                     && (diffCIEX < 0.009) && (diffCIEY < 0.009)) {
                     // this is a sky point
 log.fine("FILTER 02");
-if (check(vX, xOffset, vY, yOffset)) {
-System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") is sky ");
-}
+
                 //} else if (isSolarYellow) {
                     // this is a sky point
 //log.fine("FILTER 03");
@@ -2278,26 +2281,19 @@ System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") is sky ");
                     // evaluate clauses that evaluate to 'T' when the pixel 
                     // looks like a border (non-sky) pixel
                     boolean isNotSky = false;
-int cn=0;
+
                     for (ANDedClauses clause : clauses) {
                         if (clause.evaluate(data)) {
                             isNotSky = true;
-if (check(vX, xOffset, vY, yOffset)) {
-System.out.println("(" + (vX + xOffset) + "," + (vY + yOffset) + ") rejected by clause " + cn);
-}
                             break;
                         }
-cn++;
                     }
             
                     if (isNotSky) {
                         continue;
                     }
                 }
-
-if (check(vX, xOffset, vY, yOffset)) {
-System.out.println(" add to sky points: (" + (vX + xOffset) + "," + (vY + yOffset) + ") ");
-}                
+                
                 skyPoints.add(vPoint);
 
                 boolean doNotAddToStack = false;
@@ -3605,6 +3601,19 @@ debugPlot(set, colorImg, xOffset, yOffset,
             skyRowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
         
         return outputEmbeddedGapPoints;
+    }
+    
+    protected void extendSkylineToGradientXY(Set<PairInt> skyPoints, 
+        Image colorImg, GreyscaleImage mask, 
+        GreyscaleImage gradientXY) {
+        
+        Set<PairInt> embedded = new HashSet<PairInt>();
+        Set<PairInt> borderPoints = new HashSet<PairInt>();
+        SkylineExtractor.getEmbeddedAndBorderPoints(skyPoints,
+            gradientXY.getWidth(), gradientXY.getHeight(), embedded, 
+            borderPoints);
+
+        //TODO: paused here
     }
     
     private void correctSkylineForSun(Set<PairInt> sunPoints, 

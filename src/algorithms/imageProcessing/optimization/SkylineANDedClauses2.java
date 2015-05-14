@@ -134,7 +134,7 @@ public class SkylineANDedClauses2 {
         ANDedClauses c0Upper = c0.copy();
         c0Lower.coefficients[0] = 0.00001f;
         c0Upper.coefficients[0] = 0.2f;
-        c0Lower.coefficients[1] = 0.1f;
+        c0Lower.coefficients[1] = 0.75f;
         c0Upper.coefficients[1] = 10.0f;
         
         /*
@@ -195,7 +195,7 @@ public class SkylineANDedClauses2 {
         c2Lower.coefficients[1] = 0.5f;
         c2Upper.coefficients[1] = 5.0f;
         
-        /*
+        
         //} else if (
         //08         (diffCIEX > 0.005)
         //09         ((diffCIEX/localSky.getStdDevCIEX()) > 1.5)         RANGE 0.5 to 5.
@@ -228,17 +228,17 @@ public class SkylineANDedClauses2 {
         c4Upper.coefficients[0] = 0.5f;
         c4Lower.coefficients[1] = 0.5f;
         c4Upper.coefficients[1] = 5.0f;
-        */
+        
         
         generalClausesLowerLimits = new ANDedClauses[]{
-            c0Lower, c1Lower, c2Lower/*, c3Lower, c4Lower*/
+            c0Lower, c1Lower, c2Lower, c3Lower, c4Lower
         };
         
         generalClausesUpperLimits = new ANDedClauses[]{
-            c0Upper, c1Upper, c2Upper/*, c3Upper, c4Upper*/
+            c0Upper, c1Upper, c2Upper, c3Upper, c4Upper
         };
     
-        generalClauses = new ANDedClauses[]{c0, c1, c2/*, c3, c4*/
+        generalClauses = new ANDedClauses[]{c0, c1, c2, c3, c4
         };
     }
     

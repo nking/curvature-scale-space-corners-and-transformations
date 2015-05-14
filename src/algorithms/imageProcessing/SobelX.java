@@ -18,7 +18,7 @@ public class SobelX implements IKernel {
                         | -1  0  1 |
         
            this is the n=2 binomial filter for a Gaussian first derivative,
-           that is sigma = sqrt(2)/2 = 0.707
+           that is sigma = sqrt(2)/2 = 0.707 = [1, 0, -1]
         */
         Kernel kernel = new Kernel(3, 3);
         kernel.setValue(0, 0, -1);

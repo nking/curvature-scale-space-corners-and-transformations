@@ -733,6 +733,28 @@ public class ImageProcessorTest extends TestCase {
         
     }
     
+    public void testDeconvolve() throws Exception {
+        
+        // NOT READY FOR USE YET
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        String filePath = ResourceFinder.findFileInTestResources("test_for_deconvolve2.png");        
+        GreyscaleImage img0 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        
+        imageProcessor.applyDeconvolution(img0);
+        imageProcessor.applyDeconvolution(img0);
+        imageProcessor.applyDeconvolution(img0);
+                
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String filePath2 = dirPath + "/tmpWiener.png";
+            
+        ImageIOHelper.writeOutputImage(filePath2, img0);
+        
+        int z = 1;
+        
+    }
+    
     private GreyscaleImage getCheckboard(int width) {
         
         GreyscaleImage checkerboard = new GreyscaleImage(width, width);

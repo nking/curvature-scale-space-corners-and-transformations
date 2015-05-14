@@ -158,7 +158,7 @@ public class FFT {
     /**
      * perform FFT on x using the Cormen et al. pseudocode for iterative FFT
      */
-    protected double[] fft(int[] x) {
+    public double[] fft(int[] x) {
 
         if (x == null || x.length == 0) {
             throw new IllegalArgumentException("xReal cannot be null or empty");

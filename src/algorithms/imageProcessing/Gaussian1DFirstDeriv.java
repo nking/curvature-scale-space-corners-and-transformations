@@ -323,7 +323,7 @@ public class Gaussian1DFirstDeriv {
   
     protected static float[] getBinomialKernelSigmaZeroPointFive() {
         //1 -1 norm=0.5
-        return new float[]{0.5f, -0.0f, -0.5f};
+        return new float[]{0.5f, 0.0f, -0.5f};
     }
    
     protected static float[] getBinomialKernelSigmaZeroPointSevenOne() {

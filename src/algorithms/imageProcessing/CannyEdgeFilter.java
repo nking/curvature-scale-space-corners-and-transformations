@@ -417,9 +417,9 @@ public class CannyEdgeFilter {
      * @param input
      * @return 
      */
-    private GreyscaleImage getGradientXID(final GreyscaleImage input) {
+    private GreyscaleImage getGradientX1D(final GreyscaleImage input) {
                 
-        return getGradientID(input, true);
+        return getGradient1D(input, true);
     }
     
     /**
@@ -429,9 +429,9 @@ public class CannyEdgeFilter {
      * @param input
      * @return 
      */
-    private GreyscaleImage getGradientYID(final GreyscaleImage input) {
+    private GreyscaleImage getGradientY1D(final GreyscaleImage input) {
                 
-        return getGradientID(input, false);
+        return getGradient1D(input, false);
     }
     
     /**
@@ -441,7 +441,7 @@ public class CannyEdgeFilter {
      * @param input
      * @return 
      */
-    private GreyscaleImage getGradientID(final GreyscaleImage input, 
+    private GreyscaleImage getGradient1D(final GreyscaleImage input, 
         boolean calculateForX) {
         
         log.fine("getGradientID calculateForX=" + calculateForX);
@@ -455,6 +455,24 @@ public class CannyEdgeFilter {
         apply1DKernelToImage(output, kernel, calculateForX);
         
         return output;
+    }
+    
+    public GreyscaleImage createGradientPSFForTesting() {
+                
+        float[] k = Gaussian1D.getBinomialKernelSigmaZeroPointFive();
+        
+        GreyscaleImage gX = new GreyscaleImage(3, 3);
+        gX.setValue(1, 1, 127);        
+        apply1DKernelToImage(gX, k, true);
+        
+        GreyscaleImage gY = new GreyscaleImage(3, 3);
+        gY.setValue(1, 1, 127);
+        apply1DKernelToImage(gY, k, false);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage g = imageProcessor.combineConvolvedImages(gX, gY);
+        
+        return g;
     }
     
     private void apply1DKernelToImage(final GreyscaleImage input, 
@@ -643,9 +661,9 @@ public class CannyEdgeFilter {
             
         } else {
         
-            gX = getGradientXID(img);
+            gX = getGradientX1D(img);
             
-            gY = getGradientYID(img);
+            gY = getGradientY1D(img);
             
             removeOnePixelSpanningBorders(gX);
             

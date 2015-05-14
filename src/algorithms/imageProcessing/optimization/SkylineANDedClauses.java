@@ -134,9 +134,9 @@ public class SkylineANDedClauses {
         ANDedClauses c0Lower = c0.copy();
         ANDedClauses c0Upper = c0.copy();
         c0Lower.coefficients[0] = 0.00001f;
-        c0Upper.coefficients[0] = 0.2f;
+        c0Upper.coefficients[0] = 0.01f;
         c0Lower.coefficients[1] = 2.5f;
-        c0Upper.coefficients[1] = 30.0f;
+        c0Upper.coefficients[1] = 15.0f;
         
         /*
         c1      
@@ -169,7 +169,7 @@ public class SkylineANDedClauses {
         c1Lower.coefficients[1] = 0.01f;
         c1Upper.coefficients[1] = 0.5f;
         c1Lower.customCoefficientVariables.put(Integer.valueOf(4), 
-            Float.valueOf(0.2f));
+            Float.valueOf(1.0f));
         c1Upper.customCoefficientVariables.put(Integer.valueOf(4), 
             Float.valueOf(10.0f));
         c1Lower.customCoefficientVariables.put(Integer.valueOf(5), 
@@ -179,7 +179,7 @@ public class SkylineANDedClauses {
         c1Lower.customCoefficientVariables.put(Integer.valueOf(6), 
             Float.valueOf(-10.0f));
         c1Upper.customCoefficientVariables.put(Integer.valueOf(6), 
-            Float.valueOf(-0.5f));
+            Float.valueOf(2.0f));
         
         /* 
         c3,c4,c5,c6        
@@ -211,10 +211,10 @@ public class SkylineANDedClauses {
         ANDedClauses c2Upper = c2.copy();
         c2Lower.coefficients[0] = 0.00001f;
         c2Upper.coefficients[0] = 0.5f;
-        c2Lower.coefficients[1] = 1.1f;
+        c2Lower.coefficients[1] = 0.9f;
         c2Upper.coefficients[1] = 10.0f;
-        c2Lower.coefficients[2] = 0.00001f;
-        c2Upper.coefficients[2] = 0.05f;
+        c2Lower.coefficients[2] = 0.9f;
+        c2Upper.coefficients[2] = 10.0f;
         c2Lower.coefficients[3] = 0.2f;
         c2Upper.coefficients[3] = 100.0f;
         

@@ -143,7 +143,7 @@ public class SkylineDownhillSimplex {
         SkylineFits[] fits = createStarterPoints(skylineExtractor,
             nStarterPoints);
         
-        int nMaxIter = 100;
+        int nMaxIter = 5;//100;
         int nIter = 0;
         
         int bestFitIdx = 0;
@@ -165,7 +165,7 @@ public class SkylineDownhillSimplex {
             // best matches should be at smaller indexes
             Arrays.sort(fits, 0, (fits.length - 1));
             
-            if ((nIter == 0) && (nStarterPoints > 10)) {
+            if ((nIter == 0) && (nStarterPoints > 3)) {
                 nStarterPoints = 10;
                 fits = Arrays.copyOf(fits, nStarterPoints);
                 worstFitIdx = nStarterPoints - 1;
