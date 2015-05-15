@@ -2000,12 +2000,11 @@ public class ImageProcessor {
         
         for (int i = 0; i < input.getWidth(); i++) {
             for (int j = 0; j < input.getHeight(); j++) {
-                double r = inverse[i][j].re();
+                double f = inverse[i][j].re();
                 int v = input.getValue(i, j);
-                if (v > 0 && r > 0) {
-                    // apply it to the original image?  r*v or v?
-                    
-                    input.setValue(i, j, (int)r);
+                if (v > 0 && f > 0) {
+                    // apply it to the original image?  f*v or v or f?
+                    input.setValue(i, j, v);
                 } else {
                     input.setValue(i, j, 0);
                 }
