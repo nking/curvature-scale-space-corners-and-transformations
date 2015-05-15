@@ -1849,6 +1849,19 @@ public class ImageProcessor {
         
         //TODO NOT READY FOR USE YET... 
         
+        applyWienerFilter(input);
+       
+    }
+    
+    /**
+     * NOT READY FOR USE YET
+     * 
+     * @param input 
+     */
+    public void applyWienerFilter(GreyscaleImage input) throws IOException {
+        
+        //TODO NOT READY FOR USE YET... 
+        
         CannyEdgeFilter cef = new CannyEdgeFilter();
         
         // note, this is not scaled for total sum = 1 yet
