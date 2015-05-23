@@ -262,6 +262,31 @@ public aspect CurvatureAspect {
         }
     }
 
+    after(ImageExt clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey,
+        Set<PairInt> sunPoints) 
+        returning(double[] ellipseFits) :
+        execution(public double[] SkylineExtractor.findSunPoints(
+            ImageExt, int, int, boolean, Set<PairInt>))
+        && args(clrImage, xOffset, yOffset, skyIsDarkGrey, sunPoints)
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
+
+        ImageExt clr = (ImageExt)clrImage.copyImage();
+
+        log2.info("plotting " + sunPoints.size() + " sun points");
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(sunPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_sun_points_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
     before(Set<PairInt> skyPoints, Set<PairInt> excludePoints, 
         ImageExt originalColorImage, GreyscaleImage mask
         ) 
@@ -328,12 +353,13 @@ private static int n3 = 0;
 
     after(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
         ImageExt originalColorImage, int xOffset, int yOffset,
-        boolean skyIsDarkGrey)
-        returning(Set<PairInt> rainbowPoints) :
-        execution(Set<PairInt> SkylineExtractor.findRainbowPoints(
-            Set<PairInt>, Set<PairInt>, ImageExt, int, int, boolean) )
+        boolean skyIsDarkGrey, Set<PairInt> rainbowPoints)
+        returning(float[] coeff) :
+        execution(float[] SkylineExtractor.findRainbowPoints(
+            Set<PairInt>, Set<PairInt>, ImageExt, int, int, boolean,
+            Set<PairInt>) )
         && args(skyPoints, reflectedSunRemoved, originalColorImage, 
-            xOffset, yOffset, skyIsDarkGrey)
+            xOffset, yOffset, skyIsDarkGrey, rainbowPoints)
 	    && target(algorithms.imageProcessing.SkylineExtractor) {
 
         if (rainbowPoints.isEmpty()) {
@@ -517,7 +543,7 @@ private static int n3 = 0;
     after(GreyscaleImage gradientXY, Set<PairInt> skyPoints, 
         Set<PairInt> excludeThesePoints)
         returning() :
-        execution(public int SkylineExtractor.extractSkyFromGradientXY(
+        execution(public GreyscaleImage SkylineExtractor.extractSkyFromGradientXY(
             GreyscaleImage, Set<PairInt>, Set<PairInt>) )
         && args(gradientXY, skyPoints, excludeThesePoints)
 	    && target(algorithms.imageProcessing.SkylineExtractor) {

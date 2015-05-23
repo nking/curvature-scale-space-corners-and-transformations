@@ -1002,6 +1002,56 @@ public class ImageProcessor {
         }
     }
     
+    public void removeSpurs(Set<PairInt> points, int width, int height) {
+       
+        int nIterMax = 1000;
+        int nIter = 0;
+        int numRemoved = 1;
+        
+        while ((nIter < nIterMax) && (numRemoved > 0)) {
+            
+            numRemoved = 0;
+            
+            Set<PairInt> rm = new HashSet<PairInt>();
+            
+            for (PairInt p : points) {
+                
+                // looking for pixels having only one neighbor who subsequently
+                // has only 1 or 2 neighbors
+                // as long as neither are connected to image boundaries
+
+                PairInt neighbor = getIndexIfOnlyOneNeighbor(points, p, 
+                    width, height);
+            
+                if (neighbor != null) {
+                    
+                    int nn = count8RegionNeighbors(points, neighbor, width,
+                        height);
+
+                    if (nn <= 2) {
+                        rm.add(p);
+                        numRemoved++;
+                    }
+                } else {
+                    int n = count8RegionNeighbors(points, p, width, height);
+                    if (n == 0) {
+                        rm.add(p);
+                        numRemoved++;
+                    }
+                }
+            }
+            
+            for (PairInt p : rm) {
+                points.remove(p);
+            }
+            
+            log.fine("numRemoved=" + numRemoved + " nIter=" + nIter);
+            
+            nIter++;
+        }
+      
+    }
+    
     protected int count8RegionNeighbors(GreyscaleImage input, int x, int y) {
         
         int width = input.getWidth();
@@ -1021,6 +1071,35 @@ public class ImageProcessor {
                 }
                 int v = input.getValue(c, r);
                 if (v > 0) {
+                    count++;
+                }
+            }
+        }
+        
+        return count;
+    }
+    
+    protected int count8RegionNeighbors(Set<PairInt> points, PairInt point, 
+        int width, int height) {
+        
+        int x = point.getX();
+        int y = point.getY();
+        
+        int count = 0;
+        
+        for (int c = (x - 1); c <= (x + 1); c++) {
+            if ((c < 0) || (c > (width - 1))) {
+                continue;
+            }
+            for (int r = (y - 1); r <= (y + 1); r++) {
+                if ((r < 0) || (r > (height - 1))) {
+                    continue;
+                }
+                if ((c == x) && (r == y)) {
+                    continue;
+                }
+                PairInt tmp = new PairInt(c, r);
+                if (points.contains(tmp)) {
                     count++;
                 }
             }
@@ -1068,6 +1147,44 @@ public class ImageProcessor {
         int index = input.getIndex(xNeighbor, yNeighbor);
         
         return index;
+    }
+    
+    protected PairInt getIndexIfOnlyOneNeighbor(Set<PairInt> points, 
+        PairInt point, int width, int height) {
+        
+        int x = point.getX();
+        int y = point.getY();
+        
+        int count = 0;
+        PairInt neighbor = null;
+        
+        for (int c = (x - 1); c <= (x + 1); c++) {
+            if ((c < 0) || (c > (width - 1))) {
+                continue;
+            }
+            for (int r = (y - 1); r <= (y + 1); r++) {
+                if ((r < 0) || (r > (height - 1))) {
+                    continue;
+                }
+                if ((c == x) && (r == y)) {
+                    continue;
+                }
+                PairInt tmp = new PairInt(c, r);
+                if (points.contains(tmp)) {
+                    if (count > 0) {
+                        return null;
+                    }
+                    neighbor = tmp;
+                    count++;
+                }
+            }
+        }
+        
+        if (count == 0) {
+            return null;
+        }
+                
+        return neighbor;
     }
     
     /**

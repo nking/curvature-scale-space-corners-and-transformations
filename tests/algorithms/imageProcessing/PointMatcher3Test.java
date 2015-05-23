@@ -445,7 +445,7 @@ public class PointMatcher3Test {
             "seattle.jpg",
             "arches.jpg",
             "stinson_beach.jpg",
-            "cloudy_san_jose.jpg",            
+            "cloudy_san_jose.jpg",  
             "stonehenge.jpg",
             "norwegian_mtn_range.jpg",
             "halfdome.jpg",
@@ -453,29 +453,12 @@ public class PointMatcher3Test {
             "new-mexico-sunrise_w725_h490.jpg",
             "arizona-sunrise-1342919937GHz.jpg",
             "sky_with_rainbow.jpg",
-            "sky_with_rainbow2.jpg",
+            //"sky_with_rainbow2.jpg",
             //"30.jpg",
             //"arches_sun_01.jpg",
             //"stlouis_arch.jpg", 
             //"contrail.jpg"
         };
-        /*
-         "brown_lowe_2003_image1.jpg",         fwhm hue=0.14, fwhm saturation=0.16       nsadded=
-         "venturi_mountain_j6_0001.png",       fwhm hue=0.12, fwhm saturation=0.31       nsadded=528 to 118228 points <==== ? contig would revert
-         "seattle.jpg",                        fwhm hue=0.11, fwhm saturation=0.12       nsadded=
-         "arches.jpg",                         fwhm hue=0.11, fwhm saturation=0.29       nsadded=3739 to 217049 points;  contig passes, OK
-         "stinson_beach.jpg",                  fwhm hue=0.11, fwhm saturation=0.37       nsadded=19112 to 63105 points;  contig fixes, OK
-         "cloudy_san_jose.jpg",                fwhm hue=0.11, fwhm saturation=0.15       nsadded=31017 to 163605 points; contig fixes, OK
-         "30.jpg",                             fwhm hue=0.  , fwhm saturation=0.         nsadded=
-         "sky_with_rainbow.jpg",               fwhm hue=0.15, fwhm saturation=0.06,0.46  nsadded=42887 to 117339 points;  contig passes, OK;  other problems
-         "sky_with_rainbow2.jpg",              fwhm hue=0.12, fwhm saturation=0.07       nsadded=547 to 63561 points; contig passes, OK;  other problems
-         "stonehenge.jpg",                     fwhm hue=0.06, fwhm saturation=0.22,0.74  nsadded=178 to 162882 points; contig fixes, OK
-         "norwegian_mtn_range.jpg",            fwhm hue=0.13, fwhm saturation=0.21       nsadded=902 to 124404 points; contig passes, OK;
-         "halfdome.jpg",                       fwhm hue=0.12, fwhm saturation=0.15       nsadded=
-         "costa_rica.jpg",                     fwhm hue=0.06, fwhm saturation=0.33       nsadded=
-         "new-mexico-sunrise_w725_h490.jpg",   fwhm hue=0.16, fwhm saturation=0.15       nsadded=1588 to 295376 points;contig passes, OK;
-         "arizona-sunrise-1342919937GHz.jpg"   fwhm hue=0.11, fwhm saturation=0.21       nsadded=49902 to 231634;contig passes, OK;
-        */
         
         for (String fileName : fileNames) {
             
@@ -498,13 +481,17 @@ public class PointMatcher3Test {
 
             int nPreferredCorners = 100;
             int nCrit = 500;
+            
+            SkylineExtractor.setDebugName(fileName);
 
             CurvatureScaleSpaceCornerDetector detector = new
                 CurvatureScaleSpaceCornerDetector(img1);
+            
             detector.useOutdoorModeAndExtractSkyline();
             //detector.findCornersIteratively(nPreferredCorners, nCrit);
+            SkylineExtractor.setDebugName(fileName);
             detector.findCorners();
-            edges1 = detector.getEdgesInOriginalReferenceFrame();
+            /*edges1 = detector.getEdgesInOriginalReferenceFrame();
             points1 = detector.getCornersInOriginalReferenceFrame();
 
             Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
@@ -521,7 +508,7 @@ public class PointMatcher3Test {
             String outFilePath = dirPath + "/tmp1_edges_and_corners_" + 
                 fileName + ".png";
 
-            ImageIOHelper.writeOutputImage(outFilePath, image1);
+            ImageIOHelper.writeOutputImage(outFilePath, image1);*/
         }
     }
     
@@ -825,7 +812,7 @@ public class PointMatcher3Test {
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         sr.setSeed(seed);
-        
+
         int nScenePoints = 70;
         
         int xRange = 400;

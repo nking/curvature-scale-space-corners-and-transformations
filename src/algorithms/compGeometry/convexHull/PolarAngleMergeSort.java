@@ -47,7 +47,7 @@ public class PolarAngleMergeSort {
         
         return nUsable;
     }
-
+    
     public static int sort(int xP0, int yP0, PairIntArray xy) {
 
         if (xy == null) {

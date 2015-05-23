@@ -34,7 +34,7 @@ public class HistogramHolder {
     }
     
     public String plotHistogram(String label, 
-        int outputFileNumber) throws IOException {
+        long outputFileNumber) throws IOException {
                 
         float[] xh = xHist;
         float[] yh = yHistFloat;

@@ -19,6 +19,7 @@ import algorithms.util.LinearRegression;
 import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PolynomialFitter;
 import algorithms.util.ResourceFinder;
 import algorithms.util.ScatterPointPlotterPNG;
@@ -31,6 +32,12 @@ import java.util.logging.Logger;
 public class SkylineExtractor {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
+    
+    public static String debugName = "";
+    public static void setDebugName(String name) {
+        debugName = name;
+    }
+    
      /**
      * using the gradient's theta image, find the sky as the largest set of
      * contiguous 0 values and apply the edge filter to it to reduce the
@@ -170,10 +177,113 @@ public class SkylineExtractor {
             
             return mask;
         }
+        
+        
+        GroupPixelColors allSkyColor = new GroupPixelColors(points,
+            originalColorImage, theta.getXRelativeOffset(), 
+            theta.getYRelativeOffset());
+        
+        boolean skyIsDarkGrey = skyIsDarkGrey(allSkyColor);
+        
+        Set<PairInt> sunPoints = new HashSet<PairInt>();
+        double[] ellipFitParams = findSunPoints(
+            originalColorImage, 
+            theta.getXRelativeOffset(), theta.getYRelativeOffset(),
+            skyIsDarkGrey, sunPoints);
+        
+        double density = (ellipFitParams != null) ?
+            (sunPoints.size()/(2*Math.PI*ellipFitParams[2]*ellipFitParams[3]))
+            : 0;
                 
+        if (density < 0.5) {
+            sunPoints.clear();
+        } else if (ellipFitParams == null) {
+            sunPoints.clear();
+        } else if ((ellipFitParams[2]/ellipFitParams[3])> 6) {
+            sunPoints.clear();
+        }
+
+if (!sunPoints.isEmpty()) {
+System.out.println(" density=" + density +
+" ellipFitParams[2]/ellipFitParams[3]=" 
++ ellipFitParams[2]/ellipFitParams[3] + " " + debugName);
+debugPlot(sunPoints, originalColorImage, 
+theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"sun_points_" + debugName);
+}
+
+        // should not see sun and rainbow in same image
+        Set<PairInt> rainbowPoints = new HashSet<PairInt>();
+        float[] rainbowCoeff = null;
+        if (sunPoints.isEmpty()) {
+            rainbowCoeff = findRainbowPoints(points, 
+                removedSets.getReflectedSunRemoved(), 
+                originalColorImage, 
+                theta.getXRelativeOffset(), theta.getYRelativeOffset(),
+                skyIsDarkGrey, rainbowPoints);
+            
+            if (rainbowPoints.size() < 10) {
+                rainbowPoints.clear();
+                rainbowCoeff = null;
+            }
+        }
+
+        Set<PairInt> excludeRainbow = new HashSet<PairInt>();
+        Hull rainbowHull = null;
+        if (rainbowCoeff != null) {
+            
+debugPlot(rainbowPoints, originalColorImage, 
+theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"rainbow_points_" + debugName);
+
+            // note that this adds the outer points to the sky too
+            rainbowHull = createRainbowHull(points, rainbowCoeff, rainbowPoints,
+                originalColorImage, 
+                theta.getXRelativeOffset(), theta.getYRelativeOffset());
+            
+            if (rainbowHull != null) {
+                
+                int minXHull = (int)MiscMath.findMin(rainbowHull.xHull);
+                int maxXHull = (int)Math.ceil(MiscMath.findMax(rainbowHull.xHull));
+                int minYHull = (int)MiscMath.findMin(rainbowHull.yHull);
+                int maxYHull = (int)Math.ceil(MiscMath.findMax(rainbowHull.yHull));
+                PointInPolygon p = new PointInPolygon();
+                for (int col = minXHull; col <= maxXHull; col++) {
+                    for (int row = minYHull; row <= maxYHull; row++) {
+                        boolean in = p.isInSimpleCurve(col, row, 
+                            rainbowHull.xHull, rainbowHull.yHull, 
+                            rainbowHull.yHull.length);
+                        if (in) {
+                            excludeRainbow.add(new PairInt(col, row));
+                        }
+                    }
+                }
+                
+                if (!excludeRainbow.isEmpty()) {
+debugPlot(excludeRainbow, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"excluded_rainbow_" + debugName);
+
+debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"sky_before_r0_" + debugName); 
+
+                    // addRainbow to Hull, but only if there are sky points adjacent to hull
+                    addRainbowToPoints(points, excludeRainbow, rainbowHull,
+                        theta.getWidth() - 1, theta.getHeight() - 1);
+debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"sky_after_r0_" + debugName);
+                }
+            }
+        }
+
         int nSkyPointsBeforeFindClouds = points.size();
-                    
-        findClouds(points, new HashSet<PairInt>(), originalColorImage, theta);
+        
+        findClouds(points, excludeRainbow, originalColorImage, theta);  
+
+        if (!excludeRainbow.isEmpty()) {
+            // addRainbow to Hull, but only if there are sky points adjacent to hull
+            addRainbowToPoints(points, excludeRainbow, rainbowHull,
+                theta.getWidth() - 1, theta.getHeight() - 1);
+        }
         
         GreyscaleImage mask = gradientXY.createWithDimensions();
         mask.fill(1);
@@ -182,53 +292,10 @@ public class SkylineExtractor {
             int y = p.getY(); 
             mask.setValue(x, y, 0);
         }
-
-try {
-    String dirPath = ResourceFinder.findDirectory("bin");
-    ImageExt clr = (ImageExt)originalColorImage.copyImage();
-    ImageIOHelper.addToImage(points, theta.getXRelativeOffset(), 
-        theta.getYRelativeOffset(), clr);
-    ImageIOHelper.writeOutputImage(
-        dirPath + "/sky_after_find_clouds_" + outImgNum + ".png", clr);
-    outImgNum++;
-} catch (IOException e) {
-    log.severe("ERROR: " + e.getMessage());
-}        
+      
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "before_add_embedded");
-
-        GroupPixelColors allSkyColor = new GroupPixelColors(points,
-            originalColorImage, theta.getXRelativeOffset(), 
-            theta.getYRelativeOffset());
-        
-        boolean skyIsDarkGrey = skyIsDarkGrey(allSkyColor);
-
-        Set<PairInt> sunPoints = new HashSet<PairInt>();
-        double[] ellipFitParams = findSunConnectedToSkyPoints(points, 
-            removedSets.getReflectedSunRemoved(), originalColorImage, 
-            theta.getXRelativeOffset(), 
-            theta.getYRelativeOffset(), skyIsDarkGrey, sunPoints);
-
-        //TODO: adjust this:
-        if ((ellipFitParams != null) && 
-            (
-            ((ellipFitParams[2]/ellipFitParams[3])> 7)
-            //TODO: reconsider this rule for sun on edge of image
-            || ((ellipFitParams[0] < 0) || (ellipFitParams[1] < 0))
-            )
-            ) {
-            sunPoints.clear();
-        }
-
-        // should not see sun and rainbow in same image
-        Set<PairInt> rainbowPoints = sunPoints.isEmpty() ?
-            findRainbowPoints(points, 
-                removedSets.getReflectedSunRemoved(), 
-                originalColorImage, 
-                theta.getXRelativeOffset(), theta.getYRelativeOffset(),
-                skyIsDarkGrey) :
-            new HashSet<PairInt>();
-        
+ 
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         // find remaining embedded points
         int[] skyRowMinMax = new int[2];
@@ -269,7 +336,7 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
         log.info("number of sunPoints=" + sunPoints.size() + " "
         + "reflectedSunRemoved.size()=" + removedSets.getReflectedSunRemoved().size());
 
-        if (sunPoints.isEmpty()) {
+        if (false && sunPoints.isEmpty()) {
         
             growForLowContrastLimits(points, exclude, skyRowColRange,
                 skyRowMinMax, originalColorImage, mask);
@@ -1379,7 +1446,7 @@ try {
         
         log.info("elliptical fit to yellow points: " + Arrays.toString(params));
        
-        //TODO:  this may need adjustements.  top of sun rising over mountains..
+        //TODO:  this may need adjustments.  top of sun rising over mountains..
         /*if ((a/b) > 6) {
             return new HashSet<PairInt>();
         }*/
@@ -1403,21 +1470,26 @@ try {
      * @param colorImg
      * @param xRelativeOffset
      * @param yRelativeOffset
-     * @return 
+     * @param outputRainbowPoints output variable to return found rainbow
+     * points if any
+     * @return polynomial fit coefficients to 
+     * y = c0*1 + c1*x[i] + c2*x[i]*x[i].  this may be null if a fit wasn't
+     * possible.
      */
-    Set<PairInt> findRainbowPoints(Set<PairInt> skyPoints, 
+    float[] findRainbowPoints(Set<PairInt> skyPoints, 
         Set<PairInt> reflectedSunRemoved,
-        ImageExt colorImg, int xOffset, int yOffset, boolean skyIsDarkGrey) {
+        ImageExt colorImg, int xOffset, int yOffset, boolean skyIsDarkGrey,
+        Set<PairInt> outputRainbowPoints) {
 
         Set<PairInt> rainbowPoints = findRainbowColoredPoints(colorImg, 
             reflectedSunRemoved, xOffset, yOffset, skyIsDarkGrey);
         
         if (rainbowPoints.isEmpty()) {
-            return rainbowPoints;
+            return null;
         }
         
         if (rainbowPoints.size() < 12) {
-            return new HashSet<PairInt>();
+            return null;
         }
         
         // fit a polynomial to rainbow points.  
@@ -1431,13 +1503,13 @@ try {
         PolynomialFitter polyFitter = new PolynomialFitter();
         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
         float[] coef = polyFitter.solveAfterRandomSampling(rainbowPoints);
-        
+             
         if (coef == null) {
-            return new HashSet<PairInt>();
+            return null;
         }
         
-        log.fine("rainbow polynomial coefficients = " + Arrays.toString(coef));
-        log.fine("image dimensions are " + colorImg.getWidth() + " X " + 
+        log.info("rainbow polynomial coefficients = " + Arrays.toString(coef));
+        log.info("image dimensions are " + colorImg.getWidth() + " X " + 
             colorImg.getHeight() + " pixels^2");
          
         polyFitter.plotFit(coef, rainbowPoints, colorImg.getWidth(),
@@ -1455,13 +1527,13 @@ try {
                 colorImg.getHeight());
             
             if (coef == null) {
-                return new HashSet<PairInt>();
+                return null;
             }
             
             int w = colorImg.getWidth() - xOffset;
             int h = colorImg.getHeight() - yOffset;
             if (bestFittingPoints.size() > (0.3f * (float)(w*h))) {
-                return new HashSet<PairInt>();
+                return null;
             }
  
             // assert that colors are as expected, that is, that we don't
@@ -1546,11 +1618,11 @@ try {
             if ((nPurpRed < 10) || 
                 (((float)nPurpRed/(float)bestFittingPoints.size()) < 0.05)) {
                 
-                return rainbowPoints;
+                return null;
                 
             } else if ((cieXRange < 0.08) && (cieYRange < 0.08)) {
                 
-                return rainbowPoints;
+                return null;
             }
             
             if ((nGTX > 10) || (nLTY > 10)) {
@@ -1562,10 +1634,14 @@ try {
             }
         }
         
-        polyFitter.plotFit(coef, rainbowPoints, colorImg.getWidth(),
+        outputRainbowPoints.addAll(rainbowPoints);
+        
+        polyFitter.plotFit(coef, outputRainbowPoints, colorImg.getWidth(),
             colorImg.getHeight(), 234, "rainbow points");
         
-        return rainbowPoints;
+System.out.println("rainbow points size=" + outputRainbowPoints.size());
+ 
+        return coef;
     }
    
     private Map<PairInt, PairFloat> calculateContrastAndBOrR(
@@ -2322,7 +2398,7 @@ log.fine("FILTER 02");
         Map<Integer, List<PairInt>> skyRowColRanges = perimeterFinder.find(
             skyPoints, skyRowMinMax, imageMaxColumn, 
             outputEmbeddedGapPoints);
-        
+
         // update the perimeter for "filling in" embedded points
         perimeterFinder.updateRowColRangesForAddedPoints(skyRowColRanges, 
             skyRowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
@@ -2945,11 +3021,9 @@ try {
      * @param skyIsDarkGrey
      * @return 
      */
-    public Set<PairInt> findSunPoints(ImageExt colorImg, int xOffset, 
-        int yOffset, boolean skyIsDarkGrey) {
-        
-        Set<PairInt> set = new HashSet<PairInt>();
-        
+    public double[] findSunPoints(ImageExt colorImg, int xOffset, 
+        int yOffset, boolean skyIsDarkGrey, Set<PairInt> outputSunPoints) {
+                
         SunColors sunColors = new SunColors();
         
         if (skyIsDarkGrey) {
@@ -2962,15 +3036,41 @@ try {
                 int idx = colorImg.getInternalIndex(col, row);
 
                 if (sunColors.isSunCenterColor(colorImg, idx)) {
-                    set.add(new PairInt(col - xOffset, row - yOffset));
+                    outputSunPoints.add(new PairInt(col - xOffset, row - yOffset));
                 }
             }
         }
         
-debugPlot(set, colorImg, xOffset, yOffset, 
-"sunpoints");
+        log.info("found " + outputSunPoints.size() 
+            + " sun points from image of width " + colorImg.getWidth());
 
-        return set;
+        if (outputSunPoints.size() < 6) {
+            return null;
+        }
+        
+        //fit ellipse to yellowPoints.  ellipse because of possible occlusion.
+        EllipseHelper ellipseHelper = new EllipseHelper();
+        double[] params = ellipseHelper.fitEllipseToPoints(outputSunPoints);
+        
+        if (params == null) {
+            // not close to an ellipse
+            return null;
+        }
+        
+        float xc = (float)params[0];
+        float yc = (float)params[1];
+        float a = (float)params[2];
+        float b = (float)params[3];
+        float alpha = (float)params[4];
+        
+        log.info("elliptical fit to yellow points: " + Arrays.toString(params));
+       
+        //TODO:  this may need adjustments.  top of sun rising over mountains..
+        /*if ((a/b) > 6) {
+            return new HashSet<PairInt>();
+        }*/
+        
+        return params;
     }
 
     /**
@@ -3603,19 +3703,6 @@ debugPlot(set, colorImg, xOffset, yOffset,
         return outputEmbeddedGapPoints;
     }
     
-    protected void extendSkylineToGradientXY(Set<PairInt> skyPoints, 
-        Image colorImg, GreyscaleImage mask, 
-        GreyscaleImage gradientXY) {
-        
-        Set<PairInt> embedded = new HashSet<PairInt>();
-        Set<PairInt> borderPoints = new HashSet<PairInt>();
-        SkylineExtractor.getEmbeddedAndBorderPoints(skyPoints,
-            gradientXY.getWidth(), gradientXY.getHeight(), embedded, 
-            borderPoints);
-
-        //TODO: paused here
-    }
-    
     private void correctSkylineForSun(Set<PairInt> sunPoints, 
         Set<PairInt> skyPoints, Image colorImg, GreyscaleImage mask, 
         GreyscaleImage gradientXY) {
@@ -4119,6 +4206,660 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         return filtered;
     }
 
+    protected List<PairInt> orderByProximity(Set<PairInt> points) {
+        
+        /*
+        starting from (startX, startY), order the points into a list of 
+        sequentially closest points.
+        for points with more than one adjacent point, the order should
+        be such that horiz adjacent or vert adjacent is preferred over diag,
+        and if there is more than one horiz or vert adjacent,
+        it shouldn't matter which is chosen.
+        */
+        
+        // O( N * lg_2(N) ) + O(N)
+        DoubleLinkedCircularList tmp = new DoubleLinkedCircularList();
+        Map<Integer, HeapNode> firstXIndexes = 
+            new HashMap<Integer, HeapNode>();
+        orderByIncreasingXThenY(points, tmp, firstXIndexes);
+                
+        List<PairInt> ordered = new ArrayList<PairInt>();
+        
+        int lastX = -1;
+        int lastY = -1;
+        
+        /*
+        Because this is ordered already, the runtime complexity should be 
+        close to O(N) when there are no gaps which is usually the case for
+        the context this method was created for, else the runtime complexity is 
+        close to O(N!) when the entire remaining list has to be compared.
+        TODO: replace w/ a data structure that has indexed y ordering too.
+        */
+        while (tmp.getSentinel().getLeft() != tmp.getSentinel()) {
+                            
+            //if have adjacent points, stop search in tmp when dx > 1
+            boolean atLeastOneIsAdjacent = false;
+            
+            int minDistSq = Integer.MAX_VALUE;
+            HeapNode closest = null;
+            
+            HeapNode currentNode = tmp.getSentinel().getLeft();
+            while (currentNode != tmp.getSentinel()) {
+                
+                PairInt p = (PairInt)currentNode.getData();
+
+                if (lastX == -1) {
+                    closest = currentNode;
+                    break;
+                } else {
+                    int dx = Math.abs(p.getX() - lastX);
+                    int dy = Math.abs(p.getY() - lastY);
+                    int distSq = (dx * dx) + (dy * dy);
+                    if ((dx <= 1) && (dy <= 1)) {
+                        atLeastOneIsAdjacent = true;
+                        if (distSq < minDistSq) {
+                            closest = currentNode;
+                            minDistSq = distSq;
+                            if (distSq == 1) {
+                                // this is horiz or vertical adjacent which are preferred
+                                break;
+                            }
+                        }
+                    } else if (!atLeastOneIsAdjacent) {
+                        // there may not be an adjacent, so store the next closest
+                        if (distSq < minDistSq) {
+                            closest = currentNode;
+                            minDistSq = distSq;
+                        }
+                    } else if (atLeastOneIsAdjacent && (dx > 1)) {
+                        // we've gone past the nearest, so can break
+                        break;
+                    }
+                }
+                
+                currentNode = currentNode.getLeft();
+            }
+            
+            //O(1)
+            ordered.add((PairInt)closest.getData());
+            
+            //O(1)
+            tmp.remove(closest);
+            
+            lastX = ((PairInt)closest.getData()).getX();
+            
+            lastY = ((PairInt)closest.getData()).getY();
+        }
+        
+        return ordered;
+    }
+
+    protected void orderByIncreasingXThenY(Set<PairInt> points,
+        DoubleLinkedCircularList outputDLCList, 
+        Map<Integer, HeapNode> outputFirstXLocator) {
+
+        int[] x = new int[points.size()];
+        int[] y = new int[x.length];
+        int i = 0;
+        for (PairInt p : points) {
+            x[i] = p.getX();
+            y[i] = p.getY();
+            i++;
+        }
+        //O(N*lg_2(N))
+        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);
+        
+        //O(N)
+        for (i = 0; i < x.length; ++i) {
+            
+            PairInt p = new PairInt(x[i], y[i]);
+            
+            HeapNode node = new HeapNode(i);
+            node.setData(p);
+            outputDLCList.insert(node);
+            
+            Integer xCoord = Integer.valueOf(p.getX());
+            if (!outputFirstXLocator.containsKey(xCoord)) {
+                outputFirstXLocator.put(xCoord, node);
+            }
+        }
+    }
+
+    private void addRainbowToPoints(Set<PairInt> skyPoints, 
+        Set<PairInt> rainbowHullPoints, Hull rainbowHull,
+        int lastImgCol, int lastImgRow) {
+        
+        //TODO: Note, it may be necessary to build a hull from a spine of
+        // more than 10 points for complex images w/ rainbow intersecting
+        // multiple times with structured foreground and sky
+        
+        /* n=21
+         0,20    1    2    3    4    5    6    7    8    9
+                                                  
+         19   18   17   16   15   14   13   12   11   10
+        
+        Points 0 and 19 are opposite points on the hull, so are 1 and 18, etc.
+        So can do quick check that for each segment such as 0->1->18->19->0
+        that there are skyPoints surrounding them.
+        If not, and if the coverage is partial, will reduce the segment polygon
+        size and only add points to skypoints within the segment polygon.
+        */
+        
+        int nHull = rainbowHull.xHull.length;
+        int nHalf = nHull >> 1;
+        for (int c = 0; c < nHalf; c++) {
+            
+            int count0 = c;
+            int count1 = nHull - 2 - c;
+            
+            double dy0 = rainbowHull.yHull[count0 + 1] - rainbowHull.yHull[count0];
+            double dx0 = rainbowHull.xHull[count0 + 1] - rainbowHull.xHull[count0];
+            int dist0 = (int)Math.sqrt(dx0*dx0 + dy0*dy0);
+
+            double dy1 = rainbowHull.yHull[count1 - 1] - rainbowHull.yHull[count1];
+            double dx1 = rainbowHull.xHull[count1 - 1] - rainbowHull.xHull[count1];
+            int dist1 = (int)Math.sqrt(dx1*dx1 + dy1*dy1);
+
+            boolean removeSection = false;
+            
+            int dist = (dist0 < dist1) ? dist0 : dist1;
+            for (int i = 0; i < dist; i++) {
+                int x0 = (int)(rainbowHull.xHull[count0] + i*dx0);
+                int y0 = (int)(rainbowHull.yHull[count0] + i*dy0);
+
+                int x1 = (int)(rainbowHull.xHull[count1] + i*dx1);
+                int y1 = (int)(rainbowHull.yHull[count1] + i*dy1);
+
+                int n0Sky = 0;
+                int n0SkyPossible = 0;
+                int n1Sky = 0;
+                int n1SkyPossible = 0;
+                for (int type = 0; type < 2; type++) {
+                    int x = (type == 0) ? x0 : x1;
+                    int y = (type == 0) ? y0 : y1;
+                    int n = 0;
+                    int nPossible = 0;
+                    for (int col = (x - 1); col <= (x + 1); col++) {
+                        if ((col < 0) || (col > lastImgCol)) {
+                            continue;
+                        }
+                        for (int row = (y - 1); row <= (y + 1); row++) {
+                            if ((row < 0) || (row > lastImgRow)) {
+                                continue;
+                            }
+                            PairInt p = new PairInt(col, row);
+                            if (!rainbowHullPoints.contains(p)) {
+                                nPossible++;
+                                if (skyPoints.contains(p)) {
+                                    n++;
+                                }
+                            }
+                        }
+                    }
+                    if (type == 0) {
+                        n0Sky = n;
+                        n0SkyPossible = nPossible;
+                    } else {
+                        n1Sky = n;
+                        n1SkyPossible = nPossible;
+                    }
+                }
+                // evaluate the n's and shorten rainbowHull values for count0 and count1 if needed
+                float n0Div = (float)n0Sky/(float)n0SkyPossible;
+                float n1Div = (float)n1Sky/(float)n1SkyPossible;
+                if ((n0Div < 0.5) || (n1Div < 0.5)) {
+                    removeSection = true;
+                    break;
+                }
+            } // end for i
+            if (removeSection) {
+                
+                // remove points from rainbowHull
+                float[] xh = new float[]{
+                    rainbowHull.xHull[count0], rainbowHull.xHull[count0 + 1],
+                    rainbowHull.xHull[count1 - 1], rainbowHull.xHull[count1],
+                    rainbowHull.xHull[count0]};
+                float[] yh = new float[]{
+                    rainbowHull.yHull[count0], rainbowHull.yHull[count0 + 1],
+                    rainbowHull.yHull[count1 - 1], rainbowHull.yHull[count1],
+                    rainbowHull.yHull[count0]};
+                
+                int minXHull = (int)MiscMath.findMin(xh);
+                int maxXHull = (int)Math.ceil(MiscMath.findMax(xh));
+                int minYHull = (int)MiscMath.findMin(yh);
+                int maxYHull = (int)Math.ceil(MiscMath.findMax(yh));
+                PointInPolygon p = new PointInPolygon();
+                for (int col = minXHull; col <= maxXHull; col++) {
+                    for (int row = minYHull; row <= maxYHull; row++) {
+              
+                        boolean in = p.isInSimpleCurve(col, row, xh, yh, 
+                            xh.length);
+                        if (in) {
+                            rainbowHullPoints.remove(new PairInt(col, row));
+                        }
+                    }
+                }
+            }
+        }
+        
+        skyPoints.addAll(rainbowHullPoints);
+        
+    }
+    
+    private class Hull {
+        float[] xHull;
+        float[] yHull;
+    }
+    
+    /**
+     * 
+     * @param skyPoints
+     * @param rainbowCoeff coefficients for a 2nd order polynomial
+     * @param rainbowPoints  rainbow colored points in the image that fit a polynomial.
+     * there should be 10 or more points at least.
+     * @param originalColorImage
+     * @param xOffset
+     * @param yOffset
+     * @return 
+     */
+    private Hull createRainbowHull(Set<PairInt> skyPoints, 
+        float[] rainbowCoeff, Set<PairInt> rainbowPoints, 
+        ImageExt originalColorImage, int xOffset, int yOffset) {
+        
+        /*
+        need to know the furthest closest distanc to the polynomial, that is the
+        furthest perpendicular point to the polynomial in order to expand the 
+        region around the polynomial to become a hull that encloses all rainbow 
+        points.
+        
+        (1) Could determine for every point, the distance to the polynomial:
+        Robust and Efficient Computation of the Closest Point on a Spline Curve" 
+        Hongling Wang, Joseph Kearney, and Kendall Atkinson
+        http://homepage.cs.uiowa.edu/~kearney/pubs/CurvesAndSufacesClosestPoint.pdf
+        implemented by:
+        http://www.ogre3d.org/tikiwiki/tiki-index.php?page=Nearest+point+on+a+Spline
+        
+        -- The method for nearest point on a spline requires creating a
+        spline out of the polynomial.  can assume that something like 1000
+        points would be necessary, though maybe 100 would be fine.
+        -- Then the method requires a good starting guess for 3 points on the
+        polynomial that would be near the true perpendicular point.
+        One could guess the first 3 splines by making the polynomial roughly
+        10 splines separately and doing a distance test to each spline
+        for each point (with shortcuts for not needing to check).
+        -- Then about 10 iterations or less to find the best answer.
+        
+        The runtime might look roughly like
+        N_poly +  N_points * 10 distance tests + N_points * 10 iterations of the 
+        closestToSpline algorithm.
+        
+        (2) Or could instead, characterize the hull by 10 points and calculate 
+        the coordinates of the points projected perpendicular to them above and 
+        below at distances that are the hull of the rainbow.
+        Then evaluation of the size would be "point in polygon" tests for
+        each point.
+        Improved estimates of the hull size can use a binomial search pattern
+        to expand or shrink the distance estimate used for furthest extension
+        of the hull.
+        The first estimate of the hull size can use the rough distance point test
+        just as above, by comparing each point to the polynomial as 10 segments.
+        
+        runtime is roughly:
+            N_points * 10 distance tests +
+            N_iter * N_points *
+               "point in polygon" (which is roughly O(N_poly) where N_poly would be ~20)
+            = N_points * 10 + N_iter * N_points * 20 for each iteration
+        
+        expect that N_iter is probably <= 5 because it's close already.
+        
+        So the 2nd method will be fine for the purposes here, but the first
+        method is interesting for use cases which need precision.
+        */
+        
+        int width = originalColorImage.getWidth() - xOffset;
+        int height = originalColorImage.getHeight() - yOffset;
+        
+        float[] xc = new float[10];
+        float[] yc = new float[xc.length];
+        generatePolynomialPoints(rainbowPoints, rainbowCoeff, xc, yc);
+       
+        float maxOfPointMinDistances = maxOfPointMinDistances(rainbowPoints,
+            xc, yc);
+        
+        float high = 2 * maxOfPointMinDistances;
+        float low = maxOfPointMinDistances / 2;
+        int nMatched = 0;
+        
+        /* 
+        n=21
+         0,20    1    2    3    4    5    6    7    8    9
+                                                  
+         19   18   17   16   15   14   13   12   11   10
+        */
+        
+        float[] xPoly = new float[2 * xc.length + 1];
+        float[] yPoly = new float[xPoly.length];
+        int nMaxIter = 5;
+        int nIter = 0;
+        
+        int eps = (int)(0.01f * rainbowPoints.size());
+        
+        while ((low < high) && (nIter < nMaxIter)) {
+            
+            float mid = (high + low)/2.f;
+            
+            populatePolygon(xc, yc, mid, xPoly, yPoly, rainbowCoeff, width, 
+                height);
+            
+            nMatched = nPointsInPolygon(rainbowPoints, xPoly, yPoly);
+            
+System.out.println("low=" + low + " high=" + high + " mid=" + mid + " nMatched=" + nMatched);
+
+            if (Math.abs(nMatched - rainbowPoints.size()) < eps) {
+                if (low < mid) {
+                    // decrease high so next mid is lower
+                    high = mid;
+                } else {
+                    break;
+                }
+            } else {
+                // nMatched < rainbowPoints.size()
+                // increase low so next mid is higher
+                low = mid;
+            }
+            
+            nIter++;
+        }
+        
+debugPlot(rainbowPoints, xPoly, yPoly, originalColorImage.getWidth(),
+originalColorImage.getHeight(), "hull around rainbow");
+int z = 1;   
+        Hull hull = new Hull();
+        hull.xHull = xPoly;
+        hull.yHull = yPoly;
+
+        return hull;
+    }
+    
+    protected void generatePolynomialPoints(Set<PairInt> points, 
+        float[] polyCoeff, float[] outputX, float[] outputY) {
+        
+        /*
+        determine good endpoints for the polynomial solution.
+        it depends upon the orientation of the rainbow polynomial.
+        
+        should be able to determine the average to the 100 or so median
+        values as the middle of the rainbow,
+        then would find the smallest residual points from the model
+        polynomial that are located furthest from the median location.
+        */
+        
+        // sort points by x then y
+        int[] x = new int[points.size()];
+        int[] y = new int[x.length];
+        int i = 0;
+        for (PairInt p : points) {
+            x[i] = p.getX();
+            y[i] = p.getY();
+            i++;
+        }
+        //O(N*lg_2(N))
+        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);
+        
+        // average of central 10 or so median
+        int mid = points.size() >> 1;
+        float medianX;
+        float medianY;
+        if (points.size() < 10) {
+            medianX = x[points.size()/2];
+            medianY = y[points.size()/2];
+        } else {
+            double sumX = 0;
+            double sumY = 0;
+            int nMed = 5;
+            for (i = (mid - nMed); i <= (mid + nMed); i++) {
+                sumX += x[i];
+                sumY += y[i];
+            }
+            medianX = (float)sumX/(float)(2*nMed);
+            medianY = (float)sumY/(float)(2*nMed);
+        }
+        
+        // find the furthest points that have the smallest residuals on each side
+        int minX = -1;
+        int yForMinX = -1;
+        int maxX = -1;
+        int yForMaxX = -1;
+        for (int half = 0; half < 2; half++) {
+            double minResid = Double.MAX_VALUE;
+            int minResidIdx = -1;
+            double distFromMedianSq = Double.MIN_VALUE;
+            if (half == 0) {
+                for (i = 0; i < mid; ++i) {
+                    float yV = polyCoeff[0] * (polyCoeff[1] * x[i]) +
+                        (polyCoeff[2] * x[i] * x[i]);
+                    double resid = Math.abs(y[i] - yV);
+
+                    double distX = x[i] - medianX;
+                    double distY = y[i] - medianY;
+
+                    double distSq = (distX * distX) + (distY * distY);
+
+                    if ((resid < minResid) && (distSq >= distFromMedianSq)) {
+                        minResid = resid;
+                        minResidIdx = i;
+                        distFromMedianSq = distSq;
+                    }
+                }
+                minX = x[minResidIdx];
+                yForMinX = y[minResidIdx];
+            } else {
+                for (i = (points.size() - 1); i > mid; --i) {
+                    float yV = polyCoeff[0] * (polyCoeff[1] * x[i]) +
+                        (polyCoeff[2] * x[i] * x[i]);
+                    double resid = Math.abs(y[i] - yV);
+
+                    double distX = x[i] - medianX;
+                    double distY = y[i] - medianY;
+
+                    double distSq = (distX * distX) + (distY * distY);
+
+                    if ((resid < minResid) && (distSq >= distFromMedianSq)) {
+                        minResid = resid;
+                        minResidIdx = i;
+                        distFromMedianSq = distSq;
+                    }
+                }
+                maxX = x[minResidIdx];
+                yForMaxX = y[minResidIdx];
+            }
+        } 
+        
+//[204.83781, 0.40015212, -3.880514E-4]
+System.out.println("polyCoeff=" + Arrays.toString(polyCoeff) 
++ " endpoints=(" + minX + "," + yForMinX + ") (" + maxX + "," + yForMaxX + ")");
+       
+        int n = outputX.length;
+        
+        // max-min divided by 9 gives 8 more points
+        float deltaX = (maxX - minX)/(float)(n - 1);
+        
+        outputX[0] = minX;
+        outputY[0] = yForMinX;
+        for (i = 1; i < (n - 1); i++) {
+            outputX[i] = outputX[i - 1] + deltaX;
+            outputY[i] = polyCoeff[0] + polyCoeff[1] * outputX[i] 
+                + polyCoeff[2] * outputX[i] * outputX[i];
+        }
+        outputX[n - 1] = maxX;
+        outputY[n - 1] = yForMaxX;
+        
+    }
+
+    private float maxOfPointMinDistances(Set<PairInt> rainbowPoints, float[] xc, 
+        float[] yc) {
+        
+        double maxDistSq = Double.MIN_VALUE;
+        
+        for (PairInt p : rainbowPoints) {
+            int x = p.getX();
+            int y = p.getY();
+            double minDistSq = Double.MAX_VALUE;
+            for (int i = 0; i < xc.length; i++) {
+                float diffX = xc[i] - x;
+                float diffY = yc[i] - y;
+                float dist = (diffX * diffX) + (diffY * diffY);
+                if (dist < minDistSq) {
+                    minDistSq = dist;
+                }
+            }
+            if (minDistSq > maxDistSq) {
+                maxDistSq = minDistSq;
+            }
+        }
+        
+        return (float)Math.sqrt(maxDistSq);
+    }
+
+    /**
+    populate outputXPoly and outputYPoly with points perpendicular to x and y
+    * at distances dist.  note that the lengths of outputXPoly and outputYPoly
+    * should be 2*x.length+1
+    */
+    protected void populatePolygon(float[] x, float[] y, float dist, 
+        float[] outputXPoly, float[] outputYPoly, float[] polynomialCoeff,
+        int imgWidth, int imgHeight) {
+        
+        if (x == null || y == null) {
+            throw new IllegalArgumentException("neither x nor y can be null");
+        }
+        if (x.length != y.length) {
+            throw new IllegalArgumentException("x and y must be the same length");
+        }
+        if (outputXPoly == null || outputYPoly == null) {
+            throw new IllegalArgumentException(
+                "neither outputXPoly nor outputYPoly can be null");
+        }
+        if (outputXPoly.length != outputYPoly.length) {
+            throw new IllegalArgumentException(
+                "outputXPoly and outputYPoly must be the same length");
+        }
+        if (polynomialCoeff == null) {
+            throw new IllegalArgumentException(
+                "polynomialCoeff cannot be null");
+        }
+        if (polynomialCoeff.length != 3) {
+            throw new IllegalArgumentException(
+                "polynomialCoeff.length has to be 3");
+        }
+        if (outputXPoly.length != (2*x.length + 1)) {
+            throw new IllegalArgumentException("outputXPoly.length must be " +
+                " (2 * x.length) + 1");
+        }
+        
+        /*
+        y = c0*1 + c1*x[i] + c2*x[i]*x[i]
+        
+        dy/dx = c1 + 2*c2*x[i]
+        */
+        
+        int n = outputXPoly.length;
+        
+        /*
+        want them in order so using count0 and count1
+        n=21
+        
+        0,20    1    2    3    4    5    6    7    8    9
+                                                  
+         19   18   17   16   15   14   13   12   11   10
+        */
+        int count0 = 0;
+        int count1 = n - 2;
+        
+        for (int i = 0; i < x.length; i++) {
+            
+            double dydx = polynomialCoeff[1] + (2. * polynomialCoeff[2] * x[i]);
+            
+            if (dydx == 0) {
+                // same x, y's are +- dist
+                outputXPoly[count0] = x[i];
+                outputYPoly[count0] = y[i] + dist;
+                count0++;
+                outputXPoly[count1] = x[i];
+                outputYPoly[count1] = y[i] - dist;
+                count1--;
+                continue;
+            }
+            
+            double tangentSlope = -1./dydx;
+            
+            double theta = Math.atan(tangentSlope);
+            
+            double dy = dist * Math.sin(theta);
+            
+            double dx = dist * Math.cos(theta);
+            
+            if ((count0 == 0) && (x[i] == 0)) {
+                dy = dist;
+                dx = 0;
+            } else if (
+                ((count0 == ((x.length/2) - 1) || (count0 == (x.length/2))))
+                && (x[i] == (imgWidth - 1))) {
+                dy = dist;
+                dx = 0;
+            }
+            
+            //System.out.println("i=" + i + " theta=" + theta
+            //    + " x[i]=" + x[i] + " dx=" + dx + " dy=" + dy);
+          
+            float xHigh = (float)(x[i] + dx);
+            float yHigh = (float)(y[i] + dy);
+            
+            float xLow = (float)(x[i] - dx);
+            float yLow = (float)(y[i] - dy);
+              
+            if (theta < 0) {
+                float tx = xHigh;
+                float ty = yHigh;
+                xHigh = xLow;
+                yHigh = yLow;
+                xLow = tx;
+                yLow = ty;
+            }
+            
+            outputXPoly[count0] = xHigh;
+            outputYPoly[count0] = yHigh;
+            count0++;
+            outputXPoly[count1] = xLow;
+            outputYPoly[count1] = yLow;
+            count1--;
+        }
+        
+        outputXPoly[outputXPoly.length - 1] = outputXPoly[0];
+        outputYPoly[outputXPoly.length - 1] = outputYPoly[0];
+    }
+
+    protected int nPointsInPolygon(Set<PairInt> rainbowPoints, 
+        float[] xPoly, float[] yPoly) {
+        
+        PointInPolygon pIn = new PointInPolygon();
+        
+        int nInside = 0;
+        
+        for (PairInt p : rainbowPoints) {
+            float x = p.getX();
+            float y = p.getY();
+            
+            boolean ans = pIn.isInSimpleCurve(x, y, xPoly, yPoly, xPoly.length);
+            
+            if (ans) {
+                nInside++;
+            }
+        }
+        
+        return nInside;
+    }
+
     public class RemovedSets {
         private Set<PairInt> removedNonCloudColors = null;
         private Set<PairInt> highContrastRemoved = null;
@@ -4161,5 +4902,42 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         private int getNAfterHighContrastRemoval() {
             return nAfterHighContrastRemoval;
         }
+    }
+    
+    private String debugPlot(Set<PairInt> points, float[] xPoly, float[] yPoly,
+        int plotXMax, int plotYMax, String plotLabel) {
+        
+        float xMin = Float.MAX_VALUE;
+        float xMax = Float.MIN_VALUE;
+        float[] xP = new float[points.size()];
+        float[] yP = new float[xP.length];
+        int i = 0;
+        for (PairInt p : points) {
+            float x = p.getX();
+            if (x < xMin) {
+                xMin = x;
+            }
+            if (x > xMax) {
+                xMax = x;
+            }
+            xP[i] = x;
+            yP[i] = p.getY();
+            i++;
+        }
+        
+        try {
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0, 
+                plotXMax, 0, plotYMax);
+            plotter.addPlot(xP, yP, xPoly, yPoly, plotLabel);
+            
+            String fileName = plotter.writeFile(Integer.valueOf(9182));
+            
+            return fileName;
+            
+        } catch (IOException e) {
+            Logger.getLogger(this.getClass().getName()).severe(e.getMessage());
+        }
+        
+        return null;
     }
 }

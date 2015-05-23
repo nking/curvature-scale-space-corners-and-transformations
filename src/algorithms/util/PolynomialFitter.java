@@ -53,7 +53,8 @@ public class PolynomialFitter {
      * 
      * @param points
      * @param sr instance of secure random to use for generating random numbers
-     * @return 2nd order polynomial coefficients if solved, else null
+     * @return 2nd order polynomial coefficients if solved, else null.
+     * the coefficients are used in y = c0*1 + c1*x[i] + c2*x[i]*x[i]
      */
     protected float[] solveAfterRandomSampling(Set<PairInt> points,
         SecureRandom sr) {
@@ -76,21 +77,56 @@ public class PolynomialFitter {
         }
         tmp = null;
         
-        return solve(xP, yP);
+        // y = c0*1 + c1*x[i] + c2*x[i]*x[i]
+        float[] coeff = solve(xP, yP);
+        
+        return coeff;
     }
     
     /**
-     * solve for 2nd order curves.
+     * solve for 2nd order curves.   This uses a Vandermonde matrix and QR 
+     * decomposition.
      * 
      * @param dataX
      * @param dataY
-     * @return 2nd order polynomial coefficients if solved, else null
+     * @return 2nd order polynomial coefficients if solved, else null.
+     * The coefficients are used in y = c0*1 + c1*x[i] + c2*x[i]*x[i]
      */
     public float[] solve(float[] dataX, float[] dataY) {
         
-        // from http://rosettacode.org/wiki/Polynomial_Fitting
-        // adapted from the Go solution
+        // adapted from the Go solution of http://rosettacode.org/wiki/Polynomial_Fitting
         
+        /*
+        polyDegree unknowns and m data
+        
+        solving for the coefficients of y = c0*1 + c1*x[i] + c2*x[i]*x[i]
+        
+        The Vandermonde matrix fills the matrix with the representation of the
+        x powers of data, that is the "monomials" 1, x[i], x[i]^2, ... x[i]^(n-1)
+        
+        | 1  x[i]    (x[i])^2   |  | c0 |    | y[i]   |
+        | 1  x[i+1]  (x[i+1])^2 |  | c1 | =  | y[i+1] |
+        | ..  ...      ...      |  | c2 |    | ...    |
+        
+        The Newton matrix uses the form
+        1, (x-x[i]), (x-x[i])*(x-x[i+1]), (x-x[i])*(x-x[i+1])*(x-x[i+2]), ... 
+        and is a lower left triangular matrix
+        
+        | 1                     |  | c0 |    | y[i]   |
+        | 1  x[i]               |  | c1 | =  | y[i+1] |
+        | 1  x[i]   x[i]*x[i+1] |  | c2 |    | ...    |
+        | ...  ...   ...        |            | ...    |
+        
+        X * c = Y
+        
+        then c = Y / X is ==> c = X^-1 * Y
+        
+        for over determined systems, QR decomposition (or SVD or normal equations) 
+        can be used.
+            find Q, R such that X = Q^T * R (QR decomposition)
+            then solve R*c = Q*Y
+        
+        */
         int m = dataX.length;
         
         int polyDegree = 2;
@@ -109,16 +145,22 @@ public class PolynomialFitter {
                 ip *= dataX[i];
             }
         }
+        
         QRDecomposition<DenseMatrix64F> qrDecomp = DecompositionFactory.qr(m, n);
         if (!qrDecomp.decompose(x.getMatrix())) {
             return null; 
         }
        
+        //nCols=X.length, nRows=X.length
         DenseMatrix64F q = qrDecomp.getQ(null, false);
+        
+        //nCols=3, nRows=X.length
         DenseMatrix64F r = qrDecomp.getR(null, false);
         
+        //nCols=X.length, nRows=X.length
         SimpleMatrix qq = new SimpleMatrix(q);
         
+        //nCols=1, nRows=X.length
         SimpleMatrix qty = qq.transpose().mult(y);
         
         float[] c = new float[n];
@@ -133,7 +175,7 @@ public class PolynomialFitter {
         
         return c;
     }
-
+   
     /**
      * plot the points and 2nd order curve given the coefficients.
      * note that if there are more than 1000 points, only 1000 of
@@ -146,8 +188,8 @@ public class PolynomialFitter {
      * @param plotLabel
      * @return 
      */
-    public String plotFit(float[] coefficients, Set<PairInt> points, int plotXMax,
-    int plotYMax, int plotNumber, String plotLabel) {
+    public String plotFit(float[] coefficients, Set<PairInt> points, 
+        int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
         
         // shape the rainbow points into a more even ribbon
         float xMin = Float.MAX_VALUE;

@@ -26,6 +26,10 @@ public class PointInPolygon {
      */
     public boolean isInSimpleCurve(float xPt, float yPt, float[] xPolygon,
         float[] yPolygon, int nPolygonPoints) {
+        
+        if (isInPolyPoints(xPt, yPt, xPolygon, yPolygon, 0, nPolygonPoints)) {
+            return true;
+        }
 
         int sumIntersectingRays = 0;
         for (int i = 0; i < nPolygonPoints; i++) {
@@ -40,7 +44,7 @@ public class PointInPolygon {
                 sumIntersectingRays++;
             }
         }
-
+        
         return ((sumIntersectingRays & 1) == 1);
     }
 
@@ -58,6 +62,10 @@ public class PointInPolygon {
         float xPt, float yPt, float[] xPolygon, float[] yPolygon,
         int nPolygonPoints) {
 
+        if (isInPolyPoints(xPt, yPt, xPolygon, yPolygon, 0, nPolygonPoints)) {
+            return true;
+        }
+        
         int sumIntersectingRays = 0;
         for (int i = 0; i < nPolygonPoints; i++) {
 
@@ -86,6 +94,10 @@ public class PointInPolygon {
     public boolean isInSimpleCurve(float xPt, float yPt, float[] xPolygon,
         float[] yPolygon, int startPolygon, int endPolygon) {
 
+        if (isInPolyPoints(xPt, yPt, xPolygon, yPolygon, startPolygon, endPolygon)) {
+            return true;
+        }
+        
         int sumIntersectingRays = 0;
         for (int i = startPolygon; i < endPolygon; i++) {
 
@@ -115,7 +127,7 @@ public class PointInPolygon {
         float ay = yPolygon[index1];
         float bx = xPolygon[index2];
         float by = yPolygon[index2];
-
+        
         if (ay >= by) {
             float xtmp = ax;
             float ytmp = ay;
@@ -146,11 +158,30 @@ public class PointInPolygon {
             if (xPt < ax) {
                 return true;
             }
+            //TODO: Revisit this.  it will miss for right side
+            if ((xPt == ax) || (xPt == bx)) {
+                xPt += eps;
+            }
         }
 
         boolean intersects = (yPt - ay)/(xPt - ax) >= (by - ay)/(bx - ax);
         
         return intersects;
+    }
+
+    protected boolean isInPolyPoints(float xPt, float yPt, float[] xPolygon, 
+        float[] yPolygon, int startPolygonIdx, int stopPolygonIdxExcl) {
+        
+        for (int i = startPolygonIdx; i < stopPolygonIdxExcl; i++) {
+            
+            if (Math.abs(xPt - xPolygon[i]) < eps) {
+                if (Math.abs(yPt - yPolygon[i]) < eps) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
 
 }
