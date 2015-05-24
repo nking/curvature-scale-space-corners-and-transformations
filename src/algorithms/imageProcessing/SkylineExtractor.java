@@ -232,10 +232,6 @@ theta.getXRelativeOffset(), theta.getYRelativeOffset(),
         Hull rainbowHull = null;
         if (rainbowCoeff != null) {
             
-debugPlot(rainbowPoints, originalColorImage, 
-theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
-"rainbow_points_" + debugName);
-
             // note that this adds the outer points to the sky too
             rainbowHull = createRainbowHull(points, rainbowCoeff, rainbowPoints,
                 originalColorImage, 
@@ -260,17 +256,9 @@ theta.getXRelativeOffset(), theta.getYRelativeOffset(),
                 }
                 
                 if (!excludeRainbow.isEmpty()) {
-debugPlot(excludeRainbow, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
-"excluded_rainbow_" + debugName);
-
-debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
-"sky_before_r0_" + debugName); 
-
                     // addRainbow to Hull, but only if there are sky points adjacent to hull
                     addRainbowToPoints(points, excludeRainbow, rainbowHull,
                         theta.getWidth() - 1, theta.getHeight() - 1);
-debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
-"sky_after_r0_" + debugName);
                 }
             }
         }
@@ -305,8 +293,6 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
             embeddedPoints);
         
         if (!embeddedPoints.isEmpty()) {
-debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
-"before_add_embedded");
 
             HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
 
@@ -347,13 +333,31 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
         }
 
         if (!sunPoints.isEmpty()) {
+            
             correctSkylineForSun(sunPoints, points, originalColorImage, mask, gradientXY);
-        }/* else if (!rainbowPoints.isEmpty()) {
-            correctSkylineForRainbow(rainbowPoints, points, colorImg, mask);
-        }*/
+            
+            embeddedPoints = new HashSet<PairInt>();
+            getEmbeddedPoints(points, gradientXY.getWidth(), gradientXY.getHeight(), 
+                embeddedPoints);
+            
+            HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
+
+            // brightest sky is in bin [2], and dimmest is in [0]
+            GroupPixelColors[] skyPartitionedByBrightness = 
+                partitionInto3ByBrightness(points, originalColorImage, 
+                theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+                brightnessHistogram);
+
+            // no need to update rowColRanges as this was not an external "grow"
+            //add embedded pixels if they're near existing sky colors
+            addIfSimilarToSky(embeddedPoints, points, 
+                removedSets.getHighContrastRemoved(),
+                originalColorImage, mask,
+                brightnessHistogram, skyPartitionedByBrightness);
+        }
 
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), 
-    mask.getYRelativeOffset(), "final");
+mask.getYRelativeOffset(), "final");
         
         for (PairInt p : sunPoints) {
             int x = p.getX();
@@ -2408,6 +2412,21 @@ log.fine("FILTER 02");
         
         outputBorderPoints.addAll(borderPixels);
         
+    }
+    
+    public static void getEmbeddedPoints(Set<PairInt> skyPoints,
+        int width, int height, Set<PairInt> outputEmbeddedPoints) {
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        int imageMaxColumn = width - 1;
+        int imageMaxRow = height - 1;
+       
+        int[] skyRowMinMax = new int[2];
+        
+        Map<Integer, List<PairInt>> skyRowColRanges = perimeterFinder.find(
+            skyPoints, skyRowMinMax, imageMaxColumn, 
+            outputEmbeddedPoints);
     }
     
     private GroupPixelColors[] partitionInto3ByColorDifference(Set<PairInt> skyPoints, 
