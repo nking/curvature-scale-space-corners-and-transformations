@@ -283,79 +283,47 @@ theta.getXRelativeOffset(), theta.getYRelativeOffset(),
       
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "before_add_embedded");
- 
-        PerimeterFinder perimeterFinder = new PerimeterFinder();
-        // find remaining embedded points
-        int[] skyRowMinMax = new int[2];
-        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
-        Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(
-            points, skyRowMinMax, originalColorImage.getWidth(), 
-            embeddedPoints);
-        
-        if (!embeddedPoints.isEmpty()) {
-
-            HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
-
-            // brightest sky is in bin [2], and dimmest is in [0]
-            GroupPixelColors[] skyPartitionedByBrightness = 
-                partitionInto3ByBrightness(points, originalColorImage, 
-                theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
-                brightnessHistogram);
-
-            // no need to update rowColRanges as this was not an external "grow"
-            //add embedded pixels if they're near existing sky colors
-            addIfSimilarToSky(embeddedPoints, points, 
-                removedSets.getHighContrastRemoved(),
-                originalColorImage, mask,
-                brightnessHistogram, skyPartitionedByBrightness);        
+             
+        addEmbeddedIfSimilarToSky(points, originalColorImage, mask,
+            removedSets);
 
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_add_embedded");
 
-        }
-
         Set<PairInt> exclude = new HashSet<PairInt>();
         exclude.addAll(removedSets.getHighContrastRemoved());
-        exclude.addAll(rainbowPoints);
+        //exclude.addAll(rainbowPoints);
         exclude.addAll(sunPoints);
 
         log.info("number of sunPoints=" + sunPoints.size() + " "
         + "reflectedSunRemoved.size()=" + removedSets.getReflectedSunRemoved().size());
 
-        if (false && sunPoints.isEmpty()) {
+        boolean addEmbedded = false;
         
-            growForLowContrastLimits(points, exclude, skyRowColRange,
-                skyRowMinMax, originalColorImage, mask);
+        //if (sunPoints.isEmpty()) {
+        
+            growForLowContrastLimits(points, exclude, originalColorImage, mask,
+                determineBinFactorForSkyMask(theta.getNPixels()));
 
+            addEmbedded = true;
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
 "after_low_contrast_grow");
 
-        }
+        //}
 
         if (!sunPoints.isEmpty()) {
             
-            correctSkylineForSun(sunPoints, points, originalColorImage, mask, gradientXY);
+            correctSkylineForSun(sunPoints, points, originalColorImage, mask, 
+                gradientXY);
             
-            embeddedPoints = new HashSet<PairInt>();
-            getEmbeddedPoints(points, gradientXY.getWidth(), gradientXY.getHeight(), 
-                embeddedPoints);
-            
-            HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
-
-            // brightest sky is in bin [2], and dimmest is in [0]
-            GroupPixelColors[] skyPartitionedByBrightness = 
-                partitionInto3ByBrightness(points, originalColorImage, 
-                theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
-                brightnessHistogram);
-
-            // no need to update rowColRanges as this was not an external "grow"
-            //add embedded pixels if they're near existing sky colors
-            addIfSimilarToSky(embeddedPoints, points, 
-                removedSets.getHighContrastRemoved(),
-                originalColorImage, mask,
-                brightnessHistogram, skyPartitionedByBrightness);
+            addEmbedded = true;
         }
-
+        
+        if (addEmbedded) {
+            addEmbeddedIfSimilarToSky(points, originalColorImage, mask,
+                removedSets);
+        }
+        
 debugPlot(points, originalColorImage, mask.getXRelativeOffset(), 
 mask.getYRelativeOffset(), "final");
         
@@ -367,17 +335,8 @@ mask.getYRelativeOffset(), "final");
         
         points.addAll(sunPoints);
         
-        for (PairInt p : rainbowPoints) {
-            int x = p.getX();
-            int y = p.getY();            
-            mask.setValue(x, y, 0);
-        }
-        points.addAll(rainbowPoints);
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();        
         double[] xycen = curveHelper.calculateXYCentroids(points);
- 
         outputSkyCentroid.add((int)Math.round(xycen[0]), (int)Math.round(xycen[1]));
 
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -2793,8 +2752,8 @@ try {
     }
 
     private void growForLowContrastLimits(Set<PairInt> points, 
-        Set<PairInt> excludePoints, Map<Integer, List<PairInt>> skyRowColRange,
-        int[] skyRowMinMax, ImageExt colorImg, GreyscaleImage mask) {
+        Set<PairInt> excludePoints, ImageExt colorImg, GreyscaleImage mask,
+        int binFactor) {
 
         // it tries to avoid adding snowy mountain tops to hazy sky pixels,
         // for example.
@@ -2811,10 +2770,6 @@ try {
         GroupPixelColors allSkyColor = new GroupPixelColors(points, colorImg, 
             xOffset, yOffset);
 
-        //TODO: change to use border pixels and their 24 neighbors?
-        PixelColors foregroundColor = getAveragedColorOfDifference(points,
-            colorImg, xOffset, yOffset);
-
         double rDivB = allSkyColor.getAvgRed()/allSkyColor.getAvgBlue();
 
         boolean skyIsRed = (rDivB > 1);
@@ -2826,25 +2781,34 @@ try {
 
         int nAdded = 0;
         int nIter = 0;
-        int nMaxIter = 1;
+        int nMaxIter = binFactor;
 
-        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
-            skyRowColRange, skyRowMinMax, imageMaxColumn, imageMaxRow);
+        int[] skyRowMinMax = new int[2];
+        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
+        Map<Integer, List<PairInt>> skyRowColRange = perimeterFinder.find(points, skyRowMinMax, 
+            colorImg.getWidth(), embeddedPoints);
+        Set<PairInt> borderPixels = null;
         
-        Set<PairInt> borderPixelsAndNeighbors = new HashSet<PairInt>(borderPixels);
-
         while ((nIter == 0) || ((nIter < nMaxIter) && (nAdded > 0))) {
             
-            nAdded = 0;            
+            if (borderPixels != null) {
+                skyRowColRange = perimeterFinder.find(
+                    points, skyRowMinMax, imageMaxColumn, 
+                    embeddedPoints);
+            }
+            borderPixels = perimeterFinder.getBorderPixels(
+                skyRowColRange, skyRowMinMax, imageMaxColumn, imageMaxRow);
+            
+            nAdded = 0;          
 
             for (PairInt uPoint : borderPixels) {
 
                 int uX = uPoint.getX() + xOffset;
                 int uY = uPoint.getY() + yOffset;
                 
-                // for each u, aggregate it's neighbors colors if they are 
-                // in the "points" set
-
+                Set<PairInt> neighborsInSky = new HashSet<PairInt>();
+                Set<PairInt> neighborsNotInSky = new HashSet<PairInt>();
+                                        
                 for (int k = 0; k < dxs.length; k++) {
 
                     int vX = uX + dxs[k];
@@ -2857,176 +2821,67 @@ try {
 
                     PairInt vPoint = new PairInt(vX - xOffset, vY - yOffset);
                     
-                    if (uPoint.equals(vPoint) || !points.contains(vPoint) ||
-                        excludePoints.contains(vPoint)) {
+                    if (uPoint.equals(vPoint) || excludePoints.contains(vPoint)) {
                         continue;
                     }
-                                        
-                    Set<PairInt> neighbors = getThe8NeighborPixelsWithin(
-                        uPoint, points, mWidth, mHeight);
+                    
+                    if (points.contains(vPoint)) {
+                        neighborsInSky.add(vPoint);
+                    } else {
+                        neighborsNotInSky.add(vPoint);
+                    }
+                }
+                
+                if (!neighborsNotInSky.isEmpty()) {
+                    
+                    GroupPixelColors gpc = new GroupPixelColors(neighborsInSky,
+                        colorImg, xOffset, yOffset);
+                    
+                    for (PairInt p : neighborsNotInSky) {
                         
-                    borderPixelsAndNeighbors.addAll(neighbors);     
+                        int x = p.getX();
+                        int y = p.getY();
+                        
+                        int r = colorImg.getR(x, y);
+                        int g = colorImg.getG(x, y);
+                        int b = colorImg.getB(x, y);
+                        
+                        float contrast = gpc.calcContrastToOther(r, g, b);
+                        double contrastDivStDev = contrast/gpc.getStdDevContrast();
+                        float colorDiff = gpc.calcColorDiffToOther(r, g, b);
+                        double colorDiffForSkyColor = skyIsRed ? 
+                            (r - gpc.getAvgRed()) : (b - gpc.getAvgBlue());
+                        double colorDiffForSkyColorDivStDev = skyIsRed ?
+                            colorDiffForSkyColor/gpc.getStdDevRed() :
+                            colorDiffForSkyColor/gpc.getStdDevBlue();
+                        double diffCIEX = colorImg.getCIEX(x, y) - gpc.getAverageCIEX();
+                        double diffCIEY = colorImg.getCIEY(x, y) - gpc.getAverageCIEY();
+                        double diffCIEXDivStDev = Math.abs(diffCIEX)/gpc.getStdDevCIEX();
+                        double diffCIEYDivStDev = Math.abs(diffCIEY)/gpc.getStdDevCIEY();
+                           
+                        if (
+                            (diffCIEX < 0.01) && (diffCIEY < 0.01)
+                            && (Math.abs(contrast) < 0.01)  //0.045 for less conservative
+                            ) {
+                            points.add(new PairInt(x - xOffset, y - yOffset));
+                            nAdded++;
+                        } else if (
+                            (diffCIEX < 0.005) && (diffCIEY < 0.005)
+                            && (Math.abs(contrast) < 0.005)
+                            ) {
+                            points.add(new PairInt(x - xOffset, y - yOffset));
+                            nAdded++;
+                        }
+                    }
                 }
             }
             
-            Set<PairInt> addedPixels = growForLowContrastLimits(points, 
-                excludePoints, colorImg, mask, skyIsRed, borderPixels, 
-                borderPixelsAndNeighbors, foregroundColor);
+            System.out.println("nAdded=" + nAdded);
             
-            borderPixels = addedPixels;
-
-            nAdded = addedPixels.size();
             nIter++;
         }
     }
-        
-    private Set<PairInt> growForLowContrastLimits(Set<PairInt> points, 
-        Set<PairInt> excludePoints, ImageExt colorImg, GreyscaleImage mask,
-        boolean skyIsRed, Set<PairInt> borderPixels,
-        Set<PairInt> borderPixelsAndNeighbors, PixelColors foregroundColor) {
-        
-        if (borderPixels.isEmpty()) {
-            return new HashSet<PairInt>();
-        }
-        
-        int xOffset = mask.getXRelativeOffset();
-        int yOffset = mask.getYRelativeOffset();
-        int width = mask.getWidth();
-        int height = mask.getHeight();
-        
-        GroupPixelColors gpc = new GroupPixelColors(borderPixelsAndNeighbors,
-            colorImg, xOffset, yOffset);
-        
-        //TODO: ***change to BFS w/ insert at process pair insted of DFS***
-        
-        Stack<PairInt> stack = new Stack<PairInt>();
-        stack.addAll(borderPixels);
-        
-        Set<PairInt> visited = new HashSet<PairInt>();
-        visited.add(stack.peek());
-        
-        //int[] dxs = new int[]{-1,  0, 1, 0};
-        //int[] dys = new int[]{ 0, -1, 0, 1};
-        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
-        double skyMinusForegroundColor = 
-            foregroundColor.calculateColorDiffererenceToOther(
-            Math.round(gpc.getAvgRed()), 
-            Math.round(gpc.getAvgGreen()), Math.round(gpc.getAvgBlue()));
-        
-        log.info("skyMinusForegroundColor=" + skyMinusForegroundColor + 
-            " skyIsRed=" + skyIsRed);
-        
-        //TODO:  improve this
-        int firstSubtrTol = 7;
-        int secondSubtrTol = 2;
-        if (skyMinusForegroundColor >= 200) {
-            firstSubtrTol = 9;
-            secondSubtrTol = 8;
-        }
-        
-        int nAdded = 0;
-        
-        //Stack<PairInt> addedSky = new Stack<PairInt>();
-        Set<PairInt> addedSky = new HashSet<PairInt>();
-        
-        Stack<PixelColors> addedSkyColorToAdd = new Stack<PixelColors>();
-        
-        while (!stack.isEmpty()) {
-
-            PairInt uPoint = stack.pop();
-
-            int uX = uPoint.getX() + xOffset;
-            int uY = uPoint.getY() + yOffset;
-
-            GroupPixelColors uLocalColors = null;
-            
-            for (int k = 0; k < dxs.length; k++) {
-
-                int vX = uX + dxs[k];
-                int vY = uY + dys[k];
-
-                if ((vX < 0) || (vX > (width - 1)) || (vY < 0) || 
-                    (vY > (height - 1))) {
-                    continue;
-                }
-
-                PairInt vPoint = new PairInt(vX - xOffset, vY - yOffset);
-
-                if (uPoint.equals(vPoint) || visited.contains(vPoint) ||
-                    excludePoints.contains(vPoint) || points.contains(vPoint)
-                    || borderPixels.contains(vPoint)) {
-                    continue;
-                }
-
-                visited.add(vPoint);
-                
-                int r = colorImg.getR(vX, vY);
-                int g = colorImg.getG(vX, vY);
-                int b = colorImg.getB(vX, vY);
-                
-                if (uLocalColors == null) {
-                    
-                    Set<PairInt> neighbors = getThe8NeighborPixelsWithin(
-                        uPoint, points, width, height);
-                    neighbors.add(uPoint); 
-                        
-                    uLocalColors = new GroupPixelColors(neighbors, colorImg, 
-                        xOffset, yOffset);                    
-                }
-                
-                double contrast = uLocalColors.calcContrastToOther(r, g, b);
-                
-                double diffColor = b - gpc.getAvgBlue();
-
-                double colorChange = diffColor/gpc.getStdDevBlue();
-
-                if (skyIsRed) {
-                    diffColor = r - gpc.getAvgRed();
-                    colorChange = diffColor/gpc.getStdDevRed();
-                }
-
-                double diffContrast = contrast - gpc.getAvgContrast();
-
-                double contrastChange = diffContrast/gpc.getStdDevContrast();
-
-                boolean isBorder = false;
-                
-                float bFactor = 0.25f;
-                float cFactor = 0.01f;
-        
-                if ((Math.abs(contrastChange) > cFactor) && (Math.abs(colorChange) > bFactor)) {
-                    isBorder = true;
-                }
-
-                if (!isBorder || (
-                    ((Math.abs(r - gpc.getAvgRed()) < firstSubtrTol) 
-                    && (Math.abs(g - gpc.getAvgGreen()) < firstSubtrTol) &&
-                    (Math.abs(b - gpc.getAvgBlue()) < firstSubtrTol)))) {
-                    
-                    nAdded++;
-
-                    stack.add(vPoint);
-                    points.add(vPoint);
-
-                    mask.setValue(vX - xOffset, vY - yOffset, 0);
-
-                    // store points which were just added to try an
-                    //   add of all similar color neighbors
-                    //   after 
-
-                    addedSky.add(vPoint);
-                    addedSkyColorToAdd.add(new PixelColors(r, g, b));
-                }
-               
-            }
-        }
-        
-        return addedSky;
-
-    }
-
+    
     /**
      * find sun colored points by searching entire image.
      * Note, that if the points returned are well fit by a circle
@@ -4463,6 +4318,36 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
         
         skyPoints.addAll(rainbowHullPoints);
         
+    }
+
+    private void addEmbeddedIfSimilarToSky(Set<PairInt> points, 
+        ImageExt originalColorImage, GreyscaleImage mask, 
+        RemovedSets removedSets) {
+        
+        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
+        getEmbeddedPoints(points, originalColorImage.getWidth(), 
+            originalColorImage.getHeight(),
+            embeddedPoints);
+        
+        if (embeddedPoints.isEmpty()) {
+            return;
+        }
+        
+        HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
+
+        // brightest sky is in bin [2], and dimmest is in [0]
+        GroupPixelColors[] skyPartitionedByBrightness = 
+            partitionInto3ByBrightness(points, originalColorImage, 
+            mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+            brightnessHistogram);
+
+        // no need to update rowColRanges as this was not an external "grow"
+        //add embedded pixels if they're near existing sky colors
+        addIfSimilarToSky(embeddedPoints, points, 
+            removedSets.getHighContrastRemoved(),
+            originalColorImage, mask,
+            brightnessHistogram, skyPartitionedByBrightness);        
+
     }
     
     private class Hull {

@@ -1642,6 +1642,8 @@ public class PointMatcher3Test {
         try {
             PointMatcher3Test test = new PointMatcher3Test();
 
+            test.testSkyline();
+            
             /*
             test.test1();
             test.test2();
@@ -1667,8 +1669,6 @@ public class PointMatcher3Test {
             //test.examineInvPointLists();
             //test.smallestSubsets();
             //test.examineIterativeCorners();
-            
-            test.testSkyline();
             
             /*
             tests for :
