@@ -3888,12 +3888,30 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
             return null;
         }
         
+        /*
+        usually, the largest smooth component of the image is sky and for that
+        case, one just needs to retain the largest contiguous list in
+        zeroPointLists as the seed of the sky points from which to find
+        the remaining sky points.
+        
+        For a case such as a large smooth foreground field that has colors 
+        similar to sky, such as a featureless snow field, one needs to 
+        use other information to distinguish which points are sky points.
+        --> this can be seen when all lists in zeroPointLists, that is all points
+        in zeroPointLists have cie X and Y white.
+        */
+        // if all are white, reduce to the bluest lists
+        boolean didReduceToBluest = reduceToBluestIfAllAreWhite(zeroPointLists, 
+            colorImg, thetaImg);
+        
         //TODO:  assumes that largest smooth component of image is sky.
         // if sky is small and a foreground object is large and featureless
         // and not found as dark, this will fail. 
         // will adjust for that one day, possibly with color validation
-        reduceToLargest(zeroPointLists);
- 
+        //if (!didReduceToBluest) {
+            reduceToLargest(zeroPointLists);
+        //}
+        
         if (zeroPointLists.isEmpty()) {
             return null;
         }
@@ -4348,6 +4366,187 @@ debugPlot(skyPoints, colorImg, mask.getXRelativeOffset(), mask.getYRelativeOffse
             originalColorImage, mask,
             brightnessHistogram, skyPartitionedByBrightness);        
 
+    }
+
+    private void createDebugPlots(List<PairIntArray> zeroPointLists, 
+        ImageExt colorImg, GreyscaleImage thetaImg) {
+        
+        // scatter diagrams of cie X vs cie Y,  a plot of their (x,y) locations
+        // for the image dimensions, and scatter diagram of red/total vs blue/total.
+        
+        PolygonAndPointPlotter plotter = null;
+        try {
+            plotter = new PolygonAndPointPlotter();
+        } catch (IOException e) {
+        }
+        
+        int xOffset = thetaImg.getXRelativeOffset();
+        int yOffset = thetaImg.getYRelativeOffset();
+        int count = 0;
+        for (PairIntArray pai : zeroPointLists) {
+            int n = pai.getN();
+            float[] xP = new float[n];
+            float[] yP = new float[n];
+            float[] rDivTotal = new float[n];
+            float[] bDivTotal = new float[n];
+            CIEChromaticity cieC = new CIEChromaticity();
+            float[] cieX = new float[n];
+            float[] cieY = new float[n];
+            for (int i = 0; i < n; i++) {
+                int x = pai.getX(i) + xOffset;
+                int y = pai.getY(i) + yOffset;
+                
+                xP[i] = x;
+                yP[i] = y;
+                
+                int r = colorImg.getR(x, y);
+                int g = colorImg.getG(x, y);
+                int b = colorImg.getB(x, y);
+                int rgbTotal = r + g + b;
+                rDivTotal[i] = (float)r/(float)rgbTotal;
+                bDivTotal[i] = (float)b/(float)rgbTotal;
+                
+                float[] cie = cieC.rgbToXYChromaticity(r, g, b);
+                cieX[i] = cie[0];
+                cieY[i] = cie[1];                
+            }
+        
+            // scatter diagrams of cie X vs cie Y,  a plot of their (x,y) locations
+            // for the image dimensions, and scatter diagram of red/total vs blue/total.
+
+            plotter.addPlot(0.f, 1.f, 0.f, 1.f, cieX, cieY, 
+                null, null, "cie X vs cie Y (" + count + ")");
+
+            plotter.addPlot(0.f, 0.4f, 0.f, 0.4f, rDivTotal, bDivTotal, 
+                null, null, "R/RGB vs B/RGB (" + count + ")");
+
+            plotter.addPlot(0.f, colorImg.getWidth(), 0, colorImg.getHeight(), 
+                xP, yP, null, null, "x vs y (" + count + ")");
+
+            count++;
+        }
+        
+        try {
+            String fileName = plotter.writeFile(Integer.valueOf(700 + count));
+
+            System.out.println("fileName=" + fileName);
+        
+        } catch (IOException e) {
+            Logger.getLogger(this.getClass().getName()).severe(e.getMessage());
+        }    
+    }
+    
+    private void calculateAverageColors(List<PairIntArray> zeroPointLists, 
+        ImageExt colorImg, GreyscaleImage thetaImg, 
+        float[] outputCIEX, float[] outputCIEY, 
+        float[] outputRDIVRGB, float[] outputBDIVRGB) {
+        
+        int xOffset = thetaImg.getXRelativeOffset();
+        int yOffset = thetaImg.getYRelativeOffset();
+        int count = 0;
+        CIEChromaticity cieC = new CIEChromaticity();
+        for (PairIntArray pai : zeroPointLists) {
+                        
+            double sumCIEX = 0;
+            double sumCIEY = 0;
+            double sumRDIVGRB = 0;
+            double sumBDIVGRB = 0;
+            
+            int n = pai.getN();
+            
+            for (int i = 0; i < n; i++) {
+                int x = pai.getX(i) + xOffset;
+                int y = pai.getY(i) + yOffset;
+                                
+                int r = colorImg.getR(x, y);
+                int g = colorImg.getG(x, y);
+                int b = colorImg.getB(x, y);
+                
+                sumRDIVGRB += ((double)r/(r + g + b));
+                sumBDIVGRB += ((double)b/(r + g + b));
+                
+                float[] cie = cieC.rgbToXYChromaticity(r, g, b);
+                if (cie[0] < 0.2 || cie[1] < 0.2) {
+                    int z = 1;
+                }
+                sumCIEX += cie[0];
+                sumCIEY += cie[1];
+            }
+            outputCIEX[count] = (float)(sumCIEX/(float)n);
+            outputCIEY[count] = (float)(sumCIEY/(float)n);
+            
+            outputRDIVRGB[count] = (float)(sumRDIVGRB/(float)n);
+            outputBDIVRGB[count] = (float)(sumBDIVGRB/(float)n);
+            
+            count++;
+        }
+    }
+
+    private boolean reduceToBluestIfAllAreWhite(List<PairIntArray> zeroPointLists, 
+        ImageExt colorImg, GreyscaleImage thetaImg) {
+        
+        //createDebugPlots(zeroPointLists, colorImg, thetaImg);
+        
+        float[] cieX = new float[zeroPointLists.size()];
+        float[] cieY = new float[zeroPointLists.size()];
+        float[] rDIVRGB = new float[zeroPointLists.size()];
+        float[] bDIVRGB = new float[zeroPointLists.size()];
+                
+        calculateAverageColors(zeroPointLists, colorImg, thetaImg, 
+            cieX, cieY, rDIVRGB, bDIVRGB);        
+        
+        //TODO: may need to revise the ranges here
+        boolean allAreWhite = true;
+        for (int i = 0; i < cieX.length; i++) {
+            float x = cieX[i];
+            float y = cieY[i];
+            float xDivY = x/y;
+            if (!((x >= 0.23) && (x <= 0.43) && (Math.abs(xDivY - 1) < 0.2))){
+                allAreWhite = false;
+                break;
+            }
+            if ((x > 0.33) && (y < 0.28)) {
+                allAreWhite = false;
+                break;
+            }
+            if ((x > 0.25) & (y < 0.2)) {
+                allAreWhite = false;
+                break;
+            }
+        }
+        if (!allAreWhite) {
+System.out.println("cieX=" + Arrays.toString(cieX));
+System.out.println("cieY=" + Arrays.toString(cieY));
+            return false;
+        }
+        
+        // Looking for differences between a snow field and clouds.
+        // The Warren 1982 paper suggests that snow will have a redder slope
+        // over the optical bandpass than optically thick clouds.  
+        // The optically thick clouds will be grey if not slightly blue.
+        
+        HistogramHolder bHist = Histogram.createSimpleHistogram(3,
+            bDIVRGB, Errors.populateYErrorsBySqrt(bDIVRGB));
+        System.out.println("bHist y=" + Arrays.toString(bHist.getYHist()) 
+            + " x=" + Arrays.toString(bHist.getXHist()));
+        
+        /*try {
+            bHist.plotHistogram("blueHist", 8001);
+        } catch (IOException e) {
+        }*/
+        
+        List<PairIntArray> keep = new ArrayList<PairIntArray>();
+        float limit = 0.5f*(bHist.getXHist()[1] + bHist.getXHist()[0]);
+        for (int i = 0; i < bDIVRGB.length; i++) {
+            if (bDIVRGB[i] >= limit) {
+                keep.add(zeroPointLists.get(i));
+            }
+        }
+        
+        zeroPointLists.clear();
+        zeroPointLists.addAll(keep);
+        
+        return true;
     }
     
     private class Hull {
