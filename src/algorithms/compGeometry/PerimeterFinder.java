@@ -95,6 +95,63 @@ public class PerimeterFinder {
         return rowColRanges;
     }
     
+    /**
+     * For the given points, find the ranges of columns that bound the points
+     * that are contiguous and the points that are completely 
+     * enclosed within points but not part of the set.
+     * This returns an outline of the points attempting to correct for
+     * concave portions of the hull, that is, it is roughly a concave hull
+     * that includes embedded PairInts that are not in the set points.
+     * 
+     */
+    public Set<PairInt> findEmbeddedGivenRowData( 
+        int[] rowMinMax, int imageMaxColumn, 
+        Map<Integer, List<PairInt>> rowColRanges) {
+        
+        if (rowColRanges == null) {
+	    	throw new IllegalArgumentException("rowColRanges cannot be null");
+        }
+        if (rowMinMax == null) {
+	    	throw new IllegalArgumentException("outputRowMinMax cannot be null");
+        }
+        
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
+            List<PairInt> rcr = rowColRanges.get(Integer.valueOf(row));
+            if (rcr.isEmpty()) {
+                continue;
+            }
+            int x0 = rcr.get(0).getX();
+            int xf = rcr.get(rcr.size() - 1).getY();
+            if (x0 < minX) {
+                minX = x0;
+            }
+            if (xf > maxX) {
+                maxX = xf;
+            }
+        }
+       
+        // runtime complexity is > O(m) where m is the number of contig gap ranges by row
+        List<List<Gap>> contiguousGaps = findContiguousGaps(rowColRanges,
+            minX, maxX, rowMinMax[0], rowMinMax[1]);
+
+        //runtime complexity is > O(m) where m is the number of contig gap ranges by row
+        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, 
+            rowMinMax[0], rowMinMax[1], imageMaxColumn, rowColRanges);
+
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        // update the rowColRanges to encapsulate the truly embedded points too
+        for (List<Gap> embeddedGroup : embeddedGapGroups) {
+            
+            updateRowColRangesForVerifiedEmbedded(rowColRanges, 
+                embeddedGroup, outputEmbeddedGapPoints);
+        }
+
+        return outputEmbeddedGapPoints;
+    }
+    
     boolean boundedByPointsInHigherRows(int row, int gapStart, int gapStop,
         int maxRow, int imageMaxColumn, Map<Integer, List<PairInt>> rowColRange) {
         

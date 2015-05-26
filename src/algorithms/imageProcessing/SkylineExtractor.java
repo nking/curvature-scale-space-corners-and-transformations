@@ -295,6 +295,11 @@ debugPlot(points, originalColorImage, mask.getXRelativeOffset(), mask.getYRelati
         //exclude.addAll(rainbowPoints);
         exclude.addAll(sunPoints);
 
+        // look for patches of sky that are not yet found and are on the image
+        // boundaries
+        int nAdded = addImageBoundaryEmbeddedSkyIfSimilar(points, exclude, 
+            originalColorImage, mask, removedSets);
+        
         log.info("number of sunPoints=" + sunPoints.size() + " "
         + "reflectedSunRemoved.size()=" + removedSets.getReflectedSunRemoved().size());
 
@@ -2506,7 +2511,7 @@ try {
         
         return sets;
     }
-  
+    
         /*
         scattering:
             for atmospheric particles, their size is much smaller than
@@ -4547,6 +4552,246 @@ System.out.println("cieY=" + Arrays.toString(cieY));
         zeroPointLists.addAll(keep);
         
         return true;
+    }
+
+    private int addImageBoundaryEmbeddedSkyIfSimilar(Set<PairInt> skyPoints, 
+        Set<PairInt> exclude, ImageExt originalColorImage, GreyscaleImage mask,
+        RemovedSets removedSets) {
+        
+        int width = mask.getWidth();
+        int height = mask.getHeight();
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+
+        int imageMaxColumn = width - 1;
+        int imageMaxRow = height - 1;
+       
+        int[] skyRowMinMax = new int[2];
+        
+        Set<PairInt> embeddedPoints = new HashSet<PairInt>();
+        Map<Integer, List<PairInt>> skyRowColRanges = perimeterFinder.find(
+            skyPoints, skyRowMinMax, imageMaxColumn, embeddedPoints);
+        
+        int nEmbeddedBefore = embeddedPoints.size();
+        
+        fillInImageBoundaryGapsIfBoundedBySky(skyRowColRanges, skyRowMinMax,
+            width, height);
+        
+        embeddedPoints = perimeterFinder.findEmbeddedGivenRowData(skyRowMinMax, 
+            width - 1, skyRowColRanges);
+        
+        if (embeddedPoints.isEmpty()) {
+            return 0;
+        }
+        
+        //TODO: revisit this with more test images
+        float maxPossibleFracNewDivSky =
+            ((float)(skyPoints.size() + embeddedPoints.size())/((float)(width * height)));
+        if (maxPossibleFracNewDivSky > 0.75) {
+            return 0;
+        }
+        
+        float fracNewDivSky = (float)embeddedPoints.size()/(float)skyPoints.size();
+        //AZ        0.0070258044  <== small amount helpful
+        //rainbow   0.048877604
+        //patagonia 0.45363995    <== HELPFUL
+        //rainier   0.080801226   <== adding covers the entire image.  DO NOT USE FOR THIS
+        System.out.println("fracNewDivSky=" + fracNewDivSky 
+            + " nEmbeddedBefore=" + nEmbeddedBefore 
+            + " embedded=" + embeddedPoints.size() 
+            + " nSky/nTotal=" + ((float)skyPoints.size()/((float)(width * height)))
+            + " (nSky + nEmbeded)/nTotal=" 
+            + ((float)(skyPoints.size() + embeddedPoints.size())/((float)(width * height)))
+            + " " + debugName);
+        
+        int nSkyBefore = skyPoints.size();
+        
+        HistogramHolder[] brightnessHistogram = new HistogramHolder[1];
+
+        // brightest sky is in bin [2], and dimmest is in [0]
+        GroupPixelColors[] skyPartitionedByBrightness = 
+            partitionInto3ByBrightness(skyPoints, originalColorImage, 
+            mask.getXRelativeOffset(), mask.getYRelativeOffset(), 
+            brightnessHistogram);
+
+        // no need to update rowColRanges as this was not an external "grow"
+        //add embedded pixels if they're near existing sky colors
+        addIfSimilarToSky(embeddedPoints, skyPoints, 
+            removedSets.getHighContrastRemoved(),
+            originalColorImage, mask,
+            brightnessHistogram, skyPartitionedByBrightness);
+        
+        return (skyPoints.size() - nSkyBefore);
+    }
+
+    private void fillInImageBoundaryGapsIfBoundedBySky(
+        Map<Integer, List<PairInt>> skyRowColRanges, int[] skyRowMinMax, 
+        int width, int height) {
+        
+        int imageMaxColumn = width - 1;
+        int imageMaxRow = height - 1;
+        
+        // follow skyRowColRanges around image boundary to see if there gaps
+        // on the bounds of the image.
+        // Use a "fudge" to gather those image boundary touching pixels that
+        //    are not in skyPoints and find the embedded among them then
+        //    those that look like sky points:
+        
+        // ---- fill in any gaps in columns in top row if top row is 0 -----
+        if (skyRowMinMax[0] == 0) {
+            
+            List<PairInt> rowColRanges = skyRowColRanges.get(Integer.valueOf(0));
+            
+            if (rowColRanges.size() > 1) {
+                rowColRanges.get(0).setY(rowColRanges.get(
+                    rowColRanges.size() - 1).getY());
+                for (int i = rowColRanges.size() - 1; i > 0; i--) {
+                    rowColRanges.remove(i);
+                }
+            }
+            
+            if (!rowColRanges.isEmpty()) {
+                // fill in corners if the gap along that image boundary column
+                // is bounded at a higher row.
+                boolean fillInLeftCorner = false;
+                if (rowColRanges.get(0).getX() > 0) {
+                    // ascend rows to see if any have first colRange starting at 0
+                    for (int row = skyRowMinMax[0] + 1; row <= skyRowMinMax[1]; row++) {
+                        List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));
+                        if (rcr.get(0).getX() == 0) {
+                            fillInLeftCorner = true;
+                            break;
+                        }
+                    }
+                }
+                if (fillInLeftCorner) {
+                    rowColRanges.get(0).setX(0);
+                }
+            
+                boolean fillInRightCorner = false;
+                if (rowColRanges.get(rowColRanges.size() - 1).getY() < imageMaxColumn) {
+                    // ascend rows to see if any have last colRange == imageMaxColumn
+                    for (int row = skyRowMinMax[0] + 1; row <= skyRowMinMax[1]; row++) {
+                        List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));
+                        if (rcr.get(rcr.size() - 1).getY() == imageMaxColumn) {
+                            fillInRightCorner = true;
+                            break;
+                        }
+                    }
+                }
+                if (fillInRightCorner) {
+                    rowColRanges.get(rowColRanges.size() - 1).setY(imageMaxColumn);
+                }
+            }
+        }
+        
+        // ---- fill in any gaps in columns in bottom row if top row is imageMaxRow -----
+        if (skyRowMinMax[1] == imageMaxRow) {
+            
+            List<PairInt> rowColRanges = skyRowColRanges.get(
+                Integer.valueOf(imageMaxRow));
+            
+            if (rowColRanges.size() > 1) {
+                rowColRanges.get(0).setY(rowColRanges.get(
+                    rowColRanges.size() - 1).getY());
+                for (int i = rowColRanges.size() - 1; i > 0; i--) {
+                    rowColRanges.remove(i);
+                }
+            }
+            
+            if (!rowColRanges.isEmpty()) {
+                
+                // fill in corners if the gap along that image boundary column
+                // is bounded at a higher row.
+                boolean fillInLeftCorner = false;
+                if (rowColRanges.get(0).getX() > 0) {
+                    // ascend rows to see if any have first colRange starting at 0
+                    for (int row = skyRowMinMax[1] - 1; row > skyRowMinMax[0]; row--) {
+                        List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));
+                        if (rcr.get(0).getX() == 0) {
+                            fillInLeftCorner = true;
+                            break;
+                        }
+                    }
+                }
+                if (fillInLeftCorner) {
+                    rowColRanges.get(0).setX(0);
+                }
+            
+                boolean fillInRightCorner = false;
+                if (rowColRanges.get(rowColRanges.size() - 1).getY() < imageMaxColumn) {
+                    // ascend rows to see if any have last colRange == imageMaxColumn
+                    for (int row = skyRowMinMax[1] - 1; row > skyRowMinMax[0]; row--) {
+                        List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));
+                        if (rcr.get(rcr.size() - 1).getY() == imageMaxColumn) {
+                            fillInRightCorner = true;
+                            break;
+                        }
+                    }
+                }
+                if (fillInRightCorner) {
+                    rowColRanges.get(rowColRanges.size() - 1).setY(imageMaxColumn);
+                }
+            }
+        }
+        
+        // --- fill in leftmost and rightmost image column gaps if bounded by sky ---
+        int minRowForFirstColumn = Integer.MAX_VALUE;
+        int maxRowForFirstColumn = Integer.MIN_VALUE;
+        int minRowForLastColumn = Integer.MAX_VALUE;
+        int maxRowForLastColumn = Integer.MIN_VALUE;
+        for (int row = skyRowMinMax[0]; row <= skyRowMinMax[1]; row++) {
+            List<PairInt> rowColRanges = skyRowColRanges.get(Integer.valueOf(row));
+            if (rowColRanges.isEmpty()) {
+                continue;
+            }
+            int firstColRangeX = rowColRanges.get(0).getX();
+            int lastColRangeY = rowColRanges.get(rowColRanges.size() - 1).getY();
+            if (firstColRangeX == 0) {
+                if (row < minRowForFirstColumn) {
+                    minRowForFirstColumn = row;
+                }
+                if (row > maxRowForFirstColumn) {
+                    maxRowForFirstColumn = row;
+                }
+            }
+            if (lastColRangeY == imageMaxColumn) {
+                if (row < minRowForLastColumn) {
+                    minRowForLastColumn = row;
+                }
+                if (row > maxRowForLastColumn) {
+                    maxRowForLastColumn = row;
+                }
+            }
+        }
+        if ((minRowForFirstColumn != Integer.MAX_VALUE) &&
+            (maxRowForFirstColumn != Integer.MIN_VALUE)) {
+            
+            for (int row = minRowForFirstColumn; row <= maxRowForFirstColumn; row++) {
+                
+                List<PairInt> rowColRanges = skyRowColRanges.get(Integer.valueOf(row));
+                
+                if (rowColRanges.isEmpty()) {
+                    rowColRanges.add(new PairInt(0, 0));
+                } else {
+                    rowColRanges.get(0).setX(0);
+                }
+            }
+        }
+        if ((minRowForLastColumn != Integer.MAX_VALUE) &&
+            (maxRowForLastColumn != Integer.MIN_VALUE)) {
+            
+            for (int row = minRowForLastColumn; row <= maxRowForLastColumn; row++) {
+                
+                List<PairInt> rowColRanges = skyRowColRanges.get(Integer.valueOf(row));
+                
+                if (rowColRanges.isEmpty()) {
+                    rowColRanges.add(new PairInt(imageMaxColumn, imageMaxColumn));
+                } else {
+                    rowColRanges.get(rowColRanges.size() - 1).setY(imageMaxColumn);
+                }
+            }
+        }
     }
     
     private class Hull {

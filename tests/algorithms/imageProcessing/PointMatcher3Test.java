@@ -454,8 +454,9 @@ public class PointMatcher3Test {
             "arizona-sunrise-1342919937GHz.jpg",
             "sky_with_rainbow.jpg",
             //"sky_with_rainbow2.jpg",
-            "patagonia_snowy_foreground.jpg",
-            "mt_rainier_snowy_field.jpg"
+            //"patagonia_snowy_foreground.jpg",
+            //"mt_rainier_snowy_field.jpg"
+            "klein_matterhorn_snowy_foreground.jpg"
             //"30.jpg",
             //"arches_sun_01.jpg",
             //"stlouis_arch.jpg", 
