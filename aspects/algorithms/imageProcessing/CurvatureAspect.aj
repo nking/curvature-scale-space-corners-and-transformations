@@ -139,12 +139,20 @@ public aspect CurvatureAspect {
         yOffset)
 	    && target(algorithms.imageProcessing.RainbowFinder) {
 
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof RainbowFinder)) {
+            return;
+        }
+
+        Set<PairInt> hullPoints = ((RainbowFinder)obj).getPointsToExcludeInHull();
+
         Image clr = originalColorImage.copyImage();
 
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
 
-            ImageIOHelper.addToImage(rainbowPoints, xOffset, yOffset, clr);
+            ImageIOHelper.addToImage(hullPoints, xOffset, yOffset, clr);
 
             ImageIOHelper.writeOutputImage(
                 dirPath + "/rainbow_hull_" + outImgNum + ".png", 

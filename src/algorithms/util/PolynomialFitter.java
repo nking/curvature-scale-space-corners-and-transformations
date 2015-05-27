@@ -31,6 +31,8 @@ import org.ejml.simple.SimpleMatrix;
  */
 public class PolynomialFitter {
     
+    private Logger log = Logger.getLogger(this.getClass().getName());
+    
     /**
      * solve for 2nd order curve for a random sample of 1000 points from
      * (dataX, dataY).
@@ -108,15 +110,6 @@ public class PolynomialFitter {
         | 1  x[i+1]  (x[i+1])^2 |  | c1 | =  | y[i+1] |
         | ..  ...      ...      |  | c2 |    | ...    |
         
-        The Newton matrix uses the form
-        1, (x-x[i]), (x-x[i])*(x-x[i+1]), (x-x[i])*(x-x[i+1])*(x-x[i+2]), ... 
-        and is a lower left triangular matrix
-        
-        | 1                     |  | c0 |    | y[i]   |
-        | 1  x[i]               |  | c1 | =  | y[i+1] |
-        | 1  x[i]   x[i]*x[i+1] |  | c2 |    | ...    |
-        | ...  ...   ...        |            | ...    |
-        
         X * c = Y
         
         then c = Y / X is ==> c = X^-1 * Y
@@ -190,25 +183,22 @@ public class PolynomialFitter {
      */
     public String plotFit(float[] coefficients, Set<PairInt> points, 
         int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
-        
+                
         // shape the rainbow points into a more even ribbon
-        float xMin = Float.MAX_VALUE;
-        float xMax = Float.MIN_VALUE;
+        
         float[] xP = new float[points.size()];
         float[] yP = new float[xP.length];
         int i = 0;
         for (PairInt p : points) {
             float x = p.getX();
-            if (x < xMin) {
-                xMin = x;
-            }
-            if (x > xMax) {
-                xMax = x;
-            }
             xP[i] = x;
             yP[i] = p.getY();
             i++;
         }
+        
+        float[] minXYMaxXY = determineGoodEndPoints(coefficients, points);
+        float xMin = minXYMaxXY[0];
+        float xMax = minXYMaxXY[2];
         
         int nCurve = 100;
         float dx = (xMax - xMin)/(float)nCurve;
@@ -216,7 +206,8 @@ public class PolynomialFitter {
         float[] yPoly = new float[xPoly.length];
         for (i = 0; i < nCurve; i++) {
             xPoly[i] = xMin + i*dx;
-            yPoly[i] = coefficients[0] + coefficients[1]*xPoly[i] + coefficients[2]*xPoly[i]*xPoly[i];
+            yPoly[i] = coefficients[0] + coefficients[1]*xPoly[i] 
+                + coefficients[2]*xPoly[i]*xPoly[i];
         }
         
         try {
@@ -233,6 +224,110 @@ public class PolynomialFitter {
         }
         
         return null;
+    }
+    
+    /**
+     * determine good end points for the polynomial fit to the points.
+     * runtime complexity is O(N*lg_2(N)) + O(N)
+     * @param coefficients
+     * @param points
+     * @return float[]{minX, YForMinX, maxX, YFoMaxX}
+     */
+    private float[] determineGoodEndPoints(float[] coefficients,
+        Set<PairInt> points) {
+        
+        /*
+        determine good endpoints for the polynomial solution.
+        it depends upon the orientation of the rainbow polynomial.
+        
+        should be able to determine the average to the 100 or so median
+        values as the middle of the rainbow,
+        then would find the smallest residual points from the model
+        polynomial that are located furthest from the median location.
+        */
+        
+        // sort points by x then y
+        int[] x = new int[points.size()];
+        int[] y = new int[x.length];
+        int i = 0;
+        for (PairInt p : points) {
+            x[i] = p.getX();
+            y[i] = p.getY();
+            i++;
+        }
+        //O(N*lg_2(N))
+        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);
+        
+        // average of central 10 or so median
+        int mid = points.size() >> 1;
+        float medianX;
+        float medianY;
+        if (points.size() < 10) {
+            medianX = x[points.size()/2];
+            medianY = y[points.size()/2];
+        } else {
+            double sumX = 0;
+            double sumY = 0;
+            int nMed = 5;
+            for (i = (mid - nMed); i <= (mid + nMed); i++) {
+                sumX += x[i];
+                sumY += y[i];
+            }
+            medianX = (float)sumX/(float)(2*nMed);
+            medianY = (float)sumY/(float)(2*nMed);
+        }
+        
+        // find the furthest points that have the smallest residuals on each side
+        int minX = -1;
+        int yForMinX = -1;
+        int maxX = -1;
+        int yForMaxX = -1;
+        for (int half = 0; half < 2; half++) {
+            double minResid = Double.MAX_VALUE;
+            int minResidIdx = -1;
+            double distFromMedianSq = Double.MIN_VALUE;
+            if (half == 0) {
+                for (i = 0; i < mid; ++i) {
+                    float yV = coefficients[0] * (coefficients[1] * x[i]) +
+                        (coefficients[2] * x[i] * x[i]);
+                    double resid = Math.abs(y[i] - yV);
+
+                    double distX = x[i] - medianX;
+                    double distY = y[i] - medianY;
+
+                    double distSq = (distX * distX) + (distY * distY);
+
+                    if ((resid < minResid) && (distSq >= distFromMedianSq)) {
+                        minResid = resid;
+                        minResidIdx = i;
+                        distFromMedianSq = distSq;
+                    }
+                }
+                minX = x[minResidIdx];
+                yForMinX = y[minResidIdx];
+            } else {
+                for (i = (points.size() - 1); i > mid; --i) {
+                    float yV = coefficients[0] * (coefficients[1] * x[i]) +
+                        (coefficients[2] * x[i] * x[i]);
+                    double resid = Math.abs(y[i] - yV);
+
+                    double distX = x[i] - medianX;
+                    double distY = y[i] - medianY;
+
+                    double distSq = (distX * distX) + (distY * distY);
+
+                    if ((resid < minResid) && (distSq >= distFromMedianSq)) {
+                        minResid = resid;
+                        minResidIdx = i;
+                        distFromMedianSq = distSq;
+                    }
+                }
+                maxX = x[minResidIdx];
+                yForMaxX = y[minResidIdx];
+            }
+        } 
+        
+        return new float[]{minX, yForMinX, maxX, yForMaxX};
     }
     
     /**
@@ -256,9 +351,9 @@ public class PolynomialFitter {
             return Double.POSITIVE_INFINITY;
         }
                 
-        int[] minMaxXY = MiscMath.findMinMaxXY(points);
-        
-        double xMin = minMaxXY[0];
+        //float[] minXYMaxXY = determineGoodEndPoints(coefficients,points);
+                
+        //double xMin = minXYMaxXY[0];
         
         // these can be large, so use abs value instead of sum of squares
         
@@ -268,16 +363,18 @@ public class PolynomialFitter {
             
             double x = p.getX();
             
-            double y = p.getY();            
+            double y = p.getY();         
             
-            double yPoly = xMin + coefficients[0] + (coefficients[1]*x) 
+            double yPoly = coefficients[0] + (coefficients[1]*x) 
                 + (coefficients[2]*x*x);
             
             double diff = y - yPoly;
             
             sum += Math.abs(diff);
         }
-                
+        
+        sum /= (double)points.size();
+        
         return sum;
     }
 
@@ -302,9 +399,9 @@ public class PolynomialFitter {
             return new double[]{Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};
         }
                 
-        int[] minMaxXY = MiscMath.findMinMaxXY(points);
-        
-        double xMin = minMaxXY[0];
+        //float[] minXYMaxXY = determineGoodEndPoints(coefficients,points);
+                
+        //double xMin = minXYMaxXY[0];
         
         // these can be large, so use abs value instead of sum of squares
         
@@ -316,7 +413,7 @@ public class PolynomialFitter {
             
             double y = p.getY();            
             
-            double yPoly = xMin + coefficients[0] + (coefficients[1]*x) 
+            double yPoly = coefficients[0] + (coefficients[1]*x) 
                 + (coefficients[2]*x*x);
             
             double diff = y - yPoly;
@@ -334,7 +431,7 @@ public class PolynomialFitter {
             
             double y = p.getY();
             
-            double yPoly = xMin + coefficients[0] + (coefficients[1]*x) 
+            double yPoly = coefficients[0] + (coefficients[1]*x) 
                 + (coefficients[2]*x*x);
             
             double diff = (y - yPoly) - avg;
@@ -347,7 +444,7 @@ public class PolynomialFitter {
         return new double[]{avg, stDev};
     }
 
-    public float[] solveForBestFittingContiguousSubSamples(Set<PairInt> points, 
+    public float[] solveForBestFittingContiguousSubSets(Set<PairInt> points, 
         Set<PairInt> outputPoints, int imageWidth, int imageHeight) {
     
         //TODO: revisit this one day to add tests and look for ways to improve it
@@ -409,8 +506,10 @@ public class PolynomialFitter {
         
         sr.setSeed(System.currentTimeMillis());
         
-        
-        double bestSubsetResiduals = Double.MAX_VALUE;
+        // the fitness function should choose the largest number
+        // of points with the smallest average residuals
+        // to give largest cosr
+        double bestCost = Double.MIN_VALUE;
         
         float[] bestSubsetCoeff = null;
                 
@@ -438,9 +537,9 @@ public class PolynomialFitter {
 
                 setBits.clear();
                 
-                //System.out.println("n=" + n + " k=" + k + " " +
-                //    Long.toBinaryString(bitstring.longValue())
-                //    + " nIter=" + nIter);
+                log.info("n=" + n + " k=" + k + " " +
+                    Long.toBinaryString(bitstring.longValue())
+                    + " nIter=" + nIter);
                 
                 MiscMath.readSetBits(bitstring, setBits);
                 
@@ -462,23 +561,27 @@ public class PolynomialFitter {
                 }
                 
                 double resid = calcResiduals(coeff, subset);
+                
+                double cost = (double)subset.size()/resid;
 /*                
-String label = Long.toBinaryString(bitstring.longValue()) + " " 
-+ Double.toString(resid) + " "
-+ Arrays.toString(coeff);                
+if (coeff != null) {                
+String label = Long.toBinaryString(bitstring.longValue()) 
++ " " + Double.toString(cost)
++ " " + Double.toString(resid) 
++ " " + Arrays.toString(coeff);                
 Image img = new Image(imageWidth, imageHeight);
 try {
 ImageIOHelper.addToImage(subset, 0, 0, img);
 ImageDisplayer.displayImage(label, img);
 } catch(IOException e) {
 }
-*/
-                if (resid < bestSubsetResiduals) {
-                    
-                    //if (resid < (subset.size() * 5)) {
-                        bestSubsetResiduals = resid;
+}*/
+                if (cost > bestCost) {
+                    // avoid straight lines
+                    if ((coeff[2] > 1E-4) && (Math.abs(coeff[1]) > 0.1)) {
+                        bestCost = cost;
                         bestSubsetCoeff = coeff;
-                    //}
+                    }
                 }
                 
                 bitstring = MiscMath.getNextSubsetBitstring(n, k, bitstring);
@@ -496,6 +599,9 @@ ImageDisplayer.displayImage(label, img);
             Iterator<Entry<CoefficientWrapper, Long>> iter = 
                 subsetCoeffMap.entrySet().iterator();
             
+            log.info("bestCost=" + bestCost 
+                + " bestSubsetCoeff=" + Arrays.toString(bestSubsetCoeff));
+
             while (iter.hasNext()) {
                 
                 Entry<CoefficientWrapper, Long> entry = iter.next();
@@ -516,7 +622,7 @@ ImageDisplayer.displayImage(label, img);
                     
                     Long bitstring = entry.getValue();
                     
-                    System.out.println("adding subsets: "
+                    log.info("adding subsets: "
                         + Long.toBinaryString(bitstring.longValue()));
                     
                     MiscMath.readSetBits(bitstring, setBits);

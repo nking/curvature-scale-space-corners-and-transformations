@@ -142,13 +142,7 @@ public class SkylineExtractorTest extends TestCase {
      
             SkylineExtractor.setDebugName(fileName);
 
-            CurvatureScaleSpaceCornerDetector detector = new
-                CurvatureScaleSpaceCornerDetector(img1);
-            
-            detector.useOutdoorModeAndExtractSkyline();
-            //detector.findCornersIteratively(nPreferredCorners, nCrit);
-            SkylineExtractor.setDebugName(fileName);
-            detector.findCorners();
+            ImageHelperForTests helper = new ImageHelperForTests(img1, true);
             
             SkylineExtractor skylineExtractor = new SkylineExtractor();
                     
@@ -156,8 +150,8 @@ public class SkylineExtractorTest extends TestCase {
             
             // sky are the zeros in this:
             GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
-                detector.getTheta(), detector.getGradientXY(), img1,
-                detector.getCannyEdgeFilterSettings(), outputSkyCentroid);
+                helper.getTheta(), helper.getGradientXY(), img1,
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
             
             int idx = fileName.lastIndexOf(".");
             String fileNameRoot = fileName.substring(0, idx);

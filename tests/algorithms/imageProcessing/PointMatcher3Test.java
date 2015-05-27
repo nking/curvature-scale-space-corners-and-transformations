@@ -437,7 +437,7 @@ public class PointMatcher3Test {
     public void testSkyline() throws Exception {
         
         String[] fileNames = new String[] {
-            "brown_lowe_2003_image1.jpg",
+            //"brown_lowe_2003_image1.jpg",
             //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             /*"venturi_mountain_j6_0001.png",
@@ -451,12 +451,12 @@ public class PointMatcher3Test {
             "halfdome.jpg",
             "costa_rica.jpg",
             "new-mexico-sunrise_w725_h490.jpg",
-            "arizona-sunrise-1342919937GHz.jpg",
+            "arizona-sunrise-1342919937GHz.jpg",*/
             "sky_with_rainbow.jpg",
             //"sky_with_rainbow2.jpg",
             //"patagonia_snowy_foreground.jpg",
             //"mt_rainier_snowy_field.jpg"
-            "klein_matterhorn_snowy_foreground.jpg"*/
+            //"klein_matterhorn_snowy_foreground.jpg"
             //"30.jpg",
             //"arches_sun_01.jpg",
             //"stlouis_arch.jpg", 

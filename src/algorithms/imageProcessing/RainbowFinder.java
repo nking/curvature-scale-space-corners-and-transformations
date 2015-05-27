@@ -107,6 +107,10 @@ public class RainbowFinder {
         return outputRainbowPoints;
     }
     
+    public float[] getRainbowCoeff() {
+        return rainbowCoeff;
+    }
+    
     public void addRainbowToSkyPoints(Set<PairInt> skyPoints, 
         int lastImgCol, int lastImgRow) {
         
@@ -239,7 +243,7 @@ public class RainbowFinder {
      * search for rainbow colored points over the entire image then fit an
      * ellipse to them and asserts that the points have certain colors in
      * them.  If the original fit to an ellipse is not good, the
-     * method divides the rainbow points by contiguous subsamples to find best
+     * method divides the rainbow points by contiguous subsets to find best
      * and similar fits.  The last step of color requirement helps to rule
      * out half ellipse patterns in rocks for instance that have only rock
      * colors in them. 
@@ -297,11 +301,11 @@ public class RainbowFinder {
         double resid = polyFitter.calcResiduals(coef, rainbowPoints);
 
         //TODO: determine this more accurately:
-        if (resid > (rainbowPoints.size() * 5)) {
+        if (resid > 5) {
             
             Set<PairInt> bestFittingPoints = new HashSet<PairInt>();
             
-            coef = polyFitter.solveForBestFittingContiguousSubSamples(
+            coef = polyFitter.solveForBestFittingContiguousSubSets(
                 rainbowPoints, bestFittingPoints, colorImg.getWidth(), 
                 colorImg.getHeight());
             
