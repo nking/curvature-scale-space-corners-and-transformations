@@ -233,7 +233,7 @@ public class PolynomialFitter {
      * @param points
      * @return float[]{minX, YForMinX, maxX, YFoMaxX}
      */
-    private float[] determineGoodEndPoints(float[] coefficients,
+    public float[] determineGoodEndPoints(float[] coefficients,
         Set<PairInt> points) {
         
         /*

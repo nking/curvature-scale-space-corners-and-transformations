@@ -115,7 +115,7 @@ public class RainbowFinder {
         int lastImgCol, int lastImgRow) {
         
         addRainbowToPoints(skyPoints, this.excludePointsInRainbowHull, 
-            rainbowHull, lastImgCol, lastImgRow);
+            this.rainbowHull, lastImgCol, lastImgRow);
     }
     
     private void addRainbowToPoints(Set<PairInt> skyPoints, 
@@ -608,97 +608,15 @@ public class RainbowFinder {
     
     protected void generatePolynomialPoints(Set<PairInt> points, 
         float[] polyCoeff, float[] outputX, float[] outputY) {
-        
-        /*
-        determine good endpoints for the polynomial solution.
-        it depends upon the orientation of the rainbow polynomial.
-        
-        should be able to determine the average to the 100 or so median
-        values as the middle of the rainbow,
-        then would find the smallest residual points from the model
-        polynomial that are located furthest from the median location.
-        */
-        
-        // sort points by x then y
-        int[] x = new int[points.size()];
-        int[] y = new int[x.length];
-        int i = 0;
-        for (PairInt p : points) {
-            x[i] = p.getX();
-            y[i] = p.getY();
-            i++;
-        }
-        //O(N*lg_2(N))
-        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);
-        
-        // average of central 10 or so median
-        int mid = points.size() >> 1;
-        float medianX;
-        float medianY;
-        if (points.size() < 10) {
-            medianX = x[points.size()/2];
-            medianY = y[points.size()/2];
-        } else {
-            double sumX = 0;
-            double sumY = 0;
-            int nMed = 5;
-            for (i = (mid - nMed); i <= (mid + nMed); i++) {
-                sumX += x[i];
-                sumY += y[i];
-            }
-            medianX = (float)sumX/(float)(2*nMed);
-            medianY = (float)sumY/(float)(2*nMed);
-        }
+       
+        PolynomialFitter fitter = new PolynomialFitter();
+        float[] minXYMaxXY = fitter.determineGoodEndPoints(polyCoeff, points);
         
         // find the furthest points that have the smallest residuals on each side
-        int minX = -1;
-        int yForMinX = -1;
-        int maxX = -1;
-        int yForMaxX = -1;
-        for (int half = 0; half < 2; half++) {
-            double minResid = Double.MAX_VALUE;
-            int minResidIdx = -1;
-            double distFromMedianSq = Double.MIN_VALUE;
-            if (half == 0) {
-                for (i = 0; i < mid; ++i) {
-                    float yV = polyCoeff[0] * (polyCoeff[1] * x[i]) +
-                        (polyCoeff[2] * x[i] * x[i]);
-                    double resid = Math.abs(y[i] - yV);
-
-                    double distX = x[i] - medianX;
-                    double distY = y[i] - medianY;
-
-                    double distSq = (distX * distX) + (distY * distY);
-
-                    if ((resid < minResid) && (distSq >= distFromMedianSq)) {
-                        minResid = resid;
-                        minResidIdx = i;
-                        distFromMedianSq = distSq;
-                    }
-                }
-                minX = x[minResidIdx];
-                yForMinX = y[minResidIdx];
-            } else {
-                for (i = (points.size() - 1); i > mid; --i) {
-                    float yV = polyCoeff[0] * (polyCoeff[1] * x[i]) +
-                        (polyCoeff[2] * x[i] * x[i]);
-                    double resid = Math.abs(y[i] - yV);
-
-                    double distX = x[i] - medianX;
-                    double distY = y[i] - medianY;
-
-                    double distSq = (distX * distX) + (distY * distY);
-
-                    if ((resid < minResid) && (distSq >= distFromMedianSq)) {
-                        minResid = resid;
-                        minResidIdx = i;
-                        distFromMedianSq = distSq;
-                    }
-                }
-                maxX = x[minResidIdx];
-                yForMaxX = y[minResidIdx];
-            }
-        } 
+        int minX = (int)minXYMaxXY[0];
+        int yForMinX = (int)minXYMaxXY[1];
+        int maxX = (int)minXYMaxXY[2];
+        int yForMaxX = (int)minXYMaxXY[3];
         
         log.info("polyCoeff=" + Arrays.toString(polyCoeff) 
             + " endpoints=(" + minX + "," + yForMinX + ") (" + maxX + "," 
@@ -711,17 +629,18 @@ public class RainbowFinder {
         
         outputX[0] = minX;
         outputY[0] = yForMinX;
-        for (i = 1; i < (n - 1); i++) {
+        for (int i = 1; i < (n - 1); i++) {
             outputX[i] = outputX[i - 1] + deltaX;
             outputY[i] = polyCoeff[0] + polyCoeff[1] * outputX[i] 
                 + polyCoeff[2] * outputX[i] * outputX[i];
         }
+        
         outputX[n - 1] = maxX;
         outputY[n - 1] = yForMaxX;
         
     }
     
-    private float maxOfPointMinDistances(Set<PairInt> rainbowPoints, float[] xc, 
+    protected float maxOfPointMinDistances(Set<PairInt> rainbowPoints, float[] xc, 
         float[] yc) {
         
         double maxDistSq = Double.MIN_VALUE;
@@ -730,17 +649,24 @@ public class RainbowFinder {
             int x = p.getX();
             int y = p.getY();
             double minDistSq = Double.MAX_VALUE;
+            int minIdx = -1;
             for (int i = 0; i < xc.length; i++) {
                 float diffX = xc[i] - x;
                 float diffY = yc[i] - y;
                 float dist = (diffX * diffX) + (diffY * diffY);
                 if (dist < minDistSq) {
                     minDistSq = dist;
+                    minIdx = i;
                 }
             }
             if (minDistSq > maxDistSq) {
                 maxDistSq = minDistSq;
             }
+            
+            /*System.out.println(String.format(
+                "(%d,%d) is closest to poly point (%f,%f) dist=%f", x, y, 
+                xc[minIdx], yc[minIdx], (float)Math.sqrt(minDistSq)));
+            */
         }
         
         return (float)Math.sqrt(maxDistSq);
@@ -749,7 +675,10 @@ public class RainbowFinder {
     /**
     populate outputXPoly and outputYPoly with points perpendicular to x and y
     * at distances dist.  note that the lengths of outputXPoly and outputYPoly
-    * should be 2*x.length+1
+    * should be 2*x.length+1.
+    * Also note that one wants the separation between points in x and y
+    * to be larger than dist (else, the concave portion of writing the hull
+    * has a retrograde order and appearance).
     */
     protected void populatePolygon(float[] x, float[] y, float dist, 
         float[] outputXPoly, float[] outputYPoly, float[] polynomialCoeff,
@@ -785,7 +714,7 @@ public class RainbowFinder {
         /*
         y = c0*1 + c1*x[i] + c2*x[i]*x[i]
         
-        dy/dx = c1 + 2*c2*x[i]
+        dy/dx = c1 + 2*c2*x[i] = tan theta
         */
         
         int n = outputXPoly.length;
