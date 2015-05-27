@@ -32,7 +32,7 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
             : Float.POSITIVE_INFINITY;
         
         System.out.println("eps0 is " 
-            + ((float)eps0Factor/(float)nExpectedPoints) + " fraction of total");
+            + (eps0Factor/(float)nExpectedPoints) + " fraction of total");
         
         this.eps0 = eps0Factor * (1./(double)nExpectedPoints);
     }

@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +12,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
+import org.junit.Test;
 
 /**
  *
@@ -99,72 +102,115 @@ public class SkylineExtractorTest extends TestCase {
         assertTrue(outputMap.size() == 8);
     }
     
-    public void testPopulatePolygon() throws Exception {
+    @Test
+    public void testCreateBestSkyMask() throws Exception {
         
-        SkylineExtractor skylineExtractor = new SkylineExtractor();
+        String[] fileNames = new String[] {
+            "brown_lowe_2003_image1.jpg",
+            //"brown_lowe_2003_image1_rot.jpg",
+            //"brown_lowe_2003_image2.jpg",
+            "venturi_mountain_j6_0001.png",
+            //"venturi_mountain_j6_0010.png",
+            "seattle.jpg",
+            "arches.jpg",
+            "stinson_beach.jpg",
+            "cloudy_san_jose.jpg",  
+            "stonehenge.jpg",
+            "norwegian_mtn_range.jpg",
+            "halfdome.jpg",
+            "costa_rica.jpg",
+            "new-mexico-sunrise_w725_h490.jpg",
+            "arizona-sunrise-1342919937GHz.jpg",
+            "sky_with_rainbow.jpg",
+            "sky_with_rainbow2.jpg",
+            //"patagonia_snowy_foreground.jpg", // needs a mask
+            //"mt_rainier_snowy_field.jpg",     // needs a mask
+            //"klein_matterhorn_snowy_foreground.jpg" // needs a mask
+            //"30.jpg",
+            //"arches_sun_01.jpg",
+            //"stlouis_arch.jpg", 
+            //"contrail.jpg"
+        };
         
-        /*
-        y = c0*1 + c1*x[i] + c2*x[i]*x[i]
-        y = 10 + 0
-        */
-        float[] polynomialCoeff = new float[] {10.0f, 0.0f, 0.f};
-        float[] x = new float[]{0,    1,     2,     3};
-        float[] y = new float[]{10f,  10.0f, 10.0f, 10.0f};
+        for (String fileName : fileNames) {
+            
+            log.info("fileName=" + fileName);
+            
+            // revisit infl points.  is there a threshold removing points?
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName);
+            ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+     
+            SkylineExtractor.setDebugName(fileName);
+
+            CurvatureScaleSpaceCornerDetector detector = new
+                CurvatureScaleSpaceCornerDetector(img1);
+            
+            detector.useOutdoorModeAndExtractSkyline();
+            //detector.findCornersIteratively(nPreferredCorners, nCrit);
+            SkylineExtractor.setDebugName(fileName);
+            detector.findCorners();
+            
+            SkylineExtractor skylineExtractor = new SkylineExtractor();
+                    
+            PairIntArray outputSkyCentroid = new PairIntArray();
+            
+            // sky are the zeros in this:
+            GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
+                detector.getTheta(), detector.getGradientXY(), img1,
+                detector.getCannyEdgeFilterSettings(), outputSkyCentroid);
+            
+            int idx = fileName.lastIndexOf(".");
+            String fileNameRoot = fileName.substring(0, idx);
+            String filePathSkyMask = ResourceFinder.findFileInTestResources(
+                 fileNameRoot + "_sky.png");
+
+            // sky are non-zeros here (255, 255, 255)
+            GreyscaleImage skyMask = ImageIOHelper.readImageAsBinary(
+                filePathSkyMask);
+            
+            int xOffset = resultMask.getXRelativeOffset();
+            int yOffset = resultMask.getYRelativeOffset();
+            
+            long nExpected = 0;
+            long nFound = 0;
+            long nOverrun = 0;
+            
+            for (int i = 0; i < resultMask.getWidth(); i++) {
+                for (int j = 0; j < resultMask.getHeight(); j++) {
+                    
+                    int x0 = i + xOffset;
+                    int y0 = j + yOffset;
+                    
+                    int vExpected = skyMask.getValue(i, j);
+                    int vResult = resultMask.getValue(x0, y0);
+                    
+                    if (vExpected > 0) {
+                        nExpected++;
+                        // only count found if expected
+                        if (vResult == 0) {
+                            nFound++;
+                        }
+                    } else {
+                        if (vResult == 0) {
+                            nOverrun++;
+                        }
+                    }
+                }
+            }
         
-        float dist = 2;
-        
-        Set<PairInt> points = new HashSet<PairInt>();
-        points.add(new PairInt(1, 11));
-        points.add(new PairInt(2, 11));
-        points.add(new PairInt(3, 11));
-        points.add(new PairInt(1, 9));
-        points.add(new PairInt(2, 9));
-        points.add(new PairInt(3, 9));
-
-        /*
-        y = c0*1 + c1*x[i] + c2*x[i]*x[i]
-           
-        //    0     1     2     3      4    5     6   7   8
-        outX=[0,    1,    2,    3,      3,  2,    1,  0,  0
-        outY=[12,   12,   12,   12,     8,  8,    8,  8,  12
-
-        1 2 3 4
-        0     5
-        9 8 7 6  n=11
-        */
-        float[] outputXPoly = new float[(2 * x.length) + 1];
-        float[] outputYPoly = new float[outputXPoly.length];
-
-        skylineExtractor.populatePolygon(x, y, dist, outputXPoly, outputYPoly, 
-            polynomialCoeff, 200, 200);
-
-        float[] expectedOutputX = new float[]{
-            0,    1,    2,    3,      3,  2,    1,  0,  0};
-
-        float[] expectedOutputY = new float[]{
-            12,   12,   12,   12,     8,  8,    8,  8,  12};
-
-        for (int i = 0; i < outputXPoly.length; i++) {
-            assertTrue(Math.abs(outputXPoly[i] - expectedOutputX[i]) < 0.1);
-            assertTrue(Math.abs(outputYPoly[i] - expectedOutputY[i]) < 0.1);
+            double fracFound = (double)nFound/(double)nExpected;
+            double fracOverrun = (double)nOverrun/(double)nExpected;
+            
+            //assertTrue(Math.abs(fracFound - 1) < 0.05);
+            //assertTrue(fracOverrun < 0.05);
+            System.out.println(fileName + " fraction of expected sky found = "
+                + fracFound + "  fracOverrun = " + fracOverrun);
         }
-
-        int n = skylineExtractor.nPointsInPolygon(points, outputXPoly,
-            outputYPoly);
-        
-        assertTrue(n == points.size());
-        
-        points.add(new PairInt(100, 100));
-        
-        n = skylineExtractor.nPointsInPolygon(points, outputXPoly,
-            outputYPoly);
-        
-        assertTrue(n == 6);
     }
    
     public void testPopulatePolygon2() throws Exception {
         
-        SkylineExtractor skylineExtractor = new SkylineExtractor();
+        RainbowFinder rFinder = new RainbowFinder();
         
         /*
         y = x^2 + 3*x
@@ -181,7 +227,7 @@ public class SkylineExtractorTest extends TestCase {
         float[] outputXPoly = new float[(2 * x.length) + 1];
         float[] outputYPoly = new float[outputXPoly.length];
 
-        skylineExtractor.populatePolygon(x, y, dist, outputXPoly, outputYPoly, 
+        rFinder.populatePolygon(x, y, dist, outputXPoly, outputYPoly, 
             polynomialCoeff, 200, 200);
 
         for (int i = 0; i < outputXPoly.length; i++) {
@@ -197,6 +243,7 @@ public class SkylineExtractorTest extends TestCase {
         try {
             SkylineExtractorTest test = new SkylineExtractorTest();
 
+            test.testCreateBestSkyMask();
             //test.estOrderByProximity();
             //test.testOrderByIncreasingXThenY();
             //test.testPopulatePolygon();

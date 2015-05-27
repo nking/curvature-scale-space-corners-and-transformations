@@ -130,6 +130,44 @@ public aspect CurvatureAspect {
         }
     }
 
+    after(float[] rainbowCoeff, 
+        Set<PairInt> rainbowPoints, ImageExt originalColorImage, int xOffset, 
+        int yOffset) returning(RainbowFinder.Hull rainbowHull) :
+        execution(private RainbowFinder.Hull RainbowFinder.createRainbowHull(float[],
+        Set<PairInt>, ImageExt, int, int))
+        && args(rainbowCoeff, rainbowPoints, originalColorImage, xOffset, 
+        yOffset)
+	    && target(algorithms.imageProcessing.RainbowFinder) {
+
+        Image clr = originalColorImage.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(rainbowPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/rainbow_hull_" + outImgNum + ".png", 
+                clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+ 
+        try {
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0, 
+                clr.getWidth(), 0, clr.getHeight());
+            plotter.addPlot(rainbowHull.xHull, rainbowHull.yHull, 
+                null, null, "rainbow hull " + outImgNum);
+            
+            String fileName = plotter.writeFile(Integer.valueOf(9182));
+                        
+        } catch (IOException e) {
+            Logger.getLogger(this.getClass().getName()).severe(e.getMessage());
+        }
+
+    }
+
     after(Set<PairInt> extSkyPoints, Image originalColorImage, 
         int xOffset, int yOffset, String outputPrefixForFileName) returning() :
         execution(void SkylineExtractor.debugPlot(Set<PairInt>, Image,
@@ -352,21 +390,30 @@ private static int n2 = 0;
 private static int n3 = 0;
 
     after(Set<PairInt> skyPoints, Set<PairInt> reflectedSunRemoved, 
-        ImageExt originalColorImage, int xOffset, int yOffset,
-        boolean skyIsDarkGrey, Set<PairInt> rainbowPoints)
-        returning(float[] coeff) :
-        execution(float[] SkylineExtractor.findRainbowPoints(
-            Set<PairInt>, Set<PairInt>, ImageExt, int, int, boolean,
-            Set<PairInt>) )
-        && args(skyPoints, reflectedSunRemoved, originalColorImage, 
-            xOffset, yOffset, skyIsDarkGrey, rainbowPoints)
-	    && target(algorithms.imageProcessing.SkylineExtractor) {
+        ImageExt colorImg, int xOffset, int yOffset,
+        int imageWidth, int imageHeight,
+        boolean skyIsDarkGrey, SkylineExtractor.RemovedSets removedSets)
+        returning() :
+        execution(public void RainbowFinder.findRainbowInImage(
+        Set<PairInt>, Set<PairInt>, ImageExt, int, int,
+        int, int, boolean, SkylineExtractor.RemovedSets) )
+        && args(skyPoints, reflectedSunRemoved, colorImg, xOffset, yOffset, 
+        imageWidth, imageHeight, skyIsDarkGrey, removedSets)
+	    && target(algorithms.imageProcessing.RainbowFinder) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof RainbowFinder)) {
+            return;
+        }
+
+        Set<PairInt> rainbowPoints = ((RainbowFinder)obj).getRainbowPoints();
 
         if (rainbowPoints.isEmpty()) {
             return;
         }
 
-        ImageExt clr = (ImageExt)originalColorImage.copyImage();
+        ImageExt clr = (ImageExt)colorImg.copyImage();
 
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
@@ -383,9 +430,9 @@ private static int n3 = 0;
             for (PairInt p : rainbowPoints) {
                 int x = p.getX();
                 int y = p.getY();
-                int r = originalColorImage.getR(x + xOffset, y + yOffset);
-                int g = originalColorImage.getG(x + xOffset, y + yOffset);
-                int b = originalColorImage.getB(x + xOffset, y + yOffset);
+                int r = colorImg.getR(x + xOffset, y + yOffset);
+                int g = colorImg.getG(x + xOffset, y + yOffset);
+                int b = colorImg.getB(x + xOffset, y + yOffset);
                 float[] cie = cieC.rgbToXYChromaticity(r, g, b);
                 cieX[count] = cie[0];
                 cieY[count] = cie[1];

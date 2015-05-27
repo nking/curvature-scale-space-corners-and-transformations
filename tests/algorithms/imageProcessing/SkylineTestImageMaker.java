@@ -790,7 +790,7 @@ public class SkylineTestImageMaker {
         RemovedSets removedSets = skylineExtractor.new RemovedSets();
         PairIntArray outputSkyCentroid = new PairIntArray();
         
-        Set<PairInt> points = skylineExtractor.createBestSkyMaskPt1(
+        Set<PairInt> points = skylineExtractor.extractSkyStarterPoints(
             detector.getTheta(), detector.getGradientXY(), 
             img, detector.getCannyEdgeFilterSettings(), outputSkyCentroid,
             removedSets);

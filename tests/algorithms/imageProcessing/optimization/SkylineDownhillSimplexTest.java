@@ -9,7 +9,6 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.SkylineExtractor;
 import algorithms.misc.MiscMath;
-import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -120,7 +119,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
                 skylineExtractor.new RemovedSets();
             PairIntArray outputSkyCentroid = new PairIntArray();
         
-            Set<PairInt> points = skylineExtractor.createBestSkyMaskPt1(
+            Set<PairInt> points = skylineExtractor.extractSkyStarterPoints(
                 detector.getTheta(), detector.getGradientXY(), 
                 img, detector.getCannyEdgeFilterSettings(), outputSkyCentroid,
                 removedSets);

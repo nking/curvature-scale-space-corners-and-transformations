@@ -236,6 +236,33 @@ public class CIEChromaticity {
         return new float[]{capX, capY, capZ};
     }
 
+    /**
+     * convert CIE XYZ (1931) to rgb.
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * 
+     * @param cieX
+     * @param cieY
+     * @param cieZ
+     * @return 
+     */
+    public int[] cieXYZToRGB(float cieX, float cieY, float cieZ) {
+        
+        /*        
+            | R |   |  0.41847    -0.15866   -0.082835 |   | X |
+            | G | = | -0.091169    0.25243    0.015708 | * | Y |
+            | B |   |  0.00092090 -0.0025498  0.17860  |   | Z |
+        */
+        
+        float capR = (0.41847f * cieX +  -0.15866f * cieY + -0.082835f * cieZ);
+        
+        float capG = (-0.091169f * cieX +  0.25243f * cieY + 0.015708f * cieZ);
+        
+        float capB = (0.00092090f * cieX +  -0.0025498f * cieY + 0.17860f * cieZ);
+        
+        return new int[]{(int)capR, (int)capG, (int)capB};
+    }
+
     public List<Double> calcAvgAndStdDevXY(int[] r, int[] g, int[] b) {
         
         double xSum = 0;
@@ -272,4 +299,70 @@ public class CIEChromaticity {
         
         return list;
     }
+    
+    /**
+     * returns roughly whether the CIE (X,Y) coordinate lands within the large
+     * white zone in the center of the diagram.
+     * @param cieX
+     * @param cieY
+     * @return 
+     */
+    public boolean isWhite(float cieX, float cieY) {
+        
+        if ((cieX > 0.45) || (cieX < 0.22)) {
+            return false;
+        }
+        
+        if ((cieY > 0.45) || (cieY < 0.22)) {
+            return false;
+        }
+        
+        float diffSlope = Math.abs((cieX/cieY) - 1);
+      
+        return (diffSlope < 0.25);
+    }
+    
+    /**
+     * calculate the angle in radians of the point (cieX, cieY) in the 
+     * CIE chromaticity
+     * diagram with respect to an origin of (0.35, 0.35).
+     * Note that one should check for white before using this as the resulting
+     * angle will not be a significant answer if it is.
+     * The angles are
+     * <pre>    90(=pi/2)
+     *            |
+     *            |
+     *   180 ----------- 0
+     *   (=pi)    |
+     *            | 
+     *          270(=3pi/2)
+     * </pre>
+     * @param cieX
+     * @param cieY
+     * @return the angle in radians of the point (cieX, cieY) with respect to
+     * an origin of (0.35, 0.35).
+     */
+    public double calculateXYTheta(float cieX, float cieY) {
+        
+        if (cieY == 0) {
+            return 0;
+        }
+        
+        double theta = Math.abs((0.35 - cieY)/(0.35 - cieX));
+        
+        if (cieY < 0.35) {
+            if (cieX < 0.35) {
+                theta = Math.PI - theta;
+            } else {
+                theta = 2*Math.PI + theta;
+            }
+        } else {
+            if (cieX < 0.35) {
+                theta = Math.PI + theta;
+            }
+        }
+        
+        return theta;
+    }
+    
 }
