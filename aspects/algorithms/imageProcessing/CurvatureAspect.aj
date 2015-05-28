@@ -176,6 +176,35 @@ public aspect CurvatureAspect {
 
     }
 
+    after(ImageExt colorImg, int xOffset, int yOffset, boolean skyIsDarkGrey) :
+        execution(public void findSunPhotosphere(ImageExt, int, int, boolean))
+        && args(colorImg, xOffset, yOffset, skyIsDarkGrey)
+	    && target(algorithms.imageProcessing.SunFinder) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof SunFinder)) {
+            return;
+        }
+
+        Set<PairInt> points = ((SunFinder)obj).getSunPoints();
+
+        Image clr = colorImg.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(points, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sun_" + outImgNum + ".png", clr);
+
+        } catch (IOException e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+
+    }
+
     after(Set<PairInt> extSkyPoints, Image originalColorImage, 
         int xOffset, int yOffset, String outputPrefixForFileName) returning() :
         execution(void debugPlot(Set<PairInt>, Image,

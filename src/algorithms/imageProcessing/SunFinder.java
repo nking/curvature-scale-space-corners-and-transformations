@@ -97,9 +97,6 @@ public class SunFinder {
         
         evaluatePointDensity();
         
-        if (!sunPoints.isEmpty()) {
-            debugPlot(sunPoints, colorImg, xOffset, yOffset, "sun");
-        }
     }
     
     private void calculatePointDensity() {

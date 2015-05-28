@@ -37,7 +37,7 @@ public class SunFinderTest extends TestCase {
         String[] fileNames = new String[] {
             "costa_rica.jpg",
             "arizona-sunrise-1342919937GHz.jpg",
-            //"stinson_beach.jpg",
+            "stinson_beach.jpg",
             //"stonehenge.jpg"
         };
         
