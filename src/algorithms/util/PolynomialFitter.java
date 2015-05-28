@@ -66,7 +66,13 @@ public class PolynomialFitter {
         List<PairInt> tmp = new ArrayList<PairInt>(points);
         
         int[] indexes = new int[n];
-        MiscMath.chooseRandomly(sr, indexes, points.size());
+        if (n != points.size()) {
+            MiscMath.chooseRandomly(sr, indexes, points.size());
+        } else {
+            for (int i = 0; i < n; i++) {
+                indexes[i] = i;
+            }
+        }
         
         float[] xP = new float[n];
         float[] yP = new float[xP.length];
@@ -87,7 +93,9 @@ public class PolynomialFitter {
     
     /**
      * solve for 2nd order curves.   This uses a Vandermonde matrix and QR 
-     * decomposition.
+     * decomposition.  Note that the solver is not ideal for a mostly
+     * vertical polynomial with an extremely large gap separating two
+     * groups of points.
      * 
      * @param dataX
      * @param dataY
@@ -520,6 +528,10 @@ public class PolynomialFitter {
         
         List<Integer> setBits = new ArrayList<Integer>();
         
+        int maxDimension = (imageWidth > imageHeight) ? imageWidth : imageHeight;
+        double c2Limit = Math.pow(10.,
+            -1*Math.ceil(Math.log(maxDimension)/Math.log(10)));
+        
         //TODO: simplify the iteration thru subsets
         
         int nIter = 0;
@@ -553,17 +565,17 @@ public class PolynomialFitter {
 
                     subset.addAll(g);
                 }
-                
+                                
                 float[] coeff = solveAfterRandomSampling(subset, sr);
                 
                 if (coeff != null) {
                     subsetCoeffMap.put(new CoefficientWrapper(coeff), bitstring);
                 }
-                
+               
                 double resid = calcResiduals(coeff, subset);
                 
                 double cost = (double)subset.size()/resid;
-/*                
+if (false) {              
 if (coeff != null) {                
 String label = Long.toBinaryString(bitstring.longValue()) 
 + " " + Double.toString(cost)
@@ -574,11 +586,12 @@ try {
 ImageIOHelper.addToImage(subset, 0, 0, img);
 ImageDisplayer.displayImage(label, img);
 } catch(IOException e) {
+    ////-2393.324, 23.7, -0.052
 }
-}*/
+}}
                 if (cost > bestCost) {
-                    // avoid straight lines
-                    if ((coeff[2] > 1E-4) && (Math.abs(coeff[1]) > 0.1)) {
+                    // avoid straight lines  2nd coeff > 1E-3 for image ~ 1000 pix on side
+                    if (Math.abs(coeff[2]) > c2Limit) {
                         bestCost = cost;
                         bestSubsetCoeff = coeff;
                     }
@@ -605,7 +618,7 @@ ImageDisplayer.displayImage(label, img);
             while (iter.hasNext()) {
                 
                 Entry<CoefficientWrapper, Long> entry = iter.next();
-                
+                           
                 float[] c = entry.getKey().getCoefficients();
                 
                 float diffC0 = Math.abs(bestSubsetCoeff[0] - c[0]);

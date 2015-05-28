@@ -36,7 +36,7 @@ public class RainbowFinderTest extends TestCase {
         
         String[] fileNames = new String[] {
             "sky_with_rainbow.jpg",
-            //"sky_with_rainbow2.jpg",
+            "sky_with_rainbow2.jpg",
         };
         
         for (String fileName : fileNames) {
@@ -56,13 +56,11 @@ public class RainbowFinderTest extends TestCase {
             
             SkylineExtractor skylineExtractor = new SkylineExtractor();
             
-            RemovedSets removedSets = skylineExtractor.new RemovedSets();
-            PairIntArray outputSkyCentroid = new PairIntArray();
-            Set<PairInt> points = skylineExtractor.extractSkyStarterPoints(
-                helper.getTheta(), helper.getGradientXY(), img1, 
-                helper.getCannyEdgeFilterSettings(), outputSkyCentroid, 
-                removedSets);
-        
+            RemovedSets removedSets;
+            PairIntArray outputSkyCentroid;
+            Set<PairInt> points;
+            Set<PairInt> rainbowPoints;
+            
             boolean skyIsDarkGrey = false;
             if (fileName.equals("sky_with_rainbow2.jpg")) {
                 skyIsDarkGrey = true;
@@ -70,6 +68,14 @@ public class RainbowFinderTest extends TestCase {
             
             RainbowFinder rFinder = new RainbowFinder();
             
+            
+            removedSets = skylineExtractor.new RemovedSets();
+            outputSkyCentroid = new PairIntArray();
+            points = skylineExtractor.extractSkyStarterPoints(
+                helper.getTheta(), helper.getGradientXY(), img1, 
+                helper.getCannyEdgeFilterSettings(), outputSkyCentroid, 
+                removedSets);
+        
             rFinder.findRainbowInImage(points, 
                 removedSets.getReflectedSunRemoved(), img1, 
                 helper.getXOffset(), helper.getYOffset(), 
@@ -79,7 +85,7 @@ public class RainbowFinderTest extends TestCase {
             log.info(fileName + " rainbowCoeff=" + 
                 Arrays.toString(rFinder.getRainbowCoeff()));
             
-            Set<PairInt> rainbowPoints = rFinder.getRainbowPoints();
+            rainbowPoints = rFinder.getRainbowPoints();
             assertTrue(rainbowPoints.size() > 100);
             assertNotNull(rFinder.getRainbowCoeff());
             
@@ -98,61 +104,66 @@ public class RainbowFinderTest extends TestCase {
                 assertTrue(rainbowPoints.contains(new PairInt(458, 239)));
                 assertTrue(rainbowPoints.contains(new PairInt(556, 326)));
             }
-            
+                        
             // ------- rotate images by 90 ---------
-            ImageExt img2 = new ImageExt(img1.getHeight(), img1.getWidth());
-            for (int col = 0; col < img1.getWidth(); col++) {
-                for (int row = 0; row < img1.getHeight(); row++) {
-                    
-                    /*
-                    | 4 1          1 2 3
-                    | 5 2          4 5 6
-                    | 6 3
-                    */
-                    
-                    int col2 = img1.getHeight() - 1 - row;
-                    int row2 = col;
-                    
-                    int r = img1.getR(col, row);
-                    int g = img1.getG(col, row);
-                    int b = img1.getB(col, row);
-                    
-                    img2.setRGB(col2, row2, r, g, b);
+            int nRot = 3;
+            for (int ii = 0; ii < nRot; ii++) {
+                ImageExt img2 = new ImageExt(img1.getHeight(), img1.getWidth());
+                for (int col = 0; col < img1.getWidth(); col++) {
+                    for (int row = 0; row < img1.getHeight(); row++) {
+
+                        /*
+                        | 4 1          1 2 3
+                        | 5 2          4 5 6
+                        | 6 3
+                        */
+
+                        int col2 = img1.getHeight() - 1 - row;
+                        int row2 = col;
+
+                        int r = img1.getR(col, row);
+                        int g = img1.getG(col, row);
+                        int b = img1.getB(col, row);
+
+                        img2.setRGB(col2, row2, r, g, b);
+                    }
                 }
+
+                helper = new ImageHelperForTests(img2, true);
+
+                SkylineExtractor.setDebugName(fileName);
+
+                skylineExtractor = new SkylineExtractor();
+
+                removedSets = skylineExtractor.new RemovedSets();
+                outputSkyCentroid = new PairIntArray();
+                points = skylineExtractor.extractSkyStarterPoints(
+                    helper.getTheta(), helper.getGradientXY(), img2, 
+                    helper.getCannyEdgeFilterSettings(), outputSkyCentroid, 
+                    removedSets);
+
+                skyIsDarkGrey = false;
+                if (fileName.equals("sky_with_rainbow2.jpg")) {
+                    skyIsDarkGrey = true;
+                }
+
+                rFinder = new RainbowFinder();
+
+                rFinder.findRainbowInImage(points, 
+                    removedSets.getReflectedSunRemoved(), img2, 
+                    helper.getXOffset(), helper.getYOffset(), 
+                    helper.getTheta().getWidth(), helper.getTheta().getHeight(), 
+                    skyIsDarkGrey, removedSets);
+
+                rainbowPoints = rFinder.getRainbowPoints();
+                assertTrue(rainbowPoints.size() > 100);
+                assertNotNull(rFinder.getRainbowCoeff());
+
+                log.info(fileName + " 90 rotated rainbowCoeff=" + 
+                    Arrays.toString(rFinder.getRainbowCoeff()));
+                
+                img1 = img2;
             }
-            
-            helper = new ImageHelperForTests(img2, true);
-            
-            SkylineExtractor.setDebugName(fileName);
-            
-            skylineExtractor = new SkylineExtractor();
-            
-            removedSets = skylineExtractor.new RemovedSets();
-            outputSkyCentroid = new PairIntArray();
-            points = skylineExtractor.extractSkyStarterPoints(
-                helper.getTheta(), helper.getGradientXY(), img2, 
-                helper.getCannyEdgeFilterSettings(), outputSkyCentroid, 
-                removedSets);
-        
-            skyIsDarkGrey = false;
-            if (fileName.equals("sky_with_rainbow2.jpg")) {
-                skyIsDarkGrey = true;
-            }
-            
-            rFinder = new RainbowFinder();
-            
-            rFinder.findRainbowInImage(points, 
-                removedSets.getReflectedSunRemoved(), img2, 
-                helper.getXOffset(), helper.getYOffset(), 
-                helper.getTheta().getWidth(), helper.getTheta().getHeight(), 
-                skyIsDarkGrey, removedSets);
-            
-            rainbowPoints = rFinder.getRainbowPoints();
-            assertTrue(rainbowPoints.size() > 100);
-            assertNotNull(rFinder.getRainbowCoeff());
-            
-            log.info(fileName + " 90 rotated rainbowCoeff=" + 
-                Arrays.toString(rFinder.getRainbowCoeff()));
         }
     }
 
@@ -348,8 +359,8 @@ public class RainbowFinderTest extends TestCase {
             RainbowFinderTest test = new RainbowFinderTest();
 
             test.testFindRainbowInImage();
-            //test.testPopulatePolygon2();
-            //test.testGeneratePolynomialPoints();
+            test.testPopulatePolygon2();
+            test.testGeneratePolynomialPoints();
         
         } catch(Exception e) {
             e.printStackTrace();
