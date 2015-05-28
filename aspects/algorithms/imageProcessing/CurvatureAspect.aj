@@ -178,10 +178,9 @@ public aspect CurvatureAspect {
 
     after(Set<PairInt> extSkyPoints, Image originalColorImage, 
         int xOffset, int yOffset, String outputPrefixForFileName) returning() :
-        execution(void SkylineExtractor.debugPlot(Set<PairInt>, Image,
+        execution(void debugPlot(Set<PairInt>, Image,
         int, int, String))
-        && args(extSkyPoints, originalColorImage, xOffset, yOffset, outputPrefixForFileName)
-	    && target(algorithms.imageProcessing.SkylineExtractor) {
+        && args(extSkyPoints, originalColorImage, xOffset, yOffset, outputPrefixForFileName) {
 
         Image clr = originalColorImage.copyImage();
 

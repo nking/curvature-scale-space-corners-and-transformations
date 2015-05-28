@@ -96,6 +96,10 @@ public class SunFinder {
         calculatePointDensity();
         
         evaluatePointDensity();
+        
+        if (!sunPoints.isEmpty()) {
+            debugPlot(sunPoints, colorImg, xOffset, yOffset, "sun");
+        }
     }
     
     private void calculatePointDensity() {
@@ -354,8 +358,8 @@ public class SunFinder {
             }
         }
 
-        //debugPlot(set, colorImg, xOffset, yOffset, 
-        //    "horizon_near_sun_before_thinning");
+        debugPlot(set, colorImg, xOffset, yOffset, 
+            "horizon_near_sun_before_thinning");
         
         // points in set now represent the skyline near the sun.
         // the points are a line widened by convolution so need to be thinned
@@ -371,8 +375,8 @@ public class SunFinder {
         
         ch.populateGapsWithInterpolation(set);
 
-        //debugPlot(set, colorImg, xOffset, yOffset,
-        //    "horizon_near_sun");
+        debugPlot(set, colorImg, xOffset, yOffset,
+            "horizon_near_sun");
 
         // if know skyline direction and any points are "below" set towards
         // the skyline, those should be removed from skyPoints
@@ -386,8 +390,8 @@ public class SunFinder {
         //Set<PairInt> embeddedPoints = findEmbeddedNonPoints(skyPoints);
         //skyPoints.addAll(embeddedPoints);
         
-        //debugPlot(skyPoints, colorImg, xOffset, yOffset,
-        //    "horizon_near_sun_final");
+        debugPlot(skyPoints, colorImg, xOffset, yOffset,
+            "horizon_near_sun_final");
     }
     
     
@@ -401,5 +405,12 @@ public class SunFinder {
     
     public Set<PairInt> getSunPoints() {
         return sunPoints;
+    }
+    
+    void debugPlot(Set<PairInt> extSkyPoints, Image originalColorImage, 
+        int xOffset, int yOffset, String outputPrefixForFileName) {
+        
+        //plot is made in aspects
+        
     }
 }
