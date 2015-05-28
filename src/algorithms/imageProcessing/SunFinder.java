@@ -364,7 +364,6 @@ public class SunFinder {
         // ErosionFilter isn't currently able to provide a line that is centered,
         // it may be a line closer to one side than the other of the original
         // thick band of points.
-        
         // so trying Zhang-Suen: 
         
         ZhangSuenLineThinner zsLT = new ZhangSuenLineThinner();
@@ -382,10 +381,6 @@ public class SunFinder {
 
         skyPoints.addAll(set);
         skyPoints.addAll(sunPoints);
-        
-        // fill in the gaps
-        //Set<PairInt> embeddedPoints = findEmbeddedNonPoints(skyPoints);
-        //skyPoints.addAll(embeddedPoints);
         
         debugPlot(skyPoints, colorImg, xOffset, yOffset,
             "horizon_near_sun_final");

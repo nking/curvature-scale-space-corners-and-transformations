@@ -336,31 +336,6 @@ public aspect CurvatureAspect {
         }
     }
 
-    after(ImageExt clrImage, int xOffset, int yOffset, boolean skyIsDarkGrey,
-        Set<PairInt> sunPoints) 
-        returning(double[] ellipseFits) :
-        execution(public double[] SkylineExtractor.findSunPoints(
-            ImageExt, int, int, boolean, Set<PairInt>))
-        && args(clrImage, xOffset, yOffset, skyIsDarkGrey, sunPoints)
-	    && target(algorithms.imageProcessing.SkylineExtractor) {
-
-        ImageExt clr = (ImageExt)clrImage.copyImage();
-
-        log2.info("plotting " + sunPoints.size() + " sun points");
-
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-
-            ImageIOHelper.addToImage(sunPoints, xOffset, yOffset, clr);
-
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/sky_sun_points_" + outImgNum + ".png", clr);
-
-        } catch (IOException e) {
-            log2.severe("ERROR: " + e.getMessage());
-        }
-    }
-
     before(Set<PairInt> skyPoints, Set<PairInt> excludePoints, 
         ImageExt originalColorImage, GreyscaleImage mask
         ) 

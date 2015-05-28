@@ -3340,7 +3340,7 @@ static int outImgNum=0;
         }
     }
 
-    private void addEmbeddedIfSimilarToSky(Set<PairInt> points, 
+    protected void addEmbeddedIfSimilarToSky(Set<PairInt> points, 
         ImageExt originalColorImage, int xOffset, int yOffset, 
         RemovedSets removedSets) {
         
@@ -3552,7 +3552,7 @@ static int outImgNum=0;
         return true;
     }
 
-    private int addImageBoundaryEmbeddedSkyIfSimilar(Set<PairInt> skyPoints, 
+    protected int addImageBoundaryEmbeddedSkyIfSimilar(Set<PairInt> skyPoints, 
         Set<PairInt> exclude, ImageExt originalColorImage, int xOffset,
         int yOffset, RemovedSets removedSets) {
         
@@ -3792,9 +3792,9 @@ static int outImgNum=0;
     }
 
     public class RemovedSets {
-        private Set<PairInt> removedNonCloudColors = null;
-        private Set<PairInt> highContrastRemoved = null;
-        private Set<PairInt> reflectedSunRemoved = null;
+        private Set<PairInt> removedNonCloudColors = new HashSet<PairInt>();
+        private Set<PairInt> highContrastRemoved = new HashSet<PairInt>();
+        private Set<PairInt> reflectedSunRemoved = new HashSet<PairInt>();
         private int nBeforeHighContrastRemoval = Integer.MIN_VALUE;
         private int nAfterHighContrastRemoval = Integer.MIN_VALUE;
         

@@ -10,10 +10,11 @@ import java.util.Set;
  */
 public class ZhangSuenLineThinner {
     
-    private static final int[][] nbrs = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1},
-            {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}};
+    private static final int[][] nbrs = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, 
+        {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}};
         
-    private static final int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}}, {{0, 2, 6}, {0, 4, 6}}};
+    private static final int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}}, 
+        {{0, 2, 6}, {0, 4, 6}}};
             
     public void applyLineThinner(Set<PairInt> points, int minX, int maxX,
         int minY, int maxY) {
@@ -52,15 +53,18 @@ public class ZhangSuenLineThinner {
                     }
                      
                     remove.add(uPoint);
-                    hasChanged = true;
                 }
             }
  
-            for (PairInt p : remove) {
-                points.remove(p);
+            if (!remove.isEmpty()) {
+                
+                for (PairInt p : remove) {
+                    points.remove(p);
+                    hasChanged = true;
+                }
+
+                remove.clear();
             }
-            
-            remove.clear();
  
         } while (hasChanged || firstStep);
     }
