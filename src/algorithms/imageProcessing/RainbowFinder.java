@@ -6,7 +6,6 @@ import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.PairInt;
 import algorithms.util.PolynomialFitter;
-import java.awt.Color;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,7 +37,9 @@ public class RainbowFinder {
     /**
      * search for a rainbow within the image, and if found, create a hull of
      * points around that encapsulates image points that are part of the
-     * expanded rainbow.  The results are kept in member variables.
+     * expanded rainbow.  The results are kept in member variables
+     * rainbowCoeff, rainbowHull, outputRainbowPoints, and 
+     * excludePointsInRainbowHull.
      * 
      * @param skyPoints
      * @param reflectedSunRemoved
@@ -239,14 +240,17 @@ public class RainbowFinder {
     }
 
     /**
-     * search for rainbow colored points over the entire image then fit an
-     * ellipse to them and asserts that the points have certain colors in
+     * search for rainbow colored points over the entire image, fit an
+     * ellipse to them, and assert that the points have certain colors in
      * them.  If the original fit to an ellipse is not good, the
      * method divides the rainbow points by contiguous subsets to find best
      * and similar fits.  The last step of color requirement helps to rule
      * out half ellipse patterns in rocks for instance that have only rock
      * colors in them. 
-     * 
+     * The return polynomial coefficients are float[]{c0, c1, c2}
+     * where y[i] = c0 + c1 * x[i] + c2 * x[i] * x[i].
+     * when c2 is negative, the parabola peak is upward (higher y).
+       c2 also indicates the magnitude of the points in powers of 1/10.
      * @param skyPoints
      * @param reflectedSunRemoved
      * @param colorImg
@@ -255,7 +259,7 @@ public class RainbowFinder {
      * @param outputRainbowPoints output variable to return found rainbow
      * points if any
      * @return polynomial fit coefficients to 
-     * y = c0*1 + c1*x[i] + c2*x[i]*x[i].  this may be null if a fit wasn't
+     * y[i] = c0*1 + c1*x[i] + c2*x[i]*x[i].  this may be null if a fit wasn't
      * possible.
      */
     float[] findRainbowPoints(Set<PairInt> skyPoints, 
@@ -347,15 +351,19 @@ public class RainbowFinder {
             for (PairInt p : bestFittingPoints) {
                 int x = p.getX();
                 int y = p.getY();
-                int r = colorImg.getR(x + xOffset, y + yOffset);
-                int g = colorImg.getG(x + xOffset, y + yOffset);
-                int b = colorImg.getB(x + xOffset, y + yOffset);
+                
+                int idx = colorImg.getInternalIndex(x + xOffset, y + yOffset);
+                
+                int r = colorImg.getR(idx);
+                int g = colorImg.getG(idx);
+                int b = colorImg.getB(idx);
                 float rDivB = (float)r/(float)b;
-                float cieX = colorImg.getCIEX(x + xOffset, y + yOffset);
-                float cieY = colorImg.getCIEY(x + xOffset, y + yOffset);
+                float cieX = colorImg.getCIEX(idx);
+                float cieY = colorImg.getCIEY(idx);
 
-log.fine(String.format("(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f",
-x, y, r, g, b, rDivB, cieX, cieY));
+                log.fine(String.format(
+                    "(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f",
+                    x, y, r, g, b, rDivB, cieX, cieY));
 
                 if (cieX >= 0.35) {
                     nGTX++;
@@ -668,8 +676,8 @@ x, y, r, g, b, rDivB, cieX, cieY));
         
     }
     
-    protected float maxOfPointMinDistances(Set<PairInt> rainbowPoints, float[] xc, 
-        float[] yc) {
+    protected float maxOfPointMinDistances(Set<PairInt> rainbowPoints, 
+        float[] xc, float[] yc) {
         
         double maxDistSq = Double.MIN_VALUE;
         
@@ -753,7 +761,7 @@ x, y, r, g, b, rDivB, cieX, cieY));
         
         0,20    1    2    3    4    5    6    7    8    9
                                                   
-         19   18   17   16   15   14   13   12   11   10
+         19    18   17   16   15   14   13   12   11   10
         */
         int count0 = 0;
         int count1 = n - 2;
