@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
 import algorithms.misc.MiscMath;
@@ -331,10 +330,14 @@ public class RainbowFinder {
             int nPurpRed = 0;
             int nOranRed = 0;
             int nYellow = 0;
+            int nGreen = 0;
+            int nRed = 0;
             CIEChromaticity cieC = new CIEChromaticity();
             ArrayPair cPurpRed = cieC.getRedThroughPurplishRedPolynomial();
             ArrayPair cOranRed = cieC.getOrangePolynomial();
             ArrayPair cYellow = cieC.getYellowishGreenThroughOrangePolynomial();
+            ArrayPair cGreen = cieC.getGreenPolynomial();
+            ArrayPair cRed = cieC.getRedPolynomial();
             PointInPolygon pInPoly = new PointInPolygon();
             
             float minCIEX = Float.MAX_VALUE;
@@ -347,53 +350,67 @@ public class RainbowFinder {
                 int r = colorImg.getR(x + xOffset, y + yOffset);
                 int g = colorImg.getG(x + xOffset, y + yOffset);
                 int b = colorImg.getB(x + xOffset, y + yOffset);
-                float[] hsb = new float[3];
-                Color.RGBtoHSB(r, g, b, hsb);
-        
-                float[] cie = cieC.rgbToXYChromaticity(r, g, b);
-                if (cie[0] >= 0.39) {
+                float rDivB = (float)r/(float)b;
+                float cieX = colorImg.getCIEX(x + xOffset, y + yOffset);
+                float cieY = colorImg.getCIEY(x + xOffset, y + yOffset);
+
+log.fine(String.format("(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f",
+x, y, r, g, b, rDivB, cieX, cieY));
+
+                if (cieX >= 0.35) {
                     nGTX++;
                 }
-                if (cie[1] <= 0.3) {
+                if ((cieY <= 0.3) || (rDivB < 0.89f)) {
                     nLTY++;
                 }
-                if (cie[0] < minCIEX) {
-                    minCIEX = cie[0];
+                if (cieX < minCIEX) {
+                    minCIEX = cieX;
                 }
-                if (cie[0] > maxCIEX) {
-                    maxCIEX = cie[0];
+                if (cieX > maxCIEX) {
+                    maxCIEX = cieX;
                 }
-                if (cie[1] < minCIEY) {
-                    minCIEY = cie[1];
+                if (cieY < minCIEY) {
+                    minCIEY = cieY;
                 }
-                if (cie[1] > maxCIEY) {
-                    maxCIEY = cie[1];
+                if (cieY > maxCIEY) {
+                    maxCIEY = cieY;
                 }
                 
-                if (pInPoly.isInSimpleCurve(cie[0], cie[1], cPurpRed.getX(), 
+                if (pInPoly.isInSimpleCurve(cieX,cieY, cPurpRed.getX(), 
                     cPurpRed.getY(), cPurpRed.getX().length)) {
                     nPurpRed++;
                 }
-                if (pInPoly.isInSimpleCurve(cie[0], cie[1], cOranRed.getX(), 
+                if (pInPoly.isInSimpleCurve(cieX, cieY, cOranRed.getX(), 
                     cOranRed.getY(), cOranRed.getX().length)) {
                     nOranRed++;
                 }
-                if (pInPoly.isInSimpleCurve(cie[0], cie[1], cYellow.getX(), 
+                if (pInPoly.isInSimpleCurve(cieX, cieY, cYellow.getX(), 
                     cYellow.getY(), cYellow.getX().length)) {
                     nYellow++;
+                }
+                if (pInPoly.isInSimpleCurve(cieX, cieY, cGreen.getX(), 
+                    cGreen.getY(), cGreen.getX().length)) {
+                    nGreen++;
+                }
+                if (pInPoly.isInSimpleCurve(cieX, cieY, cRed.getX(), 
+                    cRed.getY(), cRed.getX().length)) {
+                    nRed++;
                 }
             }
             
             float cieXRange = maxCIEX - minCIEX;
             float cieYRange = maxCIEY - minCIEY;
     
-            log.fine("nGTX=" + nGTX + " nLTY=" + nLTY + " n=" 
+            log.info("nGTX=" + nGTX + " nLTY=" + nLTY + " n=" 
                 + bestFittingPoints.size() + " "
-                + " CIE: minx=" + minCIEX + " maxx=" + maxCIEX
-                + " miny=" + minCIEY + " maxy=" + maxCIEY
+                + " CIE: minCIEX=" + minCIEX + " maxCIEX=" + maxCIEX
+                + " minCIEY=" + minCIEY + " maxCIEY=" + maxCIEY
                 + " range=(" + cieXRange + "," + cieYRange + ")"
-                + " nPurpRed=" + nPurpRed + " nOranRed=" + nOranRed
-                + " nYellow=" + nYellow
+                + "\n nPurpRed=" + nPurpRed + " nOranRed=" + nOranRed
+                + " nYellow=" + nYellow + " nGreen=" + nGreen + " nRed=" + nRed
+                + " nOrange/nPurpRed=" + ((float)nOranRed/(float)nPurpRed)
+                + " nOrange/nTot=" + ((float)nOranRed/(float)bestFittingPoints.size())
+                + " nPurpRed/nTot=" + ((float)nPurpRed/(float)bestFittingPoints.size())
             );
 
             rainbowPoints.clear();
@@ -403,12 +420,20 @@ public class RainbowFinder {
                 
                 return null;
                 
-            } else if ((cieXRange < 0.08) && (cieYRange < 0.08)) {
-                
+            }/* else if ((cieXRange < 0.08) && (cieYRange < 0.08)) {
                 return null;
-            }
+            }*/
             
-            if ((nGTX > 10) || (nLTY > 10)) {
+            if ((nGTX > 10) && 
+                ((nLTY > 10) || 
+                  (!skyIsDarkGrey &&
+                    (
+                        (((float)nOranRed/(float)nPurpRed) > 1.5)
+                        && (nGreen > nPurpRed))
+                  )
+                  || (skyIsDarkGrey && (((float)nOranRed/(float)nPurpRed) > 1.5))
+                )
+                ) {
                 
                 float frac = (float)(nGTX + nLTY)/(float)bestFittingPoints.size();
                 if (frac > 0.002) {
@@ -419,8 +444,10 @@ public class RainbowFinder {
         
         outputRainbowPoints.addAll(rainbowPoints);
         
-        polyFitter.plotFit(coef, outputRainbowPoints, colorImg.getWidth(),
-            colorImg.getHeight(), 234, "rainbow points");
+        if (!rainbowPoints.isEmpty()) {
+            polyFitter.plotFit(coef, outputRainbowPoints, colorImg.getWidth(),
+                colorImg.getHeight(), 234, "rainbow points");
+        }
         
         log.info("rainbow points size=" + outputRainbowPoints.size());
  
@@ -633,6 +660,7 @@ public class RainbowFinder {
             outputX[i] = outputX[i - 1] + deltaX;
             outputY[i] = polyCoeff[0] + polyCoeff[1] * outputX[i] 
                 + polyCoeff[2] * outputX[i] * outputX[i];
+            
         }
         
         outputX[n - 1] = maxX;
@@ -779,6 +807,31 @@ public class RainbowFinder {
                 yHigh = yLow;
                 xLow = tx;
                 yLow = ty;
+            }
+            
+            if (xHigh < 0) {
+                xHigh = 0;
+            }
+            if (yHigh < 0) {
+                yHigh = 0;
+            }
+            if (xLow < 0) {
+                xLow = 0;
+            }
+            if (yLow < 0) {
+                yLow = 0;
+            }
+            if (xLow > (imgWidth - 1)) {
+                xLow = (imgWidth - 1);
+            }
+            if (xHigh > (imgWidth - 1)) {
+                xHigh = (imgWidth - 1);
+            }
+            if (yLow > (imgHeight - 1)) {
+                yLow = (imgHeight - 1);
+            }
+            if (yHigh > (imgHeight - 1)) {
+                yHigh = (imgHeight - 1);
             }
             
             outputXPoly[count0] = xHigh;

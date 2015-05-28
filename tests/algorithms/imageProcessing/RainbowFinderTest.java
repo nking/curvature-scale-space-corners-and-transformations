@@ -36,7 +36,9 @@ public class RainbowFinderTest extends TestCase {
         
         String[] fileNames = new String[] {
             "sky_with_rainbow.jpg",
+            "sky_with_rainbow_rot45.jpg",
             "sky_with_rainbow2.jpg",
+            "brown_lowe_2003_image1.jpg",
         };
         
         for (String fileName : fileNames) {
@@ -83,11 +85,17 @@ public class RainbowFinderTest extends TestCase {
                 skyIsDarkGrey, removedSets);
             
             log.info(fileName + " rainbowCoeff=" + 
-                Arrays.toString(rFinder.getRainbowCoeff()));
+                Arrays.toString(rFinder.getRainbowCoeff())
+                + " nPoints=" + rFinder.getRainbowPoints().size()
+            );
             
             rainbowPoints = rFinder.getRainbowPoints();
-            assertTrue(rainbowPoints.size() > 100);
-            assertNotNull(rFinder.getRainbowCoeff());
+            if (fileName.equals("brown_lowe_2003_image1.jpg")) {
+                assertTrue(rainbowPoints.isEmpty());
+            } else {
+                assertTrue(rainbowPoints.size() > 100);
+                assertNotNull(rFinder.getRainbowCoeff());
+            }
             
             // spot checks
             if (fileName.equals("sky_with_rainbow2.jpg")) {
@@ -97,7 +105,7 @@ public class RainbowFinderTest extends TestCase {
                 assertTrue(rainbowPoints.contains(new PairInt(520, 168)));
                 assertTrue(rainbowPoints.contains(new PairInt(556, 218)));
                 assertFalse(rainbowPoints.contains(new PairInt(584, 252)));
-            } else {
+            } else if (fileName.equals("sky_with_rainbow.jpg")) {
                 assertTrue(rainbowPoints.contains(new PairInt(14, 181)));
                 assertTrue(rainbowPoints.contains(new PairInt(85, 164)));
                 assertTrue(rainbowPoints.contains(new PairInt(295, 167)));
@@ -156,8 +164,12 @@ public class RainbowFinderTest extends TestCase {
                     skyIsDarkGrey, removedSets);
 
                 rainbowPoints = rFinder.getRainbowPoints();
-                assertTrue(rainbowPoints.size() > 100);
-                assertNotNull(rFinder.getRainbowCoeff());
+                if (fileName.equals("brown_lowe_2003_image1.jpg")) {
+                    assertTrue(rainbowPoints.isEmpty());
+                } else {
+                    assertTrue(rainbowPoints.size() > 100);
+                    assertNotNull(rFinder.getRainbowCoeff());
+                }
 
                 log.info(fileName + " 90 rotated rainbowCoeff=" + 
                     Arrays.toString(rFinder.getRainbowCoeff()));

@@ -157,6 +157,16 @@ public class CIEChromaticity {
         return p;
     }
     
+    public ArrayPair getGreenPolynomial() {
+        
+        ArrayPair p = new ArrayPair(
+            new float[]{0.03f, 0.00f,  0.0f,  0.35f, 0.35f, 0.03f},
+            new float[]{0.37f, 0.485f, 0.83f, 0.83f, 0.35f, 0.37f}
+        );
+        
+        return p;
+    }
+    
     public ArrayPair getPurplePolynomial() {
         
         /*

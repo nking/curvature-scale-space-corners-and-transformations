@@ -529,7 +529,7 @@ public class PolynomialFitter {
         List<Integer> setBits = new ArrayList<Integer>();
         
         int maxDimension = (imageWidth > imageHeight) ? imageWidth : imageHeight;
-        double c2Limit = Math.pow(10.,
+        double c2Limit = (maxDimension < 10000) ? 1E-3 :  Math.pow(10.,
             -1*Math.ceil(Math.log(maxDimension)/Math.log(10)));
         
         //TODO: simplify the iteration thru subsets
@@ -549,7 +549,7 @@ public class PolynomialFitter {
 
                 setBits.clear();
                 
-                log.info("n=" + n + " k=" + k + " " +
+                log.fine("n=" + n + " k=" + k + " " +
                     Long.toBinaryString(bitstring.longValue())
                     + " nIter=" + nIter);
                 
@@ -615,6 +615,8 @@ ImageDisplayer.displayImage(label, img);
             log.info("bestCost=" + bestCost 
                 + " bestSubsetCoeff=" + Arrays.toString(bestSubsetCoeff));
 
+            int nSimilar = 0;
+            
             while (iter.hasNext()) {
                 
                 Entry<CoefficientWrapper, Long> entry = iter.next();
@@ -622,14 +624,15 @@ ImageDisplayer.displayImage(label, img);
                 float[] c = entry.getKey().getCoefficients();
                 
                 float diffC0 = Math.abs(bestSubsetCoeff[0] - c[0]);
+                float divC0 = bestSubsetCoeff[0]/c[0];
                 float divC1 = bestSubsetCoeff[1]/c[1];
                 float divC2 = bestSubsetCoeff[2]/c[2];
                 
                 //TODO: this probably needs adjustment. 
                 // diffC0 needs real world scale or relative size knowledge
                 // divC1 comparison might be reduced to 0.1
-                if ((Math.abs(divC1 - 1) < 0.2) && (Math.abs(divC2 - 1) < 0.6)
-                    && (diffC0 < 20)) {
+                if ((Math.abs(divC1 - 1) < 0.05) && (Math.abs(divC2 - 1) < 0.05)
+                    && (Math.abs(divC0 - 1) < 0.05)) {
                     
                     setBits.clear();
                     
@@ -644,11 +647,13 @@ ImageDisplayer.displayImage(label, img);
                         Set<PairInt> g = contigList.get(groupId);
                         outputPoints.addAll(g);
                     }
+                    nSimilar++;
                 }
             }
             
-            // redo fit for outputPoints
-            float[] coeff = solveAfterRandomSampling(outputPoints, sr);
+            // redo fit for outputPoints if there are more
+            float[] coeff = (nSimilar == 1) ? bestSubsetCoeff :
+                solveAfterRandomSampling(outputPoints, sr);
             
             if (coeff == null) {
                 return null;
