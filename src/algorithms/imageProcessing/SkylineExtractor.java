@@ -15,7 +15,6 @@ import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
-import algorithms.util.LinearRegression;
 import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -184,26 +183,16 @@ public class SkylineExtractor {
         
         boolean skyIsDarkGrey = skyIsDarkGrey(allSkyColor);
         
-        Set<PairInt> sunPoints = new HashSet<PairInt>();
-        double[] ellipFitParams = findSunPoints(originalColorImage, xOffset, 
-            yOffset, skyIsDarkGrey, sunPoints);
+        log.info("skyIsDarkGrey=" + skyIsDarkGrey + " " + debugName);
         
-        double density = (ellipFitParams != null) ?
-            (sunPoints.size()/(2*Math.PI*ellipFitParams[2]*ellipFitParams[3]))
-            : 0;
-                
-        if (density < 0.5) {
-            sunPoints.clear();
-        } else if (ellipFitParams == null) {
-            sunPoints.clear();
-        } else if ((ellipFitParams[2]/ellipFitParams[3])> 6) {
-            sunPoints.clear();
-        }
+        SunFinder sunFinder = new SunFinder();
+        sunFinder.findSunPhotosphere(originalColorImage, xOffset, yOffset, 
+            skyIsDarkGrey);
 
         RainbowFinder rFinder = new RainbowFinder();
         
         // should not see sun and rainbow in same image
-        if (sunPoints.isEmpty()) {
+        if (sunFinder.getSunPoints().isEmpty()) {
                         
             rFinder.findRainbowInImage(
                 points, 
@@ -229,14 +218,14 @@ public class SkylineExtractor {
 
         Set<PairInt> exclude = new HashSet<PairInt>();
         exclude.addAll(removedSets.getHighContrastRemoved());
-        exclude.addAll(sunPoints);
+        exclude.addAll(sunFinder.getSunPoints());
 
         // look for patches of sky that are not yet found and are on the image
         // boundaries
         int nAdded = addImageBoundaryEmbeddedSkyIfSimilar(points, exclude, 
             originalColorImage, xOffset, yOffset, removedSets);
         
-        log.info("number of sunPoints=" + sunPoints.size() + " "
+        log.info("number of sunPoints=" + sunFinder.getSunPoints().size() + " "
         + "reflectedSunRemoved.size()=" + removedSets.getReflectedSunRemoved().size());
 
         boolean addEmbedded = false;
@@ -251,9 +240,9 @@ public class SkylineExtractor {
 
         //}
 
-        if (!sunPoints.isEmpty()) {
+        if (!sunFinder.getSunPoints().isEmpty()) {
             
-            correctSkylineForSun(sunPoints, points, originalColorImage, xOffset, 
+            sunFinder.correctSkylineForSun(points, originalColorImage, xOffset, 
                 yOffset, gradientXY);
             
             addEmbedded = true;
@@ -264,7 +253,7 @@ public class SkylineExtractor {
                 xOffset, yOffset, removedSets);
         }
                 
-        points.addAll(sunPoints);
+        points.addAll(sunFinder.getSunPoints());
  
         GreyscaleImage mask = gradientXY.createWithDimensions();
         mask.fill(1);
@@ -2498,71 +2487,6 @@ static int outImgNum=0;
             nIter++;
         }
     }
-    
-    /**
-     * find sun colored points by searching entire image.
-     * Note, that if the points returned are well fit by a circle
-     * or a fraction of a circle that is calculable, one has a limit
-     * on scale in the image (knowledge of the camera and lens are needed,
-     * else such objects and points of interest can help provide them).
-     * The sun's visible radius is the photosphere and that size is known.
-     * @param colorImg
-     * @param xOffset
-     * @param yOffset
-     * @param skyIsDarkGrey
-     * @return 
-     */
-    public double[] findSunPoints(ImageExt colorImg, int xOffset, 
-        int yOffset, boolean skyIsDarkGrey, Set<PairInt> outputSunPoints) {
-                
-        SunColors sunColors = new SunColors();
-        
-        if (skyIsDarkGrey) {
-            sunColors.useDarkSkiesLogic();
-        }
-        
-        for (int col = 0; col < colorImg.getWidth(); col++) {
-            for (int row = 0; row < colorImg.getHeight(); row++) {
-                
-                int idx = colorImg.getInternalIndex(col, row);
-
-                if (sunColors.isSunCenterColor(colorImg, idx)) {
-                    outputSunPoints.add(new PairInt(col - xOffset, row - yOffset));
-                }
-            }
-        }
-        
-        log.info("found " + outputSunPoints.size() 
-            + " sun points from image of width " + colorImg.getWidth());
-
-        if (outputSunPoints.size() < 6) {
-            return null;
-        }
-        
-        //fit ellipse to yellowPoints.  ellipse because of possible occlusion.
-        EllipseHelper ellipseHelper = new EllipseHelper();
-        double[] params = ellipseHelper.fitEllipseToPoints(outputSunPoints);
-        
-        if (params == null) {
-            // not close to an ellipse
-            return null;
-        }
-        
-        float xc = (float)params[0];
-        float yc = (float)params[1];
-        float a = (float)params[2];
-        float b = (float)params[3];
-        float alpha = (float)params[4];
-        
-        log.info("elliptical fit to yellow points: " + Arrays.toString(params));
-       
-        //TODO:  this may need adjustments.  top of sun rising over mountains..
-        /*if ((a/b) > 6) {
-            return new HashSet<PairInt>();
-        }*/
-        
-        return params;
-    }
 
     boolean skyIsDarkGrey(GroupPixelColors allSkyColor) {
         
@@ -3060,282 +2984,6 @@ static int outImgNum=0;
             skyRowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
         
         return outputEmbeddedGapPoints;
-    }
-    
-    private void correctSkylineForSun(Set<PairInt> sunPoints, 
-        Set<PairInt> skyPoints, Image colorImg, int xOffset, int yOffset, 
-        GreyscaleImage gradientXY) {
-        
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        double[] xySunCen = ch.calculateXYCentroids(sunPoints);
-        
-        int h = colorImg.getHeight();
-        int w = colorImg.getWidth();
-        
-        int srchRadius = 125;
-        
-        int maxValue = Integer.MIN_VALUE;
-        
-        Set<PairInt> pointsNearSun = new HashSet<PairInt>();
-                
-        for (int col = ((int)xySunCen[0] - srchRadius); 
-            col < ((int)xySunCen[0] + srchRadius); col++) {
-        
-            for (int row = ((int)xySunCen[1] - srchRadius); 
-                row < ((int)xySunCen[1] + srchRadius); row++) {
-                
-                if ((col < 0) || (col > (w - 1)) || (row < 0) || (row > (h - 1))) {
-                    continue;
-                }
-                
-                int v = gradientXY.getValue(col, row);
-                
-                if (v > maxValue) {
-                    maxValue = v;
-                }
-                
-                if (v > 0) {
-                    pointsNearSun.add(new PairInt(col, row));
-                }
-            }
-        }
-        
-        PairIntArray valueCounts = 
-            Histogram.createADescendingSortByKeyArray(pointsNearSun, gradientXY);
-        int countIsDoubledValue = maxValue;
-        int lastCount = Integer.MAX_VALUE;
-        for (int i = 1; i < valueCounts.getN(); i++) {
-            int count = valueCounts.getY(i);
-            if ((count/lastCount) >= 2) {
-                countIsDoubledValue = valueCounts.getX(i);
-                break;
-            }
-            lastCount = count;
-        }
-        
-        assert(maxValue == valueCounts.getX(0));
-        
-        int valueTolerance = 10;
-        if ((maxValue - countIsDoubledValue) > valueTolerance) {
-            valueTolerance = maxValue - countIsDoubledValue;
-        }
-        
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        
-        Set<PairInt> set = new HashSet<PairInt>();
-        
-        for (int col = ((int)xySunCen[0] - srchRadius); 
-            col < ((int)xySunCen[0] + srchRadius); col++) {
-        
-            for (int row = ((int)xySunCen[1] - srchRadius); 
-                row < ((int)xySunCen[1] + srchRadius); row++) {
-                
-                if ((col < 0) || (col > (w - 1)) || (row < 0) || (row > (h - 1))) {
-                    continue;
-                }
-                
-                int v = gradientXY.getValue(col, row);
-                
-                if (Math.abs(v - maxValue) < valueTolerance) {
-                    
-                    set.add(new PairInt(col, row));
-                    
-                    if (col < minX) {
-                        minX = col;
-                    }
-                    if (col > maxX) {
-                        maxX = col;
-                    }
-                    if (row < minY) {
-                        minY = row;
-                    }
-                    if (row > maxY) {
-                        maxY = row;
-                    }
-                }
-            }
-        }
-
-debugPlot(set, colorImg, xOffset, yOffset, 
-"horizon_near_sun_before_thinning");
-        
-        // points in set now represent the skyline near the sun.
-        // the points are a line widened by convolution so need to be thinned
-        // to the line centroid.
-        // ErosionFilter isn't currently able to provide a line that is centered,
-        // it may be a line closer to one side than the other of the original
-        // thick band of points.
-        
-        // so trying Zhang-Suen: 
-        
-        ZhangSuenLineThinner zsLT = new ZhangSuenLineThinner();
-        zsLT.applyLineThinner(set, minX, maxX, minY, maxY);
-        
-        ch.populateGapsWithInterpolation(set);
-
-debugPlot(set, colorImg, xOffset, yOffset,
-"horizon_near_sun");
-
-        // if know skyline direction and any points are "below" set towards
-        // the skyline, those should be removed from skyPoints
-        
-        removePointsUnderSkyline(set, sunPoints, skyPoints, w, h);
-
-        skyPoints.addAll(set);
-        skyPoints.addAll(sunPoints);
-        
-        // fill in the gaps
-        //Set<PairInt> embeddedPoints = findEmbeddedNonPoints(skyPoints);
-        //skyPoints.addAll(embeddedPoints);
-        
-debugPlot(skyPoints, colorImg, xOffset, yOffset,
-"horizon_near_sun_final");
-
-    }
-    
-    private int[] determineChangeTowardsSkyline(Set<PairInt> skyline, 
-        Set<PairInt> sunPoints, Set<PairInt> skyPoints) {
-        
-        //TODO:  needs alot of testing with images that are tilted and
-        // have sun in them.
-        
-        // need to fit a line to skyline to get the slope and hence
-        // know what is perpendicular to the skyline near the sun.
-        
-        int[] xsl = new int[skyline.size()];
-        int[] ysl = new int[xsl.length];
-        int i = 0;
-        for (PairInt p : skyline) {
-            xsl[i] = p.getX();
-            ysl[i] = p.getY();
-            i++;
-        }
-        
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-            
-        double[] skyXYCen = ch.calculateXYCentroids(skyPoints);
-            
-        double[] sunXYCen = ch.calculateXYCentroids(sunPoints);
-        
-        LinearRegression lr = new LinearRegression();
-        float[] yInterceptAndSlope = lr.calculateTheilSenEstimatorParams(
-            xsl, ysl);
-        
-        int dSkylineX = 0;
-        int dSkylineY = 0;
-        
-        /*
-        inf
-           1.7
-         |    1.0
-         |   /    0.57
-         | /     
-        @ ----- 0        
-        */
-        
-        if (Math.abs(yInterceptAndSlope[1]) < 0.57) {
-            // ~ horizontal line, less than 30 degrees from horiz
-            if (skyXYCen[1] > sunXYCen[1]) {
-                dSkylineY = -1;
-            } else {
-                dSkylineY = 1;
-            }
-        } else if (Math.abs(yInterceptAndSlope[1]) < 1.73) {
-            // ~ diagonal line, between 30 degrees and 60 degrees from horiz
-            if (skyXYCen[0] > sunXYCen[0]) {
-                dSkylineX = -1;
-            } else {
-                dSkylineX = 1;
-            }
-            if (skyXYCen[1] > sunXYCen[1]) {
-                dSkylineY = -1;
-            } else {
-                dSkylineY = 1;
-            }
-        } else  {
-            // approx w/ a vertical line
-            if (skyXYCen[0] > sunXYCen[0]) {
-                dSkylineX = -1;
-            } else {
-                dSkylineX = 1;
-            }
-        }
-        
-        return new int[]{dSkylineX, dSkylineY};
-    }
-
-    private void removePointsUnderSkyline(Set<PairInt> skyline, 
-        Set<PairInt> sunPoints, Set<PairInt> skyPoints, 
-        int width, int height) {
-                
-        //TODO:  needs alot of testing with images that are tilted and
-        // have sun in them.
-        
-        int[] dSkylineXY = determineChangeTowardsSkyline(skyline, sunPoints,
-            skyPoints);
-        
-        int dSkylineX = Math.round(dSkylineXY[0]);
-        int dSkylineY = Math.round(dSkylineXY[1]);
-        
-        if ((dSkylineX == 0) && (dSkylineY == 0)) {
-            // do nothing
-            
-        } else if ((dSkylineX >= 0) && (dSkylineY >= 0)) {
-            
-            for (PairInt s : skyline) {
-                int vX = s.getX() + dSkylineX;
-                int vY = s.getY() + dSkylineY;
-                while ((vX < (width - 1)) && (vY < (height - 1))) {
-                    PairInt p = new PairInt(vX, vY);
-                    skyPoints.remove(p);
-                    vX += dSkylineX;
-                    vY += dSkylineY;
-                }
-            }
-            
-        } else if ((dSkylineX == -1) && (dSkylineY >= 0)) {
-            
-            for (PairInt s : skyline) {
-                int vX = s.getX() + dSkylineX;
-                int vY = s.getY() + dSkylineY;
-                while ((vX > -1) && (vY < (height - 1))) {
-                    PairInt p = new PairInt(vX, vY);
-                    skyPoints.remove(p);
-                    vX += dSkylineX;
-                    vY += dSkylineY;
-                }
-            }
-        
-        } else if ((dSkylineX >= 0) && (dSkylineY == -1)) {
-            
-            for (PairInt s : skyline) {
-                int vX = s.getX() + dSkylineX;
-                int vY = s.getY() + dSkylineY;
-                while ((vX < (width - 1)) && (vY > -1)) {
-                    PairInt p = new PairInt(vX, vY);
-                    skyPoints.remove(p);
-                    vX += dSkylineX;
-                    vY += dSkylineY;
-                }
-            }
-            
-        } else if ((dSkylineX == -1) && (dSkylineY == -1)) {
-            
-            for (PairInt s : skyline) {
-                int vX = s.getX() + dSkylineX;
-                int vY = s.getY() + dSkylineY;
-                while ((vX > -1) && (vY > -1)) {
-                    PairInt p = new PairInt(vX, vY);
-                    skyPoints.remove(p);
-                    vX += dSkylineX;
-                    vY += dSkylineY;
-                }
-            }
-        
-        }
     }
     
     GreyscaleImage filterAndExtractSkyFromGradient(ImageExt colorImg, 
