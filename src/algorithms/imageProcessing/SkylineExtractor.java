@@ -615,10 +615,12 @@ try {
                 if ((oy < 0) || (oy > (originalColorImage.getHeight() - 1))) {
                     continue;
                 }
+                
+                int idx = originalColorImage.getInternalIndex(ox, oy);
         
-                int r = originalColorImage.getR(ox, oy);
-                int g = originalColorImage.getG(ox, oy);
-                int b = originalColorImage.getB(ox, oy);
+                int r = originalColorImage.getR(idx);
+                int g = originalColorImage.getG(idx);
+                int b = originalColorImage.getB(idx);
                 
                 double[] rgb = new double[]{r, g, b};
                         
@@ -715,9 +717,11 @@ debugPlot(outputRemovedPoints, originalColorImage, xOffset, yOffset, "filtered_o
                     continue;
                 }
                 
-                int r = originalColorImage.getR(ox, oy);
-                int g = originalColorImage.getG(ox, oy);
-                int b = originalColorImage.getB(ox, oy);
+                int idx = originalColorImage.getInternalIndex(ox, oy);
+        
+                int r = originalColorImage.getR(idx);
+                int g = originalColorImage.getG(idx);
+                int b = originalColorImage.getB(idx);
                 
                 double[] rgb = new double[]{r, g, b};
                         
@@ -1390,10 +1394,12 @@ try {
             x += totalXOffset;
             y += totalYOffset;
             
-            int r = originalColorImage.getR(x, y);
-            int g = originalColorImage.getG(x, y);
-            int b = originalColorImage.getB(x, y);
-
+            int idx = originalColorImage.getInternalIndex(x, y);
+        
+            int r = originalColorImage.getR(idx);
+            int g = originalColorImage.getG(idx);
+            int b = originalColorImage.getB(idx);
+                
             double[] rgb = new double[]{r, g, b};
             double[] yuv = MatrixUtil.multiply(m, rgb);
             yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});
@@ -2197,12 +2203,12 @@ static int outImgNum=0;
             return;
         }
 
-        int r = origColorImg.getR(col, row);
-        int g = origColorImg.getG(col, row);
-        int b = origColorImg.getB(col, row);
-        
         int idx = origColorImg.getInternalIndex(col, row);
         
+        int r = origColorImg.getR(idx);
+        int g = origColorImg.getG(idx);
+        int b = origColorImg.getB(idx);
+                    
         float luma = origColorImg.getLuma(idx);
         
         for (int k = 2; k >= 0; k--) {                    
@@ -2451,9 +2457,11 @@ static int outImgNum=0;
                         int x = p.getX();
                         int y = p.getY();
                         
-                        int r = colorImg.getR(x, y);
-                        int g = colorImg.getG(x, y);
-                        int b = colorImg.getB(x, y);
+                        int idx = colorImg.getInternalIndex(x, y);
+        
+                        int r = colorImg.getR(idx);
+                        int g = colorImg.getG(idx);
+                        int b = colorImg.getB(idx);
                         
                         float contrast = gpc.calcContrastToOther(r, g, b);
                         //double contrastDivStDev = contrast/gpc.getStdDevContrast();
@@ -2686,10 +2694,13 @@ static int outImgNum=0;
         for (PairInt p : points) {
             int x = p.getX() + xOffset;
             int y = p.getY() + yOffset;
-            int rr = colorImg.getR(x, y);
-            int gg = colorImg.getG(x, y);
-            int bb = colorImg.getB(x, y);
             
+            int idx = colorImg.getInternalIndex(x, y);
+
+            int rr = colorImg.getR(idx);
+            int gg = colorImg.getG(idx);
+            int bb = colorImg.getB(idx);
+                        
             r[i] = rr;
             g[i] = gg;
             b[i] = bb;
@@ -2823,9 +2834,11 @@ static int outImgNum=0;
                     continue;
                 }
                 
-                rSum += colorImg.getR(col, row);
-                gSum += colorImg.getG(col, row);
-                bSum += colorImg.getB(col, row);
+                int idx = colorImg.getInternalIndex(col, row);
+        
+                rSum += colorImg.getR(idx);
+                gSum += colorImg.getG(idx);
+                bSum += colorImg.getB(idx);
                 n++;
             }
         }
@@ -2935,9 +2948,11 @@ static int outImgNum=0;
                     continue;
                 }
                 
-                int r = originalColorImage.getR(ox, oy);
-                int g = originalColorImage.getG(ox, oy);
-                int b = originalColorImage.getB(ox, oy);
+                int idx = originalColorImage.getInternalIndex(ox, oy);
+                
+                int r = originalColorImage.getR(idx);
+                int g = originalColorImage.getG(idx);
+                int b = originalColorImage.getB(idx);
                 
                 if ((r < colorLimit) && (b < colorLimit) && (g < colorLimit)) {
                     nBelowLimit++;
@@ -3737,9 +3752,11 @@ debugPlot(skyPoints, colorImg, xOffset, yOffset,
                 xP[i] = x;
                 yP[i] = y;
                 
-                int r = colorImg.getR(x, y);
-                int g = colorImg.getG(x, y);
-                int b = colorImg.getB(x, y);
+                int idx = colorImg.getInternalIndex(x, y);
+                
+                int r = colorImg.getR(idx);
+                int g = colorImg.getG(idx);
+                int b = colorImg.getB(idx);
                 int rgbTotal = r + g + b;
                 rDivTotal[i] = (float)r/(float)rgbTotal;
                 bDivTotal[i] = (float)b/(float)rgbTotal;
@@ -3796,9 +3813,11 @@ debugPlot(skyPoints, colorImg, xOffset, yOffset,
                 int x = pai.getX(i) + xOffset;
                 int y = pai.getY(i) + yOffset;
                                 
-                int r = colorImg.getR(x, y);
-                int g = colorImg.getG(x, y);
-                int b = colorImg.getB(x, y);
+                int idx = colorImg.getInternalIndex(x, y);
+                
+                int r = colorImg.getR(idx);
+                int g = colorImg.getG(idx);
+                int b = colorImg.getB(idx);
                 
                 sumRDIVGRB += ((double)r/(r + g + b));
                 sumBDIVGRB += ((double)b/(r + g + b));
