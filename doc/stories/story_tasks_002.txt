@@ -66,9 +66,11 @@ Story: Near optimization of SkylineExtractor's findClouds method.
 
     amount of time used: 
 
-    state of completion: 
+    state of completion: The story is complete, but is not optimized
+        and may need to be re-opened with new test data in the future.
 
-    comments regarding state:
+    comments regarding state:  The story is complete, but is not optimized
+        and may need to be re-opened with new test data in the future.
 
     comments:
 
@@ -298,7 +300,7 @@ Task 5:
   
    amount of time used:
 
-   state of completion:
+   state of completion: complete
 
    comments:
               
@@ -332,37 +334,52 @@ Task 6:
             images as a set to get their individual fitness function
             results and use the totals of those to let the
             downhill simplex improve the coefficients.
-[paused writing here...]
-            -- use 3 instances of the downhill simplex, one for fitting
-               the clauses for all skies, the second for blue skies
-               and the third for red skies OR
-               2 instances for all + red and all + blue...
-            ==> the tests should be to assert that the results for
-               each image are closer to the expected from the mask images.
-               -- a reasonable convergence should be considered and learned
-                  empirically.
 
    time estimate: 
   
    amount of time used:
 
    state of completion:
+       the harness is implemented and leads to a result at least as
+       good as the start.  
 
    comments:
+       a better implementation may be needed one day that is far more 
+       complex but has ability to improve automatically.  That impl
+       might build successive filter clauses upon need, starting with
+       the simplest, and may need to use range searches instead of
+       only downhill simplex to find best local results, and may need
+       to determine best step sizes.  for some of the filters, for
+       example the constrast and color difference filters, an optimization 
+       algorithm that uses gradient descent may be possible,
+       but even those two (contrast and color diff) have different 
+       implicit factors for each image
+       (which is not surprising becausing the underlying reason for the
+       contrast is lighting upon the foreground object combined with
+       the foreground object's index of refraction, albedo, etc.)
+       A truly better model may need to pre-prepare sky and cloud illumation
+       models (maybe even as patches of sky) and attempt to use information 
+       about sun location when available.  To use such a model also 
+       requires an interpretation
+       of whether snow or water is in the image.  
+       Approximating the light source from this information at every point
+       that one needs to test foreground pixels is expensive and indeterminate
+       due to multiple scattering being the usual case (unless sunset 
+       conditions are present).
               
 ---------------------------------------------------------------------
 Task 7:
-    goal: find more test images, especially those described as current
+   goal: find more test images, especially those described as current
           caveats that would need an alternate way of finding the seed
           sky points.
 
-    details:  
+   details:  
 
    time estimate: 
   
    amount of time used:
 
-   state of completion:
+   state of completion: complete for now, but should be reopened upon need.
 
    comments:
               
