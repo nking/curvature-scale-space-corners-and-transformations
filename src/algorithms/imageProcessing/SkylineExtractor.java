@@ -30,9 +30,23 @@ public class SkylineExtractor {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
     
+    private boolean useAlternateSkySeeds = false;
+    
     public static String debugName = "";
     public static void setDebugName(String name) {
         debugName = name;
+    }
+    
+    /**
+     * NOT YET USABLE.  This method is a placeholder for a flag that can
+     * be used to better select the sky location, perhaps by user
+     * interaction with UI.
+     */
+    public void doUseAlternateSkySelection() {
+        
+        useAlternateSkySeeds = true;
+        
+        throw new UnsupportedOperationException("Not supported yet.");
     }
     
      /**
@@ -160,7 +174,13 @@ public class SkylineExtractor {
         }
        
         RemovedSets removedSets = new RemovedSets();
-        
+                
+        //TODO: a placeholder for an alternate method to determine seed sky
+        // points has been made but not implemented and that's presumably
+        // needed for complex cases, such as smooth foreground which
+        // has sky colors and a sky that has alot of cloud structure.
+        // This method should allow user to see first guess at sky if in
+        // interactive mode then allow them to select.
         Set<PairInt> points = extractSkyStarterPoints(theta, gradientXY, 
             originalColorImage, edgeSettings, outputSkyCentroid,
             removedSets);
@@ -3028,17 +3048,29 @@ static int outImgNum=0;
         --> this can be seen when all lists in zeroPointLists, that is all points
         in zeroPointLists have cie X and Y white.
         */
-        // if all are white, reduce to the bluest lists
-        boolean didReduceToBluest = reduceToBluestIfAllAreWhite(zeroPointLists, 
-            colorImg, thetaImg);
         
-        //TODO:  assumes that largest smooth component of image is sky.
-        // if sky is small and a foreground object is large and featureless
-        // and not found as dark, this will fail. 
-        // will adjust for that one day, possibly with color validation
-        //if (!didReduceToBluest) {
-            reduceToLargest(zeroPointLists);
-        //}
+        //TODO. This method should one day allow user to see first guess at sky 
+        // if in interactive mode then allow them to select sky location.
+                
+        if (useAlternateSkySeeds) {
+            
+            zeroPointLists = selectFromSkySeeds(zeroPointLists, colorImg, 
+                thetaImg);
+            
+        } else {
+            
+            // if all are white, reduce to the bluest lists
+            boolean didReduceToBluest = reduceToBluestIfAllAreWhite(zeroPointLists, 
+                colorImg, thetaImg);
+        
+            //TODO:  assumes that largest smooth component of image is sky.
+            // if sky is small and a foreground object is large and featureless
+            // and not found as dark, this will fail. 
+            // will adjust for that one day, possibly with color validation
+            //if (!didReduceToBluest) {
+                reduceToLargest(zeroPointLists);
+            //}
+        }
         
         if (zeroPointLists.isEmpty()) {
             return null;
@@ -3795,6 +3827,23 @@ static int outImgNum=0;
                 }
             }
         }
+    }
+
+    /**
+     * a placeholder for ability to select the seeds of the sky from the
+     * zeroPointLists.  This might allow user interaction in the future.
+     * 
+     * 
+     * @param zeroPointLists
+     * @param colorImg
+     * @param thetaImg
+     * @return 
+     */
+    protected List<PairIntArray> selectFromSkySeeds(
+        List<PairIntArray> zeroPointLists, ImageExt colorImg, 
+        GreyscaleImage thetaImg) {
+        
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public class RemovedSets {
