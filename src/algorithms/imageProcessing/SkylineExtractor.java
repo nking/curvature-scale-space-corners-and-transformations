@@ -174,7 +174,7 @@ public class SkylineExtractor {
             
             return mask;
         }
-                
+        
         int xOffset = theta.getXRelativeOffset();
         int yOffset = theta.getYRelativeOffset();
       
@@ -199,7 +199,6 @@ public class SkylineExtractor {
                 removedSets.getReflectedSunRemoved(), originalColorImage, 
                 xOffset, yOffset, theta.getWidth(), theta.getHeight(),
                 skyIsDarkGrey, removedSets);
-            
         }
 
         int nSkyPointsBeforeFindClouds = points.size();
@@ -1838,7 +1837,7 @@ static int outImgNum=0;
         int maskHeight = thetaImage.getHeight();
         
         ArrayDeque<PairInt> cloudQueue = new ArrayDeque<PairInt>(skyPoints.size());
-        for (PairInt skyPoint : skyPoints) {
+        for (PairInt skyPoint : skyPoints) {            
             cloudQueue.add(skyPoint);
         }
 
@@ -1891,7 +1890,7 @@ static int outImgNum=0;
 
                     continue;
                 }
-
+                
                 visited.add(vPoint);
                 
                 Set<PairInt> neighbors = getThe8NeighborPixelsWithin(

@@ -5,7 +5,9 @@ import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.PairInt;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PolynomialFitter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -85,6 +87,7 @@ public class RainbowFinder {
                             rainbowHull.xHull, rainbowHull.yHull, 
                             rainbowHull.yHull.length);
                         if (in) {
+                            //TODO: there may be a problem with point in polygon
                             excludePointsInRainbowHull.add(new PairInt(col, row));
                         }
                     }
@@ -92,8 +95,7 @@ public class RainbowFinder {
                 
                 if (!excludePointsInRainbowHull.isEmpty()) {
                     // addRainbow to Hull, but only if there are sky points adjacent to hull
-                    addRainbowToPoints(skyPoints, excludePointsInRainbowHull, rainbowHull,
-                        imageWidth - 1, imageHeight - 1);
+                    addRainbowToPoints(skyPoints, imageWidth - 1, imageHeight - 1);
                 }
             }
         }
@@ -114,12 +116,10 @@ public class RainbowFinder {
     public void addRainbowToSkyPoints(Set<PairInt> skyPoints, 
         int lastImgCol, int lastImgRow) {
         
-        addRainbowToPoints(skyPoints, this.excludePointsInRainbowHull, 
-            this.rainbowHull, lastImgCol, lastImgRow);
+        addRainbowToPoints(skyPoints, lastImgCol, lastImgRow);
     }
     
     private void addRainbowToPoints(Set<PairInt> skyPoints, 
-        Set<PairInt> rainbowHullPoints, Hull rainbowHull,
         int lastImgCol, int lastImgRow) {
         
         //TODO: Note, it may be necessary to build a hull from a spine of
@@ -136,7 +136,7 @@ public class RainbowFinder {
         that there are skyPoints surrounding them.
         If not, and if the coverage is partial, will reduce the segment polygon
         size and only add points to skypoints within the segment polygon.
-        */
+        */ 
         
         int nHull = rainbowHull.xHull.length;
         int nHalf = nHull >> 1;
@@ -181,7 +181,7 @@ public class RainbowFinder {
                                 continue;
                             }
                             PairInt p = new PairInt(col, row);
-                            if (!rainbowHullPoints.contains(p)) {
+                            if (!excludePointsInRainbowHull.contains(p)) {
                                 nPossible++;
                                 if (skyPoints.contains(p)) {
                                     n++;
@@ -228,14 +228,14 @@ public class RainbowFinder {
                         boolean in = p.isInSimpleCurve(col, row, xh, yh, 
                             xh.length);
                         if (in) {
-                            rainbowHullPoints.remove(new PairInt(col, row));
+                            excludePointsInRainbowHull.remove(new PairInt(col, row));
                         }
                     }
                 }
             }
         }
         
-        skyPoints.addAll(rainbowHullPoints);
+        skyPoints.addAll(excludePointsInRainbowHull);
         
     }
 
@@ -644,7 +644,7 @@ public class RainbowFinder {
         int nMaxIter = 5;
         int nIter = 0;
         
-        int eps = (int)(0.01f * rainbowPoints.size());
+        int eps = (int)(0.15f * rainbowPoints.size());
         
         while ((low < high) && (nIter < nMaxIter)) {
             
@@ -656,7 +656,7 @@ public class RainbowFinder {
             nMatched = nPointsInPolygon(rainbowPoints, xPoly, yPoly);
             
             log.info("low=" + low + " high=" + high + " mid=" + mid 
-                + " nMatched=" + nMatched);
+                + " nMatched=" + nMatched + " out of " + rainbowPoints.size());
 
             if (Math.abs(nMatched - rainbowPoints.size()) < eps) {
                 if (low < mid) {
@@ -739,7 +739,7 @@ public class RainbowFinder {
                 maxDistSq = minDistSq;
             }
             
-            /*System.out.println(String.format(
+            /*log.info(String.format(
                 "(%d,%d) is closest to poly point (%f,%f) dist=%f", x, y, 
                 xc[minIdx], yc[minIdx], (float)Math.sqrt(minDistSq)));
             */
