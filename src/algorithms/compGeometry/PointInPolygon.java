@@ -6,7 +6,9 @@ package algorithms.compGeometry;
  * follows http://rosettacode.org/wiki/Ray-casting_algorithm impl for Go that
  * counts the number of times a ray intersects the edges of the polygon starting
  * from the point and going ANY fixed direction. This algorithm is sometimes
- * also known as the crossing number algorithm or the even-odd rule algorithm
+ * also known as the crossing number algorithm or the even-odd rule algorithm.
+ * The implementation here is different, and includes logic for testing whether
+ * the point is in the polygon lines too.
  *
  * @author nichole
  */
@@ -17,110 +19,54 @@ public class PointInPolygon {
 
     float eps = 0.00001f;
 
-    /**
-     * check whether pt is in simple curve. note that the calculation returns
-     * false if a pt is on the boundary of the polygon.
-     *
-     * adapted from the Go version:
-     * http://rosettacode.org/wiki/Ray-casting_algorithm
-     */
     public boolean isInSimpleCurve(float xPt, float yPt, float[] xPolygon,
         float[] yPolygon, int nPolygonPoints) {
         
-        if (isInPolyPoints(xPt, yPt, xPolygon, yPolygon, 0, nPolygonPoints)) {
-            return true;
-        }
-
         int sumIntersectingRays = 0;
+        
+        boolean possibleDoubleCount = false;
+        
         for (int i = 0; i < nPolygonPoints; i++) {
 
             if ((i + 2) > nPolygonPoints) {
                 continue;
             }
 
-            boolean does = rayIntersects(xPt, yPt, xPolygon, yPolygon, i, i + 1);
-
-            if (does) {
+            int result = rayIntersects(xPt, yPt, xPolygon, yPolygon, i, i + 1);
+              
+            if (result == 2) {
+                return true;
+            }
+            
+            if (result == 3) {
+                if (possibleDoubleCount) {
+                    // do not count this, but do reset flag
+                    possibleDoubleCount = false;
+                    continue;
+                }
+                possibleDoubleCount = true;                
+            }
+          
+            if (result > 0) {
                 sumIntersectingRays++;
             }
         }
         
         return ((sumIntersectingRays & 1) == 1);
-    }
-
-    /**
-     * check whether pt is in simple curve. note that the calculation. returns
-     * false if a pt is on the boundary of the polygon.
-     *
-     * Note that this method can be used when (xPolygon, yPolygon) do not have
-     * the same starting and ending point.
-     *
-     * adapted from the Go version:
-     * http://rosettacode.org/wiki/Ray-casting_algorithm
-     */
-    public boolean isInSimpleCurve_calcForPolygonWithoutDoubleStartEndPoint(
-        float xPt, float yPt, float[] xPolygon, float[] yPolygon,
-        int nPolygonPoints) {
-
-        if (isInPolyPoints(xPt, yPt, xPolygon, yPolygon, 0, nPolygonPoints)) {
-            return true;
-        }
-        
-        int sumIntersectingRays = 0;
-        for (int i = 0; i < nPolygonPoints; i++) {
-
-            int i2 = i + 1;
-            if (i2 > (nPolygonPoints - 1)) {
-                i2 = 0;
-            }
-
-            boolean does = rayIntersects(xPt, yPt, xPolygon, yPolygon, i, i2);
-
-            if (does) {
-                sumIntersectingRays++;
-            }
-        }
-
-        return ((sumIntersectingRays & 1) == 1);
-    }
-
-    /**
-     * check whether pt is in simple curve. note that the calculation. returns
-     * false if a pt is on the boundary of the polygon.
-     *
-     * adapted from the Go version:
-     * http://rosettacode.org/wiki/Ray-casting_algorithm
-     */
-    public boolean isInSimpleCurve(float xPt, float yPt, float[] xPolygon,
-        float[] yPolygon, int startPolygon, int endPolygon) {
-
-        if (isInPolyPoints(xPt, yPt, xPolygon, yPolygon, startPolygon, endPolygon)) {
-            return true;
-        }
-        
-        int sumIntersectingRays = 0;
-        for (int i = startPolygon; i < endPolygon; i++) {
-
-            if ((i + 2) > endPolygon) {
-                continue;
-            }
-
-            boolean does = rayIntersects(xPt, yPt, xPolygon, yPolygon, i, i + 1);
-
-            if (does) {
-                sumIntersectingRays++;
-            }
-        }
-
-        return ((sumIntersectingRays % 2) == 1);
     }
 
     /**
      * pt intersects edge by projecting that the point will travel horizontally.
+     * returns 0 if does not intersect, returns 1 if it does intersect,
+     * returns 2 if the point lies on a line directly (and in that
+     * case, the invoker should not test further),
+     * returns 3 for yPt being equal to one of the segments and xPt being
+     * to the right of both segments (and in that case, the invoker should
+     * not count the result twice).
      *
      * @return
      */
-    boolean rayIntersects(float xPt, float yPt, float[] xPolygon,
+    int rayIntersects(float xPt, float yPt, float[] xPolygon,
         float[] yPolygon, int index1, int index2) {
 
         float ax = xPolygon[index1];
@@ -136,52 +82,64 @@ public class PointInPolygon {
             bx = xtmp;
             by = ytmp;
         }
-        if ((yPt == ay) || (yPt == by)) {
-            yPt += eps;
+        
+        if ((xPt == ax) && (yPt == ay)) {
+            return 2;
         }
-
+        if ((xPt == bx) && (yPt == by)) {
+            return 2;
+        }
+        
         if ((yPt < ay) || (yPt > by)) {
-            return false;
+            return 0;
         }
         
-        if (ax > bx) {
-            if (xPt > ax) {
-                return false;
-            }
-            if (xPt < bx) {
-                return true;
-            }
-        } else {
-            if (xPt > bx) {
-                return false;
-            }
-            if (xPt < ax) {
-                return true;
-            }
-            //TODO: Revisit this.  it will miss for right side
-            if ((xPt == ax) || (xPt == bx)) {
-                xPt += eps;
-            }
-        }
-
-        boolean intersects = (yPt - ay)/(xPt - ax) >= (by - ay)/(bx - ax);
-        
-        return intersects;
-    }
-
-    protected boolean isInPolyPoints(float xPt, float yPt, float[] xPolygon, 
-        float[] yPolygon, int startPolygonIdx, int stopPolygonIdxExcl) {
-        
-        for (int i = startPolygonIdx; i < stopPolygonIdxExcl; i++) {
-            
-            if (Math.abs(xPt - xPolygon[i]) < eps) {
-                if (Math.abs(yPt - yPolygon[i]) < eps) {
-                    return true;
+        // test for vertical a->b,  "is on line" and "right of line"
+        if (ax == bx) {
+            if (xPt == ax) {
+                if ((yPt > ay) && (yPt < by)) {
+                    return 2;
                 }
+                return 0;
+            } else if (xPt < ax) {
+                if ((yPt > ay) && (yPt < by)) {
+                    return 1;
+                }
+                return 0;
+            } else {
+                return 0;
             }
         }
         
-        return false;
+        // since (xPt,yPt) is within y range ay:by
+        if ((xPt <= ax) && (xPt <= bx)) {
+            if ((yPt == by) || (yPt == ay)) {
+                // we don't want to count the point twice as "intersects"
+                return 3;
+            }
+            return 1;
+        }
+        if ((xPt > ax) && (xPt > bx)) {
+            return 0;
+        }
+        
+        // (xPt,yPt) is within y range ay:by  and bounded by ax and bx (but != ax nor bx)
+        
+        // test "is on line"
+        float slopeAB = (by - ay)/(bx - ax);
+        
+        float slopeAPt = (yPt - ay)/(xPt - ax);
+        
+        float slopePtB = (by - yPt)/(bx - xPt);
+        
+        // TODO: may need to widen eps to include 1 pixel rounding
+        if ((Math.abs(slopeAB - slopeAPt) < eps) && 
+            (Math.abs(slopeAB - slopePtB) < eps)) {
+            
+            return 2;
+        }
+        
+        return 0;
     }
 
 }

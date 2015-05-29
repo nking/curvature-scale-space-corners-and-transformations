@@ -336,10 +336,11 @@ public class RainbowFinder {
             int nYellow = 0;
             int nGreen = 0;
             int nRed = 0;
+            int nWhite = 0;
             CIEChromaticity cieC = new CIEChromaticity();
             ArrayPair cPurpRed = cieC.getRedThroughPurplishRedPolynomial();
             ArrayPair cOranRed = cieC.getOrangePolynomial();
-            ArrayPair cYellow = cieC.getYellowishGreenThroughOrangePolynomial();
+            ArrayPair cYellow = cieC.getGreenishYellowThroughOrangePolynomial();
             ArrayPair cGreen = cieC.getGreenPolynomial();
             ArrayPair cRed = cieC.getRedPolynomial();
             PointInPolygon pInPoly = new PointInPolygon();
@@ -365,6 +366,8 @@ public class RainbowFinder {
                     "(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f",
                     x, y, r, g, b, rDivB, cieX, cieY));
 
+                boolean isWhite = cieC.isCentralWhite(cieX, cieY);
+                
                 if (cieX >= 0.35) {
                     nGTX++;
                 }
@@ -384,25 +387,27 @@ public class RainbowFinder {
                     maxCIEY = cieY;
                 }
                 
-                if (pInPoly.isInSimpleCurve(cieX,cieY, cPurpRed.getX(), 
-                    cPurpRed.getY(), cPurpRed.getX().length)) {
-                    nPurpRed++;
-                }
-                if (pInPoly.isInSimpleCurve(cieX, cieY, cOranRed.getX(), 
-                    cOranRed.getY(), cOranRed.getX().length)) {
-                    nOranRed++;
-                }
-                if (pInPoly.isInSimpleCurve(cieX, cieY, cYellow.getX(), 
-                    cYellow.getY(), cYellow.getX().length)) {
-                    nYellow++;
-                }
-                if (pInPoly.isInSimpleCurve(cieX, cieY, cGreen.getX(), 
-                    cGreen.getY(), cGreen.getX().length)) {
-                    nGreen++;
-                }
-                if (pInPoly.isInSimpleCurve(cieX, cieY, cRed.getX(), 
-                    cRed.getY(), cRed.getX().length)) {
-                    nRed++;
+                if (!isWhite) {
+                    if (pInPoly.isInSimpleCurve(cieX,cieY, cPurpRed.getX(), 
+                        cPurpRed.getY(), cPurpRed.getX().length)) {
+                        nPurpRed++;
+                    }
+                    if (pInPoly.isInSimpleCurve(cieX, cieY, cOranRed.getX(), 
+                        cOranRed.getY(), cOranRed.getX().length)) {
+                        nOranRed++;
+                    }
+                    if (pInPoly.isInSimpleCurve(cieX, cieY, cYellow.getX(), 
+                        cYellow.getY(), cYellow.getX().length)) {
+                        nYellow++;
+                    }
+                    if (pInPoly.isInSimpleCurve(cieX, cieY, cGreen.getX(), 
+                        cGreen.getY(), cGreen.getX().length)) {
+                        nGreen++;
+                    }
+                    if (pInPoly.isInSimpleCurve(cieX, cieY, cRed.getX(), 
+                        cRed.getY(), cRed.getX().length)) {
+                        nRed++;
+                    }
                 }
             }
             
@@ -422,9 +427,19 @@ public class RainbowFinder {
             );
 
             rainbowPoints.clear();
-            
-            if ((nPurpRed < 10) || 
-                (((float)nPurpRed/(float)bestFittingPoints.size()) < 0.05)) {
+               
+            debugPlot(bestFittingPoints, colorImg, xOffset, yOffset, 
+                "rainbow_before_clr_filter");
+
+            float greenFraction = (float)nGreen/(float)bestFittingPoints.size();
+            if ( 
+                (greenFraction < 0.01) ||
+                (
+                    (((float)nPurpRed/(float)bestFittingPoints.size()) < 0.05)
+                    &&
+                    (greenFraction < 0.03)
+                )
+            ) {
                 
                 return null;
                 
@@ -492,21 +507,46 @@ public class RainbowFinder {
                 }
                 
                 int idx = colorImg.getInternalIndex(col, row);
-                
-                if (colors.isInRedThroughPurplishRed(colorImg, idx)) {
+          if (col==295 && row>= 173 && row <= 175) {
+              int z = 1;
+          }      
+                float cieX = colorImg.getCIEX(idx);
+                float cieY = colorImg.getCIEY(idx);
+
+                int r = colorImg.getR(idx);
+                int g = colorImg.getG(idx);
+                int b = colorImg.getB(idx);
+
+                float saturation = colorImg.getSaturation(idx);
+                float brightness = colorImg.getBrightness(idx);
+        
+                if (colors.isInRedThroughPurplishRed(r, g, b, cieX, cieY, 
+                    saturation, brightness)) {
                     
                     set.add(p);
 
-                } else if (colors.isInOrangeRed(colorImg, idx)) {
+                } else if (colors.isInOrangeRed(r, g, b, cieX, cieY, saturation, 
+                    brightness)) {
                     
                     set.add(p);
                 
-                } else if (colors.isInGreenishYellowOrange(colorImg, idx)) {
+                } else if (colors.isInGreenishYellowOrange(r, g, b, cieX, cieY,
+                    saturation, brightness)) {
                  
                     set.add(p);
-                }
+                    
+                } /*else if (colors.isInYellowishYellowGreen(r, g, b, cieX, cieY, 
+                    saturation, brightness)) {
+                    
+                    // finds grass and trees
+                
+                    set.add(p);
+                    
+                }*/
             }
         }
+        
+        //debugPlot(set, colorImg, xOffset, yOffset, "rainbow_colored_points");
         
         return set;
     }
@@ -875,4 +915,10 @@ public class RainbowFinder {
         return nInside;
     }
     
+    void debugPlot(Set<PairInt> extSkyPoints, Image originalColorImage, 
+        int xOffset, int yOffset, String outputPrefixForFileName) {
+        
+        //plot is made in aspects
+        
+    }
 }

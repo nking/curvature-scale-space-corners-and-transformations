@@ -80,7 +80,17 @@ public class CIEChromaticity {
         return p;
     }
     
-    public ArrayPair getYellowishGreenThroughOrangePolynomial() {
+    public ArrayPair getYellowishGreenThroughYellowGreenPolynomial() {
+        
+        ArrayPair p = new ArrayPair(
+            new float[]{0.18f, 0.45f, 0.45f, 0.32f, 0.31f, 0.18f},
+            new float[]{0.8f,  0.8f, 0.55f, 0.32f,  0.4f,  0.8f}
+        );
+        
+        return p;
+    }
+    
+    public ArrayPair getGreenishYellowThroughOrangePolynomial() {
         /*
         685, 312
         456, 544
@@ -330,6 +340,30 @@ public class CIEChromaticity {
         float diffSlope = Math.abs((cieX/cieY) - 1);
       
         return (diffSlope < 0.25);
+    }
+    
+    /**
+     * returns roughly whether the CIE (X,Y) coordinate lands within the large
+     * white zone in the center of the diagram.
+     * @param cieX
+     * @param cieY
+     * @return 
+     */
+    public boolean isCentralWhite(float cieX, float cieY) {
+        
+        // centered on (0.35, 0.35) with delta
+        
+        float delta = 0.01f;
+        
+        if ((cieX > (0.35f + delta)) || (cieX < (0.35 - delta))) {
+            return false;
+        }
+        
+        if ((cieY > (0.35f + delta)) || (cieY < (0.35 - delta))) {
+            return false;
+        }
+        
+        return true;
     }
     
     /**

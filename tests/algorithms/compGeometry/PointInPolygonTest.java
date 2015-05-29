@@ -24,6 +24,14 @@ public class PointInPolygonTest extends TestCase {
 
     public void getSquarePoly(float[] xPoly, float[] yPoly) {
 
+        /*
+        10********
+          *      *
+          *      *
+        0 ********
+          0     10
+        */
+        
         xPoly[0] = 0;
         yPoly[0] = 0;
         xPoly[1] = 10;
@@ -43,86 +51,25 @@ public class PointInPolygonTest extends TestCase {
         yPoly[6] = 10;
         xPoly[7] = 0;
         yPoly[7] = 0;
-    }
-
-    public void getSquareHolePoly(float[] xPoly, float[] yPoly) {
-
-        xPoly[0] = 0;
-        yPoly[0] = 0;
-        xPoly[1] = 10;
-        yPoly[1] = 0;
-
-        xPoly[2] = 10;
-        yPoly[2] = 0;
-        xPoly[3] = 10;
-        yPoly[3] = 10;
-
-        xPoly[4] = 10;
-        yPoly[4] = 10;
-        xPoly[5] = 0;
-        yPoly[5] = 10;
-
-        xPoly[6] = 0;
-        yPoly[6] = 10;
-        xPoly[7] = 0;
-        yPoly[7] = 0;
-
-        xPoly[8] = 2.5f;
-        yPoly[8] = 2.5f;
-        xPoly[9] = 7.5f;
-        yPoly[9] = 2.5f;
-
-        xPoly[10] = 7.5f;
-        yPoly[10] = 2.5f;
-        xPoly[11] = 7.5f;
-        yPoly[11] = 7.5f;
-
-        xPoly[12] = 7.5f;
-        yPoly[12] = 7.5f;
-        xPoly[13] = 2.5f;
-        yPoly[13] = 7.5f;
-
-        xPoly[14] = 2.5f;
-        yPoly[14] = 7.5f;
-        xPoly[15] = 2.5f;
-        yPoly[15] = 2.5f;
-    }
-
-    public void getStrangePoly(float[] xPoly, float[] yPoly) {
-
-        xPoly[0] = 0;
-        yPoly[0] = 0;
-        xPoly[1] = 2.5f;
-        yPoly[1] = 2.5f;
-
-        xPoly[2] = 2.5f;
-        yPoly[2] = 2.5f;
-        xPoly[3] = 0;
-        yPoly[3] = 10;
-
-        xPoly[4] = 2.5f;
-        yPoly[4] = 7.5f;
-        xPoly[5] = 7.5f;
-        yPoly[5] = 7.5f;
-
-        xPoly[6] = 7.5f;
-        yPoly[6] = 7.5f;
-        xPoly[7] = 10;
-        yPoly[7] = 10;
-
-        xPoly[8] = 10;
-        yPoly[8] = 10;
-        xPoly[9] = 10;
-        yPoly[9] = 0;
-
-        xPoly[10] = 10;
-        yPoly[10] = 0;
-        xPoly[11] = 2.5f;
-        yPoly[11] = 2.5f;
+        
     }
 
     public void getExagonPoly(float[] xPoly, float[] yPoly) {
 
+        /*
+
+       10
+
+                *7,8--*5,6
+              /          \
+            /             \
+        *9,10               *3,4
+           \               /
+             \           /
+       0        *0,11-*1,2   
+          0                  10
+        
+        */
         xPoly[0] = 3;
         yPoly[0] = 0;
         xPoly[1] = 7;
@@ -156,6 +103,15 @@ public class PointInPolygonTest extends TestCase {
 
      public void getTestPts(float[] xPoly, float[] yPoly) {
 
+         /*
+         (5, 5)
+         (5, 8)
+         (-10, 5)
+         (0, 5)
+         (10, 5)
+         (8, 5)
+         (10, 10)
+         */
          xPoly[0] = 5;
          yPoly[0] = 5;
          xPoly[1] = 5;
@@ -187,16 +143,6 @@ public class PointInPolygonTest extends TestCase {
         getSquarePoly(squarePolyX, squarePolyY);
 
 
-        float[] squareHolePolyX = new float[16];
-        float[] squareHolePolyY = new float[16];
-        getSquareHolePoly(squareHolePolyX, squareHolePolyY);
-
-
-        float[] strangePolyX = new float[12];
-        float[] strangePolyY = new float[12];
-        getStrangePoly(strangePolyX, strangePolyY);
-
-
         float[] exagonPolyX = new float[12];
         float[] exagonPolyY = new float[12];
         getExagonPoly(exagonPolyX, exagonPolyY);
@@ -211,67 +157,68 @@ public class PointInPolygonTest extends TestCase {
 
         // test square poly
         boolean[] expected = new boolean[] {
-            true, true, false, false, true, true, false
+            true, true, false, true, true, true, true
         };
-        int count=0;
+        /*
+        10******** 2 2
+          *      *
+          *      *
+        0 ********
+          0     10
+          0      1 1
+         (5, 5)
+         (5, 8)
+         (-10, 5)
+         (0, 5)
+         (10, 5)
+         (8, 5)
+         (10, 10)
+        */
         for (int i = 0; i < testPointsX.length; i++) {
             float testPointX = testPointsX[i];
             float testPointY = testPointsY[i];
 
-            boolean result = instance.isInSimpleCurve(testPointX, testPointY, squarePolyX, squarePolyY, squarePolyX.length);
+            boolean result = instance.isInSimpleCurve(testPointX, testPointY, 
+                squarePolyX, squarePolyY, squarePolyX.length);
 
-            System.out.println("  result=" + result + " expect=" + expected[count]);
-            assertTrue(result == expected[count]);
-            count++;
+            //System.out.println("  result=" + result + " expect=" + expected[i]);
+            assertTrue(result == expected[i]);
         }
+         /*
 
-        // test square hole poly
-        expected = new boolean[] {
-            false, true, false, false, true, true, false
-        };
-        count=0;
-        for (int i = 0; i < testPointsX.length; i++) {
-            float testPointX = testPointsX[i];
-            float testPointY = testPointsY[i];
+           10
 
-            boolean result = instance.isInSimpleCurve(testPointX, testPointY, squareHolePolyX, squareHolePolyY, squareHolePolyX.length);
-
-            System.out.println("  result=" + result + " expect=" + expected[count]);
-            assertTrue(result == expected[count]);
-            count++;
-        }
-
-        // test strange poly
-        expected = new boolean[] {
-            true, false, false, false, true, true, false
-        };
-        count=0;
-        for (int i = 0; i < testPointsX.length; i++) {
-            float testPointX = testPointsX[i];
-            float testPointY = testPointsY[i];
-
-            boolean result = instance.isInSimpleCurve(testPointX, testPointY, strangePolyX, strangePolyY, strangePolyX.length);
-
-            System.out.println("  result=" + result + " expect=" + expected[count]);
-            assertTrue(result == expected[count]);
-            count++;
-        }
-
+                    *7,8--*5,6
+                  /          \
+                /             \
+            *9,10               *3,4
+               \               /
+                 \           /
+           0        *0,11-*1,2   
+              0                  10
+        
+         (5, 5)
+         (5, 8)
+         (-10, 5)
+         (0, 5)
+         (10, 5)
+         (8, 5)
+         (10, 10)
+        */
         // test exagon poly
         expected = new boolean[] {
-            true, true, false, false, false /*it's on exiting edge*/, false /*it's on exiting edge*/, false
+            true, true, false, true, true, false, false
         };
-        count=0;
-        /*for (int i = 0; i < testPointsX.length; i++) {
+        for (int i = 0; i < testPointsX.length; i++) {
             float testPointX = testPointsX[i];
             float testPointY = testPointsY[i];
 
-            boolean result = instance.isInSimpleCurve(testPointX, testPointY, exagonPolyX, exagonPolyY, exagonPolyX.length);
+            boolean result = instance.isInSimpleCurve(testPointX, testPointY, 
+                exagonPolyX, exagonPolyY, exagonPolyX.length);
 
-            System.out.println("  result=" + result + " expect=" + expected[count]);
-            assertTrue(result == expected[count]);
-            count++;
-        }*/
+            System.out.println("  result=" + result + " expect=" + expected[i]);
+            assertTrue(result == expected[i]);
+        }
     }
 
     public void test10() throws Exception {

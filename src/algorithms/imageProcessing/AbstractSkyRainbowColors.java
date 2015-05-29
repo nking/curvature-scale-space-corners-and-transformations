@@ -15,7 +15,10 @@ public abstract class AbstractSkyRainbowColors {
     protected ArrayPair orangeBounds = cieC.getOrangePolynomial();
     
     protected ArrayPair greenishYellowOrangeBounds = 
-        cieC.getYellowishGreenThroughOrangePolynomial();
+        cieC.getGreenishYellowThroughOrangePolynomial();
+    
+    protected ArrayPair yellowishGreenYellowGreenBounds = 
+        cieC.getYellowishGreenThroughYellowGreenPolynomial();
     
     protected ArrayPair redPurplishBounds = 
         cieC.getRedThroughPurplishRedPolynomial();
@@ -172,6 +175,31 @@ public abstract class AbstractSkyRainbowColors {
                 greenishYellowOrangeBounds.getX(), 
                 greenishYellowOrangeBounds.getY(), 
                 greenishYellowOrangeBounds.getX().length))) {
+                
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    public boolean isInYellowishYellowGreen(int r, int g, int b, 
+        float cieX, float cieY, float saturation, float brightness) {
+        
+        int totRGB = r + g + b;
+
+        PointInPolygon pInPoly = new PointInPolygon();
+                  
+        if ((r > 15) && (g > 15) && (b > 15)) {
+                    
+            if (
+                (saturation > greenishYellowOrangeSLimit)
+                && (brightness > 0.25)
+                && (totRGB > totRGBLimit)
+                && (pInPoly.isInSimpleCurve(cieX, cieY,
+                yellowishGreenYellowGreenBounds.getX(), 
+                yellowishGreenYellowGreenBounds.getY(), 
+                yellowishGreenYellowGreenBounds.getX().length))) {
                 
                 return true;
             }

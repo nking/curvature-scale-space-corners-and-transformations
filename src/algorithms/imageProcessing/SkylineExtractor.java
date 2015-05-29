@@ -254,7 +254,11 @@ public class SkylineExtractor {
         }
                 
         points.addAll(sunFinder.getSunPoints());
- 
+
+        
+debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
+"final");
+
         GreyscaleImage mask = gradientXY.createWithDimensions();
         mask.fill(1);
         for (PairInt p : points) {
@@ -1959,7 +1963,7 @@ static int outImgNum=0;
                         && ((diffCIEX > 0.03) || (diffCIEY > 0.03))
                         ) {
                         ArrayPair yellowGreenOrange = 
-                            cieC.getYellowishGreenThroughOrangePolynomial();
+                            cieC.getGreenishYellowThroughOrangePolynomial();
                         if (pInPoly.isInSimpleCurve(cieX, cieY,
                             yellowGreenOrange.getX(), yellowGreenOrange.getY(),
                             yellowGreenOrange.getX().length)) {
@@ -3655,7 +3659,8 @@ static int outImgNum=0;
                     // ascend rows to see if any have first colRange starting at 0
                     for (int row = skyRowMinMax[0] + 1; row <= skyRowMinMax[1]; row++) {
                         List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));
-                        if (rcr.get(0).getX() == 0) {
+                        
+                        if (!rcr.isEmpty() && (rcr.get(0).getX() == 0)) {
                             fillInLeftCorner = true;
                             break;
                         }
@@ -3669,8 +3674,9 @@ static int outImgNum=0;
                 if (rowColRanges.get(rowColRanges.size() - 1).getY() < imageMaxColumn) {
                     // ascend rows to see if any have last colRange == imageMaxColumn
                     for (int row = skyRowMinMax[0] + 1; row <= skyRowMinMax[1]; row++) {
-                        List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));
-                        if (rcr.get(rcr.size() - 1).getY() == imageMaxColumn) {
+                        List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));                        
+                        if (!rcr.isEmpty() && 
+                            (rcr.get(rcr.size() - 1).getY() == imageMaxColumn)) {
                             fillInRightCorner = true;
                             break;
                         }
@@ -3704,8 +3710,8 @@ static int outImgNum=0;
                 if (rowColRanges.get(0).getX() > 0) {
                     // ascend rows to see if any have first colRange starting at 0
                     for (int row = skyRowMinMax[1] - 1; row > skyRowMinMax[0]; row--) {
-                        List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));
-                        if (rcr.get(0).getX() == 0) {
+                        List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));                        
+                        if (!rcr.isEmpty() && (rcr.get(0).getX() == 0)) {
                             fillInLeftCorner = true;
                             break;
                         }
@@ -3720,7 +3726,8 @@ static int outImgNum=0;
                     // ascend rows to see if any have last colRange == imageMaxColumn
                     for (int row = skyRowMinMax[1] - 1; row > skyRowMinMax[0]; row--) {
                         List<PairInt> rcr = skyRowColRanges.get(Integer.valueOf(row));
-                        if (rcr.get(rcr.size() - 1).getY() == imageMaxColumn) {
+                        if (!rcr.isEmpty() && (
+                            rcr.get(rcr.size() - 1).getY() == imageMaxColumn)) {
                             fillInRightCorner = true;
                             break;
                         }

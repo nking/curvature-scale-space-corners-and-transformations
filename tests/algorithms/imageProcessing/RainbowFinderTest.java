@@ -4,17 +4,10 @@ import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.PolynomialFitter;
 import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
@@ -38,7 +31,7 @@ public class RainbowFinderTest extends TestCase {
             "sky_with_rainbow.jpg",
             "sky_with_rainbow_rot45.jpg",
             "sky_with_rainbow2.jpg",
-            "brown_lowe_2003_image1.jpg",
+            "brown_lowe_2003_image1.jpg"
         };
         
         for (String fileName : fileNames) {
@@ -69,14 +62,13 @@ public class RainbowFinderTest extends TestCase {
             }
             
             RainbowFinder rFinder = new RainbowFinder();
-            
-            
+           
             removedSets = skylineExtractor.new RemovedSets();
             outputSkyCentroid = new PairIntArray();
             points = skylineExtractor.extractSkyStarterPoints(
                 helper.getTheta(), helper.getGradientXY(), img1, 
                 helper.getCannyEdgeFilterSettings(), outputSkyCentroid, 
-                removedSets);
+                removedSets);    
         
             rFinder.findRainbowInImage(points, 
                 removedSets.getReflectedSunRemoved(), img1, 
