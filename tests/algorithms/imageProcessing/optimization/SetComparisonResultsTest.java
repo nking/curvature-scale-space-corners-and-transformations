@@ -48,19 +48,20 @@ public class SetComparisonResultsTest extends TestCase {
         assertTrue(s0.compareTo(s1) == 0);
         
         //----------------------
+        // the difference in overrun is smaller than eps
         s0 = new SetComparisonResults(nExpected, 0, 
             nMatched, nExpectedBorder, nMatchedBorder);
         
         s1 = new SetComparisonResults(nExpected, nOverrun, 
             nMatched, nExpectedBorder, nMatchedBorder);
         
-        assertFalse(s0.equals(s1));
+        assertTrue(s0.equals(s1));
         
-        assertTrue(s0.compareTo(s1) == -1);
+        assertTrue(s0.compareTo(s1) == 0);
         
-        assertFalse(s1.equals(s0));
+        assertTrue(s1.equals(s0));
         
-        assertTrue(s1.compareTo(s0) == 1);
+        assertTrue(s1.compareTo(s0) == 0);
         
         //----------------------
         nExpected = 100;
