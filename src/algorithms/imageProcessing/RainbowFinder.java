@@ -5,9 +5,7 @@ import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.PairInt;
-import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PolynomialFitter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,6 +15,11 @@ import java.util.logging.Logger;
  * class with methods to find a rainbow within an image and to create a hull
  * to encapsulate it for various methods.
  * 
+ *  TODO: Note, it may be necessary to build a hull from a spine of
+    more than 10 points for complex images w/ rainbow intersecting
+    multiple times with structured foreground and sky
+    (see the end of method createRainbowHull).
+        
  * @author nichole
  */
 public class RainbowFinder {
@@ -35,6 +38,12 @@ public class RainbowFinder {
     private Hull rainbowHull = null;
     
     private float[] rainbowCoeff = null;
+    
+    private float[] rainbowSkeletonX = null;
+    
+    private float[] rainbowSkeletonY = null;
+    
+    private float hullHalfWidth = 0;
     
     /**
      * search for a rainbow within the image, and if found, create a hull of
@@ -70,11 +79,12 @@ public class RainbowFinder {
         
         if (rainbowCoeff != null) {
             
-            // note that this adds the outer points to the sky too
             rainbowHull = createRainbowHull(rainbowCoeff, 
                 outputRainbowPoints, colorImg, xOffset, yOffset);
             
             if (rainbowHull != null) {
+                
+                //TODO: may need adjustment for a boundary being an image boundary
                 
                 int minXHull = (int)MiscMath.findMin(rainbowHull.xHull);
                 int maxXHull = (int)Math.ceil(MiscMath.findMax(rainbowHull.xHull));
@@ -87,7 +97,6 @@ public class RainbowFinder {
                             rainbowHull.xHull, rainbowHull.yHull, 
                             rainbowHull.yHull.length);
                         if (in) {
-                            //TODO: there may be a problem with point in polygon
                             excludePointsInRainbowHull.add(new PairInt(col, row));
                         }
                     }
@@ -121,10 +130,6 @@ public class RainbowFinder {
     
     private void addRainbowToPoints(Set<PairInt> skyPoints, 
         int lastImgCol, int lastImgRow) {
-        
-        //TODO: Note, it may be necessary to build a hull from a spine of
-        // more than 10 points for complex images w/ rainbow intersecting
-        // multiple times with structured foreground and sky
         
         /* n=21
          0,20    1    2    3    4    5    6    7    8    9
@@ -569,7 +574,7 @@ public class RainbowFinder {
         int yOffset) {
         
         /*
-        need to know the furthest closest distanc to the polynomial, that is the
+        need to know the furthest closest distance to the polynomial, that is the
         furthest perpendicular point to the polynomial in order to expand the 
         region around the polynomial to become a hull that encloses all rainbow 
         points.
@@ -621,12 +626,13 @@ public class RainbowFinder {
         int width = originalColorImage.getWidth() - xOffset;
         int height = originalColorImage.getHeight() - yOffset;
         
-        float[] xc = new float[10];
-        float[] yc = new float[xc.length];
-        generatePolynomialPoints(rainbowPoints, rainbowCoeff, xc, yc);
+        rainbowSkeletonX = new float[10];
+        rainbowSkeletonY = new float[10];
+        generatePolynomialPoints(rainbowPoints, rainbowCoeff, rainbowSkeletonX, 
+            rainbowSkeletonY);
        
         float maxOfPointMinDistances = maxOfPointMinDistances(rainbowPoints,
-            xc, yc);
+            rainbowSkeletonX, rainbowSkeletonY);
         
         float high = 2 * maxOfPointMinDistances;
         float low = maxOfPointMinDistances / 2;
@@ -639,7 +645,7 @@ public class RainbowFinder {
          19   18   17   16   15   14   13   12   11   10
         */
         
-        float[] xPoly = new float[2 * xc.length + 1];
+        float[] xPoly = new float[2 * rainbowSkeletonX.length + 1];
         float[] yPoly = new float[xPoly.length];
         int nMaxIter = 5;
         int nIter = 0;
@@ -650,8 +656,10 @@ public class RainbowFinder {
             
             float mid = (high + low)/2.f;
             
-            populatePolygon(xc, yc, mid, xPoly, yPoly, rainbowCoeff, width, 
-                height);
+            hullHalfWidth = mid;
+            
+            populatePolygon(rainbowSkeletonX, rainbowSkeletonY, mid, 
+                xPoly, yPoly, rainbowCoeff, width, height);
             
             nMatched = nPointsInPolygon(rainbowPoints, xPoly, yPoly);
             
@@ -673,6 +681,11 @@ public class RainbowFinder {
             
             nIter++;
         }
+        
+        //TODO: once a reasonable hullHalfWidth has been determined,
+        // may want to regenerate the hull with higher resolution,
+        // that is 5 or 10 times the number of skeleton points on 
+        // each side
          
         Hull hull = new Hull();
         hull.xHull = xPoly;
