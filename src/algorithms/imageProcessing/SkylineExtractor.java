@@ -26,6 +26,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Logger;
 
+/**
+ * class to find the sky points in an image.  TODO: there needs
+ * to be another class that is usable to combine information (sky masks) from
+ * multiple images that are registered (aligned) in order to better define 
+ * the skyline when there are optically thick clouds for instance.
+ * 
+ * @author nichole
+ */
 public class SkylineExtractor {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
