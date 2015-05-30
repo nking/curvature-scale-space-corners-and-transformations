@@ -68,7 +68,8 @@ public class CannyEdgeFilter {
         
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
-    private Class<? extends ILineThinner> lineThinnerClass = ErosionFilter.class;
+    // ErosionFilter
+    private Class<? extends ILineThinner> lineThinnerClass = ZhangSuenLineThinner.class;
     
     protected boolean useOutdoorMode = false;
     
@@ -228,10 +229,13 @@ public class CannyEdgeFilter {
         
         applyLineThinnerFilter(gradientXYImage);
         
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        if (lineThinnerClass.equals(ErosionFilter.class)) {
+            
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        curveHelper.additionalThinning45DegreeEdges(gradientThetaImage.copyImage(), 
-            gradientXYImage);
+            curveHelper.additionalThinning45DegreeEdges(gradientThetaImage.copyImage(), 
+                gradientXYImage);
+        }
     }
    
     /*
