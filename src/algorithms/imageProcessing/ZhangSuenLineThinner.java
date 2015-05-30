@@ -186,6 +186,21 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
     private void correctForArtifacts(GreyscaleImage input) {
         
         correctForHoleArtifacts(input);
+        
+//debugPrint(input, 157, 160, 79, 83);
+        
+        correctFor45DegreeArtificats(input);
+        
+//debugPrint(input, 157, 160, 79, 83);
+        
+        correctForZigZag0(input);
+        
+//debugPrint(input, 157, 160, 79, 83);
+        
+        //correctForZigZag1(input);
+        
+//debugPrint(input, 157, 160, 79, 83);
+        //correctForZigZag2(input);
     }
     
     private void correctForHoleArtifacts(GreyscaleImage input) {
@@ -379,5 +394,390 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             }
         }
     }    
+
+    private void correctFor45DegreeArtificats(GreyscaleImage input) {
+        
+        /*
+        looking for pattern
+        
+          0 0   #
+        0 0 # #
+        0 # # 0
+          # 0 0
+        #
+        
+        and removing the topmost left #'s
+        
+        */
+        
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        Set<PairInt> remove = new HashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-2, 0));
+        zeroes.add(new PairInt(-2, -1));
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, 0));
+        
+        ones.add(new PairInt(-2, 2));
+        ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(2, -2));
+        
+        remove.add(new PairInt(-1, 0));
+        remove.add(new PairInt(0, -1));
+        
+        replacePattern(input, zeroes, ones, remove, 1);
+        
+        // ----- change the sign of x to handle -45 degrees -----
+        for (PairInt p : zeroes) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : ones) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : remove) {
+            p.setX(-1 * p.getX());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+        
+    }
     
+    private void correctForZigZag0(GreyscaleImage input) {
+        
+        /*
+        looking for pattern
+        
+          0 0 #  
+        0 0 #
+        0 # # 0
+          . 0 0    . is the center pixel and should be value '1'
+        #
+        
+        and removing the topmost left #'s
+        
+        */
+        
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        Set<PairInt> remove = new HashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(1, -2));
+        ones.add(new PairInt(2, -3));
+        
+        zeroes.add(new PairInt(1, 0));
+        zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, -3));
+                
+        remove.add(new PairInt(0, -1));
+        
+        replacePattern(input, zeroes, ones, remove, 1);
+        
+        // ----- change the sign of x to handle other direction -----
+        for (PairInt p : zeroes) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : ones) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : remove) {
+            p.setX(-1 * p.getX());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+             
+        // ----- change the sign of y to handle other direction -----
+        for (PairInt p : zeroes) {
+            p.setY(-1 * p.getY());
+        }
+        
+        for (PairInt p : ones) {
+            p.setY(-1 * p.getY());
+        }
+        
+        for (PairInt p : remove) {
+            p.setY(-1 * p.getY());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+        
+        // ----- change the sign of x to handle another direction -----
+        for (PairInt p : zeroes) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : ones) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : remove) {
+            p.setX(-1 * p.getX());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+    }
+    
+    private void correctForZigZag1(GreyscaleImage input) {
+        
+        /*
+        looking for pattern
+          0
+        0 # # 0
+          0 . #  where . is the center pixel and should be '1'
+          0 0 0<-
+        and removing the topmost left #'s
+        
+        */
+        
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        Set<PairInt> remove = new HashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(-2, -1));
+        
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+                        
+        remove.add(new PairInt(0, 0));
+       
+        replacePattern(input, zeroes, ones, remove, 1);
+                    
+        // ----- change the sign of x to handle other direction -----
+        for (PairInt p : zeroes) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : ones) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : remove) {
+            p.setX(-1 * p.getX());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+             
+        // ----- change the sign of y to handle other direction -----
+        for (PairInt p : zeroes) {
+            p.setY(-1 * p.getY());
+        }
+        
+        for (PairInt p : ones) {
+            p.setY(-1 * p.getY());
+        }
+        
+        for (PairInt p : remove) {
+            p.setY(-1 * p.getY());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+        
+        // ----- change the sign of x to handle another direction -----
+        for (PairInt p : zeroes) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : ones) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : remove) {
+            p.setX(-1 * p.getX());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+    }
+    
+    private void correctForZigZag2(GreyscaleImage input) {
+        
+        /*
+        looking for pattern
+          0
+          # # 0
+          0 . # 0 where . is the center pixel and should be '1'
+          0 0 # #
+              0<--?
+        and removing the topmost left #'s
+        
+        */
+        
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        Set<PairInt> remove = new HashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(0, 1));
+        //zeroes.add(new PairInt(1, 2));
+        zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(1, -1));
+        
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, 1));
+        ones.add(new PairInt(2, 1));
+                        
+        remove.add(new PairInt(0, -1));
+        remove.add(new PairInt(1, 1));
+       
+        replacePattern(input, zeroes, ones, remove, 1);
+        
+        // ----- change the sign of x to handle other direction -----
+        for (PairInt p : zeroes) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : ones) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : remove) {
+            p.setX(-1 * p.getX());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+             
+        // ----- change the sign of y to handle other direction -----
+        for (PairInt p : zeroes) {
+            p.setY(-1 * p.getY());
+        }
+        
+        for (PairInt p : ones) {
+            p.setY(-1 * p.getY());
+        }
+        
+        for (PairInt p : remove) {
+            p.setY(-1 * p.getY());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+        
+        // ----- change the sign of x to handle another direction -----
+        for (PairInt p : zeroes) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : ones) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : remove) {
+            p.setX(-1 * p.getX());
+        }
+                    
+        replacePattern(input, zeroes, ones, remove, 1);
+    }
+    
+    private void replacePattern(GreyscaleImage input, final Set<PairInt> zeroes,
+        final Set<PairInt> ones, final Set<PairInt> remove, final int centerValue) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        for (int col = 0; col < w; col++) {
+            
+            for (int row = 0; row < h; row++) {
+                
+                int v = input.getValue(col, row);
+                
+                if (v != centerValue) {
+                    continue;
+                }
+                
+                boolean foundPattern = true;
+                
+                for (PairInt p : zeroes) {
+                    int x = col + p.getX();
+                    int y = row + p.getY();
+                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                        continue;
+                    }
+                    int vz = input.getValue(x, y);
+                    if (vz != 0) {
+                        foundPattern = false;
+                        break;
+                    }
+                }
+                
+                if (!foundPattern) {
+                    continue;
+                }
+                
+                for (PairInt p : ones) {
+                    int x = col + p.getX();
+                    int y = row + p.getY();
+                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                        continue;
+                    }
+                    int vz = input.getValue(x, y);
+                    if (vz != 1) {
+                        foundPattern = false;
+                        break;
+                    }
+                }
+                
+                if (!foundPattern) {
+                    continue;
+                }
+                
+                // null the remove
+                for (PairInt p : remove) {
+                    int x = col + p.getX();
+                    int y = row + p.getY();
+                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                        continue;
+                    }
+                    input.setValue(x, y, 0);
+                }
+            }
+        }
+    }
+    
+    private void debugPrint(GreyscaleImage input, int xStart, int xStop,
+        int yStart, int yStop) {
+        
+        StringBuilder sb = new StringBuilder();
+                    
+        for (int row = yStart; row <= yStop; row++) {
+            sb.append(String.format("%3d: ", row));
+            for (int col = xStart; col <= xStop; col++) {
+                sb.append(String.format(" %3d ", input.getValue(col, row)));
+            }
+            sb.append(String.format("\n"));
+        }
+        
+        System.out.println(sb.toString());
+    }
 }

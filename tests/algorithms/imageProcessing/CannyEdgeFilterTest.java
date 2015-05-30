@@ -101,9 +101,14 @@ public class CannyEdgeFilterTest {
                 
         filter.applyFilter(img);
         
-        //ImageDisplayer.displayImage("canny edge filtered", filter.img);
-                
+              
+        img.multiply(255);
+        //ImageDisplayer.displayImage("canny edge filtered", img);
+        String dirPath = ResourceFinder.findDirectory("bin");
+        ImageIOHelper.writeOutputImage(dirPath + "/linethinned.png", img);
+        
         //TODO: add qualitative tests...
+        int z = 1;        
     }
     
     @Test
