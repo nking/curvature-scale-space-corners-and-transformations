@@ -185,11 +185,11 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
 
     private void correctForArtifacts(GreyscaleImage input) {
                 
-        correctForHoleArtifacts3(input);
+        //correctForHoleArtifacts3(input);
         
-        correctForHoleArtifacts2(input);
+        //correctForHoleArtifacts2(input);
         
-        correctForHoleArtifacts1(input);
+        //correctForHoleArtifacts1(input);
                         
         correctForZigZag0(input);
                         
