@@ -1,5 +1,8 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -969,7 +972,7 @@ public class ErosionFilter extends AbstractLineThinner {
      * @param j
      * @return 
      */
-    private boolean process(final GreyscaleImage input, final GreyscaleImage 
+    boolean process(final GreyscaleImage input, final GreyscaleImage 
         output, int i, int j) {
         
         if (output.getValue(i, j) == 0) {
