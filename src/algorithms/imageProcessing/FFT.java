@@ -33,7 +33,7 @@ public class FFT {
         }
         
         if (!MiscMath.isAPowerOf2(n)) {
-            throw new IllegalArgumentException("xReal's length has to be a power of 2");
+            throw new IllegalArgumentException("x's length has to be a power of 2");
         }
         
         Complex[] a = bitReverseCopy(x);
@@ -156,7 +156,9 @@ public class FFT {
     }
     
     /**
-     * perform FFT on x using the Cormen et al. pseudocode for iterative FFT
+     * perform FFT on x using the Cormen et al. pseudocode for iterative FFT.
+     * Note that the result cannot be inverted because only the real portion is 
+     * returned and inverse FFT needs the real and complex components.
      */
     public double[] fft(int[] x) {
 

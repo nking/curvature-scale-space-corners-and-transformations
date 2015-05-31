@@ -63,12 +63,6 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         }
         
         // make corrections for artifacts created for inclined lines
-        /*
-        can see a 3x3 hollow square.  the correction should replace it
-        with the diagonal of the exterior connecting slope.
-        Is the artifact a product of the gaussian convolution size?
-        If yes, would need to know the blur radius.
-        */
         correctForArtifacts(input);
                 
         //correctForMinorOffsetsByIntensity(input, summed);

@@ -194,7 +194,8 @@ public class SetComparisonResults implements Comparable<SetComparisonResults> {
         
         double eps1 = 5.0E-4;//0.536e-7; // 1 pixel in 1024x104:
         
-        if (Math.abs(numberOverrunDivExpectedMatchedPoints - other.numberOverrunDivExpectedMatchedPoints)
+        if (Math.abs(numberOverrunDivExpectedMatchedPoints 
+            - other.numberOverrunDivExpectedMatchedPoints)
             > eps0) {
             return false;
         }
