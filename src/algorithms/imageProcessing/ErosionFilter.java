@@ -224,6 +224,9 @@ public class ErosionFilter extends AbstractLineThinner {
      * combine the rules for multiple pixel tests to reduce the redundant
      * comparisons for the regions in common.
      * 
+     * Note, that row and col are expected to be at least 1 pixel distant
+     * from the image borders.
+     * 
      * @param input
      * @param col
      * @param row

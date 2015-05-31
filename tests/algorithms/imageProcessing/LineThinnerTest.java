@@ -1,6 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,9 +15,9 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class ErosionFilterTest {
+public class LineThinnerTest {
     
-    public ErosionFilterTest() {
+    public LineThinnerTest() {
     }
     
     @Before
@@ -39,166 +44,113 @@ public class ErosionFilterTest {
           0                       _
             0 1 2 3 4 5 6 7 8 9         0 1 2 3 4 5 6 7 8 9  
         
-                
-         9       result
-         8  
-         7        1 1 1 1 1 1 
-         6      1             1 
-         5      1             1 
-         4      1             1 
-         3      1             1 
-         2        1 1 1 1 1 1 
-         1  
-         0  
-            0 1 2 3 4 5 6 7 8 9    
         */
                
         GreyscaleImage input = getTestRectangle();
+        
+        GreyscaleImage input2 = input.copyImage();
                 
         ErosionFilter instance = new ErosionFilter();
         
         instance.applyFilter(input);
         
-        System.out.println("erosion:");
-        for (int row = (input.getHeight() - 1); row > -1; row--) {
-            StringBuilder sb = new StringBuilder();
-            for (int col = 0; col < input.getWidth(); col++) {
-                int v = input.getValue(col, row);
-                if (v == 0) {
-                    sb.append(" ");
-                } else {
-                    sb.append(v);
+        //System.out.println("erosion:");
+        //printImage(input);
+            
+        GreyscaleImage input3 = input2.copyImage();
+        
+        ZhangSuenLineThinner instance2 = new ZhangSuenLineThinner();
+        
+        instance2.applyFilter(input2);
+        
+        //System.out.println("zhang-suen:");
+        //printImage(input2);
+        
+        Set<PairInt> expected = getExpectedThinnedTestRectangle();
+        int nExpectedFound = 0;
+        int nNotExpectedFound = 0;
+        for (int col = 0; col < input2.getWidth(); col++) {
+            for (int row = 0; row < input2.getHeight(); row++) {
+                
+                int v = input2.getValue(col, row);
+                PairInt p = new PairInt(col, row);
+                
+                if (v == 1) {
+                    if (expected.contains(p)) {
+                        nExpectedFound++;
+                    } else {
+                        nNotExpectedFound++;
+                    }
                 }
-                sb.append(" ");
-            }
-            System.out.println(sb.toString());
-        }
-        System.out.println("\n");
-       
-        for (int row = 0; row < input.getHeight(); row++) {
-            assertTrue(input.getValue(0, row) == 0);
-            assertTrue(input.getValue(1, row) == 0);
-            assertTrue(input.getValue(10, row) == 0);
-            assertTrue(input.getValue(11, row) == 0);
-        }
-        for (int col = 0; col < input.getWidth(); col++) {
-            assertTrue(input.getValue(col, 0) == 0);
-            assertTrue(input.getValue(col, 1) == 0);
-            assertTrue(input.getValue(col, 8) == 0);
-            assertTrue(input.getValue(col, 9) == 0);
-        }
-        for (int col = 3; col < 9; col++) {
-            for (int row = 3; row < 7; row++) {
-                assertTrue(input.getValue(col, row) == 0);
             }
         }
-        for (int col = 3; col < 8; col++) {
-            assertTrue(input.getValue(col, 2) == 1);
-            assertTrue(input.getValue(col, 7) == 1);
-        }
-        for (int row = 3; row < 6; row++) {
-            assertTrue(input.getValue(2, row) == 1);
-            assertTrue(input.getValue(9, row) == 1);
-        }
+        
+        // there are small errors, so need a tolerance
+        float eps = 0.1f * expected.size();
+        assertTrue(Math.abs(nExpectedFound - expected.size()) < eps);
+        assertTrue(nNotExpectedFound < eps);
         
     }
     
     @Test
-    public void testApplyFilter_circle() {
+    public void testApplyFilter_shell() {
         
-        /*
-        EXPECTED when different are '+'.  spot checks only.
-        So, can see that when a line thickness is an even number,
-        the erosion filter alone doesn't know to make corrections
-        for a larger unknown shape.  It's not ideal, but it's fast
-        and the difference from where one would like the remaining
-        pixel to have been is at most += 1 pixel.
+        GreyscaleImage input = getTestShell();
         
-         0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0   4
-         0 0 0 0 0 0 0 0 0                   0 0 0 0 0 0 0   3
-         0 0 0 0 0 0 0 0                       0 0 0 0 0 0   2
-         0 0 0 0 0 0 0                 1         0 0 0 0 0   1
-         0 0 0 0 0 0     1 1 1 1 1 1 1 + 1 1       0 0 0 0  20 
-         0 0 0 0 0     1                     1       0 0 0   9
-         0 0 0 0     1                         1       0 0   8
-         0 0 0       1                           1     0 0   7
-         0 0       1                           + 1     0 0   6
-         0 0     1                               + 1   0 0   5
-         0 0   1                                 1     0 0   4   
-         0 0   1                                 1     0 0   3
-         0 0   1                 C               1     0 0 * 2
-         0 0   1                                 1     0 0   1
-         0 0   1                                 1     0 0  10
-         0 0   1                                 1     0 0   9
-         0 0     1                               1     0 0   8
-         0 0 0     1                           1     0 0 0   7
-         0 0 0 0     1                     1 1       0 0 0   6
-         0 0 0 0 0     1                 1       0 0 0 0 0   5
-         0 0 0 0 0 0     1             1       0 0 0 0 0 0   4
-         0 0 0 0 0 0 0     1 1 1 1 1 1       0 0 0 0 0 0 0   3
-         0 0 0 0 0 0 0 0                   0 0 0 0 0 0 0 0   2
-         0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0   1
-         0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0   0
-                                 *
-         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
-                             1                   2
-        */
+        GreyscaleImage input2 = input.copyImage();
         
-        GreyscaleImage input = getTestCircleImage();
+        GreyscaleImage input3 = input.copyImage();
         
         ErosionFilter instance = new ErosionFilter();
         
         instance.applyFilter(input);
         
-        System.out.println("erosion:");
-        for (int row = (input.getHeight() - 1); row > -1; row--) {
-            StringBuilder sb = new StringBuilder();
-            for (int col = 0; col < input.getWidth(); col++) {
-                int v = input.getValue(col, row);
-                if (v == 0) {
-                    sb.append(" ");
-                } else {
-                    sb.append(v);
-                }
-                sb.append(" ");
-            }
-            System.out.println(sb.toString());
-        }
-        System.out.println("\n");
+        //System.out.println("erosion:");
+        //printImage(input);
+       
+        //-----------------------------------------------------
+        ZhangSuenLineThinner instance2 = new ZhangSuenLineThinner();
         
-        // find the non-zero's in result and compare to expected within a tolerance
-        // of 1
-        PairIntArray nonZerosInResult = new PairIntArray();
-        for (int col = 0; col < input.getWidth(); col++) {
-            for (int row = 0; row < input.getHeight(); row++) {
-                int v = input.getValue(col, row);
-                if (v > 0) {
-                    nonZerosInResult.add(col, row);
-                }
-            }
-        }
+        instance2.applyFilter(input2);
         
-        PairIntArray expected = getTestCircleExpectedErosion();
-        boolean[] foundExpectedWithinTolerance = new boolean[expected.getN()];
-        for (int i = 0; i < expected.getN(); i++) {
-            int x = expected.getX(i);
-            int y = expected.getY(i);
-            for (int ii = 0; ii < nonZerosInResult.getN(); ii++) {
-                int xx = nonZerosInResult.getX(ii);
-                int yy = nonZerosInResult.getY(ii);
-                int diffX = Math.abs(xx - x);
-                int diffY = Math.abs(yy - y);
-                if ((diffX <= 1) && (diffY <= 1)) {
-                    foundExpectedWithinTolerance[i] = true;
-                    break;
+        //System.out.println("zhang-suen:");
+        //printImage(input2);
+        
+        //System.out.println("summed:");
+        //printSummed(input3);
+        
+        Set<PairInt> expected = getExpectedThinnedTestShell();
+        int nExpectedFound = 0;
+        int nNotExpectedFound = 0;
+        for (int col = 0; col < input2.getWidth(); col++) {
+            for (int row = 0; row < input2.getHeight(); row++) {
+                
+                int v = input2.getValue(col, row);
+                PairInt p = new PairInt(col, row);
+                
+                if (v == 1) {
+                    if (expected.contains(p)) {
+                        nExpectedFound++;
+                    } else {
+                        nNotExpectedFound++;
+                    }
                 }
             }
         }
         
-        for (boolean found : foundExpectedWithinTolerance) {
-            assertTrue(found);
-        }
+        // there are small errors, so need a tolerance
+        float eps = 0.1f * expected.size();
+        assertTrue(Math.abs(nExpectedFound - expected.size()) < eps);
+        assertTrue(nNotExpectedFound < eps);
+    }
+    
+    private void printSummed(GreyscaleImage img) {
         
+        ZhangSuenLineThinner lineThinner = new ZhangSuenLineThinner();
+        
+        GreyscaleImage input4 = lineThinner.sumOver8Neighborhood(img);
+        
+        printImage(input4);
     }
     
     private GreyscaleImage getTestRectangleLeftUpper() {
@@ -241,7 +193,7 @@ public class ErosionFilterTest {
             }
         }
        
-        printImage(input);
+        //printImage(input);
         
         return input;
     }
@@ -286,31 +238,177 @@ public class ErosionFilterTest {
             }
         }
        
-        printImage(input);
+        //printImage(input);
         
         return input;
     }
     
     private void printImage(final GreyscaleImage input) {
         for (int row = (input.getHeight() - 1); row > -1; row--) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder(String.format("row %2d:  ", row));
             for (int col = 0; col < input.getWidth(); col++) {
-                sb.append(input.getValue(col, row)).append(" ");
+                int v = input.getValue(col, row);
+                String str = (v == 0) ? String.format("  ") : String.format("%d ", v);
+                sb.append(str);
             }
             System.out.println(sb.toString());
         }
+        StringBuilder sb = new StringBuilder(String.format("        "));
+        for (int col = 0; col < input.getWidth(); col++) {
+            sb.append(String.format("%2d", col));
+        }
+        System.out.println(sb.toString());
         System.out.println("\n");
+    }
+    
+    private Set<PairInt> getExpectedThinnedTestRectangle() {
+        
+        Set<PairInt> expected = new HashSet<PairInt>();
+        
+        for (int row = 2; row <= 7; row++) {
+            expected.add(new PairInt(2, row));
+            expected.add(new PairInt(9, row));
+        }
+        for (int col = 2; col <= 9; col++) {
+            expected.add(new PairInt(col, 2));
+            expected.add(new PairInt(col, 7));
+        }
+        
+        return expected;
     }
     
     private GreyscaleImage getTestRectangle() {
         
         GreyscaleImage input = getTestImage00();
                         
-        printImage(input);
+        //printImage(input);
         
         return input;
     }
     
+    private Set<PairInt> getExpectedThinnedTestShell() {
+    
+        Set<PairInt> expected = new HashSet<PairInt>();
+        
+        List<String> str = new ArrayList<String>();
+        str.add("               11111             ");
+        str.add("           11111   11111         ");
+        str.add("        1111           1111      ");
+        str.add("       1                   1     ");
+        str.add("      1                     1    ");
+        str.add("     1                       1   ");
+        str.add("    1                         1  ");
+        str.add("    1                         1  ");
+        str.add("    1                         1  ");
+        str.add("     1                       1   ");
+        str.add("      1                     1    ");
+        str.add("       1                   1     ");
+        str.add("        1111          1111       ");
+        str.add("           11111  11111          ");
+        str.add("               1111              ");
+        
+        int w = str.get(0).length();
+        int h = str.size();
+        
+        //GreyscaleImage img = new GreyscaleImage(w, h);
+        
+        for (int row = 0; row < str.size(); row++) {
+            String rowStr = str.get(row);
+            for (int col = 0; col < w; col++) {
+                char c = rowStr.charAt(col);
+                if (c != ' ') {
+                    expected.add(new PairInt(col, row));
+                    //img.setValue(col, row, 1);
+                }
+            }
+        }
+        
+        //printImage(img);
+        
+        return expected;
+    }
+    
+    private GreyscaleImage getTestShell() {
+            
+        /*
+        http://ascii.co.uk/art/circle
+                        11111
+                    1111111111111
+                 1111           1111
+               111                 111
+              111                   111
+             111                     111
+            111                       111
+            111                       111
+            111                       111
+             111                     111
+              111                   111
+               111                 111
+                 1111          1111
+                    111111111111
+                        1111        
+        */
+     
+        List<String> str = new ArrayList<String>();
+        str.add("               11111             ");
+        str.add("           1111111111111         ");
+        str.add("        1111           1111      ");
+        str.add("      111                 111    ");
+        str.add("     111                   111   ");
+        str.add("    111                     111  ");
+        str.add("   111                       111 ");
+        str.add("   111                       111 ");
+        str.add("   111                       111 ");
+        str.add("    111                     111  ");
+        str.add("     111                   111   ");
+        str.add("      111                 111    ");
+        str.add("        1111          1111       ");
+        str.add("           111111111111          ");
+        str.add("               1111              ");
+        
+        int w = str.get(0).length();
+        int h = str.size();
+        
+        GreyscaleImage img = new GreyscaleImage(w, h);
+        for (int row = 0; row < str.size(); row++) {
+            String rowStr = str.get(row);
+            for (int col = 0; col < w; col++) {
+                char c = rowStr.charAt(col);
+                if (c != ' ') {
+                    img.setValue(col, row, 1);
+                }
+            }
+        }
+        
+        //printImage(img);
+        
+        return img;
+    }
+    
+    /*http://ascii.co.uk/art/circle
+                   ooo OOO OOO ooo
+               oOO                 OOo
+           oOO                         OOo
+        oOO                               OOo
+      oOO                                   OOo
+    oOO                                       OOo
+   oOO                                         OOo
+  oOO                                           OOo
+ oOO                                             OOo
+ oOO                                             OOo
+ oOO                                             OOo
+ oOO                                             OOo
+ oOO                                             OOo
+  oOO                                           OOo
+   oOO                                         OOo
+    oOO                                       OOo
+      oOO                                   OOo
+        oO                                OOo
+           oOO                         OOo
+               oOO                 OOo
+                   ooo OOO OOO ooo
+
+    */
     private GreyscaleImage getTestImage00() {
         /*
           9 _ _ _ _ _ _ _ _ _ _ _ _
@@ -454,15 +552,7 @@ public class ErosionFilterTest {
         input.setValue(1, yc, 1);
         
         System.out.println("circle:");
-        
-        for (int row = (input.getHeight() - 1); row > -1; row--) {
-            StringBuilder sb = new StringBuilder();
-            for (int col = 0; col < input.getWidth(); col++) {
-                sb.append(input.getValue(col, row)).append(" ");
-            }
-            System.out.println(sb.toString());
-        }
-        System.out.println("\n");
+        //printImage(input);
         
         return input;
     }

@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,12 +22,13 @@ import java.util.logging.Logger;
  */
 public class ZhangSuenLineThinner extends AbstractLineThinner {
     
-    private static final int[][] nbrs = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, 
+    private static final int[][] nbrs = 
+        {{0, -1}, {1, -1}, {1, 0}, {1, 1}, 
         {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}};
         
-    private static final int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}}, 
+    private static int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}}, 
         {{0, 2, 6}, {0, 4, 6}}};
-            
+
     protected boolean useLineDrawingMode = false;
     
     protected boolean debug = false;
@@ -53,6 +55,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
     @Override
     public void applyFilter(final GreyscaleImage input) {
         
+        GreyscaleImage summed = sumOver8Neighborhood(input);
+        
         Set<PairInt> points = new HashSet<PairInt>();
         for (int col = 0; col < input.getWidth(); col++) {
             for (int row = 0; row < input.getHeight(); row++) {
@@ -76,6 +80,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         If yes, would need to know the blur radius.
         */
         correctForArtifacts(input);
+                
+        //correctForMinorOffsetsByIntensity(input, summed);
     }
     
     public void applyLineThinner(Set<PairInt> points, int minX, int maxX,
@@ -106,7 +112,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                         continue;
                     }
  
-                    if (numTransitions(r, c, points) != 1) {
+                    int nt = numTransitions(r, c, points);
+                    if (nt != 1) {
                         continue;
                     }
  
@@ -139,12 +146,32 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             PairInt p = new PairInt(x, y);
             if (points.contains(p)) {
                 count++;
+            } else {
+                int z = 1;
             }
         }
         return count;
     }
  
+    /**
+     * visits neighbors in counter-clockwise direction and looks for the
+     * pattern 0:1 in the current and next neighbor.  each such pattern
+     * is counted as a transition.
+     * @param r
+     * @param c
+     * @param points
+     * @return 
+     */
     static int numTransitions(int r, int c, Set<PairInt> points) {
+        
+        /* 
+         5  4  3    1
+         6     2    0
+         7  0  1   -1
+ 
+         -1  0  1
+         */
+        
         int count = 0;
         for (int i = 0; i < nbrs.length - 1; i++) {
             int x = c + nbrs[i][0];
@@ -162,25 +189,35 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         return count;
     }
  
+    /**
+     * looking for 2 zeroes within the 4 neighborhood pattern of point (c,r).
+     * @param r
+     * @param c
+     * @param step
+     * @param points
+     * @return 
+     */
     static boolean atLeastOneIsVacant(int r, int c, int step, Set<PairInt> points) {
         int count = 0;
+        
         int[][] group = nbrGroups[step];
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < group[i].length; j++) {
                 int[] nbr = nbrs[group[i][j]];
-                
+
                 int x = c + nbr[0];
                 int y = r + nbr[1];
-                
+
                 PairInt p = new PairInt(x, y);
-                
+
                 if (!points.contains(p)) {
                     count++;
                     break;
                 }
             }
         }
-        return count > 1;
+        
+        return (count > 1);
     }
 
     private void correctForArtifacts(GreyscaleImage input) {
@@ -190,7 +227,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         //correctForHoleArtifacts2(input);
         
         //correctForHoleArtifacts1(input);
-                        
+                 
         correctForZigZag0(input);
                         
         correctForZigZag1(input);
@@ -202,16 +239,17 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         correctForZigZag4(input);
         
         correctForLine0(input);
+        
     }
     
     private void correctForZigZag0(GreyscaleImage input) {
-        
+       
         /*
         looking for pattern
        
            0  0         2
            0  #  #      1
-           #* #  0      0
+           #* #<=0      0
         #     0         -1
         
        -1  0  1  2
@@ -219,10 +257,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         and removing the topmost left #'s
         */
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToOnes = new HashSet<PairInt>();
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
         zeroes.add(new PairInt(0, -1));
@@ -264,10 +302,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         and removing the topmost left #'s
         */
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToOnes = new HashSet<PairInt>();
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
         
         /*
         looking for pattern
@@ -323,10 +361,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         and removing the topmost left #'s
         */
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToOnes = new HashSet<PairInt>();
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
         zeroes.add(new PairInt(-1, 1));
@@ -370,10 +408,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         and removing the topmost left #'s
         */
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToOnes = new HashSet<PairInt>();
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
         zeroes.add(new PairInt(-1, 0));
@@ -418,10 +456,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         and removing the topmost left #'s
         */
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToOnes = new HashSet<PairInt>();
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
         zeroes.add(new PairInt(-1, 1));
@@ -454,9 +492,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
     }
     
-    private void rotate90ThreeTimes(GreyscaleImage input, final Set<PairInt> zeroes,
-        final Set<PairInt> ones, Set<PairInt> changeToZeroes, 
-        final Set<PairInt> changeToOnes, final int startCenterValue) {
+    private void rotate90ThreeTimes(GreyscaleImage input, 
+        final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
+        LinkedHashSet<PairInt> changeToZeroes, 
+        final LinkedHashSet<PairInt> changeToOnes, final int startCenterValue) {
         
         // ----- change the sign of x to handle other direction -----
         for (PairInt p : zeroes) {
@@ -520,8 +559,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
     }
     
     private void replacePattern(GreyscaleImage input, 
-        final Set<PairInt> zeroes, final Set<PairInt> ones, 
-        final Set<PairInt> changeToZeroes, final Set<PairInt> changeToOnes, 
+        final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
+        final LinkedHashSet<PairInt> changeToZeroes, final LinkedHashSet<PairInt> changeToOnes, 
         final int startCenterValue) {
         
         int w = input.getWidth();
@@ -543,7 +582,9 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                     int x = col + p.getX();
                     int y = row + p.getY();
                     if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        continue;
+                        //TODO: revisit this
+                        foundPattern = false;
+                        break;
                     }
                     int vz = input.getValue(x, y);
                     if (vz != 0) {
@@ -560,7 +601,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                     int x = col + p.getX();
                     int y = row + p.getY();
                     if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        continue;
+                        foundPattern = false;
+                        break;
                     }
                     int vz = input.getValue(x, y);
                     if (vz != 1) {
@@ -636,10 +678,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
         */
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToOnes = new HashSet<PairInt>();
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
         
         // y's are inverted here because sketch above is top left is (0,0)
         zeroes.add(new PairInt(-1, -1));
@@ -733,10 +775,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         -2   -1    0    1    2    3                
         */
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToOnes = new HashSet<PairInt>();
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
       
         // y's are inverted here because sketch above is top left is (0,0)
         zeroes.add(new PairInt(0, 2));
@@ -810,10 +852,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         and removing the topmost left #'s
         */
         
-        Set<PairInt> ones = new HashSet<PairInt>();
-        Set<PairInt> zeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToZeroes = new HashSet<PairInt>();
-        Set<PairInt> changeToOnes = new HashSet<PairInt>();
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         /*
         looking for pattern
@@ -942,6 +984,114 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             }
         }
         
+    }
+
+    protected GreyscaleImage sumOver8Neighborhood(GreyscaleImage img) {
+        
+        GreyscaleImage summed = img.copyImage();
+        
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        // for each pixel, sum it's neighbors
+        for (int col = 0; col < w; col++) {
+            for (int row = 0; row < h; row++) {
+                
+                int sum = 0;
+                
+                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                    
+                    int x = dxs[nIdx] + col;
+                    int y = dys[nIdx] + row;
+                    
+                    if ((x<0) || (y<0) || (x>(w-1)) || (y>(h-1))) {
+                        continue;
+                    }
+                    int v = img.getValue(x, y);
+                    
+                    sum += v;                    
+                }
+                summed.setValue(col, row, sum);
+            }
+        }
+        
+        return summed;
+    }
+
+    private void correctForMinorOffsetsByIntensity(GreyscaleImage input, 
+        GreyscaleImage summed) {
+        
+        /*
+        for each pixel in input, put the 8 neighbors in sorted order,
+        keeping track of their location.
+        iterate over the list of descending sorted sums:
+            while centerSum < neighborSum
+                if (neighbor value in input is 0) 
+                    if swap does not disconnect any lines
+                        swap pixels
+                        break
+        */
+        
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+       
+        ErosionFilter erosionFilter = new ErosionFilter();
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+            
+        for (int col = 1; col < (w - 1); col++) {
+            for (int row = 1; row < (h - 1); row++) {
+                
+                int v = input.getValue(col, row);
+                if (v == 0) {
+                    continue;
+                }
+                
+                int vSum = summed.getValue(col, row);
+                
+                if (vSum == 8) {
+                    continue;
+                }
+                                
+                if (erosionFilter.doesDisconnect(input, col, row)) {
+                    continue;
+                }
+                
+                int maxSum = vSum;
+                int maxIdx = -1;
+                
+                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                    
+                    int x = dxs[nIdx] + col;
+                    int y = dys[nIdx] + row;
+                    
+                    if ((x<0) || (y<0) || (x>(w-1)) || (y>(h-1))) {
+                        continue;
+                    }
+                    
+                    // only compare the neighbors which are swappable
+                    if (input.getValue(x, y) == 0) {
+                        int sum = summed.getValue(x, y);
+                        if (sum > maxSum) {
+                            maxIdx = nIdx;
+                            maxSum = sum;
+                        }
+                    }
+                }
+                                
+                if (maxIdx > -1) {
+                    int x = dxs[maxIdx] + col;
+                    int y = dys[maxIdx] + row;
+                    input.setValue(x, y, 1);
+                    input.setValue(col, row, 0);
+                }
+                
+            }    
+        }
     }
     
 }
