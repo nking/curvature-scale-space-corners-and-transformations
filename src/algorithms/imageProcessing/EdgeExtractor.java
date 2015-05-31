@@ -287,8 +287,8 @@ public class EdgeExtractor {
         */
       
         /*
-        TODO:  improve this section.  Could be done in O(N) and revised to add the
-        missing junction information that subsequent operations need.
+        TODO:  improve this section.  Could be done in O(N) and revised to add
+        the missing junction information that subsequent operations need.
         
         second draft:
         
@@ -296,6 +296,9 @@ public class EdgeExtractor {
            (the first item in edges list is written by read location and 
            direction along columns and rows of the image, so is consistently 
            the same start point if data has not changed).
+        -- create an output List<PairIntArray> and add the reference first
+           item to it.
+        -- remove current reference endpoints from both maps.
         -- need two data structures to hold the searchable information of
            edges.  need to be able to search by start endpoint (x,y) in one
            strcture and by end endpoint (x,y) in the other structure.
@@ -339,8 +342,6 @@ public class EdgeExtractor {
                referenced edges index if there are more than one members in the
                set.  entries are also added to junctionLocationMap and 
                junctionOutputIndexesMap for the central referenced pixel.
-        -- create an output List<PairIntArray> and add the reference first
-           item to it. 
         -- search for the matching EndPoint:
                -- for the 8 neighbors of the end endpoint: 
                   -- search startMap for reference endpoints.
@@ -351,7 +352,6 @@ public class EdgeExtractor {
                   -- track the one with the most members its edges PairIntArray 
                      as maxPairIntArray
                -- if any items are found:
-                  -- set reference PairIntArray to maxPairIntArray
                   -- if there are more than one items in the found set:
                      -- add an entry to junctionMap:
                         key=center PairInt(x,y)
@@ -368,17 +368,22 @@ public class EdgeExtractor {
                         -- add an entry to junctionLocationMap:
                            key= PairInt(x,y)
                            value= reference edges index
-               -- else if not found:
-                     -- start a new PairIntArray in output list
-                     -- choose a new reference PairIntArray from iter of startMap
-               then (for found and not found):
-                   -- remove current reference endpoints from both maps.
-                   -- add referenced edge from edges to current last item in
-                      output.
-                   -- IF the reference point is found in junctionLocationMap
+                  -- IF the reference point is found in junctionLocationMap
                         and an entry to junctionOutputIndexesMap
                         key=center PairInt(x,y)
                         value= size of output list - 1 (this is the index where will be added)
+                  -- set reference PairIntArray to maxPairIntArray
+               -- else if not found:
+                 -- IF the reference point is found in junctionLocationMap
+                    and an entry to junctionOutputIndexesMap
+                    key=center PairInt(x,y)
+                    value= size of output list - 1 (this is the index where will be added)
+                 -- start a new PairIntArray in output list
+                 -- choose a new reference PairIntArray from iter of startMap
+               -- THEN (after else/if)
+                  -- add referenced edge from edges to current last item in
+                     output.
+                  -- remove current reference endpoints from both maps.
             ==> 16 * O(N)
         --  convert the values in junctionMap from edges indexes to output
             list indexes.
