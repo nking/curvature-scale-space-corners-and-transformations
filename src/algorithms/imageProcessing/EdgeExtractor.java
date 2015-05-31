@@ -286,6 +286,87 @@ public class EdgeExtractor {
         revert reverse for next start
         */
       
+        /*
+        TODO:  improve this section.  Could be done in O(N) and revised to add the
+        missing junction information that subsequent operations need.
+        
+        first draft:
+        
+        -- retain reference to the first item in edges to make testing easier.
+        -- need two data structures to hold the searchable information of
+           edges.  need to be able to search by start endpoint (x,y) in one
+           strcture and by end endpoint (x,y) in the other structure.
+           the structure needs to retain reference to the item in edges which
+           it describes.
+           because of junctions, there may be more than one object with the 
+           same start or end endpoint.
+           -- I think gaps aren't necessary to allow for here, but there is
+              allowance for it later, so this may need to be re-visited.
+           searches are exact, so can use a HashSet for O(1) inserts and
+           O(1) removals.  would like a key by start endpoint for the first
+           list and key by end endpoint for the second list, so would use hashmaps.
+           ==> Data structures are 2 HashMaps with
+                key = PairInt of start(x,y) or end(x,y)
+                value = set of PairIntArrays with the key
+           ========> runtime complexity is 2 * O(N) for creating these hashmaps
+        -- need a structure to hold junction information when more than one
+           endpoint matches.  this is to be used later.  
+           -- it needs to refer to the items in the output list to avoid 
+           re-searching later, and it needs to retain the (x,y) of the junction.
+           ==> Data structure should be one HashMap
+                 key = PairInt of junction (x,y)
+                 value = set of indexes of the output list where the junction
+                         occurs
+                         (NOTE: before last step in method, these will be a set
+                         of indexes to the edges list)
+           The simplest way to build this is probably during the search.
+           (requires reading the next bullet...)
+           for each current reference point,
+               8 neighbors are searched for in both startMap and endMap.
+               all matches should be placed in junctionMap if a key is not
+               found (else, might be 2nd find of a reduced same group of junctions).
+               The problem is that the "match" does not yet have an output
+               list.
+               So, it would be best to store the index to edges at this time.
+               that also means that need a HashMap with key = edges index
+               and value = output list index.  
+               ==> Data structure edgesToOutputMap is a HashMap
+                   key = index to edges
+                   value = index to output list
+               This edgesToOutputMap will be used after output is finished to replace
+               the values of junctionMap with indexes relative to the output list.
+        -- create an output List<PairIntArray> and add the reference first
+           item to it.
+           search for the matching EndPoint:
+               -- for the 8 neighbors of the end endpoint: 
+                  -- search startMap for reference endpoints.
+                  -- search endMap for reference endpoints
+                  keep all in a set and track the one with the most members in 
+                  the edges PairIntArray as maxPairIntArray
+               -- if found:
+                  -- set reference PairIntArray to maxPairIntArray
+                  -- add an entry to junctionMap for the center and for the
+                     set of found adjacent edges:
+                         key=center PairInt(x,y)
+                         value=set of edges indexes.
+                     If the key already exists, add to the existing values.
+               -- else if not found:
+                     -- start a new PairIntArray in output list
+                     -- choose a new reference PairIntArray from iter of startMap
+               then (for found and not found):
+                   -- remove current reference endpoints from both maps.
+                   -- add referenced edge from edges to current last item in
+                      output.
+                   -- add an entry to edgesToOutputMap for key=edges index
+                      w/ value = output list index
+        --  convert the values in junctionMap from edges indexes to output
+            list indexes.
+            store the resulting map as a member variable.
+            ==> O(N)
+        
+        ====> runtime complexity is O(N)
+        */
+        
         boolean[] removed = new boolean[edges.size()];
         
         List<PairIntArray> output = new ArrayList<PairIntArray>();
