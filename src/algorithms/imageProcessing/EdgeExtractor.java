@@ -290,7 +290,7 @@ public class EdgeExtractor {
         TODO:  improve this section.  Could be done in O(N) and revised to add
         the missing junction information that subsequent operations need.
         
-        second draft:
+        fourth draft:
         
         -- retain reference to the first item in edges to make testing easier
            (the first item in edges list is written by read location and 
@@ -382,8 +382,8 @@ public class EdgeExtractor {
                  -- choose a new reference PairIntArray from iter of startMap
                -- THEN (after else/if)
                   -- add referenced edge from edges to current last item in
-                     output.
-                  -- remove current reference endpoints from both maps.
+                     output (if last is empty, can just replace it instead of append)
+                  -- remove current reference endpoints from both startMap and endMap.
             ==> 16 * O(N)
         --  convert the values in junctionMap from edges indexes to output
             list indexes.
@@ -391,6 +391,43 @@ public class EdgeExtractor {
             ==> O(N)
         
         ====> runtime complexity is O(N)
+        
+        
+        Tests:
+           -- 5 or so edges, with 3 meeting at a junction.
+              the final output should be 3 edges, one of which contains
+              the two non-junction containing edges plus the longest of
+              the junction containing edges.
+              -- assert that there are 3 items in junctionLocationsMap
+                 and junctionMap
+              -- assert that each item in junctionMap holds values that
+                 are the 2 other adjacent pixels.
+              -- assert that the junctionLocationsMap has the expected
+                 values.
+              -- assert the ordered points in the final 3 edges.
+             
+              Make several tests of the above data w/ different combinations
+                 of reversed start and end points, excepting the first
+                 edge which should always be the one with the smallest
+                 column and smallest row as an endpoint.
+           -- 5 or so edges in which 2 are connected, another 2 are connected
+              and the last has no connections, so the total is 3 edges
+              after merging.
+              -- assert that junctionsMap and junctionLocationsMap are empty
+              -- assert the content of edges in the final 3 edges.
+        
+              Make several tests of the above data w/ different combinations
+                 of reversed start and end points, excepting the first
+                 edge which should always be the one with the smallest
+                 column and smallest row as an endpoint.
+        
+           -- given 5 or so edges which do not have junctions and should result
+              in a final closed curve, that is one edge.
+              -- assert that junctionsMap and junctionLocationsMap are empty
+              -- assert the ordered points in the output final edge.
+        
+           -- assert that given an empty list of edges returns an empty output list
+        
         */
         
         boolean[] removed = new boolean[edges.size()];
