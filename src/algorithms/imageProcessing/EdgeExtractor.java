@@ -126,17 +126,22 @@ public class EdgeExtractor {
      */
     public List<PairIntArray> findEdges() {
         
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
         // DFS search for sequential neighbors.
         
         Stack<PairInt> stack = new Stack<PairInt>();
       
         int thresh0 = 1;
         
-        for (int i = 0; i < img.getWidth(); i++) {
-            for (int j = 0; j < img.getHeight(); j++) {
-                //for now, choosing to look only at the blue
-                int bPix = img.getValue(i, j);
-                if (bPix >= thresh0) {
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                int v = img.getValue(i, j);
+                if (v >= thresh0) {
                     stack.add(new PairInt(i, j));
                 }
             }
@@ -157,75 +162,34 @@ public class EdgeExtractor {
             
             int uX = uNode.getX();
             int uY = uNode.getY();
-            int uIdx = (uY * img.getWidth()) + uX;
+            int uIdx = img.getIndex(uX, uY);
                         
-            boolean foundNeighbor = false;
-            
-            // for each neighbor v of u
-            for (int vX = (uX - 1); vX < (uX + 2); vX++) {
+            for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                 
-                if (foundNeighbor) {
-                    break;
-                }
-                
-                if (vX < 0 || vX > (img.getWidth() - 1)) {
+                int vX = dxs[nIdx] + uX;
+                int vY = dys[nIdx] + uY;
+
+                if ((vX < 0) || (vX > (w - 1)) || (vY < 0) || (vY > (h - 1))) {
                     continue;
                 }
+
+                int vIdx = img.getIndex(vX, vY);
                 
-                for (int vY = (uY - 1); vY < (uY + 2); vY++) {
-
-                    if (vY < 0 || vY > (img.getHeight() - 1)) {
-                        continue;
-                    }
-                    
-                    int vIdx = (vY * img.getWidth()) + vX;
-                
-                    if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx)) {
-                        continue;
-                    }
-                    
-                    if (img.getValue(vX, vY) < thresh0) {
-                        continue;
-                    }
-
-                    // if u is not in an edge already, create a new one
-                    if (uNodeEdgeIdx[uIdx] == -1) {
-                        
-                        PairIntArray edge = new PairIntArray();
-                        
-                        edge.add(uX, uY);
-                        
-                        uNodeEdgeIdx[uIdx] = output.size();
-
-                        output.add(edge);                        
-                    }
-                    
-                    // keep the curve points ordered
-                                    
-                    // add v to the edge u if u is the last node in it's edge
-                                        
-                    PairIntArray appendToNode = output.get(uNodeEdgeIdx[uIdx]);
-                    int aIdx = appendToNode.getN() - 1;
-                    if ((appendToNode.getX(aIdx) != uX) || 
-                        (appendToNode.getY(aIdx) != uY)) {
-                        continue;
-                    }
-                        
-                    appendToNode.add(vX, vY);
-                    
-                    uNodeEdgeIdx[vIdx] = uNodeEdgeIdx[uIdx];
-                                        
-                    //TODO: do we only want 1 neighbor from the 9 as a continuation?
-                    // yes for now, but this requires edges be only 1 pixel wide
-                                
-                   // inserting back at the top of the stack assures that the 
-                   // search continues next from an associated point
-                   stack.add(new PairInt(vX, vY));
-                   
-                   foundNeighbor = true;
-                   
-                   break;
+                if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx)) {
+                    continue;
                 }
+
+                if (img.getValue(vX, vY) < thresh0) {
+                    continue;
+                }
+                   
+                processNeighbor(uX, uY, uIdx, vX, vY, vIdx, uNodeEdgeIdx, output);
+
+                //TODO: do we only want 1 neighbor from the 9 as a continuation?
+                // yes for now, but this requires edges be only 1 pixel wide
+                // inserting back at the top of the stack assures that the 
+                // search continues next from an associated point
+                stack.add(new PairInt(vX, vY));
             }
         }
         
@@ -233,7 +197,6 @@ public class EdgeExtractor {
         
         int nIterMax = 100;
         int n, sz, lastSize;
-        
         
         // count the number of points in edges
         long sum = countPixelsInEdges(output);
@@ -250,28 +213,6 @@ public class EdgeExtractor {
         
         log.log(Level.FINE, "{0} edges after merge adjacent", 
             Integer.toString(output.size()));
-        
-        /*
-        //not necessary now that lines from CannyEdgeFilter are 1 pix width.
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        
-        n = 0;
-        sz = output.size();
-        lastSize = Integer.MAX_VALUE;
-        while ((sz < lastSize) && (n < nIterMax)) {
-            
-            lastSize = sz;
-        
-            output = ch.pruneAndIncludeAdjacentCurves(output, img.getWidth());
-           
-            sz = output.size();
-            
-            log.log(Level.FINE, "{0}) {1} edges after prune overlapping", 
-                new Object[]{Integer.toString(n), Integer.toString(sz)});
-            
-            n++;
-        }
-        */
         
         // This helps to merge edges (that is extracted curves) at adjacent 
         // points that resemble an intersection of the lines, but it's not 
@@ -308,13 +249,14 @@ public class EdgeExtractor {
        
         //pruneSpurs(output);
         
-        adjustEdgesTowardsBrightPixels(output);
+        // necessary only if the LineThinner in CannyEdgeFilter was ErosionFilter
+        //adjustEdgesTowardsBrightPixels(output);
         
         if (repeatConnectAndTrim) {
             
             output = connectClosestPointsIfCanTrim(output);
         }
-        
+    
         return output;
     }
     
@@ -1146,5 +1088,38 @@ for (int i = 0; i < edge.getN(); i++) {
         curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);
         
         curveHelper.correctCheckeredSegments(tmpEdges);
+    }
+
+    private void processNeighbor(int uX, int uY, int uIdx,
+        int vX, int vY, int vIdx,
+        int[] uNodeEdgeIdx, List<PairIntArray> output) {
+        
+        // if u is not in an edge already, create a new one
+        if (uNodeEdgeIdx[uIdx] == -1) {
+
+            PairIntArray edge = new PairIntArray();
+
+            edge.add(uX, uY);
+
+            uNodeEdgeIdx[uIdx] = output.size();
+
+            output.add(edge);                        
+        }
+
+        // keep the curve points ordered
+
+        // add v to the edge u if u is the last node in it's edge
+
+        PairIntArray appendToNode = output.get(uNodeEdgeIdx[uIdx]);
+        int aIdx = appendToNode.getN() - 1;
+        if ((appendToNode.getX(aIdx) != uX) || 
+            (appendToNode.getY(aIdx) != uY)) {
+            return;
+        }
+
+        appendToNode.add(vX, vY);
+
+        uNodeEdgeIdx[vIdx] = uNodeEdgeIdx[uIdx];
+        
     }
 }
