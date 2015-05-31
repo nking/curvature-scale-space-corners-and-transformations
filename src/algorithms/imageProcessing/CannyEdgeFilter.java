@@ -258,8 +258,6 @@ public class CannyEdgeFilter {
     
        Note that pixels that are attached to the image boundaries should not
        be nulled in the 2nd stage of the layer if that would disconnect a line.
-       (TODO: the same correction might need to be applied to the low
-       threshold intensity filter too.)
     
     */
     protected void apply2LayerFilter(final GreyscaleImage input) {
@@ -280,7 +278,7 @@ public class CannyEdgeFilter {
         
         double lowThresh = stats.getLowThresholdApplied();
                 
-        log.info("2-layer filter: lowThresh=" + lowThresh);
+        log.info("2-layer filter: low thresh=" + lowThresh);
         
         double threshold2 = lowThresh * highThreshold;
         
@@ -294,13 +292,13 @@ public class CannyEdgeFilter {
             (int)threshold2, 255);
         
         double r = (double)n1/(double)n0;
-        
-        log.fine("threshold2=" + threshold2 + " n0=" + n0 + " n1=" + n1 + 
+ 
+        log.info("threshold2=" + threshold2 + " n0=" + n0 + " n1=" + n1 + 
             " n1/n0=" + r);
         
         GreyscaleImage img2 = input.createWithDimensions();
         
-        // find points that are "sure-edge" points
+        // find points that are "sure-edge" points, above threshold2
         for (int i = 0; i < input.getWidth(); i++) {
             for (int j = 0; j < input.getHeight(); j++) {
                 int pixG = input.getValue(i, j);
@@ -309,6 +307,13 @@ public class CannyEdgeFilter {
                 }
             }
         }
+        
+        int w = img2.getWidth();
+        int h = img2.getHeight();
+        
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
         
         //TODO:  define "connected" as connected only to "sure-edge" points or
         //       connected to any point in the image in progress?
@@ -326,27 +331,27 @@ public class CannyEdgeFilter {
                 
                     img3.setValue(i, j, pixG);
                 
-                } else if (pixG <= threshold2) {
-                    
-                    boolean found = true;
-                    
-                    for (int ii = -1; ii < 2; ii++) {
-                        if (((i + ii) < 0) || ((i + ii) > 
-                            (img3.getWidth() - 1))) {
+                } else {
+                                        
+                    for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                        
+                        int x = i + dxs[nIdx];
+                        int y = j + dys[nIdx];
+                        if ((x<0) || (y<0) || (x>(w-1)) || (y>(h-1))) {
                             continue;
                         }
-                        for (int jj = -1; jj < 2; jj++) {
-                            if (((j + jj) < 0) || ((j + jj) > 
-                                (img3.getHeight() - 1))) {
-                                continue;
-                            }
-                            if (img2.getValue(i + ii, j + jj) > 0) {
-                                img3.setValue(i, j, pixG);
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (found) {
+                        
+                        int v2 = img2.getValue(x, y);
+                        
+                        // to add smaller lower intensity details, can use weak association too:
+                        /*int v3 = img3.getValue(x, y);
+                        if (v3 > 0) {
+                            img3.setValue(i, j, pixG);
+                            break;
+                        }*/
+                        
+                        if (v2 > 0) {
+                            img3.setValue(i, j, pixG);
                             break;
                         }
                     }

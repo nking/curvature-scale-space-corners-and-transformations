@@ -1,19 +1,9 @@
 package algorithms.imageProcessing;
 
-import algorithms.CountingSort;
 import algorithms.util.PairInt;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /**
@@ -226,10 +216,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
         //correctForHoleArtifacts2(input);
         
-        //correctForHoleArtifacts1(input);
+        correctForHoleArtifacts1(input);
                  
         correctForZigZag0(input);
-                        
+                
         correctForZigZag1(input);
         
         correctForZigZag2(input);
@@ -250,7 +240,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
            0  0         2
            0  #  #      1
            #* #<=0      0
-        #     0         -1
+        #     0  0     -1
         
        -1  0  1  2
         
@@ -268,6 +258,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         zeroes.add(new PairInt(1, 1));
         zeroes.add(new PairInt(1, -2));
         zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(2, 1));
         
         ones.add(new PairInt(-1, 1));
         ones.add(new PairInt(1, -1));
@@ -277,7 +268,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         changeToZeroes.add(new PairInt(1, 0));
         
         int startValue = 1;
-        
+            
         replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
@@ -571,7 +562,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             for (int row = 0; row < h; row++) {
                 
                 int v = input.getValue(col, row);
-              
+                   
                 if (v != startCenterValue) {
                     continue;
                 }
@@ -949,7 +940,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                     int x = col + p.getX();
                     int y = row + p.getY();
                     if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        continue;
+                        foundPattern = false;
+                        break;
                     }
                     int vz = input.getValue(x, y);
                     if (vz != 1) {
@@ -1023,18 +1015,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
 
     private void correctForMinorOffsetsByIntensity(GreyscaleImage input, 
         GreyscaleImage summed) {
-        
-        /*
-        for each pixel in input, put the 8 neighbors in sorted order,
-        keeping track of their location.
-        iterate over the list of descending sorted sums:
-            while centerSum < neighborSum
-                if (neighbor value in input is 0) 
-                    if swap does not disconnect any lines
-                        swap pixels
-                        break
-        */
-        
+     
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
        
@@ -1089,7 +1070,6 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                     input.setValue(x, y, 1);
                     input.setValue(col, row, 0);
                 }
-                
             }    
         }
     }
