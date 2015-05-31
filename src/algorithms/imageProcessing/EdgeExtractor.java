@@ -296,9 +296,10 @@ public class EdgeExtractor {
            (the first item in edges list is written by read location and 
            direction along columns and rows of the image, so is consistently 
            the same start point if data has not changed).
-        -- create an output List<PairIntArray> and add the reference first
-           item to it.
-        -- remove current reference endpoints from both maps.
+        -- create an output List<PairIntArray> 
+        -- add reference edge from edges to first item in output
+        -- remove current reference endpoints from both startMap and endMap
+           (see next bullet)
         -- need two data structures to hold the searchable information of
            edges.  need to be able to search by start endpoint (x,y) in one
            strcture and by end endpoint (x,y) in the other structure.
@@ -311,7 +312,7 @@ public class EdgeExtractor {
            searches are exact, so can use a HashSet for O(1) inserts and
            O(1) removals.  would like a key by start endpoint for the first
            list and key by end endpoint for the second list, so would use hashmaps.
-           ==> Data structures are 2 HashMaps with
+           ==> Data structures are 2 HashMaps, startMap and endMap, with
                 key = PairInt of start(x,y) or end(x,y)
                 value = set of PairIntArrays for the key
            ========> runtime complexity is 2 * O(N) for creating these hashmaps
@@ -409,7 +410,7 @@ public class EdgeExtractor {
               Make several tests of the above data w/ different combinations
                  of reversed start and end points, excepting the first
                  edge which should always be the one with the smallest
-                 column and smallest row as an endpoint.
+                 column and smallest row as a start endpoint.
            -- 5 or so edges in which 2 are connected, another 2 are connected
               and the last has no connections, so the total is 3 edges
               after merging.
@@ -419,7 +420,7 @@ public class EdgeExtractor {
               Make several tests of the above data w/ different combinations
                  of reversed start and end points, excepting the first
                  edge which should always be the one with the smallest
-                 column and smallest row as an endpoint.
+                 column and smallest row as a start endpoint.
         
            -- given 5 or so edges which do not have junctions and should result
               in a final closed curve, that is one edge.
