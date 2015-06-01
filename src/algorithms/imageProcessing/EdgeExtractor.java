@@ -531,7 +531,14 @@ public class EdgeExtractor {
               
             } else {
                 
-                if (junctionMap.containsKey(currentEndPoint)) {
+                PairInt oppositeEndPoint = getOppositeEndPointOfEdge(currentEndPoint, 
+                    edges.get(currentEdgeIdx));
+                
+                //TODO: revisit this
+                if (junctionLocationMap.containsKey(currentEndPoint)) {
+                    junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
+                        Integer.valueOf(output.size() - 1));
+                } else if (junctionLocationMap.containsKey(oppositeEndPoint)) {
                     junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
                         Integer.valueOf(output.size() - 1));
                 }
@@ -551,14 +558,31 @@ public class EdgeExtractor {
                     
                 currentEdgeIdx = endPointMap.get(currentEndPoint).intValue();
             }
-            
+                        
             appendToOutput(output, edges.get(currentEdgeIdx));
      
+            PairInt oppositeEndPoint = getOppositeEndPointOfEdge(currentEndPoint, 
+                edges.get(currentEdgeIdx));
+            
+            if (junctionLocationMap.containsKey(currentEndPoint)) {
+                junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
+                    Integer.valueOf(output.size() - 1));
+            } else if (junctionLocationMap.containsKey(oppositeEndPoint)) {
+                junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
+                    Integer.valueOf(output.size() - 1));
+            }
+            
             endPointMap.remove(currentEndPoint);
-            endPointMap.remove(getOppositeEndPointOfEdge(currentEndPoint, 
-                edges.get(currentEdgeIdx)));
+            endPointMap.remove(oppositeEndPoint);
         }
        
+        /*
+            (35, 11) null
+            (33, 10) 0
+            (35, 9) null
+            (34, 10) 0
+            
+        */
         // convert the values in junctionLocationMap from edges indexes to output
         Map<PairInt, Integer> tmpJunctionLocationMap = new HashMap<PairInt, Integer>();
         Iterator<Entry<PairInt, Integer> > iter = 
@@ -674,7 +698,7 @@ search back until find start of that edge
               -- set reference PairIntArray to maxPairIntArray,
                  that is, set currentEdgeIdx and currentEndPoint
            -- else if not found:
-             -- IF currentEndPoint is found in junctionMap
+             -- IF currentEndPoint is found in junctionLocationMap
                 and an entry to junctionEdgesToOutputIndexesMap
                 key=currentEdgeIdx
                 value= size of output list - 1 (this is the index where will be added)

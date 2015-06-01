@@ -194,14 +194,37 @@ public class EdgeExtractorTest extends TestCase {
         expectedOutput1.addAll(originalEdges.get(3));
         
         assertTrue(expectedOutput1.getN() == output.get(1).getN());
-        
+   
+        // the order isn't specified, so assert that one ordering doesn't fail
+        boolean foundAll = true;
         for (int i = 0; i < expectedOutput1.getN(); i++) {
             int eX = expectedOutput1.getX(i);
             int eY = expectedOutput1.getY(i);
             int x = output.get(1).getX(i);
             int y = output.get(1).getY(i);
-            assertTrue(eX == x);
-            assertTrue(eY == y);
+            if (eX == x) {
+                foundAll = false;
+            }
+            if (eY == y) {
+                foundAll = false;
+            }
+        }
+        if (!foundAll) {
+            // reverse the pattern
+            expectedOutput1.reverse();
+            foundAll = true;
+            for (int i = 0; i < expectedOutput1.getN(); i++) {
+                int eX = expectedOutput1.getX(i);
+                int eY = expectedOutput1.getY(i);
+                int x = output.get(1).getX(i);
+                int y = output.get(1).getY(i);
+                if (eX == x) {
+                    foundAll = false;
+                }
+                if (eY == y) {
+                    foundAll = false;
+                }
+            }
         }
     }
     
@@ -426,43 +449,75 @@ public class EdgeExtractorTest extends TestCase {
     }
     
     public void testMergeAdjacentEndPoints2_0() throws Exception {
+                
+        for (int nTest = 0; nTest < 4; nTest++) {
         
-        List<PairIntArray> edges = getJunctionEdges0();
-        
-        EdgeExtractor extractor = new EdgeExtractor(
-            new GreyscaleImage(100, 100));
-        
-        extractor.overrideEdgeSizeLowerLimit(1);
-        
-        List<PairIntArray> output = extractor.mergeAdjacentEndPoints2(edges);
-        
-        assertJunctionEdges0Output(output);
-        
-        assertTrue(extractor.getEdgeJunctionMap().size() == 1);
-        
-        Entry<PairInt, Set<PairInt>> entry = 
-            extractor.getEdgeJunctionMap().entrySet().iterator().next();
-        
-        assertTrue(entry.getValue().size() == 3);
-        
-        assertTrue(extractor.getOutputIndexLocatorForJunctionPoints().size() >=
-            3);
-        
-        PairInt expectedJunctionCenter = new PairInt(34, 10);
-        
-        Set<PairInt> expectedJunction = new HashSet<PairInt>();
-        expectedJunction.add(new PairInt(33, 10));
-        expectedJunction.add(new PairInt(35, 9));
-        expectedJunction.add(new PairInt(35, 11));
-        
-        assertTrue(expectedJunctionCenter.equals(entry.getKey()));
-         
-        for (PairInt p : entry.getValue()) {
-            if (expectedJunction.contains(p)) {
-                expectedJunction.remove(p);
+            List<PairIntArray> edges = getJunctionEdges0();
+            
+            switch(nTest) {
+                case 1:
+                    edges.get(4).reverse();
+                    break;
+                case 2:
+                    edges.get(3).reverse();
+                    edges.get(1).reverse();
+                    break;
+                case 3:
+                    edges.get(2).reverse();
+                    break;
+                default:
+                    break;
             }
+        
+            EdgeExtractor extractor = new EdgeExtractor(
+                new GreyscaleImage(100, 100));
+            extractor.overrideEdgeSizeLowerLimit(1);
+
+            List<PairIntArray> output = extractor.mergeAdjacentEndPoints2(edges);
+            
+            //System.out.println("nTest=" + nTest);
+            assertJunctionEdges0Output(output);
+
+            assertTrue(extractor.getEdgeJunctionMap().size() == 1);
+
+            Entry<PairInt, Set<PairInt>> entry = 
+                extractor.getEdgeJunctionMap().entrySet().iterator().next();
+
+            assertTrue(entry.getValue().size() == 3);
+
+            PairInt expectedJunctionCenter = new PairInt(34, 10);
+
+            Set<PairInt> expectedJunction = new HashSet<PairInt>();
+            expectedJunction.add(new PairInt(33, 10));
+            expectedJunction.add(new PairInt(35, 9));
+            expectedJunction.add(new PairInt(35, 11));
+
+            assertTrue(expectedJunctionCenter.equals(entry.getKey()));
+
+            for (PairInt p : entry.getValue()) {
+                if (expectedJunction.contains(p)) {
+                    expectedJunction.remove(p);
+                }
+            }
+            assertTrue(expectedJunction.isEmpty());
+                        
+            Map<PairInt, Integer> pointOuputIndexMap = 
+                extractor.getOutputIndexLocatorForJunctionPoints();
+            
+            assertTrue(pointOuputIndexMap.size() == 4);
+            
+            assertTrue(pointOuputIndexMap.get(new PairInt(34, 10)).intValue() 
+                == 0);
+            
+            assertTrue(pointOuputIndexMap.get(new PairInt(35, 11)).intValue() 
+                == 0);
+            
+            assertTrue(pointOuputIndexMap.get(new PairInt(33, 10)).intValue() 
+                == 0);
+            
+            assertTrue(pointOuputIndexMap.get(new PairInt(35, 9)).intValue() 
+                == 1);
         }
-        assertTrue(expectedJunction.isEmpty());
     }
 
     public void testMergeAdjacentEndPoints0() throws Exception {
