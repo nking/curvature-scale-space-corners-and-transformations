@@ -262,5 +262,70 @@ public class PairIntArrayTest extends TestCase {
             assertTrue(Math.abs(xy.getY(i) - xyF.getY(i)) < 0.001f);
         }
     }
+    
+    public void testAddAll() throws Exception {
+        
+        int[] x0 = new int[]{0, 1, 2};
+        int[] y0 = new int[]{10, 11, 12};
+        
+        int[] x1 = new int[]{3, 4, 5};
+        int[] y1 = new int[]{13, 14, 15};
+        
+        PairIntArray p0 = new PairIntArray();
+        for (int i = 0; i < x0.length; i++) {
+            int x = x0[i];
+            int y = y0[i];
+            p0.add(x, y);
+        }
+        assertTrue(p0.getN() == x0.length);
+        for (int i = 0; i < p0.getN(); i++) {
+            int x = x0[i];
+            int y = y0[i];
+            assertTrue(p0.getX(i) == x);
+            assertTrue(p0.getY(i) == y);
+        }
+        
+        PairIntArray p1 = new PairIntArray();
+        for (int i = 0; i < x1.length; i++) {
+            int x = x1[i];
+            int y = y1[i];
+            p1.add(x, y);
+        }
+        assertTrue(p1.getN() == x1.length);
+        for (int i = 0; i < p1.getN(); i++) {
+            int x = x1[i];
+            int y = y1[i];
+            assertTrue(p1.getX(i) == x);
+            assertTrue(p1.getY(i) == y);
+        }
+        
+        
+        PairIntArray pAppend = new PairIntArray();
+        pAppend.addAll(p0);
+        
+        assertTrue(p0.getN() == pAppend.getN());
+        for (int i = 0; i < x0.length; i++) {
+            int x = x0[i];
+            int y = y0[i];
+            assertTrue(pAppend.getX(i) == x);
+            assertTrue(pAppend.getY(i) == y);
+        }
+        
+        pAppend.addAll(p1);
+        for (int i = 0; i < x0.length; i++) {
+            int x = x0[i];
+            int y = y0[i];
+            assertTrue(pAppend.getX(i) == x);
+            assertTrue(pAppend.getY(i) == y);
+        }
+        for (int i = 0; i < x0.length; i++) {
+            int x = x1[i];
+            int y = y1[i];
+            int idx = x0.length + i;
+            assertTrue(pAppend.getX(idx) == x);
+            assertTrue(pAppend.getY(idx) == y);
+        }
+        
+    }
 
 }

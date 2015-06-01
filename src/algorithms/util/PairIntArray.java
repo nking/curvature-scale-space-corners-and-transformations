@@ -43,6 +43,16 @@ public class PairIntArray {
         n++;
     }
     
+    public void addAll(PairIntArray other) {
+        
+        expandIfNeeded(n + other.getN());        
+        
+        System.arraycopy(other.getX(), 0, x, n, other.getN());
+        System.arraycopy(other.getY(), 0, y, n, other.getN());
+            
+        n += other.getN();
+    }
+    
     /**
      * remove indexes from idxLo to idxHi, inclusive
      * @param idxLo
