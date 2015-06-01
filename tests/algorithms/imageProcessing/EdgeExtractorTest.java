@@ -122,6 +122,57 @@ public class EdgeExtractorTest extends TestCase {
         assertTrue(index.intValue() == 3);
     }
     
+    public void testGetOppositeEndPointOfEdge() throws Exception {
+        
+        List<PairIntArray> edges = getJunctionEdges0();
+      
+        EdgeExtractor extractor = new EdgeExtractor(
+            new GreyscaleImage(100, 100));
+
+        for (int i = 0; i < edges.size(); i++) {
+            PairIntArray edge = edges.get(i);
+            PairInt startPoint = new PairInt(edge.getX(0), edge.getY(0));
+            int n = edge.getN();
+            PairInt expectedEndPoint = new PairInt(edge.getX(n - 1), edge.getY(n - 1));
+            
+            PairInt endPoint = extractor.getOppositeEndPointOfEdge(startPoint, edge);
+            
+            assertTrue(expectedEndPoint.equals(endPoint));
+        }
+    }
+    
+    public void testGetFindStartingPoint() throws Exception {
+        
+        List<PairIntArray> edges = getJunctionEdges0();
+        
+        /*
+                        0      4   / 3
+                     |-----||-----|
+                                   \
+                                  1 \     2
+                                     \|-------
+        */
+        
+        EdgeExtractor extractor = new EdgeExtractor(
+            new GreyscaleImage(100, 100));
+        
+        extractor.overrideEdgeSizeLowerLimit(1);
+        
+        Map<PairInt, Integer> endPointMap = extractor.createEndPointMap(
+            edges);
+        
+        PairInt startPoint = new PairInt(edges.get(2).getX(0),
+            edges.get(2).getY(0));
+        
+        PairInt earliestStartPoint = extractor.findStartingPoint(startPoint, 
+            endPointMap, edges);
+        
+        assertTrue(earliestStartPoint.getX() == edges.get(0).getX(0));
+        
+        assertTrue(earliestStartPoint.getY() == edges.get(0).getY(0));
+        
+    }
+    
     public void testCreateEndPointMap() throws Exception {
         
         List<PairIntArray> edges = getJunctionEdges0();

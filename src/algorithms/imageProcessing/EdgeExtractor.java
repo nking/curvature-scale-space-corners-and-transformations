@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
@@ -373,7 +374,8 @@ public class EdgeExtractor {
     }
     
     /**
-     * merge edges adjacent end points of given edges. 
+     * merge edges adjacent end points of given edges and fid the junctions
+     * along the way.  the junctions are stored as member variables.
      * 
      * the runtime complexity is at best O(N)
     
@@ -409,19 +411,16 @@ public class EdgeExtractor {
         // initialize the current endpoint information:
         int currentEdgeIdx = 0;
         
-        
-        //TODO: use findStartingIndex(currentStartPoint, endPointMap) here
-        
-        PairInt currentEndPoint = new PairInt(
-            edges.get(currentEdgeIdx).getX(edges.get(currentEdgeIdx).getN() - 1), 
-            edges.get(currentEdgeIdx).getY(edges.get(currentEdgeIdx).getN() - 1));
+        PairInt currentEndPoint = findStartingPoint(
+            new PairInt(edges.get(currentEdgeIdx).getX(0), 
+            edges.get(currentEdgeIdx).getY(0)), endPointMap,
+            edges);
         
         output.add(edges.get(currentEdgeIdx));
      
         endPointMap.remove(currentEndPoint);
-        endPointMap.remove(new PairInt(edges.get(currentEdgeIdx).getX(0),
-            edges.get(currentEdgeIdx).getY(0)));
-        
+        endPointMap.remove(getOppositeEndPointOfEdge(currentEndPoint, 
+            edges.get(currentEdgeIdx)));
         
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
@@ -434,6 +433,8 @@ public class EdgeExtractor {
             int maxAdjEdgesIdx = -1;
             
             int maxAdjEdgesN = Integer.MIN_VALUE;
+            
+            PairInt maxAdjEdgesPoint = null;
             
             for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                 int x = currentEndPoint.getX() + dxs[nIdx];
@@ -449,6 +450,7 @@ public class EdgeExtractor {
                     if (nPoints > maxAdjEdgesN) {
                         maxAdjEdgesN = nPoints;
                         maxAdjEdgesIdx = eIdx.intValue();
+                        maxAdjEdgesPoint = p;
                     }
                 } else if (junctionMap.containsKey(p)) {
                     eIdx = junctionLocationMap.get(p);
@@ -491,19 +493,22 @@ public class EdgeExtractor {
                         junctionLocationMap.put(foundEndPoints.get(i), 
                             foundEdgesIndexes.get(i));
                     }
-                      
+                    
                     currentEdgeIdx = maxAdjEdgesIdx;
+                    
+                    currentEndPoint = getOppositeEndPointOfEdge(
+                        maxAdjEdgesPoint, edges.get(currentEdgeIdx));
                     
                 } else {
                     
-                    currentEdgeIdx = foundEdgesIndexes.get(0);                    
+                    currentEdgeIdx = foundEdgesIndexes.get(0);
+                    
+                    currentEndPoint = getOppositeEndPointOfEdge(
+                        foundEndPoints.get(0), edges.get(currentEdgeIdx));                      
                 }
-                
-                currentEndPoint = new PairInt(
-                    edges.get(currentEdgeIdx).getX(edges.get(currentEdgeIdx).getN() - 1), 
-                    edges.get(currentEdgeIdx).getY(edges.get(currentEdgeIdx).getN() - 1));
-                
+              
             } else {
+                
                 if (junctionMap.containsKey(currentEndPoint)) {
                     junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
                         Integer.valueOf(output.size() - 1));
@@ -516,25 +521,20 @@ public class EdgeExtractor {
                 // then invoke a method to follow the endpoint back to find
                 // the true start
                 
-                currentEdgeIdx = endPointMap.entrySet().iterator().next().getValue();
-                
-                PairInt currentStartPoint = new PairInt(
-                    edges.get(currentEdgeIdx).getX(0), 
-                    edges.get(currentEdgeIdx).getY(0));
-               
-                //TODO: currentEdgeIdx = findStartingIndex(currentStartPoint, endPointMap);
+                Entry<PairInt, Integer> tmp = 
+                    endPointMap.entrySet().iterator().next();
+                                
+                currentEndPoint = findStartingPoint(tmp.getKey(), endPointMap, 
+                    edges);
                     
-                currentEndPoint = new PairInt(
-                    edges.get(currentEdgeIdx).getX(edges.get(currentEdgeIdx).getN() - 1), 
-                    edges.get(currentEdgeIdx).getY(edges.get(currentEdgeIdx).getN() - 1));
-                
+                currentEdgeIdx = endPointMap.get(currentEndPoint).intValue();
             }
             
             output.add(edges.get(currentEdgeIdx));
      
             endPointMap.remove(currentEndPoint);
-            endPointMap.remove(new PairInt(edges.get(currentEdgeIdx).getX(0),
-                edges.get(currentEdgeIdx).getY(0)));
+            endPointMap.remove(getOppositeEndPointOfEdge(currentEndPoint, 
+                edges.get(currentEdgeIdx)));
         }
        
         // convert the values in junctionMap from edges indexes to output
@@ -542,7 +542,7 @@ public class EdgeExtractor {
         // store junctionMap and junctionLocationsMap as member variables
         
         /*
-        TODO:  improve this section.  Could be done in O(N) and revised to add
+        Design for an implementation that is at best O(N) and revised to add
         the missing junction information that subsequent operations need.
                 
         (1) DONE 
@@ -564,7 +564,7 @@ public class EdgeExtractor {
             make local variables for this:
             ==> currentEdgeIdx which is the index to the edge in edges.
             ==> currentEndPoint which is a PairInt holding the last (x, y).
-REVISE:  use findStartingIndex(currentStartPoint, endPointMap) to
+REVISE:  use findStartingPoint(currentStartPoint, endPointMap, edges) to
 search back until find start of that edge
         (3) DONE
             initialize local variables
@@ -633,7 +633,7 @@ search back until find start of that edge
                  -- for each item in foundEdgesIndexes, foundEndPoints,
                     add and entry to junctionLocationMap
               -- set reference PairIntArray to maxPairIntArray,
-                 that is currentEdgeIdx and currentEndPoint
+                 that is, set currentEdgeIdx and currentEndPoint
            -- else if not found:
              -- IF currentEndPoint is found in junctionMap
                 and an entry to junctionEdgesToOutputIndexesMap
@@ -660,7 +660,8 @@ search back until find start of that edge
                       the output size is the same as the input size.
                       the runtime of this one could be large...
 REVISE: will choose a. and implement it as
-                      findStartingIndex(PairInt p, Map<PairInt, Integer> endPointMap) : int
+                      findStartingPoint(PairInt p, Map<PairInt, Integer> 
+                          endPointMap, List<PairIntArray> edges) : int
         
            -- THEN (after else/if)
               -- append the item at edges.get(currentEdgeIdx) to the current last item in
@@ -752,84 +753,7 @@ REVISE: will choose a. and implement it as
                -- assert that given an empty list of edges returns an empty output list
         
         */
-        
-        boolean[] removed = new boolean[edges.size()];
-
-        for (int i = 0; i < edges.size(); i++) {
-            
-            if (removed[i]) {
-                continue;
-            }
-            
-            PairIntArray uEdge = edges.get(i);
-            
-            // an extra iteration for reversing uEdge
-            for (int r = 0; r < 2; r++) {
-                 
-                // compare bottom of uEdge to top of vEdge
-
-                for (int j = 0; j < edges.size(); j++) {
-
-                    if (i == j) {
-                        continue;
-                    }
-                    if (removed[j]) {
-                        continue;
-                    }
-
-                    PairIntArray vEdge = edges.get(j);
-
-                    // recalculate in case u has grown
-                    int uX = uEdge.getX(uEdge.getN() - 1);
-                    int uY = uEdge.getY(uEdge.getN() - 1);
-
-                    int vX = vEdge.getX(0);
-                    int vY = vEdge.getY(0);
-
-                    int diffX = uX - vX;
-                    if (diffX < 0) {
-                        diffX *= -1;
-                    }
-
-                    if (diffX > 1) {
-                        continue;
-                    }
-
-                    int diffY = uY - vY;
-                    if (diffY < 0) {
-                        diffY *= -1;
-                    }
-
-                    if (diffY > 1) {
-                        continue;
-                    }
-
-                    for (int k = 0; k < vEdge.getN(); k++) {
-                        uEdge.add(vEdge.getX(k), vEdge.getY(k));
-                    }
-
-                    removed[j] = true;
-
-                    // have to restart the j iteration to re-compare terms
-                    j = -1;
-                }
-                
-                if (r == 0) {
-                    // just finished forward, start revers 
-                    uEdge.reverse();
-                } else if (r == 1) {
-                    // revert the array back to other direction
-                    uEdge.reverse();
-                }
-            }
-        }
-        
-        for (int i = 0; i < edges.size(); i++) {
-            if (!removed[i]) {
-                output.add(edges.get(i));
-            }
-        }
-        
+       
         return output;
     }
     
@@ -1610,5 +1534,122 @@ for (int i = 0; i < edge.getN(); i++) {
 
         uNodeEdgeIdx[vIdx] = uNodeEdgeIdx[uIdx];
         
+    }
+    
+    /**
+     * get the other endPoint within this edge.  NOTE that the method assumes
+     * that endPoint is truly an endPoint of edge, so it will always return 
+     * a value.
+     * @param endPoint
+     * @param edge
+     * @return 
+     */
+    protected PairInt getOppositeEndPointOfEdge(PairInt endPoint, 
+        PairIntArray edge) {
+        
+        int x = endPoint.getX();
+        int y = endPoint.getY();
+        
+        int idx = 0;
+        
+        int n = edge.getN();
+        
+        if ((edge.getX(idx) == x) && (edge.getY(idx) == y)) {
+            int x2 = edge.getX(n - 1);
+            int y2 = edge.getY(n - 1);
+            return new PairInt(x2, y2);
+        } else {
+            int x2 = edge.getX(0);
+            int y2 = edge.getY(0);
+            return new PairInt(x2, y2);
+        }
+    }
+
+    /**
+     * Search endMap "backwards" to find the earliest match to the startPoint.
+     * When a junction is found, choose the longest edge.
+     * <pre>
+     *           -- find 
+     *             \
+     *              \
+     *               \           start
+     *                \find     *point
+     *             |---/-------||------|
+     *       discard
+     * </pre>
+     * @param startPoint
+     * @param endPointMap
+     * @param edges
+     * @return 
+     */
+    protected PairInt findStartingPoint(PairInt startPoint, Map<PairInt, Integer> 
+        endPointMap, List<PairIntArray> edges) {
+        
+        if (startPoint == null) {
+            throw new IllegalArgumentException("startPoint cannot be null");
+        }
+        if (endPointMap == null) {
+            throw new IllegalArgumentException("endPointMap cannot be null");
+        }
+        if (edges == null) {
+            throw new IllegalArgumentException("edges cannot be null");
+        }
+        
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
+        PairInt originalStartPoint = startPoint;
+        
+        PairInt lastStartPoint = startPoint;
+        
+        PairInt currentStartPoint = startPoint;
+        
+        int nIter = 0;
+                
+        while ((currentStartPoint != null) &&
+            ((nIter == 0) ||
+            ((nIter > 0) && !currentStartPoint.equals(originalStartPoint))
+            )
+            ) {
+            
+            int maxN = Integer.MIN_VALUE;
+            Integer maxNIndex = null;            
+            PairInt maxNPoint = null;
+            
+            for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                
+                int x = currentStartPoint.getX() + dxs[nIdx];
+                int y = currentStartPoint.getY() + dys[nIdx];
+                
+                PairInt p = new PairInt(x, y);
+                
+                Integer eIndex = endPointMap.get(p);
+                
+                if (eIndex != null) {
+                    PairIntArray pai = edges.get(eIndex.intValue());
+                    int n = pai.getN();
+                    if (n > maxN) {
+                        maxN = n;
+                        maxNIndex = eIndex;
+                        maxNPoint = p;
+                    }
+                 }
+            }
+            
+            lastStartPoint = currentStartPoint;
+            
+            if (maxNIndex == null) {
+                currentStartPoint = null;
+            } else {
+                // the opposite end of this edge becomes
+                // our next potential currentStartPoint
+                PairIntArray pai = edges.get(maxNIndex);
+                currentStartPoint = getOppositeEndPointOfEdge(maxNPoint, pai);
+            }
+                        
+            nIter++;
+        }
+                
+        return lastStartPoint;
     }
 }
