@@ -604,6 +604,8 @@ public class EdgeExtractor {
         edgeJunctionMap.putAll(junctionMap);
         outputIndexLocatorForJunctionPoints.putAll(junctionLocationMap);
        
+        return output;
+        
         /*
         Design for an implementation that is at best O(N) and revised to add
         the missing junction information that subsequent operations need.
@@ -793,33 +795,9 @@ REVISE: will choose a. and implement it as
                   -- assert that output list contains 2 edges of expected 
                      ordered points
         
-               -- 5 or so edges, with 3 meeting at a junction.
-                  the final output should be 3 edges, one of which contains
-                  the two non-junction containing edges plus the longest of
-                  the junction containing edges.
-                      
-                        0         4   / 3
-                     |-----|   |-----|
-                                      \
-                                     1 \           2
-                                        \      |-------
-        
-                  -- assert that junctionMap.size() is 1 and that 
-                     junctionLocationMap.size() is 4 
-                  -- assert the values in junctionMap and junctionLocationMap
-                  -- assert that output list contains 4 edges of expected 
-                     points
-
-                  Make several tests of the above data w/ different combinations
-                     of reversed start and end points, excepting the first
-                     edge which should always be the one with the smallest
-                     column and smallest row as a start endpoint.
-
                -- assert that given an empty list of edges returns an empty output list
         
         */
-       
-        return output;
     }
     
     protected Map<PairInt, Integer> createEndPointMap(List<PairIntArray>

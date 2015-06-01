@@ -520,6 +520,18 @@ public class EdgeExtractorTest extends TestCase {
         }
     }
 
+    public void testMergeAdjacentEndPoints2_00() throws Exception {
+               
+        EdgeExtractor extractor = new EdgeExtractor(
+            new GreyscaleImage(100, 100));
+        extractor.overrideEdgeSizeLowerLimit(1);
+
+        List<PairIntArray> output = extractor.mergeAdjacentEndPoints2(
+            new ArrayList<PairIntArray>());
+        
+        assertTrue(output.isEmpty());
+    }
+        
     public void testMergeAdjacentEndPoints0() throws Exception {
         
         System.out.println("testMergeAdjacentEndPoints0");
