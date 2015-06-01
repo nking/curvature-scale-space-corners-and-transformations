@@ -552,8 +552,7 @@ public class EdgeExtractor {
                 currentEdgeIdx = endPointMap.get(currentEndPoint).intValue();
             }
             
-            // append to output
-            output.get(output.size() - 1).addAll(edges.get(currentEdgeIdx));
+            appendToOutput(output, edges.get(currentEdgeIdx));
      
             endPointMap.remove(currentEndPoint);
             endPointMap.remove(getOppositeEndPointOfEdge(currentEndPoint, 
@@ -1692,5 +1691,48 @@ for (int i = 0; i < edge.getN(); i++) {
         }
                 
         return lastStartPoint;
+    }
+
+    /**
+     * append edge to output, reversing the edge if needed to minimize the 
+     * distance between the last point in output and the first point 
+     * appended from edge.
+     * 
+     * @param output
+     * @param edge 
+     */
+    protected void appendToOutput(List<PairIntArray> output, PairIntArray edge) {
+        
+        PairIntArray lastOutputEdge = output.get(output.size() - 1);
+        
+        if (lastOutputEdge.getN() == 0) {
+            lastOutputEdge.addAll(edge);
+            return;
+        }
+        
+        int lastX = lastOutputEdge.getX(lastOutputEdge.getN() - 1);
+        int lastY = lastOutputEdge.getY(lastOutputEdge.getN() - 1);
+        
+        int x0 = edge.getX(0);
+        int y0 = edge.getY(0);
+        int diffX0 = x0 - lastX;
+        int diffY0 = y0 - lastY;
+        long dist0Sq = (diffX0 * diffX0) + (diffY0 * diffY0);
+        
+        int xn = edge.getX(edge.getN() - 1);
+        int yn = edge.getY(edge.getN() - 1);
+        
+        int diffXn = xn - lastX;
+        int diffYn = yn - lastY;
+        long distnSq = (diffXn * diffXn) + (diffYn * diffYn);
+        
+        if (dist0Sq > distnSq) {
+            // reverse
+            PairIntArray rev = edge.copy();
+            rev.reverse();
+            lastOutputEdge.addAll(rev);
+        } else {
+            lastOutputEdge.addAll(edge);
+        }
     }
 }

@@ -309,6 +309,32 @@ public class EdgeExtractorTest extends TestCase {
         
     }
     
+    public void testAppendToOutput() throws Exception {
+        
+        EdgeExtractor extractor = new EdgeExtractor(
+            new GreyscaleImage(100, 100));
+        
+        List<PairIntArray> edges = getJunctionEdges1();
+        
+        List<PairIntArray> output = new ArrayList<PairIntArray>();
+        output.add(edges.get(0));
+        
+        // add expected rest of edges in order and assert them
+        extractor.appendToOutput(output, edges.get(2));
+        extractor.appendToOutput(output, edges.get(1));
+        assertJunctionEdges1Output(output);
+        
+        // ===repeat test, but reverse edges 2 and 1 ====
+        edges = getJunctionEdges1();
+        output = new ArrayList<PairIntArray>();
+        output.add(edges.get(0));
+        edges.get(2).reverse();
+        edges.get(1).reverse();
+        extractor.appendToOutput(output, edges.get(2));
+        extractor.appendToOutput(output, edges.get(1));
+        assertJunctionEdges1Output(output);
+    }
+    
     public void testMergeAdjacentEndPoints2_1() throws Exception {
         
         List<PairIntArray> edges = getJunctionEdges1();
@@ -325,8 +351,41 @@ public class EdgeExtractorTest extends TestCase {
         assertTrue(extractor.getEdgeJunctionMap().isEmpty());
         
         assertTrue(extractor.getOutputIndexLocatorForJunctionPoints().isEmpty());
+        
+        // ====== reverse edge 1  and test again =======
+        edges = getJunctionEdges1();
+        edges.get(1).reverse();
+        
+        extractor = new EdgeExtractor(new GreyscaleImage(100, 100));
+        
+        extractor.overrideEdgeSizeLowerLimit(1);
+        
+        output = extractor.mergeAdjacentEndPoints2(edges);
+        
+        assertJunctionEdges1Output(output);
+        
+        assertTrue(extractor.getEdgeJunctionMap().isEmpty());
+        
+        assertTrue(extractor.getOutputIndexLocatorForJunctionPoints().isEmpty());
+        
+        // ====== reverse edge 2  and test again =======
+        /*edges = getJunctionEdges1();
+        edges.get(2).reverse();
+        
+        extractor = new EdgeExtractor(new GreyscaleImage(100, 100));
+        
+        extractor.overrideEdgeSizeLowerLimit(1);
+        
+        output = extractor.mergeAdjacentEndPoints2(edges);
+        
+        assertJunctionEdges1Output(output);
+        
+        assertTrue(extractor.getEdgeJunctionMap().isEmpty());
+        
+        assertTrue(extractor.getOutputIndexLocatorForJunctionPoints().isEmpty());
+        */
     }
-    
+        
     public void testMergeAdjacentEndPoints0() throws Exception {
         
         System.out.println("testMergeAdjacentEndPoints0");
