@@ -325,6 +325,39 @@ public class EdgeExtractorTest extends TestCase {
         
     }
     
+    public void testFindStartingPoint1() throws Exception {
+        
+        List<PairIntArray> edges = getJunctionEdges1();
+        
+         /*
+                *\
+             0 /  \ 1      result will be single closed edge 0:2:1
+              /    \
+             |------|
+                 2
+        Edge 0: start = (25, 5), end = (23, 7)
+        */
+        
+        EdgeExtractor extractor = new EdgeExtractor(
+            new GreyscaleImage(100, 100));
+        
+        extractor.overrideEdgeSizeLowerLimit(1);
+        
+        Map<PairInt, Integer> endPointMap = extractor.createEndPointMap(
+            edges);
+        
+        PairInt startPoint = new PairInt(edges.get(0).getX(0),
+            edges.get(0).getY(0));
+        
+        PairInt earliestStartPoint = extractor.findStartingPoint(startPoint, 
+            endPointMap, edges);
+        
+        assertTrue(earliestStartPoint.getX() == edges.get(0).getX(0));
+        
+        assertTrue(earliestStartPoint.getY() == edges.get(0).getY(0));
+        
+    }
+    
     public void testCreateEndPointMap() throws Exception {
         
         List<PairIntArray> edges = getJunctionEdges0();
