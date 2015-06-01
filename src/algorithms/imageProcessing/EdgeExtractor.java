@@ -289,10 +289,9 @@ public class EdgeExtractor {
         /*
         TODO:  improve this section.  Could be done in O(N) and revised to add
         the missing junction information that subsequent operations need.
-        
-        sixth draft:
-        
-        (1) need data structure to hold the searchable information of edges.  
+                
+        (1) create method constructEndPointsMap(List<PairIntArray>) : HashMap<PairInt, Set<Integer>>
+           need data structure to hold the searchable information of edges.  
            need to be able to search by start endpoint (x,y) and by end 
            endpoint (x,y).  the structure needs to retain reference to the item 
            in edges which it describes.
@@ -344,11 +343,14 @@ public class EdgeExtractor {
                junctionOutputIndexesMap holds lookup information for the
                currentEndPoint and for all of its adjacent pixels as they
                are added to the output list.
-        
+               junctionLocationMap holding not only the center junctions, 
+               but also the adjacent points to make them findable later.
         (5) search for currentEndPoint neighbors:
            -- for the 8 neighbors of currentEndPoint: 
               -- search endPointMap
-              -- search junctionLocationMap
+              -- search junctionMap 
+                 (can use junctionLocationMap if contains is true to get the
+                  needed edges index)
               -- keep results in 2 parallel lists:
                  foundEdgesIndexes
                  foundEndPoints
@@ -373,10 +375,12 @@ public class EdgeExtractor {
                     value = output.size() - 1
                     Note that this makes currentEndPoint lookup of output
                     index possible and also the next to last point.
+                 -- for each item in foundEdgesIndexes, foundEndPoints,
+                    add and entry to junctionLocationMap
               -- set reference PairIntArray to maxPairIntArray,
                  that is currentEdgeIdx and currentEndPoint
            -- else if not found:
-             -- IF the reference point is found in junctionLocationMap
+             -- IF the reference point is found in junctionMap
                 and an entry to junctionOutputIndexesMap
                 key=center PairInt(x,y)
                 value= size of output list - 1 (this is the index where will be added)
@@ -398,39 +402,73 @@ public class EdgeExtractor {
         
         
         Tests:
-           -- 5 or so edges, with 3 meeting at a junction.
-              the final output should be 3 edges, one of which contains
-              the two non-junction containing edges plus the longest of
-              the junction containing edges.
-              -- assert that there are 3 items in junctionLocationsMap
-                 and junctionMap
-              -- assert that each item in junctionMap holds values that
-                 are the 2 other adjacent pixels.
-              -- assert that the junctionLocationsMap has the expected
-                 values.
-              -- assert the ordered points in the final 3 edges.
-             
-              Make several tests of the above data w/ different combinations
-                 of reversed start and end points, excepting the first
-                 edge which should always be the one with the smallest
-                 column and smallest row as a start endpoint.
-           -- 5 or so edges in which 2 are connected, another 2 are connected
-              and the last has no connections, so the total is 3 edges
-              after merging.
-              -- assert that junctionsMap and junctionLocationsMap are empty
-              -- assert the content of edges in the final 3 edges.
         
-              Make several tests of the above data w/ different combinations
-                 of reversed start and end points, excepting the first
-                 edge which should always be the one with the smallest
-                 column and smallest row as a start endpoint.
+           Tests for the internal methods that mergeAdjacentEndPoints uses:
+               -- for constructEndPointsMap(List<PairIntArray>) : HashMap<PairInt, Set<Integer>>
+                  -- 5 or so edges, with 3 meeting at a junction and the other 
+                     two connected also:
+                     
+                        0      4   / 3
+                     |-----||-----|
+                                   \
+                                  1 \     2
+                                     \|-------
+                     
+                     -- assert that the resulting HashMap is size 5
+                     -- assert that each point in the sketch has the expected
+                        indexes
+                     
+                     Make several tests of the above data w/ different combinations
+                     of reversed start and end points in edges 1 thru 4
         
-           -- given 5 or so edges which do not have junctions and should result
-              in a final closed curve, that is one edge.
-              -- assert that junctionsMap and junctionLocationsMap are empty
-              -- assert the ordered points in the output final edge.
+            Tests for entire method mergeAdjacentEndPoints:
+               -- 5 or so edges, with 3 meeting at a junction and the other 
+                     two connected also:
+                     
+                        0      4   / 3
+                     |-----||-----|
+                                   \
+                                  1 \     2
+                                     \|-------
         
-           -- assert that given an empty list of edges returns an empty output list
+                  -- assert that junctionMap.size() is 1 and that 
+                     junctionLocationMap.size() is 4  (check this w/ above...)
+                  -- assert the values in junctionMap and junctionLocationMap
+                  -- assert that output list contains 2 edges of expected 
+                     ordered points
+        
+               -- 5 or so edges, with 3 meeting at a junction.
+                  the final output should be 3 edges, one of which contains
+                  the two non-junction containing edges plus the longest of
+                  the junction containing edges.
+                      
+                        0         4   / 3
+                     |-----|   |-----|
+                                      \
+                                     1 \           2
+                                        \      |-------
+        
+                  -- assert that junctionMap.size() is 1 and that 
+                     junctionLocationMap.size() is 4 (check this...)
+                  -- assert the values in junctionMap and junctionLocationMap
+                  -- assert that output list contains 4 edges of expected 
+                     points
+
+                  Make several tests of the above data w/ different combinations
+                     of reversed start and end points, excepting the first
+                     edge which should always be the one with the smallest
+                     column and smallest row as a start endpoint.
+
+               -- given 5 or so edges which do not have junctions and should result
+                  in a final closed curve, that is one edge.
+                      
+                        0      4      1      3       2
+                     |-----||-----||-----||-----||------|
+                                     
+                  -- assert that junctionsMap and junctionLocationsMap are empty
+                  -- assert the ordered points in the output final edge.
+
+               -- assert that given an empty list of edges returns an empty output list
         
         */
         
