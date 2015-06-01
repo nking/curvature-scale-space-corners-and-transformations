@@ -4,7 +4,9 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -290,22 +292,18 @@ public class EdgeExtractor {
         TODO:  improve this section.  Could be done in O(N) and revised to add
         the missing junction information that subsequent operations need.
                 
-        (1) create method constructEndPointsMap(List<PairIntArray>) : HashMap<PairInt, Set<Integer>>
+        (1) create method createEndPointsMap(List<PairIntArray>) : Map<PairInt, Integer>
            need data structure to hold the searchable information of edges.  
            need to be able to search by start endpoint (x,y) and by end 
            endpoint (x,y).  the structure needs to retain reference to the item 
            in edges which it describes.
-           because of junctions, there may be more than one object with the 
-           same start or end endpoint.
-           -- I think gaps aren't necessary to allow for here, but there is
-              allowance for it later, so this may need to be re-visited.
            searches are exact, so can use a HashSet for O(1) inserts and
            O(1) removals.  would like a key by start endpoint, and a key by end
            endpoint, so would use a hashmap.
            ==> Data structure needed is a HashMap:
                HashMap endPointMap
                key = PairInt of start (x,y) or end (x,y)
-               value = set of edges indexes for the keys.
+               value = edges index of this endpoint's edge
            ==> runtime complexity is 2 * O(N) for creating the HashMap
         (2) retain reference to the first item in edges to make testing easier
             (the first item in edges list is written by read location and 
@@ -404,7 +402,7 @@ public class EdgeExtractor {
         Tests:
         
            Tests for the internal methods that mergeAdjacentEndPoints uses:
-               -- for constructEndPointsMap(List<PairIntArray>) : HashMap<PairInt, Set<Integer>>
+               -- for createEndPointsMap(List<PairIntArray>) : Map<PairInt, Integer>
                   -- 5 or so edges, with 3 meeting at a junction and the other 
                      two connected also:
                      
@@ -414,14 +412,29 @@ public class EdgeExtractor {
                                   1 \     2
                                      \|-------
                      
-                     -- assert that the resulting HashMap is size 5
+                     -- assert that the returned HashMap is size 10
                      -- assert that each point in the sketch has the expected
-                        indexes
+                        indexes in the returned HashMap
                      
                      Make several tests of the above data w/ different combinations
                      of reversed start and end points in edges 1 thru 4
         
             Tests for entire method mergeAdjacentEndPoints:
+               
+               -- given 5 or so edges which do not have junctions and should result
+                  in a final closed curve, that is one edge.
+                      
+                        0      4      1      3       2
+                     |-----||-----||-----||-----||------|
+                                     
+                  -- assert that junctionsMap and junctionLocationsMap are empty
+                  -- assert the ordered points in the output final edge.
+
+                  Make several tests of the above data w/ different combinations
+                     of reversed start and end points, excepting the first
+                     edge which should always be the one with the smallest
+                     column and smallest row as a start endpoint.
+        
                -- 5 or so edges, with 3 meeting at a junction and the other 
                      two connected also:
                      
@@ -432,7 +445,7 @@ public class EdgeExtractor {
                                      \|-------
         
                   -- assert that junctionMap.size() is 1 and that 
-                     junctionLocationMap.size() is 4  (check this w/ above...)
+                     junctionLocationMap.size() is 4  
                   -- assert the values in junctionMap and junctionLocationMap
                   -- assert that output list contains 2 edges of expected 
                      ordered points
@@ -449,7 +462,7 @@ public class EdgeExtractor {
                                         \      |-------
         
                   -- assert that junctionMap.size() is 1 and that 
-                     junctionLocationMap.size() is 4 (check this...)
+                     junctionLocationMap.size() is 4 
                   -- assert the values in junctionMap and junctionLocationMap
                   -- assert that output list contains 4 edges of expected 
                      points
@@ -458,15 +471,6 @@ public class EdgeExtractor {
                      of reversed start and end points, excepting the first
                      edge which should always be the one with the smallest
                      column and smallest row as a start endpoint.
-
-               -- given 5 or so edges which do not have junctions and should result
-                  in a final closed curve, that is one edge.
-                      
-                        0      4      1      3       2
-                     |-----||-----||-----||-----||------|
-                                     
-                  -- assert that junctionsMap and junctionLocationsMap are empty
-                  -- assert the ordered points in the output final edge.
 
                -- assert that given an empty list of edges returns an empty output list
         
@@ -552,6 +556,30 @@ public class EdgeExtractor {
         }
         
         return output;
+    }
+    
+    protected Map<PairInt, Integer> createEndPointMap(List<PairIntArray>
+        edges) {
+        
+        Map<PairInt, Integer> endPointMap = new HashMap<PairInt, Integer>();
+        
+        for (int idx = 0; idx < edges.size(); idx++) {
+            
+            PairIntArray edge = edges.get(idx);
+            
+            int n = edge.getN();
+            
+            PairInt start = new PairInt(edge.getX(0), edge.getY(0));
+            
+            PairInt end = new PairInt(edge.getX(n - 1), edge.getY(n - 1));
+            
+            endPointMap.put(start, Integer.valueOf(idx));
+            
+            endPointMap.put(end, Integer.valueOf(idx));
+            
+        }
+        
+        return endPointMap;
     }
     
     /**
