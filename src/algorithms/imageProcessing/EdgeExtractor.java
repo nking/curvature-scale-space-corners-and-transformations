@@ -1646,8 +1646,16 @@ for (int i = 0; i < edge.getN(); i++) {
         PairInt lastStartPoint = startPoint;
         
         PairInt currentStartPoint = startPoint;
-                        
+                
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        int nIter = 0;
+        
         while (currentStartPoint != null) {
+                        
+            if ((nIter > 0) && (lastStartPoint.equals(currentStartPoint))) {
+                break;
+            }
             
             int maxN = Integer.MIN_VALUE;
             Integer maxNIndex = null;            
@@ -1659,6 +1667,10 @@ for (int i = 0; i < edge.getN(); i++) {
                 int y = currentStartPoint.getY() + dys[nIdx];
                 
                 PairInt p = new PairInt(x, y);
+                
+                if (visited.contains(p)) {
+                    continue;
+                }
                 
                 Integer eIndex = endPointMap.get(p);
                 
@@ -1682,16 +1694,20 @@ for (int i = 0; i < edge.getN(); i++) {
                 // our next potential currentStartPoint
                 PairIntArray pai = edges.get(maxNIndex);
                 currentStartPoint = getOppositeEndPointOfEdge(maxNPoint, pai);
-                
+        
+                visited.add(currentStartPoint);
+
                 // if this is a closed curve, set the variables to exit and
                 // return the correct value.
                 if (currentStartPoint.equals(originalStartPoint)) {
                     currentStartPoint = null;
                     lastStartPoint = originalStartPoint;
                 }
-            }                        
+            }
+            
+            nIter++;
         }
-                
+                        
         return lastStartPoint;
     }
 
