@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -55,6 +56,12 @@ public class EdgeExtractor {
     
     private GreyscaleImage edgeGuideImage = null;
     
+    private Map<PairInt, Set<PairInt> > edgeJunctionMap = 
+        new HashMap<PairInt, Set<PairInt>>();
+    
+    private Map<PairInt, Integer> outputIndexLocatorForJunctionPoints =
+        new HashMap<PairInt, Integer>();
+        
     private long numberOfPixelsAboveThreshold = 0;
     
     private Logger log = Logger.getLogger(this.getClass().getName());
@@ -106,6 +113,13 @@ public class EdgeExtractor {
     
     public GreyscaleImage getImage() {
         return img;
+    }
+    
+    public Map<PairInt, Set<PairInt> > getEdgeJunctionMap() {
+        return edgeJunctionMap;
+    }
+    public Map<PairInt, Integer> getOutputIndexLocatorForJunctionPoints() {
+        return outputIndexLocatorForJunctionPoints;
     }
     
     public void overrideEdgeSizeLowerLimit(int length) {
@@ -416,6 +430,11 @@ public class EdgeExtractor {
             edges.get(currentEdgeIdx).getY(0)), endPointMap,
             edges);
         
+        currentEdgeIdx = endPointMap.get(currentEndPoint).intValue();
+        
+        currentEndPoint = getOppositeEndPointOfEdge(currentEndPoint, 
+            edges.get(currentEdgeIdx));
+                
         output.add(edges.get(currentEdgeIdx));
      
         endPointMap.remove(currentEndPoint);
@@ -435,6 +454,9 @@ public class EdgeExtractor {
             int maxAdjEdgesN = Integer.MIN_VALUE;
             
             PairInt maxAdjEdgesPoint = null;
+            
+            foundEdgesIndexes.clear();
+            foundEndPoints.clear();
             
             for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                 int x = currentEndPoint.getX() + dxs[nIdx];
@@ -530,17 +552,35 @@ public class EdgeExtractor {
                 currentEdgeIdx = endPointMap.get(currentEndPoint).intValue();
             }
             
-            output.add(edges.get(currentEdgeIdx));
+            // append to output
+            output.get(output.size() - 1).addAll(edges.get(currentEdgeIdx));
      
             endPointMap.remove(currentEndPoint);
             endPointMap.remove(getOppositeEndPointOfEdge(currentEndPoint, 
                 edges.get(currentEdgeIdx)));
         }
        
-        // convert the values in junctionMap from edges indexes to output
-        
+        // convert the values in junctionLocationMap from edges indexes to output
+        Map<PairInt, Integer> tmpJunctionLocationMap = new HashMap<PairInt, Integer>();
+        Iterator<Entry<PairInt, Integer> > iter = 
+            junctionLocationMap.entrySet().iterator();
+        while (iter.hasNext()) {
+            
+            Entry<PairInt, Integer> entry = iter.next();
+            
+            Integer replValue = junctionEdgesToOutputIndexesMap.get(
+                entry.getValue());
+            assert(replValue != null);
+            
+            tmpJunctionLocationMap.put(entry.getKey(), replValue);
+        }
+        assert(tmpJunctionLocationMap.size() == junctionLocationMap.size());
+        junctionLocationMap = tmpJunctionLocationMap;
+         
         // store junctionMap and junctionLocationsMap as member variables
-        
+        edgeJunctionMap.putAll(junctionMap);
+        outputIndexLocatorForJunctionPoints.putAll(junctionLocationMap);
+       
         /*
         Design for an implementation that is at best O(N) and revised to add
         the missing junction information that subsequent operations need.
@@ -599,7 +639,7 @@ search back until find start of that edge
                are added to the output list.
                junctionLocationMap holding not only the center junctions, 
                but also the adjacent points to make them findable later.
-        (5) IN PROGRESS 
+        (5) DONE 
            search for currentEndPoint neighbors:
            -- for the 8 neighbors of currentEndPoint: 
               -- search endPointMap
@@ -668,10 +708,12 @@ REVISE: will choose a. and implement it as
                  output (if last is empty, can just replace it instead of append)
               -- remove currentEndPoint and it's edge's start endpoint from endPointMap.
             ==> 16*O(N)
-        (6) convert the values in junctionMap from edges indexes to output
-            list indexes using junctionEdgesToOutputIndexesMap.
+        (6) DONE
+            convert the values in junctionLocationMap from edges indexes to
+            output list indexes using junctionEdgesToOutputIndexesMap.
             ==> O(N)
-        (7) store junctionMap and junctionLocationsMap as member variables.
+        (7) DONE
+            store junctionMap and junctionLocationsMap as member variables.
             
         
         ====> runtime complexity is O(N)
@@ -1603,14 +1645,8 @@ for (int i = 0; i < edge.getN(); i++) {
         PairInt lastStartPoint = startPoint;
         
         PairInt currentStartPoint = startPoint;
-        
-        int nIter = 0;
-                
-        while ((currentStartPoint != null) &&
-            ((nIter == 0) ||
-            ((nIter > 0) && !currentStartPoint.equals(originalStartPoint))
-            )
-            ) {
+                        
+        while (currentStartPoint != null) {
             
             int maxN = Integer.MIN_VALUE;
             Integer maxNIndex = null;            
@@ -1645,9 +1681,14 @@ for (int i = 0; i < edge.getN(); i++) {
                 // our next potential currentStartPoint
                 PairIntArray pai = edges.get(maxNIndex);
                 currentStartPoint = getOppositeEndPointOfEdge(maxNPoint, pai);
-            }
-                        
-            nIter++;
+                
+                // if this is a closed curve, set the variables to exit and
+                // return the correct value.
+                if (currentStartPoint.equals(originalStartPoint)) {
+                    currentStartPoint = null;
+                    lastStartPoint = originalStartPoint;
+                }
+            }                        
         }
                 
         return lastStartPoint;

@@ -75,6 +75,46 @@ public class EdgeExtractorTest extends TestCase {
         return edges;
     }
     
+    public List<PairIntArray> getJunctionEdges1() {
+    
+        /*
+                *\
+             0 /  \ 1      result will be single closed edge 0:2:1
+              /    \
+             |------|
+                 2
+        */
+        List<PairIntArray> edges = new ArrayList<PairIntArray>();
+                
+        // add edge 0
+        edges.add(new PairIntArray());
+        // start = (25, 5), end = (23, 7)
+        int y = 4;
+        for (int x = 25; x >= 23; x--) {
+            y++;
+            edges.get(edges.size() - 1).add(x, y);
+        }
+        
+        // add edge 1
+        edges.add(new PairIntArray());
+        // start = (28,7) end = (26, 5)
+        y = 8;
+        for (int x = 28; x >= 26; x--) {
+            y--;
+            edges.get(edges.size() - 1).add(x, y);
+        }
+        
+        // add edge 2
+        edges.add(new PairIntArray());
+        y = 7;
+        // start=(22,7)     end=(27,7)
+        for (int x = 22; x < 28; x++) {
+            edges.get(edges.size() - 1).add(x, y); 
+        }
+        
+        return edges;
+    }
+    
     private void assertJunctionEdges0EndPoints(Map<PairInt, Integer> 
         endPointMap) {
         
@@ -122,6 +162,52 @@ public class EdgeExtractorTest extends TestCase {
         assertTrue(index.intValue() == 3);
     }
     
+    private void assertJunctionEdges1Output(List<PairIntArray> output) {
+        
+        assertTrue(output.size() == 1);
+        
+        List<PairIntArray> originalEdges = getJunctionEdges1();
+        
+        PairIntArray edge = output.get(0);
+        
+        // assert edge 0 : 2 : 1
+        
+        int count = 0;
+        
+        // assert edge 0
+        for (int i = 0; i < originalEdges.get(0).getN(); i++) {
+            int x = originalEdges.get(0).getX(i);
+            int y = originalEdges.get(0).getY(i);
+            int xt = edge.getX(count);
+            int yt = edge.getY(count);
+            assertTrue(xt == x);
+            assertTrue(yt == y);
+            count++;
+        }
+        
+        //assert edge 2 is next
+        for (int i = 0; i < originalEdges.get(2).getN(); i++) {
+            int x = originalEdges.get(2).getX(i);
+            int y = originalEdges.get(2).getY(i);
+            int xt = edge.getX(count);
+            int yt = edge.getY(count);
+            assertTrue(xt == x);
+            assertTrue(yt == y);
+            count++;
+        }
+        
+        // assert edge 1 is next
+        for (int i = 0; i < originalEdges.get(1).getN(); i++) {
+            int x = originalEdges.get(1).getX(i);
+            int y = originalEdges.get(1).getY(i);
+            int xt = edge.getX(count);
+            int yt = edge.getY(count);
+            assertTrue(xt == x);
+            assertTrue(yt == y);
+            count++;
+        }
+    }
+    
     public void testGetOppositeEndPointOfEdge() throws Exception {
         
         List<PairIntArray> edges = getJunctionEdges0();
@@ -141,7 +227,7 @@ public class EdgeExtractorTest extends TestCase {
         }
     }
     
-    public void testGetFindStartingPoint() throws Exception {
+    public void testFindStartingPoint() throws Exception {
         
         List<PairIntArray> edges = getJunctionEdges0();
         
@@ -221,7 +307,24 @@ public class EdgeExtractorTest extends TestCase {
         
         assertJunctionEdges0EndPoints(endPointMap);
         
+    }
+    
+    public void testMergeAdjacentEndPoints2_1() throws Exception {
         
+        List<PairIntArray> edges = getJunctionEdges1();
+        
+        EdgeExtractor extractor = new EdgeExtractor(
+            new GreyscaleImage(100, 100));
+        
+        extractor.overrideEdgeSizeLowerLimit(1);
+        
+        List<PairIntArray> output = extractor.mergeAdjacentEndPoints2(edges);
+        
+        assertJunctionEdges1Output(output);
+        
+        assertTrue(extractor.getEdgeJunctionMap().isEmpty());
+        
+        assertTrue(extractor.getOutputIndexLocatorForJunctionPoints().isEmpty());
     }
     
     public void testMergeAdjacentEndPoints0() throws Exception {
