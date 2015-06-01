@@ -5,8 +5,10 @@ import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -288,11 +290,263 @@ public class EdgeExtractor {
         revert reverse for next start
         */
       
+        boolean[] removed = new boolean[edges.size()];
+        
+        List<PairIntArray> output = new ArrayList<PairIntArray>();
+
+        for (int i = 0; i < edges.size(); i++) {
+            
+            if (removed[i]) {
+                continue;
+            }
+            
+            PairIntArray uEdge = edges.get(i);
+            
+            // an extra iteration for reversing uEdge
+            for (int r = 0; r < 2; r++) {
+                 
+                // compare bottom of uEdge to top of vEdge
+
+                for (int j = 0; j < edges.size(); j++) {
+
+                    if (i == j) {
+                        continue;
+                    }
+                    if (removed[j]) {
+                        continue;
+                    }
+
+                    PairIntArray vEdge = edges.get(j);
+
+                    // recalculate in case u has grown
+                    int uX = uEdge.getX(uEdge.getN() - 1);
+                    int uY = uEdge.getY(uEdge.getN() - 1);
+
+                    int vX = vEdge.getX(0);
+                    int vY = vEdge.getY(0);
+
+                    int diffX = uX - vX;
+                    if (diffX < 0) {
+                        diffX *= -1;
+                    }
+
+                    if (diffX > 1) {
+                        continue;
+                    }
+
+                    int diffY = uY - vY;
+                    if (diffY < 0) {
+                        diffY *= -1;
+                    }
+
+                    if (diffY > 1) {
+                        continue;
+                    }
+
+                    for (int k = 0; k < vEdge.getN(); k++) {
+                        uEdge.add(vEdge.getX(k), vEdge.getY(k));
+                    }
+
+                    removed[j] = true;
+
+                    // have to restart the j iteration to re-compare terms
+                    j = -1;
+                }
+                
+                if (r == 0) {
+                    // just finished forward, start revers 
+                    uEdge.reverse();
+                } else if (r == 1) {
+                    // revert the array back to other direction
+                    uEdge.reverse();
+                }
+            }
+        }
+        
+        for (int i = 0; i < edges.size(); i++) {
+            if (!removed[i]) {
+                output.add(edges.get(i));
+            }
+        }
+        
+        return output;
+    }
+    
+    /**
+     * merge edges adjacent end points of given edges. 
+     * 
+     * the runtime complexity is at best O(N)
+    
+     * @param edges
+     * @return 
+     */
+    protected List<PairIntArray> mergeAdjacentEndPoints2(
+        List<PairIntArray> edges) {
+        
+        List<PairIntArray> output = new ArrayList<PairIntArray>();
+        
+        if (edges == null || edges.isEmpty()) {
+            return output;
+        }
+        
+        // key = center of junction pixel coordinates
+        // value = set of adjacent pixels when there are more than the preceding
+        //         and next.
+        Map<PairInt, Set<PairInt> > junctionMap = new HashMap<PairInt, Set<PairInt>>();
+        
+        // key = pixel coordinates of all pixels involved in junctions
+        // value = index in edges (NOTE: at end of method, these are converted to 
+        //                        indexes of output list).
+        Map<PairInt, Integer> junctionLocationMap = new HashMap<PairInt, Integer>();
+        
+        // key = edges index
+        // value = indexes of the output edge that the pixel is in.
+        Map<Integer, Integer> junctionEdgesToOutputIndexesMap = 
+            new HashMap<Integer, Integer>();
+        
+        Map<PairInt, Integer> endPointMap = createEndPointMap(edges);
+        
+        // initialize the current endpoint information:
+        int currentEdgeIdx = 0;
+        
+        
+        //TODO: use findStartingIndex(currentStartPoint, endPointMap) here
+        
+        PairInt currentEndPoint = new PairInt(
+            edges.get(currentEdgeIdx).getX(edges.get(currentEdgeIdx).getN() - 1), 
+            edges.get(currentEdgeIdx).getY(edges.get(currentEdgeIdx).getN() - 1));
+        
+        output.add(edges.get(currentEdgeIdx));
+     
+        endPointMap.remove(currentEndPoint);
+        endPointMap.remove(new PairInt(edges.get(currentEdgeIdx).getX(0),
+            edges.get(currentEdgeIdx).getY(0)));
+        
+        
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
+        List<Integer> foundEdgesIndexes = new ArrayList<Integer>();
+        List<PairInt> foundEndPoints = new ArrayList<PairInt>();
+        
+        while (!endPointMap.isEmpty()) {
+            
+            int maxAdjEdgesIdx = -1;
+            
+            int maxAdjEdgesN = Integer.MIN_VALUE;
+            
+            for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                int x = currentEndPoint.getX() + dxs[nIdx];
+                int y = currentEndPoint.getY() + dys[nIdx];
+                
+                PairInt p = new PairInt(x, y);
+                
+                Integer eIdx = endPointMap.get(p);
+                if (eIdx != null) {
+                    foundEdgesIndexes.add(eIdx);
+                    foundEndPoints.add(p);
+                    int nPoints = edges.get(eIdx.intValue()).getN();
+                    if (nPoints > maxAdjEdgesN) {
+                        maxAdjEdgesN = nPoints;
+                        maxAdjEdgesIdx = eIdx.intValue();
+                    }
+                } else if (junctionMap.containsKey(p)) {
+                    eIdx = junctionLocationMap.get(p);
+                    assert(eIdx != null);
+                    foundEdgesIndexes.add(eIdx);
+                    foundEndPoints.add(p);
+                }
+            }
+            
+            if (!foundEndPoints.isEmpty()) {
+                if (foundEndPoints.size() > 1) {
+                    // this is a junction
+                    
+                    // add entry too junctionMap
+                    Set<PairInt> values = new HashSet<PairInt>(foundEndPoints);
+                    
+                    PairIntArray lastInOutput = output.get(output.size() - 1);
+                    int n = lastInOutput.getN();
+                    PairInt prevPoint = new PairInt(lastInOutput.getX(n - 2),
+                        lastInOutput.getY(n - 2));
+                    
+                    values.add(prevPoint);
+                    
+                    junctionMap.put(currentEndPoint, values);
+                    
+                    // add an entry to junctionLocationMap for currentEndPoint
+                    junctionLocationMap.put(currentEndPoint, Integer.valueOf(currentEdgeIdx));
+                    
+                    // add an entry to junctionLocationMap for prevPoint
+                    junctionLocationMap.put(prevPoint, Integer.valueOf(currentEdgeIdx));
+                    
+                    // add an entry to junctionEdgesToOutputIndexesMap for currentEndPoint
+                    junctionEdgesToOutputIndexesMap.put(
+                        Integer.valueOf(currentEdgeIdx), 
+                        Integer.valueOf(output.size() - 1));
+                    
+                    // add entries to junctionLocationMap for items in
+                    // foundEdgesIndexes, foundEndPoints
+                    for (int i = 0; i < foundEdgesIndexes.size(); i++) {
+                        junctionLocationMap.put(foundEndPoints.get(i), 
+                            foundEdgesIndexes.get(i));
+                    }
+                      
+                    currentEdgeIdx = maxAdjEdgesIdx;
+                    
+                } else {
+                    
+                    currentEdgeIdx = foundEdgesIndexes.get(0);                    
+                }
+                
+                currentEndPoint = new PairInt(
+                    edges.get(currentEdgeIdx).getX(edges.get(currentEdgeIdx).getN() - 1), 
+                    edges.get(currentEdgeIdx).getY(edges.get(currentEdgeIdx).getN() - 1));
+                
+            } else {
+                if (junctionMap.containsKey(currentEndPoint)) {
+                    junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
+                        Integer.valueOf(output.size() - 1));
+                }
+                
+                output.add(new PairIntArray());
+                
+                // since the last edge has ended, pick any remaining in
+                // endPointMap as the start of the next.
+                // then invoke a method to follow the endpoint back to find
+                // the true start
+                
+                currentEdgeIdx = endPointMap.entrySet().iterator().next().getValue();
+                
+                PairInt currentStartPoint = new PairInt(
+                    edges.get(currentEdgeIdx).getX(0), 
+                    edges.get(currentEdgeIdx).getY(0));
+               
+                //TODO: currentEdgeIdx = findStartingIndex(currentStartPoint, endPointMap);
+                    
+                currentEndPoint = new PairInt(
+                    edges.get(currentEdgeIdx).getX(edges.get(currentEdgeIdx).getN() - 1), 
+                    edges.get(currentEdgeIdx).getY(edges.get(currentEdgeIdx).getN() - 1));
+                
+            }
+            
+            output.add(edges.get(currentEdgeIdx));
+     
+            endPointMap.remove(currentEndPoint);
+            endPointMap.remove(new PairInt(edges.get(currentEdgeIdx).getX(0),
+                edges.get(currentEdgeIdx).getY(0)));
+        }
+       
+        // convert the values in junctionMap from edges indexes to output
+        
+        // store junctionMap and junctionLocationsMap as member variables
+        
         /*
         TODO:  improve this section.  Could be done in O(N) and revised to add
         the missing junction information that subsequent operations need.
                 
-        (1) create method createEndPointsMap(List<PairIntArray>) : Map<PairInt, Integer>
+        (1) DONE 
+           create method createEndPointMap(List<PairIntArray>) : Map<PairInt, Integer>
            need data structure to hold the searchable information of edges.  
            need to be able to search by start endpoint (x,y) and by end 
            endpoint (x,y).  the structure needs to retain reference to the item 
@@ -305,18 +559,20 @@ public class EdgeExtractor {
                key = PairInt of start (x,y) or end (x,y)
                value = edges index of this endpoint's edge
            ==> runtime complexity is 2 * O(N) for creating the HashMap
-        (2) retain reference to the first item in edges to make testing easier
-            (the first item in edges list is written by read location and 
-            direction along columns and rows of the image, so is consistently 
-            the same start point if data has not changed).
+        (2) DONE
+            retain reference to the first item in edges
             make local variables for this:
             ==> currentEdgeIdx which is the index to the edge in edges.
             ==> currentEndPoint which is a PairInt holding the last (x, y).
-        (3) initialize local variables
+REVISE:  use findStartingIndex(currentStartPoint, endPointMap) to
+search back until find start of that edge
+        (3) DONE
+            initialize local variables
             ==> create an output List<PairIntArray> 
             -- add currentEdgeIdx edge from edges to the output list
             -- remove currentEndPoint from endPointMap        
-        (4) need structures to hold junction information when more than one
+        (4) DONE
+            need structures to hold junction information when more than one
             endpoint matches.  this is to be used later.  
             -- it needs to refer to the items in the output list to avoid 
             re-searching later, and it needs to retain the (x,y)'s of the junction.
@@ -338,12 +594,13 @@ public class EdgeExtractor {
         
                where junctionMap and junctionLocationMap is added to for 
                each currentEndPoint that has more than one adjacent pixel.
-               junctionOutputIndexesMap holds lookup information for the
+               junctionEdgesToOutputIndexesMap holds lookup information for the
                currentEndPoint and for all of its adjacent pixels as they
                are added to the output list.
                junctionLocationMap holding not only the center junctions, 
                but also the adjacent points to make them findable later.
-        (5) search for currentEndPoint neighbors:
+        (5) IN PROGRESS 
+           search for currentEndPoint neighbors:
            -- for the 8 neighbors of currentEndPoint: 
               -- search endPointMap
               -- search junctionMap 
@@ -358,16 +615,16 @@ public class EdgeExtractor {
               -- if there are more than one items in foundEndPoints:
                  -- add an entry to junctionMap:
                     key = currentEndPoint PairInt(x,y)                        
-                    value = foundEdgesIndexes.  
-                            PLUS add the next to the 
-                            last point in the last item of output list.
-                            NOTE that the previous point will not be in 
-                            junctionLocationMap for finding later,
-                            so place it in tmpOuputIndexMap with key = (x,y), value = output.size()-1
+                    value = foundEdgePoints.  
+                            PLUS add the next to the last point in the last item 
+                            of output list.
                     If the key already exists, add to the existing values.
                  -- add an entry to junctionLocationMap:
                     key = currentEndPoint PairInt(x,y)
-                    value = currentEdgeIdx  
+                    value = currentEdgeIdx
+                 -- add an entry to junctionLocationMap:
+                    key = next to last point in output.get(output.size() - 1)
+                    value = currentEdgeIdx
                  -- add to junctionEdgesToOutputIndexesMap:
                     key = currentEdgeIdx
                     value = output.size() - 1
@@ -378,17 +635,37 @@ public class EdgeExtractor {
               -- set reference PairIntArray to maxPairIntArray,
                  that is currentEdgeIdx and currentEndPoint
            -- else if not found:
-             -- IF the reference point is found in junctionMap
-                and an entry to junctionOutputIndexesMap
-                key=center PairInt(x,y)
+             -- IF currentEndPoint is found in junctionMap
+                and an entry to junctionEdgesToOutputIndexesMap
+                key=currentEdgeIdx
                 value= size of output list - 1 (this is the index where will be added)
              -- start a new PairIntArray in output list
              -- choose a new reference PairIntArray from iter of endPointMap,
                 that is currentEdgeIdx and currentEndPoint
+                NOTE, this may not be the start of its true connected edge.
+                can think of several ways to accomodate this.
+                   a. one could create a method to search for adjacent pixels
+                      to the start point, and if more than one is found, choose
+                      the longest edge, and keep searching "backwards" until
+                      either find no more adjacent edges or until have reached
+                      the start again (as would happen for closed curves.
+                      then the return of this method is used
+                      as currentEdgeIdx and currentEndPoint.
+                      the runtime complexity for this method is potentially as long as the
+                      number of edges that compose it is so is probably the
+                      fastest of the possibilities
+                   b. could just use the point that is possibly not the
+                      start point and make a wrapper method to invoke
+                      this method with the previous output as input until
+                      the output size is the same as the input size.
+                      the runtime of this one could be large...
+REVISE: will choose a. and implement it as
+                      findStartingIndex(PairInt p, Map<PairInt, Integer> endPointMap) : int
+        
            -- THEN (after else/if)
               -- append the item at edges.get(currentEdgeIdx) to the current last item in
                  output (if last is empty, can just replace it instead of append)
-              -- remove currentEndPoint from endPointMap.
+              -- remove currentEndPoint and it's edge's start endpoint from endPointMap.
             ==> 16*O(N)
         (6) convert the values in junctionMap from edges indexes to output
             list indexes using junctionEdgesToOutputIndexesMap.
@@ -402,7 +679,7 @@ public class EdgeExtractor {
         Tests:
         
            Tests for the internal methods that mergeAdjacentEndPoints uses:
-               -- for createEndPointsMap(List<PairIntArray>) : Map<PairInt, Integer>
+               -- for createEndPointMap(List<PairIntArray>) : Map<PairInt, Integer>
                   -- 5 or so edges, with 3 meeting at a junction and the other 
                      two connected also:
                      
@@ -477,8 +754,6 @@ public class EdgeExtractor {
         */
         
         boolean[] removed = new boolean[edges.size()];
-        
-        List<PairIntArray> output = new ArrayList<PairIntArray>();
 
         for (int i = 0; i < edges.size(); i++) {
             

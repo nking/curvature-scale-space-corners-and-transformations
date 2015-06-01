@@ -6,6 +6,8 @@ import algorithms.util.PairIntArray;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
@@ -33,9 +35,147 @@ public class EdgeExtractorTest extends TestCase {
         super.tearDown();
     }
     
-    public void testMergeAdjacentEndPoints() throws Exception {
+    public List<PairIntArray> getJunctionEdges0() {
+    
+        /*
+                        0      4   / 3
+                     |-----||-----|
+                                   \
+                                  1 \     2
+                                     \|-------
+        */
+        List<PairIntArray> edges = new ArrayList<PairIntArray>();
+                
+        // add edge 0
+        edges.add(new PairIntArray());
+        for (int x = 15; x < 25; x++) {
+            edges.get(edges.size() - 1).add(x, 10);
+        }
+        // add edge 1
+        edges.add(new PairIntArray());
+        for (int x = 35; x < 45; x++) {
+            edges.get(edges.size() - 1).add(x, 11 + (x - 35));
+        }
+        // add edge 2
+        edges.add(new PairIntArray());
+        for (int x = 45; x < 55; x++) {
+            edges.get(edges.size() - 1).add(x, 11 + (44 - 35)); 
+        }
+        // add edge 3
+        edges.add(new PairIntArray());
+        for (int x = 35; x < 38; x++) {
+            edges.get(edges.size() - 1).add(x, 9 - (x - 35)); 
+        }
+        // add edge 4
+        edges.add(new PairIntArray());
+        for (int x = 25; x < 35; x++) {
+            edges.get(edges.size() - 1).add(x, 10);
+        }
         
-        System.out.println("testMergeAdjacentEndPoints");
+        return edges;
+    }
+    
+    private void assertJunctionEdges0EndPoints(Map<PairInt, Integer> 
+        endPointMap) {
+        
+        assertTrue(endPointMap.size() == 10);
+        
+        Integer index;
+        
+        // edge 0
+        index = endPointMap.get(new PairInt(15, 10));
+        assertNotNull(index);
+        assertTrue(index.intValue() == 0);
+        index = endPointMap.get(new PairInt(24, 10));
+        assertNotNull(index);
+        assertTrue(index.intValue() == 0);
+
+        // edge 4
+        index = endPointMap.get(new PairInt(25, 10));
+        assertNotNull(index);
+        assertTrue(index.intValue() == 4);
+        index = endPointMap.get(new PairInt(34, 10));
+        assertTrue(index.intValue() == 4);
+        
+        // edge 1
+        index = endPointMap.get(new PairInt(35, 11));
+        assertNotNull(index);
+        assertTrue(index.intValue() == 1);
+        index = endPointMap.get(new PairInt(44, 20));
+        assertNotNull(index);
+        assertTrue(index.intValue() == 1);
+        
+        // edge 2
+        index = endPointMap.get(new PairInt(45, 20));
+        assertNotNull(index);
+        assertTrue(index.intValue() == 2);
+        index = endPointMap.get(new PairInt(54, 20)); 
+        assertNotNull(index);
+        assertTrue(index.intValue() == 2);
+        
+        // edge 3
+        index = endPointMap.get(new PairInt(35, 9));
+        assertNotNull(index);
+        assertTrue(index.intValue() == 3);
+        index = endPointMap.get(new PairInt(37, 7));
+        assertNotNull(index);
+        assertTrue(index.intValue() == 3);
+    }
+    
+    public void testCreateEndPointMap() throws Exception {
+        
+        List<PairIntArray> edges = getJunctionEdges0();
+        
+        /*
+                        0      4   / 3
+                     |-----||-----|
+                                   \
+                                  1 \     2
+                                     \|-------
+        */
+        
+        EdgeExtractor extractor = new EdgeExtractor(
+            new GreyscaleImage(100, 100));
+        
+        extractor.overrideEdgeSizeLowerLimit(1);
+        
+        Map<PairInt, Integer> endPointMap = extractor.createEndPointMap(
+            edges);
+        
+        assertJunctionEdges0EndPoints(endPointMap);
+        
+        // ===== reverse the 2nd item in edges ======
+        edges = getJunctionEdges0();
+        edges.get(1).reverse();
+        
+        endPointMap = extractor.createEndPointMap(edges);
+        
+        assertJunctionEdges0EndPoints(endPointMap);
+        
+        // ===== reverse the 3rd and 4th item in edges ======
+        edges = getJunctionEdges0();
+        edges.get(2).reverse();
+        edges.get(3).reverse();
+        
+        endPointMap = extractor.createEndPointMap(edges);
+        
+        assertJunctionEdges0EndPoints(endPointMap);
+        
+        // ===== reverse edges 4 and 1 ======
+        edges = getJunctionEdges0();
+        edges.get(4).reverse();
+        edges.get(1).reverse();
+        
+        endPointMap = extractor.createEndPointMap(edges);
+        
+        assertJunctionEdges0EndPoints(endPointMap);
+        
+        
+    }
+    
+    public void testMergeAdjacentEndPoints0() throws Exception {
+        
+        System.out.println("testMergeAdjacentEndPoints0");
            
         EdgeExtractor contourExtractor = new EdgeExtractor(
             new GreyscaleImage(100, 100));
@@ -1048,6 +1188,8 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         EdgeExtractor contourExtractor = new EdgeExtractor(img);
         List<PairIntArray> edges = contourExtractor.findEdges();
         
+        log.info("edges.size()=" + edges.size());
+        
         int clr = 0;
         Image img2 = new Image(img.getWidth(), img.getHeight());
         for (int i = 0; i < edges.size(); i++) {
@@ -1080,6 +1222,14 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         }
         
         ImageDisplayer.displayImage("edge detected image", img2);
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String sep = System.getProperty("file.separator");
+        ImageIOHelper.writeOutputImage(dirPath + sep + "africa_edges.png", img2);
+        
+        img.multiply(250);
+        ImageIOHelper.writeOutputImage(dirPath + sep + "africa_thinned.png", 
+            img);
         
         assertTrue(!edges.isEmpty());
     }
