@@ -290,32 +290,35 @@ public class EdgeExtractor {
         TODO:  improve this section.  Could be done in O(N) and revised to add
         the missing junction information that subsequent operations need.
         
-        fourth draft:
+        fifth draft:
         
         -- retain reference to the first item in edges to make testing easier
            (the first item in edges list is written by read location and 
            direction along columns and rows of the image, so is consistently 
            the same start point if data has not changed).
+           make local variables for this:
+               ==> currentEdgeIdx which is the index to the edge in edges.
+               ==> currentEndPoint which is a PairInt holding the last (x, y).
         -- create an output List<PairIntArray> 
-        -- add reference edge from edges to first item in output
-        -- remove current reference endpoints from both startMap and endMap
+        -- add currentEdgeIdx edge from edges to the output list
+        -- remove currentEndPoint from both startMap and endMap
            (see next bullet)
-        -- need two data structures to hold the searchable information of
-           edges.  need to be able to search by start endpoint (x,y) in one
-           strcture and by end endpoint (x,y) in the other structure.
-           the structure needs to retain reference to the item in edges which
-           it describes.
+        -- need data structure to hold the searchable information of edges.  
+           need to be able to search by start endpoint (x,y) and by end 
+           endpoint (x,y).  the structure needs to retain reference to the item 
+           in edges which it describes.
            because of junctions, there may be more than one object with the 
            same start or end endpoint.
            -- I think gaps aren't necessary to allow for here, but there is
               allowance for it later, so this may need to be re-visited.
            searches are exact, so can use a HashSet for O(1) inserts and
-           O(1) removals.  would like a key by start endpoint for the first
-           list and key by end endpoint for the second list, so would use hashmaps.
-           ==> Data structures are 2 HashMaps, startMap and endMap, with
-                key = PairInt of start(x,y) or end(x,y)
-                value = set of PairIntArrays for the key
-           ========> runtime complexity is 2 * O(N) for creating these hashmaps
+           O(1) removals.  would like a key by start endpoint, and a key by end
+           endpoint, so would use a hashmap.
+           ==> Data structure needed is a HashMap:
+                HashMap endPointMap
+                key = PairInt of start (x,y) or end (x,y)
+                value = set of edges indexes for the keys.
+           ========> runtime complexity is 2 * O(N) for creating the HashMap
         -- need structures to hold junction information when more than one
            endpoint matches.  this is to be used later.  
            -- it needs to refer to the items in the output list to avoid 
@@ -332,47 +335,48 @@ public class EdgeExtractor {
                          (NOTE: before last step in method, this will be 
                          converted to index of the *output* list.)
         
-                 HashMap = junctionOutputIndexesMap
-                 key = PairInt of junction (x,y) 
+                 HashMap = junctionEdgesToOutputIndexesMap
+                 key = edges index
                  value = output index
+        
+                 where junctionMap and junctionLocationMap is added to for 
+                 each currentEndPoint that has more than one adjacent pixel.
+                 junctionOutputIndexesMap holds lookup information for the
+                 currentEndPoint and for all of its adjacent pixels as they
+                 are added to the output list.
+        
            The simplest way to build this is during the search.
            (requires reading the next bullet...)
-           for each current reference point,
-               8 neighbors are searched for in both startMap and endMap.
-               all matches should be placed in junctionMap along with the 
-               referenced edges index if there are more than one members in the
-               set.  entries are also added to junctionLocationMap and 
-               junctionOutputIndexesMap for the central referenced pixel.
-        -- search for the matching EndPoint:
-               -- for the 8 neighbors of the end endpoint: 
-                  -- search startMap for reference endpoints.
-                  -- search endMap for reference endpoints
+           
+        -- search for currentEndPoint neighbors:
+               -- for the 8 neighbors of currentEndPoint: 
+                  -- search endPointMap
+                  -- search junctionLocationMap
                   -- keep results in 2 parallel lists:
                          foundEdgesIndexes
                          foundEndPoints
-                  -- track the one with the most members its edges PairIntArray 
-                     as maxPairIntArray
+                  -- from found items from endPointMap keep the one with the
+                     most members its edges PairIntArray as maxAdjEdgesIdx and 
+                     maxAdjEdgesN
                -- if any items are found:
-                  -- if there are more than one items in the found set:
+                  -- if there are more than one items in foundEndPoints:
                      -- add an entry to junctionMap:
-                        key=center PairInt(x,y)
-                        value=set of edges indexes.
+                        key = currentEndPoint PairInt(x,y)                        
+                        value = foundEdgesIndexes.  
+                                PLUS add the next to the 
+                                last point in the last item of output list.
+                                NOTE that the previous point will not be in 
+                                junctionLocationMap for finding later,
+                                so place it in tmpOuputIndexMap with key = (x,y), value = output.size()-1
                         If the key already exists, add to the existing values.
                      -- add an entry to junctionLocationMap:
-                        key=center PairInt(x,y)
-                        value= reference edges index
-                     -- for each member of the found set:
-                        -- add an entry to junctionMap:
-                           key= PairInt(x,y)
-                           value=set of edges indexes.  PLUS the center referenced edges index.
-                           If the key already exists, add to the existing values.
-                        -- add an entry to junctionLocationMap:
-                           key= PairInt(x,y)
-                           value= reference edges index
-                  -- IF the reference point is found in junctionLocationMap
-                        and an entry to junctionOutputIndexesMap
-                        key=center PairInt(x,y)
-                        value= size of output list - 1 (this is the index where will be added)
+                        key = currentEndPoint PairInt(x,y)
+                        value = currentEdgeIdx  
+                     -- add to junctionEdgesToOutputIndexesMap:
+                        key = currentEdgeIdx
+                        value = output.size() - 1
+                        Note that this makes currentEndPoint lookup of output
+                        index possible and also the next to last point.
                   -- set reference PairIntArray to maxPairIntArray
                -- else if not found:
                  -- IF the reference point is found in junctionLocationMap
@@ -387,7 +391,7 @@ public class EdgeExtractor {
                   -- remove current reference endpoints from both startMap and endMap.
             ==> 16 * O(N)
         --  convert the values in junctionMap from edges indexes to output
-            list indexes.
+            list indexes using junctionEdgesToOutputIndexesMap.
             store junctionMap and junctionLocationsMap as member variables.
             ==> O(N)
         
