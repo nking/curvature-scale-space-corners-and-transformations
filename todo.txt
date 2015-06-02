@@ -19,6 +19,9 @@ on needed features, bugs, etc.
    the theta of a (cieX, xieY) point.  that theta between 0 and 359 degrees would be mapped
    to values 0 to 254.  the center space near (0.35, 0.35) is white so would be set to value 255.
    I started the code for this already.
+   -- for each image, could use a histogram of values to perform theta to 0 to 255 conversion to
+      occupy the least amount of space so that the histogram equalization in Canny can change the range,
+      in other words, remove gaps in the theta bins during assignment.
    -- converting color image to cie xy theta creates a greyscale image which can be used
       by the CannyEdgeFilter and EdgeExtractor similarly to the intensity greyscale image.
    -- compare the resulting extracted edges between the default intensity based and a color based.
