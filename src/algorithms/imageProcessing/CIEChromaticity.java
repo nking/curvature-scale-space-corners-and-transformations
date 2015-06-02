@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,11 @@ import java.util.Set;
  * @author nichole
  */
 public class CIEChromaticity {
+    
+    /**
+     * the offset from (0.35, 0.35) considered "white"
+     */
+    private static final float deltaWhite = 0.02f;
     
     /**
      * get the bounds of yellow in the CIE 1931 xy chromaticity diagram
@@ -350,16 +356,12 @@ public class CIEChromaticity {
      * @return 
      */
     public boolean isCentralWhite(float cieX, float cieY) {
-        
-        // centered on (0.35, 0.35) with delta
-        
-        float delta = 0.01f;
-        
-        if ((cieX > (0.35f + delta)) || (cieX < (0.35 - delta))) {
+                       
+        if ((cieX > (0.35f + deltaWhite)) || (cieX < (0.35 - deltaWhite))) {
             return false;
         }
         
-        if ((cieY > (0.35f + delta)) || (cieY < (0.35 - delta))) {
+        if ((cieY > (0.35f + deltaWhite)) || (cieY < (0.35 - deltaWhite))) {
             return false;
         }
         
@@ -384,27 +386,26 @@ public class CIEChromaticity {
      * @param cieX
      * @param cieY
      * @return the angle in radians of the point (cieX, cieY) with respect to
-     * an origin of (0.35, 0.35).
+     * an origin of (0.35, 0.35). The invoker should check the original r,g,b
+     * for black and white to avoid use here.  A value of -1 is returned for
+     * white.
      */
     public double calculateXYTheta(float cieX, float cieY) {
+                
+        float whiteBuffer = 0.2f;
         
-        if (cieY == 0) {
-            return 0;
-        }
-        
-        double theta = Math.abs((0.35 - cieY)/(0.35 - cieX));
-        
-        if (cieY < 0.35) {
-            if (cieX < 0.35) {
-                theta = Math.PI - theta;
+        if (cieX == 0.35) {
+            if (cieY > (0.35 + deltaWhite)) {
+                return Math.PI/2.;
+            } else if (cieY < (0.35 - deltaWhite)) {
+                return 1.5 * Math.PI;
             } else {
-                theta = 2*Math.PI + theta;
-            }
-        } else {
-            if (cieX < 0.35) {
-                theta = Math.PI + theta;
+                // this should have been found as white to avoid use here
+                return -1;
             }
         }
+        
+        double theta = MiscMath.calculatePolarTheta(cieX - 0.35f, cieY - 0.35f);
         
         return theta;
     }
