@@ -920,4 +920,54 @@ public class MiscMath {
         // n XOR n-1
         return ((n == 0) || ((n & (n - 1)) == 0));
     }
+    
+    /**
+     * calculate the angle of theta with respect to an origin of zero for the
+     * point (x, y).
+     * The angles are
+     * <pre>    90(=pi/2)
+     *            |
+     *            |
+     *   180 ----------- 0
+     *   (=pi)    |
+     *            | 
+     *          270(=3pi/2)
+     * </pre>
+     * 
+     * @param x
+     * @param y
+     * @return degrees in radians
+     */
+    public static double calculatePolarTheta(float x, float y) {
+        
+        if (x == 0) {
+            if (y < 0) {
+                return 1.5 * Math.PI;
+            }
+            return Math.PI/2.;
+        }
+        
+        double div = y/x;
+        
+        double theta = Math.atan(div);
+        
+        if (x > 0) {
+            // if y > 0, no change needed
+            if (y == 0) {
+                theta = 0;
+            } else if (y < 0) {
+                theta = 2*Math.PI + theta;
+            }
+        } else {
+            // x < 0
+            if (y == 0) {
+                theta = Math.PI;
+            } else {
+                theta = Math.PI + theta;
+            }
+        }
+        
+        return theta;
+    }
+    
 }

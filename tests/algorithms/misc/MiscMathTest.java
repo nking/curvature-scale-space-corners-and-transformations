@@ -517,5 +517,68 @@ public class MiscMathTest extends TestCase {
         assertFalse(MiscMath.isAPowerOf2(17));
     }
 
+    public void testCalculatePolarTheta() throws Exception {
+        //public static double calculatePolarTheta(float x, float y) {
+        
+        /*
+         * <pre>    90(=pi/2)
+         *            |
+         *            |
+         *   180 ----------- 0
+         *   (=pi)    |
+         *            | 
+         *          270(=3pi/2)
+         * </pre>
+        */
+        
+        double eps = 0.001;
+        
+        float x, y;
+        double theta, expectedTheta;
+        
+        x = 1;
+        y = 0;
+        expectedTheta = 0;
+        theta = MiscMath.calculatePolarTheta(x, y);
+        assertTrue(Math.abs(expectedTheta - theta) < eps);
+        
+        x = 0;
+        y = 1;
+        expectedTheta = 90. * (Math.PI/180.);
+        theta = MiscMath.calculatePolarTheta(x, y);
+        assertTrue(Math.abs(expectedTheta - theta) < eps);
+        
+        x = -1;
+        y = 0;
+        expectedTheta =  180. * (Math.PI/180.);
+        theta = MiscMath.calculatePolarTheta(x, y);
+        assertTrue(Math.abs(expectedTheta - theta) < eps);
+        
+        x = 0;
+        y = -1;
+        expectedTheta =  270. * (Math.PI/180.);
+        theta = MiscMath.calculatePolarTheta(x, y);
+        assertTrue(Math.abs(expectedTheta - theta) < eps);
+        
+        double[] d = new double[] {
+            30. * (Math.PI/180.),
+            60. * (Math.PI/180.),
+            120. * (Math.PI/180.),
+            150. * (Math.PI/180.),
+            210. * (Math.PI/180.),
+            240. * (Math.PI/180.),
+            300. * (Math.PI/180.),
+            330. * (Math.PI/180.)
+        };
+        
+        for (int i = 3; i < d.length; i++) {
+            x = (float)Math.cos(d[i]);
+            y = (float)Math.sin(d[i]);
+            expectedTheta = d[i];
+            theta = MiscMath.calculatePolarTheta(x, y);
+            assertTrue(Math.abs(expectedTheta - theta) < eps);
+        }
+        
+    }
 
 }
