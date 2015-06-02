@@ -85,8 +85,8 @@ public class CannyEdgeFilterTest {
     @Test
     public void testApplyFilter() throws Exception {
                 
-        String fileName = "house.gif";
-        //String fileName = "lab.gif";
+        //String fileName = "house.gif";
+        String fileName = "lab.gif";
         //String fileName = "susan-in.gif";
         //String fileName = "susan-in_plus.png";
         //String fileName = "africa.png";
@@ -98,7 +98,13 @@ public class CannyEdgeFilterTest {
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
                 
         CannyEdgeFilter filter = new CannyEdgeFilter();
-                
+        
+        if (fileName.equals("africa.png")) {
+            filter.useLineDrawingMode();
+        } else if (fileName.contains("susan")) {
+            filter.useLineDrawingMode();
+        }
+        
         filter.applyFilter(img);
         
               
@@ -106,12 +112,14 @@ public class CannyEdgeFilterTest {
         //ImageDisplayer.displayImage("canny edge filtered", img);
         String dirPath = ResourceFinder.findDirectory("bin");
         ImageIOHelper.writeOutputImage(dirPath + "/linethinned.png", img);
+
+        ImageIOHelper.writeOutputImage(dirPath + "/gXY.png", filter.getGradientXY());
         
         //TODO: add qualitative tests...
         int z = 1;        
     }
     
-    @Test
+    //@Test
     public void testApplyHistogramEqualization() {
         
         GreyscaleImage input = new GreyscaleImage(10, 10);

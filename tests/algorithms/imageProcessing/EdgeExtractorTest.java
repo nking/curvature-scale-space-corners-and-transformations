@@ -442,7 +442,7 @@ public class EdgeExtractorTest extends TestCase {
             new GreyscaleImage(100, 100));
         extractor.overrideEdgeSizeLowerLimit(1);
         
-        List<PairIntArray> output = extractor.mergeAdjacentEndPoints2(edges);
+        List<PairIntArray> output = extractor.mergeAdjacentEndPoints(edges);
         
         assertJunctionEdges1Output(output);
         
@@ -456,7 +456,7 @@ public class EdgeExtractorTest extends TestCase {
         edges = getJunctionEdges1();
         edges.get(1).reverse();
         
-        output = extractor.mergeAdjacentEndPoints2(edges);
+        output = extractor.mergeAdjacentEndPoints(edges);
         
         assertJunctionEdges1Output(output);
         
@@ -471,7 +471,7 @@ public class EdgeExtractorTest extends TestCase {
         edges = getJunctionEdges1();
         edges.get(2).reverse();
         
-        output = extractor.mergeAdjacentEndPoints2(edges);
+        output = extractor.mergeAdjacentEndPoints(edges);
         
         assertJunctionEdges1Output(output);
         
@@ -506,7 +506,7 @@ public class EdgeExtractorTest extends TestCase {
                 new GreyscaleImage(100, 100));
             extractor.overrideEdgeSizeLowerLimit(1);
 
-            List<PairIntArray> output = extractor.mergeAdjacentEndPoints2(edges);
+            List<PairIntArray> output = extractor.mergeAdjacentEndPoints(edges);
             
             //System.out.println("nTest=" + nTest);
             assertJunctionEdges0Output(output);
@@ -553,177 +553,16 @@ public class EdgeExtractorTest extends TestCase {
         }
     }
 
-    public void testMergeAdjacentEndPoints2_00() throws Exception {
+    public void testMergeAdjacentEndPoints2_2() throws Exception {
                
         EdgeExtractor extractor = new EdgeExtractor(
             new GreyscaleImage(100, 100));
         extractor.overrideEdgeSizeLowerLimit(1);
 
-        List<PairIntArray> output = extractor.mergeAdjacentEndPoints2(
+        List<PairIntArray> output = extractor.mergeAdjacentEndPoints(
             new ArrayList<PairIntArray>());
         
         assertTrue(output.isEmpty());
-    }
-        
-    public void testMergeAdjacentEndPoints0() throws Exception {
-        
-        System.out.println("testMergeAdjacentEndPoints0");
-           
-        EdgeExtractor contourExtractor = new EdgeExtractor(
-            new GreyscaleImage(100, 100));
-        
-        PairIntArray edge0 = new PairIntArray();
-        edge0.add(10, 10);
-        edge0.add(11, 10);
-        edge0.add(12, 10);
-        
-        for (int orientation = 0; orientation < 8; orientation ++) {
-            
-            PairIntArray edge1 = new PairIntArray();
-            
-            PairIntArray expectedOutput = new PairIntArray();
-            
-            switch(orientation) {
-                case 0:
-                    edge1.add(13, 10);
-                    edge1.add(14, 10);
-                    edge1.add(15, 10);
-                    expectedOutput = edge0.copy();
-                    expectedOutput.add(13, 10);
-                    expectedOutput.add(14, 10);
-                    expectedOutput.add(15, 10);
-                    break;
-                case 1:
-                    edge1.add(13, 9);
-                    edge1.add(14, 9);
-                    edge1.add(15, 9);
-                    expectedOutput = edge0.copy();
-                    expectedOutput.add(13, 9);
-                    expectedOutput.add(14, 9);
-                    expectedOutput.add(15, 9);
-                    break;
-                case 2:
-                    edge1.add(12, 9);
-                    edge1.add(13, 9);
-                    edge1.add(14, 9);
-                    expectedOutput = edge0.copy();
-                    expectedOutput.add(12, 9);
-                    expectedOutput.add(13, 9);
-                    expectedOutput.add(14, 9);
-                    break;
-                case 3:
-                    edge1.add(11, 9);
-                    edge1.add(12, 9);
-                    edge1.add(13, 9);
-                    expectedOutput = edge0.copy();
-                    expectedOutput.add(11, 9);
-                    expectedOutput.add(12, 9);
-                    expectedOutput.add(13, 9);
-                    break;
-                case 4:
-                    // reversed list to be inserted int front of edge0
-                    edge1.add(9, 10);
-                    edge1.add(8, 10);
-                    edge1.add(7, 10);
-                    expectedOutput.add(12, 10);
-                    expectedOutput.add(11, 10);
-                    expectedOutput.add(10, 10);
-                    expectedOutput.add(9, 10);
-                    expectedOutput.add(8, 10);
-                    expectedOutput.add(7, 10);
-                    expectedOutput.reverse();
-                    break;
-                case 5:
-                    // forward list to be inserted int front of edge0
-                    edge1.add(7, 11);
-                    edge1.add(8, 11);
-                    edge1.add(9, 11);
-                    expectedOutput.add(7, 11);
-                    expectedOutput.add(8, 11);
-                    expectedOutput.add(9, 11);
-                    expectedOutput.add(10, 10);
-                    expectedOutput.add(11, 10);
-                    expectedOutput.add(12, 10);
-                    break;
-                case 6:
-                    // reversed list to be inserted int front of edge0
-                    edge1.add(10, 11);
-                    edge1.add(9, 11);
-                    edge1.add(8, 11);
-                    expectedOutput.add(12, 10);
-                    expectedOutput.add(11, 10);
-                    expectedOutput.add(10, 10);
-                    expectedOutput.add(10, 11);
-                    expectedOutput.add(9, 11);
-                    expectedOutput.add(8, 11);
-                    expectedOutput.reverse();
-                    break;
-                case 7:
-                    // forward list to be inserted int front of edge0
-                    edge1.add(9, 11);
-                    edge1.add(10, 11);
-                    edge1.add(11, 11);
-                    expectedOutput.add(12, 10);
-                    expectedOutput.add(11, 10);
-                    expectedOutput.add(10, 10);
-                    expectedOutput.add(9, 11);
-                    expectedOutput.add(10, 11);
-                    expectedOutput.add(11, 11);
-                    expectedOutput.reverse();
-                    break;
-            }
-            
-            System.out.println("orientation case=" + orientation);
-            
-            List<PairIntArray> edges = new ArrayList<PairIntArray>();
-            edges.add(edge0.copy());
-            edges.add(edge1.copy());
-
-            List<PairIntArray> output = contourExtractor.mergeAdjacentEndPoints(
-                edges);
-
-            assertTrue(output.size() == 1);
-            assertTrue(output.get(0).getN() == (edge0.getN() + edge1.getN()));
-
-            boolean[] found0 = new boolean[edge0.getN()];
-            boolean[] found1 = new boolean[edge1.getN()];
-            for (int i = 0; i < output.get(0).getN(); i++) {
-                int x = output.get(0).getX(i);
-                int y = output.get(0).getY(i);
-                for (int ii = 0; ii < edge0.getN(); ii++) {
-                    int xx = edge0.getX(ii);
-                    int yy = edge0.getY(ii);
-                    if ((xx == x) && (yy == y)) {
-                        found0[ii] = true;
-                        break;
-                    }
-                }
-                for (int ii = 0; ii < edge1.getN(); ii++) {
-                    int xx = edge1.getX(ii);
-                    int yy = edge1.getY(ii);
-                    if ((xx == x) && (yy == y)) {
-                        found1[ii] = true;
-                        break;
-                    }
-                }
-            }
-            for (int i = 0; i < found0.length; i++) {
-                assertTrue(found0[i]);
-            }
-            for (int i = 0; i < found1.length; i++) {
-                assertTrue(found1[i]);
-            }
-            
-            assertTrue(expectedOutput.getN() == output.get(0).getN());
-                        
-            for (int i = 0; i < output.get(0).getN(); i++) {
-                int x = output.get(0).getX(i);
-                int y = output.get(0).getY(i);
-                int xx = expectedOutput.getX(i);
-                int yy = expectedOutput.getY(i);
-                assertTrue((xx == x) && (yy == y));
-            }
-        }      
     }
     
     public void testFillInGaps() throws Exception {
@@ -1109,6 +948,8 @@ public class EdgeExtractorTest extends TestCase {
     }
     
     public void estConnectClosestPointsIfCanTrim0() throws Exception {
+       
+        //TODO: redo tests for this method
         
         PairIntArray edge0 = new PairIntArray();
         for (int i = 0; i < 60; i++) {
@@ -1625,121 +1466,75 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         
         assertTrue(!edges.isEmpty());
     }
-
-    @Test
-    public void testExtractEdges() {
+    
+    public void testFindEdges2() throws Exception {
+                
+        String fileName = "house.gif";
+        //String fileName = "lab.gif";
+        //String fileName = "susan-in.gif";
+        //String fileName = "susan-in_plus.png";
+        //String fileName = "africa.png";
+        //String fileName = "valve_gaussian.png";
+        //String fileName = "lena.jpg";
         
-        GreyscaleImage img = new GreyscaleImage(10, 10);
-                        
-        PairIntArray t = getSquare();
-        for (int j = 0; j < t.getN(); j++) {                
-            t.set(j, t.getX(j), t.getY(j));
-            img.setValue(t.getX(j), t.getY(j), 250);                
-        }        
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
         
-        GreyscaleImage guide = img.copyImage();
-        EdgeExtractor extractor = null;
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
         
-        for (int k = 0; k < 2; k++) {
-            
-            if (k == 0) {
-                extractor = new EdgeExtractor(img);
-            } else {
-                extractor = new EdgeExtractor(img, guide);
-            }
-
-            List<PairIntArray> result = extractor.findEdges();
-
-            assertNotNull(result);
-            assertTrue(result.size() == 1);
-
-            // assert that they are all connected
-            double sep = Math.sqrt(2);
-            PairIntArray edge = result.get(0);
-            for (int i = 1; i < (edge.getN() - 1); i++) {
-                int x = edge.getX(i);
-                int y = edge.getY(i);
-
-                double distPrev = Math.pow(edge.getX(i - 1) - x, 2) + 
-                    Math.pow(edge.getY(i - 1) - y, 2);
-                distPrev = Math.sqrt(distPrev);
-
-                double distNext = Math.pow(edge.getX(i + 1) - x, 2) + 
-                    Math.pow(edge.getY(i + 1) - y, 2);
-                distNext = Math.sqrt(distNext);
-
-                assertTrue(distPrev <= (sep + 0.01));
-                assertTrue(distNext <= (sep + 0.01));
-            }
+        // get a line thinned image:
+        CannyEdgeFilter edgeFilter = new CannyEdgeFilter();
+        edgeFilter.applyFilter(img);
         
-            // assert that main lines are present though the corners may have
-            //  been eroded
-            /*
-              6
-              5   @ @ @ @ @ @ @ @ 
-              4   @             @
-              3   @             @  
-              2   @             @  
-              1   @ @ @ @ @ @ @ @
-              0
-                0 1 2 3 4 5 6 7 8 9
-            */
-
-            assertTrue(edge.getN() >= 18);
-
-            // print result
-            GreyscaleImage extracted = new GreyscaleImage(10, 10);
-            for (int i = 0; i < edge.getN(); i++) {
-                int x = edge.getX(i);
-                int y = edge.getY(i);
-                extracted.setValue(x, y, 1);
+        EdgeExtractor contourExtractor = new EdgeExtractor(img);
+        List<PairIntArray> edges = contourExtractor.findEdges();
+        
+        log.info("edges.size()=" + edges.size());
+        
+        int clr = 0;
+        Image img2 = new Image(img.getWidth(), img.getHeight());
+        for (int i = 0; i < edges.size(); i++) {
+            PairIntArray edge = edges.get(i);
+            if (clr > 5) {
+                clr = 0;
             }
-
-            /*
-            for (int row = (extracted.getHeight() - 1); row > -1; row--) {
-                StringBuilder sb = new StringBuilder();
-                for (int col = 0; col < extracted.getWidth(); col++) {
-                    int v = extracted.getValue(col, row);
-                    if (v == 0) {
-                        sb.append(" ");
-                    } else {
-                        sb.append(v);
-                    }
-                    sb.append(" ");
-                }
-                System.out.println(sb.toString());
+            int c = Color.BLUE.getRGB();
+            switch(clr) {
+                case 1:
+                    c = Color.PINK.getRGB();
+                    break;
+                case 2:
+                    c = Color.GREEN.getRGB();
+                    break;
+                case 3:
+                    c = Color.RED.getRGB();
+                    break;
+                case 4:
+                    c = Color.CYAN.getRGB();
+                    break;
+                case 5:
+                    c = Color.MAGENTA.getRGB();
+                    break;
             }
-            System.out.println("\n");
-            */
-
-            // make a pair int array out of expected and remove the corners as found
-            PairIntArray expected = getSquare();
-            // remove the corners which may have been eroded
-            for (int i = (expected.getN() - 1); i > -1; i--) {
-                if ((expected.getX(i) == 1) && (expected.getY(i) == 1)) {
-                    expected.removeRange(i, i);
-                } else if ((expected.getX(i) == 1) && (expected.getY(i) == 5)) {
-                    expected.removeRange(i, i);
-                } else if ((expected.getX(i) == 8) && (expected.getY(i) == 1)) {
-                    expected.removeRange(i, i);
-                } else if ((expected.getX(i) == 8) && (expected.getY(i) == 5)) {
-                    expected.removeRange(i, i);
-                }
+            for (int ii = 0; ii < edge.getN(); ii++) {
+                img2.setRGB(edge.getX(ii), edge.getY(ii), c);
             }
-
-            for (int i = 0; i < edge.getN(); i++) {
-                int x = edge.getX(i);
-                int y = edge.getY(i);
-                for (int j = 0; j < expected.getN(); j++) {
-                    if ((expected.getX(j) == x) && (expected.getY(j) == y)) {
-                        expected.removeRange(j, j);
-                        break;
-                    }
-                }
-            }
-
-            assertTrue(expected.getN() == 0);
+            clr++;
         }
+        
+         int idx = fileName.lastIndexOf(".");
+         String fileNameRoot = fileName.substring(0, idx);
+        
+        ImageDisplayer.displayImage("edge detected image", img2);
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String sep = System.getProperty("file.separator");
+        ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot + "_edges.png", img2);
+        
+        img.multiply(250);
+        ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot + "_thinned.png", 
+            img);
+        
+        assertTrue(!edges.isEmpty());
     }
     
     @Test

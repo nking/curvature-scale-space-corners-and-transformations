@@ -145,15 +145,6 @@ public class EdgeExtractor {
      */
     public List<PairIntArray> findEdges() {
         
-        /*
-        TODO: there is a problem with point order especially at line endings
-        when the pixel is not exactly single pixel width due to a corner
-        like an 'L' shape.
-        There also seems to possibly be a problem with a larger than single
-        pixel pattern in the thinned africa test image, so
-        the line thinner may need to be corrected for it.
-        */
-        
         int w = img.getWidth();
         int h = img.getHeight();
         
@@ -239,7 +230,7 @@ public class EdgeExtractor {
         
         output = mergeAdjacentEndPoints(output);
         
-        log.log(Level.FINE, "{0} edges after merge adjacent", 
+        log.log(Level.INFO, "{0} edges after merge adjacent", 
             Integer.toString(output.size()));
         
         // This helps to merge edges (that is extracted curves) at adjacent 
@@ -250,12 +241,11 @@ public class EdgeExtractor {
         
         output = connectClosestPointsIfCanTrim(output);
         
-        log.fine(output.size() + " edges after connect closest");
-        
+        log.info(output.size() + " edges after connect closest");
         
         output = fillInGaps(output);
         
-        log.log(Level.FINE, "{0} edges after fill in gaps", 
+        log.log(Level.INFO, "{0} edges after fill in gaps", 
             new Object[]{Integer.toString(output.size())});
          
                 
@@ -264,10 +254,9 @@ public class EdgeExtractor {
         sz = output.size();
         
         
-        log.log(Level.FINE, "{0} edges after removing those shorter", 
+        log.log(Level.INFO, "{0} edges after removing those shorter", 
             new Object[]{Integer.toString(sz)});
 
-        
         long sum2 = countPixelsInEdges(output);
                
         log.log(Level.FINE, 
@@ -277,14 +266,10 @@ public class EdgeExtractor {
        
         //pruneSpurs(output);
         
-        // necessary only if the LineThinner in CannyEdgeFilter was ErosionFilter
-        //adjustEdgesTowardsBrightPixels(output);
-        
         if (repeatConnectAndTrim) {
-            
             output = connectClosestPointsIfCanTrim(output);
         }
-    
+        
         return output;
     }
     
@@ -297,115 +282,17 @@ public class EdgeExtractor {
     }
    
     /**
-     * merge edges adjacent end points of curves
-     * 
-     * runtime complexity:
-     *   2 * O(N_edges^2)
-     * 
-     * @param edges
-     * @return 
-     */
-    protected List<PairIntArray> mergeAdjacentEndPoints(List<PairIntArray> 
-        edges) {
-     
-        /*
-        compare end of uEdge to beginning of all others
-        reverse uEdge and repeat
-        revert reverse for next start
-        */
-      
-        boolean[] removed = new boolean[edges.size()];
-        
-        List<PairIntArray> output = new ArrayList<PairIntArray>();
-
-        for (int i = 0; i < edges.size(); i++) {
-            
-            if (removed[i]) {
-                continue;
-            }
-            
-            PairIntArray uEdge = edges.get(i);
-            
-            // an extra iteration for reversing uEdge
-            for (int r = 0; r < 2; r++) {
-                 
-                // compare bottom of uEdge to top of vEdge
-
-                for (int j = 0; j < edges.size(); j++) {
-
-                    if (i == j) {
-                        continue;
-                    }
-                    if (removed[j]) {
-                        continue;
-                    }
-
-                    PairIntArray vEdge = edges.get(j);
-
-                    // recalculate in case u has grown
-                    int uX = uEdge.getX(uEdge.getN() - 1);
-                    int uY = uEdge.getY(uEdge.getN() - 1);
-
-                    int vX = vEdge.getX(0);
-                    int vY = vEdge.getY(0);
-
-                    int diffX = uX - vX;
-                    if (diffX < 0) {
-                        diffX *= -1;
-                    }
-
-                    if (diffX > 1) {
-                        continue;
-                    }
-
-                    int diffY = uY - vY;
-                    if (diffY < 0) {
-                        diffY *= -1;
-                    }
-
-                    if (diffY > 1) {
-                        continue;
-                    }
-
-                    for (int k = 0; k < vEdge.getN(); k++) {
-                        uEdge.add(vEdge.getX(k), vEdge.getY(k));
-                    }
-
-                    removed[j] = true;
-
-                    // have to restart the j iteration to re-compare terms
-                    j = -1;
-                }
-                
-                if (r == 0) {
-                    // just finished forward, start revers 
-                    uEdge.reverse();
-                } else if (r == 1) {
-                    // revert the array back to other direction
-                    uEdge.reverse();
-                }
-            }
-        }
-        
-        for (int i = 0; i < edges.size(); i++) {
-            if (!removed[i]) {
-                output.add(edges.get(i));
-            }
-        }
-        
-        return output;
-    }
-    
-    /**
      * merge edges adjacent end points of given edges and fid the junctions
      * along the way.  the junctions are stored as member variables.
+     * For best results, make sure the edges were created from an image whose
+     * lines were thinned to 1 pixel widths.
      * 
-     * the runtime complexity is at best O(N)
+     * the runtime complexity is at best O(N).
     
      * @param edges
      * @return 
      */
-    protected List<PairIntArray> mergeAdjacentEndPoints2(
+    protected List<PairIntArray> mergeAdjacentEndPoints(
         List<PairIntArray> edges) {
         
         List<PairIntArray> output = new ArrayList<PairIntArray>();
@@ -483,11 +370,6 @@ public class EdgeExtractor {
                         maxAdjEdgesIdx = eIdx.intValue();
                         maxAdjEdgesPoint = p;
                     }
-                } else if (junctionMap.containsKey(p)) {
-                    eIdx = junctionLocationMap.get(p);
-                    assert(eIdx != null);
-                    foundEdgesIndexes.add(eIdx);
-                    foundEndPoints.add(p);
                 }
             }
             
@@ -561,10 +443,10 @@ public class EdgeExtractor {
                 
                 Entry<PairInt, Integer> tmp = 
                     endPointMap.entrySet().iterator().next();
-                                
+                
                 currentEndPoint = findStartingPoint(tmp.getKey(), endPointMap, 
                     edges);
-                    
+                
                 currentEdgeIdx = endPointMap.get(currentEndPoint).intValue();
             }
                         
@@ -581,17 +463,12 @@ public class EdgeExtractor {
                     Integer.valueOf(output.size() - 1));
             }
             
-            endPointMap.remove(currentEndPoint);
-            endPointMap.remove(oppositeEndPoint);
+            Integer v0 = endPointMap.remove(currentEndPoint);
+            Integer v1 = endPointMap.remove(oppositeEndPoint);
+            assert(v0 != null);
+            assert(v1 != null);
         }
-       
-        /*
-            (35, 11) null
-            (33, 10) 0
-            (35, 9) null
-            (34, 10) 0
-            
-        */
+      
         // convert the values in junctionLocationMap from edges indexes to output
         Map<PairInt, Integer> tmpJunctionLocationMap = new HashMap<PairInt, Integer>();
         Iterator<Entry<PairInt, Integer> > iter = 
@@ -618,7 +495,7 @@ public class EdgeExtractor {
         /*
         Design for an implementation that is at best O(N) and revised to add
         the missing junction information that subsequent operations need.
-                
+               
         (1) DONE 
            create method createEndPointMap(List<PairIntArray>) : Map<PairInt, Integer>
            need data structure to hold the searchable information of edges.  
@@ -1657,6 +1534,7 @@ for (int i = 0; i < edge.getN(); i++) {
         PairInt currentStartPoint = startPoint;
                 
         Set<PairInt> visited = new HashSet<PairInt>();
+        visited.add(currentStartPoint);
         
         int nIter = 0;
         
@@ -1677,21 +1555,33 @@ for (int i = 0; i < edge.getN(); i++) {
                 
                 PairInt p = new PairInt(x, y);
                 
-                if (visited.contains(p)) {
-                    continue;
-                }
-                
                 Integer eIndex = endPointMap.get(p);
                 
                 if (eIndex != null) {
+                    
                     PairIntArray pai = edges.get(eIndex.intValue());
+                    
                     int n = pai.getN();
+                    
                     if (n > maxN) {
+                        
+                        // the opposite end of this edge becomes
+                        // our next potential currentStartPoint
+                        PairInt reversed = getOppositeEndPointOfEdge(p, pai);
+                        
+                        if (visited.contains(reversed)) {
+                            // if this is a closed curve, return the original
+                            if (reversed.equals(originalStartPoint)) {
+                                return originalStartPoint;
+                            }
+                            continue;
+                        }
+    
                         maxN = n;
                         maxNIndex = eIndex;
-                        maxNPoint = p;
+                        maxNPoint = reversed;
                     }
-                 }
+                }
             }
             
             lastStartPoint = currentStartPoint;
@@ -1699,18 +1589,14 @@ for (int i = 0; i < edge.getN(); i++) {
             if (maxNIndex == null) {
                 currentStartPoint = null;
             } else {
-                // the opposite end of this edge becomes
-                // our next potential currentStartPoint
-                PairIntArray pai = edges.get(maxNIndex);
-                currentStartPoint = getOppositeEndPointOfEdge(maxNPoint, pai);
+                
+                currentStartPoint = maxNPoint;
         
                 visited.add(currentStartPoint);
-
-                // if this is a closed curve, set the variables to exit and
-                // return the correct value.
+                
+                // if this is a closed curve, return the original value
                 if (currentStartPoint.equals(originalStartPoint)) {
-                    currentStartPoint = null;
-                    lastStartPoint = originalStartPoint;
+                    return originalStartPoint;
                 }
             }
             

@@ -205,7 +205,9 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
     }
 
     private void correctForArtifacts(GreyscaleImage input) {
-                
+               
+        //TODO: reduce the number of patterns here if possible
+        
         //correctForHoleArtifacts3(input);
         
         //correctForHoleArtifacts2(input);
@@ -213,17 +215,33 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         correctForHoleArtifacts1(input);
                  
         correctForZigZag0(input);
+        
+        correctForZigZag0Alt(input);
                 
         correctForZigZag1(input);
-        
+     
         correctForZigZag2(input);
         
+        correctForZigZag1Alt(input);
+        
         correctForZigZag3(input);
+                
+        correctForZigZag5(input);
         
-        correctForZigZag4(input);
+        correctForZigZag6(input);
         
+        correctForWs(input);
+        
+        // TODO: revisit, not sure this is always an artifact:
         correctForLine0(input);
         
+        // better edge extraction at the expense of unsharpening true corners:
+        correctForLs(input);
+        correctForLs2(input);
+        
+        correctForZigZag1(input);
+        
+        correctForSpurs(input);
     }
     
     private void correctForZigZag0(GreyscaleImage input) {
@@ -260,6 +278,284 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         ones.add(new PairInt(2, -1));
         
         changeToZeroes.add(new PairInt(1, 0));
+        
+        int startValue = 1;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+    }
+    
+    private void correctForZigZag0Alt(GreyscaleImage input) {
+       
+        /*
+        keep
+       
+           0  0  #  0   2
+        0  0  #  0  0   1
+        0  #* #< 0  0   0
+        0  #  0  0     -1
+        0  #  0        -2
+        
+       -1  0  1  2  3       
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+     
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 2));
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, 2));
+        zeroes.add(new PairInt(1, -2));
+        zeroes.add(new PairInt(2, 1));
+        zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(3, 0));
+        zeroes.add(new PairInt(3, -1));
+        zeroes.add(new PairInt(3, -2));
+       
+        ones.add(new PairInt(0, 2));
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(2, -2));
+        
+        changeToZeroes.add(new PairInt(1, 0));
+        
+        int startValue = 1;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+    }
+    
+    private void correctForZigZag5(GreyscaleImage input) {
+       
+        /*
+        keep
+            
+        0  #  0        2
+        0  #  0  0     1
+        0  #  #*<0     0
+        0  0  #  0    -1
+              0  #    -2
+        
+       -2 -1  0  1         
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+     
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-2, 1));
+        zeroes.add(new PairInt(-2, 0));
+        zeroes.add(new PairInt(-2, -1));
+        zeroes.add(new PairInt(-2, -2));
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, 0));
+        zeroes.add(new PairInt(1, -1));
+        
+        ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(1, 2));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+        
+        int startValue = 1;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+    }
+    
+    private void correctForZigZag6(GreyscaleImage input) {
+       
+        /*       
+           0  0  0  0   2
+           0  #< #  #   1
+        #  #* #  0      0
+           0  0  0     -1
+        
+       -1  0  1  2        
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, -2));
+        zeroes.add(new PairInt(2, 1));
+        zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(2, -2));
+        zeroes.add(new PairInt(3, -2));
+       
+        ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(2, -1));
+        ones.add(new PairInt(3, -1));
+        
+        changeToZeroes.add(new PairInt(1, -1));
+        
+        int startValue = 1;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+    }
+    
+    /**
+     * using this one unfortunately reduces the sharpness of real corners,
+     * but it allows clear point ordering when extracting edges from the
+     * line thinned image.
+     * 
+     * @param input 
+     */
+    private void correctForLs(GreyscaleImage input) {
+       
+        /*  
+        
+        0  #  0         1
+        0  #* 0         0
+        0  #< #        -1
+        0  0  0        -2
+        
+       -1  0  1  2 
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+    
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 2));
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 2));
+        zeroes.add(new PairInt(1, 0));
+        zeroes.add(new PairInt(1, -1));
+        
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 1));
+        
+        changeToZeroes.add(new PairInt(0, 1));
+        
+        int startValue = 1;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+    }
+    
+    private void correctForLs2(GreyscaleImage input) {
+       
+        /*  
+        0  #  0  0      1
+        0  #*<#  #      0
+        0  0  0        -1
+        
+       -1  0  1  2 
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+   
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(2, -1));
+        
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(2, 0));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+        
+        int startValue = 1;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+    }
+    
+    private void correctForWs(GreyscaleImage input) {
+       
+        /*        
+        
+        0  0  #         1
+        0  #*<#         0
+        #  #  0        -1
+                       -2
+       -1  0  1  2 
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+    
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 1));
+        
+        ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+        
+        changeToZeroes.add(new PairInt(0, 0));
         
         int startValue = 1;
             
@@ -319,7 +615,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
     }
     
-    private void correctForZigZag2(GreyscaleImage input) {
+     private void correctForZigZag2(GreyscaleImage input) {
         
         /*
         looking for pattern
@@ -355,6 +651,52 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         ones.add(new PairInt(2, -1));
         
         changeToZeroes.add(new PairInt(0, 0));
+        
+        int startValue = 1;
+        
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+    }
+    
+    private void correctForZigZag1Alt(GreyscaleImage input) {
+        
+        /*
+        looking for pattern
+       
+           0  0  #  #       1
+           0  #* #< 0       0
+           0  #  0  0      -1
+           #  0            -2
+        
+       -2 -1  0  1  2        
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(2, 1));
+        zeroes.add(new PairInt(2, 0));
+      
+        ones.add(new PairInt(0, -1)); // NOT YET REV
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, 1));
+        ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(2, 1));
+        
+        changeToZeroes.add(new PairInt(1, 0));
         
         int startValue = 1;
         
@@ -414,49 +756,48 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
     }
     
-    private void correctForZigZag4(GreyscaleImage input) {
+    /**
+     * using this one unfortunately reduces the sharpness of real corners,
+     * but it allows clear point ordering when extracting edges from the
+     * line thinned image.
+     * 
+     * @param input 
+     */
+    private void correctForRemaining(GreyscaleImage input) {
+       
+        /*  
         
-        /*
-        looking for pattern
-                           3
-        #  #  0  0         2
-           0  #  0  0      1
-           0  #* #  #      0
-           0  0  0  0  #  -1
+        #     0         1
+        0  #* 0         0
+        0  #< #        -1
+        0  0  0        -2
         
-       -2 -1  0  1  2
-        
-        and removing the topmost left #'s
+       -1  0  1  2 
         */
         
         LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
-       
+    
         // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 2));
         zeroes.add(new PairInt(-1, 1));
         zeroes.add(new PairInt(-1, 0));
         zeroes.add(new PairInt(-1, -1));
-        zeroes.add(new PairInt(0, 1));
-        zeroes.add(new PairInt(0, -2));
-        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 2));
+        zeroes.add(new PairInt(1, 0));
         zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(1, -2));
-        zeroes.add(new PairInt(2, 1));
-        zeroes.add(new PairInt(2, -1));
-      
-        ones.add(new PairInt(-2, -2));
-        ones.add(new PairInt(-1, -2));
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(1, 0));
-        ones.add(new PairInt(2, 0));
-        ones.add(new PairInt(3, 1));
         
-        changeToZeroes.add(new PairInt(0, 0));
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 1));
+        
+        changeToZeroes.add(new PairInt(0, 1));
         
         int startValue = 1;
-        
+            
         replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
@@ -814,15 +1155,14 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         /*
         looking for pattern
        
-           #            2
-           #  0         1
+        0  #  0         2
+        0  #  0  0      1
         0  0* #  0      0
-           #  0        -1
-           #
+        0  #  0  0     -1
+        0  #  0
         
        -1  0  1  2
         
-        and removing the topmost left #'s
         */
         
         LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
@@ -830,25 +1170,19 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
-        /*
-        looking for pattern
-       
-           #            2
-           #  0         1
-        0  0* #  0      0
-           #  0        -1
-           #           -2
-        
-       -1  0  1  2
-        
-        and removing the topmost left #'s
-        */
-        
         // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 2));
+        zeroes.add(new PairInt(-1, 1));
         zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(1, 2));
         zeroes.add(new PairInt(1, 1));
         zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(1, -2));
+        zeroes.add(new PairInt(2, 1));
         zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(2, -1));
         
         ones.add(new PairInt(0, 2));
         ones.add(new PairInt(0, 1));
@@ -866,7 +1200,49 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
         rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
+    }
+    
+    /**
+     * possibly decreases sharpness of a true diagonal edge at the expense of
+     * making a better line width for the edge extractor.
+     * @param input 
+     */
+    private void correctForSpurs(GreyscaleImage input) {
         
+        /*
+        looking for pattern
+                        
+        #  #  0         1
+        0  #*<0         0
+        0  0  0         -1
+        
+       -1  0  1  2
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+      
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, -1));
+        
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, -1));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+        
+        int startValue = 1;
+        
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
     }
     
     private void correctForHoleArtifacts1(GreyscaleImage input) {
