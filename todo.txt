@@ -1,103 +1,48 @@
 Note, this is a precursor step to the agile story and tasks to gather notes 
 on needed features, bugs, etc.
 
-Task 6 in story 002:
--- the optimization appears to be working except for the last small 
-   amount near the borders.
-   -- change the cost function to care about matching the border pixels.
-      (1) penalize overrunning the border.
-          this means that if sky mask includes points that are likely to
-          be embedded sky like a moon or star, then the mask having sky
-          values at the embedded location does no harm for the fitness
-          function.
-      (2) attempt to match all of the border pixels (and count the expected
-          number of them)
-      (3) when there are no overrun pixels, and no border pixels yet matched, 
-          the better fitness will be the instance with higher fraction of 
-          expected matches of all sky pixels.
-   -- is there just one or two pixels in the mask that are too far away
-      from the real skyline that are making the solution remain that 
-      "distance" in terms of contrast and color?
-      -- make a copy of the masks for venturi and brown & lee and look for
-         such pixels and retry if they are found
-   -- are the steps small enough to get to a more precise solution?
-   -- is there a lower or upper limit that is set too high or low to allow the last
-      pixels to be included as sky?  probably not considering it starts with overrun for some.
-      -- could note those pixels and log when they are falsely found as
-         boundary pixels...
-   -- are the clauses composed of the right combination of parameters that 
-      would lead to a more precise result?
-      consider each unique combination of parameters and
-      consider trying to fit them in a more methodical manner.
-      as subsequent filters seems to be necessary, so that complicates the logic...
-         -- could start w/ only the unique combination of the parameters to make
-            relationships to try.
-            linear, multiplicative and differential combinations of them, and
-            consider combinations such as red intensity combined with contrast or color diff
-            such as is current present in a custom coefficient.
-            the custom coefficients need more starter points.
-         -- ** if the above changing of the cost function improves the results,
-            consider simplifying these relationships. start w/ smallest number that
-            includes every used clause.
+-- consider making a separate method in EdgeExtractor for junction finding
+   between all edge points, even if embedded in the curve.
+   -- O(N_points) calculate x and y bounds of each edge
+   -- < O(N_points^2) compare edges within 1 pixel of each other's bounds to find
+      adjacent points.
+      store in 2 maps: key = pair int of pix coord, value = set<PairInt> of adjacent.
+                       key = pair int of each junction pix coord, 
+                             value = pairint holding edge index and index within the edge
+   -- << O(N_points) iterate over the junction maps to remove the keys which are not the center
+      of their junctions by comparing the number of values in first map among all members.
 
--- organizing the SkylineExtractor's findClouds parameters for consideration of optimization.
+-- since the Edges are constructed from intensity differences as the basis of the gradient,
+   it seems as if it might be useful to make a similar gradient set of images based upon
+   color instead of intensity.  
+   to do so, one could use the CIE X,Y color space with a center of (0.35, 0.35) and calculate
+   the theta of a (cieX, xieY) point.  that theta between 0 and 359 degrees would be mapped
+   to values 0 to 254.  the center space near (0.35, 0.35) is white so would be set to value 255.
+   I started the code for this already.
+   -- converting color image to cie xy theta creates a greyscale image which can be used
+      by the CannyEdgeFilter and EdgeExtractor similarly to the intensity greyscale image.
+   -- compare the resulting extracted edges between the default intensity based and a color based.
 
-       If each pameter can be in one of m states, the number of possible combinations for one
-       parameter is m_states^(1 parameter).  And combining parameters is multiplication.
-       For example, if we had 3 parameters and we knew each could be in one of 2 states, the
-       number of possible combinations is 2^3.  Combining them separately is (2^1)*(2^1)*(2^1).
-       That means that for 3 parameters with 2 states each, one would be running 8 separate
-       total equations of clauses to optimize separately (and afterwards decide between the results of).
 
-       Note that the logic of the problem itself is specialization of segmentation that is very specific
-       to sky, land, and foreground.  For that reason, some of the logic is best applied in an order.
-       More specifically, a filter for brown land is performed before the other
-       operations to quickly exclude land.
-       Also, filter for large contrast should be applied early on to rule out 'sky' as a pixel.
-       And there is a trend for blue sky and red sky that should be applied, that is for blue
-       sky, the difference in contrast and difference in blue make a jump at skyline boundaries,
-       while for red skies, the skyline is remarkable in the difference in contrast and the
-       difference in red color.
-           Note, for this color diff and contrast diff relationship, no simple coefficient fit
-           a trend usable for all of them, that is a simple linear relationship was not correct.
-           one can see from the plots that the contrast scales with the difference in color, 
-           which must be because contrast is built from luma, so roughly an intensity difference 
-           and the difference in color is a difference in intensity.
-           *Note that I didn't plot a difference in CIE XY chromaticity in the same way, but one 
-           would expect cases where that might fail? especially for snowy mountain peaks under 
-           hazy skies... CIE XY is color without luminosity dependency.
-           *Note also that strength of the contrast is different for every object because it's
-           dependent upon it's light scattering properties such as index of refraction for its
-           materials.
-           so the comparison is probably just a minimum factor above the standard deviation 
-           of that property for the sky.
+-- after all of the improvements to the EdgeExtractor are finished,
+   revisit the CannyEdgeFilter to adjust the 2-layer threshold,
+   and consider adjusting the gaussian convolution radius.
+   -- then consider adjustments in the Corner detector's curvature
+      factor above minimum.
+   -- rerun curvature and inflecion tests
 
-    Once all of the equations of clauses are calculated, can solve for the parameters 
-    using many test images.
-    Because there are so many parameters, a gradient approach is less appealing than a heuristic
-    approach such as the Nelder-Mead downhill simplex method.   
-        set the initial coefficients with a good approximation such as is currently in the code 
-        so that this is a local search.
-        for each equation (where an equation is the set of clauses of parameters and coefficients):
-            iterate until convergence or maxIter:
-                for each test image: 
-                    use findClouds w/ given coefficients.
-                    the result is a set of sky points.
-                    calculate the residual difference between result and the expected sky set.
-                    store the best result for the image for the equation. 
-                improve the coefficients based upon each image's best solution.
-                this is done in the Nelder-Mead algorithm.
-                evaluate whether has converged
-        having stored the best result for each image for each equation, combine and compare
-           the best results for each equation over all images and choose the
-           best or combine the solutions to make the best solution for each equation.
-        Do the same for the best result for each image just to compare while implementing.
+-- finish integrating use of skyline extractor in edge extractor
+   
+-- return to the point correspondence
 
-        then the solution is the best among the equations' solutions.
+-- for coverage reports, re-enable
+       SkylineDownhillSimplexTest
+    
+-- before merging with main, checkout code and build and runtests
+   in empty directory to make sure that all files have been checked in.
 
-        note that the fitness function should probably be weighted by the expected number of
-        sky points so that it's actually measuring the fraction found as sky
-
+-- for a datastructure ordered by x and y:
+Notes: A "celltree" is now more commonly called a "compressed quadtree" or "compressed hyperoctree", and this paper is apparently the first appearance of such a construction. Vaidya refined the algorithm here to avoid randomness and bit-twiddling, at some cost in dependence on d; his algorithm, and this one, and that of Gabow, Bentley, and Tarjan, all use the same basic geometrical observation, which implies that the total number of nearest neighbors is O(n), even up to approximate neighbors. Callahan and Kosaraju used similar ideas for "well-separated pairs decomposition". The σ ratio is now more commonly called the spread.
 
 -- when sun is found, such as in the NM image, might try to fit a
    radial profile (1/r^2) from it over the image.
@@ -111,40 +56,9 @@ Task 6 in story 002:
    even more.   cie XY are independent of illumination in any case,
    so this step probably isn't useful and not always possible...
 
--- the rainbow points can be found before findClouds because it is a search over
-   the entire image.
-
-   -- keep the current steps to store the ellipse parameters and rainbow points 
-      and make the plot
-
-   then consider:
-      -- encapsulation of the rainbow points can be accomplished with a 
-         convex hull.  then to include all rainbow pixels, would want to find the
-         maximum width or the mode of the width (where width is the dimension of the
-         rainbow perperdicular to the half ellipse) and expand the hull to that width
-         all along the main axis.
-      -- interpolation over that hull region with left and right samples surrounding it
-         making sure that the same amount of color and brightness variation is present
-         so that later use of the method findClouds interprets the pixels as sky.
-
-   then the rest of the sky extraction can proceed normally.
-      should not need to correct for rainbow intersection at skyline, but if so,
-      can use method similar to used in sun corrections, that is, follow the skyline
-      match in the theta image, and in this case, interpolate between left and right
-      of rainbow.
-
 -- include other atmospheric optically visible features:  sun dogs and moon dogs.
 -- consider more images which are near evening or evening, but there is enough illumination
    to see a skyline.
-
--- consider revisiting solveForBestFittingContiguousSubSamples in PolynomialFitter to
-   make more tests.  walk through the method and check the math.
-
--- if there are still more stragglers of clouds connected to the boundaries of the image, 
-   consider something
-   like the spur removal, but only for pixels the same color as the sky...
-   have to make sure only use such an algorithm when the image boundary pixels are sky on either side
-   to avoid growing the foreground.
 
 -- consider simplest ways to find solar reflected light in the images:
      -- already have a method which finds visible sun's photosphere
@@ -167,9 +81,6 @@ Task 6 in story 002:
          or assumption of horizontal.  In ambiguous cases, might need to make the assumption of
          skyline being horizontal in the image and sky near the top of the image...would like to avoid
          that assumption if at all possible.
-
--- junction corners should be handled in edge extractor.  for large number of edges, might have
-   more fractured lines, hence missing corners at junctions.
 
 --in the RANSAC stage, for a threshold for matching, consider using
    0.6% of maximum image dimension
