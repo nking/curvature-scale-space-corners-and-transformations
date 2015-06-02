@@ -316,6 +316,7 @@ public class EdgeExtractor {
         Map<Integer, Integer> junctionEdgesToOutputIndexesMap = 
             new HashMap<Integer, Integer>();
         
+        // 2 * O(N)
         Map<PairInt, Integer> endPointMap = createEndPointMap(edges);
         
         // initialize the current endpoint information:
@@ -343,6 +344,7 @@ public class EdgeExtractor {
         List<Integer> foundEdgesIndexes = new ArrayList<Integer>();
         List<PairInt> foundEndPoints = new ArrayList<PairInt>();
         
+        // 2 * O(N) * 8
         while (!endPointMap.isEmpty()) {
             
             int maxAdjEdgesIdx = -1;
@@ -491,199 +493,6 @@ public class EdgeExtractor {
         outputIndexLocatorForJunctionPoints.putAll(junctionLocationMap);
        
         return output;
-        
-        /*
-        Design for an implementation that is at best O(N) and revised to add
-        the missing junction information that subsequent operations need.
-               
-        (1) DONE 
-           create method createEndPointMap(List<PairIntArray>) : Map<PairInt, Integer>
-           need data structure to hold the searchable information of edges.  
-           need to be able to search by start endpoint (x,y) and by end 
-           endpoint (x,y).  the structure needs to retain reference to the item 
-           in edges which it describes.
-           searches are exact, so can use a HashSet for O(1) inserts and
-           O(1) removals.  would like a key by start endpoint, and a key by end
-           endpoint, so would use a hashmap.
-           ==> Data structure needed is a HashMap:
-               HashMap endPointMap
-               key = PairInt of start (x,y) or end (x,y)
-               value = edges index of this endpoint's edge
-           ==> runtime complexity is 2 * O(N) for creating the HashMap
-        (2) DONE
-            retain reference to the first item in edges
-            make local variables for this:
-            ==> currentEdgeIdx which is the index to the edge in edges.
-            ==> currentEndPoint which is a PairInt holding the last (x, y).
-REVISE:  use findStartingPoint(currentStartPoint, endPointMap, edges) to
-search back until find start of that edge
-        (3) DONE
-            initialize local variables
-            ==> create an output List<PairIntArray> 
-            -- add currentEdgeIdx edge from edges to the output list
-            -- remove currentEndPoint from endPointMap        
-        (4) DONE
-            need structures to hold junction information when more than one
-            endpoint matches.  this is to be used later.  
-            -- it needs to refer to the items in the output list to avoid 
-            re-searching later, and it needs to retain the (x,y)'s of the junction.
-            ==> Data structures needed are three HashMaps:
-               HashMap = junctionMap
-               key = PairInt of junction (x,y)
-               value = set of PairInt coordinates that are adjacent pixels
-        
-               HashMap = junctionLocationMap
-               key = PairInt of junction (x,y)
-               value = index of the edges list of the PairIntArray holding
-                       the point
-                       (NOTE: before last step in method, this will be 
-                       converted to index of the *output* list.)
-        
-               HashMap = junctionEdgesToOutputIndexesMap
-               key = edges index
-               value = output index
-        
-               where junctionMap and junctionLocationMap is added to for 
-               each currentEndPoint that has more than one adjacent pixel.
-               junctionEdgesToOutputIndexesMap holds lookup information for the
-               currentEndPoint and for all of its adjacent pixels as they
-               are added to the output list.
-               junctionLocationMap holding not only the center junctions, 
-               but also the adjacent points to make them findable later.
-        (5) DONE 
-           search for currentEndPoint neighbors:
-           -- for the 8 neighbors of currentEndPoint: 
-              -- search endPointMap
-              -- search junctionMap 
-                 (can use junctionLocationMap if contains is true to get the
-                  needed edges index)
-              -- keep results in 2 parallel lists:
-                 foundEdgesIndexes
-                 foundEndPoints
-              -- from found items from endPointMap keep the one with the
-                 most edge points as maxAdjEdgesIdx and maxAdjEdgesN
-           -- if any items are in foundEndPoints:
-              -- if there are more than one items in foundEndPoints:
-                 -- add an entry to junctionMap:
-                    key = currentEndPoint PairInt(x,y)                        
-                    value = foundEdgePoints.  
-                            PLUS add the next to the last point in the last item 
-                            of output list.
-                    If the key already exists, add to the existing values.
-                 -- add an entry to junctionLocationMap:
-                    key = currentEndPoint PairInt(x,y)
-                    value = currentEdgeIdx
-                 -- add an entry to junctionLocationMap:
-                    key = next to last point in output.get(output.size() - 1)
-                    value = currentEdgeIdx
-                 -- add to junctionEdgesToOutputIndexesMap:
-                    key = currentEdgeIdx
-                    value = output.size() - 1
-                    Note that this makes currentEndPoint lookup of output
-                    index possible and also the next to last point.
-                 -- for each item in foundEdgesIndexes, foundEndPoints,
-                    add and entry to junctionLocationMap
-              -- set reference PairIntArray to maxPairIntArray,
-                 that is, set currentEdgeIdx and currentEndPoint
-           -- else if not found:
-             -- IF currentEndPoint is found in junctionLocationMap
-                and an entry to junctionEdgesToOutputIndexesMap
-                key=currentEdgeIdx
-                value= size of output list - 1 (this is the index where will be added)
-             -- start a new PairIntArray in output list
-             -- choose a new reference PairIntArray from iter of endPointMap,
-                that is currentEdgeIdx and currentEndPoint
-                NOTE, this may not be the start of its true connected edge.
-                can think of several ways to accomodate this.
-                   a. one could create a method to search for adjacent pixels
-                      to the start point, and if more than one is found, choose
-                      the longest edge, and keep searching "backwards" until
-                      either find no more adjacent edges or until have reached
-                      the start again (as would happen for closed curves.
-                      then the return of this method is used
-                      as currentEdgeIdx and currentEndPoint.
-                      the runtime complexity for this method is potentially as long as the
-                      number of edges that compose it is so is probably the
-                      fastest of the possibilities
-                   b. could just use the point that is possibly not the
-                      start point and make a wrapper method to invoke
-                      this method with the previous output as input until
-                      the output size is the same as the input size.
-                      the runtime of this one could be large...
-REVISE: will choose a. and implement it as
-                      findStartingPoint(PairInt p, Map<PairInt, Integer> 
-                          endPointMap, List<PairIntArray> edges) : int
-        
-           -- THEN (after else/if)
-              -- append the item at edges.get(currentEdgeIdx) to the current last item in
-                 output (if last is empty, can just replace it instead of append)
-              -- remove currentEndPoint and it's edge's start endpoint from endPointMap.
-            ==> 16*O(N)
-        (6) DONE
-            convert the values in junctionLocationMap from edges indexes to
-            output list indexes using junctionEdgesToOutputIndexesMap.
-            ==> O(N)
-        (7) DONE
-            store junctionMap and junctionLocationsMap as member variables.
-            
-        
-        ====> runtime complexity is O(N)
-        
-        
-        Tests:
-        
-           Tests for the internal methods that mergeAdjacentEndPoints uses:
-               -- for createEndPointMap(List<PairIntArray>) : Map<PairInt, Integer>
-                  -- 5 or so edges, with 3 meeting at a junction and the other 
-                     two connected also:
-                     
-                        0      4   / 3
-                     |-----||-----|
-                                   \
-                                  1 \     2
-                                     \|-------
-                     
-                     -- assert that the returned HashMap is size 10
-                     -- assert that each point in the sketch has the expected
-                        indexes in the returned HashMap
-                     
-                     Make several tests of the above data w/ different combinations
-                     of reversed start and end points in edges 1 thru 4
-        
-            Tests for entire method mergeAdjacentEndPoints:
-               
-               -- given 5 or so edges which do not have junctions and should result
-                  in a final closed curve, that is one edge.
-                      
-                        0      4      1      3       2
-                     |-----||-----||-----||-----||------|
-                                     
-                  -- assert that junctionsMap and junctionLocationsMap are empty
-                  -- assert the ordered points in the output final edge.
-
-                  Make several tests of the above data w/ different combinations
-                     of reversed start and end points, excepting the first
-                     edge which should always be the one with the smallest
-                     column and smallest row as a start endpoint.
-        
-               -- 5 or so edges, with 3 meeting at a junction and the other 
-                     two connected also:
-                     
-                        0      4   / 3
-                     |-----||-----|
-                                   \
-                                  1 \     2
-                                     \|-------
-        
-                  -- assert that junctionMap.size() is 1 and that 
-                     junctionLocationMap.size() is 4  
-                  -- assert the values in junctionMap and junctionLocationMap
-                  -- assert that output list contains 2 edges of expected 
-                     ordered points
-        
-               -- assert that given an empty list of edges returns an empty output list
-        
-        */
     }
     
     protected Map<PairInt, Integer> createEndPointMap(List<PairIntArray>
