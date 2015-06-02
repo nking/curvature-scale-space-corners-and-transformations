@@ -145,6 +145,15 @@ public class EdgeExtractor {
      */
     public List<PairIntArray> findEdges() {
         
+        /*
+        TODO: there is a problem with point order especially at line endings
+        when the pixel is not exactly single pixel width due to a corner
+        like an 'L' shape.
+        There also seems to possibly be a problem with a larger than single
+        pixel pattern in the thinned africa test image, so
+        the line thinner may need to be corrected for it.
+        */
+        
         int w = img.getWidth();
         int h = img.getHeight();
         
