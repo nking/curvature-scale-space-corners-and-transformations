@@ -67,16 +67,16 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage img = ImageIO.read(file);
+            BufferedImage bufferedInput = ImageIO.read(file);
             
             //System.out.println("imageType=" + img.getType());
             
-            int h = img.getHeight();
-            int w = img.getWidth();
+            int h = bufferedInput.getHeight();
+            int w = bufferedInput.getWidth();
             
             ImageExt image = new ImageExt(w, h);
             
-            convertImage(img, image);
+            convertImage(bufferedInput, image);
             
             return image;
             

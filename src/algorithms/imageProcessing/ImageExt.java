@@ -243,6 +243,11 @@ public class ImageExt extends Image {
     
     public void calculateColorIncludingNeighbors(int idx, int neighborRadius) {
         
+        if (neighborRadius == 0) {
+            calculateColor(idx);
+            return;
+        }
+        
         int col0 = this.getCol(idx);
         int row0 = this.getRow(idx);
         

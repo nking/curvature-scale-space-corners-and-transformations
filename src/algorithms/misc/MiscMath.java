@@ -922,7 +922,7 @@ public class MiscMath {
     }
     
     /**
-     * calculate the angle of theta with respect to an origin of zero for the
+     * calculate the angle of theta with respect to an origin of (0, 0) for the
      * point (x, y).
      * The angles are
      * <pre>    90(=pi/2)

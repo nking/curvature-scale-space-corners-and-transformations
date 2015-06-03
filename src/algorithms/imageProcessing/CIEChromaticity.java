@@ -19,7 +19,7 @@ public class CIEChromaticity {
     /**
      * the offset from (0.35, 0.35) considered "white"
      */
-    private static final float deltaWhite = 0.02f;
+    private static final float deltaWhite = 0.0125f;
     
     /**
      * get the bounds of yellow in the CIE 1931 xy chromaticity diagram
@@ -335,17 +335,11 @@ public class CIEChromaticity {
      */
     public boolean isWhite(float cieX, float cieY) {
         
-        if ((cieX > 0.45) || (cieX < 0.22)) {
-            return false;
-        }
+        double diffX = Math.abs(cieX - 0.35);
         
-        if ((cieY > 0.45) || (cieY < 0.22)) {
-            return false;
-        }
-        
-        float diffSlope = Math.abs((cieX/cieY) - 1);
+        double diffY = Math.abs(cieY - 0.35);
       
-        return (diffSlope < 0.25);
+        return ((diffX < deltaWhite) && (diffY < deltaWhite));
     }
     
     /**
@@ -391,9 +385,7 @@ public class CIEChromaticity {
      * white.
      */
     public double calculateXYTheta(float cieX, float cieY) {
-                
-        float whiteBuffer = 0.2f;
-        
+                        
         if (cieX == 0.35) {
             if (cieY > (0.35 + deltaWhite)) {
                 return Math.PI/2.;

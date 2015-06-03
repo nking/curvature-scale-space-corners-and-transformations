@@ -7,11 +7,19 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PairInt;
 import algorithms.misc.Complex;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.util.Errors;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -2187,5 +2195,128 @@ public class ImageProcessor {
         }
             
         return img2;
+    }
+    
+    /**
+     * convert the color image into an image scaled into values 0 to 255
+     * by the polar theta angle in CIE XY space.  
+     * 
+     * runtime complexity is O(N) + O(N*lg_2(N))
+     * 
+     * @param input
+     * @return 
+     */
+    public GreyscaleImage convertToCIEXYPolarTheta(ImageExt input) {
+       
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        input.setRadiusForPopulateOnDemand(0);
+        
+        GreyscaleImage output = new GreyscaleImage(w, h);
+        
+        Map<PairInt, Float> pixThetaMap = new HashMap<PairInt, Float>();
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        float[] thetaValues = new float[input.getNPixels()];
+        int thetaCount = 0;
+        
+        for (int col = 0; col < w; col++) {
+            for (int row = 0; row < h; row++) {
+                
+                PairInt p = new PairInt(col, row);
+                
+                int r = input.getR(col, row);
+                int g = input.getG(col, row);
+                int b = input.getB(col, row);
+                
+                if ((r == 0) && (g == 0) && (b == 0)) {
+                    continue;
+                } else if ((r == 255) && (g == 255) && (b == 255)) {
+                    output.setValue(col, row, 255);
+                    continue;
+                }
+                
+                float cieX = input.getCIEX(col, row);
+                float cieY = input.getCIEY(col, row);
+                
+                if (cieC.isWhite(cieX, cieY)) {
+                    output.setValue(col, row, 255);
+                } else {
+                    
+                    double theta = cieC.calculateXYTheta(cieX, cieY);
+                    
+System.out.println(String.format("r,g,b=(%d,%d,%d) cieX,cieY=(%f,%f) theta=%f  pix=(%d,%d)", 
+r, g, b, cieX, cieY, (float)theta, col, row));
+
+                    thetaValues[thetaCount] = (float)theta;
+                    
+                    pixThetaMap.put(p, Float.valueOf((float)theta));
+                    
+                    thetaCount++;
+                }
+            }
+        }
+        
+        thetaValues = Arrays.copyOf(thetaValues, thetaCount);
+        
+        float minValue = MiscMath.findMin(thetaValues);
+        float maxValue = MiscMath.findMax(thetaValues);
+                
+        HistogramHolder hist = Histogram.createSimpleHistogram(minValue,
+            maxValue, 254, thetaValues, 
+            Errors.populateYErrorsBySqrt(thetaValues));
+        
+        try {
+            hist.plotHistogram("cie XY theta histogram", 76543);
+        } catch (Exception e) {}
+        
+        int nonZeroCount = 0;
+        for (int i = 0; i < hist.getXHist().length; i++) {
+            int c = hist.getYHist()[i];
+            if (c > 0) {
+                nonZeroCount++;
+            }
+        }
+        
+        float[] startBins = new float[nonZeroCount];
+        
+        float halfBinWidth = (hist.getXHist()[1] - hist.getXHist()[0])/2.f;
+        
+        nonZeroCount = 0;
+        for (int i = 0; i < hist.getXHist().length; i++) {
+            int c = hist.getYHist()[i];
+            if (c > 0) {
+                startBins[nonZeroCount] = hist.getXHist()[i] - halfBinWidth;
+                nonZeroCount++;
+            }
+        }
+        
+        Iterator<Entry<PairInt, Float> > iter = pixThetaMap.entrySet().iterator();
+        
+        // O(N * lg_2(N))
+        while (iter.hasNext()) {
+            
+            Entry<PairInt, Float> entry = iter.next();
+            
+            PairInt p = entry.getKey();
+            
+            float theta = entry.getValue().floatValue();
+            
+            int idx = Arrays.binarySearch(startBins, theta);
+            
+            // if it's negative, (-(insertion point) - 1)
+            if (idx < 0) {
+                // idx = -*idx2 - 1
+                idx = -1*(idx + 1);                
+            }
+            
+            int mappedValue = 254 - startBins.length + idx + 2;
+            
+            output.setValue(p.getX(), p.getY(), mappedValue);
+        }
+        
+        return output;
     }
 }
