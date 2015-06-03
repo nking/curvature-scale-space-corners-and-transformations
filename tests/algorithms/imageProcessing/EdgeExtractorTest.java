@@ -1410,9 +1410,13 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
     
     public void testFindEdges() throws Exception {
                 
-        String filePath = ResourceFinder.findFileInTestResources("africa.png");
+        String fileName = "africa.png";
+        
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        
+        log.info("fileName=" + fileName);
         
         // get a line thinned image:
         CannyEdgeFilter edgeFilter = new CannyEdgeFilter();
@@ -1469,17 +1473,36 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
     
     public void testFindEdges2() throws Exception {
                 
-        String fileName = "house.gif";
+        //String fileName = "house.gif";
         //String fileName = "lab.gif";
         //String fileName = "susan-in.gif";
         //String fileName = "susan-in_plus.png";
         //String fileName = "africa.png";
         //String fileName = "valve_gaussian.png";
         //String fileName = "lena.jpg";
+        String fileName = "middlebury_cones_im2.png";
+        
+        log.info("fileName=" + fileName);
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
+        String dirPath = ResourceFinder.findDirectory("bin");
+        String sep = System.getProperty("file.separator");
+        
+        int idx = fileName.lastIndexOf(".");
+        String fileNameRoot = fileName.substring(0, idx);
+        
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        
+        // to experiment w/ a color mapping instead of intensity:
+        if (false && !fileName.equals("house.gif")) {//cannot use on B&W images
+            ImageProcessor imageProcessor = new ImageProcessor();
+            ImageExt clrImg = ImageIOHelper.readImageExt(filePath);
+            img = imageProcessor.createGreyscaleFromColorSegmentation(clrImg);
+            
+            ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot 
+                + "_color_theta.png", img);
+        }
         
         // get a line thinned image:
         CannyEdgeFilter edgeFilter = new CannyEdgeFilter();
@@ -1521,17 +1544,14 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
             clr++;
         }
         
-         int idx = fileName.lastIndexOf(".");
-         String fileNameRoot = fileName.substring(0, idx);
-        
         ImageDisplayer.displayImage("edge detected image", img2);
         
-        String dirPath = ResourceFinder.findDirectory("bin");
-        String sep = System.getProperty("file.separator");
-        ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot + "_edges.png", img2);
+        ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot + 
+            "_edges.png", img2);
         
         img.multiply(250);
-        ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot + "_thinned.png", 
+        ImageIOHelper.writeOutputImage(dirPath + sep + fileNameRoot 
+            + "_thinned.png", 
             img);
         
         assertTrue(!edges.isEmpty());

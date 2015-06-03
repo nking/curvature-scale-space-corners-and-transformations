@@ -182,4 +182,81 @@ public class Kernel1DHelper {
 
         return sum;
     }
+    
+    /**
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true.
+     * @param img
+     * @param col
+     * @param row
+     * @param g
+     * @param calcX
+     * @return double[]{rSum, gSum, bSum]
+     */
+    public double[] convolvePointWithKernel(final Image img, int col, 
+        int row, float[] g, final boolean calcX) {
+
+        int h = g.length >> 1;
+
+        double[] sum = new double[3];        
+
+        int len = calcX ? img.getWidth() : img.getHeight();
+        
+        for (int color = 0; color < 3; color++) {
+                
+            for (int gIdx = 0; gIdx < g.length; gIdx++) {
+
+                float gg = g[gIdx];
+
+                if (gg == 0) {
+                    continue;
+                }
+
+                int idx = gIdx - h;
+
+                int cIdx = calcX ? (col + idx) : (row + idx);
+
+                if (cIdx < 0) {
+                    // replicate
+                    cIdx = -1*cIdx - 1;
+                    if (cIdx > (len - 1)) {
+                        cIdx = len - 1;
+                    }
+                } else if (cIdx >= (len)) {
+                    //TODO: revisit this for range of kernel sizes vs edge sizes
+                    int diff = cIdx - len;
+                    cIdx = len - diff - 1;
+                    if (cIdx < 0) {
+                        cIdx = 0;
+                    }
+                }
+
+                float point;
+
+                if (calcX) {
+                    // keep row constant
+                    if (color == 0) {
+                        point = img.getR(cIdx, row);
+                    } else if (color == 1) {
+                        point = img.getG(cIdx, row);
+                    } else {
+                        point = img.getB(cIdx, row);
+                    }
+                } else {
+                    // keep col constant
+                    if (color == 0) {
+                        point = img.getR(col, cIdx);
+                    } else if (color == 1) {
+                        point = img.getG(col, cIdx);
+                    } else {
+                        point = img.getB(col, cIdx);
+                    }
+                }
+
+                sum[color] += (point * gg);
+            }
+        }
+        
+        return sum;
+    }
+    
 }

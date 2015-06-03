@@ -868,6 +868,42 @@ public class ImageProcessor {
         input.resetTo(output);
     }
     
+    /**
+     * blur the r, g, b vectors of image input by sigma.
+     * @param input
+     * @param sigma 
+     */
+    public void blur(Image input, float sigma) {
+                        
+        float[] kernel = Gaussian1D.getKernel(sigma);
+        
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        Image output = (ImageExt)input.copyImage();
+        
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                double[] conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, true);                
+                output.setRGB(i, j, (int)conv[0], (int)conv[1], (int)conv[2]);
+            }
+        }
+        
+        input.resetTo(output);
+        
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                double[] conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, false);                
+                output.setRGB(i, j, (int)conv[0], (int)conv[1], (int)conv[2]);
+            }
+        }
+        
+        input.resetTo(output);
+    }
+    
     public void divideByBlurredSelf(GreyscaleImage input, float sigma) {
          
         GreyscaleImage input2 = input.copyImage();
@@ -2196,23 +2232,183 @@ public class ImageProcessor {
             
         return img2;
     }
+    /**
+     * create an image segmented by color...useful for experimenting with corners
+     * due to color differences rather than original intensity differences.
+     * The default provided here uses 8 color segmentation.
+     * @param input
+     * @return 
+     */
+    public GreyscaleImage createGreyscaleFromColorSegmentation(ImageExt input) {
+        
+        int kColors = 8;//253;
+        
+        return createGreyscaleFromColorSegmentation(input, kColors);
+    }
+    
+    /**
+     * create an image segmented by color...useful for experimenting with corners
+     * due to color differences rather than original intensity differences.
+     * The default provided here uses 8 color segmentation.
+     * @param input
+     * @param kColors the number of colors to bin the image by.  max allowed value
+     * is 253.
+     * @return 
+     */
+    public GreyscaleImage createGreyscaleFromColorSegmentation(ImageExt input, 
+        int kColors) {
+        
+        if (kColors > 253) {
+            throw new IllegalArgumentException("kColors must be <= 253");
+        }
+        if (kColors < 2) {
+            throw new IllegalArgumentException("kColors must be >= 2");
+        }
+        
+        GreyscaleImage img;
+        
+        int minNeighborLimit;
+        
+        boolean useBlur = true;
+                
+        if (useBlur) {
+        
+            Image input2 = input.copyImage();
+        
+            blur(input2, 1/*(float)Math.sqrt(2)/2.f*/);
+        
+            img = convertToCIEXYPolarTheta(input2, kColors);
+        
+            minNeighborLimit = 6;
+            
+        } else {
+            
+            img = convertToCIEXYPolarTheta(input, kColors);
+            
+            minNeighborLimit = 5;
+        }
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        // ----replace pixel, if 7 or more neighbors have same color -----
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
+        Map<Integer, Integer> freqMap = new HashMap<Integer, Integer>();
+        
+        int nChanged = 1;
+        int nIterMax = 100;
+        int nIter = 0;
+        
+        while (!useBlur && (nIter < nIterMax) && (nChanged > 0)) {
+            
+            log.fine("nIter=" + nIter + " nChanged=" + nChanged);
+            
+            nChanged = 0;
+            
+            for (int col = 0; col < w; col++) {
+                for (int row = 0; row < h; row++) {
+
+                    freqMap.clear();
+
+                    Integer maxCountValue = null;
+                    int maxCount = Integer.MIN_VALUE;
+
+                    for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
+                        int x = dxs[nIdx] + col;
+                        int y = dys[nIdx] + row;
+
+                        if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
+                            break;
+                        }
+
+                        Integer v = Integer.valueOf(img.getValue(x, y));
+
+                        Integer c = freqMap.get(v);
+                        if (c == null) {
+                            c = Integer.valueOf(1);
+                        } else {
+                            c = Integer.valueOf(c.intValue() + 1);
+                        }
+                        freqMap.put(v, c);
+
+                        if (c.intValue() > maxCount) {
+                            maxCount = c.intValue();
+                            maxCountValue = v;
+                        }
+                    }
+
+                    if ((maxCount >= minNeighborLimit) && 
+                        (img.getValue(col, row) != maxCountValue.intValue())) {
+                        
+                        img.setValue(col, row, maxCountValue.intValue());
+                        nChanged++;
+                    }
+                }
+            }
+            
+            nIter++;
+        }
+        
+        // rescale the image
+        HistogramEqualization hEq = new HistogramEqualization(img);
+        hEq.applyFilter();
+            
+        return img;
+    }
     
     /**
      * convert the color image into an image scaled into values 0 to 255
-     * by the polar theta angle in CIE XY space.  
+     * by the polar theta angle in CIE XY color space.  The colors are
+     * divided into 254 bins plus black and white.
      * 
      * runtime complexity is O(N) + O(N*lg_2(N))
      * 
      * @param input
      * @return 
      */
-    public GreyscaleImage convertToCIEXYPolarTheta(ImageExt input) {
+    public GreyscaleImage convertToCIEXYPolarTheta(Image input) {
+        
+        return convertToCIEXYPolarTheta(input, 254);
+    }
+    
+    /**
+     * convert the color image into an image scaled into values 0 to 255
+     * by the polar theta angle in CIE XY color space.  The colors are divided
+     * into kColors number of bins.
+     * 
+     * runtime complexity is O(N) + O(N*lg_2(N))
+     * 
+     * @param input
+     * @param kColors the number of color bins to use for the image segmentation.
+     * The minimum allowed value is 2 and the maximum allowed value is 253.
+     * @return 
+     */
+    public GreyscaleImage convertToCIEXYPolarTheta(Image input, int kColors) {
        
+        if (kColors > 253) {
+            throw new IllegalArgumentException("kColors must be <= 253");
+        }
+        if (kColors < 2) {
+            throw new IllegalArgumentException("kColors must be >= 2");
+        }
+        
+        /*
+        TODO: needs some improvements in color mapping.
+           -- for regions that are very spotty, might consider using the 
+              intensity image to help define the region and take the highest 
+              number density color in that region and assign it to all.
+           
+        */
+                
         int w = input.getWidth();
         int h = input.getHeight();
         
-        input.setRadiusForPopulateOnDemand(0);
-        
+        int nReserved = 254 - kColors;
+                
+        float[] tmpColorBuffer = new float[2];
+                
         GreyscaleImage output = new GreyscaleImage(w, h);
         
         Map<PairInt, Float> pixThetaMap = new HashMap<PairInt, Float>();
@@ -2231,25 +2427,22 @@ public class ImageProcessor {
                 int g = input.getG(col, row);
                 int b = input.getB(col, row);
                 
-                if ((r == 0) && (g == 0) && (b == 0)) {
+                if ((r < 25) && (g < 25) && (b < 25)) {
                     continue;
-                } else if ((r == 255) && (g == 255) && (b == 255)) {
+                } else if ((r > 230) && (g > 230) && (b > 230)) {//might need to use 195 as lower limit
                     output.setValue(col, row, 255);
                     continue;
                 }
                 
-                float cieX = input.getCIEX(col, row);
-                float cieY = input.getCIEY(col, row);
+                float[] cieXY = tmpColorBuffer;
+                cieC.rgbToXYChromaticity(r, g, b, cieXY);
                 
-                if (cieC.isWhite(cieX, cieY)) {
+                if (cieC.isWhite(cieXY[0], cieXY[1])) {
                     output.setValue(col, row, 255);
                 } else {
                     
-                    double theta = cieC.calculateXYTheta(cieX, cieY);
+                    double theta = cieC.calculateXYTheta(cieXY[0], cieXY[1]);
                     
-System.out.println(String.format("r,g,b=(%d,%d,%d) cieX,cieY=(%f,%f) theta=%f  pix=(%d,%d)", 
-r, g, b, cieX, cieY, (float)theta, col, row));
-
                     thetaValues[thetaCount] = (float)theta;
                     
                     pixThetaMap.put(p, Float.valueOf((float)theta));
@@ -2263,14 +2456,18 @@ r, g, b, cieX, cieY, (float)theta, col, row));
         
         float minValue = MiscMath.findMin(thetaValues);
         float maxValue = MiscMath.findMax(thetaValues);
+        
+        log.fine("minTheta=" + (minValue * 180./Math.PI) +
+            " maxTheta=" + (maxValue * 180./Math.PI));
                 
         HistogramHolder hist = Histogram.createSimpleHistogram(minValue,
-            maxValue, 254, thetaValues, 
+            maxValue, (256 - nReserved - 1), thetaValues, 
             Errors.populateYErrorsBySqrt(thetaValues));
         
-        try {
+        /*try {
             hist.plotHistogram("cie XY theta histogram", 76543);
         } catch (Exception e) {}
+        */
         
         int nonZeroCount = 0;
         for (int i = 0; i < hist.getXHist().length; i++) {
@@ -2294,7 +2491,7 @@ r, g, b, cieX, cieY, (float)theta, col, row));
         }
         
         Iterator<Entry<PairInt, Float> > iter = pixThetaMap.entrySet().iterator();
-        
+                
         // O(N * lg_2(N))
         while (iter.hasNext()) {
             
@@ -2312,7 +2509,7 @@ r, g, b, cieX, cieY, (float)theta, col, row));
                 idx = -1*(idx + 1);                
             }
             
-            int mappedValue = 254 - startBins.length + idx + 2;
+            int mappedValue = 255 - startBins.length + idx;
             
             output.setValue(p.getX(), p.getY(), mappedValue);
         }

@@ -235,6 +235,46 @@ public class CIEChromaticity {
         return new float[]{x, y};
     }
     
+    private float[] cieXYTmpHolder = new float[3];
+    /**
+     * convert from CIE XYZ 1931, to CIE XY chromaticity 1931.
+     * 
+     * useful for more information:
+     * http://www.efg2.com/Lab/Graphics/Colors/Chromaticity.htm
+     * http://en.wikipedia.org/wiki/CIE_1931_color_space
+     * http://hyperphysics.phy-astr.gsu.edu/hbase/vision/cie.html
+     * 
+     * @param r
+     * @param g
+     * @param b
+     * @param outputcieXY the float array of length 2 that the output will be 
+     * placed in.
+     */
+    public void rgbToXYChromaticity(int r, int g, int b, float[] outputcieXY) {
+        
+        if (outputcieXY == null || outputcieXY.length != 2) {
+            throw new IllegalArgumentException("outputcieXY must be length 2");
+        }
+        
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            // not really defined on the diagram since chromaticity is color
+            // without intensity.  since all 0's is the lack of all color
+            // will return 0,0, but it's N/A
+            outputcieXY[0] = 0;
+            outputcieXY[1] = 0;
+            return;
+        }
+        
+        rgbToCIEXYZ(r, g, b, cieXYTmpHolder);
+        
+        float x = cieXYTmpHolder[0]/(cieXYTmpHolder[0] + cieXYTmpHolder[1] + cieXYTmpHolder[2]);
+        
+        float y = cieXYTmpHolder[1]/(cieXYTmpHolder[0] + cieXYTmpHolder[1] + cieXYTmpHolder[2]);
+        
+        outputcieXY[0] = x;
+        outputcieXY[1] = y;
+    }
+    
     /**
      * convert rgb to CIE XYZ (1931).
      * 
@@ -260,6 +300,40 @@ public class CIEChromaticity {
         float capZ = (0.01f * g + 0.99f * b)/0.17697f;
         
         return new float[]{capX, capY, capZ};
+    }
+
+    /**
+     * convert rgb to CIE XYZ (1931).
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * 
+     * @param r
+     * @param g
+     * @param b
+     * @param outputCIEXYZ output array of length 3 that will be populated with
+     * cieX, cieY and cieZ.
+     */
+    public void rgbToCIEXYZ(int r, int g, int b, float[] outputCIEXYZ) {
+        
+        if (outputCIEXYZ == null || outputCIEXYZ.length != 3) {
+            throw new IllegalArgumentException("outputCIEXYZ has to be length 3");
+        }
+        
+        /*        
+            | X |       1     | 0.49     0.31      0.20     |   | R |
+            | Y | = --------- | 0.17697  0.81240   0.01063  | * | G |
+            | Z |    0.17697  | 0.00     0.01      0.99     |   | B |
+        */
+        
+        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;
+        
+        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;
+        
+        float capZ = (0.01f * g + 0.99f * b)/0.17697f;
+        
+        outputCIEXYZ[0] = capX;
+        outputCIEXYZ[1] = capY;
+        outputCIEXYZ[2] = capZ;
     }
 
     /**
