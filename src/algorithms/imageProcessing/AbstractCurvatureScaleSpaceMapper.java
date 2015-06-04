@@ -45,9 +45,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     protected boolean doNotNormalizeByHistogram = false;
     
     protected boolean useLineDrawingMode = false;
-    
-    protected boolean doNotStraightenEdges = false;
-    
+        
     protected boolean useLowestHighIntensityCutoff = false;
     
     protected boolean useLowHighIntensityCutoff = false;
@@ -273,14 +271,12 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             GreyscaleImage out = skylineExtractor.createSkyline(theta, 
                 gradientXY, this.originalImg, settings, outputSkyCentroid);
             
-            EdgeExtractor contourExtractor = new EdgeExtractor(out);
+            IEdgeExtractor contourExtractor = new EdgeExtractorWithJunctions(out);
             
             if ((img.getWidth() > 300) && (img.getHeight() > 300)) {
                 contourExtractor.overrideEdgeSizeLowerLimit(50);
             }
             
-            contourExtractor.useRepeatConnectAndTrim();
-
             List<PairIntArray> skyEdges = contourExtractor.findEdges();
             
             if (skyEdges.isEmpty()) {
@@ -338,13 +334,9 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     protected void extractEdges() {
         
-        EdgeExtractor contourExtractor;
+        IEdgeExtractor contourExtractor;
         
-        if (doNotStraightenEdges) { 
-            contourExtractor = new EdgeExtractor(img);
-        } else {
-            contourExtractor = new EdgeExtractor(img, gradientXY);
-        }
+        contourExtractor = new EdgeExtractorWithJunctions(img);
         
         List<PairIntArray> tmpEdges = contourExtractor.findEdges();
        

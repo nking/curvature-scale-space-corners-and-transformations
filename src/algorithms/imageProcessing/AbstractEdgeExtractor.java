@@ -94,10 +94,6 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         edgeSizeLowerLimit = length;
     }
     
-    public void useRepeatConnectAndTrim() {
-        repeatConnectAndTrim = true;
-    }
-    
     @Override
     public List<PairIntArray> findEdges() {
         
@@ -105,9 +101,9 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         
         output = findEdgesIntermediateSteps(output);
         
-        //removeEdgesShorterThan(output, edgeSizeLowerLimit);
+        removeEdgesShorterThan(output, edgeSizeLowerLimit);
         
-        adjustEdgesTowardsBrightPixels(output);
+        //adjustEdgesTowardsBrightPixels(output);
         
         return output;
     }

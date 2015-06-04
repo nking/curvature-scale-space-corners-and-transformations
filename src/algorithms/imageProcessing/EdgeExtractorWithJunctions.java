@@ -131,7 +131,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         //O(N)
         Map<PairInt, PairInt> joinPoints = findJoinPoints(output);
         
-printJoinPoints(joinPoints, output);
+//printJoinPoints(joinPoints, output);
         
         output = joinOnJoinPoints(joinPoints, output);
   /*      
