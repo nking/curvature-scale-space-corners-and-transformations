@@ -174,12 +174,12 @@ printJunctions();
             
             PairIntArray edge = edges.get(edgeIdx);
             
-            for (int uIdx = 0; uIdx < edge.getN(); uIdx++) {
+            for (int iEdgeIdx = 0; iEdgeIdx < edge.getN(); iEdgeIdx++) {
                 
-                int pixIdx = img.getIndex(edge.getX(uIdx), edge.getY(uIdx));
+                int pixIdx = img.getIndex(edge.getX(iEdgeIdx), edge.getY(iEdgeIdx));
                 
                 pointLocator.put(Integer.valueOf(pixIdx), new PairInt(edgeIdx, 
-                    uIdx));
+                    iEdgeIdx));
             }
         }
         
@@ -199,9 +199,10 @@ printJunctions();
                 int col = edge.getX(iEdgeIdx);
                 int row = edge.getY(iEdgeIdx);
                 
-                int uIdx = img.getIndex(col, row);
+                int pixIdx = img.getIndex(col, row);
                 
                 Set<PairInt> neighbors = new HashSet<PairInt>();
+                int nDifferentEdgeThanUEdge = 0;
                 
                 for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                     
@@ -211,17 +212,61 @@ printJunctions();
                     if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
                         continue;
                     }
-                    
+ 
                     int vIdx = img.getIndex(x, y);
                     
                     PairInt vLoc = pointLocator.get(Integer.valueOf(vIdx));
                     
                     if (vLoc != null) {
                         neighbors.add(vLoc);
+                        
+                        if (vLoc.getX() != edgeIdx) {
+                            nDifferentEdgeThanUEdge++;
+                        }
                     }
                 }
                 
-                if (neighbors.size() == 2) {
+                // if there is a junction, but there is actually only one
+                // other edge aside from edge, this is a join point w/ the closest point
+                if ((neighbors.size() > 2) && (nDifferentEdgeThanUEdge == 1)) {
+                    // we want a junction point between the closest members of edge
+                    // to the point in the other edge.
+                    // the test for this each time one of the same points is
+                    // iEdgeIdx and the write of the result should be idempotent.
+                    
+                    PairInt nonEdge = null;
+                    for (PairInt p : neighbors) {
+                        if (p.getX() != edgeIdx) {
+                            nonEdge = p;
+                            break;
+                        }
+                    }
+                    int nonEdgeX = edges.get(nonEdge.getX()).getX(nonEdge.getY());
+                    int nonEdgeY = edges.get(nonEdge.getX()).getY(nonEdge.getY());
+                    
+                    // init w/ the "u" value
+                    int closestIEdgeIdx = iEdgeIdx;
+                    int closestDistSq = ((col - nonEdgeX)*(col - nonEdgeX)) + 
+                        ((row - nonEdgeY)*(row - nonEdgeY));
+                    
+                    for (PairInt p : neighbors) {
+                        if (p.getX() == edgeIdx) {
+                            int x2 = edges.get(p.getX()).getX(p.getY());
+                            int y2 = edges.get(p.getX()).getY(p.getY());
+                            int diffX = x2 - nonEdgeX;
+                            int diffY = y2 - nonEdgeY;
+                            int distSq = (diffX * diffX) + (diffY * diffY);
+                            if (distSq < closestDistSq) {
+                                closestIEdgeIdx = p.getY();
+                                closestDistSq = distSq;
+                            }
+                        }
+                    }
+                    
+                    theJoinPoints.put(new PairInt(edgeIdx, closestIEdgeIdx), 
+                        nonEdge);
+                     
+                } else if (neighbors.size() == 2) {
                     
                     // if they are not in the same edge already, this is a
                     // potential join point
