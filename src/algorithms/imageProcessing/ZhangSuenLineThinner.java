@@ -45,27 +45,36 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
     @Override
     public void applyFilter(final GreyscaleImage input) {
         
-        GreyscaleImage summed = sumOver8Neighborhood(input);
+        //GreyscaleImage summed = sumOver8Neighborhood(input);
+        
+        GreyscaleImage input2 = addOnePixelBorders(input);
+        
+        int w2 = input2.getWidth();
+        int h2 = input2.getHeight();
         
         Set<PairInt> points = new HashSet<PairInt>();
-        for (int col = 0; col < input.getWidth(); col++) {
-            for (int row = 0; row < input.getHeight(); row++) {
-                if (input.getValue(col, row) > 0) {
+        for (int col = 0; col < w2; col++) {
+            for (int row = 0; row < h2; row++) {
+                if (input2.getValue(col, row) > 0) {
                     points.add(new PairInt(col, row));
                 }
             }
         }
-        applyLineThinner(points, 0, input.getWidth(),
-            0, input.getHeight());
-        input.fill(0);
+        applyLineThinner(points, 0, w2, 0, h2);
+        input2.fill(0);
         for (PairInt p : points) {
-            input.setValue(p.getX(), p.getY(), 1);
+            input2.setValue(p.getX(), p.getY(), 1);
         }
         
         // make corrections for artifacts created for inclined lines
-        correctForArtifacts(input);
-                
+        correctForArtifacts(input2);
+        
         //correctForMinorOffsetsByIntensity(input, summed);
+        
+        GreyscaleImage input3 = removeOnePixelBorders(input2);
+        
+        input.resetTo(input3);
+                
     }
     
     public void applyLineThinner(Set<PairInt> points, int minX, int maxX,
@@ -1481,6 +1490,42 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                 }
             }    
         }
+    }
+
+    protected GreyscaleImage addOnePixelBorders(GreyscaleImage input) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2);
+        
+        //TODO: make a method internal to GreyscaleImage that uses
+        //   System.arrays.copy
+        for (int col = 0; col < w; col++) {
+            for (int row = 0; row < h; row++) {
+                output.setValue(col + 1, row + 1, input.getValue(col, row));
+            }
+        }
+        
+        return output;
+    }
+
+    protected GreyscaleImage removeOnePixelBorders(GreyscaleImage input) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        GreyscaleImage output = new GreyscaleImage(w - 2, h - 2);
+        
+        //TODO: make a method internal to GreyscaleImage that uses
+        //   System.arrays.copy
+        for (int col = 0; col < (w - 2); col++) {
+            for (int row = 0; row < (h - 2); row++) {
+                output.setValue(col, row, input.getValue(col + 1, row + 1));
+            }
+        }
+        
+        return output;
     }
     
 }
