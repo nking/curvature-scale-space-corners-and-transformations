@@ -1,0 +1,7 @@
+from CSS paper web site:
+
+http://www.ee.surrey.ac.uk/CVSSP/demos/corners/originals.html
+
+see also:
+http://www.ee.surrey.ac.uk/CVSSP/demos/corners/
+http://www.ee.surrey.ac.uk/CVSSP/demos/corners/results4.html
