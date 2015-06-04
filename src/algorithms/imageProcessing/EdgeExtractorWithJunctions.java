@@ -30,14 +30,18 @@ import java.util.logging.Logger;
         (1) DFS walk through connected pixel to form a sequence of pixels called
             an edge.
           
-        (2) find junctions and join points
+        (2) find join points
         
-        (3) 
+        (3) join edges using join points
+        
+        (4) find junction points
+         
+        (5)
             
-        (4) find edge endpoints which are separated from one another by a gap of
+        (6) find edge endpoints which are separated from one another by a gap of
             one and fill in the gap while merging the edges.
          
-        (5) remove edges shorter than a minimum length
+        (7) remove edges shorter than a minimum length
         
   @see AbstractEdgeExtractor
   * 
@@ -127,13 +131,17 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         //O(N)
         Map<PairInt, PairInt> joinPoints = findJoinPoints(output);
         
-        printJoinPoints(joinPoints, output);
+printJoinPoints(joinPoints, output);
         
-        // this updates the junction and joinPoint maps too
         output = joinOnJoinPoints(joinPoints, output);
-        
+  /*      
         findJunctions(output);
         
+can see that can use the junction points next to make decisions
+on whether to divide an edge to make longer edges
+printJunctions();
+        
+    */    
         return output;
     }
     
@@ -273,6 +281,10 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                                 if (e0Idx == e2Idx) {
                                     continue;
                                 }
+                                
+                                //TODO: need to improve decision when not appending to first or last
+                                // they might all need to be distance based, like the last
+                                // else block
                                 
                                 int iEIdx = p0.getY();
                                 PairIntArray e0 = edges.get(e0Idx);
@@ -568,6 +580,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             PairInt loc1 = edgeJoins[i][1];
 
             PairIntArray edge0 = edges.get(Integer.valueOf(loc0.getX()));
+                  
             int x0 = edge0.getX(loc0.getY());
             int y0 = edge0.getY(loc0.getY());
             
@@ -605,9 +618,9 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
      */
     protected List<PairIntArray> joinOnJoinPoints(Map<PairInt, PairInt> 
         joinPoints, List<PairIntArray> edges) {
-                
-        // put the joinPoints in a list ordered by the edge index of the
-        // 1st pair (which is the one which is appended to the other)
+        
+        //order the join points
+        
         int[] indexes = new int[joinPoints.size()];
         PairInt[][] edgeJoins = new PairInt[joinPoints.size()][2];
         int count = 0;
@@ -628,14 +641,19 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         int n = edgeJoins.length;
         
         for (int i = (n - 1); i > -1; --i) {
-            
-printJoinPoints(edgeJoins, 0, i, edgesMap);
-            
+           
+//printJoinPoints(edgeJoins, 0, i, edgesMap);
+           
             PairInt[] entry = edgeJoins[i];
 
             PairInt loc0 = entry[0];
 
             PairInt loc1 = entry[1];
+            
+            // if they've already been merged
+            if (loc0.getX() == loc1.getX()) {
+                continue;
+            }
             
             // the smaller edge index should be loc1 and the larger loc0,
             if (loc1.getX() > loc0.getX()) {
@@ -646,6 +664,8 @@ printJoinPoints(edgeJoins, 0, i, edgesMap);
             
             // edge to move
             PairIntArray edge0 = edgesMap.remove(Integer.valueOf(loc0.getX()));
+            int removedEdgeIdx = loc0.getX();
+
             int n0 = edge0.getN();
             // join point should be at the beginning, so reverse if not
             if (loc0.getY() != 0) {
@@ -667,7 +687,6 @@ printJoinPoints(edgeJoins, 0, i, edgesMap);
                     }
                 }
             }
-
             // edge to receive new edge
             PairIntArray edge1 = edgesMap.get(Integer.valueOf(loc1.getX()));
             int n1 = edge1.getN();
@@ -729,7 +748,7 @@ printJoinPoints(edgeJoins, 0, i, edgesMap);
             // the output map keeps 0 to loc1.getx(),
             // but loc0.getX() + 1 gets moved to loc0.getX()
             //    and on until have reached size() - 1
-            for (int j = (loc0.getX() + 1); j <= edgesMap.size(); ++j) {
+            for (int j = (removedEdgeIdx + 1); j <= edgesMap.size(); ++j) {
                 PairIntArray v = edgesMap.remove(Integer.valueOf(j));
                 assert(v != null);
                 edgesMap.put(Integer.valueOf(j - 1), v);
