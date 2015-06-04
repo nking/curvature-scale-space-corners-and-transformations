@@ -1,7 +1,5 @@
 package algorithms;
 
-import java.util.Arrays;
-
 /**
  *
  * @author nichole
@@ -14,6 +12,21 @@ public class QuickSort {
      */
     public static void sort(float[] a) {
         sort(a, 0, a.length - 1);
+    }
+    
+    public static void sortBy1stArg(int[] a, Object[][] b) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        sortBy1stArg(a, b, 0, a.length - 1);
     }
     
     /**
@@ -58,6 +71,68 @@ public class QuickSort {
             sort(a, idxLo, idxMid - 1);
 
             sort(a, idxMid + 1, idxHi);
+        }
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stArg(int[] a, Object[][] b, int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        if (a.length < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+
+            int x = a[idxLo];
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (a[store] < x));
+                do {
+                    idxMid--;
+                } while (a[idxMid] > x);
+                if (store > idxMid) {
+                    break;
+                }
+                int swap = a[store];
+                a[store] = a[idxMid];
+                a[idxMid] = swap;
+                
+                Object[] bSwap = b[store];
+                b[store] = b[idxMid];
+                b[idxMid] = bSwap;
+            }
+            int swap = a[idxLo];
+            a[idxLo] = a[idxMid];
+            a[idxMid] = swap;
+            
+            Object[] bSwap = b[idxLo];
+            b[idxLo] = b[idxMid];
+            b[idxMid] = bSwap;
+         
+            sortBy1stArg(a, b, idxLo, idxMid - 1);
+
+            sortBy1stArg(a, b, idxMid + 1, idxHi);
         }
     }
     
@@ -172,4 +247,5 @@ public class QuickSort {
         c[idxHi] = swap2;
         return store;
     }
+
 }

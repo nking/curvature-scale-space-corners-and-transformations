@@ -207,6 +207,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
     private void correctForArtifacts(GreyscaleImage input) {
                
         //TODO: reduce the number of patterns here if possible
+        // and make sure that true corners aren't drastically reduced to less
+        // usable smaller corners 
         
         //correctForHoleArtifacts3(input);
         
@@ -242,6 +244,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         correctForZigZag1(input);
         
         correctForSpurs(input);
+        
+        correctForZigZag7(input);        
     }
     
     private void correctForZigZag0(GreyscaleImage input) {
@@ -427,6 +431,55 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         ones.add(new PairInt(3, -1));
         
         changeToZeroes.add(new PairInt(1, -1));
+        
+        int startValue = 1;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+    }
+    
+    /**
+     * using this one unfortunately reduces the sharpness of real corners,
+     * but it allows clear point ordering when extracting edges from the
+     * line thinned image.
+     * 
+     * @param input 
+     */
+    private void correctForZigZag7(GreyscaleImage input) {
+       
+        /*  
+           #
+        0  #  0         1
+        #  #*<0         0
+        #  0  0        -1
+        #              -2
+        
+       -1  0  1  2 
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+    
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, 0));
+        zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(-1, -1));
+        
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(-1, 2));
+        ones.add(new PairInt(0, -2));
+        
+        changeToZeroes.add(new PairInt(0, 0));
         
         int startValue = 1;
             
@@ -767,7 +820,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
        
         /*  
         
-        #     0         1
+        #               1
         0  #* 0         0
         0  #< #        -1
         0  0  0        -2
@@ -784,14 +837,12 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         zeroes.add(new PairInt(-1, 2));
         zeroes.add(new PairInt(-1, 1));
         zeroes.add(new PairInt(-1, 0));
-        zeroes.add(new PairInt(-1, -1));
         zeroes.add(new PairInt(0, 2));
         zeroes.add(new PairInt(1, 2));
         zeroes.add(new PairInt(1, 0));
-        zeroes.add(new PairInt(1, -1));
         
+        ones.add(new PairInt(-1, -1));
         ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(0, -1));
         ones.add(new PairInt(1, 1));
         
         changeToZeroes.add(new PairInt(0, 1));

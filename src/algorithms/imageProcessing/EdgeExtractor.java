@@ -3,31 +3,22 @@ package algorithms.imageProcessing;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
- * Edge extractor operates on an image that has already been reduced to holding
- * single pixel width lines where the original image was.  
- * The EdgeExtractor additionally accepts an argument that is an image
- * that is used as guidance to correct the extracted edges.  The guidance
- * image, for example, is expected to be the combined gradient X and Y image
- * that was used in forming the main input image.  The guidance image is used
- * to make minor corrections to the coordinates of edge pixels if the changes
- * do not disconnect the edge.  The guidance image helps corrects errors in
- * the input image due to a line thinner that doesn't make thinning decisions
- * on a slightly larger scale, for example.
+ * Edge extractor operates on an image that has already been reduced to 
+ * single pixel width lines and extracts edges from it, attempting to make
+ * the longest edges it can. 
  * 
- Edge extraction
+ * @see AbstractEdgeExtractor
+
+Edge extraction
     Local Methods:
         (1) DFS walk through connected pixel to form a sequence of pixels called
             an edge.
@@ -39,40 +30,13 @@ import java.util.logging.Logger;
             
         (4) find edge endpoints which are separated from one another by a gap of
             one and fill in the gap while merging the edges.
-         
-        (5) remove edges shorter than a minimum length
         
-        (6) if an edge guide image was provided, make adjustments to edge 
-            towards highest intensity pixels in the edge guide image as long
-            as the adjustment doesn't create a gap in the edge.
-            This stage also reduces any redundant pixels that may be present
-            in the line.
+        (5) remove edges shorter than a minimum length
 
  * @author nichole
  */
-public class EdgeExtractor {
-    
-    private final GreyscaleImage img;
-    
-    private GreyscaleImage edgeGuideImage = null;
-    
-    private Map<PairInt, Set<PairInt> > edgeJunctionMap = 
-        new HashMap<PairInt, Set<PairInt>>();
-    
-    private Map<PairInt, Integer> outputIndexLocatorForJunctionPoints =
-        new HashMap<PairInt, Integer>();
-        
-    private long numberOfPixelsAboveThreshold = 0;
-    
-    private Logger log = Logger.getLogger(this.getClass().getName());
+public class EdgeExtractor extends AbstractEdgeExtractor {
             
-    /**
-     * if the image is smaller than 100 on a side, this will be lowered to 5
-     */
-    private int edgeSizeLowerLimit = 15;
-    
-    private boolean repeatConnectAndTrim = false;
-    
     /**
      * NOTE:  input should have a black (empty) background and edges should
      * have values > 125 counts.  Edges should also have width of 1 and no larger.
@@ -81,11 +45,7 @@ public class EdgeExtractor {
      */
     public EdgeExtractor(GreyscaleImage input) {
         
-        img = input;
-        
-        if (img.getWidth() < 100 || img.getHeight() < 100) {
-            edgeSizeLowerLimit = 5;
-        }
+        super(input);
     }
     
     /**
@@ -102,133 +62,23 @@ public class EdgeExtractor {
     public EdgeExtractor(GreyscaleImage input, 
         final GreyscaleImage anEdgeGuideImage) {
         
-        img = input;
-        
-        edgeGuideImage = anEdgeGuideImage;
-        
-        if (img.getWidth() < 100 || img.getHeight() < 100) {
-            edgeSizeLowerLimit = 5;
-        }
-    }
-    
-    public GreyscaleImage getImage() {
-        return img;
-    }
-    
-    public Map<PairInt, Set<PairInt> > getEdgeJunctionMap() {
-        return edgeJunctionMap;
-    }
-    public Map<PairInt, Integer> getOutputIndexLocatorForJunctionPoints() {
-        return outputIndexLocatorForJunctionPoints;
-    }
-    
-    public void overrideEdgeSizeLowerLimit(int length) {
-        edgeSizeLowerLimit = length;
-    }
-    
-    public void useRepeatConnectAndTrim() {
-        repeatConnectAndTrim = true;
+        super(input, anEdgeGuideImage);
     }
     
     /**
-     * find the edges and return as a list of points.  The method uses a
-     * DFS search through all points in the image with values > 0 to link
-     * adjacent sequential points into edges.
-     * The method then uses method mergeAdjacentEndPoints.
-     * Note that the later 2 methods are not needed if the edges will be used
-     * in a corner detector only, but if the edges are to be used to
-     * find inflection points in scale space maps, those methods help to
-     * provide more complete shapes and better matches between the same object
-     * in another scale space map.
+     * this method is invoked by the super class after the DFS connect of
+     * points in the image to make edges.  It merges the edges that have
+     * adjacent endpoints.
+     * It then looks for locations within the edges where it
+     * can connect to other edges by trimming a small number of pixels between
+     * them.
      * 
      * @return 
      */
-    public List<PairIntArray> findEdges() {
+    @Override
+    public List<PairIntArray> findEdgesIntermediateSteps(List<PairIntArray> edges) {
         
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
-        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
-        // DFS search for sequential neighbors.
-        
-        Stack<PairInt> stack = new Stack<PairInt>();
-      
-        int thresh0 = 1;
-        
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                int v = img.getValue(i, j);
-                if (v >= thresh0) {
-                    stack.add(new PairInt(i, j));
-                }
-            }
-        }
-        
-        numberOfPixelsAboveThreshold = stack.size();
-        
-        log.log(Level.FINE, "Number of pixels that exceed threshhold={0}", 
-            Long.toString(numberOfPixelsAboveThreshold));
-        
-        List<PairIntArray> output = new ArrayList<PairIntArray>();
-        int[] uNodeEdgeIdx = new int[img.getWidth() * img.getHeight()];
-        Arrays.fill(uNodeEdgeIdx, -1);
-           
-        while (!stack.isEmpty()) {
-            
-            PairInt uNode = stack.pop();
-            
-            int uX = uNode.getX();
-            int uY = uNode.getY();
-            int uIdx = img.getIndex(uX, uY);
-                        
-            for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
-                
-                int vX = dxs[nIdx] + uX;
-                int vY = dys[nIdx] + uY;
-
-                if ((vX < 0) || (vX > (w - 1)) || (vY < 0) || (vY > (h - 1))) {
-                    continue;
-                }
-
-                int vIdx = img.getIndex(vX, vY);
-                
-                if (uNodeEdgeIdx[vIdx] != -1 || (uIdx == vIdx)) {
-                    continue;
-                }
-
-                if (img.getValue(vX, vY) < thresh0) {
-                    continue;
-                }
-                   
-                processNeighbor(uX, uY, uIdx, vX, vY, vIdx, uNodeEdgeIdx, output);
-
-                //TODO: do we only want 1 neighbor from the 9 as a continuation?
-                // yes for now, but this requires edges be only 1 pixel wide
-                // inserting back at the top of the stack assures that the 
-                // search continues next from an associated point
-                stack.add(new PairInt(vX, vY));
-            }
-        }
-        
-        log.fine(output.size() + " edges after DFS");
-        
-        int nIterMax = 100;
-        int n, sz, lastSize;
-        
-        // count the number of points in edges
-        long sum = countPixelsInEdges(output);
-        
-        log.log(Level.FINE, 
-            "==> {0} pixels are in edges out of {1} pixels > threshhold", 
-            new Object[]{Long.toString(sum), 
-                Long.toString(numberOfPixelsAboveThreshold)});
-        
-        log.log(Level.FINE, "there are {0} edges", 
-            Integer.toString(output.size()));
-        
-        output = mergeAdjacentEndPoints(output);
+        List<PairIntArray> output = mergeAdjacentEndPoints(edges);
         
         log.log(Level.INFO, "{0} edges after merge adjacent", 
             Integer.toString(output.size()));
@@ -248,39 +98,9 @@ public class EdgeExtractor {
         log.log(Level.INFO, "{0} edges after fill in gaps", 
             new Object[]{Integer.toString(output.size())});
          
-                
-        //TODO:  this may need to change
-        removeEdgesShorterThan(output, edgeSizeLowerLimit);
-        sz = output.size();
-        
-        
-        log.log(Level.INFO, "{0} edges after removing those shorter", 
-            new Object[]{Integer.toString(sz)});
-
-        long sum2 = countPixelsInEdges(output);
-               
-        log.log(Level.FINE, 
-            "==> {0}) pixels are in edges out of {1} pixels > threshhold", 
-            new Object[]{Long.toString(sum2), 
-                Long.toString(numberOfPixelsAboveThreshold)});
-       
-        //pruneSpurs(output);
-        
-        if (repeatConnectAndTrim) {
-            output = connectClosestPointsIfCanTrim(output);
-        }
-        
         return output;
     }
-    
-    private long countPixelsInEdges(List<PairIntArray> edges) {
-        long sum = 0;
-        for (PairIntArray edge : edges) {
-            sum += edge.getN();
-        }
-        return sum;
-    }
-   
+ 
     /**
      * merge edges adjacent end points of given edges and fid the junctions
      * along the way.  the junctions are stored as member variables.
@@ -300,21 +120,6 @@ public class EdgeExtractor {
         if (edges == null || edges.isEmpty()) {
             return output;
         }
-        
-        // key = center of junction pixel coordinates
-        // value = set of adjacent pixels when there are more than the preceding
-        //         and next.
-        Map<PairInt, Set<PairInt> > junctionMap = new HashMap<PairInt, Set<PairInt>>();
-        
-        // key = pixel coordinates of all pixels involved in junctions
-        // value = index in edges (NOTE: at end of method, these are converted to 
-        //                        indexes of output list).
-        Map<PairInt, Integer> junctionLocationMap = new HashMap<PairInt, Integer>();
-        
-        // key = edges index
-        // value = indexes of the output edge that the pixel is in.
-        Map<Integer, Integer> junctionEdgesToOutputIndexesMap = 
-            new HashMap<Integer, Integer>();
         
         // 2 * O(N)
         Map<PairInt, Integer> endPointMap = createEndPointMap(edges);
@@ -354,7 +159,7 @@ public class EdgeExtractor {
             PairInt maxAdjEdgesPoint = null;
             
             foundEdgesIndexes.clear();
-            foundEndPoints.clear();
+            foundEndPoints.clear();         
             
             for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                 int x = currentEndPoint.getX() + dxs[nIdx];
@@ -389,26 +194,6 @@ public class EdgeExtractor {
                     
                     values.add(prevPoint);
                     
-                    junctionMap.put(currentEndPoint, values);
-                    
-                    // add an entry to junctionLocationMap for currentEndPoint
-                    junctionLocationMap.put(currentEndPoint, Integer.valueOf(currentEdgeIdx));
-                    
-                    // add an entry to junctionLocationMap for prevPoint
-                    junctionLocationMap.put(prevPoint, Integer.valueOf(currentEdgeIdx));
-                    
-                    // add an entry to junctionEdgesToOutputIndexesMap for currentEndPoint
-                    junctionEdgesToOutputIndexesMap.put(
-                        Integer.valueOf(currentEdgeIdx), 
-                        Integer.valueOf(output.size() - 1));
-                    
-                    // add entries to junctionLocationMap for items in
-                    // foundEdgesIndexes, foundEndPoints
-                    for (int i = 0; i < foundEdgesIndexes.size(); i++) {
-                        junctionLocationMap.put(foundEndPoints.get(i), 
-                            foundEdgesIndexes.get(i));
-                    }
-                    
                     currentEdgeIdx = maxAdjEdgesIdx;
                     
                     currentEndPoint = getOppositeEndPointOfEdge(
@@ -423,18 +208,6 @@ public class EdgeExtractor {
                 }
               
             } else {
-                
-                PairInt oppositeEndPoint = getOppositeEndPointOfEdge(currentEndPoint, 
-                    edges.get(currentEdgeIdx));
-                
-                //TODO: revisit this
-                if (junctionLocationMap.containsKey(currentEndPoint)) {
-                    junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
-                        Integer.valueOf(output.size() - 1));
-                } else if (junctionLocationMap.containsKey(oppositeEndPoint)) {
-                    junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
-                        Integer.valueOf(output.size() - 1));
-                }
                 
                 output.add(new PairIntArray());
                 
@@ -457,41 +230,12 @@ public class EdgeExtractor {
             PairInt oppositeEndPoint = getOppositeEndPointOfEdge(currentEndPoint, 
                 edges.get(currentEdgeIdx));
             
-            if (junctionLocationMap.containsKey(currentEndPoint)) {
-                junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
-                    Integer.valueOf(output.size() - 1));
-            } else if (junctionLocationMap.containsKey(oppositeEndPoint)) {
-                junctionEdgesToOutputIndexesMap.put(Integer.valueOf(currentEdgeIdx),
-                    Integer.valueOf(output.size() - 1));
-            }
-            
             Integer v0 = endPointMap.remove(currentEndPoint);
             Integer v1 = endPointMap.remove(oppositeEndPoint);
             assert(v0 != null);
             assert(v1 != null);
         }
       
-        // convert the values in junctionLocationMap from edges indexes to output
-        Map<PairInt, Integer> tmpJunctionLocationMap = new HashMap<PairInt, Integer>();
-        Iterator<Entry<PairInt, Integer> > iter = 
-            junctionLocationMap.entrySet().iterator();
-        while (iter.hasNext()) {
-            
-            Entry<PairInt, Integer> entry = iter.next();
-            
-            Integer replValue = junctionEdgesToOutputIndexesMap.get(
-                entry.getValue());
-            assert(replValue != null);
-            
-            tmpJunctionLocationMap.put(entry.getKey(), replValue);
-        }
-        assert(tmpJunctionLocationMap.size() == junctionLocationMap.size());
-        junctionLocationMap = tmpJunctionLocationMap;
-         
-        // store junctionMap and junctionLocationsMap as member variables
-        edgeJunctionMap.putAll(junctionMap);
-        outputIndexLocatorForJunctionPoints.putAll(junctionLocationMap);
-       
         return output;
     }
     
@@ -687,7 +431,7 @@ public class EdgeExtractor {
      */
     protected List<PairIntArray> connectClosestPointsIfCanTrim(
         List<PairIntArray> edges) {
-     
+             
         double sqrtTwo = Math.sqrt(2) + 0.01;
         //double gapOfOne = 2*Math.sqrt(2) + 0.01;
         
@@ -808,6 +552,7 @@ public class EdgeExtractor {
                         if (closest1IsNearTop) {
                             edge1.reverse();
                         }
+
                         for (int k = 0; k < edge1.getN(); k++) {
                             edge0.set(k, edge1.getX(k), edge1.getY(k));
                         }
@@ -817,6 +562,7 @@ public class EdgeExtractor {
                         if (!closest1IsNearTop) {
                             edge1.reverse();
                         }
+
                         for (int k = 0; k < edge1.getN(); k++) {
                             edge0.add(edge1.getX(k), edge1.getY(k));
                         }
@@ -867,440 +613,6 @@ public class EdgeExtractor {
         }
         
         return true;
-    }
-
-    protected void removeEdgesShorterThan(List<PairIntArray> output, 
-        int minNumberOfPixelsInEdge) {
-        
-        for (int i = (output.size() - 1); i > -1; i--) {
-            if (output.get(i).getN() < minNumberOfPixelsInEdge) {
-                output.remove(i);
-            }
-        }
-    }
-    
-    private void pruneSpurs(List<PairIntArray> tmpEdges) {
-        
-        //TODO: improve this to follow a spur when found and remove the
-        //  resulting spurs from the remove action
-        
-        int nIter = 0;
-        int nMaxIter = 3;
-        int nRemoved = 0;
-                
-        while (nIter < nMaxIter) {
-            
-            nRemoved = 0;
-            
-            /*
-            0 0 0    0 0 0
-            0 1 0    0 1 0
-            0 _ _    _ _ 0
-            */
-            // indexes that have to be zeros that is, not within an edge
-            int[] topXIdx = new int[]{-1, 0, 1, -1, 1};
-            int[] topYIdx = new int[]{ 1, 1, 1,  0, 0};
-            int[] leftXIdx = new int[]{-1};
-            int[] leftYIdx = new int[]{-1};
-            int[] rightXIdx = new int[]{1};
-            int[] rightYIdx = new int[]{-1};
-            // one must be a zero:
-            int[] leftOrZeroXIdx = new int[]{0, 1};
-            int[] leftOrZeroYIdx = new int[]{-1, -1};
-            int[] rightOrZeroXIdx = new int[]{-1, 0};
-            int[] rightOrZeroYIdx = new int[]{-1, -1};
-        
-            for (int r = 0; r < 4; r++) {
-                if (r > 0) {
-                    rotateIndexesBy90(topXIdx, topYIdx);
-                    rotateIndexesBy90(leftXIdx, leftYIdx);
-                    rotateIndexesBy90(rightXIdx, rightYIdx);
-                    rotateIndexesBy90(leftOrZeroXIdx, leftOrZeroYIdx);
-                    rotateIndexesBy90(rightOrZeroXIdx, rightOrZeroYIdx);
-                }
-                for (int i = 0; i < tmpEdges.size(); i++) {
-                    
-                    PairIntArray edge = tmpEdges.get(i);
-                    
-                    // skip the endpoints
-                    for (int j = (edge.getN() - 1); j > 0; j--) {
-                        
-                        if ((j < 0) || (j > (edge.getN() - 1))) {break;}
-                        
-                        int x = edge.getX(j);
-                        int y = edge.getY(j);
-                        
-                        // TODO: consider a smaller range to search than +-10
-                        int start = j - 10;
-                        if (start < 0) {
-                            continue;
-                        }
-                        int stop = j + 10;
-                        if (stop > (edge.getN() - 1)) {
-                            continue;
-                        }
-                        // "notFound" is "all are zeroes"
-                        boolean notFound = notFound(edge, topXIdx, topYIdx, x, y, 
-                            start, stop);
-                        if (notFound) {
-                            notFound = notFound(edge, leftXIdx, leftYIdx, x, y, 
-                                start, stop);
-                            if (notFound) {
-                                if (hasAtLeastOneZero(edge, leftOrZeroXIdx,
-                                    leftOrZeroYIdx, x, y, start, stop)) {
-                                    
-                                    edge.removeRange(j, j);
-                                    nRemoved++;
-                                }
-                            } else {
-                                notFound = notFound(edge, rightXIdx, rightYIdx, x, y, 
-                                    start, stop);
-                                if (notFound) {
-                                    if (hasAtLeastOneZero(edge, rightOrZeroXIdx,
-                                        rightOrZeroYIdx, x, y, start, stop)) {
-                                        
-                                        edge.removeRange(j, j);
-                                        nRemoved++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            log.info("nRemoved=" + nRemoved);
-            if (nRemoved == 0) {
-                break;
-            }
-            nIter++;
-        }
-    }
-    
-    /**
-     * edge contains point pairs of (x, y).  this method searches edge to assert
-     * that all of the specified points are not present, else returns as soon
-     * as one of the specified points is found.  
-     * The specified points are 
-     * (xIndex + xIndexOffsets[i], yIndex + yIndexOffsets[i]).
-     * The search through edge is done from startIdx to stopIdx, inclusive.
-     * @param edge
-     * @param xIndexOffsets
-     * @param yIndexOffsets
-     * @param xIndex
-     * @param yIndex
-     * @param startIdx
-     * @param stopIdx
-     * @return 
-     */
-    private boolean notFound(PairIntArray edge, 
-        int[] xIndexOffsets, int[] yIndexOffsets,
-        int xIndex, int yIndex, int startIdx, int stopIdx) {
-        
-StringBuilder sb2 = new StringBuilder();
-        
-        for (int j = 0; j < xIndexOffsets.length; j++) {
-            int xFind = xIndex + xIndexOffsets[j];
-            int yFind = yIndex + yIndexOffsets[j];
-sb2.append(String.format("(%d, %d)\n", xFind, yFind));
-            for (int i = startIdx; i <= stopIdx; i++) {
-                int x = edge.getX(i);
-                int y = edge.getY(i);
-                if ((x == xFind) && (y == yFind)) {
-                    return false;
-                }
-            }
-        }
-        
-StringBuilder sb = new StringBuilder();
-for (int i = 0; i < edge.getN(); i++) {
-     int x = edge.getX(i);
-     int y = edge.getY(i);
-     sb.append(String.format("%d)  (%d, %d)\n", i, x, y));
-}
-        
-        return true;
-    }
-    
-    /**
-     * edge contains point pairs of (x, y).  this method searches edge to assert
-     * that all of the specified points are not present, else returns as soon
-     * as one of the specified points is found.  
-     * The specified points are 
-     * (xIndex + xIndexOffsets[i], yIndex + yIndexOffsets[i]).
-     * The search through edge is done from startIdx to stopIdx, inclusive.
-     * NOTE: also checks for whether nulling the pixel at (xP, yP) is 
-     * connected to the wall and returns false if it is.
-     * @param edge
-     * @param xIndexOffsets
-     * @param yIndexOffsets
-     * @param xIndex
-     * @param yIndex
-     * @param startIdx
-     * @param stopIdx
-     * @return 
-     */
-    private boolean hasAtLeastOneZero(PairIntArray edge, 
-        int[] xIndexOffsets, int[] yIndexOffsets,
-        int xP, int yP, int startIdx, int stopIdx) {
-        
-        // side logic of checking whether connected to wall.  return false if so
-        if ((xP == 0) || (yP == 0)) {
-            return false;
-        }
-        if ((xP == (img.getWidth() - 1)) 
-            || (yP == (img.getHeight() - 1))) {
-            return false;
-        }
-        
-        int nOnes = 0;
-        for (int j = 0; j < xIndexOffsets.length; j++) {
-            int xFind = xP + xIndexOffsets[j];
-            int yFind = yP + yIndexOffsets[j];
-            for (int i = startIdx; i <= stopIdx; i++) {
-                int x = edge.getX(i);
-                int y = edge.getY(i);
-                if ((x == xFind) && (y == yFind)) {
-                    nOnes++;
-                }
-            }
-        }        
-        
-        return (nOnes < (xIndexOffsets.length));
-    }
-    
-    private void rotateIndexesBy90(int[] xOffsetIndexes, int[] yOffsetIndexes) {
-        
-        for (int i = 0; i < xOffsetIndexes.length; i++) {
-            int xoff = xOffsetIndexes[i];
-            int yoff = yOffsetIndexes[i];
-           
-            switch(xoff) {
-                case -1:
-                    switch (yoff) {
-                        case -1:
-                            xOffsetIndexes[i] = -1;
-                            yOffsetIndexes[i] = 1;
-                            break;
-                        case 0:
-                            xOffsetIndexes[i] = 0;
-                            yOffsetIndexes[i] = 1;
-                            break;
-                        case 1:
-                            xOffsetIndexes[i] = 1;
-                            yOffsetIndexes[i] = 1;
-                            break;
-                    }
-                    break;
-                case 0:
-                    switch (yoff) {
-                        case -1:
-                            xOffsetIndexes[i] = -1;
-                            yOffsetIndexes[i] = 0;
-                            break;
-                        case 0:
-                            // remains same
-                            break;
-                        case 1:
-                            xOffsetIndexes[i] = 1;
-                            yOffsetIndexes[i] = 0;
-                            break;
-                    }
-                    break;
-                case 1:
-                    switch (yoff) {
-                        case -1:
-                            xOffsetIndexes[i] = -1;
-                            yOffsetIndexes[i] = -1;
-                            break;
-                        case 0:
-                            xOffsetIndexes[i] = 0;
-                            yOffsetIndexes[i] = -1;
-                            break;
-                        case 1:
-                            xOffsetIndexes[i] = 1;
-                            yOffsetIndexes[i] = -1;
-                            break;
-                    }
-                    break;
-            }
-        }
-        /*
-        1 2 3    7 4 1  
-        4 5 6      5 2  
-        7 _ _      6 3 
-        
-        (-1,1)    (1,1)   0
-        (0,1)     (1,0)   1
-        (1,1)     (1,-1)  2
-        (-1,0)    (0,1)   3
-        (0,0)     (0,0)   4
-        (1,0)     (0,-1)  5
-        (-1,-1)   (-1,1)  6
-        (0,-1)    (-1,0)  7
-        (1,-1)    (-1,-1) 8
-        */
-    }
-    
-    private void adjustEdgesTowardsBrightPixels(List<PairIntArray> tmpEdges) {
-        
-        if (edgeGuideImage == null) {
-            return;
-        }
-        
-        int nReplaced = 1;
-        
-        int nMaxIter = 100;
-        int nIter = 0;
-      
-        while ((nIter < nMaxIter) && (nReplaced > 0)) {
-           
-           nReplaced = 0;
-        
-           for (int lIdx = 0; lIdx < tmpEdges.size(); lIdx++) {
-            
-                PairIntArray edge = tmpEdges.get(lIdx);
-
-                if (edge.getN() < 3) {
-                    continue;
-                }
-
-                int nEdgeReplaced = 0;
-                
-                /*
-                looking at the 8 neighbor region of each pixel for which the
-                pixel's preceding and next edge pixels remain connected for
-                   and among those, looking for a higher intensity pixel than
-                   the center and if found, change coords to that.
-                */
-                for (int i = 1; i < (edge.getN() - 1); i++) {
-                    int x = edge.getX(i);                
-                    int y = edge.getY(i);
-                    int prevX = edge.getX(i - 1);                
-                    int prevY = edge.getY(i - 1);
-                    int nextX = edge.getX(i + 1);                
-                    int nextY = edge.getY(i + 1);
-
-                    int maxValue = edgeGuideImage.getValue(x, y);
-                    int maxValueX = x;
-                    int maxValueY = y;
-                    boolean changed = false;
-
-                    for (int col = (prevX - 1); col <= (prevX + 1); col++) {
-
-                        if ((col < 0) || (col > (edgeGuideImage.getWidth() - 1))) {
-                            continue;
-                        }
-
-                        for (int row = (prevY - 1); row <= (prevY + 1); row++) {
-
-                            if ((row < 0) || (row > (edgeGuideImage.getHeight() - 1))) {
-                                continue;
-                            }
-                            if ((col == prevX) && (row == prevY)) {
-                                continue;
-                            }
-                            if ((col == nextX) && (row == nextY)) {
-                                continue;
-                            }
-
-                            // skip if pixel is not next to (nextX, nextY)
-                            int diffX = Math.abs(nextX - col);
-                            int diffY = Math.abs(nextY - row);
-                            if ((diffX > 1) || (diffY > 1)) {
-                                continue;
-                            }
-
-                            if (edgeGuideImage.getValue(col, row) > maxValue) {
-                                maxValue = edgeGuideImage.getValue(col, row);
-                                maxValueX = col;
-                                maxValueY = row;
-                                changed = true;
-                            }
-                        }
-                    }
-                    if (changed) {
-                        nEdgeReplaced++;
-                        edge.set(i, maxValueX, maxValueY);
-                    }                    
-                }
-                
-                nReplaced += nEdgeReplaced;
-            }
-
-            log.fine("REPLACED: " + nReplaced + " nIter=" + nIter);
-
-            nIter++;
-        }
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        curveHelper.removeRedundantPoints(tmpEdges);
-        
-        curveHelper.pruneAdjacentNeighborsTo2(tmpEdges);
-        
-        curveHelper.correctCheckeredSegments(tmpEdges);
-    }
-
-    private void processNeighbor(int uX, int uY, int uIdx,
-        int vX, int vY, int vIdx,
-        int[] uNodeEdgeIdx, List<PairIntArray> output) {
-        
-        // if u is not in an edge already, create a new one
-        if (uNodeEdgeIdx[uIdx] == -1) {
-
-            PairIntArray edge = new PairIntArray();
-
-            edge.add(uX, uY);
-
-            uNodeEdgeIdx[uIdx] = output.size();
-
-            output.add(edge);                        
-        }
-
-        // keep the curve points ordered
-
-        // add v to the edge u if u is the last node in it's edge
-
-        PairIntArray appendToNode = output.get(uNodeEdgeIdx[uIdx]);
-        int aIdx = appendToNode.getN() - 1;
-        if ((appendToNode.getX(aIdx) != uX) || 
-            (appendToNode.getY(aIdx) != uY)) {
-            return;
-        }
-
-        appendToNode.add(vX, vY);
-
-        uNodeEdgeIdx[vIdx] = uNodeEdgeIdx[uIdx];
-        
-    }
-    
-    /**
-     * get the other endPoint within this edge.  NOTE that the method assumes
-     * that endPoint is truly an endPoint of edge, so it will always return 
-     * a value.
-     * @param endPoint
-     * @param edge
-     * @return 
-     */
-    protected PairInt getOppositeEndPointOfEdge(PairInt endPoint, 
-        PairIntArray edge) {
-        
-        int x = endPoint.getX();
-        int y = endPoint.getY();
-        
-        int idx = 0;
-        
-        int n = edge.getN();
-        
-        if ((edge.getX(idx) == x) && (edge.getY(idx) == y)) {
-            int x2 = edge.getX(n - 1);
-            int y2 = edge.getY(n - 1);
-            return new PairInt(x2, y2);
-        } else {
-            int x2 = edge.getX(0);
-            int y2 = edge.getY(0);
-            return new PairInt(x2, y2);
-        }
     }
 
     /**
@@ -1457,4 +769,5 @@ for (int i = 0; i < edge.getN(); i++) {
             lastOutputEdge.addAll(edge);
         }
     }
+    
 }
