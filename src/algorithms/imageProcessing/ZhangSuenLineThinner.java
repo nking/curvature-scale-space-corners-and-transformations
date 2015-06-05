@@ -47,7 +47,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
         //GreyscaleImage summed = sumOver8Neighborhood(input);
         
-        GreyscaleImage input2 = addOnePixelBorders(input);
+        boolean hasABorderPixel = hasAtLeastOneBorderPixel(input);
+        
+        GreyscaleImage input2 = hasABorderPixel ? addOnePixelBorders(input) :
+            input;
         
         int w2 = input2.getWidth();
         int h2 = input2.getHeight();
@@ -71,7 +74,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
         //correctForMinorOffsetsByIntensity(input, summed);
         
-        GreyscaleImage input3 = removeOnePixelBorders(input2);
+        GreyscaleImage input3 = hasABorderPixel ? removeOnePixelBorders(input2)
+            : input2;
         
         input.resetTo(input3);
                 
@@ -254,7 +258,8 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         
         correctForSpurs(input);
         
-        correctForZigZag7(input);        
+        correctForZigZag7(input);
+    
     }
     
     private void correctForZigZag0(GreyscaleImage input) {
@@ -1526,6 +1531,44 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         }
         
         return output;
+    }
+
+    /**
+     * return true if at least one pixel is found on the border of the images
+     * to have a non-zero value (value > 0 || value < 0).
+     * @param input
+     * @return 
+     */
+    protected boolean hasAtLeastOneBorderPixel(GreyscaleImage input) {
+        
+        int lastCol = input.getWidth() - 1;
+        int lastRow = input.getHeight() - 1;
+        
+        for (int i = 0; i <= lastCol; i++) {
+            if (input.getValue(i, 0) != 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastCol; i++) {
+            if (input.getValue(i, lastRow) != 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastRow; i++) {
+            if (input.getValue(0, i) != 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastRow; i++) {
+            if (input.getValue(lastCol, i) != 0) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
 }

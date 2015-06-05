@@ -292,6 +292,15 @@ public class CannyEdgeFilter {
             (int)threshold2, 255);
         
         double r = (double)n1/(double)n0;
+        
+        /*
+        NOTE: if wanted the final result to include slightly lower intensity
+        pixels w/o changing the noise level, these parameters seem to give the
+        next best results:
+            gaussian sigma = SIGMA.ZEROPOINTSEVONEONE in getGradient1D
+            lowThreshFactor = 2.0 in LowIntensityRemovalFilter
+            threshold2 *= 0.4 here
+        */
  
         log.info("threshold2=" + threshold2 + " n0=" + n0 + " n1=" + n1 + 
             " n1/n0=" + r);

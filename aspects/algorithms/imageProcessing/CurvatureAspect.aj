@@ -1243,19 +1243,19 @@ private static int n3 = 0;
     }
 
     before() 
-        : call(List<PairIntArray> EdgeExtractor*.findEdges() ) 
+        : execution(List<PairIntArray> AbstractEdgeExtractor*.findEdges() ) 
         && args() 
-        && target(algorithms.imageProcessing.EdgeExtractor) {
+        && target(algorithms.imageProcessing.AbstractEdgeExtractor) {
 
-        log2.fine("before EdgeExtractor*.findEdges()");
+        log2.fine("before AbstractEdgeExtractor*.findEdges()");
 
         Object obj = thisJoinPoint.getThis();
 
-        if (!(obj instanceof EdgeExtractor)) {
+        if (!(obj instanceof AbstractEdgeExtractor)) {
             return;
         }
 
-        EdgeExtractor instance = (EdgeExtractor)obj;
+        AbstractEdgeExtractor instance = (AbstractEdgeExtractor)obj;
 
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
@@ -1272,16 +1272,16 @@ private static int n3 = 0;
     }
 
     after() returning(List<PairIntArray> edges) : 
-	    target(algorithms.imageProcessing.EdgeExtractor) 
-        && execution(List<PairIntArray> EdgeExtractor*.findEdges()) {
+	    target(algorithms.imageProcessing.AbstractEdgeExtractor) 
+        && execution(List<PairIntArray> AbstractEdgeExtractor*.findEdges()) {
 
         Object obj = thisJoinPoint.getThis();
 
-        if (!(obj instanceof EdgeExtractor)) {
+        if (!(obj instanceof AbstractEdgeExtractor)) {
             return;
         }
 
-        EdgeExtractor instance = (EdgeExtractor)obj;
+        AbstractEdgeExtractor instance = (AbstractEdgeExtractor)obj;
 
         GreyscaleImage img3 = instance.getImage();
 

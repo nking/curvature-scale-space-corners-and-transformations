@@ -499,6 +499,10 @@ public class CurvatureScaleSpaceCornerDetector extends
         HistogramHolder h = Histogram.calculateSturgesHistogramRemoveZeroTail(
             k, Errors.populateYErrorsBySqrt(k));
         
+        if (h.getXHist().length < 3) {
+            return new ArrayList<Integer>();
+        }
+        
         int[] firstPeakAndMinIdx = findFirstPeakAndMinimum(h);
        
         if (firstPeakAndMinIdx[1] > 3) {
@@ -516,6 +520,12 @@ public class CurvatureScaleSpaceCornerDetector extends
             firstPeakAndMinIdx = findFirstPeakAndMinimum(h);
         }
         
+        /*
+        try {
+            h.plotHistogram("curvature", 283746);
+        } catch (Exception e) {}
+        */
+        
         // sum intensity <= firstMinIdx and then after to compare
         long sum0 = 0;
         long sum1 = 0;
@@ -525,6 +535,10 @@ public class CurvatureScaleSpaceCornerDetector extends
             } else {
                 sum1 += h.getYHist()[i];
             }
+        }
+        
+        if (sum1 == 0) {
+            return new ArrayList<Integer>();
         }
         
         float divSum = (float)sum0/(float)sum1;
@@ -537,7 +551,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         } else if ((firstPeakAndMinIdx[1] > 0) && (sum1 == 0)) {
             firstPeakAndMinIdx[1]--;
         }
-                
+        
         log.fine("lowThresh=" + outputLowThreshold[0] 
             + " sum0=" + sum0 + " sum1=" + sum1 + " divsum=" + divSum
             + " firstPeakAndMinIdx[0]=" + firstPeakAndMinIdx[0] 

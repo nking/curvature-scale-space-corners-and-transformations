@@ -102,6 +102,10 @@ public class ZhangSuenLineThinnerTest extends TestCase {
         
         GreyscaleImage img2 = lineThinner.addOnePixelBorders(img);
         
+        assertTrue(lineThinner.hasAtLeastOneBorderPixel(img));
+        
+        assertFalse(lineThinner.hasAtLeastOneBorderPixel(img2));
+        
         assertTrue(img.getWidth() == w);
         assertTrue(img.getHeight() == h);
         
@@ -117,6 +121,10 @@ public class ZhangSuenLineThinnerTest extends TestCase {
         }
         
         GreyscaleImage img3 = lineThinner.removeOnePixelBorders(img2);
+        
+        assertTrue(lineThinner.hasAtLeastOneBorderPixel(img));
+        assertTrue(lineThinner.hasAtLeastOneBorderPixel(img3));
+        assertFalse(lineThinner.hasAtLeastOneBorderPixel(img2));
         
         assertTrue(img3.getWidth() == w);
         assertTrue(img3.getHeight() == h);

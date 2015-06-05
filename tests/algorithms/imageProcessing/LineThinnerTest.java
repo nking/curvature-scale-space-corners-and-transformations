@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,7 +17,7 @@ import static org.junit.Assert.*;
  * @author nichole
  */
 public class LineThinnerTest {
-    
+        
     public LineThinnerTest() {
     }
     
@@ -85,8 +86,10 @@ public class LineThinnerTest {
             }
         }
         
-        // there are small errors, so need a tolerance
-        float eps = 0.1f * expected.size();
+        // lots of curves, so higher errors due to staircase corrections
+        float eps = 0.21f * expected.size();
+        System.out.println("nExpectedFound=" + nExpectedFound + "  expected=" 
+            + expected.size() + " eps=" + eps);
         assertTrue(Math.abs(nExpectedFound - expected.size()) < eps);
         assertTrue(nNotExpectedFound < eps);
         
@@ -138,8 +141,10 @@ public class LineThinnerTest {
             }
         }
         
-        // there are small errors, so need a tolerance
-        float eps = 0.1f * expected.size();
+        // lots of curves, so higher errors due to staircase corrections
+        float eps = 0.21f * expected.size();
+        System.out.println("nExpectedFound=" + nExpectedFound + "  expected=" 
+            + expected.size() + " eps=" + eps);
         assertTrue(Math.abs(nExpectedFound - expected.size()) < eps);
         assertTrue(nNotExpectedFound < eps);
     }
