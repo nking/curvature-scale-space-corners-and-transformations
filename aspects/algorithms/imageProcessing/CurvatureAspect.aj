@@ -889,7 +889,8 @@ private static int n3 = 0;
             ImageIOHelper.writeOutputImage(
                 dirPath + "/gTheta_" + outImgNum + ".png", cTheta);
 
-            ImageIOHelper.writeOutputImage(dirPath + "/edgethinned.png", image);
+            ImageIOHelper.writeOutputImage(dirPath + "/edgethinned" 
+                + outImgNum + ".png", image);
 
         } catch (IOException e) {
             log2.severe(e.getMessage());

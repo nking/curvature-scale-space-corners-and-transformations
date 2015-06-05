@@ -223,12 +223,21 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         // and make sure that true corners aren't drastically reduced to less
         // usable smaller corners 
         
+ //could speed this up alot by putting the pixels above zero in a set
+ //to avoid iterating over all pixels
+        
         //correctForHoleArtifacts3(input);
         
         //correctForHoleArtifacts2(input);
         
         correctForHoleArtifacts1(input);
+        
+        correctForHoleArtifacts1_2(input);
                  
+        correctForHoleArtifacts1_3(input);
+        
+        correctForHoleArtifacts1_4(input);
+        
         correctForZigZag0(input);
         
         correctForZigZag0Alt(input);
@@ -1399,6 +1408,182 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             }
         }
         
+    }
+
+    private void correctForHoleArtifacts1_2(GreyscaleImage input) {
+        
+        /*     
+             0  0              2
+          0  0  #  #  #        1
+             #  0  0  #        0
+             #  #  #  0  0     -1
+                   0  0        -2
+        
+         -3 -2 -1  0  1  2
+        */  
+
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, -1));
+        zeroes.add(new PairInt(-2, -1));
+        zeroes.add(new PairInt(-2, -2));
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 2));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(2, 1));
+        
+        ones.add(new PairInt(-2, 1));
+        ones.add(new PairInt(-2, 0));
+        ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+        
+        changeToZeroes.add(new PairInt(-2, 0));
+        changeToZeroes.add(new PairInt(-1, -1));
+        changeToZeroes.add(new PairInt(-1, 1));
+        changeToZeroes.add(new PairInt(0, 1));
+        changeToZeroes.add(new PairInt(0, -1));
+        changeToZeroes.add(new PairInt(1, 0));
+        
+        changeToOnes.add(new PairInt(-1, 0));
+        changeToOnes.add(new PairInt(0, 0));
+        
+        int startValue = 0;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+       
+    }
+    
+    private void correctForHoleArtifacts1_3(GreyscaleImage input) {
+        
+        /*     
+             0  0              2
+          0  0  #  #           1
+          0  #  0  0< #  0     0
+                #  #  0  0     -1
+                   0  0        -2
+        
+         -3 -2 -1  0  1  2
+        */  
+
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 0));
+        zeroes.add(new PairInt(-3, -1));
+        zeroes.add(new PairInt(-2, -1));
+        zeroes.add(new PairInt(-2, -2));
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 2));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(2, 1));
+        zeroes.add(new PairInt(2, 0));
+        
+        ones.add(new PairInt(-2, 0));
+        ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+        
+        changeToZeroes.add(new PairInt(-2, 0));
+        changeToZeroes.add(new PairInt(-1, -1));
+        changeToZeroes.add(new PairInt(-1, 1));
+        changeToZeroes.add(new PairInt(0, -1));
+        changeToZeroes.add(new PairInt(0, 1));
+        changeToZeroes.add(new PairInt(1, 0));
+        
+        changeToOnes.add(new PairInt(-2, 1));
+        changeToOnes.add(new PairInt(-1, 0));
+        changeToOnes.add(new PairInt(0, 0));
+        changeToOnes.add(new PairInt(1, -1));
+        
+        int startValue = 0;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+       
+    }
+
+    private void correctForHoleArtifacts1_4(GreyscaleImage input) {
+        
+        /*     
+                   0  0        3
+                #  #  0  0     2
+                #  0  #  0     1
+             0  #  0< #        0
+             0  0  #           -1
+                0  0           -2
+        
+         -3 -2 -1  0  1  2
+        */
+
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-2, 1));
+        zeroes.add(new PairInt(-2, 0));
+        zeroes.add(new PairInt(-1, 2));
+        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, -2));
+        zeroes.add(new PairInt(1, -3));
+        zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(2, -2));
+
+        ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+     
+        changeToZeroes.add(new PairInt(-1, 0));
+        changeToZeroes.add(new PairInt(-1,-1));
+        changeToZeroes.add(new PairInt(0, 1));
+        changeToZeroes.add(new PairInt(0, -2));
+        changeToZeroes.add(new PairInt(1, 0));
+        changeToZeroes.add(new PairInt(1, -1));
+        
+        changeToOnes.add(new PairInt(0, -1));
+        changeToOnes.add(new PairInt(0, 0));
+        changeToOnes.add(new PairInt(1, 1));
+        
+        int startValue = 0;
+            
+        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+        
+        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
+       
     }
 
     protected GreyscaleImage sumOver8Neighborhood(GreyscaleImage img) {
