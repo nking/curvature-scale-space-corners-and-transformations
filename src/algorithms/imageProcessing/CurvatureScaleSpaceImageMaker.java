@@ -54,6 +54,7 @@ public final class CurvatureScaleSpaceImageMaker extends
         super.initialize();
         
         createListOfClosedCurves();
+        
     } 
     
     @Override
@@ -159,6 +160,8 @@ public final class CurvatureScaleSpaceImageMaker extends
 
             ScaleSpaceCurve curve;
 
+log.info("trimmedXOffset=" + trimmedXOffset + " trimmedYOffset=" + trimmedYOffset);
+      
             if (lastCurve == null) {
                 curve = scaleSpaceHelper.computeCurvature(edge, sigma, 
                     resultingSigma);
@@ -311,6 +314,8 @@ public final class CurvatureScaleSpaceImageMaker extends
             && (resultingSigma < SIGMA.getValue(SIGMA.TWOHUNDREDANDFIFTYSIX))) {
 
             ScaleSpaceCurve curve;
+            
+log.info("trimmedXOffset=" + trimmedXOffset + " trimmedYOffset=" + trimmedYOffset);
 
             if (lastCurve == null) {
                 curve = scaleSpaceHelper.computeCurvature(edge, sigma, 

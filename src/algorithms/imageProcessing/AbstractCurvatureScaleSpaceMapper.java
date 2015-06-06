@@ -233,8 +233,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         CannyEdgeFilter filter = new CannyEdgeFilter();
 
-        CannyEdgeFilterSettings settings = 
-            getCannyEdgeFilterSettings();
+        CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
         
         filter.setSetters(settings);
                 

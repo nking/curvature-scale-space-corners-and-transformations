@@ -17,7 +17,8 @@ import java.util.List;
  * 
  * @author nichole
  */
-public final class CurvatureScaleSpaceInflectionMapper extends AbstractCurvatureScaleSpaceInflectionMapper {
+public final class CurvatureScaleSpaceInflectionMapper extends 
+    AbstractCurvatureScaleSpaceInflectionMapper {
         
     private List<CurvatureScaleSpaceContour> matchedContours1 = new 
         ArrayList<CurvatureScaleSpaceContour>();

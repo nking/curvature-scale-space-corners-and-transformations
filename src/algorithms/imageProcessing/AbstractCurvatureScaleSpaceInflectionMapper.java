@@ -2,6 +2,8 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -181,6 +183,7 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
             }
             contours1.addAll(result);
         }
+                
         if (contours1.isEmpty()) {
             log.info("no contours found in image 1");
             return;
@@ -258,6 +261,10 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
         }
         offsetImageX2 = imgMaker.getTrimmedXOffset();
         offsetImageY2 = imgMaker.getTrimmedYOffset();
+        
+debugPlot(contours1, image1, offsetImageX1, offsetImageY1);
+debugPlot(contours2, image2, offsetImageX2, offsetImageY2);
+       
         if (contours2.isEmpty()) {
             log.info("did not find contours in image 2");
             return;
@@ -456,4 +463,49 @@ public abstract class AbstractCurvatureScaleSpaceInflectionMapper implements
     protected abstract List<PairIntArray> getEdges(
         CurvatureScaleSpaceImageMaker imgMaker);
    
+    private void debugPlot(List<CurvatureScaleSpaceContour> result, ImageExt 
+        img, int xOffset, int yOffset) {
+        
+        if (result.isEmpty()) {
+            return;
+        }
+        
+        int nExtraForDot = 1;
+        int rClr = 255;
+        int gClr = 0;
+        int bClr = 0;
+        
+        for (int i = 0; i < result.size(); i++) {
+            
+            CurvatureScaleSpaceContour cssC = result.get(i);
+            
+            CurvatureScaleSpaceImagePoint[] peakDetails = cssC.getPeakDetails();
+            
+            for (CurvatureScaleSpaceImagePoint peakDetail : peakDetails) {
+                int x = peakDetail.getXCoord() + xOffset;
+                int y = peakDetail.getYCoord() + yOffset;
+                for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                    float xx = x + dx;
+                    if ((xx > -1) && (xx < (img.getWidth() - 1))) {
+                        for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                            dy++) {
+                            float yy = y + dy;
+                            if ((yy > -1) && (yy < (img.getHeight() - 1))) {
+                                img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                            }
+                        }
+                    }
+                }
+            }            
+        }
+        
+        try {
+            
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.writeOutputImage(dirPath + "/contours_" 
+                + System.currentTimeMillis() + ".png", img);
+        
+        } catch (IOException e) {}
+    }
 }

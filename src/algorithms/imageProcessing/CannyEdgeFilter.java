@@ -4,9 +4,6 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.Errors;
 import algorithms.misc.MiscMath;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -173,6 +170,11 @@ public class CannyEdgeFilter {
             ImageProcessor.shrinkImage(input, shrinkToSize);
         } else {
             ImageProcessor.shrinkImageToFirstNonZeros(input);
+        }
+        
+        if (useLineDrawingMode) {
+            // line drawings should be thinned first
+            applyLineThinnerFilter(input);
         }
              
         if (useOutdoorMode) {

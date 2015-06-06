@@ -1,13 +1,19 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import algorithms.util.ScatterPointPlotterPNG;
+import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  *
  * @author nichole
  */
 public class ScaleSpaceCurvature {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
     /**
      * compute scale space metrics of curve, given sigma
@@ -113,22 +119,10 @@ public class ScaleSpaceCurvature {
                 : numerator / denominator;
            
             scaleSpaceCurve.setK(i, (float)curvature);
-                     
-            // set the zeros in curvature
-            if (i > 0) {
-                if (isZeroCrossing(scaleSpaceCurve.getK(i-1), 
-                    scaleSpaceCurve.getK(i))) {
-                    
-                    float p = (float)i/(float)curve.getN();
-                    
-                    //System.out.println("sigma=" + resultingSigma 
-                    //    + " t=" + p);
-                    scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));
-                }
-            }
+            
         }
-
-        scaleSpaceCurve.compressKIsZeroIdx();
+        
+        calculateZeroCrossings(scaleSpaceCurve, curve);
 
         return scaleSpaceCurve;
     }
@@ -146,5 +140,56 @@ public class ScaleSpaceCurvature {
         }
         return false;
     }
-    
+
+    private void calculateZeroCrossings(ScaleSpaceCurve scaleSpaceCurve,
+        PairIntArray curve) {
+
+        /*
+        // find the points where the curvature changes from + to -, but
+        // discard such changes when they are noise.
+        float[] x = new float[scaleSpaceCurve.getK().length];
+        float[] y = new float[x.length];
+        for (int i = 0; i < x.length; i++) {
+            x[i] = i;
+            y[i] = scaleSpaceCurve.getK(i);
+        }
+        float yMin = 1.2f*MiscMath.findMin(y);
+        float yMax = 1.2f*MiscMath.findMax(y);
+        try {
+            String time = Long.toString((long)Math.floor(
+                System.currentTimeMillis()));
+            time = time.substring(4, time.length());
+            int fileNumber = Long.valueOf(time).intValue();
+            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+            plotter.plot(0.0f, x[x.length - 1], yMin, yMax,
+                x, y, "curvature", "t", "k");
+            plotter.writeFile(fileNumber);
+
+            StringBuilder sb = new StringBuilder(fileNumber + " coords:");
+            for (int i = 0; i < curve.getN(); i++) {
+                sb.append(String.format("t=%d (%d,%d)\n", i, curve.getX(i), curve.getY(i)));
+            }
+            log.info(sb.toString());
+            
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        }
+        */
+
+        //TODO: adjust this to avoid noise
+        for (int i = 1; i < scaleSpaceCurve.getK().length; ++i) {
+            if (isZeroCrossing(scaleSpaceCurve.getK(i - 1),
+                scaleSpaceCurve.getK(i))) {
+
+                //float p = (float)i/(float)curve.getN();
+                //System.out.println("sigma=" + resultingSigma 
+                //    + " t=" + p);
+                scaleSpaceCurve.addKIsZeroIdx(i, curve.getX(i), curve.getY(i));
+            }
+        }
+
+        scaleSpaceCurve.compressKIsZeroIdx();
+
+    }
+
 }

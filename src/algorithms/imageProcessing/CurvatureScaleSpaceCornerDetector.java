@@ -613,7 +613,7 @@ public class CurvatureScaleSpaceCornerDetector extends
 if (useOutdoorMode) {
     factorAboveMin = 3.5f;//10.f;
 }
-        
+   
         List<Integer> cornerCandidates = new ArrayList<Integer>();
 
         // choose candidates from minMaxIndexes that are 
