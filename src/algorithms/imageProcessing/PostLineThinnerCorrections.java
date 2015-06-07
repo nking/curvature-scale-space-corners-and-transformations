@@ -1120,22 +1120,7 @@ public class PostLineThinnerCorrections {
     
     private void correctForHoleArtifacts1(Set<PairInt> points, int imageWidth,
         int imageHeight) {
-        
-        /*     
-        look for pattern with hole in middle,
-        fill the hole,
-        then use 
-        boolean nullable = erosionFilter.process(input, input, 
-            neighborX, neighborY);
-                                          
-                      1               1
-                 1    0*   1          0     
-                      1              -1
-                                     -2
-        
-           -2   -1    0    1    2
-        */  
-        
+             
         /* 
                       1               2
                  1    0    1          1     
@@ -1147,19 +1132,9 @@ public class PostLineThinnerCorrections {
         
         ErosionFilter erosionFilter = new ErosionFilter();
         
-        int[] nbX = new int[]{-1, -1, 0, 1, 1, 1,  0, -1};
-        int[] nbY = new int[]{ 0,  1, 1, 1, 0, -1,-1, -1};
-
         Set<PairInt> ones = new HashSet<PairInt>();
         Set<PairInt> zeroes = new HashSet<PairInt>();
        
-        /* 
-                      1               2
-                 1    0    1          1     
-                      1*              0
-        
-           -2   -1    0    1    2
-        */  
         // y's are inverted here because sketch above is top left is (0,0)
         ones.add(new PairInt(-1, -1));
         ones.add(new PairInt(0, -2));
@@ -1169,12 +1144,10 @@ public class PostLineThinnerCorrections {
         
         int w = imageWidth;
         int h = imageHeight;
-        
-        int centralValue = 1;
-        
+                
         for (PairInt p : points) {
             
-            // test for the pattern of ones and zeroe's in the neighbors,
+            // test for the pattern of ones and zeroes in the neighbors,
             // then make a temporary set of center to zero and test if each of
             // the four sorrounding can be deleted
             
@@ -1232,12 +1205,9 @@ public class PostLineThinnerCorrections {
                 
                 PairInt p3 = new PairInt(x, y);
                 
+                // adds to tmpPointsRemoved
                 boolean nullable = erosionFilter.process(p3, points, 
                     tmpPointsAdded, tmpPointsRemoved, w, h);
-                
-                if (nullable) {
-                    tmpPointsRemoved.add(p3);
-                }
             }
             
             for (PairInt p2 : tmpPointsRemoved) {
