@@ -1144,7 +1144,10 @@ public class PostLineThinnerCorrections {
         
         int w = imageWidth;
         int h = imageHeight;
-                
+        
+        Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
+        Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
+                    
         for (PairInt p : points) {
             
             // test for the pattern of ones and zeroes in the neighbors,
@@ -1164,7 +1167,8 @@ public class PostLineThinnerCorrections {
                     break;
                 }
                 PairInt p3 = new PairInt(x, y);
-                if (!points.contains(p3)) {
+                if (tmpPointsRemoved.contains(p3) ||
+                    (!points.contains(p3) && !tmpPointsAdded.contains(p3))) {
                     foundPattern = false;
                     break;
                 }
@@ -1182,7 +1186,8 @@ public class PostLineThinnerCorrections {
                     break;
                 }
                 PairInt p3 = new PairInt(x, y);
-                if (points.contains(p3)) {
+                if (!tmpPointsRemoved.contains(p3) 
+                    && (points.contains(p3) || tmpPointsAdded.contains(p3))) {
                     foundPattern = false;
                     break;
                 }
@@ -1192,11 +1197,8 @@ public class PostLineThinnerCorrections {
                 continue;
             }
             
-            Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
-            Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
-            
             // change the central 0 to a 1
-            tmpPointsAdded.add(new PairInt(0, -1));
+            tmpPointsAdded.add(new PairInt(col, row - 1));
                         
             // test if can set the surrounding 1's to 0's without disconnecting
             // lines
@@ -1211,15 +1213,14 @@ public class PostLineThinnerCorrections {
                 boolean nullable = erosionFilter.process(p3, points, 
                     tmpPointsAdded, tmpPointsRemoved, w, h);
             }
-            
-            for (PairInt p2 : tmpPointsRemoved) {
-                points.remove(p2);
-            }
-            for (PairInt p2 : tmpPointsAdded) {
-                points.add(p2);
-            }
         }
         
+        for (PairInt p2 : tmpPointsRemoved) {
+            points.remove(p2);
+        }
+        for (PairInt p2 : tmpPointsAdded) {
+            points.add(p2);
+        }
     }
 
     private void correctForHoleArtifacts1_2(GreyscaleImage input) {

@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -271,160 +270,130 @@ public class ErosionFilter extends AbstractLineThinner {
         int row) {
         
         /*
-            6   7  8 
-           11 *C* 12
-           15  16 17
+        coordinates of the 8 neighbors as already created PairInts without 
+        bound checks.
+        indexes are found as +1 of the difference relative to center,
+        for example, a point for (col-1, row-1) is found as neighborCoords[0][0]
         */
-                
-        //6  Ʌ  8  Ʌ  ¬((7)  V  (11  Ʌ  16  Ʌ  12))
-        if (
-            ((input.getValue(col - 1, row + 1) > 0) 
-            && (input.getValue(col + 1, row + 1) > 0)) && 
-            !((input.getValue(col, row + 1) > 0) 
-            || 
-            ((input.getValue(col - 1, row) > 0)
-            && (input.getValue(col, row - 1) > 0) 
-            && (input.getValue(col + 1, row) > 0)))) {
-            return true;
-        } else 
-            //6  Ʌ  12  Ʌ  ¬((7)  V  (11  Ʌ  16))
-            if (
-            ((input.getValue(col - 1, row + 1) > 0) 
-                && (input.getValue(col + 1, row) > 0)) && 
-                !((input.getValue(col, row + 1) > 0)
-                || 
-                ((input.getValue(col - 1, row) > 0) 
-                && (input.getValue(col, row - 1) > 0)))) {
-            return true;
-        } else 
-            //6  Ʌ  17  Ʌ  ¬((7  Ʌ  12) V (11  Ʌ  16))
-            if (
-            ((input.getValue(col - 1, row + 1) > 0) 
-                && (input.getValue(col + 1, row - 1) > 0)) && 
-                !(((input.getValue(col, row + 1) > 0)
-                && (input.getValue(col + 1, row) > 0)) 
-                || ((input.getValue(col - 1, row) > 0) 
-                && (input.getValue(col, row - 1) > 0)))) {
-            return true;
-        } else 
-            //6  Ʌ  16  Ʌ  ¬((7  Ʌ  12) V (11))
-            if (
-            ((input.getValue(col - 1, row + 1) > 0) 
-                && (input.getValue(col, row - 1) > 0)) && 
-                !(((input.getValue(col, row + 1) > 0)
-                && (input.getValue(col + 1, row) > 0)) 
-                || (input.getValue(col - 1, row) > 0))) {
-            return true;
-        } else 
-            //6  Ʌ  15  Ʌ  ¬((7  Ʌ  12 Ʌ 16) V (11))
-            if (
-            ((input.getValue(col - 1, row + 1) > 0) 
-                && (input.getValue(col - 1, row - 1) > 0)) && 
-                !(((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col + 1, row) > 0) 
-                && (input.getValue(col, row - 1) > 0)) 
-                || (input.getValue(col - 1, row) > 0))) {
-            return true;
-        } else 
-            //7  Ʌ  17  Ʌ  ¬((12)  V  (11  Ʌ  16))
-            if (
-            ((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col + 1, row - 1) > 0)) && 
-                !(((input.getValue(col - 1, row) > 0)
-                && (input.getValue(col, row - 1) > 0)) 
-                || (input.getValue(col + 1, row) > 0))) {
-            return true;
-        } else 
-            //7  Ʌ  16  Ʌ  ¬(12  V  11)
-            if (
-            ((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col, row - 1) > 0)) && 
-                !((input.getValue(col + 1, row) > 0)
-                || (input.getValue(col - 1, row) > 0))) {
-            return true;
-        } else 
-            //7  Ʌ  15  Ʌ  ¬((11)  V  (12 Ʌ 16))
-            if (
-            ((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col - 1, row - 1) > 0)) && 
-                !(((input.getValue(col + 1, row) > 0) 
-                && (input.getValue(col, row - 1) > 0)) 
-                || (input.getValue(col - 1, row) > 0))) {
-            return true;
-        } else 
-            //8  Ʌ  17  Ʌ  ¬((12)  V  (7 Ʌ 11  Ʌ  16))
-            if (
-            ((input.getValue(col + 1, row + 1) > 0) 
-                && (input.getValue(col + 1, row - 1) > 0)) && 
-                !(((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col - 1, row) > 0) 
-                && (input.getValue(col, row - 1) > 0)) 
-                || (input.getValue(col + 1, row) > 0))) {
-            return true;
-        } else 
-            //8  Ʌ  16  Ʌ  ¬((12)  V  (7 Ʌ 11))
-            if (
-            ((input.getValue(col + 1, row + 1) > 0) 
-                && (input.getValue(col, row - 1) > 0)) && 
-                !(((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col - 1, row) > 0)) 
-                || (input.getValue(col + 1, row) > 0))) {
-            return true;
-        } else 
-            //8  Ʌ  15  Ʌ  ¬((12 Ʌ  16)  V  (7 Ʌ 11))
-            if (
-            ((input.getValue(col + 1, row + 1) > 0) 
-                && (input.getValue(col - 1, row - 1) > 0)) && 
-                !(((input.getValue(col + 1, row) > 0) 
-                && (input.getValue(col, row - 1) > 0)) || 
-                ((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col - 1, row) > 0)))) {
-            return true;
-        } else 
-            //8  Ʌ  11  Ʌ  ¬((7)  V  (12 Ʌ 16))
-            if (
-            ((input.getValue(col + 1, row + 1) > 0) 
-                && (input.getValue(col - 1, row) > 0)) && 
-                !(((input.getValue(col + 1, row) > 0) 
-                && (input.getValue(col, row - 1) > 0)) 
-                || (input.getValue(col, row + 1) > 0))) {
-            return true;
-        } else 
-            //12  Ʌ  15  Ʌ  ¬((16)  V  (7 Ʌ 11))
-            if (
-            ((input.getValue(col + 1, row) > 0) 
-                && (input.getValue(col - 1, row - 1) > 0)) && 
-                !(((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col - 1, row) > 0)) 
-                || (input.getValue(col, row - 1) > 0))) {
-            return true;
-        } else 
-            //12  Ʌ  11  Ʌ  ¬((16)  V  (7))
-            if (
-            ((input.getValue(col + 1, row) > 0) 
-                && (input.getValue(col - 1, row) > 0)) && 
-                !((input.getValue(col, row + 1) > 0) 
-                || (input.getValue(col, row - 1) > 0))) {
-            return true;
-        } else 
-            //17  Ʌ  15  Ʌ  ¬((16)  V  (7 Ʌ 11 Ʌ 12))
-            if (
-            ((input.getValue(col + 1, row - 1) > 0) 
-                && (input.getValue(col - 1, row - 1) > 0)) && 
-                !(((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col - 1, row) > 0) 
-                && (input.getValue(col + 1, row) > 0)) 
-                || (input.getValue(col, row - 1) > 0))) {
-            return true;
-        } else 
-            //17  Ʌ  11  Ʌ  ¬((16)  V  (7 Ʌ 12))
-            if (
-            ((input.getValue(col + 1, row - 1) > 0) 
-                && (input.getValue(col - 1, row) > 0)) && 
-                !(((input.getValue(col, row + 1) > 0) 
-                && (input.getValue(col + 1, row) > 0)) 
-                || (input.getValue(col, row - 1) > 0))) {
-            return true;
+        PairInt[][] neighborCoords = createCoordinatePointsForEightNeighbors(
+            col, row);
+       
+         /*
+            6  7  8      +1  2      transformed by 90 rot:     15  11  6
+           11 *C* 12     0   1                                 16  C*  7
+           15  16 17     -1  0                                 17  12  8
+        
+           -1  0   1
+            0  1   2
+               
+        disconnects:
+           -- if (6 || 7 || 8) && (11 && 17) && !(15) && !(16)
+           -- if (6 || 7 || 8) && (12 && 15) && !(16) && !(17)
+           -- if (6 || 7 || 8) && (15 || 16 || 17) && !(11) && !(12)
+           -- if !(6) && !(7) && (8) && (11) && !(12)
+           -- if (6) && !(7) && !(8) && !(11) && (12)
+        does not disconnect
+           -- if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
+        
+        then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
+        */
+        
+        for (int nRot = 0; nRot < 4; nRot++) {
+        
+            if (nRot > 0) {
+                rotateBy90(neighborCoords);
+            }
+            
+            if (//if (6 || 7 || 8)
+            (input.getValue(neighborCoords[0][2].getX(), neighborCoords[0][2].getY()) > 0)
+            ||
+            (input.getValue(neighborCoords[1][2].getX(), neighborCoords[1][2].getY()) > 0)
+            ||
+            (input.getValue(neighborCoords[2][2].getX(), neighborCoords[2][2].getY()) > 0)
+            ) {
+                if ( //if (6 || 7 || 8) && (11 && 17) && !(15) && !(16)
+                (
+                    (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) > 0)
+                    &&
+                    (input.getValue(neighborCoords[2][0].getX(), neighborCoords[2][0].getY()) > 0)
+                )
+                &&
+                (
+                    (input.getValue(neighborCoords[0][0].getX(), neighborCoords[0][0].getY()) == 0)
+                    &&
+                    (input.getValue(neighborCoords[1][0].getX(), neighborCoords[1][0].getY()) == 0)
+                )
+                ) {
+                    return true;
+                } else if (//if (6 || 7 || 8) && (12 && 15) && !(16) && !(17)
+                (
+                    (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) > 0)
+                    &&
+                    (input.getValue(neighborCoords[0][0].getX(), neighborCoords[0][0].getY()) > 0)
+                )
+                &&
+                (
+                    (input.getValue(neighborCoords[1][0].getX(), neighborCoords[1][0].getY()) == 0)
+                    &&
+                    (input.getValue(neighborCoords[2][0].getX(), neighborCoords[2][0].getY()) == 0)
+                )
+                ) {
+                    return true;
+                } else if (//if (6 || 7 || 8) && (15 || 16 || 17) && !(11) && !(12)
+                (
+                    (input.getValue(neighborCoords[0][0].getX(), neighborCoords[0][0].getY()) > 0)
+                    ||
+                    (input.getValue(neighborCoords[1][0].getX(), neighborCoords[1][0].getY()) > 0)
+                    ||
+                    (input.getValue(neighborCoords[2][0].getX(), neighborCoords[2][0].getY()) > 0)
+                )
+                &&
+                (
+                    (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) == 0)
+                    &&
+                    (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) == 0)
+                )
+                ) {
+                    return true;
+                } else if (//if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
+                (input.getValue(neighborCoords[0][0].getX(), neighborCoords[0][0].getY()) == 0)
+                &&
+                (input.getValue(neighborCoords[1][0].getX(), neighborCoords[1][0].getY()) == 0)
+                &&
+                (input.getValue(neighborCoords[2][0].getX(), neighborCoords[2][0].getY()) == 0)
+                &&
+                (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) == 0)
+                &&
+                (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) == 0)
+                ) {
+                    return false;
+                }
+            } else if (//if (6) && !(7) && !(8) && !(11) && (12)
+            (input.getValue(neighborCoords[0][2].getX(), neighborCoords[0][2].getY()) > 0)
+            &&
+            (input.getValue(neighborCoords[1][2].getX(), neighborCoords[1][2].getY()) == 0)
+            &&
+            (input.getValue(neighborCoords[2][2].getX(), neighborCoords[2][2].getY()) == 0)
+            &&
+            (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) == 0)
+            &&
+            (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) > 0)
+            ) {
+                return true;
+            } else if (//if !(6) && !(7) && (8) && (11) && !(12)
+            (input.getValue(neighborCoords[0][2].getX(), neighborCoords[0][2].getY()) == 0)
+            &&
+            (input.getValue(neighborCoords[1][2].getX(), neighborCoords[1][2].getY()) == 0)
+            &&
+            (input.getValue(neighborCoords[2][2].getX(), neighborCoords[2][2].getY()) > 0)
+            &&
+            (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) > 0)
+            &&
+            (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) == 0)
+            ) {
+                return true;
+            }
+           
         }
         
         return false;
@@ -1031,7 +1000,7 @@ public class ErosionFilter extends AbstractLineThinner {
         // at a time rather than continue thinning from the same
         // direction
         if (hasAZeroInNeighbors(input, i, j)) {
-
+            
             //if (!doesDisconnectOrIsEndPoint(output, i, j)) {
             if (canBeNulled(output, i, j)) {
                 
@@ -2139,517 +2108,21 @@ public class ErosionFilter extends AbstractLineThinner {
         return false;
     }
 
-    /**
-     * for the full 8 neighbor region, determine whether nulling the pixel
-     * at (col, row) would disconnect the remaining line.  Note that the
-     * boolean logic is embedded in the comments.  One should be able to
-     * combine the rules for multiple pixel tests to reduce the redundant
-     * comparisons for the regions in common.
-     * 
-     * Note, that row and col are expected to be at least 1 pixel distant
-     * from the image borders.
-    
-     * @return 
-     */
-    private boolean doesDisconnect(PairInt p, Set<PairInt> points, 
-        Set<PairInt> overridePointsAdded, Set<PairInt> overridePointsRemoved, 
-        int imageWidth, int imageHeight) {
-       
-        int col = p.getX();
-        int row = p.getY();
-        
-        /*
-        coordinates of the 8 neighbors as already created PairInts without 
-        bound checks.
-        indexes are found as +1 of the difference relative to center,
-        for example, a point for (col-1, row-1) is found as neighborCoords[0][0]
-        */
-        PairInt[][] neighborCoords = createCoordinatePointsForEightNeighbors(
-            col, row);
-        
-        /*
-            6   7  8 
-           11 *C* 12
-           15  16 17
-        */
-                
-        //6  Ʌ  8  Ʌ  ¬((7)  V  (11  Ʌ  16  Ʌ  12))
-        if (
-            (
-               (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
-               (overridePointsAdded.contains(neighborCoords[0][2]) ||
-               points.contains(neighborCoords[0][2])))
-               && 
-               (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
-               (overridePointsAdded.contains(neighborCoords[2][2]) ||
-               points.contains(neighborCoords[2][2])))
-            ) && 
-            !(
-               (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-               (overridePointsAdded.contains(neighborCoords[1][2]) ||
-               points.contains(neighborCoords[1][2])))
-               || 
-               (
-                   (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                   (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                   points.contains(neighborCoords[0][1])))
-                   && 
-                   (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                   (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                   points.contains(neighborCoords[1][0])))
-                   && 
-                   (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                   (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                   points.contains(neighborCoords[2][1])))
-            ))) {
-            return true;
-        } else 
-            //6  Ʌ  12  Ʌ  ¬((7)  V  (11  Ʌ  16))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][2]) ||
-                    points.contains(neighborCoords[0][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                ) 
-                && 
-                !(
-                    (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                    points.contains(neighborCoords[1][2])))
-                    || 
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                        points.contains(neighborCoords[0][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                        points.contains(neighborCoords[1][0])))
-                ))) {
-            return true;
-        } else 
-            //6  Ʌ  17  Ʌ  ¬((7  Ʌ  12) V (11  Ʌ  16))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
-                   (overridePointsAdded.contains(neighborCoords[0][2]) ||
-                   points.contains(neighborCoords[0][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                   (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                   points.contains(neighborCoords[2][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                        points.contains(neighborCoords[2][1])))
-                    ) 
-                    || 
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                        points.contains(neighborCoords[0][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                        points.contains(neighborCoords[1][0])))
-                ))) {
-            return true;
-        } else 
-            //6  Ʌ  16  Ʌ  ¬((7  Ʌ  12) V (11))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][2]) ||
-                    points.contains(neighborCoords[0][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                        points.contains(neighborCoords[2][1])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                )) {
-            return true;
-        } else 
-            //6  Ʌ  15  Ʌ  ¬((7  Ʌ  12 Ʌ 16) V (11))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][2]) ||
-                    points.contains(neighborCoords[0][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                    points.contains(neighborCoords[0][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                        points.contains(neighborCoords[2][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                        points.contains(neighborCoords[1][0])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                )) {
-            return true;
-        } else 
-            //7  Ʌ  17  Ʌ  ¬((12)  V  (11  Ʌ  16))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                    points.contains(neighborCoords[1][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                    points.contains(neighborCoords[2][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                        points.contains(neighborCoords[0][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                        points.contains(neighborCoords[1][0])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                )) {
-            return true;
-        } else 
-            //7  Ʌ  16  Ʌ  ¬(12  V  11)
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                    points.contains(neighborCoords[1][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                ) 
-                && 
-                !(
-                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                )) {
-            return true;
-        } else 
-            //7  Ʌ  15  Ʌ  ¬((11)  V  (12 Ʌ 16))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                    points.contains(neighborCoords[1][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                    points.contains(neighborCoords[0][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                        points.contains(neighborCoords[2][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                        points.contains(neighborCoords[1][0])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                )) {
-            return true;
-        } else 
-            //8  Ʌ  17  Ʌ  ¬((12)  V  (7 Ʌ 11  Ʌ  16))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][2]) ||
-                    points.contains(neighborCoords[2][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                    points.contains(neighborCoords[2][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                        points.contains(neighborCoords[0][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                        points.contains(neighborCoords[1][0])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                )) {
-            return true;
-        } else 
-            //8  Ʌ  16  Ʌ  ¬((12)  V  (7 Ʌ 11))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][2]) ||
-                    points.contains(neighborCoords[2][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[0][1])
-                        && (overridePointsAdded.contains(neighborCoords[0][1])
-                        || points.contains(neighborCoords[0][1])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                )) {
-            return true;
-        } else 
-            //8  Ʌ  15  Ʌ  ¬((12 Ʌ  16)  V  (7 Ʌ 11))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][2]) ||
-                    points.contains(neighborCoords[2][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                    points.contains(neighborCoords[0][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                        points.contains(neighborCoords[2][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                        points.contains(neighborCoords[1][0])))
-                    ) 
-                    || 
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                        points.contains(neighborCoords[0][1])))
-                ))) {
-            return true;
-        } else 
-            //8  Ʌ  11  Ʌ  ¬((7)  V  (12 Ʌ 16))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][2]) ||
-                    points.contains(neighborCoords[2][2])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                        points.contains(neighborCoords[2][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                        points.contains(neighborCoords[1][0])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                    points.contains(neighborCoords[1][2])))
-                )) {
-            return true;
-        } else 
-            //12  Ʌ  15  Ʌ  ¬((16)  V  (7 Ʌ 11))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                    points.contains(neighborCoords[0][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                        points.contains(neighborCoords[0][1])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                )) {
-            return true;
-        } else 
-            //12  Ʌ  11  Ʌ  ¬((16)  V  (7))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                ) 
-                && 
-                !(
-                    (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                    points.contains(neighborCoords[1][2])))
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                )) {
-            return true;
-        } else 
-            //17  Ʌ  15  Ʌ  ¬((16)  V  (7 Ʌ 11 Ʌ 12))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                    points.contains(neighborCoords[2][0])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                    points.contains(neighborCoords[0][0])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                        points.contains(neighborCoords[0][1])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                        points.contains(neighborCoords[2][1])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                )) {
-            return true;
-        } else 
-            //17  Ʌ  11  Ʌ  ¬((16)  V  (7 Ʌ 12))
-            if (
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                    points.contains(neighborCoords[2][0])))
-                    && 
-                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                ) 
-                && 
-                !(
-                    (
-                        (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-                        (overridePointsAdded.contains(neighborCoords[1][2]) ||
-                        points.contains(neighborCoords[1][2])))
-                        && 
-                        (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                        (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                        points.contains(neighborCoords[2][1])))
-                    ) 
-                    || 
-                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                )) {
-            return true;
+    private void printImage(final GreyscaleImage input) {
+        for (int row = (input.getHeight() - 1); row > -1; row--) {
+            StringBuilder sb = new StringBuilder(String.format("row %2d:  ", row));
+            for (int col = 0; col < input.getWidth(); col++) {
+                int v = input.getValue(col, row);
+                String str = (v == 0) ? String.format("  ") : String.format("%d ", v);
+                sb.append(str);
+            }
+            System.out.println(sb.toString());
         }
-        
-        return false;
+        StringBuilder sb = new StringBuilder(String.format("        "));
+        for (int col = 0; col < input.getWidth(); col++) {
+            sb.append(String.format("%2d", col));
+        }
+        System.out.println(sb.toString());
+        System.out.println("\n");
     }
-
 }

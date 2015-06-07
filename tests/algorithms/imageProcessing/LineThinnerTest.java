@@ -6,30 +6,18 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
 /**
  *
  * @author nichole
  */
-public class LineThinnerTest {
+public class LineThinnerTest extends TestCase {
         
     public LineThinnerTest() {
     }
     
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-
-    @Test
     public void testApplyFilter() {
         
         /*                                    ideally
@@ -55,17 +43,17 @@ public class LineThinnerTest {
         
         instance.applyFilter(input);
         
-        //System.out.println("erosion:");
-        //printImage(input);
-            
+        System.out.println("erosion:");
+        printImage(input);
+        
         GreyscaleImage input3 = input2.copyImage();
         
         ZhangSuenLineThinner instance2 = new ZhangSuenLineThinner();
         
         instance2.applyFilter(input2);
         
-        //System.out.println("zhang-suen:");
-        //printImage(input2);
+        System.out.println("zhang-suen:");
+        printImage(input2);
         
         Set<PairInt> expected = getExpectedThinnedTestRectangle();
         int nExpectedFound = 0;
@@ -95,7 +83,6 @@ public class LineThinnerTest {
         
     }
     
-    @Test
     public void testApplyFilter_shell() {
         
         GreyscaleImage input = getTestShell();
@@ -108,16 +95,16 @@ public class LineThinnerTest {
         
         instance.applyFilter(input);
         
-        //System.out.println("erosion:");
-        //printImage(input);
+        System.out.println("erosion:");
+        printImage(input);
        
         //-----------------------------------------------------
         ZhangSuenLineThinner instance2 = new ZhangSuenLineThinner();
         
         instance2.applyFilter(input2);
         
-        //System.out.println("zhang-suen:");
-        //printImage(input2);
+        System.out.println("zhang-suen:");
+        printImage(input2);
         
         //System.out.println("summed:");
         //printSummed(input3);
@@ -649,7 +636,6 @@ public class LineThinnerTest {
         return input;
     }
 
-    @Test
     public void testPrefillGapsSurroundedByNeighbors() {
         /*2   @
           1 @ C @
@@ -666,7 +652,6 @@ public class LineThinnerTest {
         assertTrue(input.getValue(1, 1) == 1);
     }
 
-    @Test
     public void testHasImmediateFourNeighbors() {
         
         /*2   @
@@ -706,7 +691,6 @@ public class LineThinnerTest {
         assertEquals(expResult, result);
     }
 
-    @Test
     public void testIsTheEndOfAOnePixelLine() {
         /*
             #
@@ -731,6 +715,193 @@ public class LineThinnerTest {
         expResult = false;
         result = instance.isTheEndOfAOnePixelLine(input, col, row);
         assertEquals(expResult, result);
+    }
+    
+    public void testRotate90() throws Exception {
+        
+        AbstractLineThinner lineThinner = new ZhangSuenLineThinner();
+        
+        PairInt[][] coords = 
+            lineThinner.createCoordinatePointsForEightNeighbors(1, 1);
+        
+        assertTrue(coords[0][0].equals(new PairInt(0, 0)));
+        assertTrue(coords[1][0].equals(new PairInt(1, 0)));
+        assertTrue(coords[2][0].equals(new PairInt(2, 0)));
+        
+        assertTrue(coords[0][1].equals(new PairInt(0, 1)));
+        assertTrue(coords[1][1].equals(new PairInt(1, 1)));
+        assertTrue(coords[2][1].equals(new PairInt(2, 1)));
+        
+        assertTrue(coords[0][2].equals(new PairInt(0, 2)));
+        assertTrue(coords[1][2].equals(new PairInt(1, 2)));
+        assertTrue(coords[2][2].equals(new PairInt(2, 2)));
+        
+        // --- rotate by 90 -----
+        lineThinner.rotateBy90(coords);
+        
+        /*
+            6   7  8     +1  2      transformed by 90 rot:     15  11  6
+           11 *C* 12     0   1                                 16  C*  7
+           15  16 17     -1  0                                 17  12  8
+        
+           -1  0   1
+            0  1   2
+         */
+        
+        assertTrue(coords[0][0].equals(new PairInt(2, 0)));
+        assertTrue(coords[1][0].equals(new PairInt(2, 1)));
+        assertTrue(coords[2][0].equals(new PairInt(2, 2)));
+        
+        assertTrue(coords[0][1].equals(new PairInt(1, 0)));
+        assertTrue(coords[1][1].equals(new PairInt(1, 1)));
+        assertTrue(coords[2][1].equals(new PairInt(1, 2)));
+        
+        assertTrue(coords[0][2].equals(new PairInt(0, 0)));
+        assertTrue(coords[1][2].equals(new PairInt(0, 1)));
+        assertTrue(coords[2][2].equals(new PairInt(0, 2)));
+    }
+    
+    /*
+    protected boolean doesDisconnect(PairInt p, Set<PairInt> points, 
+        Set<PairInt> overridePointsAdded, Set<PairInt> overridePointsRemoved, 
+        int imageWidth, int imageHeight) {
+    */
+    public void testDoesDisconnect() throws Exception {
+        
+        /* 
+                                          7
+                      1    1    1     2   6
+                           1*         1   5 
+                                      0   4
+                                     -1   3
+        
+           -2   -1    0    1    2
+            2   3     4    5    6
+        */
+        
+        int w = 10;
+        int h = 10;
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+       
+        points.add(new PairInt(5, 5));
+        for (int col = 4; col <= 6; col++) {
+            points.add(new PairInt(col, 6));
+        }
+        
+        Set<PairInt> overridePointsAdded = new HashSet<PairInt>();
+        
+        Set<PairInt> overridePointsRemoved = new HashSet<PairInt>();
+        
+        AbstractLineThinner lineThinner = new ZhangSuenLineThinner();
+        
+        boolean doesDisconnect = lineThinner.doesDisconnect(
+            new PairInt(5, 5), points, 
+            overridePointsAdded, overridePointsRemoved, w, h);
+        
+        assertFalse(doesDisconnect);
+        
+        // ---------
+        /* 
+                      1                   7
+                      1               2   6
+                      1    1          1   5 
+                      1               0   4
+                      1              -1   3
+        
+           -2   -1    0    1    2
+            2   3     4    5    6
+        */ 
+        points = new HashSet<PairInt>();
+       
+        points.add(new PairInt(5, 5));
+        for (int row = 3; row <= 7; row++) {
+            points.add(new PairInt(4, row));
+        }
+        
+        overridePointsAdded = new HashSet<PairInt>();
+        
+        overridePointsRemoved = new HashSet<PairInt>();
+        
+        lineThinner = new ZhangSuenLineThinner();
+        
+        doesDisconnect = lineThinner.doesDisconnect(
+            new PairInt(5, 5), points, 
+            overridePointsAdded, overridePointsRemoved, w, h);
+        
+        assertFalse(doesDisconnect);
+        
+        // -----------------------------------------------
+        
+        /* 
+                                          7
+                      1    1    1     2   6
+                           1*         1   5 
+                      1               0   4
+                                     -1   3
+        
+           -2   -1    0    1    2
+            2   3     4    5    6
+        */
+        for (int t = 0; t < 3; t++) {
+            
+            points = new HashSet<PairInt>();
+            points.add(new PairInt(5, 5));
+            for (int col = 4; col <= 6; col++) {
+                points.add(new PairInt(col, 6));
+            }
+            points.add(new PairInt(4 + t, 4));
+
+            overridePointsAdded = new HashSet<PairInt>();
+
+            overridePointsRemoved = new HashSet<PairInt>();
+
+            lineThinner = new ZhangSuenLineThinner();
+
+            doesDisconnect = lineThinner.doesDisconnect(
+                new PairInt(5, 5), points, 
+                overridePointsAdded, overridePointsRemoved, w, h);
+
+            assertTrue(doesDisconnect);
+        }
+        
+        // -----------------------------------------------
+        
+        /* 
+                                          7
+                      1    1    1     2   6
+                      .    1*   .     1   5 
+                                      0   4
+                                     -1   3
+        
+           -2   -1    0    1    2
+            2   3     4    5    6
+        */
+        for (int t = 0; t < 2; t++) {
+            
+            points = new HashSet<PairInt>();
+            points.add(new PairInt(5, 5));
+            for (int col = 4; col <= 6; col++) {
+                points.add(new PairInt(col, 6));
+            }
+            if (t == 0) {
+                points.add(new PairInt(4, 5));
+            } else {
+                points.add(new PairInt(6, 5));
+            }
+
+            overridePointsAdded = new HashSet<PairInt>();
+
+            overridePointsRemoved = new HashSet<PairInt>();
+
+            lineThinner = new ZhangSuenLineThinner();
+
+            doesDisconnect = lineThinner.doesDisconnect(
+                new PairInt(5, 5), points, 
+                overridePointsAdded, overridePointsRemoved, w, h);
+
+            assertFalse(doesDisconnect);
+        }
     }
     
 }

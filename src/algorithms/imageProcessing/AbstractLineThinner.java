@@ -263,26 +263,6 @@ public abstract class AbstractLineThinner implements ILineThinner {
         return false;
     }
     
-    protected PairInt[][] createCoordinatePointsForEightNeighbors(
-        int col, int row) {
-        
-        PairInt[][] set = new PairInt[3][];
-        
-        for (int i = 0; i < 3; i++) {
-            set[i] = new PairInt[3];
-            int x = col + i - 1;
-            for (int j = 0; j < 3; j++) {
-                if (i == 1 && j == 1) {
-                    continue;
-                }
-                int y = row + j - 1;
-                set[i][j] = new PairInt(x, y);
-            }
-        }
-        
-        return set;
-    }
-
     public boolean isASmallerSearchRegionAndDoesDisconnect(PairInt p, 
         Set<PairInt> points, Set<PairInt> overridePointsAdded, 
         Set<PairInt> overridePointsRemoved, int imageWidth, int imageHeight) {
@@ -848,4 +828,260 @@ public abstract class AbstractLineThinner implements ILineThinner {
         return false;
     }
     
+    public PairInt[][] createCoordinatePointsForEightNeighbors(
+        int col, int row) {
+        
+        PairInt[][] set = new PairInt[3][];
+        
+        for (int i = 0; i < 3; ++i) {
+            set[i] = new PairInt[3];
+            int x = col + i - 1;
+            for (int j = 0; j < 3; ++j) {
+                int y = row + j - 1;
+                set[i][j] = new PairInt(x, y);
+            }
+        }
+        
+        return set;
+    }
+
+    public void rotateBy90(PairInt[][] neighborCoords) {
+        
+        /*
+            6   7  8     +1  2      transformed by 90 rot:     15  11  6
+           11 *C* 12     0   1                                 16  C*  7
+           15  16 17     -1  0                                 17  12  8
+        
+           -1  0   1
+            0  1   2
+         */
+        
+        PairInt tmp6 = neighborCoords[0][2];
+        PairInt tmp7 = neighborCoords[1][2];
+        PairInt tmp8 = neighborCoords[2][2];
+        
+        neighborCoords[0][2] = neighborCoords[0][0];
+        neighborCoords[1][2] = neighborCoords[0][1];
+        neighborCoords[2][2] = tmp6;
+        
+        PairInt tmp12 = neighborCoords[2][1];
+        
+        neighborCoords[0][1] = neighborCoords[1][0];
+        neighborCoords[2][1] = tmp7;
+        
+        neighborCoords[0][0] = neighborCoords[2][0];
+        neighborCoords[1][0] = tmp12;
+        neighborCoords[2][0] = tmp8;
+    }
+
+    /**
+     * for the full 8 neighbor region, determine whether nulling the pixel
+     * at (col, row) would disconnect the remaining line.  Note that the
+     * boolean logic is embedded in the comments.  One should be able to
+     * combine the rules for multiple pixel tests to reduce the redundant
+     * comparisons for the regions in common.
+     * 
+     * Note, that row and col are expected to be at least 1 pixel distant
+     * from the image borders.
+    
+     * @return 
+     */
+    protected boolean doesDisconnect(PairInt p, Set<PairInt> points, 
+        Set<PairInt> overridePointsAdded, Set<PairInt> overridePointsRemoved, 
+        int imageWidth, int imageHeight) {
+       
+        int col = p.getX();
+        int row = p.getY();
+        
+        /*
+        coordinates of the 8 neighbors as already created PairInts without 
+        bound checks.
+        indexes are found as +1 of the difference relative to center,
+        for example, a point for (col-1, row-1) is found as neighborCoords[0][0]
+        */
+        PairInt[][] neighborCoords = createCoordinatePointsForEightNeighbors(
+            col, row);
+       
+         /*
+            6   7  8     +1  2      transformed by 90 rot:     15  11  6
+           11 *C* 12     0   1                                 16  C*  7
+           15  16 17     -1  0                                 17  12  8
+        
+           -1  0   1
+            0  1   2
+        
+        disconnects:
+           -- if (6 || 7 || 8) && (11 && 17) && !(15) && !(16)
+           -- if (6 || 7 || 8) && (12 && 15) && !(16) && !(17)
+           -- if (6 || 7 || 8) && (15 || 16 || 17) && !(11) && !(12)
+           -- if !(6) && !(7) && (8) && (11) && !(12)
+           -- if (6) && !(7) && !(8) && !(11) && (12)
+        does not disconnect
+           -- if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
+        
+        then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
+        */
+        
+        for (int nRot = 0; nRot < 4; nRot++) {
+        
+            if (nRot > 0) {
+                rotateBy90(neighborCoords);
+            }
+            
+            if (//if (6 || 7 || 8)
+            (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
+            (overridePointsAdded.contains(neighborCoords[0][2]) ||
+            points.contains(neighborCoords[0][2])))
+            ||
+            (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
+            (overridePointsAdded.contains(neighborCoords[1][2]) ||
+            points.contains(neighborCoords[1][2])))
+            ||
+            (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
+            (overridePointsAdded.contains(neighborCoords[2][2]) ||
+            points.contains(neighborCoords[2][2])))
+            ) {
+                if ( //if (6 || 7 || 8) && (11 && 17) && !(15) && !(16)
+                (
+                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
+                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
+                    points.contains(neighborCoords[0][1])))
+                    &&
+                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
+                    points.contains(neighborCoords[2][0])))
+                )
+                &&
+                (
+                    !(!overridePointsRemoved.contains(neighborCoords[0][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
+                    points.contains(neighborCoords[0][0])))
+                    &&
+                    !(!overridePointsRemoved.contains(neighborCoords[1][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
+                    points.contains(neighborCoords[1][0])))
+                )
+                ) {
+                    return true;
+                } else if (//if (6 || 7 || 8) && (12 && 15) && !(16) && !(17)
+                (
+                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
+                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
+                    points.contains(neighborCoords[2][1])))
+                    &&
+                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
+                    points.contains(neighborCoords[0][0])))
+                )
+                &&
+                (
+                    !(!overridePointsRemoved.contains(neighborCoords[1][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
+                    points.contains(neighborCoords[1][0])))
+                    &&
+                    !(!overridePointsRemoved.contains(neighborCoords[2][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
+                    points.contains(neighborCoords[2][0])))
+                )
+                ) {
+                    return true;
+                } else if (//if (6 || 7 || 8) && (15 || 16 || 17) && !(11) && !(12)
+                (
+                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
+                    points.contains(neighborCoords[0][0])))
+                    ||
+                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
+                    points.contains(neighborCoords[1][0])))
+                    ||
+                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
+                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
+                    points.contains(neighborCoords[2][0])))
+                )
+                &&
+                (
+                    !(!overridePointsRemoved.contains(neighborCoords[0][1]) &&
+                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
+                    points.contains(neighborCoords[0][1])))
+                    &&
+                    !(!overridePointsRemoved.contains(neighborCoords[2][1]) &&
+                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
+                    points.contains(neighborCoords[2][1])))
+                )
+                ) {
+                    return true;
+                } else if (//if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
+                !(!overridePointsRemoved.contains(neighborCoords[0][0]) &&
+                (overridePointsAdded.contains(neighborCoords[0][0]) ||
+                points.contains(neighborCoords[0][0])))
+                &&
+                !(!overridePointsRemoved.contains(neighborCoords[1][0]) &&
+                (overridePointsAdded.contains(neighborCoords[1][0]) ||
+                points.contains(neighborCoords[1][0])))
+                &&
+                !(!overridePointsRemoved.contains(neighborCoords[2][0]) &&
+                (overridePointsAdded.contains(neighborCoords[2][0]) ||
+                points.contains(neighborCoords[2][0])))
+                &&
+                !(!overridePointsRemoved.contains(neighborCoords[0][1]) &&
+                (overridePointsAdded.contains(neighborCoords[0][1]) ||
+                points.contains(neighborCoords[0][1])))
+                &&
+                !(!overridePointsRemoved.contains(neighborCoords[2][1]) &&
+                (overridePointsAdded.contains(neighborCoords[2][1]) ||
+                points.contains(neighborCoords[2][1])))
+                ) {
+                    return false;
+                }
+            } else if (//if !(6) && !(7) && (8) && (11) && !(12)
+            !(!overridePointsRemoved.contains(neighborCoords[0][2]) &&
+            (overridePointsAdded.contains(neighborCoords[0][2]) ||
+            points.contains(neighborCoords[0][2])))
+            &&
+            !(!overridePointsRemoved.contains(neighborCoords[1][2]) &&
+            (overridePointsAdded.contains(neighborCoords[1][2]) ||
+            points.contains(neighborCoords[1][2])))
+            &&
+            (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
+            (overridePointsAdded.contains(neighborCoords[2][2]) ||
+            points.contains(neighborCoords[2][2])))
+            &&
+            (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
+            (overridePointsAdded.contains(neighborCoords[0][1]) ||
+            points.contains(neighborCoords[0][1])))
+            &&
+            !(!overridePointsRemoved.contains(neighborCoords[2][1]) &&
+            (overridePointsAdded.contains(neighborCoords[2][1]) ||
+            points.contains(neighborCoords[2][1])))
+            ) {
+                return true;
+            } else if (//if (6) && !(7) && !(8) && !(11) && (12)
+            (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
+            (overridePointsAdded.contains(neighborCoords[0][2]) ||
+            points.contains(neighborCoords[0][2])))
+            &&
+            !(!overridePointsRemoved.contains(neighborCoords[1][2]) &&
+            (overridePointsAdded.contains(neighborCoords[1][2]) ||
+            points.contains(neighborCoords[1][2])))
+            &&
+            !(!overridePointsRemoved.contains(neighborCoords[2][2]) &&
+            (overridePointsAdded.contains(neighborCoords[2][2]) ||
+            points.contains(neighborCoords[2][2])))
+            &&
+            !(!overridePointsRemoved.contains(neighborCoords[0][1]) &&
+            (overridePointsAdded.contains(neighborCoords[0][1]) ||
+            points.contains(neighborCoords[0][1])))
+            &&
+            (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
+            (overridePointsAdded.contains(neighborCoords[2][1]) ||
+            points.contains(neighborCoords[2][1])))
+            ) {
+                return true;
+            }            
+        }
+        
+        return false;
+    }
+
 }
