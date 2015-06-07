@@ -17,7 +17,28 @@ public abstract class AbstractLineThinner implements ILineThinner {
         new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
     protected static final int[] eightNeighborsY = 
         new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
+
+    protected boolean useLineDrawingMode = false;
+    
+    protected boolean debug = false;
+    
+    /**
+     * for images which are already line drawings, that is images such as
+     * maps with only lines, or for block images, use this to avoid a gap filling
+     * stage that fills single pixel gaps surrounded by non-zero pixels.  
+     * (Else, the filter applies such a gap filling algorithm to help avoid 
+     * creating bubbles in thick lines).
+     */
+    @Override
+    public void useLineDrawingMode() {
+        useLineDrawingMode = true;
+    }
+
+    @Override
+    public void setDebug(boolean setToDebug) {
+        debug = setToDebug;
+    }
+    
     protected boolean isASmallerSearchRegionAndDoesDisconnect(
         final GreyscaleImage input, int col, int row) {
         
@@ -1082,6 +1103,80 @@ public abstract class AbstractLineThinner implements ILineThinner {
         }
         
         return false;
+    }
+
+    /**
+     * return true if at least one pixel is found on the border of the images
+     * to have a non-zero value (value > 0 || value < 0).
+     * @param input
+     * @return 
+     */
+    protected boolean hasAtLeastOneBorderPixel(GreyscaleImage input) {
+        
+        int lastCol = input.getWidth() - 1;
+        int lastRow = input.getHeight() - 1;
+        
+        for (int i = 0; i <= lastCol; i++) {
+            if (input.getValue(i, 0) != 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastCol; i++) {
+            if (input.getValue(i, lastRow) != 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastRow; i++) {
+            if (input.getValue(0, i) != 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastRow; i++) {
+            if (input.getValue(lastCol, i) != 0) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    protected GreyscaleImage addOnePixelBorders(GreyscaleImage input) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2);
+        
+        //TODO: make a method internal to GreyscaleImage that uses
+        //   System.arrays.copy
+        for (int col = 0; col < w; col++) {
+            for (int row = 0; row < h; row++) {
+                output.setValue(col + 1, row + 1, input.getValue(col, row));
+            }
+        }
+        
+        return output;
+    }
+
+    protected GreyscaleImage removeOnePixelBorders(GreyscaleImage input) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        GreyscaleImage output = new GreyscaleImage(w - 2, h - 2);
+        
+        //TODO: make a method internal to GreyscaleImage that uses
+        //   System.arrays.copy
+        for (int col = 0; col < (w - 2); col++) {
+            for (int row = 0; row < (h - 2); row++) {
+                output.setValue(col, row, input.getValue(col + 1, row + 1));
+            }
+        }
+        
+        return output;
     }
 
 }

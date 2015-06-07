@@ -18,6 +18,9 @@ public class PostLineThinnerCorrections {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         Set<PairInt> points = imageProcessor.readNonZeroPixels(input);
         
         //TODO: reduce the number of patterns here if possible
@@ -27,9 +30,9 @@ public class PostLineThinnerCorrections {
         //correctForHoleArtifacts3(input);
         //correctForHoleArtifacts2(input);
 
-        /*
-        correctForHoleArtifacts1(points);
+        correctForHoleArtifacts1(points, w, h);
         
+/*        
         correctForHoleArtifacts1_2(points);
                  
         correctForHoleArtifacts1_3(points);
