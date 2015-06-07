@@ -1118,7 +1118,7 @@ public class PostLineThinnerCorrections {
             startValue);
     }
     
-    private void correctForHoleArtifacts1(Set<PairInt> points, int imageWidth,
+    protected void correctForHoleArtifacts1(Set<PairInt> points, int imageWidth,
         int imageHeight) {
              
         /* 
@@ -1163,7 +1163,8 @@ public class PostLineThinnerCorrections {
                     foundPattern = false;
                     break;
                 }
-                if (!points.contains(p2)) {
+                PairInt p3 = new PairInt(x, y);
+                if (!points.contains(p3)) {
                     foundPattern = false;
                     break;
                 }
@@ -1180,7 +1181,8 @@ public class PostLineThinnerCorrections {
                     foundPattern = false;
                     break;
                 }
-                if (points.contains(p2)) {
+                PairInt p3 = new PairInt(x, y);
+                if (points.contains(p3)) {
                     foundPattern = false;
                     break;
                 }
@@ -1394,41 +1396,6 @@ public class PostLineThinnerCorrections {
         rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
        
-    }
-
-    protected GreyscaleImage sumOver8Neighborhood(GreyscaleImage img) {
-        
-        GreyscaleImage summed = img.copyImage();
-        
-        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
-        // for each pixel, sum it's neighbors
-        for (int col = 0; col < w; col++) {
-            for (int row = 0; row < h; row++) {
-                
-                int sum = 0;
-                
-                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
-                    
-                    int x = dxs[nIdx] + col;
-                    int y = dys[nIdx] + row;
-                    
-                    if ((x<0) || (y<0) || (x>(w-1)) || (y>(h-1))) {
-                        continue;
-                    }
-                    int v = img.getValue(x, y);
-                    
-                    sum += v;                    
-                }
-                summed.setValue(col, row, sum);
-            }
-        }
-        
-        return summed;
     }
 
     private void correctForMinorOffsetsByIntensity(GreyscaleImage input, 

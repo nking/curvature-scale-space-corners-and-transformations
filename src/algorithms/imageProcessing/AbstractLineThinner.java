@@ -269,6 +269,7 @@ public abstract class AbstractLineThinner implements ILineThinner {
         PairInt[][] set = new PairInt[3][];
         
         for (int i = 0; i < 3; i++) {
+            set[i] = new PairInt[3];
             int x = col + i - 1;
             for (int j = 0; j < 3; j++) {
                 if (i == 1 && j == 1) {
