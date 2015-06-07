@@ -32,48 +32,48 @@ public class PostLineThinnerCorrections {
 
         correctForHoleArtifacts1(points, w, h);
         
-/*        
-        correctForHoleArtifacts1_2(points);
-                 
-        correctForHoleArtifacts1_3(points);
+        correctForHoleArtifacts1_2(points, w, h);
+
+        correctForHoleArtifacts1_3(points, w, h);
         
-        correctForHoleArtifacts1_4(points);
+        correctForHoleArtifacts1_4(points, w, h);
         
-        correctForZigZag0(points);
+        correctForZigZag0(points, w, h);
         
-        correctForZigZag0Alt(points);
+        correctForZigZag0Alt(points, w, h);
                 
-        correctForZigZag1(points);
+        correctForZigZag1(points, w, h);
      
-        correctForZigZag2(points);
+        correctForZigZag2(points, w, h);
         
-        correctForZigZag1Alt(points);
+        correctForZigZag1Alt(points, w, h);
         
-        correctForZigZag3(points);
+        correctForZigZag3(points, w, h);
                 
-        correctForZigZag5(points);
+        correctForZigZag5(points, w, h);
         
-        correctForZigZag6(points);
+        correctForZigZag6(points, w, h);
         
-        correctForWs(points);
+        correctForWs(points, w, h);
         
         // TODO: revisit, not sure this is always an artifact:
-        correctForLine0(points);
+        correctForLine0(points, w, h);
         
         // better edge extraction at the expense of unsharpening true corners:
-        correctForLs(input);
-        correctForLs2(points);
+        correctForLs(points, w, h);
+        correctForLs2(points, w, h);
         
-        correctForZigZag1(points);
+        correctForZigZag1(points, w, h);
         
-        correctForSpurs(points);
+        correctForSpurs(points, w, h);
         
-        correctForZigZag7(points);
-*/
+        correctForZigZag7(points, w, h);
+
         imageProcessor.writeAsBinaryToImage(input, points);
     }
     
-    private void correctForZigZag0(GreyscaleImage input) {
+    private void correctForZigZag0(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
        
         /*
         looking for pattern
@@ -110,15 +110,17 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
-        
     }
     
-    private void correctForZigZag0Alt(GreyscaleImage input) {
+    private void correctForZigZag0Alt(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
        
         /*
         keep
@@ -164,15 +166,18 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
     
-    private void correctForZigZag5(GreyscaleImage input) {
+    private void correctForZigZag5(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
        
         /*
         keep
@@ -214,15 +219,18 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
     
-    private void correctForZigZag6(GreyscaleImage input) {
+    private void correctForZigZag6(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
        
         /*       
            0  0  0  0   2
@@ -259,10 +267,12 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
@@ -274,7 +284,8 @@ public class PostLineThinnerCorrections {
      * 
      * @param input 
      */
-    private void correctForZigZag7(GreyscaleImage input) {
+    private void correctForZigZag7(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
        
         /*  
            #
@@ -308,10 +319,12 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
@@ -323,7 +336,8 @@ public class PostLineThinnerCorrections {
      * 
      * @param input 
      */
-    private void correctForLs(GreyscaleImage input) {
+    private void correctForLs(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
        
         /*  
         
@@ -358,15 +372,18 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
     
-    private void correctForLs2(GreyscaleImage input) {
+    private void correctForLs2(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
        
         /*  
         0  #  0  0      1
@@ -398,15 +415,18 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
     
-    private void correctForWs(GreyscaleImage input) {
+    private void correctForWs(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
        
         /*        
         
@@ -437,15 +457,18 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
     
-    private void correctForZigZag1(GreyscaleImage input) {
+    private void correctForZigZag1(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*
         looking for pattern
@@ -485,15 +508,18 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
     
-     private void correctForZigZag2(GreyscaleImage input) {
+    private void correctForZigZag2(Set<PairInt> points, int imageWidth, 
+         int imageHeight) {
         
         /*
         looking for pattern
@@ -532,15 +558,18 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
     }
     
-    private void correctForZigZag1Alt(GreyscaleImage input) {
+    private void correctForZigZag1Alt(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*
         looking for pattern
@@ -578,15 +607,17 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
-        
     }
     
-    private void correctForZigZag3(GreyscaleImage input) {
+    private void correctForZigZag3(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*
         looking for pattern
@@ -626,12 +657,13 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
-        
     }
     
     /**
@@ -641,7 +673,8 @@ public class PostLineThinnerCorrections {
      * 
      * @param input 
      */
-    private void correctForRemaining(GreyscaleImage input) {
+    private void correctForRemaining(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
        
         /*  
         
@@ -674,15 +707,17 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
-        
     }
     
-    private void rotate90ThreeTimes(GreyscaleImage input, 
+    private void rotate90ThreeTimes(
+        Set<PairInt> points, int imageWidth, int imageHeight,
         final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
         LinkedHashSet<PairInt> changeToZeroes, 
         final LinkedHashSet<PairInt> changeToOnes, final int startCenterValue) {
@@ -704,7 +739,9 @@ public class PostLineThinnerCorrections {
             p.setX(-1 * p.getX());
         }
                     
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes,
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes,
             startCenterValue);
              
         // ----- change the sign of y to handle other direction -----
@@ -724,7 +761,9 @@ public class PostLineThinnerCorrections {
             p.setY(-1 * p.getY());
         }
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes,
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes,
             startCenterValue);
         
         // ----- change the sign of x to handle another direction -----
@@ -744,85 +783,107 @@ public class PostLineThinnerCorrections {
             p.setX(-1 * p.getX());
         }
                     
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes,
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes,
             startCenterValue);
     }
     
-    private void replacePattern(GreyscaleImage input, 
+    private void replacePattern(
+        Set<PairInt> points, int imageWidth, int imageHeight,
         final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
         final LinkedHashSet<PairInt> changeToZeroes, final LinkedHashSet<PairInt> changeToOnes, 
         final int startCenterValue) {
         
-        int w = input.getWidth();
-        int h = input.getHeight();
-        
-        for (int col = 0; col < w; col++) {
+        int w = imageWidth;
+        int h = imageHeight;
+
+        Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
+        Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
+
+        for (PairInt p : points) {
+
+            boolean isNotPresent = tmpPointsRemoved.contains(p) ||
+                (!points.contains(p) && !tmpPointsAdded.contains(p));
+
+            if (startCenterValue == 0) {
+                // skip if point is in set
+                if (!isNotPresent) {
+                    continue;
+                }
+            } else if (isNotPresent) {
+                // skip if point is not in set
+                continue;
+            }
             
-            for (int row = 0; row < h; row++) {
-                
-                int v = input.getValue(col, row);
-                   
-                if (v != startCenterValue) {
-                    continue;
+            int col = p.getX();
+            int row = p.getY();
+            
+            boolean foundPattern = true;
+            
+            for (PairInt p2 : zeroes) {
+                int x = col + p2.getX();
+                int y = row + p2.getY();
+                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                    //TODO: revisit this
+                    foundPattern = false;
+                    break;
                 }
-                
-                boolean foundPattern = true;
-                
-                for (PairInt p : zeroes) {
-                    int x = col + p.getX();
-                    int y = row + p.getY();
-                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        //TODO: revisit this
-                        foundPattern = false;
-                        break;
-                    }
-                    int vz = input.getValue(x, y);
-                    if (vz != 0) {
-                        foundPattern = false;
-                        break;
-                    }
-                }
-                
-                if (!foundPattern) {
-                    continue;
-                }
-                
-                for (PairInt p : ones) {
-                    int x = col + p.getX();
-                    int y = row + p.getY();
-                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        foundPattern = false;
-                        break;
-                    }
-                    int vz = input.getValue(x, y);
-                    if (vz != 1) {
-                        foundPattern = false;
-                        break;
-                    }
-                }
-                
-                if (!foundPattern) {
-                    continue;
-                }
-                
-                for (PairInt p : changeToZeroes) {
-                    int x = col + p.getX();
-                    int y = row + p.getY();
-                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        continue;
-                    }
-                    input.setValue(x, y, 0);
-                }
-                
-                for (PairInt p : changeToOnes) {
-                    int x = col + p.getX();
-                    int y = row + p.getY();
-                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        continue;
-                    }
-                    input.setValue(x, y, 1);
+                PairInt p3 = new PairInt(x, y);
+                if (!tmpPointsRemoved.contains(p3)
+                    && (points.contains(p3) || tmpPointsAdded.contains(p3))) {
+                    foundPattern = false;
+                    break;
                 }
             }
+                
+            if (!foundPattern) {
+                continue;
+            }
+
+            for (PairInt p2 : ones) {
+                int x = col + p2.getX();
+                int y = row + p2.getY();
+                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                    foundPattern = false;
+                    break;
+                }
+                PairInt p3 = new PairInt(x, y);
+                if (tmpPointsRemoved.contains(p3) ||
+                    (!points.contains(p3) && !tmpPointsAdded.contains(p3))) {
+                    foundPattern = false;
+                    break;
+                }
+            }
+                
+            if (!foundPattern) {
+                continue;
+            }
+            
+            for (PairInt p2 : changeToZeroes) {
+                int x = col + p2.getX();
+                int y = row + p2.getY();
+                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                    continue;
+                }
+                tmpPointsRemoved.add(new PairInt(x, y));
+            }
+
+            for (PairInt p2 : changeToOnes) {
+                int x = col + p2.getX();
+                int y = row + p2.getY();
+                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                    continue;
+                }
+                tmpPointsAdded.add(new PairInt(x, y));
+            }
+        }
+        
+        for (PairInt p2 : tmpPointsRemoved) {
+            points.remove(p2);
+        }
+        for (PairInt p2 : tmpPointsAdded) {
+            points.add(p2);
         }
     }
     
@@ -849,7 +910,8 @@ public class PostLineThinnerCorrections {
      * CannyEdgeFilter.
      * @param input 
      */
-    private void correctForHoleArtifacts3(GreyscaleImage input) {
+    private void correctForHoleArtifacts3(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*
         looking for pattern
@@ -933,13 +995,15 @@ public class PostLineThinnerCorrections {
         changeToZeroes.add(new PairInt(1, 1));
         changeToZeroes.add(new PairInt(0, 2));
               
-        int centralValue = 0;
+        int startValue = 0;
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
-            centralValue);
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
-            centralValue);
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
        
     }
     
@@ -950,7 +1014,8 @@ public class PostLineThinnerCorrections {
      * CannyEdgeFilter.
      * @param input 
      */
-    private void correctForHoleArtifacts2(GreyscaleImage input) {
+    private void correctForHoleArtifacts2(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*
         looking for pattern
@@ -1016,17 +1081,20 @@ public class PostLineThinnerCorrections {
         changeToZeroes.add(new PairInt(2, -2));
         changeToZeroes.add(new PairInt(2, 0));
         
-        int centralValue = 0;
+        int startValue = 0;
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
-            centralValue);
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
-            centralValue);
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
+            startValue);
        
     }
     
-    private void correctForLine0(GreyscaleImage input) {
+    private void correctForLine0(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*
         looking for pattern
@@ -1071,10 +1139,12 @@ public class PostLineThinnerCorrections {
         
         int startValue = 0;
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
     }
     
@@ -1083,7 +1153,8 @@ public class PostLineThinnerCorrections {
      * making a better line width for the edge extractor.
      * @param input 
      */
-    private void correctForSpurs(GreyscaleImage input) {
+    private void correctForSpurs(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*
         looking for pattern
@@ -1114,10 +1185,12 @@ public class PostLineThinnerCorrections {
         
         int startValue = 1;
         
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
     }
     
@@ -1226,7 +1299,8 @@ public class PostLineThinnerCorrections {
         }
     }
 
-    private void correctForHoleArtifacts1_2(GreyscaleImage input) {
+    private void correctForHoleArtifacts1_2(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
         
         /*     
              0  0              2
@@ -1274,16 +1348,20 @@ public class PostLineThinnerCorrections {
         changeToOnes.add(new PairInt(0, 0));
         
         int startValue = 0;
-            
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
        
     }
     
-    private void correctForHoleArtifacts1_3(GreyscaleImage input) {
+    private void correctForHoleArtifacts1_3(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*     
              0  0              2
@@ -1334,15 +1412,18 @@ public class PostLineThinnerCorrections {
         
         int startValue = 0;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
        
     }
 
-    private void correctForHoleArtifacts1_4(GreyscaleImage input) {
+    private void correctForHoleArtifacts1_4(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
         
         /*     
                    0  0        3
@@ -1394,147 +1475,14 @@ public class PostLineThinnerCorrections {
         
         int startValue = 0;
             
-        replacePattern(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
         
-        rotate90ThreeTimes(input, zeroes, ones, changeToZeroes, changeToOnes, 
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
        
     }
 
-    private void correctForMinorOffsetsByIntensity(GreyscaleImage input, 
-        GreyscaleImage summed) {
-     
-        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
-       
-        ErosionFilter erosionFilter = new ErosionFilter();
-        
-        int w = input.getWidth();
-        int h = input.getHeight();
-            
-        for (int col = 1; col < (w - 1); col++) {
-            for (int row = 1; row < (h - 1); row++) {
-                
-                int v = input.getValue(col, row);
-                if (v == 0) {
-                    continue;
-                }
-                
-                int vSum = summed.getValue(col, row);
-                
-                if (vSum == 8) {
-                    continue;
-                }
-                                
-                if (erosionFilter.doesDisconnect(input, col, row)) {
-                    continue;
-                }
-                
-                int maxSum = vSum;
-                int maxIdx = -1;
-                
-                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
-                    
-                    int x = dxs[nIdx] + col;
-                    int y = dys[nIdx] + row;
-                    
-                    if ((x<0) || (y<0) || (x>(w-1)) || (y>(h-1))) {
-                        continue;
-                    }
-                    
-                    // only compare the neighbors which are swappable
-                    if (input.getValue(x, y) == 0) {
-                        int sum = summed.getValue(x, y);
-                        if (sum > maxSum) {
-                            maxIdx = nIdx;
-                            maxSum = sum;
-                        }
-                    }
-                }
-                                
-                if (maxIdx > -1) {
-                    int x = dxs[maxIdx] + col;
-                    int y = dys[maxIdx] + row;
-                    input.setValue(x, y, 1);
-                    input.setValue(col, row, 0);
-                }
-            }    
-        }
-    }
-
-    protected GreyscaleImage addOnePixelBorders(GreyscaleImage input) {
-        
-        int w = input.getWidth();
-        int h = input.getHeight();
-        
-        GreyscaleImage output = new GreyscaleImage(w + 2, h + 2);
-        
-        //TODO: make a method internal to GreyscaleImage that uses
-        //   System.arrays.copy
-        for (int col = 0; col < w; col++) {
-            for (int row = 0; row < h; row++) {
-                output.setValue(col + 1, row + 1, input.getValue(col, row));
-            }
-        }
-        
-        return output;
-    }
-
-    protected GreyscaleImage removeOnePixelBorders(GreyscaleImage input) {
-        
-        int w = input.getWidth();
-        int h = input.getHeight();
-        
-        GreyscaleImage output = new GreyscaleImage(w - 2, h - 2);
-        
-        //TODO: make a method internal to GreyscaleImage that uses
-        //   System.arrays.copy
-        for (int col = 0; col < (w - 2); col++) {
-            for (int row = 0; row < (h - 2); row++) {
-                output.setValue(col, row, input.getValue(col + 1, row + 1));
-            }
-        }
-        
-        return output;
-    }
-
-    /**
-     * return true if at least one pixel is found on the border of the images
-     * to have a non-zero value (value > 0 || value < 0).
-     * @param input
-     * @return 
-     */
-    protected boolean hasAtLeastOneBorderPixel(GreyscaleImage input) {
-        
-        int lastCol = input.getWidth() - 1;
-        int lastRow = input.getHeight() - 1;
-        
-        for (int i = 0; i <= lastCol; i++) {
-            if (input.getValue(i, 0) != 0) {
-                return true;
-            }
-        }
-        
-        for (int i = 0; i <= lastCol; i++) {
-            if (input.getValue(i, lastRow) != 0) {
-                return true;
-            }
-        }
-        
-        for (int i = 0; i <= lastRow; i++) {
-            if (input.getValue(0, i) != 0) {
-                return true;
-            }
-        }
-        
-        for (int i = 0; i <= lastRow; i++) {
-            if (input.getValue(lastCol, i) != 0) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
 }

@@ -18,6 +18,70 @@ public class LineThinnerTest extends TestCase {
     public LineThinnerTest() {
     }
     
+     public void testAddOnePixelBorder() throws Exception {
+        
+        int w = 10;
+        int h = 10;
+        GreyscaleImage img = new GreyscaleImage(w, h);
+        img.fill(200);
+        
+        AbstractLineThinner lineThinner = new ZhangSuenLineThinner();
+        
+        GreyscaleImage img2 = lineThinner.addOnePixelBorders(img);
+        
+        assertTrue(lineThinner.hasAtLeastOneBorderPixel(img));
+        
+        assertFalse(lineThinner.hasAtLeastOneBorderPixel(img2));
+        
+        assertTrue(img.getWidth() == w);
+        assertTrue(img.getHeight() == h);
+        
+        assertTrue(img2.getWidth() == (w + 2));
+        assertTrue(img2.getHeight() == (h + 2));
+        
+        for (int col = 0; col < w; col++) {
+            for (int row = 0; row < h; row++) {
+                int v = img.getValue(col, row);
+                int v2 = img2.getValue(col + 1, row + 1);
+                assertTrue(v == v2);
+            }
+        }
+        
+        GreyscaleImage img3 = lineThinner.removeOnePixelBorders(img2);
+        
+        assertTrue(lineThinner.hasAtLeastOneBorderPixel(img));
+        assertTrue(lineThinner.hasAtLeastOneBorderPixel(img3));
+        assertFalse(lineThinner.hasAtLeastOneBorderPixel(img2));
+        
+        assertTrue(img3.getWidth() == w);
+        assertTrue(img3.getHeight() == h);
+        
+        for (int col = 0; col < w; col++) {
+            for (int row = 0; row < h; row++) {
+                int v = img.getValue(col, row);
+                int v2 = img2.getValue(col + 1, row + 1);
+                int v3 = img3.getValue(col, row);
+                assertTrue(v == v2);
+                assertTrue(v == v3);
+            }
+        }
+    }
+
+    public void testHasAtLeastOneBorderPixel() {
+        
+        int w = 10;
+        int h = 10;
+        GreyscaleImage img = new GreyscaleImage(w, h);
+        img.fill(200);
+        
+        AbstractLineThinner lineThinner = new ZhangSuenLineThinner();
+
+        assertTrue(lineThinner.hasAtLeastOneBorderPixel(img));
+        
+        img = new GreyscaleImage(w, h);
+        assertFalse(lineThinner.hasAtLeastOneBorderPixel(img));
+    }
+    
     public void testApplyFilter() {
         
         /*                                    ideally
