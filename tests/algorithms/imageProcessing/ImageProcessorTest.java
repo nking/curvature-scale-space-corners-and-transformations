@@ -2,8 +2,10 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;
+import java.util.Set;
 import junit.framework.TestCase;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -16,17 +18,6 @@ public class ImageProcessorTest extends TestCase {
 
     public ImageProcessorTest(String testName) {
         super(testName);
-    }
-
-    @Override
-    protected void setUp() throws Exception {
-
-        super.setUp();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
     }
 
     public void testCreateEmptyImg() {
@@ -64,7 +55,6 @@ public class ImageProcessorTest extends TestCase {
         assertTrue(Arrays.equals(img2.b, img.b));
     }
    
-    @Test   
     public void testApplySobelKernel() throws Exception {
             
         String filePath = ResourceFinder.findFileInTestResources("tajmahal.png");
@@ -136,7 +126,6 @@ public class ImageProcessorTest extends TestCase {
         assertTrue(ImageProcessor.calculateTheta(1, -1) == -45);
     }
 
-     @Test
     public void testCombineConvolvedImages_Image_Image() {
         
         int w = 10;
@@ -169,7 +158,6 @@ public class ImageProcessorTest extends TestCase {
         }
     }
 
-    @Test
     public void testCombineConvolvedImages_GreyscaleImage_GreyscaleImage() {
         
         int w = 10;
@@ -198,7 +186,6 @@ public class ImageProcessorTest extends TestCase {
         }
     }
     
-    @Test
     public void testComputeTheta_Image_Image() {
         
         int w = 10;
@@ -283,7 +270,6 @@ public class ImageProcessorTest extends TestCase {
         assertTrue(result.getB(8, 8) == -45);
     }
     
-    @Test
     public void testComputeTheta_GreyscaleImage_GreyscaleImage() {
         
         int w = 10;
@@ -351,7 +337,6 @@ public class ImageProcessorTest extends TestCase {
         assertTrue(result.getValue(8, 8) == -45);
     }
     
-    @Test
     public void testSubtractImages() {
         
         int w = 10;
@@ -378,7 +363,6 @@ public class ImageProcessorTest extends TestCase {
         }
     }
       
-    @Test
     public void testShrinkImageToFirstNonZeros() {
         
         int w = 10;
@@ -753,6 +737,42 @@ public class ImageProcessorTest extends TestCase {
         
         int z = 1;
         
+    }
+    
+    public void testReadNonZeroPixels() throws Exception {
+        
+        int w = 10;
+        int h = 10;
+        
+        GreyscaleImage img = new GreyscaleImage(w, h);
+        
+        for (int i = 0; i < w; i++) {
+            img.setValue(i, i, 1);
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Set<PairInt> points = imageProcessor.readNonZeroPixels(img);
+        
+        int count = 0;
+        for (int i = 0; i < w; i++) {
+            assertTrue(points.contains(new PairInt(i, i)));
+            count++;
+        }
+        
+        assertTrue(points.size() == count);
+        
+        GreyscaleImage img2 = img.createWithDimensions();
+        
+        imageProcessor.writeAsBinaryToImage(img2, points);
+        
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                int v = img.getValue(i, j);
+                int v2 = img2.getValue(i, j);
+                assertTrue(v == v2);
+            }
+        }
     }
     
     private GreyscaleImage getCheckboard(int width) {

@@ -2516,4 +2516,39 @@ public class ImageProcessor {
         
         return output;
     }
+    
+    /**
+     * read the image and store the non-zero pixels in a set.  note that negative
+     * values will also be stored in the output set.
+     * @param img
+     * @return 
+     */
+    public Set<PairInt> readNonZeroPixels(GreyscaleImage img) {
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        
+        for (int col = 0; col < img.getWidth(); col++) {
+            for (int row = 0; row < img.getHeight(); row++) {
+                int v = img.getValue(col, row);
+                if (v != 0) {
+                    set.add(new PairInt(col, row));
+                }
+            }
+        }
+        
+        return set;
+    }
+    
+    public void writeAsBinaryToImage(GreyscaleImage img, Set<PairInt> 
+        nonZeroPoints) {
+
+        img.fill(0);
+        
+        for (PairInt p : nonZeroPoints) {
+            int x = p.getX();
+            int y = p.getY();
+            img.setValue(x, y, 1);
+        }
+        
+    }
 }

@@ -10,265 +10,64 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public class ZhangSuenLineThinner extends AbstractLineThinner {
-    
-    private static final int[][] nbrs = 
-        {{0, -1}, {1, -1}, {1, 0}, {1, 1}, 
-        {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}};
-        
-    private static int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}}, 
-        {{0, 2, 6}, {0, 4, 6}}};
-
-    protected boolean useLineDrawingMode = false;
-    
-    protected boolean debug = false;
+public class PostLineThinnerCorrections {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
-    
-    /**
-     * for images which are already line drawings, that is images such as
-     * maps with only lines, or for block images, use this to avoid a gap filling
-     * stage that fills single pixel gaps surrounded by non-zero pixels.  
-     * (Else, the filter applies such a gap filling algorithm to help avoid 
-     * creating bubbles in thick lines).
-     */
-    @Override
-    public void useLineDrawingMode() {
-        useLineDrawingMode = true;
-    }
 
-    @Override
-    public void setDebug(boolean setToDebug) {
-        debug = setToDebug;
-    }
-    
-    @Override
-    public void applyFilter(final GreyscaleImage input) {
+    public void correctForArtifacts(GreyscaleImage input) {
         
-        //GreyscaleImage summed = sumOver8Neighborhood(input);
+        ImageProcessor imageProcessor = new ImageProcessor();
         
-        boolean hasABorderPixel = hasAtLeastOneBorderPixel(input);
+        Set<PairInt> points = imageProcessor.readNonZeroPixels(input);
         
-        GreyscaleImage input2 = hasABorderPixel ? addOnePixelBorders(input) :
-            input;
-        
-        int w2 = input2.getWidth();
-        int h2 = input2.getHeight();
-        
-        Set<PairInt> points = new HashSet<PairInt>();
-        for (int col = 0; col < w2; col++) {
-            for (int row = 0; row < h2; row++) {
-                if (input2.getValue(col, row) > 0) {
-                    points.add(new PairInt(col, row));
-                }
-            }
-        }
-        applyLineThinner(points, 0, w2, 0, h2);
-        input2.fill(0);
-        for (PairInt p : points) {
-            input2.setValue(p.getX(), p.getY(), 1);
-        }
-        
-        // make corrections for artifacts created for inclined lines
-        correctForArtifacts(input2);
-        
-        //correctForMinorOffsetsByIntensity(input, summed);
-        
-        GreyscaleImage input3 = hasABorderPixel ? removeOnePixelBorders(input2)
-            : input2;
-        
-        input.resetTo(input3);
-                
-    }
-    
-    public void applyLineThinner(Set<PairInt> points, int minX, int maxX,
-        int minY, int maxY) {
-        
-        // adapted from code at http://rosettacode.org/wiki/Zhang-Suen_thinning_algorithm#Java
-         
-        boolean firstStep = false;
-        boolean hasChanged;
-        
-        Set<PairInt> remove = new HashSet<PairInt>();
-        
-        do {
-            hasChanged = false;
-            firstStep = !firstStep;
-             
-            for (int r = minY + 1; r < maxY - 1; r++) {
-                for (int c = minX + 1; c < maxX - 1; c++) {
-                     
-                    PairInt uPoint = new PairInt(c, r);
-                    
-                    if (!points.contains(uPoint)) {
-                        continue;
-                    }
- 
-                    int nn = numNeighbors(r, c, points);
-                    if (nn < 2 || nn > 6) {
-                        continue;
-                    }
- 
-                    int nt = numTransitions(r, c, points);
-                    if (nt != 1) {
-                        continue;
-                    }
- 
-                    if (!atLeastOneIsVacant(r, c, firstStep ? 0 : 1, points)) {
-                        continue;
-                    }
-                     
-                    remove.add(uPoint);
-                }
-            }
- 
-            if (!remove.isEmpty()) {
-                
-                for (PairInt p : remove) {
-                    points.remove(p);
-                    hasChanged = true;
-                }
-
-                remove.clear();
-            }
- 
-        } while (hasChanged || firstStep);
-    }
-    
-    private int numNeighbors(int r, int c, Set<PairInt> points) {
-        int count = 0;
-        for (int i = 0; i < nbrs.length - 1; i++) {
-            int x = c + nbrs[i][0];
-            int y = r + nbrs[i][1];
-            PairInt p = new PairInt(x, y);
-            if (points.contains(p)) {
-                count++;
-            } else {
-                int z = 1;
-            }
-        }
-        return count;
-    }
- 
-    /**
-     * visits neighbors in counter-clockwise direction and looks for the
-     * pattern 0:1 in the current and next neighbor.  each such pattern
-     * is counted as a transition.
-     * @param r
-     * @param c
-     * @param points
-     * @return 
-     */
-    static int numTransitions(int r, int c, Set<PairInt> points) {
-        
-        /* 
-         5  4  3    1
-         6     2    0
-         7  0  1   -1
- 
-         -1  0  1
-         */
-        
-        int count = 0;
-        for (int i = 0; i < nbrs.length - 1; i++) {
-            int x = c + nbrs[i][0];
-            int y = r + nbrs[i][1];
-            PairInt p = new PairInt(x, y);
-            if (!points.contains(p)) {
-                int x2 = c + nbrs[i + 1][0];
-                int y2 = r + nbrs[i + 1][1];
-                PairInt p2 = new PairInt(x2, y2);
-                if (points.contains(p2)) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
- 
-    /**
-     * looking for 2 zeroes within the 4 neighborhood pattern of point (c,r).
-     * @param r
-     * @param c
-     * @param step
-     * @param points
-     * @return 
-     */
-    static boolean atLeastOneIsVacant(int r, int c, int step, Set<PairInt> points) {
-        int count = 0;
-        
-        int[][] group = nbrGroups[step];
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < group[i].length; j++) {
-                int[] nbr = nbrs[group[i][j]];
-
-                int x = c + nbr[0];
-                int y = r + nbr[1];
-
-                PairInt p = new PairInt(x, y);
-
-                if (!points.contains(p)) {
-                    count++;
-                    break;
-                }
-            }
-        }
-        
-        return (count > 1);
-    }
-
-    private void correctForArtifacts(GreyscaleImage input) {
-               
         //TODO: reduce the number of patterns here if possible
         // and make sure that true corners aren't drastically reduced to less
         // usable smaller corners 
         
- //could speed this up alot by putting the pixels above zero in a set
- //to avoid iterating over all pixels
-        
         //correctForHoleArtifacts3(input);
-        
         //correctForHoleArtifacts2(input);
 
-        correctForHoleArtifacts1(input);
+        /*
+        correctForHoleArtifacts1(points);
         
-        correctForHoleArtifacts1_2(input);
+        correctForHoleArtifacts1_2(points);
                  
-        correctForHoleArtifacts1_3(input);
+        correctForHoleArtifacts1_3(points);
         
-        correctForHoleArtifacts1_4(input);
+        correctForHoleArtifacts1_4(points);
         
-        correctForZigZag0(input);
+        correctForZigZag0(points);
         
-        correctForZigZag0Alt(input);
+        correctForZigZag0Alt(points);
                 
-        correctForZigZag1(input);
+        correctForZigZag1(points);
      
-        correctForZigZag2(input);
+        correctForZigZag2(points);
         
-        correctForZigZag1Alt(input);
+        correctForZigZag1Alt(points);
         
-        correctForZigZag3(input);
+        correctForZigZag3(points);
                 
-        correctForZigZag5(input);
+        correctForZigZag5(points);
         
-        correctForZigZag6(input);
+        correctForZigZag6(points);
         
-        correctForWs(input);
+        correctForWs(points);
         
         // TODO: revisit, not sure this is always an artifact:
-        correctForLine0(input);
+        correctForLine0(points);
         
         // better edge extraction at the expense of unsharpening true corners:
         correctForLs(input);
-        correctForLs2(input);
+        correctForLs2(points);
         
-        correctForZigZag1(input);
+        correctForZigZag1(points);
         
-        correctForSpurs(input);
+        correctForSpurs(points);
         
-        correctForZigZag7(input);
-
+        correctForZigZag7(points);
+*/
+        imageProcessor.writeAsBinaryToImage(input, points);
     }
     
     private void correctForZigZag0(GreyscaleImage input) {
@@ -1319,10 +1118,10 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             startValue);
     }
     
-    private void correctForHoleArtifacts1(GreyscaleImage input) {
+    private void correctForHoleArtifacts1(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
         
         /*     
-        
         look for pattern with hole in middle,
         fill the hole,
         then use 
@@ -1337,74 +1136,115 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
            -2   -1    0    1    2
         */  
         
+        /* 
+                      1               2
+                 1    0    1          1     
+                      1*              0
+                                     -1
+        
+           -2   -1    0    1    2
+        */  
+        
         ErosionFilter erosionFilter = new ErosionFilter();
         
-        int w = input.getWidth();
-        int h = input.getHeight();
-      
         int[] nbX = new int[]{-1, -1, 0, 1, 1, 1,  0, -1};
         int[] nbY = new int[]{ 0,  1, 1, 1, 0, -1,-1, -1};
 
         Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
        
+        /* 
+                      1               2
+                 1    0    1          1     
+                      1*              0
+        
+           -2   -1    0    1    2
+        */  
         // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1));
         
-        ones.add(new PairInt(-1, 0));
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(1, 0));
+        zeroes.add(new PairInt(0, -1));
         
-        int centralValue = 0;
+        int w = imageWidth;
+        int h = imageHeight;
+        
+        int centralValue = 1;
+        
+        for (PairInt p : points) {
             
-        for (int col = 0; col < w; col++) {
+            // test for the pattern of ones and zeroe's in the neighbors,
+            // then make a temporary set of center to zero and test if each of
+            // the four sorrounding can be deleted
+            
+            int col = p.getX();
+            int row = p.getY();
+            
+            boolean foundPattern = true;
 
-            for (int row = 0; row < h; row++) {
-
-                int v = input.getValue(col, row);
-
-                if (v != centralValue) {
-                    continue;
+            for (PairInt p2 : ones) {
+                int x = col + p2.getX();
+                int y = row + p2.getY();
+                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                    foundPattern = false;
+                    break;
                 }
-
-                boolean foundPattern = true;
-
-                for (PairInt p : ones) {
-                    int x = col + p.getX();
-                    int y = row + p.getY();
-                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        foundPattern = false;
-                        break;
-                    }
-                    int vz = input.getValue(x, y);
-                    if (vz != 1) {
-                        foundPattern = false;
-                        break;
-                    }
+                if (!points.contains(p2)) {
+                    foundPattern = false;
+                    break;
                 }
-
-                if (!foundPattern) {
-                    continue;
+            }
+            
+            if (!foundPattern) {
+                continue;
+            }
+            
+            for (PairInt p2 : zeroes) {
+                int x = col + p2.getX();
+                int y = row + p2.getY();
+                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                    foundPattern = false;
+                    break;
                 }
-
-                // set the center pixel to '1' and visit each in 8 neighbor
-                // hood to determine if can null it
-
-                input.setValue(col, row, 1);
-
-                for (int k = 0; k < nbX.length; k++) {
-                    int x = col + nbX[k];
-                    int y = row + nbY[k];
-                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                        continue;
-                    }
-
-                    boolean nullable = erosionFilter.process(input, input, 
-                        x, y);
-
-                    if (nullable) {
-                        input.setValue(x, y, 0);
-                    }
+                if (points.contains(p2)) {
+                    foundPattern = false;
+                    break;
                 }
+            }
+            
+            if (!foundPattern) {
+                continue;
+            }
+            
+            Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
+            Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
+            
+            // change the central 0 to a 1
+            tmpPointsAdded.add(new PairInt(0, -1));
+                        
+            // test if can set the surrounding 1's to 0's without disconnecting
+            // lines
+            for (PairInt p2 : ones) {
+                
+                int x = col + p2.getX();
+                int y = row + p2.getY();
+                
+                PairInt p3 = new PairInt(x, y);
+                
+                boolean nullable = erosionFilter.process(p3, points, 
+                    tmpPointsAdded, tmpPointsRemoved, w, h);
+                
+                if (nullable) {
+                    tmpPointsRemoved.add(p3);
+                }
+            }
+            
+            for (PairInt p2 : tmpPointsRemoved) {
+                points.remove(p2);
+            }
+            for (PairInt p2 : tmpPointsAdded) {
+                points.add(p2);
             }
         }
         
