@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -27,11 +29,17 @@ public class PostLineThinnerCorrections {
         // and make sure that true corners aren't drastically reduced to less
         // usable smaller corners 
         
-        //correctForHoleArtifacts3(input);
-        //correctForHoleArtifacts2(input);
+try {
+String dirPath = ResourceFinder.findDirectory("bin");
+ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
+} catch (IOException e){}
 
+        correctForHoleArtifacts0(points, w, h);
+        correctForHoleArtifacts0_1(points, w, h);
+        correctForHoleArtifacts0_2(points, w, h);
+       
         correctForHoleArtifacts1(points, w, h);
-        
+       
         correctForHoleArtifacts1_2(points, w, h);
 
         correctForHoleArtifacts1_3(points, w, h);
@@ -716,11 +724,9 @@ public class PostLineThinnerCorrections {
             startValue);
     }
     
-    private void rotate90ThreeTimes(
-        Set<PairInt> points, int imageWidth, int imageHeight,
-        final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
-        LinkedHashSet<PairInt> changeToZeroes, 
-        final LinkedHashSet<PairInt> changeToOnes, final int startCenterValue) {
+    private void reverseXs(
+        final Set<PairInt> zeroes, final Set<PairInt> ones, 
+        Set<PairInt> changeToZeroes, final Set<PairInt> changeToOnes) {
         
         // ----- change the sign of x to handle other direction -----
         for (PairInt p : zeroes) {
@@ -738,13 +744,25 @@ public class PostLineThinnerCorrections {
         for (PairInt p : changeToOnes) {
             p.setX(-1 * p.getX());
         }
-                    
-        replacePattern(
-            points, imageWidth, imageHeight,
-            zeroes, ones, changeToZeroes, changeToOnes,
-            startCenterValue);
-             
-        // ----- change the sign of y to handle other direction -----
+    }
+    
+    private void reverseXs(final Set<PairInt> zeroes, final Set<PairInt> ones) {
+        
+        // ----- change the sign of x to handle other direction -----
+        for (PairInt p : zeroes) {
+            p.setX(-1 * p.getX());
+        }
+        
+        for (PairInt p : ones) {
+            p.setX(-1 * p.getX());
+        }
+        
+    }
+    
+    private void reverseYs(final Set<PairInt> zeroes, final Set<PairInt> ones, 
+        Set<PairInt> changeToZeroes, final Set<PairInt> changeToOnes) {
+        
+        // ----- change the sign of y  -----
         for (PairInt p : zeroes) {
             p.setY(-1 * p.getY());
         }
@@ -760,6 +778,38 @@ public class PostLineThinnerCorrections {
         for (PairInt p : changeToOnes) {
             p.setY(-1 * p.getY());
         }
+        
+    }
+    
+    private void reverseYs(final Set<PairInt> zeroes, final Set<PairInt> ones) {
+        
+        // ----- change the sign of y  -----
+        for (PairInt p : zeroes) {
+            p.setY(-1 * p.getY());
+        }
+        
+        for (PairInt p : ones) {
+            p.setY(-1 * p.getY());
+        }
+        
+    }
+    
+    private void rotate90ThreeTimes(
+        Set<PairInt> points, int imageWidth, int imageHeight,
+        final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
+        LinkedHashSet<PairInt> changeToZeroes, 
+        final LinkedHashSet<PairInt> changeToOnes, final int startCenterValue) {
+        
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes,
+            startCenterValue);
+             
+        // ----- change the sign of y to handle other direction -----
+        reverseYs(zeroes, ones, changeToZeroes, changeToOnes);
         
         replacePattern(
             points, imageWidth, imageHeight,
@@ -767,21 +817,7 @@ public class PostLineThinnerCorrections {
             startCenterValue);
         
         // ----- change the sign of x to handle another direction -----
-        for (PairInt p : zeroes) {
-            p.setX(-1 * p.getX());
-        }
-        
-        for (PairInt p : ones) {
-            p.setX(-1 * p.getX());
-        }
-        
-        for (PairInt p : changeToZeroes) {
-            p.setX(-1 * p.getX());
-        }
-        
-        for (PairInt p : changeToOnes) {
-            p.setX(-1 * p.getX());
-        }
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
                     
         replacePattern(
             points, imageWidth, imageHeight,
@@ -803,8 +839,7 @@ public class PostLineThinnerCorrections {
 
         for (PairInt p : points) {
 
-            boolean isNotPresent = tmpPointsRemoved.contains(p) ||
-                (!points.contains(p) && !tmpPointsAdded.contains(p));
+            boolean isNotPresent = tmpPointsRemoved.contains(p);
 
             if (startCenterValue == 0) {
                 // skip if point is in set
@@ -916,11 +951,11 @@ public class PostLineThinnerCorrections {
         /*
         looking for pattern
         
-            0    0    0    0    0    0           3
-            0    0    0    0    1    1    1      2
-            0    0    0    1    0    1    0      1
-            0    0    1    0*   1    1    0      0
-            0    1    0    1    1    0    0     -1
+            0    0    0    0    0    0           3 4
+            0    0    0    0    1    1    1      2 3
+            0    0    0    1    0    1    0      1 2
+            0    0    1    0*   1    1    0      0 1
+            0    1    0    1**  1    0    0     -1 0
             0    1    1    1    0    0    0     -2
             0    1    0    0    0    0    0     -3
         
@@ -936,66 +971,66 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
         
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, -1));
-        zeroes.add(new PairInt(-1, 1)); 
-        zeroes.add(new PairInt(1, -1)); 
-        zeroes.add(new PairInt(0, -2)); 
-        zeroes.add(new PairInt(1, 2)); 
-        zeroes.add(new PairInt(2, 2)); 
-        zeroes.add(new PairInt(2, 1)); 
-        zeroes.add(new PairInt(0, -3)); 
-        zeroes.add(new PairInt(1, -3)); 
-        zeroes.add(new PairInt(-1, -2)); 
-        zeroes.add(new PairInt(-1, -3)); 
-        zeroes.add(new PairInt(2, -3));
-        zeroes.add(new PairInt(-2, -3));
-        zeroes.add(new PairInt(-2, -2));
-        zeroes.add(new PairInt(-2, -1));
-        zeroes.add(new PairInt(-2, 0));
-        zeroes.add(new PairInt(-1, 3));
-        zeroes.add(new PairInt(0, 3));
-        zeroes.add(new PairInt(1, 3));
-        zeroes.add(new PairInt(2, 3));
-        zeroes.add(new PairInt(3, 3));
-        zeroes.add(new PairInt(3, 2));
-        zeroes.add(new PairInt(3, 1));
-        zeroes.add(new PairInt(3, 0));
-        zeroes.add(new PairInt(3, -1));
-        zeroes.add(new PairInt(-3, -3));
-        zeroes.add(new PairInt(-3, 2));
-        zeroes.add(new PairInt(-3, -1));
-        zeroes.add(new PairInt(-3, 0));
-        zeroes.add(new PairInt(-3, -1));
-        zeroes.add(new PairInt(-3, -2));
-        zeroes.add(new PairInt(-3, -3));
+        zeroes.add(new PairInt(-1, -1 - 1));
+        zeroes.add(new PairInt(-1, 1 - 1));
+        zeroes.add(new PairInt(1, -1 - 1));
+        zeroes.add(new PairInt(0, -2 - 1));
+        zeroes.add(new PairInt(1, 2 - 1));
+        zeroes.add(new PairInt(2, 2 - 1)); 
+        zeroes.add(new PairInt(2, 1 - 1));
+        zeroes.add(new PairInt(0, -3 - 1));
+        zeroes.add(new PairInt(1, -3 - 1));
+        zeroes.add(new PairInt(-1, -2 - 1));
+        zeroes.add(new PairInt(-1, -3 - 1));
+        zeroes.add(new PairInt(2, -3 - 1));
+        zeroes.add(new PairInt(-2, -3 - 1));
+        zeroes.add(new PairInt(-2, -2 - 1));
+        zeroes.add(new PairInt(-2, -1 - 1));
+        zeroes.add(new PairInt(-2, 0 - 1));
+        zeroes.add(new PairInt(-1, 3 - 1));
+        zeroes.add(new PairInt(0, 3 - 1));
+        zeroes.add(new PairInt(1, 3 - 1));
+        zeroes.add(new PairInt(2, 3 - 1));
+        zeroes.add(new PairInt(3, 3 - 1));
+        zeroes.add(new PairInt(3, 2 - 1));
+        zeroes.add(new PairInt(3, 1 - 1));
+        zeroes.add(new PairInt(3, 0 - 1));
+        zeroes.add(new PairInt(3, -1 - 1));
+        zeroes.add(new PairInt(-3, -3 - 1));
+        zeroes.add(new PairInt(-3, 2 - 1));
+        zeroes.add(new PairInt(-3, -1 - 1));
+        zeroes.add(new PairInt(-3, 0 - 1));
+        zeroes.add(new PairInt(-3, -1 - 1));
+        zeroes.add(new PairInt(-3, -2 - 1));
+        zeroes.add(new PairInt(-3, -3 - 1));
         
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(0, 2));
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(-1, 0));
-        ones.add(new PairInt(-1, 2));
-        ones.add(new PairInt(1, -2));
-        ones.add(new PairInt(1, 0));
-        ones.add(new PairInt(1, 1));
-        ones.add(new PairInt(2, -2));
-        ones.add(new PairInt(2, -1));
-        ones.add(new PairInt(2, 0));
-        ones.add(new PairInt(3, -2));
-        ones.add(new PairInt(-2, 1));
-        ones.add(new PairInt(-2, 2));
-        ones.add(new PairInt(-2, 3));
+        ones.add(new PairInt(0, 1 - 1));
+        ones.add(new PairInt(0, 2 - 1));
+        ones.add(new PairInt(0, -1 - 1));
+        ones.add(new PairInt(-1, 0 - 1));
+        ones.add(new PairInt(-1, 2 - 1));
+        ones.add(new PairInt(1, -2 - 1));
+        ones.add(new PairInt(1, 0 - 1));
+        ones.add(new PairInt(1, 1 - 1));
+        ones.add(new PairInt(2, -2 - 1));
+        ones.add(new PairInt(2, -1 - 1));
+        ones.add(new PairInt(2, 0 - 1));
+        ones.add(new PairInt(3, -2 - 1));
+        ones.add(new PairInt(-2, 1 - 1));
+        ones.add(new PairInt(-2, 2 - 1));
+        ones.add(new PairInt(-2, 3 - 1));
     
-        changeToZeroes.add(new PairInt(-2, 2));
-        changeToZeroes.add(new PairInt(-2, 1));
-        changeToZeroes.add(new PairInt(-1, 0));
-        changeToZeroes.add(new PairInt(0, -1));
-        changeToZeroes.add(new PairInt(1, -2));
-        changeToZeroes.add(new PairInt(2, -2));
-        changeToZeroes.add(new PairInt(2, 0));
-        changeToZeroes.add(new PairInt(1, 1));
-        changeToZeroes.add(new PairInt(0, 2));
+        changeToZeroes.add(new PairInt(-2, 2 - 1));
+        changeToZeroes.add(new PairInt(-2, 1 - 1));
+        changeToZeroes.add(new PairInt(-1, 0 - 1));
+        changeToZeroes.add(new PairInt(0, -1 - 1));
+        changeToZeroes.add(new PairInt(1, -2 - 1));
+        changeToZeroes.add(new PairInt(2, -2 - 1));
+        changeToZeroes.add(new PairInt(2, 0 - 1));
+        changeToZeroes.add(new PairInt(1, 1 - 1));
+        changeToZeroes.add(new PairInt(0, 2 - 1));
               
-        int startValue = 0;
+        int startValue = 1;
         
         replacePattern(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes, 
@@ -1020,12 +1055,12 @@ public class PostLineThinnerCorrections {
         /*
         looking for pattern
         
-         0    0    0    0    0    0     3
-         0    0    0    1    1    1     2
-         0    0    1    0    1    0     1
-         0    1    0*   1    1    0     0
-         0    1    1    1    0    0    -1
-         0    1    0    0    0    0    -2
+         0    0    0    0    0    0     3   4
+         0    0    0    1    1    1     2   3
+         0    0    1    0    1    0     1   2
+         0    1    0    1    1    0     0   1
+         0    1    1*    1    0    0    -1  0
+         0    1    0    0    0    0    -2   -1
         
         -2   -1    0    1    2    3                
         */
@@ -1036,52 +1071,52 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
       
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(0, -2));
-        zeroes.add(new PairInt(-1, -1));
-        zeroes.add(new PairInt(-1, -2));
-        zeroes.add(new PairInt(-1, -3));
-        zeroes.add(new PairInt(0, -3));
-        zeroes.add(new PairInt(1, -3));
-        zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(1, 2));
-        zeroes.add(new PairInt(2, -3));
-        zeroes.add(new PairInt(2, 1));
-        zeroes.add(new PairInt(2, 2));
-        zeroes.add(new PairInt(-2, -3));
-        zeroes.add(new PairInt(-2, -2));
-        zeroes.add(new PairInt(-2, -1));
-        zeroes.add(new PairInt(-2, 0));
-        zeroes.add(new PairInt(-2, 1));
-        zeroes.add(new PairInt(-2, 2));
-        zeroes.add(new PairInt(3, -3));
-        zeroes.add(new PairInt(3, -1));
-        zeroes.add(new PairInt(3, 0));
-        zeroes.add(new PairInt(3, 1));
-        zeroes.add(new PairInt(3, 2));
+        zeroes.add(new PairInt(0, 2 - 1));
+        zeroes.add(new PairInt(0, -2 - 1));
+        zeroes.add(new PairInt(-1, -1 - 1));
+        zeroes.add(new PairInt(-1, -2 - 1));
+        zeroes.add(new PairInt(-1, -3 - 1));
+        zeroes.add(new PairInt(0, -3 - 1));
+        zeroes.add(new PairInt(1, -3 - 1));
+        zeroes.add(new PairInt(1, -1 - 1));
+        zeroes.add(new PairInt(1, 2 - 1));
+        zeroes.add(new PairInt(2, -3 - 1));
+        zeroes.add(new PairInt(2, 1 - 1));
+        zeroes.add(new PairInt(2, 2 - 1));
+        zeroes.add(new PairInt(-2, -3 - 1));
+        zeroes.add(new PairInt(-2, -2 - 1));
+        zeroes.add(new PairInt(-2, -1 - 1));
+        zeroes.add(new PairInt(-2, 0 - 1));
+        zeroes.add(new PairInt(-2, 1 - 1));
+        zeroes.add(new PairInt(-2, 2 - 1));
+        zeroes.add(new PairInt(3, -3 - 1));
+        zeroes.add(new PairInt(3, -1 - 1));
+        zeroes.add(new PairInt(3, 0 - 1));
+        zeroes.add(new PairInt(3, 1 - 1));
+        zeroes.add(new PairInt(3, 2 - 1));
         
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(-1, 0));
-        ones.add(new PairInt(-1, 1));
-        ones.add(new PairInt(-1, 2));
-        ones.add(new PairInt(1, -2));
-        ones.add(new PairInt(1, 0));
-        ones.add(new PairInt(1, 1));
-        ones.add(new PairInt(2, -2));
-        ones.add(new PairInt(2, -1));
-        ones.add(new PairInt(2, 0));
-        ones.add(new PairInt(3, -2));
+        ones.add(new PairInt(0, -1 - 1));
+        ones.add(new PairInt(0, 1 - 1));
+        ones.add(new PairInt(-1, 0 - 1));
+        ones.add(new PairInt(-1, 1 - 1));
+        ones.add(new PairInt(-1, 2 - 1));
+        ones.add(new PairInt(1, -2 - 1));
+        ones.add(new PairInt(1, 0 - 1));
+        ones.add(new PairInt(1, 1 - 1));
+        ones.add(new PairInt(2, -2 - 1));
+        ones.add(new PairInt(2, -1 - 1));
+        ones.add(new PairInt(2, 0 - 1));
+        ones.add(new PairInt(3, -2 - 1));
     
-        changeToZeroes.add(new PairInt(-1, 0));
-        changeToZeroes.add(new PairInt(-1, 1));
-        changeToZeroes.add(new PairInt(0, -1));
-        changeToZeroes.add(new PairInt(1, -2));
-        changeToZeroes.add(new PairInt(1, 1));
-        changeToZeroes.add(new PairInt(2, -2));
-        changeToZeroes.add(new PairInt(2, 0));
+        changeToZeroes.add(new PairInt(-1, 0 - 1));
+        changeToZeroes.add(new PairInt(-1, 1 - 1));
+        changeToZeroes.add(new PairInt(0, -1 - 1));
+        changeToZeroes.add(new PairInt(1, -2 - 1));
+        changeToZeroes.add(new PairInt(1, 1 - 1));
+        changeToZeroes.add(new PairInt(2, -2 - 1));
+        changeToZeroes.add(new PairInt(2, 0 - 1));
         
-        int startValue = 0;
+        int startValue = 1;
         
         replacePattern(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes, 
@@ -1101,8 +1136,8 @@ public class PostLineThinnerCorrections {
        
         0  #  0         2
         0  #  0  0      1
-        0  0* #  0      0
-        0  #  0  0     -1
+        0  0  #  0      0
+        0  #* 0  0     -1
         0  #  0
         
        -1  0  1  2
@@ -1115,29 +1150,29 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(-1, 1));
-        zeroes.add(new PairInt(-1, 0));
-        zeroes.add(new PairInt(-1, -1));
-        zeroes.add(new PairInt(-1, -2));
-        zeroes.add(new PairInt(1, 2));
-        zeroes.add(new PairInt(1, 1));
-        zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(1, -2));
-        zeroes.add(new PairInt(2, 1));
-        zeroes.add(new PairInt(2, 0));
-        zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(-1, 2 - 1));
+        zeroes.add(new PairInt(-1, 1 - 1));
+        zeroes.add(new PairInt(-1, 0 - 1));
+        zeroes.add(new PairInt(-1, -1 - 1));
+        zeroes.add(new PairInt(-1, -2 - 1));
+        zeroes.add(new PairInt(1, 2 - 1));
+        zeroes.add(new PairInt(1, 1 - 1));
+        zeroes.add(new PairInt(1, -1 - 1));
+        zeroes.add(new PairInt(1, -2 - 1));
+        zeroes.add(new PairInt(2, 1 - 1));
+        zeroes.add(new PairInt(2, 0 - 1));
+        zeroes.add(new PairInt(2, -1 - 1));
         
-        ones.add(new PairInt(0, 2));
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(0, -2));
-        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(0, 2 - 1));
+        ones.add(new PairInt(0, 1 - 1));
+        ones.add(new PairInt(0, -1 - 1));
+        ones.add(new PairInt(0, -2 - 1));
+        ones.add(new PairInt(1, 0 - 1));
         
-        changeToZeroes.add(new PairInt(1, 0));
-        changeToOnes.add(new PairInt(0, 0));
+        changeToZeroes.add(new PairInt(1, 0 - 1));
+        changeToOnes.add(new PairInt(0, 0 - 1));
         
-        int startValue = 0;
+        int startValue = 1;
         
         replacePattern(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes, 
@@ -1306,7 +1341,7 @@ public class PostLineThinnerCorrections {
              0  0              2
           0  0  #  #  #        1
              #  0  0  #        0
-             #  #  #  0  0     -1
+             #  #  #* 0  0     -1
                    0  0        -2
         
          -3 -2 -1  0  1  2
@@ -1318,36 +1353,36 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
 
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-3, -1));
-        zeroes.add(new PairInt(-2, -1));
-        zeroes.add(new PairInt(-2, -2));
-        zeroes.add(new PairInt(-1, 0));
-        zeroes.add(new PairInt(-1, -2));
-        zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, 2));
-        zeroes.add(new PairInt(1, 1));
-        zeroes.add(new PairInt(2, 1));
+        zeroes.add(new PairInt(-3, -1 - 1));
+        zeroes.add(new PairInt(-2, -1 - 1));
+        zeroes.add(new PairInt(-2, -2 - 1));
+        zeroes.add(new PairInt(-1, 0 - 1));
+        zeroes.add(new PairInt(-1, -2 - 1));
+        zeroes.add(new PairInt(0, 2 - 1));
+        zeroes.add(new PairInt(1, 2 - 1));
+        zeroes.add(new PairInt(1, 1 - 1));
+        zeroes.add(new PairInt(2, 1 - 1));
         
-        ones.add(new PairInt(-2, 1));
-        ones.add(new PairInt(-2, 0));
-        ones.add(new PairInt(-1, 1));
-        ones.add(new PairInt(-1, -1));
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(1, 0));
-        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(-2, 1 - 1));
+        ones.add(new PairInt(-2, 0 - 1));
+        ones.add(new PairInt(-1, 1 - 1));
+        ones.add(new PairInt(-1, -1 - 1));
+        ones.add(new PairInt(0, 1 - 1));
+        ones.add(new PairInt(0, -1 - 1));
+        ones.add(new PairInt(1, 0 - 1));
+        ones.add(new PairInt(1, -1 - 1));
         
-        changeToZeroes.add(new PairInt(-2, 0));
-        changeToZeroes.add(new PairInt(-1, -1));
-        changeToZeroes.add(new PairInt(-1, 1));
-        changeToZeroes.add(new PairInt(0, 1));
-        changeToZeroes.add(new PairInt(0, -1));
-        changeToZeroes.add(new PairInt(1, 0));
+        changeToZeroes.add(new PairInt(-2, 0 - 1));
+        changeToZeroes.add(new PairInt(-1, -1 - 1));
+        changeToZeroes.add(new PairInt(-1, 1 - 1));
+        changeToZeroes.add(new PairInt(0, 1 - 1));
+        changeToZeroes.add(new PairInt(0, -1 - 1));
+        changeToZeroes.add(new PairInt(1, 0 - 1));
         
-        changeToOnes.add(new PairInt(-1, 0));
-        changeToOnes.add(new PairInt(0, 0));
+        changeToOnes.add(new PairInt(-1, 0 - 1));
+        changeToOnes.add(new PairInt(0, 0 - 1));
         
-        int startValue = 0;
+        int startValue = 1;
         
         replacePattern(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes, 
@@ -1367,7 +1402,7 @@ public class PostLineThinnerCorrections {
              0  0              2
           0  0  #  #           1
           0  #  0  0< #  0     0
-                #  #  0  0     -1
+                #  #* 0  0     -1
                    0  0        -2
         
          -3 -2 -1  0  1  2
@@ -1379,38 +1414,38 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
 
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-3, 0));
-        zeroes.add(new PairInt(-3, -1));
-        zeroes.add(new PairInt(-2, -1));
-        zeroes.add(new PairInt(-2, -2));
-        zeroes.add(new PairInt(-1, 0));
-        zeroes.add(new PairInt(-1, -2));
-        zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, 2));
-        zeroes.add(new PairInt(1, 1));
-        zeroes.add(new PairInt(2, 1));
-        zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(-3, 0 - 1));
+        zeroes.add(new PairInt(-3, -1 - 1));
+        zeroes.add(new PairInt(-2, -1 - 1));
+        zeroes.add(new PairInt(-2, -2 - 1));
+        zeroes.add(new PairInt(-1, 0 - 1));
+        zeroes.add(new PairInt(-1, -2 - 1));
+        zeroes.add(new PairInt(0, 2 - 1));
+        zeroes.add(new PairInt(1, 2 - 1));
+        zeroes.add(new PairInt(1, 1 - 1));
+        zeroes.add(new PairInt(2, 1 - 1));
+        zeroes.add(new PairInt(2, 0 - 1));
         
-        ones.add(new PairInt(-2, 0));
-        ones.add(new PairInt(-1, 1));
-        ones.add(new PairInt(-1, -1));
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(-2, 0 - 1));
+        ones.add(new PairInt(-1, 1 - 1));
+        ones.add(new PairInt(-1, -1 - 1));
+        ones.add(new PairInt(0, 1 - 1));
+        ones.add(new PairInt(0, -1 - 1));
+        ones.add(new PairInt(1, 0 - 1));
         
-        changeToZeroes.add(new PairInt(-2, 0));
-        changeToZeroes.add(new PairInt(-1, -1));
-        changeToZeroes.add(new PairInt(-1, 1));
-        changeToZeroes.add(new PairInt(0, -1));
-        changeToZeroes.add(new PairInt(0, 1));
-        changeToZeroes.add(new PairInt(1, 0));
+        changeToZeroes.add(new PairInt(-2, 0 - 1));
+        changeToZeroes.add(new PairInt(-1, -1 - 1));
+        changeToZeroes.add(new PairInt(-1, 1 - 1));
+        changeToZeroes.add(new PairInt(0, -1 - 1));
+        changeToZeroes.add(new PairInt(0, 1 - 1));
+        changeToZeroes.add(new PairInt(1, 0 - 1));
         
-        changeToOnes.add(new PairInt(-2, 1));
-        changeToOnes.add(new PairInt(-1, 0));
-        changeToOnes.add(new PairInt(0, 0));
-        changeToOnes.add(new PairInt(1, -1));
+        changeToOnes.add(new PairInt(-2, 1 - 1));
+        changeToOnes.add(new PairInt(-1, 0 - 1));
+        changeToOnes.add(new PairInt(0, 0 - 1));
+        changeToOnes.add(new PairInt(1, -1 - 1));
         
-        int startValue = 0;
+        int startValue = 1;
             
         replacePattern(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes, 
@@ -1430,7 +1465,7 @@ public class PostLineThinnerCorrections {
                 #  #  0  0     2
                 #  0  #  0     1
              0  #  0< #        0
-             0  0  #           -1
+             0  0  #*          -1
                 0  0           -2
         
          -3 -2 -1  0  1  2
@@ -1442,38 +1477,38 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
 
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-2, 1));
-        zeroes.add(new PairInt(-2, 0));
-        zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(-1, 1));
-        zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(0, -1));
-        zeroes.add(new PairInt(0, -3));
-        zeroes.add(new PairInt(1, -2));
-        zeroes.add(new PairInt(1, -3));
-        zeroes.add(new PairInt(2, -1));
-        zeroes.add(new PairInt(2, -2));
+        zeroes.add(new PairInt(-2, 1 - 1));
+        zeroes.add(new PairInt(-2, 0 - 1));
+        zeroes.add(new PairInt(-1, 2 - 1));
+        zeroes.add(new PairInt(-1, 1 - 1));
+        zeroes.add(new PairInt(0, 2 - 1));
+        zeroes.add(new PairInt(0, -1 - 1));
+        zeroes.add(new PairInt(0, -3 - 1));
+        zeroes.add(new PairInt(1, -2 - 1));
+        zeroes.add(new PairInt(1, -3 - 1));
+        zeroes.add(new PairInt(2, -1 - 1));
+        zeroes.add(new PairInt(2, -2 - 1));
 
-        ones.add(new PairInt(-1, 0));
-        ones.add(new PairInt(-1, -1));
-        ones.add(new PairInt(-1, -2));
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(0, -2));
-        ones.add(new PairInt(1, 0));
-        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(-1, 0 - 1));
+        ones.add(new PairInt(-1, -1 - 1));
+        ones.add(new PairInt(-1, -2 - 1));
+        ones.add(new PairInt(0, 1 - 1));
+        ones.add(new PairInt(0, -2 - 1));
+        ones.add(new PairInt(1, 0 - 1));
+        ones.add(new PairInt(1, -1 - 1));
      
-        changeToZeroes.add(new PairInt(-1, 0));
-        changeToZeroes.add(new PairInt(-1,-1));
-        changeToZeroes.add(new PairInt(0, 1));
-        changeToZeroes.add(new PairInt(0, -2));
-        changeToZeroes.add(new PairInt(1, 0));
-        changeToZeroes.add(new PairInt(1, -1));
+        changeToZeroes.add(new PairInt(-1, 0 - 1));
+        changeToZeroes.add(new PairInt(-1, -1 - 1));
+        changeToZeroes.add(new PairInt(0, 1 - 1));
+        changeToZeroes.add(new PairInt(0, -2 - 1));
+        changeToZeroes.add(new PairInt(1, 0 - 1));
+        changeToZeroes.add(new PairInt(1, -1 - 1));
         
-        changeToOnes.add(new PairInt(0, -1));
-        changeToOnes.add(new PairInt(0, 0));
-        changeToOnes.add(new PairInt(1, 1));
+        changeToOnes.add(new PairInt(0, -1 - 1));
+        changeToOnes.add(new PairInt(0, 0 - 1));
+        changeToOnes.add(new PairInt(1, 1 - 1));
         
-        int startValue = 0;
+        int startValue = 1;
             
         replacePattern(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes, 
@@ -1483,6 +1518,225 @@ public class PostLineThinnerCorrections {
             zeroes, ones, changeToZeroes, changeToOnes, 
             startValue);
        
+    }
+
+    private void correctForHoleArtifacts0(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*
+                #  #  #      2
+                #  0  #      1
+                #  #* #      0
+                               
+         -3 -2 -1  0  1  2
+        
+        if the pattern is found, 
+            -- set the center 0's to '1'
+            -- for each pixel in the open squares, test which 
+               values can be nulled and set them
+        */
+                
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(1, -2));
+                
+        zeroes.add(new PairInt(0, -1));
+        
+        int nRotations = 0;
+        
+        replaceAndRotateOnesIfNullable(points, imageWidth, imageHeight,
+            zeroes, ones, nRotations);
+    }
+
+    private void correctForHoleArtifacts0_1(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*
+                #  #  #      2
+             #  #  0  #      1
+          #  #  0  #* #      0
+          #  0  #  #        -1
+          #  #  #           -2
+         -3 -2 -1  0  1  2
+        
+        if the pattern is found, 
+            -- set the center 0's to '1'
+            -- for each pixel in the open squares, test which 
+               values can be nulled and set them
+        */
+                
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-3, 2));  ones.add(new PairInt(-3, 1)); ones.add(new PairInt(-3, 0));
+        ones.add(new PairInt(-2, 2));  ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 2));  ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, 1));  ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0));  ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        
+        zeroes.add(new PairInt(-2, 1));  
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(0, -1));
+        
+        int nRotations = 3;
+        
+        replaceAndRotateOnesIfNullable(points, imageWidth, imageHeight,
+            zeroes, ones, nRotations);
+    }
+
+    private void correctForHoleArtifacts0_2(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*
+                #  #  #      2
+             #  #  0  #      1
+             #  0  #* #      0
+             #  #  #        -1
+                            -2
+         -3 -2 -1  0  1  2
+        
+        if the pattern is found, 
+            -- set the center 0's to '1'
+            -- for each pixel in the open squares, test which 
+               values can be nulled and set them
+        */
+                
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-2, 1));  ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, 1));  ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0));  ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(0, -1));
+        
+        int nRotations = 3;
+        
+        replaceAndRotateOnesIfNullable(points, imageWidth, imageHeight,
+            zeroes, ones, nRotations);
+    }
+
+    private void replaceAndRotateOnesIfNullable(Set<PairInt> points, 
+        int imageWidth, int imageHeight,
+        Set<PairInt> zeroes, Set<PairInt> ones, int nRotations) {
+        
+        ErosionFilter erosionFilter = new ErosionFilter();
+        
+        int w = imageWidth;
+        int h = imageHeight;
+        
+        for (int nRot = 0; nRot <= nRotations; nRot++) {
+       
+            switch(nRot) {
+                case 1:
+                    reverseXs(zeroes, ones);
+                    break;
+                case 2:
+                    reverseYs(zeroes, ones);
+                    break;
+                case 3:
+                    reverseXs(zeroes, ones);
+                    break;
+                default:
+                    break;
+            }
+            
+            Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
+            Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
+
+            for (PairInt p : points) {
+
+                int col = p.getX();
+                int row = p.getY();
+
+                // make sure the current point hasn't been added to tmpPointsRemoved
+                boolean isNotPresent = tmpPointsRemoved.contains(p);
+                if (isNotPresent) {
+                    continue;
+                }
+
+                boolean foundPattern = true;
+
+                for (PairInt p2 : ones) {
+                    int x = col + p2.getX();
+                    int y = row + p2.getY();
+                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                        foundPattern = false;
+                        break;
+                    }
+                    PairInt p3 = new PairInt(x, y);
+                    if (tmpPointsRemoved.contains(p3) ||
+                        (!points.contains(p3) && !tmpPointsAdded.contains(p3))) {
+                        foundPattern = false;
+                        break;
+                    }
+                }
+
+                if (!foundPattern) {
+                    continue;
+                }
+
+                for (PairInt p2 : zeroes) {
+                    int x = col + p2.getX();
+                    int y = row + p2.getY();
+                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                        foundPattern = false;
+                        break;
+                    }
+                    PairInt p3 = new PairInt(x, y);
+                    if (!tmpPointsRemoved.contains(p3)
+                        && (points.contains(p3) || tmpPointsAdded.contains(p3))) {
+                        foundPattern = false;
+                        break;
+                    }
+                }
+
+                if (!foundPattern) {
+                    continue;
+                }
+                
+                //change the zeroes to ones.  bounds have been checked
+                for (PairInt p2 : zeroes) {
+                    int x = col + p2.getX();
+                    int y = row + p2.getY();
+                    PairInt p3 = new PairInt(x, y);
+                    tmpPointsAdded.add(p3);
+                }
+
+                // test if can set the surrounding 1's to 0's without disconnecting
+                // lines
+                for (PairInt p2 : ones) {
+
+                    int x = col + p2.getX();
+                    int y = row + p2.getY();
+
+                    PairInt p3 = new PairInt(x, y);
+
+                    // adds to tmpPointsRemoved
+                    boolean nullable = erosionFilter.process(p3, points, 
+                        tmpPointsAdded, tmpPointsRemoved, w, h);
+                }
+            }
+
+            for (PairInt p2 : tmpPointsRemoved) {
+                points.remove(p2);
+            }
+            for (PairInt p2 : tmpPointsAdded) {
+                points.add(p2);
+            }
+        }
     }
 
 }

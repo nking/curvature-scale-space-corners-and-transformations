@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -27,9 +26,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
     
     @Override
     public void applyFilter(final GreyscaleImage input) {
-        
-        //GreyscaleImage summed = sumOver8Neighborhood(input);
-        
+                
         boolean hasABorderPixel = hasAtLeastOneBorderPixel(input);
         
         GreyscaleImage input2 = hasABorderPixel ? addOnePixelBorders(input) :
@@ -54,9 +51,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
 
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.correctForArtifacts(input2);
-        
-        //correctForMinorOffsetsByIntensity(input, summed);
-        
+                
         GreyscaleImage input3 = hasABorderPixel ? removeOnePixelBorders(input2)
             : input2;
         
