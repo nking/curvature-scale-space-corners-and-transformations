@@ -37,10 +37,13 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
         correctForHoleArtifacts0(points, w, h);
         correctForHoleArtifacts0_1(points, w, h);
         correctForHoleArtifacts0_2(points, w, h);
-       
+        correctForHoleArtifacts0_3(points, w, h);
+        correctForHoleArtifacts0_4(points, w, h);
+
         correctForHoleArtifacts1(points, w, h);
        
         correctForHoleArtifacts1_2(points, w, h);
+        correctForHoleArtifacts1_2_1(points, w, h);
 
         correctForHoleArtifacts1_3(points, w, h);
         
@@ -1395,6 +1398,41 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
        
     }
     
+    private void correctForHoleArtifacts1_2_1(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
+        
+        /*     
+                               
+                #  #  #        2
+             #  0  0  #        1
+             #  #  #* #        0
+        
+         -3 -2 -1  0  1  2
+        */  
+
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-2, 0));
+        ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(1, -2));
+        
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, -1));        
+        
+        int nRotations = 3;
+        
+        replaceAndRotateOnesIfNullable(points, imageWidth, imageHeight,
+            zeroes, ones, nRotations);
+       
+    }
+    
     private void correctForHoleArtifacts1_3(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
         
@@ -1551,6 +1589,41 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
         zeroes.add(new PairInt(0, -1));
         
         int nRotations = 0;
+        
+        replaceAndRotateOnesIfNullable(points, imageWidth, imageHeight,
+            zeroes, ones, nRotations);
+    }
+    
+    private void correctForHoleArtifacts0_4(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*
+                #  #         2
+                #  0  #      1
+                #  #* #      0
+                               
+         -3 -2 -1  0  1  2
+        
+        if the pattern is found, 
+            -- set the center 0's to '1'
+            -- for each pixel in the open squares, test which 
+               values can be nulled and set them
+        */
+                
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+                
+        zeroes.add(new PairInt(0, -1));
+        
+        int nRotations = 3;
         
         replaceAndRotateOnesIfNullable(points, imageWidth, imageHeight,
             zeroes, ones, nRotations);
@@ -1737,6 +1810,41 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
                 points.add(p2);
             }
         }
+    }
+
+    private void correctForHoleArtifacts0_3(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*
+                   #  #      2
+                #  0  #      1
+             #  0  #*        0
+                #           -1
+                            -2
+         -3 -2 -1  0  1  2
+        
+        if the pattern is found, 
+            -- set the center 0's to '1'
+            -- for each pixel in the open squares, test which 
+               values can be nulled and set them
+        */
+                
+        Set<PairInt> ones = new HashSet<PairInt>();
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-2, 0)); 
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(0, -1));
+        
+        int nRotations = 3;
+        
+        replaceAndRotateOnesIfNullable(points, imageWidth, imageHeight,
+            zeroes, ones, nRotations);
     }
 
 }
