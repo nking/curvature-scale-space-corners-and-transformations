@@ -26,6 +26,8 @@ public class ErosionFilter extends AbstractLineThinner {
     
     protected boolean debug = false;
     
+    private boolean performEndOfLineCheck = true;
+    
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     /**
@@ -1084,6 +1086,10 @@ public class ErosionFilter extends AbstractLineThinner {
         return false;
                 
     }
+    
+    protected void overrideEndOfLineCheck() {
+        performEndOfLineCheck = false;
+    }
 
     private boolean canBeNulled(PairInt p, Set<PairInt> points, 
         Set<PairInt> overridePointsAdded, Set<PairInt> overridePointsRemoved, 
@@ -1106,13 +1112,13 @@ public class ErosionFilter extends AbstractLineThinner {
 
             return !doesDisconnect;
         }
-        
-        /*
-        check that this isn't the endpoint of a 1 pixel width line.
-        */
-        if (isTheEndOfAOnePixelLine(p, points, overridePointsAdded, 
-            overridePointsRemoved, imageWidth, imageHeight)) {
-            return false;
+
+        if (performEndOfLineCheck) {
+            //check that this isn't the endpoint of a 1 pixel width line.
+            if (isTheEndOfAOnePixelLine(p, points, overridePointsAdded, 
+                overridePointsRemoved, imageWidth, imageHeight)) {
+                return false;
+            }
         }
         
         /*
