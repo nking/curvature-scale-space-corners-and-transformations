@@ -44,19 +44,31 @@ String dirPath = ResourceFinder.findDirectory("bin");
 ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
 } catch (IOException e){}
 
-        correctForHoleArtifacts00_0(points, w, h);
+        correctForZigZag000_00(points, w, h);
+        correctForZigZag000_01(points, w, h);
+        correctForZigZag000_02(points, w, h);
+        correctForZigZag000_0(points, w, h);
+        correctForZigZag000_1(points, w, h);
+        
+        
+        /*
         correctForHoleArtifacts00_1(points, w, h);
         correctForHoleArtifacts00_2(points, w, h);
         correctForHoleArtifacts00_3(points, w, h);
         correctForHoleArtifacts00_4(points, w, h);
-       
+        correctForHoleArtifacts00_5(points, w, h);
+        correctForHoleArtifacts00_6(points, w, h);
+        correctForHoleArtifacts00_7(points, w, h);
+        correctForHoleArtifacts00_8(points, w, h);
+        correctForHoleArtifacts00_9(points, w, h);
+        */
+        
         /*
         correctForHoleArtifacts0(points, w, h);
         correctForHoleArtifacts0_1(points, w, h);
         correctForHoleArtifacts0_2(points, w, h);
         correctForHoleArtifacts0_3(points, w, h);
         correctForHoleArtifacts0_4(points, w, h);
-        correctForHoleArtifacts0_5(points, w, h);
 
         correctForHoleArtifacts1(points, w, h);
         correctForHoleArtifacts1_1(points, w, h);
@@ -100,7 +112,9 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
         correctForZigZag00_16(points, w, h);
         
         //correctForSpurs(points, w, h);
-        */
+        
+        correctForHoleArtifacts00_10(points, w, h);
+       */ 
         imageProcessor.writeAsBinaryToImage(input, points);
 
 try {
@@ -1084,10 +1098,7 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
             int row = p.getY();           
             
             boolean foundPattern = true;
-//43,429    
-if (col==43 && row==429) {
-    int z = 1;
-}            
+           
             for (PairInt p2 : zeroes) {
                 int x = col + p2.getX();
                 int y = row + p2.getY();
@@ -2096,50 +2107,224 @@ if (col==43 && row==429) {
        
     }
 
-    private void correctForHoleArtifacts00_0(Set<PairInt> points, 
+    private void correctForZigZag000_00(Set<PairInt> points, 
         int imageWidth, int imageHeight) {
         
-        /*   
-                            5                        5
-             # # 0          4         # #            4
-           # 0 # # 0        3       #   # .          3
-           # # 0 # #        2       # # @ # #        2
-           0 # # 0 #        1         . #   #        1
-             0 # #*         0           # #*         0
-                           -1                       -1
-          -3-2-1 0 1 2             -3-2-1 0 1 2
-        */ 
-       
+        /* diagonal lines on both sides of a narrow cavity are sometimes
+           zig-zag and can be thinned in the direction of widening the
+           cavity.
+                                3                          3
+                   0 #          2             0 #          2
+                 # # 0 #        1           # . 0 #        1
+                 0 # #*0 #      0             # .*0        0
+                   0 #         -1               #         -1
+        
+        -6-5-4-3-2-1 0 1 2 3       -6-5-4-3-2-1 0 1 2 3
+        */
         LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
         
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-3, -1));
-        zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -3));
-        zeroes.add(new PairInt(-1, -2));
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -4));
-        zeroes.add(new PairInt(1, -3)); 
+        zeroes.add(new PairInt(-2, 0));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 0));
         
-        ones.add(new PairInt(-3, -2)); ones.add(new PairInt(-3, -3));
-        ones.add(new PairInt(-2, -1)); ones.add(new PairInt(-2, -2)); ones.add(new PairInt(-2, -4));
-        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -3)); ones.add(new PairInt(-1, -4));
-        ones.add(new PairInt(0, -2)); ones.add(new PairInt(0, -3));
-        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(2, 0));
         
-        changeToZeroes.add(new PairInt(-2, -1));
-        changeToZeroes.add(new PairInt(0, -3));
-        
-        changeToOnes.add(new PairInt(-1, -2));
-        
+        changeToZeroes.add(new PairInt(-1, -1)); 
+        changeToZeroes.add(new PairInt(0, 0));
+                
         replacePattern(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        replacePattern(
+            points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
     }
 
+    private void correctForZigZag000_01(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+        
+        /* diagonal lines on both sides of a narrow cavity are sometimes
+           zig-zag and can be thinned in the direction of widening the
+           cavity.
+                                3                          3
+                     # #        2               #          2
+                   # 0 # #      1             # 0 .        1
+                     #*0 # #    0               #*0 .      0
+                       #       -1                 #       -1
+        
+        -6-5-4-3-2-1 0 1 2 3       -6-5-4-3-2-1 0 1 2 3
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 0));
+        
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 1)); ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        ones.add(new PairInt(2, 0)); ones.add(new PairInt(2, -1));
+        ones.add(new PairInt(3, 0));
+        
+        changeToZeroes.add(new PairInt(1, -1)); 
+        changeToZeroes.add(new PairInt(2, 0));
+                
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForZigZag000_02(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+        
+        /* diagonal lines on both sides of a narrow cavity are sometimes
+           zig-zag and can be thinned in the direction of widening the
+           cavity.
+                                3                          3
+                     # #        2               #          2
+                   # 0 # #      1             # 0 .        1
+                     #*0 #      0               #*0        0
+                       #       -1                 #       -1
+        
+        -6-5-4-3-2-1 0 1 2 3       -6-5-4-3-2-1 0 1 2 3
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 0));
+        
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 1)); ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        ones.add(new PairInt(2, 0)); ones.add(new PairInt(2, -1));
+        
+        changeToZeroes.add(new PairInt(1, -1)); 
+                
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForZigZag000_0(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+        
+        /* diagonal lines on both sides of a narrow cavity are sometimes
+           zig-zag and can be thinned in the direction of widening the
+           cavity.
+                                3                          3
+                   0 # #        2             0 #          2
+                 # # 0 # #      1           # . 0 #        1
+                 # # #*0 #      0             # .*0        0
+                   # #         -1               #         -1
+        
+        -6-5-4-3-2-1 0 1 2 3       -6-5-4-3-2-1 0 1 2 3
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 0));
+        
+        ones.add(new PairInt(-2, -1)); ones.add(new PairInt(-2, 0));
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        ones.add(new PairInt(2, 0)); ones.add(new PairInt(2, -1));
+        
+        changeToZeroes.add(new PairInt(-1, -1)); 
+        changeToZeroes.add(new PairInt(0, 0));
+                
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+
+    private void correctForZigZag000_1(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+        
+        /* diagonal lines on both sides of a narrow cavity are sometimes
+           zig-zag and can be thinned in the direction of widening the
+           cavity.
+                                3                          3
+                 # 0 0 0        2           #              2
+               0 #.# 0 0 0      1           #.#            1
+               0 0 #.#*0 0      0             #.#*         0
+                 0 0 #         -1               #         -1
+        
+        -6-5-4-3-2-1 0 1 2 3       -6-5-4-3-2-1 0 1 2 3
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 0)); zeroes.add(new PairInt(-3, -1));
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1)); zeroes.add(new PairInt(1, -2));
+        zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
+        
+        ones.add(new PairInt(-2, -1)); ones.add(new PairInt(-2, -2));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, 0));
+        
+        changeToZeroes.add(new PairInt(-2, -1)); 
+        changeToZeroes.add(new PairInt(-1, 0));
+                
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
     private void correctForHoleArtifacts00_1(Set<PairInt> points, 
         int imageWidth, int imageHeight) {
                 
@@ -2329,6 +2514,234 @@ if (col==43 && row==429) {
             zeroes, ones, changeToZeroes, changeToOnes);
     }
     
+    private void correctForHoleArtifacts00_5(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+
+        /*   
+               0 #          4             #          4
+             0 # # 0        3           . #          3
+           0 # 0 # # 0      2         . @ . .        2
+           0 # # 0 # 0      1         . . @ .        1
+           0 0 # #*#        0           # .*#        0
+             0 # 0 0       -1           #           -1
+          -3-2-1 0 1 2 3           -3-2-1 0 1 2
+        */ 
+       
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 0)); zeroes.add(new PairInt(-3, -1)); zeroes.add(new PairInt(-3, -2));
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, -2)); zeroes.add(new PairInt(-1, -4));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -3));
+        zeroes.add(new PairInt(2, -1)); zeroes.add(new PairInt(2, -2));
+        
+        ones.add(new PairInt(-2, -1)); ones.add(new PairInt(-2, -2));
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -3));
+        ones.add(new PairInt(0, -2)); ones.add(new PairInt(0, -3)); ones.add(new PairInt(0, -4));
+        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        
+        changeToZeroes.add(new PairInt(-2, -1)); changeToZeroes.add(new PairInt(-2, -2));
+        changeToZeroes.add(new PairInt(-1, -1)); changeToZeroes.add(new PairInt(-1, -3));
+        changeToZeroes.add(new PairInt(0, 0)); changeToZeroes.add(new PairInt(0, -2));
+        changeToZeroes.add(new PairInt(1, -1)); changeToZeroes.add(new PairInt(1, -2));
+        
+        changeToOnes.add(new PairInt(-1, -2));  
+        changeToOnes.add(new PairInt(0, -1));
+        
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForHoleArtifacts00_6(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+
+        /*   
+               0 0 #        4               #        4
+             0 # # # 0      3           . # .        3
+           0 # 0 # # 0      2         . @ . .        2
+           0 # # 0 # #      1         . . @ # #      1
+           0 0 # #*#        0           . .*#        0
+             0 0 # #       -1             # #       -1
+          -3-2-1 0 1 2 3           -3-2-1 0 1 2
+        */ 
+       
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 0)); zeroes.add(new PairInt(-3, -1)); zeroes.add(new PairInt(-3, -2));
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -2)); zeroes.add(new PairInt(-1, -4));
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -4));
+        zeroes.add(new PairInt(2, -2)); zeroes.add(new PairInt(2, -3));
+        
+        ones.add(new PairInt(-2, -1)); ones.add(new PairInt(-2, -2));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -3));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -2)); ones.add(new PairInt(0, -3));
+        ones.add(new PairInt(1, 1)); ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        ones.add(new PairInt(1, -3)); ones.add(new PairInt(1, -4));
+        ones.add(new PairInt(2, -1));
+        
+        changeToZeroes.add(new PairInt(-2, -1)); changeToZeroes.add(new PairInt(-2, -2));
+        changeToZeroes.add(new PairInt(-1, 0)); changeToZeroes.add(new PairInt(-1, -1)); changeToZeroes.add(new PairInt(-1, -3));
+        changeToZeroes.add(new PairInt(0, 0)); changeToZeroes.add(new PairInt(0, -2));
+        changeToZeroes.add(new PairInt(1, -2)); changeToZeroes.add(new PairInt(1, -3));
+        
+        changeToOnes.add(new PairInt(-1, -2));  
+        changeToOnes.add(new PairInt(0, -1));
+        
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForHoleArtifacts00_7(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+
+        /*   
+                            4                        4
+               # # 0        3           . .          3
+           0 # 0 # # 0      2         . @ . .        2
+             # # 0 # 0      1         . # @ .        1
+             # # #*0        0         # . .*         0
+               0 0 0       -1                       -1
+          -3-2-1 0 1 2 3           -3-2-1 0 1 2
+        */ 
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, -2));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -3));
+        zeroes.add(new PairInt(2, -1)); zeroes.add(new PairInt(2, -2));
+        
+        ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1)); ones.add(new PairInt(-2, -2));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -3));
+        ones.add(new PairInt(0, -2)); ones.add(new PairInt(0, -3));
+        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        
+        changeToZeroes.add(new PairInt(-2, -1)); changeToZeroes.add(new PairInt(-2, -2));
+        changeToZeroes.add(new PairInt(-1, 0)); changeToZeroes.add(new PairInt(-1, -3));
+        changeToZeroes.add(new PairInt(0, 0)); changeToZeroes.add(new PairInt(0, -2)); changeToZeroes.add(new PairInt(0, -3));
+        changeToZeroes.add(new PairInt(1, -1)); changeToZeroes.add(new PairInt(1, -2));
+        
+        changeToOnes.add(new PairInt(-1, -2));  
+        changeToOnes.add(new PairInt(0, -1));
+        
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForHoleArtifacts00_8(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+
+        /*   
+               #            4           #            4
+               # # 0        3           # .          3
+           0 # 0 # # 0      2         . @ . .        2
+             # # 0 # #      1         . # @ #        1
+             # # #*0        0         # . .*         0
+               0 0 0       -1                       -1
+          -3-2-1 0 1 2 3           -3-2-1 0 1 2
+        */ 
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, -2));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -3));
+        zeroes.add(new PairInt(2, -2));
+        
+        ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1)); ones.add(new PairInt(-2, -2));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -3)); ones.add(new PairInt(-1, -4));
+        ones.add(new PairInt(0, -2)); ones.add(new PairInt(0, -3));
+        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        ones.add(new PairInt(2, -1)); 
+        
+        changeToZeroes.add(new PairInt(-2, -1)); changeToZeroes.add(new PairInt(-2, -2));
+        changeToZeroes.add(new PairInt(-1, 0));
+        changeToZeroes.add(new PairInt(0, 0)); changeToZeroes.add(new PairInt(0, -2)); changeToZeroes.add(new PairInt(0, -3));
+        changeToZeroes.add(new PairInt(1, -2));
+        
+        changeToOnes.add(new PairInt(-1, -2));  
+        changeToOnes.add(new PairInt(0, -1));
+        
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForHoleArtifacts00_9(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+
+        /*   
+                            4                        4
+             0 0 0          3                        3
+             0 # # #        2           . . #        2
+             # # 0 # 0      1         . . @ .        1
+           0 # 0 #*# 0      0         . @ .*.        0
+               #   0 0     -1           #           -1
+        
+          -3-2-1 0 1 2 3           -3-2-1 0 1 2
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 0)); 
+        zeroes.add(new PairInt(-2, -2)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -3));
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
+        
+        ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        
+        changeToZeroes.add(new PairInt(-2, 0)); changeToZeroes.add(new PairInt(-2, -1));
+        changeToZeroes.add(new PairInt(-1, -1)); changeToZeroes.add(new PairInt(-1, -2));
+        changeToZeroes.add(new PairInt(0, 0)); changeToZeroes.add(new PairInt(0, -2));
+        changeToZeroes.add(new PairInt(1, 0)); changeToZeroes.add(new PairInt(1, -1));
+        
+        changeToOnes.add(new PairInt(-1, 0));  
+        changeToOnes.add(new PairInt(0, -1));
+        
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
     private void correctForHoleArtifacts00_10(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
         /*
@@ -2360,6 +2773,7 @@ if (col==43 && row==429) {
         ones.add(new PairInt(1, -1));
         
         ErosionFilter erosionFilter = new ErosionFilter();
+        erosionFilter.overrideEndOfLineCheck();
                         
         Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
         Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
@@ -2405,14 +2819,16 @@ if (col==43 && row==429) {
                if nullable.
             */
             
+            int centerRow = row - 1;
+            
             // set the center point
-            tmpPointsAdded.add(new PairInt(col, row - 1));
+            tmpPointsAdded.add(new PairInt(col, centerRow));
 
             Arrays.fill(neighborsCount, 0);
             Arrays.fill(neighborsIdx, 0);
             for (int n1Idx = 0; n1Idx < eightNeighborsX.length; ++n1Idx) {
                 int x1 = col + eightNeighborsX[n1Idx];
-                int y1 = row + eightNeighborsY[n1Idx];                
+                int y1 = centerRow + eightNeighborsY[n1Idx];                
                 neighborsIdx[n1Idx] = n1Idx;
                 if ((x1 < 0) || (y1 < 0) || (x1 > (w - 1)) || (y1 > (h - 1))) {
                     neighborsCount[n1Idx] = 0;
@@ -2435,7 +2851,7 @@ if (col==43 && row==429) {
                 neighborsCount[n1Idx] = count;
             }
             CountingSort.sort(neighborsCount, neighborsIdx, 8);
-            
+
             for (int ii = 0; ii < neighborsIdx.length; ++ii) {
                 int nIdx = neighborsIdx[ii];
                 if (neighborsCount[nIdx] == 0) {
@@ -2443,10 +2859,10 @@ if (col==43 && row==429) {
                 }
                 
                 int x2 = col + eightNeighborsX[nIdx];
-                int y2 = row + eightNeighborsY[nIdx];
+                int y2 = centerRow + eightNeighborsY[nIdx];
                 
                 PairInt p3 = new PairInt(x2, y2);
-                
+ 
                 // adds to tmpPointsRemoved
                 boolean nullable = erosionFilter.process(p3, points, 
                     tmpPointsAdded, tmpPointsRemoved, w, h);
