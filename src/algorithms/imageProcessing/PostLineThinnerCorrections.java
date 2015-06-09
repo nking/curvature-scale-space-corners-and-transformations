@@ -50,14 +50,11 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
         correctForZigZag000_0(points, w, h);
         correctForZigZag000_1(points, w, h);
         
-        /*
-        //correctForHoleArtifacts1_1(points, w, h);
-       
+        //correctForHoleArtifacts1_1(points, w, h);       
         correctForHoleArtifacts1_2(points, w, h);
         correctForHoleArtifacts1_2_1(points, w, h);
-
         correctForHoleArtifacts1_3(points, w, h);
-                
+        
         correctForZigZag00(points, w, h);
         correctForZigZag00_1(points, w, h);
         correctForZigZag00_2(points, w, h);
@@ -73,7 +70,7 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
         correctForZigZag00_13(points, w, h);
         
         correctForZigZag00_4(points, w, h);
-        
+      
         correctForTs(points, w, h);
         
         correctForWs(points, w, h);
@@ -92,7 +89,7 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
         //correctForSpurs(points, w, h);
         
         correctForHoleArtifacts00_10(points, w, h);
-       */ 
+      
         imageProcessor.writeAsBinaryToImage(input, points);
 
 try {
@@ -1589,9 +1586,13 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
         Set<PairInt> zeroes, Set<PairInt> ones, int nRotations) {
         
         ErosionFilter erosionFilter = new ErosionFilter();
+        erosionFilter.overrideEndOfLineCheck();
         
         int w = imageWidth;
         int h = imageHeight;
+        
+        int[] neighborsCount = new int[ones.size()];
+        PairInt[] neighbors = new PairInt[neighborsCount.length];
         
         for (int nRot = 0; nRot <= nRotations; nRot++) {
        
@@ -1670,15 +1671,39 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
                     PairInt p3 = new PairInt(x, y);
                     tmpPointsAdded.add(p3);
                 }
-
-                // test if can set the surrounding 1's to 0's without disconnecting
-                // lines
+               
+                Arrays.fill(neighborsCount, 0);
+                int nIdx = 0;
                 for (PairInt p2 : ones) {
+                    int x1 = col + p2.getX();
+                    int y1 = row + p2.getY();
+                    PairInt p3 = new PairInt(x1, y1);
+                    neighbors[nIdx] = p3;
+                    int count = 0;
+                    for (int n2Idx = 0; n2Idx < eightNeighborsX.length; ++n2Idx) {
+                        int x2 = x1 + eightNeighborsX[n2Idx];
+                        int y2 = y1 + eightNeighborsY[n2Idx];
+                        if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                            continue;
+                        }
+                        PairInt p4 = new PairInt(x2, y2);
+                        if (!tmpPointsRemoved.contains(p4)
+                            && (tmpPointsAdded.contains(p4) || 
+                            points.contains(p4))) {
+                            count++;
+                        }
+                    }
+                    neighborsCount[nIdx] = count;
+                    nIdx++;
+                }
+                
+                CountingSort.sort(neighborsCount, neighbors, 8);
 
-                    int x = col + p2.getX();
-                    int y = row + p2.getY();
-
-                    PairInt p3 = new PairInt(x, y);
+                for (nIdx = 0; nIdx < neighbors.length; ++nIdx) {
+                    
+                    PairInt p3 = neighbors[nIdx];
+                    
+                    // test if can set to 0's without disconnecting lines
 
                     // adds to tmpPointsRemoved
                     boolean nullable = erosionFilter.process(p3, points, 
@@ -1961,15 +1986,9 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
             zeroes, ones, changeToZeroes, changeToOnes);
     }
     
-    private void correctForHoleArtifacts00_10(Set<PairInt> points, int imageWidth, 
+    protected void correctForHoleArtifacts00_10(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
-        /*
-        TODO: redo this one to check for connections for the diagonal corners
-        of the surrounding 8 pixels.
-        Since this artifact occurs on diagonal lines mainly, we're looking to
-        remove all pixels in the square except the connecting diagonals.
-        (along w/ setting the center to '1'.
-        */
+        
         int w = imageWidth;
         int h = imageHeight;
         
@@ -2059,7 +2078,7 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
                     int x2 = x1 + eightNeighborsX[n2Idx];
                     int y2 = y1 + eightNeighborsY[n2Idx];                
                     if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                        neighborsCount[n2Idx] = 0;
+                        continue;
                     }
                     PairInt p3 = new PairInt(x2, y2);
                     if (!tmpPointsRemoved.contains(p3) && 
