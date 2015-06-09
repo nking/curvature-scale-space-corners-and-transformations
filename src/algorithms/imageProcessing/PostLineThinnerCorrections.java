@@ -89,6 +89,8 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
         //correctForSpurs(points, w, h);
         
         correctForHoleArtifacts00_10(points, w, h);
+        
+        correctForCorrectionCreatedSquares(points, w, h);
       
         imageProcessor.writeAsBinaryToImage(input, points);
 
@@ -2091,10 +2093,12 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
             CountingSort.sort(neighborsCount, neighborsIdx, 8);
 
             for (int ii = 0; ii < neighborsIdx.length; ++ii) {
-                int nIdx = neighborsIdx[ii];
-                if (neighborsCount[nIdx] == 0) {
+                
+                if (neighborsCount[ii] == 0) {
                     continue;
                 }
+                
+                int nIdx = neighborsIdx[ii];
                 
                 int x2 = col + eightNeighborsX[nIdx];
                 int y2 = centerRow + eightNeighborsY[nIdx];
@@ -2102,6 +2106,159 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
                 PairInt p3 = new PairInt(x2, y2);
  
                 // adds to tmpPointsRemoved
+                boolean nullable = erosionFilter.process(p3, points, 
+                    tmpPointsAdded, tmpPointsRemoved, w, h);
+            }
+        }
+
+        for (PairInt p2 : tmpPointsRemoved) {
+            points.remove(p2);
+        }
+        for (PairInt p2 : tmpPointsAdded) {
+            points.add(p2);
+        }
+    }
+
+    private void correctForCorrectionCreatedSquares(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+        
+        int w = imageWidth;
+        int h = imageHeight;
+        
+        /*
+        Find a filled in 2x2 square.
+       
+                   #  #      1
+                   #* #      0
+                               
+         -3 -2 -1  0  1  2
+        
+         -- expand the region to the surrounding pixels and for each,
+           null them if possible
+        */
+                
+        Set<PairInt> ones = new HashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+        
+        ErosionFilter erosionFilter = new ErosionFilter();
+        erosionFilter.overrideEndOfLineCheck();
+                        
+        Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
+        Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
+
+        for (PairInt p : points) {
+
+            int col = p.getX();
+            int row = p.getY();
+
+            // make sure the current point hasn't been added to tmpPointsRemoved
+            boolean isNotPresent = tmpPointsRemoved.contains(p);
+            if (isNotPresent) {
+                continue;
+            }
+
+            boolean foundPattern = true;
+//500,65  500,64
+if (col==500 && row==65){
+    int z =1;
+}
+if (col==500 && row==64){
+    int z = 1;
+}
+            for (PairInt p2 : ones) {
+                int x = col + p2.getX();
+                int y = row + p2.getY();
+                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                    foundPattern = false;
+                    break;
+                }
+                PairInt p3 = new PairInt(x, y);
+                if (tmpPointsRemoved.contains(p3) ||
+                    (!points.contains(p3) && !tmpPointsAdded.contains(p3))) {
+                    foundPattern = false;
+                    break;
+                }
+            }
+
+            if (!foundPattern) {
+                continue;
+            }
+            
+            /*
+            visit each of the surrounding pixels and the center 4 in order
+            of smallest number of neighbors, and null the ones which are 
+            nullable without disconnecting lines.
+            
+                    +  +  +  +   2
+                    +  #  #  +   1
+                    +  #* #  +   0
+                    +  +  +  +  -1
+        
+             -3 -2 -1  0  1  2
+            */
+            
+            int nn = 0;
+            int[] neighborsCount = new int[16];
+            PairInt[] neighbors = new PairInt[16];
+            
+            for (int ii = -1; ii <= 2; ++ii) {
+                for (int jj = -2; jj <= 1; ++jj) {
+                    
+                    int x1 = col + ii;
+                    int y1 = row + jj;
+                    
+                    if ((x1 < 0) || (y1 < 0) || (x1 > (w - 1)) || (y1 > (h - 1))) {
+                        continue;
+                    }
+                    PairInt p3 = new PairInt(x1, y1);
+                    if (tmpPointsRemoved.contains(p3) || 
+                        (!tmpPointsAdded.contains(p3) && !points.contains(p3))) {
+                        continue;
+                    }
+
+                    neighbors[nn] = p3;
+                    
+                    int count = 0;
+                    // count the neighbors of the neighbor
+                    for (int n2Idx = 0; n2Idx < eightNeighborsX.length; ++n2Idx) {
+                        int x2 = x1 + eightNeighborsX[n2Idx];
+                        int y2 = y1 + eightNeighborsY[n2Idx];                
+                        if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                            continue;
+                        }
+                        PairInt p4 = new PairInt(x2, y2);
+                        if (!tmpPointsRemoved.contains(p4) && 
+                            (tmpPointsAdded.contains(p4) || points.contains(p4))) {
+                            count++;
+                        }
+                    }
+                    
+                    neighborsCount[nn] = count;
+                    nn++;
+                }
+            }
+            
+            neighbors = Arrays.copyOf(neighbors, nn);
+            neighborsCount = Arrays.copyOf(neighborsCount, nn);
+            
+            CountingSort.sort(neighborsCount, neighbors, 8);
+
+            for (int ii = 0; ii < neighbors.length; ++ii) {
+                if (neighborsCount[ii] == 0) {
+                    continue;
+                }
+                PairInt p3 = neighbors[ii]; 
+                // adds to tmpPointsRemoved
+if (p3.getX()==500 && p3.getY()==65){
+    int z =1;
+}
+if (p3.getX()==500 && p3.getY()==64){
+    int z = 1;
+}
                 boolean nullable = erosionFilter.process(p3, points, 
                     tmpPointsAdded, tmpPointsRemoved, w, h);
             }
