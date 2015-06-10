@@ -60,7 +60,6 @@ public class PostLineThinnerCorrections {
         final int w = input.getWidth();
         final int h = input.getHeight();
         
-
         Set<PairInt> points = imageProcessor.readNonZeroPixels(input);
         
         correctForArtifacts(points, w, h);
@@ -76,7 +75,6 @@ public class PostLineThinnerCorrections {
  
     private void correctForArtifacts(Set<PairInt> points, int w, int h) {
      
-
         correctForSingleHole_01(points, w, h);
         correctForSingleHole_02(points, w, h);
         correctForSingleHole_03(points, w, h);
@@ -85,8 +83,6 @@ public class PostLineThinnerCorrections {
         correctForSingleHole_06(points, w, h);
         correctForSingleHole_07(points, w, h);
         correctForSingleHole_08(points, w, h);
-        
-
 
         correctForZigZag000_00(points, w, h);
         correctForZigZag000_01(points, w, h);
@@ -99,8 +95,6 @@ public class PostLineThinnerCorrections {
         correctForZigZag000_07(points, w, h);
         correctForZigZag000_08(points, w, h);
         correctForZigZag000_09(points, w, h);
-
-
 
         //correctForHoleArtifacts1_1(points, w, h);       
         correctForHoleArtifacts1_2(points, w, h);
@@ -853,10 +847,10 @@ public class PostLineThinnerCorrections {
         zeroes.add(new PairInt(0, 2));
         zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
         
-        zeroes.add(new PairInt(-1, -2));
+        ones.add(new PairInt(-1, -2));
         ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -1));
         ones.add(new PairInt(1, 1));
-        zeroes.add(new PairInt(2, 2));
+        ones.add(new PairInt(2, 2));
         
         changeToZeroes.add(new PairInt(0, 1));
                     
@@ -874,7 +868,7 @@ public class PostLineThinnerCorrections {
         /* 
         a variant of the pattern in correctForZigZag00_5
         
-        #
+        #               2
         0  #  0  0      1
         0  #*<#  #      0
         0  0  0  0  #  -1
@@ -891,8 +885,9 @@ public class PostLineThinnerCorrections {
         zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, 1));
         zeroes.add(new PairInt(0, 1));
         zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(2, -1)); zeroes.add(new PairInt(2, 1));
+        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, -1));
         
+        ones.add(new PairInt(-1, -2));
         ones.add(new PairInt(0, -1));
         ones.add(new PairInt(1, 0));
         ones.add(new PairInt(2, 0));
@@ -2741,16 +2736,7 @@ public class PostLineThinnerCorrections {
         ones.add(new PairInt(0, -1)); ones.add(new PairInt(0, -3));
         ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2)); ones.add(new PairInt(1, -3));
         ones.add(new PairInt(2, -4));
-        /*  
-                 0  0  0  0  #      4                    #      4
-              0  0  #  #  #         3           .  .  #         3
-           0  0  #  #  0  #  0      2        .  .  @  .         2
-           0  #  #  0  #  #  0      1     .  .  @  .  .         1
-           0  #  0  #  #* 0  0      0     .  @  .  .*           0
-           0  #  #  #  0  0        -1     #  .  .              -1
-           0  #  0  0              -2     #                    -2
-          -4 -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3  
-        */
+        
         changeToZeroes.add(new PairInt(-3, 0)); changeToZeroes.add(new PairInt(-3, -1));
         changeToZeroes.add(new PairInt(-2, 1)); changeToZeroes.add(new PairInt(-2, -1)); changeToZeroes.add(new PairInt(-2, -2));
         changeToZeroes.add(new PairInt(-1, 1)); changeToZeroes.add(new PairInt(-1, 0)); 
@@ -2768,4 +2754,5 @@ public class PostLineThinnerCorrections {
         rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
     }
+    
 }
