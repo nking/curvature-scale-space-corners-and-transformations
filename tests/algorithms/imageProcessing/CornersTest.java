@@ -42,8 +42,8 @@ public class CornersTest extends TestCase {
         
         String fileName = "lena.jpg";
         String outFileName = "lena.png";
-        //fileName = "valve_gaussian.png";
-        //outFileName = fileName;
+        fileName = "valve_gaussian.png";
+        outFileName = fileName;
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
@@ -51,7 +51,7 @@ public class CornersTest extends TestCase {
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);
-       
+        //detector.doNotPerformHistogramEqualization();
         detector.findCorners();        
        
         Image image = ImageIOHelper.readImageAsGrayScale(filePath);

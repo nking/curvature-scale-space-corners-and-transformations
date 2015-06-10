@@ -147,7 +147,6 @@ public class ContourFinderTest extends TestCase {
         
         String filePath = ResourceFinder.findFileInTestResources(
             "blox.gif");
-            //"closed_curve_translate.png");
         
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         

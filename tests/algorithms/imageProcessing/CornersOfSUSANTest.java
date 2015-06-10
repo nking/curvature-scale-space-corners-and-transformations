@@ -48,7 +48,7 @@ public class CornersOfSUSANTest extends TestCase {
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);
                
-        detector.useLineDrawingMode();
+        //detector.useLineDrawingMode();
                
         detector.findCorners();
         

@@ -4,31 +4,47 @@ import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.util.logging.Logger;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
 /**
  *
  * @author nichole
  */
-public class InflectionMapperOneObjectTest {
+public class InflectionMapperOneObjectTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     public InflectionMapperOneObjectTest() {
     }
     
-    @Before
-    public void setUp() {
+    public void estImproveLineDrawingMode() throws Exception {
+        
+        String fileName2 = "closed_curve_translate_scale_rotate60.png";
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        GreyscaleImage img2 = ImageIOHelper.readImageExt(filePath2).copyToGreyscale();
+        
+        /*
+        ILineThinner lineThinner = new ZhangSuenLineThinner();
+        lineThinner.useLineDrawingMode();
+        lineThinner.applyFilter(img2);
+        */
+        
+        CannyEdgeFilter filter = new CannyEdgeFilter();
+        filter.useLineDrawingMode();
+        CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
+        settings.setUseLineDrawingMode();        
+        filter.setSetters(settings);
+        filter.applyFilter(img2);
+        
+        img2.multiply(200);
+        
+        String dirPath = ResourceFinder.findDirectory("bin");
+        
+        ImageIOHelper.writeOutputImage(
+            dirPath + "/line_drawing_thinned.png", img2);
     }
     
-    @After
-    public void tearDown() {
-    }
-
-    @Test
     public void testMap() throws Exception {
         
         String[] rotDegreesList = new String[]{"20", "45", "60", "110", "160",
@@ -40,7 +56,7 @@ public class InflectionMapperOneObjectTest {
             for (String rotDegrees : rotDegreesList) {
 
                 /*
-                if (!rotDegrees.equals("335")) {
+                if (!rotDegrees.equals("60")) {
                     continue;
                 }
                 */
@@ -48,7 +64,6 @@ public class InflectionMapperOneObjectTest {
                 String fileName1 = "closed_curve.png";
                 String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
 
-                //String fileName2 = "closed_curve_translate.png";
                 //String fileName2 = "closed_curve_translate_scale.png";
                 String fileName2 = "closed_curve_translate_scale_rotate" + rotDegrees 
                     + ".png";
@@ -169,6 +184,7 @@ public class InflectionMapperOneObjectTest {
                 new InflectionMapperOneObjectTest();
                         
             test.testMap();
+            //test.testImproveLineDrawingMode();
             
         } catch (Exception e) {
             e.printStackTrace();

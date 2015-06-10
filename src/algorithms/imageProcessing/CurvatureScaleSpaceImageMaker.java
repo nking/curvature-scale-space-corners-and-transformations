@@ -160,7 +160,7 @@ public final class CurvatureScaleSpaceImageMaker extends
 
             ScaleSpaceCurve curve;
 
-log.info("trimmedXOffset=" + trimmedXOffset + " trimmedYOffset=" + trimmedYOffset);
+//log.info("trimmedXOffset=" + trimmedXOffset + " trimmedYOffset=" + trimmedYOffset);
       
             if (lastCurve == null) {
                 curve = scaleSpaceHelper.computeCurvature(edge, sigma, 
@@ -315,7 +315,7 @@ log.info("trimmedXOffset=" + trimmedXOffset + " trimmedYOffset=" + trimmedYOffse
 
             ScaleSpaceCurve curve;
             
-log.info("trimmedXOffset=" + trimmedXOffset + " trimmedYOffset=" + trimmedYOffset);
+//log.info("trimmedXOffset=" + trimmedXOffset + " trimmedYOffset=" + trimmedYOffset);
 
             if (lastCurve == null) {
                 curve = scaleSpaceHelper.computeCurvature(edge, sigma, 

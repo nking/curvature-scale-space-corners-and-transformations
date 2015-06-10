@@ -75,7 +75,7 @@ public class CurvatureScaleSpaceContourMatcherTest {
             getImageContours("closed_curve.png");
         
         List<CurvatureScaleSpaceContour> contours2 = 
-            getImageContours("closed_curve_translate.png");
+            getImageContours("closed_curve_translate_scale.png");
         
         CurvatureScaleSpaceContourMatcher matcher = new
             CurvatureScaleSpaceContourMatcher();
@@ -95,7 +95,7 @@ public class CurvatureScaleSpaceContourMatcherTest {
        
         assertTrue(Math.abs(matcher.getSolvedShift()) < 0.1);
        
-        assertTrue(Math.abs(matcher.getSolvedScale()) < 1.01);
+        assertTrue(Math.abs(matcher.getSolvedScale() - 1.33) < 0.1);
     }
 
 }

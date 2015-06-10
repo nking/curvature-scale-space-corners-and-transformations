@@ -34,6 +34,11 @@ public class SkylineDownhillSimplexTest extends TestCase {
     
     public void test0() throws Exception {
         
+        if (true) {
+            // re-enable upon need.  very time consuming!
+            return;
+        }
+        
         boolean useAllImages = true;
         boolean useBlueSkyImages = false;
         

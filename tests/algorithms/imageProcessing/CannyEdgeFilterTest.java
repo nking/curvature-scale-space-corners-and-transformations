@@ -2,39 +2,26 @@ package algorithms.imageProcessing;
 
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
 /**
  *
  * @author nichole
  */
-public class CannyEdgeFilterTest {
+public class CannyEdgeFilterTest extends TestCase {
     
     public CannyEdgeFilterTest() {
     }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-    
-    
-    @Test
+        
     public void testLowIntensityFilter() throws Exception {
         
-        //String fileName = "house.gif";
+        String fileName = "house.gif";
         //String fileName = "lab.gif";
         //String fileName = "susan-in_plus.png";
         //String fileName = "africa.png";
         //String fileName = "valve_gaussian.png";
-        String fileName = "lena.jpg";
+        //String fileName = "lena.jpg";
                 
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
@@ -54,8 +41,7 @@ public class CannyEdgeFilterTest {
         int z = 1;
     }
 
-    //@Test
-    public void testApply2LayerFilter() throws Exception {
+    public void estApply2LayerFilter() throws Exception {
                 
         String fileName = "house.gif";
         //String fileName = "lab.gif";
@@ -82,7 +68,6 @@ public class CannyEdgeFilterTest {
         //TODO: add qualitative tests...
     }
     
-    @Test
     public void testApplyFilter() throws Exception {
                 
         //String fileName = "house.gif";
@@ -113,13 +98,14 @@ public class CannyEdgeFilterTest {
         String dirPath = ResourceFinder.findDirectory("bin");
         ImageIOHelper.writeOutputImage(dirPath + "/linethinned.png", img);
 
-        ImageIOHelper.writeOutputImage(dirPath + "/gXY.png", filter.getGradientXY());
+        GreyscaleImage img2 = filter.getGradientXY();
+        img2.multiply(100);
+        ImageIOHelper.writeOutputImage(dirPath + "/gXY.png", img2);
         
         //TODO: add qualitative tests...
         int z = 1;        
     }
     
-    //@Test
     public void testApplyHistogramEqualization() {
         
         GreyscaleImage input = new GreyscaleImage(10, 10);
@@ -160,7 +146,6 @@ public class CannyEdgeFilterTest {
         assertTrue(max == 255);
     }
     
-    @Test
     public void testCreateGradientProducts() throws IOException {
         
         double dTheta = 10.0;
@@ -251,14 +236,14 @@ public class CannyEdgeFilterTest {
             
             CannyEdgeFilterTest test = new CannyEdgeFilterTest();
             
-            test.testApplyHistogramEqualization();
+            /*test.testApplyHistogramEqualization();
             
             test.testLowIntensityFilter();
             
             test.testApply2LayerFilter();
             
             test.testCreateGradientProducts();
-            
+            */
             test.testApplyFilter();
             
         } catch (Exception e) {
