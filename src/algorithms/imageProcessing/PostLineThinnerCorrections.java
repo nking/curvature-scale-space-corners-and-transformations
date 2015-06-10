@@ -35,15 +35,6 @@ public class PostLineThinnerCorrections {
         
         Set<PairInt> points = imageProcessor.readNonZeroPixels(input);
         
-        //TODO: reduce the number of patterns here if possible
-        // and make sure that true corners aren't drastically reduced to less
-        // usable smaller corners 
-        
-try {
-String dirPath = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
-} catch (IOException e){}
-
         correctForZigZag000_00(points, w, h);
         correctForZigZag000_01(points, w, h);
         correctForZigZag000_02(points, w, h);
@@ -87,17 +78,12 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero.png", input);
         correctForZigZag00_16(points, w, h);
         
         //correctForSpurs(points, w, h);
-        
+    
         correctForHoleArtifacts00_10(points, w, h);
-        
+       
         correctForCorrectionCreatedSquares(points, w, h);
       
         imageProcessor.writeAsBinaryToImage(input, points);
-
-try {
-String dirPath = ResourceFinder.findDirectory("bin");
-ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
-} catch (IOException e){}
 
     }
     
@@ -2104,10 +2090,11 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
                 int y2 = centerRow + eightNeighborsY[nIdx];
                 
                 PairInt p3 = new PairInt(x2, y2);
- 
+
                 // adds to tmpPointsRemoved
                 boolean nullable = erosionFilter.process(p3, points, 
                     tmpPointsAdded, tmpPointsRemoved, w, h);
+               
             }
         }
 
@@ -2162,13 +2149,7 @@ ImageIOHelper.writeOutputImage(dirPath + "/nonZero2.png", input);
             }
 
             boolean foundPattern = true;
-//500,65  500,64
-if (col==500 && row==65){
-    int z =1;
-}
-if (col==500 && row==64){
-    int z = 1;
-}
+
             for (PairInt p2 : ones) {
                 int x = col + p2.getX();
                 int y = row + p2.getY();
@@ -2253,12 +2234,7 @@ if (col==500 && row==64){
                 }
                 PairInt p3 = neighbors[ii]; 
                 // adds to tmpPointsRemoved
-if (p3.getX()==500 && p3.getY()==65){
-    int z =1;
-}
-if (p3.getX()==500 && p3.getY()==64){
-    int z = 1;
-}
+
                 boolean nullable = erosionFilter.process(p3, points, 
                     tmpPointsAdded, tmpPointsRemoved, w, h);
             }

@@ -52,7 +52,7 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
                 
         PostLineThinnerCorrections pc = new PostLineThinnerCorrections();
         
-        pc.correctForHoleArtifacts1(points, w, h);
+        pc.correctForHoleArtifacts00_10(points, w, h);
         
         /* 
                       1                   7

@@ -930,7 +930,7 @@ public abstract class AbstractLineThinner implements ILineThinner {
 
            -1  0   1
             0  1   2
-        TODO: REDO FOR THIS MORE COMPLETE CHECK:       
+        
         disconnects:
            -- if (6) && (8) && !(7) && (!(11) || !(16) || !(12))
            -- if (6) && (12) && !(7) && (!(11) || !(16))
@@ -939,10 +939,12 @@ public abstract class AbstractLineThinner implements ILineThinner {
            -- if (6) && (17) && ( (!(7) || !(12)) && (!(11) || !(16)) )
            -- if (7) && (15) && !(11) && (!(12) || !(16))
            -- if (7) && (17) && !(12) && (!(11) || !(16))
+           -- if (7) && (16) && !(11) && !(12)
            -- if (8) && (11) && !(7) && (!(12) || !(16))
            -- if (8) && (17) && !(12) && (!(16) || !(11) || !(7))
            -- if (8) && (16) && !(7) && !(12)
            -- if (8) && (15) && ( (!(7) || !(11)) && (!(12) || !(16)) )
+           -- if (11) && (12) && !(7) && !(16)
            -- if (11) && (17) && !(16) && (!(7) || !(12))           
            -- if (12) && (15) && !(16) && (!(7) || !(11))
            -- if (15) && (17) && !(16) && (!(11) || !(7) || !(12))
@@ -953,179 +955,50 @@ public abstract class AbstractLineThinner implements ILineThinner {
         then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
         */
         
-        for (int nRot = 0; nRot < 4; nRot++) {
+        boolean[][] isPresent = evaluate(neighborCoords, points, 
+            overridePointsRemoved, overridePointsAdded);
         
-            if (nRot > 0) {
-                rotateBy90(neighborCoords);
-            }
-            
-            if (//if (6 || 7 || 8)
-            (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
-            (overridePointsAdded.contains(neighborCoords[0][2]) ||
-            points.contains(neighborCoords[0][2])))
-            ||
-            (!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-            (overridePointsAdded.contains(neighborCoords[1][2]) ||
-            points.contains(neighborCoords[1][2])))
-            ||
-            (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
-            (overridePointsAdded.contains(neighborCoords[2][2]) ||
-            points.contains(neighborCoords[2][2])))
-            ) {
-                if ( //if (6 || 7 || 8) && (11 && 17) && !(15) && !(16)
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                    &&
-                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                    points.contains(neighborCoords[2][0])))
-                )
-                &&
-                (
-                    !(!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                    points.contains(neighborCoords[0][0])))
-                    &&
-                    !(!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                )
-                ) {
-if (col==500 && row==64){
-    /*
-    17     8
-   !16     7
-   !15 11  6
-    */
-    //6=0,2  501,65 X
-    //7=1,2  501,64 X
-    //8=2,2  501,63 X
-    //11=0,1 500,65 X
-    //17=2,0 499,63 X
-    //15=0,0 499,65
-    //16=1,0 499,64
-    int z = 1;//center 501,64
-    
-}
-                    return true;
-                } else if (//if (6 || 7 || 8) && (12 && 15) && !(16) && !(17)
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                    &&
-                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                    points.contains(neighborCoords[0][0])))
-                )
-                &&
-                (
-                    !(!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                    &&
-                    !(!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                    points.contains(neighborCoords[2][0])))
-                )
-                ) {
-                    return true;
-                } else if (//if (6 || 7 || 8) && (15 || 16 || 17) && !(11) && !(12)
-                (
-                    (!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                    points.contains(neighborCoords[0][0])))
-                    ||
-                    (!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                    points.contains(neighborCoords[1][0])))
-                    ||
-                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                    points.contains(neighborCoords[2][0])))
-                )
-                &&
-                (
-                    !(!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                    points.contains(neighborCoords[0][1])))
-                    &&
-                    !(!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                    (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                    points.contains(neighborCoords[2][1])))
-                )
-                ) {
-                    return true;
-                } else if (//if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
-                !(!overridePointsRemoved.contains(neighborCoords[0][0]) &&
-                (overridePointsAdded.contains(neighborCoords[0][0]) ||
-                points.contains(neighborCoords[0][0])))
-                &&
-                !(!overridePointsRemoved.contains(neighborCoords[1][0]) &&
-                (overridePointsAdded.contains(neighborCoords[1][0]) ||
-                points.contains(neighborCoords[1][0])))
-                &&
-                !(!overridePointsRemoved.contains(neighborCoords[2][0]) &&
-                (overridePointsAdded.contains(neighborCoords[2][0]) ||
-                points.contains(neighborCoords[2][0])))
-                &&
-                !(!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-                (overridePointsAdded.contains(neighborCoords[0][1]) ||
-                points.contains(neighborCoords[0][1])))
-                &&
-                !(!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-                (overridePointsAdded.contains(neighborCoords[2][1]) ||
-                points.contains(neighborCoords[2][1])))
-                ) {
-                    return false;
-                }
-            } else if (//if !(6) && !(7) && (8) && (11) && !(12)
-            !(!overridePointsRemoved.contains(neighborCoords[0][2]) &&
-            (overridePointsAdded.contains(neighborCoords[0][2]) ||
-            points.contains(neighborCoords[0][2])))
-            &&
-            !(!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-            (overridePointsAdded.contains(neighborCoords[1][2]) ||
-            points.contains(neighborCoords[1][2])))
-            &&
-            (!overridePointsRemoved.contains(neighborCoords[2][2]) &&
-            (overridePointsAdded.contains(neighborCoords[2][2]) ||
-            points.contains(neighborCoords[2][2])))
-            &&
-            (!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-            (overridePointsAdded.contains(neighborCoords[0][1]) ||
-            points.contains(neighborCoords[0][1])))
-            &&
-            !(!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-            (overridePointsAdded.contains(neighborCoords[2][1]) ||
-            points.contains(neighborCoords[2][1])))
-            ) {
-                return true;
-            } else if (//if (6) && !(7) && !(8) && !(11) && (12)
-            (!overridePointsRemoved.contains(neighborCoords[0][2]) &&
-            (overridePointsAdded.contains(neighborCoords[0][2]) ||
-            points.contains(neighborCoords[0][2])))
-            &&
-            !(!overridePointsRemoved.contains(neighborCoords[1][2]) &&
-            (overridePointsAdded.contains(neighborCoords[1][2]) ||
-            points.contains(neighborCoords[1][2])))
-            &&
-            !(!overridePointsRemoved.contains(neighborCoords[2][2]) &&
-            (overridePointsAdded.contains(neighborCoords[2][2]) ||
-            points.contains(neighborCoords[2][2])))
-            &&
-            !(!overridePointsRemoved.contains(neighborCoords[0][1]) &&
-            (overridePointsAdded.contains(neighborCoords[0][1]) ||
-            points.contains(neighborCoords[0][1])))
-            &&
-            (!overridePointsRemoved.contains(neighborCoords[2][1]) &&
-            (overridePointsAdded.contains(neighborCoords[2][1]) ||
-            points.contains(neighborCoords[2][1])))
-            ) {
-                return true;
-            }            
+        boolean t6 = isPresent[0][2];
+        boolean t7 = isPresent[1][2];
+        boolean t8 = isPresent[2][2];
+        boolean t11 = isPresent[0][1];
+        boolean t12 = isPresent[2][1];
+        boolean t15 = isPresent[0][0];
+        boolean t16 = isPresent[1][0];
+        boolean t17 = isPresent[2][0];
+        
+        if ((t6) && (t8) && !(t7) && (!(t11) || !(t16) || !(t12))) {
+            return true;
+        } else if ((t6) && (t12) && !(t7) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t6) && (t15) && !(t11) && (!(t16) || !(t12) || !(t7))) {
+            return true;
+        } else if ((t6) && (t16) && !(t7) && !(t11)) {
+            return true;
+        } else if ((t6) && (t17) && ( (!(t7) || !(t12)) && (!(t11) || !(t16)) )) {
+            return true;
+        } else if ((t7) && (t15) && !(t11) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t7) && (t17) && !(t12) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t7) && (t16) && !(t11) && !(t12)) {
+            return true;
+        } else if ((t8) && (t11) && !(t7) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t8) && (t17) && !(t12) && (!(t16) || !(t11) || !(t7))) {
+            return true;
+        } else if ((t8) && (t16) && !(t7) && !(t12)) {
+            return true;
+        } else if ((t8) && (t15) && ( (!(t7) || !(t11)) && (!(t12) || !(t16)) )) {
+            return true;
+        } else if ((t11) && (t12) && !(t7) && !(t16)) {
+            return true;
+        } else if ((t11) && (t17) && !(t16) && (!(t7) || !(t12))) {
+            return true;
+        } else if ((t12) && (t15) && !(t16) && (!(t7) || !(t11))) {
+            return true;
+        } else if ((t15) && (t17) && !(t16) && (!(t11) || !(t7) || !(t12))) {
+            return true;
         }
         
         return false;
@@ -1203,6 +1076,28 @@ if (col==500 && row==64){
         }
         
         return output;
+    }
+
+    private boolean[][] evaluate(PairInt[][] coords, 
+        Set<PairInt> points, Set<PairInt> overridePointsRemoved, 
+        Set<PairInt> overridePointsAdded) {
+        
+        boolean[][] isPresent = new boolean[coords.length][];
+        
+        for (int i = 0; i < coords.length; ++i) {
+            
+            isPresent[i] = new boolean[coords[i].length];
+            
+            for (int j = 0; j < coords[i].length; ++j) {
+                
+                isPresent[i][j] = 
+                    (!overridePointsRemoved.contains(coords[i][j]) &&
+                    (overridePointsAdded.contains(coords[i][j]) ||
+                    points.contains(coords[i][j])));
+            }
+        }
+        
+        return isPresent;
     }
 
 }
