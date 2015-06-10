@@ -289,113 +289,78 @@ public class ErosionFilter extends AbstractLineThinner {
             0  1   2
                
         disconnects:
-           -- if (6 || 7 || 8) && (11 && 17) && !(15) && !(16)
-           -- if (6 || 7 || 8) && (12 && 15) && !(16) && !(17)
-           -- if (6 || 7 || 8) && (15 || 16 || 17) && !(11) && !(12)
-           -- if !(6) && !(7) && (8) && (11) && !(12)
-           -- if (6) && !(7) && !(8) && !(11) && (12)
+           -- if (6) && (8) && !(7) && (!(11) || !(16) || !(12))
+           -- if (6) && (12) && !(7) && (!(11) || !(16))
+           -- if (6) && (15) && !(11) && (!(16) || !(12) || !(7))
+           -- if (6) && (16) && !(7) && !(11)
+           -- if (6) && (17) && ( (!(7) || !(12)) && (!(11) || !(16)) )
+           -- if (7) && (15) && !(11) && (!(12) || !(16))
+           -- if (7) && (17) && !(12) && (!(11) || !(16))
+           -- if (7) && (16) && !(11) && !(12)
+           -- if (8) && (11) && !(7) && (!(12) || !(16))
+           -- if (8) && (17) && !(12) && (!(16) || !(11) || !(7))
+           -- if (8) && (16) && !(7) && !(12)
+           -- if (8) && (15) && ( (!(7) || !(11)) && (!(12) || !(16)) )
+           -- if (11) && (12) && !(7) && !(16)
+           -- if (11) && (17) && !(16) && (!(7) || !(12))           
+           -- if (12) && (15) && !(16) && (!(7) || !(11))
+           -- if (15) && (17) && !(16) && (!(11) || !(7) || !(12))
+        
         does not disconnect
            -- if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
         
         then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
         */
         
-        for (int nRot = 0; nRot < 4; nRot++) {
+        boolean t6 = (input.getValue(neighborCoords[0][2].getX(), 
+            neighborCoords[0][2].getY()) > 0);
+        boolean t7 = (input.getValue(neighborCoords[1][2].getX(), 
+            neighborCoords[1][2].getY()) > 0);
+        boolean t8 = (input.getValue(neighborCoords[2][2].getX(), 
+            neighborCoords[2][2].getY()) > 0);
+        boolean t11 = (input.getValue(neighborCoords[0][1].getX(), 
+            neighborCoords[0][1].getY()) > 0);
+        boolean t12 = (input.getValue(neighborCoords[2][1].getX(), 
+            neighborCoords[2][1].getY()) > 0);
+        boolean t15 = (input.getValue(neighborCoords[0][0].getX(), 
+            neighborCoords[0][0].getY()) > 0);
+        boolean t16 = (input.getValue(neighborCoords[1][0].getX(), 
+            neighborCoords[1][0].getY()) > 0);
+        boolean t17 = (input.getValue(neighborCoords[2][0].getX(), 
+            neighborCoords[2][0].getY()) > 0);
         
-            if (nRot > 0) {
-                rotateBy90(neighborCoords);
-            }
-            
-            if (//if (6 || 7 || 8)
-            (input.getValue(neighborCoords[0][2].getX(), neighborCoords[0][2].getY()) > 0)
-            ||
-            (input.getValue(neighborCoords[1][2].getX(), neighborCoords[1][2].getY()) > 0)
-            ||
-            (input.getValue(neighborCoords[2][2].getX(), neighborCoords[2][2].getY()) > 0)
-            ) {
-                if ( //if (6 || 7 || 8) && (11 && 17) && !(15) && !(16)
-                (
-                    (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) > 0)
-                    &&
-                    (input.getValue(neighborCoords[2][0].getX(), neighborCoords[2][0].getY()) > 0)
-                )
-                &&
-                (
-                    (input.getValue(neighborCoords[0][0].getX(), neighborCoords[0][0].getY()) == 0)
-                    &&
-                    (input.getValue(neighborCoords[1][0].getX(), neighborCoords[1][0].getY()) == 0)
-                )
-                ) {
-                    return true;
-                } else if (//if (6 || 7 || 8) && (12 && 15) && !(16) && !(17)
-                (
-                    (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) > 0)
-                    &&
-                    (input.getValue(neighborCoords[0][0].getX(), neighborCoords[0][0].getY()) > 0)
-                )
-                &&
-                (
-                    (input.getValue(neighborCoords[1][0].getX(), neighborCoords[1][0].getY()) == 0)
-                    &&
-                    (input.getValue(neighborCoords[2][0].getX(), neighborCoords[2][0].getY()) == 0)
-                )
-                ) {
-                    return true;
-                } else if (//if (6 || 7 || 8) && (15 || 16 || 17) && !(11) && !(12)
-                (
-                    (input.getValue(neighborCoords[0][0].getX(), neighborCoords[0][0].getY()) > 0)
-                    ||
-                    (input.getValue(neighborCoords[1][0].getX(), neighborCoords[1][0].getY()) > 0)
-                    ||
-                    (input.getValue(neighborCoords[2][0].getX(), neighborCoords[2][0].getY()) > 0)
-                )
-                &&
-                (
-                    (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) == 0)
-                    &&
-                    (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) == 0)
-                )
-                ) {
-                    return true;
-                } else if (//if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
-                (input.getValue(neighborCoords[0][0].getX(), neighborCoords[0][0].getY()) == 0)
-                &&
-                (input.getValue(neighborCoords[1][0].getX(), neighborCoords[1][0].getY()) == 0)
-                &&
-                (input.getValue(neighborCoords[2][0].getX(), neighborCoords[2][0].getY()) == 0)
-                &&
-                (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) == 0)
-                &&
-                (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) == 0)
-                ) {
-                    return false;
-                }
-            } else if (//if (6) && !(7) && !(8) && !(11) && (12)
-            (input.getValue(neighborCoords[0][2].getX(), neighborCoords[0][2].getY()) > 0)
-            &&
-            (input.getValue(neighborCoords[1][2].getX(), neighborCoords[1][2].getY()) == 0)
-            &&
-            (input.getValue(neighborCoords[2][2].getX(), neighborCoords[2][2].getY()) == 0)
-            &&
-            (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) == 0)
-            &&
-            (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) > 0)
-            ) {
-                return true;
-            } else if (//if !(6) && !(7) && (8) && (11) && !(12)
-            (input.getValue(neighborCoords[0][2].getX(), neighborCoords[0][2].getY()) == 0)
-            &&
-            (input.getValue(neighborCoords[1][2].getX(), neighborCoords[1][2].getY()) == 0)
-            &&
-            (input.getValue(neighborCoords[2][2].getX(), neighborCoords[2][2].getY()) > 0)
-            &&
-            (input.getValue(neighborCoords[0][1].getX(), neighborCoords[0][1].getY()) > 0)
-            &&
-            (input.getValue(neighborCoords[2][1].getX(), neighborCoords[2][1].getY()) == 0)
-            ) {
-                return true;
-            }
-           
+       if ((t6) && (t8) && !(t7) && (!(t11) || !(t16) || !(t12))) {
+            return true;
+        } else if ((t6) && (t12) && !(t7) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t6) && (t15) && !(t11) && (!(t16) || !(t12) || !(t7))) {
+            return true;
+        } else if ((t6) && (t16) && !(t7) && !(t11)) {
+            return true;
+        } else if ((t6) && (t17) && ( (!(t7) || !(t12)) && (!(t11) || !(t16)) )) {
+            return true;
+        } else if ((t7) && (t15) && !(t11) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t7) && (t17) && !(t12) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t7) && (t16) && !(t11) && !(t12)) {
+            return true;
+        } else if ((t8) && (t11) && !(t7) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t8) && (t17) && !(t12) && (!(t16) || !(t11) || !(t7))) {
+            return true;
+        } else if ((t8) && (t16) && !(t7) && !(t12)) {
+            return true;
+        } else if ((t8) && (t15) && ( (!(t7) || !(t11)) && (!(t12) || !(t16)) )) {
+            return true;
+        } else if ((t11) && (t12) && !(t7) && !(t16)) {
+            return true;
+        } else if ((t11) && (t17) && !(t16) && (!(t7) || !(t12))) {
+            return true;
+        } else if ((t12) && (t15) && !(t16) && (!(t7) || !(t11))) {
+            return true;
+        } else if ((t15) && (t17) && !(t16) && (!(t11) || !(t7) || !(t12))) {
+            return true;
         }
         
         return false;
