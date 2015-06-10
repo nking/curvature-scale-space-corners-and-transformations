@@ -36,12 +36,30 @@ public class PostLineThinnerCorrections {
     
     public void correctForArtifacts(GreyscaleImage input) {
            
+        if (edgeGuideImage != null) {
+            if (input.getXRelativeOffset() != edgeGuideImage.getXRelativeOffset()) {
+                throw new IllegalStateException(
+                    "input and edgeGuideImage must have same x offsets");
+            }
+            if (input.getYRelativeOffset() != edgeGuideImage.getYRelativeOffset()) {
+                throw new IllegalStateException(
+                    "input and edgeGuideImage must have same y offsets");
+            }
+            if (input.getWidth() != edgeGuideImage.getWidth()) {
+                throw new IllegalStateException(
+                    "input and edgeGuideImage must have same widths");
+            }
+            if (input.getHeight() != edgeGuideImage.getHeight()) {
+                throw new IllegalStateException(
+                    "input and edgeGuideImage must have same heights");
+            }
+        }
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        int w = input.getWidth();
-        int h = input.getHeight();
+        final int w = input.getWidth();
+        final int h = input.getHeight();
         
-
         Set<PairInt> points = imageProcessor.readNonZeroPixels(input);
         
         correctForArtifacts(points, w, h);
@@ -56,7 +74,6 @@ public class PostLineThinnerCorrections {
     }
  
     private void correctForArtifacts(Set<PairInt> points, int w, int h) {
-     
 
         correctForSingleHole_01(points, w, h);
         correctForSingleHole_02(points, w, h);
@@ -64,8 +81,6 @@ public class PostLineThinnerCorrections {
         correctForSingleHole_04(points, w, h);
         correctForSingleHole_05(points, w, h);
         
-
-
         correctForZigZag000_00(points, w, h);
         correctForZigZag000_01(points, w, h);
         correctForZigZag000_02(points, w, h);
@@ -77,8 +92,6 @@ public class PostLineThinnerCorrections {
         correctForZigZag000_07(points, w, h);
         correctForZigZag000_08(points, w, h);
         correctForZigZag000_09(points, w, h);
-
-
 
         //correctForHoleArtifacts1_1(points, w, h);       
         correctForHoleArtifacts1_2(points, w, h);
@@ -2301,7 +2314,7 @@ public class PostLineThinnerCorrections {
             int maxIntensity = edgeGuideImage.getValue(x, y);
             PairInt maxIntensityPoint = null;
             
-            for (int i = 0; i < eightNeighborsX.length; i++) {
+            for (int i = 0; i < eightNeighborsX.length; ++i) {
                 int x2 = x + eightNeighborsX[i];
                 int y2 = y + eightNeighborsY[i];
                 if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) || 
@@ -2331,21 +2344,10 @@ public class PostLineThinnerCorrections {
                 }
             }
             if (maxIntensityPoint != null) {
-                System.out.println(
-                    String.format("\np=(%d,%d) -> (%d,%d)  xc,yc=%f,%f",
-                    p.getX(), p.getY(), maxIntensityPoint.getX(), 
-                    maxIntensityPoint.getY(), (float)xc,(float)yc)
-                );
-                debugPrint(points, tmpPointsAdded, tmpPointsRemoved,
-                    p.getX() - 2, p.getX() + 2, p.getY() - 2, p.getY() + 2);
-                
                 // "change location" of the point.
                 tmpPointsRemoved.add(p);
                 tmpPointsRemoved.remove(maxIntensityPoint);
                 tmpPointsAdded.add(maxIntensityPoint);
-                
-                debugPrint(points, tmpPointsAdded, tmpPointsRemoved,
-                    p.getX() - 2, p.getX() + 2, p.getY() - 2, p.getY() + 2);
             }
         }
         

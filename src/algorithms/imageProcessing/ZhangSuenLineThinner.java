@@ -51,7 +51,12 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
 
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         if (edgeGuideImage != null) {
-            pltc.setEdgeGuideImage(edgeGuideImage);
+            if (input2.getXRelativeOffset() == 1 && input2.getYRelativeOffset() == 1) {
+                GreyscaleImage gXY2 = addOnePixelBorders(edgeGuideImage);
+                pltc.setEdgeGuideImage(gXY2);
+            } else {
+                pltc.setEdgeGuideImage(edgeGuideImage);
+            }
         }
         pltc.correctForArtifacts(input2);
                 

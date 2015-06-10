@@ -164,12 +164,20 @@ public class CannyEdgeFilter {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
         
-        ImageProcessor ImageProcessor = new ImageProcessor();
+        ImageProcessor imageProcessor = new ImageProcessor();
         
         if (shrinkToSize != null) {
-            ImageProcessor.shrinkImage(input, shrinkToSize);
+            
+            imageProcessor.shrinkImage(input, shrinkToSize);
+            
         } else {
-            ImageProcessor.shrinkImageToFirstNonZeros(input);
+            
+            int[] offsetsXY = imageProcessor.shrinkImageToFirstNonZeros(input);
+            
+            if (offsetsXY[0] > 0 || offsetsXY[1] > 0) {
+                shrinkToSize = new int[]{offsetsXY[0], offsetsXY[1],
+                    input.getWidth(), input.getHeight()};
+            }
         }
         
         if (useLineDrawingMode) {
@@ -178,7 +186,7 @@ public class CannyEdgeFilter {
         }
              
         if (useOutdoorMode) {
-            ImageProcessor.blur(input, 2.0f); //3.0
+            imageProcessor.blur(input, 2.0f); //3.0
         }
 
         applyHistogramEqualization(input);
@@ -532,7 +540,14 @@ public class CannyEdgeFilter {
             lineThinner = lineThinnerClass.newInstance();
             
             if (gXY != null) {
-                lineThinner.setEdgeGuideImage(gXY);
+                if (shrinkToSize != null) {
+                    GreyscaleImage gXY2 = gXY.copyImage();
+                    ImageProcessor imageProcessor = new ImageProcessor();
+                    imageProcessor.shrinkImage(gXY2, shrinkToSize);
+                    lineThinner.setEdgeGuideImage(gXY2);
+                } else {
+                    lineThinner.setEdgeGuideImage(gXY);
+                }
             }
             
             lineThinner.applyFilter(img);

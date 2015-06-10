@@ -505,13 +505,16 @@ public class ImageProcessor {
      */
     public int[] shrinkImageToFirstNonZeros(final GreyscaleImage input) {
         
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
         int xNZFirst = -1;
         int xNZLast = -1;
         int yNZFirst = -1;
         int yNZLast = -1;
         
-        for (int i = 0; i < input.getWidth(); i++) {
-            for (int j = 0; j < input.getHeight(); j++) {
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
                 int pixValue = input.getValue(i, j);
                 if (pixValue > 0) {
                     xNZFirst = i;
@@ -522,8 +525,8 @@ public class ImageProcessor {
                 break;
             }
         }
-        for (int j = 0; j < input.getHeight(); j++) {
-            for (int i = 0; i < input.getWidth(); i++) {
+        for (int j = 0; j < h; j++) {
+            for (int i = 0; i < w; i++) {
                 int pixValue = input.getValue(i, j);
                 if (pixValue > 0) {
                     yNZFirst = j;
@@ -535,8 +538,8 @@ public class ImageProcessor {
             }
         }
         
-        for (int i = (input.getWidth() - 1); i > -1; i--) {
-            for (int j = (input.getHeight() - 1); j > -1; j--) {
+        for (int i = (w - 1); i > -1; i--) {
+            for (int j = (h - 1); j > -1; j--) {
                 if (input.getValue(i, j) > 0) {
                     xNZLast = i;                    
                     break;
@@ -547,8 +550,8 @@ public class ImageProcessor {
             }
         }
         
-        for (int j = (input.getHeight() - 1); j > -1; j--) {
-            for (int i = (input.getWidth() - 1); i > -1; i--) {
+        for (int j = (h - 1); j > -1; j--) {
+            for (int i = (w - 1); i > -1; i--) {
                 int pixValue = input.getValue(i, j);
                 if (pixValue > 0) {
                     yNZLast = j;                    
@@ -560,8 +563,8 @@ public class ImageProcessor {
             }
         }
         
-        if ((xNZFirst > 0) || (xNZLast < (input.getWidth() - 1)) 
-            || (yNZFirst > 0) || (yNZLast < (input.getHeight() - 1))) {
+        if ((xNZFirst > 0) || (xNZLast < (w - 1)) || (yNZFirst > 0) || 
+            (yNZLast < (h - 1))) {
             
             //add a 2 pix border
             xNZFirst -= 2;
