@@ -4,9 +4,11 @@ import algorithms.CountingSort;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -26,21 +28,58 @@ public class PostLineThinnerCorrections {
     protected static final int[] eightNeighborsY = 
         new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
     
+    protected GreyscaleImage edgeGuideImage = null;
+    
+    public void setEdgeGuideImage(final GreyscaleImage gradientXY) {
+        this.edgeGuideImage = gradientXY;
+    }
+    
     public void correctForArtifacts(GreyscaleImage input) {
-        
+           
         ImageProcessor imageProcessor = new ImageProcessor();
         
         int w = input.getWidth();
         int h = input.getHeight();
         
+
         Set<PairInt> points = imageProcessor.readNonZeroPixels(input);
         
+        correctForArtifacts(points, w, h);
+        
+        straightenLines(points, w, h);
+        
+        correctForArtifacts(points, w, h);
+        
+
+        imageProcessor.writeAsBinaryToImage(input, points);
+
+    }
+ 
+    private void correctForArtifacts(Set<PairInt> points, int w, int h) {
+     
+
+        correctForSingleHole_01(points, w, h);
+        correctForSingleHole_02(points, w, h);
+        correctForSingleHole_03(points, w, h);
+        correctForSingleHole_04(points, w, h);
+        correctForSingleHole_05(points, w, h);
+        
+
+
         correctForZigZag000_00(points, w, h);
         correctForZigZag000_01(points, w, h);
         correctForZigZag000_02(points, w, h);
-        correctForZigZag000_0(points, w, h);
-        correctForZigZag000_1(points, w, h);
+        correctForZigZag000_03(points, w, h);
         
+        correctForZigZag000_04(points, w, h);
+        correctForZigZag000_05(points, w, h);
+        correctForZigZag000_06(points, w, h);
+        correctForZigZag000_07(points, w, h);
+        correctForZigZag000_08(points, w, h);
+        correctForZigZag000_09(points, w, h);
+
+
+
         //correctForHoleArtifacts1_1(points, w, h);       
         correctForHoleArtifacts1_2(points, w, h);
         correctForHoleArtifacts1_2_1(points, w, h);
@@ -56,35 +95,31 @@ public class PostLineThinnerCorrections {
         correctForZigZag00_8(points, w, h);
         correctForZigZag00_9(points, w, h);
         correctForZigZag00_10(points, w, h);
-        correctForZigZag00_11(points, w, h);
-        correctForZigZag00_12(points, w, h);
-        correctForZigZag00_13(points, w, h);
-        
+                
         correctForZigZag00_4(points, w, h);
       
         correctForTs(points, w, h);
-        
-        correctForWs(points, w, h);
-        
+                
         // TODO: revisit, not sure this is always an artifact:
         correctForLine0(points, w, h);
         
         // better edge extraction at the expense of unsharpening true corners:
         correctForLs(points, w, h);
         correctForLs2(points, w, h);
-                
+        
         correctForZigZag00_14(points, w, h);
         correctForZigZag00_15(points, w, h);
         correctForZigZag00_16(points, w, h);
-        
-        //correctForSpurs(points, w, h);
-    
+            
         correctForHoleArtifacts00_10(points, w, h);
        
         correctForCorrectionCreatedSquares(points, w, h);
       
-        imageProcessor.writeAsBinaryToImage(input, points);
-
+        correctForZigZag000_04(points, w, h);
+        correctForZigZag000_07(points, w, h);
+        
+        correctForLs(points, w, h);
+        correctForLs2(points, w, h);
     }
     
     private void correctForZigZag00(Set<PairInt> points, int imageWidth, 
@@ -472,51 +507,15 @@ public class PostLineThinnerCorrections {
             zeroes, ones, changeToZeroes, changeToOnes);
     }
     
-    private void correctForZigZag00_11(Set<PairInt> points, int imageWidth, 
-        int imageHeight) {
-       
-        /*       
-                                2
-                0  0  0         1
-                #  #* 0         0
-                0  #  #        -1
-                0  0  0        -2
-         -3 -2 -1  0  1  2     
-        */
-        
-        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
-       
-        // y's are inverted here because sketch above is top left is (0,0)
-        ones.add(new PairInt(-1, 0));
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(1, 1));
-        
-        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -1));
-        zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, -1));
-        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
-        
-        changeToZeroes.add(new PairInt(0, 0));
-                    
-        replacePattern(points, imageWidth, imageHeight,
-            zeroes, ones, changeToZeroes, changeToOnes);
-        
-        rotate90ThreeTimes(points, imageWidth, imageHeight,
-            zeroes, ones, changeToZeroes, changeToOnes);
-    }
-    
-    private void correctForZigZag00_12(Set<PairInt> points, int imageWidth, 
+    private void correctForZigZag000_07(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
         /*       
                 0  0  0         2
-             0  0  #  #         1
-             0  #  #* 0         0
-             0  #  0  0        -1
-                               -2
-         -3 -2 -1  0  1  2     
+                #  #< 0         1
+                0  #  #*        0
+                0  0  0        -1
+            -3 -2 -1  0  1  2     
         */
         
         LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
@@ -525,16 +524,14 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
-        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, 0));
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
         
-        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -1));
-        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -2));
-        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -2));
-        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -2));
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -2));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
         
-        changeToZeroes.add(new PairInt(0, 0));
+        changeToZeroes.add(new PairInt(-1, -1));
                     
         replacePattern(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
@@ -543,12 +540,47 @@ public class PostLineThinnerCorrections {
             zeroes, ones, changeToZeroes, changeToOnes);
     }
     
-    private void correctForZigZag00_13(Set<PairInt> points, int imageWidth, 
+    private void correctForZigZag000_06(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
         /*       
-                0  0  #         1
-                0  #* #         0
+           0  0  0        2
+           #  #  0  0     1
+           0  #< #* 0     0
+           0  0  #  0    -1
+                         -2
+       -3 -2 -1  0  1  2     
+        */ 
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 1));
+        
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -2));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
+        
+        changeToZeroes.add(new PairInt(-1, 0));
+                    
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForZigZag000_08(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+       
+        /*       
+                #  0  0         1
+                #  #*<0         0
                 0  #  0        -1
         
          -3 -2 -1  0  1  2     
@@ -560,12 +592,12 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
         ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, -1));
         
-        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(-1, 1));
         zeroes.add(new PairInt(0, -1));
-        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
         
         changeToZeroes.add(new PairInt(0, 0));
                     
@@ -772,18 +804,18 @@ public class PostLineThinnerCorrections {
      * using this one unfortunately reduces the sharpness of real corners,
      * but it allows clear point ordering when extracting edges from the
      * line thinned image.
-     * 
-     * @param input 
      */
-    private void correctForLs(Set<PairInt> points, int imageWidth, 
+    protected void correctForLs(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
         /*  
+       a variant of the pattern in correctForZigZag00_5
         
+        #               2
         0  #  0         1
         0  #* 0         0
         0  #< #        -1
-        0  0  0        -2
+        0  0  0  #     -2
         
        -1  0  1  2 
         */
@@ -794,18 +826,15 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
     
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, 2));
-        zeroes.add(new PairInt(-1, 1));
-        zeroes.add(new PairInt(-1, 0));
-        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 1)); 
+        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1)); 
         zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, 2));
-        zeroes.add(new PairInt(1, 0));
-        zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
         
-        ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -1));
         ones.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(2, 2));
         
         changeToZeroes.add(new PairInt(0, 1));
                     
@@ -817,15 +846,18 @@ public class PostLineThinnerCorrections {
         
     }
     
-    private void correctForLs2(Set<PairInt> points, int imageWidth, 
+    protected void correctForLs2(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
-        /*  
+        /* 
+        a variant of the pattern in correctForZigZag00_5
+        
+        #
         0  #  0  0      1
         0  #*<#  #      0
-        0  0  0        -1
+        0  0  0  0  #  -1
         
-       -1  0  1  2 
+       -1  0  1  2  3
         */
         
         LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
@@ -834,17 +866,15 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
    
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, -1));
-        zeroes.add(new PairInt(-1, 0));
-        zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, 1));
         zeroes.add(new PairInt(0, 1));
-        zeroes.add(new PairInt(1, 1));
-        zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(2, -1)); zeroes.add(new PairInt(2, 1));
         
         ones.add(new PairInt(0, -1));
         ones.add(new PairInt(1, 0));
         ones.add(new PairInt(2, 0));
+        ones.add(new PairInt(3, 1));
         
         changeToZeroes.add(new PairInt(0, 0));
                     
@@ -856,16 +886,14 @@ public class PostLineThinnerCorrections {
         
     }
     
-    private void correctForWs(Set<PairInt> points, int imageWidth, 
+    private void correctForZigZag000_09(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
         /*        
-        
-        0  0  #         1
-        0  #*<#         0
-        #  #  0        -1
-                       -2
-       -1  0  1  2 
+            #  0  0         1
+            #  #*<0         0
+            0  #  #        -1
+           -1  0  1  2 
         */
         
         LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
@@ -874,14 +902,12 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
     
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, 0));
-        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(-1, 1));
         zeroes.add(new PairInt(0, -1));
-        zeroes.add(new PairInt(1, 1));
+        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
         
-        ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
         ones.add(new PairInt(0, 1));
-        ones.add(new PairInt(1, 0));
         ones.add(new PairInt(1, -1));
         
         changeToZeroes.add(new PairInt(0, 0));
@@ -1116,7 +1142,9 @@ public class PostLineThinnerCorrections {
                 if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
                     continue;
                 }
-                tmpPointsAdded.add(new PairInt(x, y));
+                PairInt p3 = new PairInt(x, y);
+                tmpPointsRemoved.remove(p3);
+                tmpPointsAdded.add(p3);
             }
         }
         
@@ -1142,6 +1170,35 @@ public class PostLineThinnerCorrections {
         }
         
         System.out.println(sb.toString());
+    }
+    
+    private void debugPrint(Set<PairInt> points, 
+        Set<PairInt> addedPoints, Set<PairInt> removedPoints,
+        int xStart, int xStop,
+        int yStart, int yStop) {
+        
+        for (int row = yStop; row >= yStart; row--) {
+            StringBuilder sb = new StringBuilder(String.format("row %4d:  ", row));
+            for (int col = xStart; col <= xStop; col++) {
+                
+                PairInt p = new PairInt(col, row);
+                
+                int v = 0;
+                if (!removedPoints.contains(p) 
+                    && (addedPoints.contains(p) || points.contains(p))) {
+                    v = 1;
+                }
+                String str = (v == 0) ? String.format("     ") : String.format("%4d ", v);
+                sb.append(str);
+            }
+            System.out.println(sb.toString());
+        }
+        StringBuilder sb = new StringBuilder(String.format("        "));
+        for (int col = xStart; col <= xStop; col++) {
+            sb.append(String.format("%4d ", col));
+        }
+        System.out.println(sb.toString());
+        System.out.println("\n");
     }
 
     /**
@@ -1244,88 +1301,6 @@ public class PostLineThinnerCorrections {
        
     }
     
-    /**
-     * removes a hole artifact in inclined lines.  note that this should
-     * probably be adjusted for gaussian convolution combined radius
-     * if used outside of the gradientXY image produced by the
-     * CannyEdgeFilter.
-     * @param input 
-     */
-    private void correctForHoleArtifacts2(Set<PairInt> points, int imageWidth, 
-        int imageHeight) {
-        
-        /*
-        looking for pattern
-        
-         0    0    0    0    0    0     3   4
-         0    0    0    1    1    1     2   3
-         0    0    1    0    1    0     1   2
-         0    1    0    1    1    0     0   1
-         0    1    1*    1    0    0    -1  0
-         0    1    0    0    0    0    -2   -1
-        
-        -2   -1    0    1    2    3                
-        */
-        
-        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
-      
-        // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(0, 2 - 1));
-        zeroes.add(new PairInt(0, -2 - 1));
-        zeroes.add(new PairInt(-1, -1 - 1));
-        zeroes.add(new PairInt(-1, -2 - 1));
-        zeroes.add(new PairInt(-1, -3 - 1));
-        zeroes.add(new PairInt(0, -3 - 1));
-        zeroes.add(new PairInt(1, -3 - 1));
-        zeroes.add(new PairInt(1, -1 - 1));
-        zeroes.add(new PairInt(1, 2 - 1));
-        zeroes.add(new PairInt(2, -3 - 1));
-        zeroes.add(new PairInt(2, 1 - 1));
-        zeroes.add(new PairInt(2, 2 - 1));
-        zeroes.add(new PairInt(-2, -3 - 1));
-        zeroes.add(new PairInt(-2, -2 - 1));
-        zeroes.add(new PairInt(-2, -1 - 1));
-        zeroes.add(new PairInt(-2, 0 - 1));
-        zeroes.add(new PairInt(-2, 1 - 1));
-        zeroes.add(new PairInt(-2, 2 - 1));
-        zeroes.add(new PairInt(3, -3 - 1));
-        zeroes.add(new PairInt(3, -1 - 1));
-        zeroes.add(new PairInt(3, 0 - 1));
-        zeroes.add(new PairInt(3, 1 - 1));
-        zeroes.add(new PairInt(3, 2 - 1));
-        
-        ones.add(new PairInt(0, -1 - 1));
-        ones.add(new PairInt(0, 1 - 1));
-        ones.add(new PairInt(-1, 0 - 1));
-        ones.add(new PairInt(-1, 1 - 1));
-        ones.add(new PairInt(-1, 2 - 1));
-        ones.add(new PairInt(1, -2 - 1));
-        ones.add(new PairInt(1, 0 - 1));
-        ones.add(new PairInt(1, 1 - 1));
-        ones.add(new PairInt(2, -2 - 1));
-        ones.add(new PairInt(2, -1 - 1));
-        ones.add(new PairInt(2, 0 - 1));
-        ones.add(new PairInt(3, -2 - 1));
-    
-        changeToZeroes.add(new PairInt(-1, 0 - 1));
-        changeToZeroes.add(new PairInt(-1, 1 - 1));
-        changeToZeroes.add(new PairInt(0, -1 - 1));
-        changeToZeroes.add(new PairInt(1, -2 - 1));
-        changeToZeroes.add(new PairInt(1, 1 - 1));
-        changeToZeroes.add(new PairInt(2, -2 - 1));
-        changeToZeroes.add(new PairInt(2, 0 - 1));
-                
-        replacePattern(points, imageWidth, imageHeight, 
-            zeroes, ones, changeToZeroes, changeToOnes);
-        
-        rotate90ThreeTimes(points, imageWidth, imageHeight, 
-            zeroes, ones, changeToZeroes, changeToOnes);
-       
-    }
-    
     private void correctForLine0(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
         
@@ -1369,48 +1344,6 @@ public class PostLineThinnerCorrections {
         
         changeToZeroes.add(new PairInt(1, 0 - 1));
         changeToOnes.add(new PairInt(0, 0 - 1));
-                
-        replacePattern(points, imageWidth, imageHeight, 
-            zeroes, ones, changeToZeroes, changeToOnes);
-        
-        rotate90ThreeTimes(points, imageWidth, imageHeight, 
-            zeroes, ones, changeToZeroes, changeToOnes);
-    }
-    
-    /**
-     * possibly decreases sharpness of a true diagonal edge at the expense of
-     * making a better line width for the edge extractor.
-     * @param input 
-     */
-    private void correctForSpurs(Set<PairInt> points, int imageWidth, 
-        int imageHeight) {
-        
-        /*
-        looking for pattern
-                        
-        #  #  0         1
-        0  #*<0         0
-        0  0  0         -1
-        
-       -1  0  1  2
-        */
-        
-        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
-      
-        // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, 1));
-        zeroes.add(new PairInt(-1, 0));
-        zeroes.add(new PairInt(0, 1));
-        zeroes.add(new PairInt(1, 1));
-        zeroes.add(new PairInt(1, -1));
-        
-        ones.add(new PairInt(-1, -1));
-        ones.add(new PairInt(0, -1));
-        
-        changeToZeroes.add(new PairInt(0, 0));
                 
         replacePattern(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
@@ -1657,6 +1590,7 @@ public class PostLineThinnerCorrections {
                     int x = col + p2.getX();
                     int y = row + p2.getY();
                     PairInt p3 = new PairInt(x, y);
+                    tmpPointsRemoved.remove(p3);
                     tmpPointsAdded.add(p3);
                 }
                
@@ -1885,7 +1819,49 @@ public class PostLineThinnerCorrections {
             zeroes, ones, changeToZeroes, changeToOnes);
     }
     
-    private void correctForZigZag000_0(Set<PairInt> points, 
+    private void correctForZigZag000_04(Set<PairInt> points, 
+        int imageWidth, int imageHeight) {
+        
+        /*
+                                3                           3
+               # 0 0 0          2         # 0 0 0          2
+               0 # # 0 0        1         0 # #<0 0        1
+                 0 # #*0        0           0 # #<0        0
+                     0 0       -1               0 0       -1
+        
+        -6-5-4-3-2-1 0 1 2 3       -6-5-4-3-2-1 0 1 2 3
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+        
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, -1));
+        zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -2));
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
+        
+        ones.add(new PairInt(-3, -2));
+        ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+        changeToZeroes.add(new PairInt(-1, -1));
+                
+        replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForZigZag000_03(Set<PairInt> points, 
         int imageWidth, int imageHeight) {
         
         /* diagonal lines on both sides of a narrow cavity are sometimes
@@ -1929,7 +1905,7 @@ public class PostLineThinnerCorrections {
             zeroes, ones, changeToZeroes, changeToOnes);
     }
 
-    private void correctForZigZag000_1(Set<PairInt> points, 
+    private void correctForZigZag000_05(Set<PairInt> points, 
         int imageWidth, int imageHeight) {
         
         /* diagonal lines on both sides of a narrow cavity are sometimes
@@ -2048,7 +2024,9 @@ public class PostLineThinnerCorrections {
             int centerRow = row - 1;
             
             // set the center point
-            tmpPointsAdded.add(new PairInt(col, centerRow));
+            PairInt p3 = new PairInt(col, centerRow);
+            tmpPointsRemoved.remove(p3);
+            tmpPointsAdded.add(p3);
 
             Arrays.fill(neighborsCount, 0);
             Arrays.fill(neighborsIdx, 0);
@@ -2068,9 +2046,9 @@ public class PostLineThinnerCorrections {
                     if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
                         continue;
                     }
-                    PairInt p3 = new PairInt(x2, y2);
-                    if (!tmpPointsRemoved.contains(p3) && 
-                        (tmpPointsAdded.contains(p3) || points.contains(p3))) {
+                    PairInt p4 = new PairInt(x2, y2);
+                    if (!tmpPointsRemoved.contains(p4) && 
+                        (tmpPointsAdded.contains(p4) || points.contains(p4))) {
                         count++;
                     }
                 }
@@ -2089,10 +2067,10 @@ public class PostLineThinnerCorrections {
                 int x2 = col + eightNeighborsX[nIdx];
                 int y2 = centerRow + eightNeighborsY[nIdx];
                 
-                PairInt p3 = new PairInt(x2, y2);
+                PairInt p4 = new PairInt(x2, y2);
 
                 // adds to tmpPointsRemoved
-                boolean nullable = erosionFilter.process(p3, points, 
+                boolean nullable = erosionFilter.process(p4, points, 
                     tmpPointsAdded, tmpPointsRemoved, w, h);
                
             }
@@ -2246,5 +2224,376 @@ public class PostLineThinnerCorrections {
         for (PairInt p2 : tmpPointsAdded) {
             points.add(p2);
         }
+    }
+
+    protected void straightenLines(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        if (edgeGuideImage == null) {
+            return;
+        }
+        
+        /*
+        To move a pixel from one location to a better if possible
+        means determining if the move does not break any line connections.
+        Since the line widths have already been reduced to widths of '1',
+        this should just be a matter of noting which points it is connected
+        to and only choose points which are adjacent to the connected.
+        
+              V
+              *                            V
+           *     *  *  can be moved to  *  *  *  *
+        
+        The neighbors of p are p0 and p1 for example, so
+        points which are within 1 pixel of p, p0, and p1 found as the centroid
+        of them +- 1 pixel radius.
+        
+        Goal is to find if a point in points can be moved within a pixel's 
+        distance, to a position which is closer to the brightest pixel in the 
+        edgeGuideImage within range without breaking connections.
+     
+        For each point in points:
+            -- find the adjacent points.
+            -- determine a centroid for them and the point.
+            -- iterate around the 8 neighboring pixels of point
+               -- initialize maxIntensity w/ the current points's edgeGuideImage
+                  intensity.
+               -- if the pixel is further than 1 from the centroid, discard it,
+                  else, compare the pixel's edgeGuideImage with maxIntensity and
+                  keep if larger.
+            -- if maxIntensityPoint is not null, move the current point to 
+               it (by adding point to the remove list and adding the new location
+               to the add list).
+        */
+
+        double onePixDist = Math.sqrt(2);
+        
+        Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
+        Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
+        
+        Set<PairInt> outputNeighbors = new HashSet<PairInt>();
+        
+        for (PairInt p : points) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            findNeighbors(x, y, outputNeighbors, points, 
+                tmpPointsAdded, tmpPointsRemoved, imageWidth, imageHeight);
+            
+            int nBrs = outputNeighbors.size();
+            
+            if (nBrs == 0) {
+                continue;
+            }
+            
+            // determine centroid
+            double xc = p.getX();
+            double yc = p.getY();
+            for (PairInt p2 : outputNeighbors) {
+                xc += p2.getX();
+                yc += p2.getY();
+            }
+            xc /= (double)(nBrs + 1);
+            yc /= (double)(nBrs + 1);
+            
+            // find highest intensity neighbor within 1 pix of centroid
+            int maxIntensity = edgeGuideImage.getValue(x, y);
+            PairInt maxIntensityPoint = null;
+            
+            for (int i = 0; i < eightNeighborsX.length; i++) {
+                int x2 = x + eightNeighborsX[i];
+                int y2 = y + eightNeighborsY[i];
+                if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) || 
+                    (y2 > (imageHeight - 1))) {
+                    continue;
+                }
+                PairInt p2 = new PairInt(x2, y2);
+                // discard if it's already a point
+                if (outputNeighbors.contains(p2) || tmpPointsAdded.contains(p2) 
+                    || points.contains(p2)) {
+                    continue;
+                }
+                
+                // this is a vacant pixel.
+                
+                // check that it is within 1 pixel of (xc, yc) 
+                double diffX = x2 - xc;
+                double diffY = y2 - yc;
+                double dist = Math.sqrt((diffX * diffX) + (diffY * diffY));
+                
+                if (dist <= (onePixDist/2.)) {
+                    int v = edgeGuideImage.getValue(x2, y2);
+                    if (v > maxIntensity) {
+                        maxIntensity = v;
+                        maxIntensityPoint = p2;
+                    }
+                }
+            }
+            if (maxIntensityPoint != null) {
+                System.out.println(
+                    String.format("\np=(%d,%d) -> (%d,%d)  xc,yc=%f,%f",
+                    p.getX(), p.getY(), maxIntensityPoint.getX(), 
+                    maxIntensityPoint.getY(), (float)xc,(float)yc)
+                );
+                debugPrint(points, tmpPointsAdded, tmpPointsRemoved,
+                    p.getX() - 2, p.getX() + 2, p.getY() - 2, p.getY() + 2);
+                
+                // "change location" of the point.
+                tmpPointsRemoved.add(p);
+                tmpPointsRemoved.remove(maxIntensityPoint);
+                tmpPointsAdded.add(maxIntensityPoint);
+                
+                debugPrint(points, tmpPointsAdded, tmpPointsRemoved,
+                    p.getX() - 2, p.getX() + 2, p.getY() - 2, p.getY() + 2);
+            }
+        }
+        
+        for (PairInt p2 : tmpPointsRemoved) {
+            points.remove(p2);
+        }
+        for (PairInt p2 : tmpPointsAdded) {
+            points.add(p2);
+        }
+        
+    }
+    
+    protected void findNeighbors(int x, int y, Set<PairInt> outputNeighbors,
+        Set<PairInt> points, Set<PairInt> tmpAddedPoints, 
+        Set<PairInt> tmpRemovedPoints, int imageWidth, int imageHeight) {
+        
+        outputNeighbors.clear();
+                
+        for (int i = 0; i < eightNeighborsX.length; i++) {
+            
+            int x2 = x + eightNeighborsX[i];
+            int y2 = y + eightNeighborsY[i];
+            
+            if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) || 
+                (y2 > (imageHeight - 1))) {
+                continue;
+            }
+            
+            PairInt p2 = new PairInt(x2, y2);
+            
+            if (tmpRemovedPoints.contains(p2)) {
+                continue;
+            }
+            if (tmpAddedPoints.contains(p2) || points.contains(p2)) {
+                outputNeighbors.add(p2);
+            }
+        }
+    }
+
+    private void correctForSingleHole_01(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*    
+          0  0  0  0  0         3                           3
+          0  0  #  #  0         2           .  .            2
+          0  #  0  #  #         1        .  0  .  #         1
+          0  #  #  #* 0         0        .  #  #*           0
+             #  0  0  0        -1        #                 -1
+         -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3  
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 0)); zeroes.add(new PairInt(-3, -1));
+        zeroes.add(new PairInt(-3, -2)); zeroes.add(new PairInt(-3, -3));
+        zeroes.add(new PairInt(-2, -2)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -3));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -2)); zeroes.add(new PairInt(1, -3));
+        
+        ones.add(new PairInt(-2, 1)); ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -1)); ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1));
+        
+        changeToZeroes.add(new PairInt(-2, -1));
+        changeToZeroes.add(new PairInt(-2, 0));
+        changeToZeroes.add(new PairInt(-1, -2));
+        changeToZeroes.add(new PairInt(0, -2));
+        changeToZeroes.add(new PairInt(0, -1));
+                    
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForSingleHole_02(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*    
+          0  0  0  0  0         3                           3
+          0  0  #  0  0         2           .               2
+          0  #  0  #  0         1        .  0  .            1
+          0  #  #  #* #         0        .  #  #* #         0
+             #  0  0  0        -1        #                 -1
+         -3 -2 -1  0  1  2           -3 -2 -1  0  1  2        
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 0)); zeroes.add(new PairInt(-3, -1)); 
+        zeroes.add(new PairInt(-3, -2)); zeroes.add(new PairInt(-3, -3));
+        zeroes.add(new PairInt(-2, -2)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -3));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -2)); zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1)); 
+        zeroes.add(new PairInt(1, -2)); zeroes.add(new PairInt(1, -3));
+        
+        ones.add(new PairInt(-2, 1)); ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+        
+        changeToZeroes.add(new PairInt(-2, -1)); changeToZeroes.add(new PairInt(-2, 0));
+        changeToZeroes.add(new PairInt(-1, -2));
+        changeToZeroes.add(new PairInt(0, -1));
+
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForSingleHole_03(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*    
+          0  0  0  0  0         3                           3
+          0  0  #  #  0         2           .  .            2
+          0  #  0  #  #         1        .  0  .  #         1
+          0  #  #  #* 0         0        .  .  #*           0
+          0  0  #  0  0        -1           #              -1
+         -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3  
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 1)); zeroes.add(new PairInt(-3, 0)); zeroes.add(new PairInt(-3, -1));
+        zeroes.add(new PairInt(-3, -2)); zeroes.add(new PairInt(-3, -3));
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, -2)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -3));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, 0)); 
+        zeroes.add(new PairInt(1, -2)); zeroes.add(new PairInt(1, -3));
+        
+        ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -1)); ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1));
+        
+        changeToZeroes.add(new PairInt(-2, 0)); changeToZeroes.add(new PairInt(-2, -1));
+        changeToZeroes.add(new PairInt(-1, 0)); changeToZeroes.add(new PairInt(-1, -2));
+        changeToZeroes.add(new PairInt(0, -1)); changeToZeroes.add(new PairInt(0, -2));
+                    
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForSingleHole_04(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*    
+          0  0  0  0  0         3                           3
+          0  0  #  #  0         2           .  .            2
+          0  #  0  #  0         1        .  0  .            1
+          0  #  #  #* #         0        .  .  #*           0
+          0  0  #  0  0        -1           #              -1
+         -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3  
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 1)); zeroes.add(new PairInt(-3, 0)); zeroes.add(new PairInt(-3, -1));
+        zeroes.add(new PairInt(-3, -2)); zeroes.add(new PairInt(-3, -3));
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, -2)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -3));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1)); 
+        zeroes.add(new PairInt(1, -2)); zeroes.add(new PairInt(1, -3));
+        
+        ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -1)); ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0));
+        
+        changeToZeroes.add(new PairInt(-2, 0)); changeToZeroes.add(new PairInt(-2, -1));
+        changeToZeroes.add(new PairInt(-1, 0)); changeToZeroes.add(new PairInt(-1, -2));
+        changeToZeroes.add(new PairInt(0, -1)); changeToZeroes.add(new PairInt(0, -2));
+                    
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+    }
+    
+    private void correctForSingleHole_05(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*    
+          0  0  0  0  0         3                           3
+          0  0  #  #  0         2           .  .            2
+          0  #  0  #  #         1        .  0  .  #         1
+          #  #  #  #* 0         0        #  #  #*           0
+          0  0  0  0  0        -1                          -1
+         -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3  
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-3, 1)); zeroes.add(new PairInt(-3, -1));
+        zeroes.add(new PairInt(-3, -2)); zeroes.add(new PairInt(-3, -3));
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, -2)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -3));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, 0)); 
+        zeroes.add(new PairInt(1, -2)); zeroes.add(new PairInt(1, -3));
+        
+        ones.add(new PairInt(-3, 0));
+        ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -1)); ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1));
+        
+        changeToZeroes.add(new PairInt(-2, -1));
+        changeToZeroes.add(new PairInt(-1, -2));
+        changeToZeroes.add(new PairInt(0, -1)); changeToZeroes.add(new PairInt(0, -2));
+                    
+        replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        rotate90ThreeTimes(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
     }
 }

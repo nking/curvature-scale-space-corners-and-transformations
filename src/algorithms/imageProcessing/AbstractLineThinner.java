@@ -23,6 +23,20 @@ public abstract class AbstractLineThinner implements ILineThinner {
     protected boolean debug = false;
     
     /**
+     * the gradientXY image to use for straightening the edges if not null
+     */
+    protected GreyscaleImage edgeGuideImage = null;
+    
+    /**
+     * set the image that will be used to help straighten out the the thinned
+     * lines.
+     * @param gradientXY 
+     */
+    public void setEdgeGuideImage(final GreyscaleImage gradientXY) {
+        this.edgeGuideImage = gradientXY;
+    }
+    
+    /**
      * for images which are already line drawings, that is images such as
      * maps with only lines, or for block images, use this to avoid a gap filling
      * stage that fills single pixel gaps surrounded by non-zero pixels.  

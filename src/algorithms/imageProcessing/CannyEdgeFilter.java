@@ -531,6 +531,10 @@ public class CannyEdgeFilter {
             
             lineThinner = lineThinnerClass.newInstance();
             
+            if (gXY != null) {
+                lineThinner.setEdgeGuideImage(gXY);
+            }
+            
             lineThinner.applyFilter(img);
             
         } catch (InstantiationException ex) {

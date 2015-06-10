@@ -25,7 +25,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     @Override
-    public void applyFilter(final GreyscaleImage input) {
+    public void applyFilter(GreyscaleImage input) {
                 
         boolean hasABorderPixel = hasAtLeastOneBorderPixel(input);
         
@@ -50,6 +50,9 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         }
 
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        if (edgeGuideImage != null) {
+            pltc.setEdgeGuideImage(edgeGuideImage);
+        }
         pltc.correctForArtifacts(input2);
                 
         GreyscaleImage input3 = hasABorderPixel ? removeOnePixelBorders(input2)
