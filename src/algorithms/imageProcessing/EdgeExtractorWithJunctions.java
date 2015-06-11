@@ -6,6 +6,7 @@ import algorithms.QuickSort;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -134,13 +135,15 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
 //printJoinPoints(joinPoints, output);
         
         output = joinOnJoinPoints(joinPoints, output);
-  /*      
+ 
         findJunctions(output);
         
+printJunctions(output);
+
+/*        
 can see that can use the junction points next to make decisions
 on whether to divide an edge to make longer edges
 printJunctions();
-        
     */    
         return output;
     }
@@ -810,6 +813,34 @@ printJunctions();
         }
         
         return output;
+    }
+
+    private void printJunctions(List<PairIntArray> edges) {
+        
+        try {
+            
+            Image img2 = img.copyImageToGreen();
+
+            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
+            int nExtraForDot = 1;
+            int rClr = 255;
+            int gClr = 0;
+            int bClr = 100;
+            for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
+                int pixIdx = entry.getKey().intValue();
+                int col = img2.getCol(pixIdx);
+                int row = img2.getRow(pixIdx);
+                ImageIOHelper.addPointToImage(col, row, img2, nExtraForDot,
+                    rClr, gClr, bClr);
+            }
+
+            String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
+            String sep = System.getProperty("file.separator");
+            ImageIOHelper.writeOutputImage(dirPath + sep + "junctions.png", img2);
+            
+        } catch (IOException e) {
+            
+        }
     }
  
 }

@@ -1,17 +1,17 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayComparator;
-import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.logging.Level;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -39,9 +39,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * edge(s).
      */
     protected List<PairIntArray> skylineEdges = new ArrayList<PairIntArray>();
-    
-    protected PairIntArray tCorners = new PairIntArray();
-    
+        
     protected boolean doNotNormalizeByHistogram = false;
     
     protected boolean useLineDrawingMode = false;
@@ -63,6 +61,22 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     protected GreyscaleImage gradientXY = null;
     
     protected GreyscaleImage theta = null;
+    
+    /**
+     * map with key = center of junction pixel coordinates; 
+     * value = set of adjacent pixels when there are more than the preceding 
+     * and next.
+     */
+    private Map<Integer, Set<Integer>> junctionMap = new HashMap<Integer, Set<Integer>>();
+
+    /**
+     * map with key = pixel coordinates of all pixels involved in junctions;
+     * value = PairInt holding index of edge that pixel is located in and
+     * holding the index within that edge of the pixel.
+     * for example, a pixel located in edges(0) at offset=100
+     * would have PairInt(0, 100) as a value.
+     */
+    private Map<Integer, PairInt> junctionLocationMap = new HashMap<Integer, PairInt>();
      
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -176,7 +190,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             //      in order to create shapes instead of creating
             //      lines preferentially.
             // (3) look for t-junctions and closed curves
-            markTheClosedCurvesAndTCorners();
+            markTheClosedCurves();
             
             state = CurvatureScaleSpaceMapperState.INITIALIZED;
         }
@@ -223,7 +237,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             //      in order to create shapes instead of creating
             //      lines preferentially.
             // (3) look for t-junctions and closed curves
-            markTheClosedCurvesAndTCorners();
+            markTheClosedCurves();
             
             state = CurvatureScaleSpaceMapperState.INITIALIZED;
         }
@@ -280,6 +294,26 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
             if (skyEdges.isEmpty()) {
                 return;
+            }
+            
+            if (contourExtractor instanceof EdgeExtractorWithJunctions) {
+            
+                junctionMap.clear();
+                junctionLocationMap.clear();
+            
+                Map<Integer, Set<Integer>> jm = 
+                    ((EdgeExtractorWithJunctions)contourExtractor)
+                        .getJunctionMap();
+                
+                if (!jm.isEmpty()) {
+                    
+                    junctionMap.putAll(jm);
+                    
+                    junctionLocationMap.putAll(
+                        ((EdgeExtractorWithJunctions)contourExtractor)
+                            .getLocatorForJunctionAssociatedPoints()
+                    );
+                }
             }
             
             Collections.sort(skyEdges, new PairIntArrayComparator());
@@ -347,6 +381,26 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             addCurveToImage(edge, output, 0, 255);
         }
         
+        if (contourExtractor instanceof EdgeExtractorWithJunctions) {
+
+            junctionMap.clear();
+            junctionLocationMap.clear();
+            
+            Map<Integer, Set<Integer>> jm
+                = ((EdgeExtractorWithJunctions) contourExtractor)
+                .getJunctionMap();
+
+            if (!jm.isEmpty()) {
+
+                junctionMap.putAll(jm);
+
+                junctionLocationMap.putAll(
+                    ((EdgeExtractorWithJunctions) contourExtractor)
+                    .getLocatorForJunctionAssociatedPoints()
+                );
+            }
+        }
+
         img = output;
         
         state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;
@@ -354,25 +408,13 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         log.fine("edges extracted");
     }
 
-    protected void markTheClosedCurvesAndTCorners() {
+    protected void markTheClosedCurves() {
         
         ClosedCurveAndJunctionFinder ccjFinder = 
             new ClosedCurveAndJunctionFinder();
         
         ccjFinder.findClosedCurves(edges);
-        
-        /*
-              ---@---
-                 |
-                 |
-        */
-        // Fill small gaps in edge contours. When the gap forms a T-junction, 
-        // mark it as a T-corner.
-        // May have already filled these in in the contourextractor.
-        // TODO: revisit this and consider tracking t-junctions in the
-        // contourExtractor when filling a gap
-        // see http://www.diva-portal.org/smash/get/diva2:457189/FULLTEXT01.pdf
-        //  pg 26
+       
     }
   
     public List<PairIntArray> getEdges() {

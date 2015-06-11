@@ -70,6 +70,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps = 
             findCornersInScaleSpaceMaps();
         
+        includeJunctionsInCorners();
     }
     
     @Override
@@ -151,6 +152,8 @@ public class CurvatureScaleSpaceCornerDetector extends
             
             nCorners = corners.getN();
         }
+        
+        includeJunctionsInCorners();
         
         this.edges = prevEdges;
         this.corners = prevCorners;
@@ -1075,6 +1078,10 @@ if (useOutdoorMode) {
             copied.add(edge);
         }
         return copied;
+    }
+
+    private void includeJunctionsInCorners() {
+        // to be implemented
     }
 
 }
