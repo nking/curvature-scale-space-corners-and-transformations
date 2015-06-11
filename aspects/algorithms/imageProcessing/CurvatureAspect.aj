@@ -130,6 +130,96 @@ public aspect CurvatureAspect {
         }
     }
 
+    before() :
+        execution(private void algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector*.includeJunctionsInCorners())
+        && args() 
+	    && target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof CurvatureScaleSpaceCornerDetector)) {
+            return;
+        }
+
+        CurvatureScaleSpaceCornerDetector instance = 
+            (CurvatureScaleSpaceCornerDetector)obj;
+
+        Image img2 = instance.getImage().copyImageToGreen();
+
+        PairIntArray corners = instance.getCornersInOriginalReferenceFrame();
+
+        Map<Integer, Set<Integer>> junctionMap = instance.getJunctionMap();
+
+        PairIntArray junctions = new PairIntArray(junctionMap.size());
+
+        int xOffset = instance.getTrimmedXOffset();
+        int yOffset = instance.getTrimmedYOffset();
+
+        for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
+            
+            int pixIdx = entry.getKey().intValue();
+            
+            int xP = img2.getCol(pixIdx) + xOffset;
+            int yP = img2.getRow(pixIdx) + yOffset;
+
+            junctions.add(xP, yP);
+        }        
+
+        Image img3 = img2.copyImage();
+
+        try {
+            ImageIOHelper.addCurveToImage(corners, img2, 1, 255, 0, 0);
+
+            ImageIOHelper.addCurveToImage(junctions, img3, 1, 255, 0, 0);
+
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/before_junction_corners" + outImgNum + ".png", img2);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/junctions" + outImgNum + ".png", img3);
+
+        } catch (Exception e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    after() returning() :
+        execution(private void algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector*.includeJunctionsInCorners())
+        && args()
+	    && target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof CurvatureScaleSpaceCornerDetector)) {
+            return;
+        }
+
+        CurvatureScaleSpaceCornerDetector instance = 
+            (CurvatureScaleSpaceCornerDetector)obj;
+
+        PairIntArray corners = instance.getCornersInOriginalReferenceFrame();
+
+        Image img2 = instance.getImage().copyImageToGreen();
+
+        int xOffset = instance.getTrimmedXOffset();
+        int yOffset = instance.getTrimmedYOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addCurveToImage(corners, img2, 1, 255, 0, 0);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/after_junction_corners" + outImgNum + ".png", img2);
+
+        } catch (Exception e) {
+            log2.severe("ERROR: " + e.getMessage());
+        }
+
+    }
+
     after(float[] rainbowCoeff, 
         Set<PairInt> rainbowPoints, ImageExt originalColorImage, int xOffset, 
         int yOffset) returning(RainbowFinder.Hull rainbowHull) :

@@ -67,7 +67,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * value = set of adjacent pixels when there are more than the preceding 
      * and next.
      */
-    private Map<Integer, Set<Integer>> junctionMap = new HashMap<Integer, Set<Integer>>();
+    protected Map<Integer, Set<Integer>> junctionMap = new HashMap<Integer, Set<Integer>>();
 
     /**
      * map with key = pixel coordinates of all pixels involved in junctions;
@@ -76,7 +76,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * for example, a pixel located in edges(0) at offset=100
      * would have PairInt(0, 100) as a value.
      */
-    private Map<Integer, PairInt> junctionLocationMap = new HashMap<Integer, PairInt>();
+    protected Map<Integer, PairInt> junctionLocationMap = new HashMap<Integer, PairInt>();
      
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -573,6 +573,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     public GreyscaleImage getGradientXY() {
         return gradientXY;
+    }
+    
+    public Map<Integer, Set<Integer>> getJunctionMap() {        
+        return junctionMap;
     }
     
     /*

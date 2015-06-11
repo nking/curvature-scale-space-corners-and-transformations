@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.NearestPoints;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArrayWithColor;
@@ -7,11 +8,15 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
+import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Level;
 
 /**
@@ -1081,7 +1086,49 @@ if (useOutdoorMode) {
     }
 
     private void includeJunctionsInCorners() {
-        // to be implemented
+        
+        int nTot = corners.getN();
+        
+        int[] x = new int[nTot];
+        int[] y = new int[nTot];
+        
+        System.arraycopy(corners.getX(), 0, x, 0, corners.getN());
+        System.arraycopy(corners.getY(), 0, y, 0, corners.getN());
+
+        Set<PairInt> corners2 = new HashSet<PairInt>();
+        for (int i = 0; i < corners.getN(); i++) {
+            int x2 = corners.getX(i);
+            int y2 = corners.getY(i);
+            corners2.add(new PairInt(x2, y2));
+        }
+        
+        float sepDist = 4;
+        
+        NearestPoints nearestPoints = new NearestPoints(x, y);
+        
+        for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
+            
+            int pixIdx = entry.getKey().intValue();
+            
+            int xP = img.getCol(pixIdx);
+            int yP = img.getRow(pixIdx);
+            
+            Set<PairInt> overlapping = nearestPoints.findNeighbors(xP, yP, 
+                sepDist);
+         
+            for (PairInt p : overlapping) {
+                corners2.remove(p);
+            }
+            
+            corners2.add(new PairInt(xP, yP));
+        }
+        
+        corners = new PairIntArray();
+        
+        for (PairInt p : corners2) {
+            corners.add(p.getX(), p.getY());
+        }
+
     }
 
 }
