@@ -142,8 +142,7 @@ printJunctions(output);
 
 /*        
 can see that can use the junction points next to make decisions
-on whether to divide an edge to make longer edges
-printJunctions();
+on whether to divide an edge to make longer edges too
     */    
         return output;
     }
@@ -529,9 +528,13 @@ printJunctions();
         // visit each junction and make sure the real center is the only one
         // stored
         Set<Integer> remove = new HashSet<Integer>();
+        Set<Integer> doNotRemove = new HashSet<Integer>();
         for (Entry<Integer, Set<Integer>> entry : theJunctionMap.entrySet()) {
             
             Integer pixelIndex = entry.getKey();
+            
+            int col = img.getCol(pixelIndex.intValue());
+            int row = img.getRow(pixelIndex.intValue());
             
             Set<Integer> neighborIndexes = entry.getValue();
             int nN = neighborIndexes.size();
@@ -556,10 +559,18 @@ printJunctions();
                     }
                 }
             }
-            
             if (maxN > Integer.MIN_VALUE) {
                 // remove this pixel
                 remove.add(pixelIndex);
+                assert(!doNotRemove.contains(pixelIndex));
+            } else {
+                doNotRemove.add(pixelIndex);
+                // remove the neighbors from the junction map
+                for (Integer pixelIndex2 : neighborIndexes) { 
+                    if (!doNotRemove.contains(pixelIndex2)) {
+                        remove.add(pixelIndex2);
+                    }
+                }
             }
         }
         
@@ -816,6 +827,11 @@ printJunctions();
     }
 
     private void printJunctions(List<PairIntArray> edges) {
+        printJunctions(this.junctionMap, edges);
+    }
+    
+    private void printJunctions(Map<Integer, Set<Integer>> jMap, 
+        List<PairIntArray> edges) {
         
         try {
             
@@ -826,7 +842,7 @@ printJunctions();
             int rClr = 255;
             int gClr = 0;
             int bClr = 100;
-            for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
+            for (Entry<Integer, Set<Integer>> entry : jMap.entrySet()) {
                 int pixIdx = entry.getKey().intValue();
                 int col = img2.getCol(pixIdx);
                 int row = img2.getRow(pixIdx);
@@ -841,6 +857,25 @@ printJunctions();
         } catch (IOException e) {
             
         }
+    }
+    
+    private String printJunctionsToString(Map<Integer, Set<Integer>> jMap, 
+        List<PairIntArray> edges) {
+
+        StringBuilder sb = new StringBuilder("junctions:\n");
+            
+        int nExtraForDot = 1;
+        int rClr = 255;
+        int gClr = 0;
+        int bClr = 100;
+        for (Entry<Integer, Set<Integer>> entry : jMap.entrySet()) {
+            int pixIdx = entry.getKey().intValue();
+            int col = img.getCol(pixIdx);
+            int row = img.getRow(pixIdx);
+            sb.append(String.format("(%d,%d)\n", col, row));
+        }
+        
+        return sb.toString();
     }
  
 }

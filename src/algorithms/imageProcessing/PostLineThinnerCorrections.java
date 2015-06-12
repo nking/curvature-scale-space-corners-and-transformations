@@ -1102,10 +1102,7 @@ public class PostLineThinnerCorrections {
             
             int col = p.getX();
             int row = p.getY();           
-            
-if (col==386 && row==416) {
-    int z = 1;
-}     
+                
             boolean foundPattern = true;
            
             for (PairInt p2 : zeroes) {
