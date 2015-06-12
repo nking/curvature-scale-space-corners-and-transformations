@@ -38,6 +38,7 @@ public aspect CurvatureAspect {
             plotter9 = new PolygonAndPointPlotter();
             plotter10 = new PolygonAndPointPlotter();
             } catch (IOException e) {
+                e.printStackTrace();
                 log2.severe("ERROR: " + e.getMessage());
             }
         }
@@ -126,6 +127,7 @@ public aspect CurvatureAspect {
                 dirPath + "/gXY_thresh_" + outImgNum + ".png", gXY2);
 
         } catch (Exception e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -150,7 +152,7 @@ public aspect CurvatureAspect {
 
         Map<Integer, Set<Integer>> junctionMap = instance.getJunctionMap();
 
-        PairIntArray junctions = new PairIntArray(junctionMap.size());
+        PairIntArray junctions = new PairIntArray();
 
         int xOffset = instance.getTrimmedXOffset();
         int yOffset = instance.getTrimmedYOffset();
@@ -181,6 +183,7 @@ public aspect CurvatureAspect {
                 dirPath + "/junctions" + outImgNum + ".png", img3);
 
         } catch (Exception e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -215,6 +218,7 @@ public aspect CurvatureAspect {
                 dirPath + "/after_junction_corners" + outImgNum + ".png", img2);
 
         } catch (Exception e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
 
@@ -249,6 +253,7 @@ public aspect CurvatureAspect {
                 clr);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
  
@@ -290,6 +295,7 @@ public aspect CurvatureAspect {
                 dirPath + "/sun_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
 
@@ -312,6 +318,7 @@ public aspect CurvatureAspect {
                 dirPath + "/" + outputPrefixForFileName + "_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+            e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -342,6 +349,7 @@ public aspect CurvatureAspect {
                 dirPath + "/" + outputPrefixForFileName + "_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -370,6 +378,7 @@ public aspect CurvatureAspect {
             ImageIOHelper.writeOutputImage(
                 dirPath + "/sky_gxy_" + outImgNum + ".png", mask);
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
 
@@ -395,6 +404,7 @@ public aspect CurvatureAspect {
                 dirPath + "/sky_points_before_sun_search_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -422,6 +432,7 @@ public aspect CurvatureAspect {
                 dirPath + "/sky_sun_points_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -448,6 +459,7 @@ public aspect CurvatureAspect {
                 dirPath + "/sky_before_find_clouds_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -483,6 +495,7 @@ public aspect CurvatureAspect {
             n3++;
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -551,6 +564,7 @@ private static int n3 = 0;
             plotter.writeFile(outImgNum*10);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -576,6 +590,7 @@ private static int n3 = 0;
                 dirPath + "/sky_before_noncloudcolors_removed_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -602,6 +617,7 @@ private static int n3 = 0;
                 dirPath + "/sky_reflectedsun_removed_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+             e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -628,6 +644,7 @@ private static int n3 = 0;
                 dirPath + "/sky_after_noncloudcolors_removed_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+            e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -656,6 +673,7 @@ private static int n3 = 0;
                 dirPath + "/sky_before_high_contrast_points_removed_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+            e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -684,6 +702,7 @@ private static int n3 = 0;
                 dirPath + "/sky_high_contrast_points_removed_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+            e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -707,6 +726,7 @@ private static int n3 = 0;
                 dirPath + "/sky_from_gradientXY_" + outImgNum + ".png", clr);
 
         } catch (IOException e) {
+            e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -766,6 +786,7 @@ private static int n3 = 0;
                 dirPath + "/matched_contour_peaks2.png", img2);
 
         } catch (IOException e) {
+            e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
 
@@ -812,6 +833,7 @@ private static int n3 = 0;
                 dirPath + "/matched_contour_peaks2.png", img2);
 
         } catch (IOException e) {
+            e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
 
@@ -869,6 +891,7 @@ private static int n3 = 0;
                 dirPath + "/contour_peaks2.png", img2);
 
         } catch (IOException e) {
+            e.printStackTrace();
             log2.severe("ERROR: " + e.getMessage());
         }
     }
@@ -1652,57 +1675,66 @@ private static int n3 = 0;
         }
     }
 
-    private void plotHistogram(GreyscaleImage img, String label) throws 
-    IOException {
+    private void plotHistogram(GreyscaleImage img, String label) {
         
-        float[] v = new float[img.getWidth() * img.getHeight()];
-        float[] ve = new float[v.length];
+        try {
+            float[] v = new float[img.getWidth() * img.getHeight()];
+            float[] ve = new float[v.length];
         
-        int count = 0;
-        for (int i = 0; i < img.getWidth(); i++) {
-            for (int j = 0; j < img.getHeight(); j++) {
-                v[count] = img.getValue(i, j);
-                ve[count] = (float)Math.sqrt(v[count]);
-                count++;
+            int count = 0;
+            for (int i = 0; i < img.getWidth(); i++) {
+                for (int j = 0; j < img.getHeight(); j++) {
+                    v[count] = img.getValue(i, j);
+                    ve[count] = (float)Math.sqrt(v[count]);
+                    count++;
+                }
             }
-        }
-        
-        HistogramHolder h = Histogram.createSimpleHistogram(v, ve);
-        //HistogramHolder h = Histogram.defaultHistogramCreator(v, ve);
-        
-        float[] xh = h.getXHist();
-        float[] xhe = h.getXErrors();
-        float[] yh = h.getYHistFloat();
-        float[] yhe = h.getYErrors();
-        int firstZero = -1;
-        for (int i = (yh.length - 1); i > -1; i--) {
-            if (yh[i] > 0) {
-                break;
-            } else {
-                firstZero = i;
+
+            HistogramHolder h = Histogram.createSimpleHistogram(v, ve);
+            //HistogramHolder h = Histogram.defaultHistogramCreator(v, ve);
+
+            float[] xh = h.getXHist();
+            float[] xhe = h.getXErrors();
+            float[] yh = h.getYHistFloat();
+            float[] yhe = h.getYErrors();
+            int firstZero = -1;
+            for (int i = (yh.length - 1); i > -1; i--) {
+                if (yh[i] > 0) {
+                    break;
+                } else {
+                    firstZero = i;
+                }
             }
+            if (firstZero > -1) {
+                int n = xh.length - firstZero;
+                xh = Arrays.copyOf(xh, n);
+                xhe = Arrays.copyOf(xhe, n);
+                yh = Arrays.copyOf(yh, n);
+                yhe = Arrays.copyOf(yhe, n);
+            }
+
+            float xMax = MiscMath.findMax(xh);
+            float yMax = MiscMath.findMax(yh);
+
+            int yMaxIdx = MiscMath.findYMaxIndex(yh);
+            yMax = yh[yMaxIdx + 3];
+            if (yMax == 0) {
+                yMax = 1;
+            }
+
+            PolygonAndPointPlotter plotter2 = new PolygonAndPointPlotter();
+
+            plotter2.addPlot(0, xMax, 0, yMax, xh, yh, xhe, yhe, label);
+
+            //log2.info("xMax=" + xMax + " yMax=" + yMax + " xh.length=" + xh.length);
+
+            String filePath = plotter2.writeFile3();
+
+            log2.info("filePath=" + filePath);
+        } catch (IOException e) {
+            e.printStackTrace(); 
+            log2.severe("ERROR: " + e.getMessage());
         }
-        if (firstZero > -1) {
-            int n = xh.length - firstZero;
-            xh = Arrays.copyOf(xh, n);
-            xhe = Arrays.copyOf(xhe, n);
-            yh = Arrays.copyOf(yh, n);
-            yhe = Arrays.copyOf(yhe, n);
-        }
-        
-        float xMax = MiscMath.findMax(xh);
-        float yMax = MiscMath.findMax(yh);
-        
-        int yMaxIdx = MiscMath.findYMaxIndex(yh);
-        yMax = yh[yMaxIdx + 3];
-        
-        PolygonAndPointPlotter plotter2 = new PolygonAndPointPlotter();
-        
-        plotter2.addPlot(0, xMax, 0, yMax, xh, yh, xhe, yhe, label);
-        
-        String filePath = plotter2.writeFile3();
-        
-        log2.info("filePath=" + filePath);
     }
 
     public void printContents(ScaleSpaceCurveImage spaceImage) {

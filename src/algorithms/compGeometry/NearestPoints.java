@@ -58,6 +58,9 @@ public class NearestPoints {
             // idx = -*idx2 - 1
             idx = -1*(idx + 1);                
         }
+        if (idx > (x.length - 1)) {
+            idx = x.length - 1;
+        }
         
         int startIdx = idx;
         for (int i = idx; i > -1; --i) {
