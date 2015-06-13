@@ -57,7 +57,7 @@
     <property name="compile.target"      value="1.7"/>
 
     <!-- build all targets -->
-    <!--<target name="all" depends="clean,prepare,compile,compileTests,runTests" />
+    <!--<target name="all" depends="prepare,clean,compile,compileTests,runTests" />
     -->
 
     <!-- print usage: prints all targets -->
@@ -364,7 +364,7 @@
     </target>
 
     <target name="dtraceImageProcessing" if="junit.present" 
-        depends="clean,prepare,debug,compile,JUnit,compileTests">
+        depends="prepare,clean,debug,compile,JUnit,compileTests">
 
         <record name="${logfile}" append="yes" loglevel="debug"/>
 
@@ -428,7 +428,7 @@
         <echo message="use ./run_jacoco_reports.sh"/>
     </target>
 
-    <target name="runTest" if="junit.present" depends="clean,prepare,debug,compile,JUnit,compileTests">
+    <target name="runTest" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
 
         <record name="${logfile}" append="yes" loglevel="debug"/>
 
@@ -457,7 +457,7 @@
         </junit>
     </target>
 
-    <target name="debugTest" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
+    <target name="debugTest" if="junit.present" depends="clean,prepare,debug,compile,JUnit,compileTests">
         <record name="${logfile}" append="yes" loglevel="info"/>
 
         <fail unless="test">
