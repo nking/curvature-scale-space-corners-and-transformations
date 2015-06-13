@@ -130,6 +130,7 @@ public class PostLineThinnerCorrections {
         // better edge extraction at the expense of unsharpening true corners:
         correctForLs(points, w, h);
         correctForLs2(points, w, h);
+        correctForLs2_1(points, w, h);
         correctForLs3(points, w, h);
         correctForLs4(points, w, h);
         
@@ -148,6 +149,7 @@ public class PostLineThinnerCorrections {
         
         correctForLs(points, w, h);
         correctForLs2(points, w, h);
+        correctForLs2_1(points, w, h);
         correctForLs3(points, w, h);
         correctForLs4(points, w, h);
         
@@ -1275,6 +1277,51 @@ public class PostLineThinnerCorrections {
         ones.add(new PairInt(1, 0));
         ones.add(new PairInt(2, 0));
         ones.add(new PairInt(3, 1));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+                    
+        int nCorrections = 0;
+        
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+            Integer.toString(nCorrections));
+        methodNumber++;
+    }
+    
+    protected void correctForLs2_1(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+       
+        /* 
+        a variant of the pattern in correctForZigZag00_5
+        
+        #               2
+        0  #  0  0      1
+        0  #*<#  #      0
+        0  0  0  0     -1
+        
+       -1  0  1  2  3
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+   
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, -1));
+        
+        ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(2, 0));
         
         changeToZeroes.add(new PairInt(0, 0));
                     

@@ -13,7 +13,7 @@ public class LowIntensityRemovalFilter {
 
     public static float defaultLowThreshFactor = 1.0f;
     
-    private float lowThreshFactor = 1.0f;
+    private float lowThreshFactor = 0.9f;//1.0f;
 
     public void overrideLowThresholdFactor(float theFactor) {
         lowThreshFactor = theFactor;
