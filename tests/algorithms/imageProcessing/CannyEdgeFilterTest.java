@@ -1,7 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -11,99 +15,57 @@ import static org.junit.Assert.*;
  */
 public class CannyEdgeFilterTest extends TestCase {
     
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+    
     public CannyEdgeFilterTest() {
-    }
-        
-    public void testLowIntensityFilter() throws Exception {
-        
-        String fileName = "house.gif";
-        //String fileName = "lab.gif";
-        //String fileName = "susan-in_plus.png";
-        //String fileName = "africa.png";
-        //String fileName = "valve_gaussian.png";
-        //String fileName = "lena.jpg";
-                
-        String filePath = ResourceFinder.findFileInTestResources(fileName);
-        
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
-        
-        CannyEdgeFilter filter = new CannyEdgeFilter();
-        
-        if (fileName.equals("susan-in_plus.png") || fileName.equals("africa.png")) {
-            filter.useLineDrawingMode();
-        }
-        
-        filter.applyFilter(img);
-        
-        //Image[] gradientProducts = filter.createGradientProducts(img);                
-        //Image g = gradientProducts[2];
-
-        int z = 1;
-    }
-
-    public void estApply2LayerFilter() throws Exception {
-                
-        String fileName = "house.gif";
-        //String fileName = "lab.gif";
-        //String fileName = "susan-in.gif";
-        //String fileName = "susan-in_plus.png";
-        //String fileName = "africa.png";
-        //String fileName = "valve_gaussian.png";
-        //String fileName = "lena.jpg";
-                
-        String filePath = ResourceFinder.findFileInTestResources(fileName);
-        
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
-                
-        CannyEdgeFilter filter = new CannyEdgeFilter();
-                                
-        GreyscaleImage[] gradientProducts = filter.createGradientProducts(img);
-        
-        assertTrue(gradientProducts.length == 4);
-        
-        GreyscaleImage g = gradientProducts[2];
-
-        filter.apply2LayerFilter(g);
-               
-        //TODO: add qualitative tests...
     }
     
     public void testApplyFilter() throws Exception {
                 
-        //String fileName = "house.gif";
-        String fileName = "lab.gif";
-        //String fileName = "susan-in.gif";
-        //String fileName = "susan-in_plus.png";
-        //String fileName = "africa.png";
-        //String fileName = "valve_gaussian.png";
-        //String fileName = "lena.jpg";
-                
-        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        String[] fileNames = new String[] {
+            "blox.gif",
+            "house.gif",
+            "lab.gif",
+            "africa.png",
+            "susan-in.gif",
+            "valve_gaussian.png",
+            "lena.jpg"
+        };
         
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
-                
-        CannyEdgeFilter filter = new CannyEdgeFilter();
+        for (String fileName : fileNames) {
+                        
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName);
+            
+            GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath1);
+            
+            CannyEdgeFilter filter = new CannyEdgeFilter();
         
-        if (fileName.equals("africa.png")) {
-            filter.useLineDrawingMode();
-        } else if (fileName.contains("susan")) {
-            filter.useLineDrawingMode();
+            if (fileName.equals("africa.png")) {
+                filter.useLineDrawingMode();
+            }
+            
+            int idx = fileName.lastIndexOf(".");
+            String fileNameRoot = fileName.substring(0, idx);
+            
+            filter.applyFilter(img);
+            GreyscaleImage img2 = img.copyImage();
+            img.multiply(200);
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath 
+                + "/linethinned_" + fileNameRoot +".png", img);
+        
+            GreyscaleImage gXY = filter.getGradientXY();
+            
+            // ----- assert line width is 1 pix everywhere exception junctions.
+            // ---- this tests results of the line thinner and post-line
+            // ---- thinner corrections            
+            gXY.multiply(100);
+            ImageIOHelper.writeOutputImage(dirPath + "/gXY+" 
+                + fileNameRoot + ".png", gXY);
+            
+            assertThinnedLines(img2);
         }
-        
-        filter.applyFilter(img);
-        
-              
-        img.multiply(255);
-        //ImageDisplayer.displayImage("canny edge filtered", img);
-        String dirPath = ResourceFinder.findDirectory("bin");
-        ImageIOHelper.writeOutputImage(dirPath + "/linethinned.png", img);
-
-        GreyscaleImage img2 = filter.getGradientXY();
-        img2.multiply(100);
-        ImageIOHelper.writeOutputImage(dirPath + "/gXY.png", img2);
-        
-        //TODO: add qualitative tests...
-        int z = 1;        
+             
     }
     
     public void testApplyHistogramEqualization() {
@@ -249,6 +211,100 @@ public class CannyEdgeFilterTest extends TestCase {
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("ERROR: " + e.getMessage());
+        }
+    }
+
+    private void assertThinnedLines(GreyscaleImage thinnedImg) {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        final int w = thinnedImg.getWidth();
+        final int h = thinnedImg.getHeight();
+        
+        Set<PairInt> points = imageProcessor.readNonZeroPixels(thinnedImg);
+        
+        assertFalse(points.isEmpty());
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        
+        /*    0         2
+           0  #  #  0   1
+        0  #* #  0      0
+           #  0        -1
+       -1  0  1  2  3
+        */
+        Set<PairInt> zeroes = new HashSet<PairInt>();
+        Set<PairInt> ones = new HashSet<PairInt>();
+        zeroes.add(new PairInt(-1, 0));
+        zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -2));
+        zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(3, -1));
+        
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(2, -1));
+        
+        for (int nRot = 0; nRot < 4; ++nRot) {
+        
+            switch(nRot) {
+                case 1:
+                    pltc.reverseXs(zeroes, ones);
+                    break;
+                case 2:
+                    pltc.reverseYs(zeroes, ones);
+                    break;
+                case 3:
+                    pltc.reverseXs(zeroes, ones);
+                    break;
+                default:
+                    break;
+            }
+            
+            for (PairInt p : points) {
+
+                int col = p.getX();
+                int row = p.getY();           
+
+                int patternCount = 0;
+
+                for (PairInt p2 : ones) {
+                    int x = col + p2.getX();
+                    int y = row + p2.getY();
+                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                        patternCount = 0;
+                        break;
+                    }
+                    PairInt p3 = new PairInt(x, y);
+                    if (points.contains(p3)) {
+                        patternCount++;
+                    }
+                }
+                
+                for (PairInt p2 : zeroes) {
+                    int x = col + p2.getX();
+                    int y = row + p2.getY();
+                    if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                        patternCount = 0;
+                        break;
+                    }
+                    PairInt p3 = new PairInt(x, y);
+                    if (!points.contains(p3)) {
+                        patternCount++;
+                    }
+                }
+                
+                if (patternCount == (ones.size() + zeroes.size())) {
+                    
+                    pltc.debugPrint(points, 
+                        new HashSet<PairInt>(), new HashSet<PairInt>(),
+                        col - 2, col + 2, row - 2, row + 2);
+        
+                    fail("col=" + (col + thinnedImg.getXRelativeOffset())
+                        + " row=" + (row + thinnedImg.getYRelativeOffset()));
+                }
+            }
         }
     }
 }

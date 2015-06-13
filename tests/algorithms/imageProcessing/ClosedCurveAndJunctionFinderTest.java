@@ -119,20 +119,6 @@ public class ClosedCurveAndJunctionFinderTest {
         
         return xy;
     }
-
-    @Test
-    public void testFindTJunctions() {
-        
-        // need to lower the threshold in Canny Edge detector for this one I think...
-        List<PairIntArray> edges = new ArrayList<PairIntArray>();
-        
-        ClosedCurveAndJunctionFinder instance = new ClosedCurveAndJunctionFinder();
-        
-        PairIntArray expResult = null;
-        
-        PairIntArray tJunctions = instance.findTJunctions(edges);
-        
-    }
     
     private PairIntArray getTestEdge1() {
         
@@ -451,9 +437,7 @@ public class ClosedCurveAndJunctionFinderTest {
                 new ClosedCurveAndJunctionFinderTest();
             
             test.testFindClosedCurves();
-            
-            test.testFindTJunctions();
-            
+                        
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("ERROR: " + e.getMessage());

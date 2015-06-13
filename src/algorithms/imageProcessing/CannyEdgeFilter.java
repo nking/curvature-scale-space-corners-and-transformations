@@ -311,7 +311,7 @@ public class CannyEdgeFilter {
             lowThreshFactor = 2.0 in LowIntensityRemovalFilter
             threshold2 *= 0.4 here
         */
- 
+
         log.info("threshold2=" + threshold2 + " n0=" + n0 + " n1=" + n1 + 
             " n1/n0=" + r);
         

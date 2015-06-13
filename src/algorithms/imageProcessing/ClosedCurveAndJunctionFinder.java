@@ -38,7 +38,7 @@ public class ClosedCurveAndJunctionFinder {
             
             PairIntArray edge = edges.get(i);
             
-            if (edge.getN() < minEdgePoints) {
+            if (edge.getN() < minEdgePoints || edge.getN() < 2) {
                 continue;
             }
             
@@ -148,16 +148,4 @@ public class ClosedCurveAndJunctionFinder {
         }
     }
     
-    /**
-     * not yet implemented.  returns an empty point list.
-     * 
-     * @param edges
-     * @return 
-     */
-    public PairIntArray findTJunctions(List<PairIntArray> edges) {
-        
-        PairIntArray junctions = new PairIntArray();
-        
-        return junctions;
-    }
 }
