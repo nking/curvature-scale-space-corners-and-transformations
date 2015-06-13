@@ -403,12 +403,9 @@ public class PostLineThinnerCorrections {
         changeToZeroes.add(new PairInt(0, -1));
                     
         int nCorrections = 0;
-        log.info("correctForRemaining:");
+       
         nCorrections += replacePattern(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
-        
-        debugPrint(points, new HashSet<PairInt>(), new HashSet<PairInt>(),
-            180 - 2, 180 + 2, 182 - 2, 182 + 2);
         
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
