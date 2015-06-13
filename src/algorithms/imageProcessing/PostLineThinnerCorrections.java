@@ -151,7 +151,7 @@ public class PostLineThinnerCorrections {
         correctForLs3(points, w, h);
         correctForLs4(points, w, h);
         
-        correctForRemaining(points, w, h);
+        //correctForRemaining(points, w, h);
     }
     
     private int methodNumber = 0;
