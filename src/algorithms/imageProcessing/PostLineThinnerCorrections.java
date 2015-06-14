@@ -58,13 +58,18 @@ public class PostLineThinnerCorrections {
         final int h = input.getHeight();
         
         Set<PairInt> points = imageProcessor.readNonZeroPixels(input);
+          
+        for (int i = 0; i < 1; i++) {
+            straightenLines(points, w, h);
+        }
         
         correctForArtifacts(points, w, h);
         
-        straightenLines(points, w, h);
+        for (int i = 0; i < 2; i++) {
+            straightenLines(points, w, h);
+        }
         
         correctForArtifacts(points, w, h);
-        
 
         imageProcessor.writeAsBinaryToImage(input, points);
 

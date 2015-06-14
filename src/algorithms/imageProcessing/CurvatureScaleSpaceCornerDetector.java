@@ -6,6 +6,7 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
@@ -235,7 +236,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         return scaleSpaceMaps;
     }
-
+    
     /**
      * find the corners in the given scale space map.  
      * The corners are found using the curvature minima and maxima points in 
@@ -260,7 +261,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
         
         float[] outputLowThreshold = new float[1];
-        
+
         List<Integer> minimaAndMaximaIndexes = findMinimaAndMaximaInCurvature(
             k, outputLowThreshold);
 
@@ -311,7 +312,7 @@ public class CurvatureScaleSpaceCornerDetector extends
             
             xy.add(scaleSpace.getX(idx), scaleSpace.getY(idx));
         }
-        
+
         return xy;
     }
     
@@ -346,7 +347,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         PairFloatArray candidateCornersXY = 
             findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, true,
             isAClosedCurve);
-        
+
         SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);
 
         SIGMA prevSigma = maxSIGMA;
@@ -357,14 +358,14 @@ public class CurvatureScaleSpaceCornerDetector extends
             ScaleSpaceCurve scaleSpace = scaleSpaceCurves.get(sigma);
 
             refinePrimaryCoordinates(candidateCornersXY.getX(), 
-                candidateCornersXY.getY(), scaleSpace, prevSigma, 
-                edgeNumber, isAClosedCurve);
+                candidateCornersXY.getY(), candidateCornersXY.getN(),
+                scaleSpace, prevSigma, edgeNumber, isAClosedCurve);
             
             prevSigma = sigma;
 
             sigma = SIGMA.divideBySQRT2(sigma);
         }
-        
+   
         log.log(Level.FINE, "number of corners adding ={0}", 
             Integer.valueOf(candidateCornersXY.getN()));
         
@@ -501,15 +502,29 @@ public class CurvatureScaleSpaceCornerDetector extends
             }
         }
         
-        float kMax = MiscMath.findMax(k);
+        if (k.length < 3) {
+            return new ArrayList<Integer>();
+        }
+        
+        float[] kQuartiles = ImageStatisticsHelper.getQuartiles(k);
+        
+        log.info("quartiles=" + Arrays.toString(kQuartiles));
+        
+        //float kMax = MiscMath.findMax(k);
         
         // determine float lowThresh
-        HistogramHolder h = Histogram.calculateSturgesHistogramRemoveZeroTail(
-            k, Errors.populateYErrorsBySqrt(k));
+        HistogramHolder h = Histogram.calculateSturgesHistogram(
+            0, 2 * kQuartiles[2], k, Errors.populateYErrorsBySqrt(k));
         
         if (h.getXHist().length < 3) {
             return new ArrayList<Integer>();
         }
+       
+        /*
+        try {
+            h.plotHistogram("curvature", 283746);
+        } catch (Exception e) {}
+        */
         
         int[] firstPeakAndMinIdx = findFirstPeakAndMinimum(h);
        
@@ -519,20 +534,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         if (firstPeakAndMinIdx[1] >= (h.getYHist().length >> 1)) {
             firstPeakAndMinIdx[1] = 1;
         }
-        
-        if (kMax/(h.getXHist()[firstPeakAndMinIdx[1]]) > 10000) {
-            
-            h = Histogram.calculateSturgesHistogram(
-                0, kMax, k, Errors.populateYErrorsBySqrt(k));
-            
-            firstPeakAndMinIdx = findFirstPeakAndMinimum(h);
-        }
-        
-        /*
-        try {
-            h.plotHistogram("curvature", 283746);
-        } catch (Exception e) {}
-        */
         
         // sum intensity <= firstMinIdx and then after to compare
         long sum0 = 0;
@@ -573,16 +574,17 @@ public class CurvatureScaleSpaceCornerDetector extends
         List<Integer> minMaxIndexes = new ArrayList<Integer>();
         
         float lastK = k[0];
-        int lastMinIdx = -1;
         boolean incr = true;
         for (int ii = 1; ii < k.length; ii++) {
+
+            float currentK = k[ii];
             
-            if ((k[ii] < lastK) && incr) {
+            if ((currentK < lastK) && incr) {
                 if (k[ii - 1] > outputLowThreshold[0]) {
                     minMaxIndexes.add(Integer.valueOf(ii - 1));
                 }
                 incr = false;
-            } else if ((k[ii] > lastK) && !incr) {
+            } else if ((currentK > lastK) && !incr) {
                 // values below outputLowThreshold[0] are handled by 
                 // callers.  TODO: redesign the caller and this method
                 // to not need to understand peculiarities of the data.
@@ -590,7 +592,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                 incr = true;
             }
 
-            lastK = k[ii];
+            lastK = currentK;
         }
         
         if (incr) {
@@ -616,7 +618,7 @@ public class CurvatureScaleSpaceCornerDetector extends
 
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima 
 
-        float factorAboveMin = 3.5f;// 10 misses some corners
+        float factorAboveMin = 2.5f;//3.5f;// 10 misses some corners
 
 if (useOutdoorMode) {
     factorAboveMin = 3.5f;//10.f;
@@ -663,7 +665,7 @@ if (useOutdoorMode) {
                         if (compare < lowThreshold) {
                             // avoids divide by very small number sometimes
                             compare = lowThreshold;
-                        }
+                        }                        
                         if (k[idx] >= factorAboveMin * compare) {
                             cornerCandidates.add(Integer.valueOf(idx));
                         }
@@ -688,7 +690,7 @@ if (useOutdoorMode) {
      * @param previousSigma
      * @param edgeNumber included for debugging
      */
-    private void refinePrimaryCoordinates(float[] xc, float[] yc, 
+    private void refinePrimaryCoordinates(float[] xc, float[] yc, int xyLength,
         ScaleSpaceCurve scaleSpace, SIGMA previousSigma,
         int edgeNumber, boolean isAClosedCurve) {
         
@@ -705,10 +707,14 @@ if (useOutdoorMode) {
         //TODO: this may need to be altered to a smaller value
         float maxSepSq = Gaussian1D.estimateHWZI(previousSigma, 0.01f);
         maxSepSq *= maxSepSq;
-            
+        
+        if (maxSepSq > 4) {
+            maxSepSq = 4;
+        }
+        
         // revise the points in {xc, yc} to the closest in {xc2, yc2}
         boolean[] matchedNew = new boolean[xy2.getN()];
-        for (int j = 0; j < xc.length; j++) {
+        for (int j = 0; j < xyLength; j++) {
             float x = xc[j];
             float y = yc[j];
             float minSepSq = Float.MAX_VALUE;
@@ -849,36 +855,47 @@ if (useOutdoorMode) {
         // until the methods used by findJaggedLineSegments and 
         // findJaggedLineSegments2 are simplified, use both separately
         // and keep the solution which results in fewer corners.
-        
+         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        PairIntArray jaggedLineSegments1 = curveHelper.findJaggedLineSegments(
-            xyCurve);
+        PairIntArray jaggedLineSegments1 = 
+            curveHelper.findJaggedLineSegments(xyCurve);
         
-        PairIntArray jaggedLineSegments2 = curveHelper.findJaggedLineSegments2(
-            xyCurve);
+        PairIntArray jaggedLineSegments2 = 
+            curveHelper.findJaggedLineSegments2(xyCurve);
                         
         List<Integer> remove1 = new ArrayList<Integer>();
         
         List<Integer> remove2 = new ArrayList<Integer>();
             
         for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
+            
             int idx = maxCandidateCornerIndexes.get(ii);
+            
             if (isAClosedCurve && ((idx < 3) || (idx > (xyCurve.getN() - 4)))) {
                 // keep 
+            
             } else if ((idx < 4) || (idx > (xyCurve.getN() - 5))) {
+                
                 remove1.add(Integer.valueOf(ii));
                 remove2.add(Integer.valueOf(ii));
+                
             } else {
-                //TODO: make this result less sensitive to minDistFromBoundary
-                boolean isInARange1 = isWithinARange(jaggedLineSegments1, idx, 
+                
+                //TODO: make this result less sensitive to minDistFromBoundary                
+                int range1Idx = isWithinARange(jaggedLineSegments1, idx, 
                     3);
-                if (isInARange1) {
-                    remove1.add(Integer.valueOf(ii));
+
+                if (range1Idx > -1) {
+                    
+                    int last1Idx = jaggedLineSegments1.getN() - 1;
+                    
+                    if ((range1Idx > 0) && (range1Idx < last1Idx)) {
+                        remove1.add(Integer.valueOf(ii));
+                    }
                 }
-                boolean isInARange2 = isWithinARange(jaggedLineSegments2, idx, 
-                    3);
-                if (isInARange2) {
+                int range2Idx = isWithinARange(jaggedLineSegments2, idx, 3);
+                if (range2Idx > -1) {
                     remove2.add(Integer.valueOf(ii));
                 }
             }
@@ -935,18 +952,18 @@ if (useOutdoorMode) {
      * @param minDistFromEnds
      * @return 
      */
-    private boolean isWithinARange(PairIntArray lineRangeSegments, int idx,
+    private int isWithinARange(PairIntArray lineRangeSegments, int idx,
         int minDistFromEnds) {
         
         if ((lineRangeSegments == null) || (lineRangeSegments.getN() == 0)) {
-            return false;
+            return -1;
         }
         
         // search outside of bounds first:
         if (idx < lineRangeSegments.getX(0)) {
-            return false;
+            return -1;
         } else if (idx > lineRangeSegments.getY(lineRangeSegments.getN() - 1)) {
-            return false;
+            return -1;
         }
         
         for (int i = 0; i < lineRangeSegments.getN(); i++) {
@@ -957,11 +974,11 @@ if (useOutdoorMode) {
             if ((idx >= (idx0 + minDistFromEnds)) 
                 && (idx <= (idx1 - minDistFromEnds))) {
                 
-                return true;
+                return i;
             }
         }
         
-        return false;
+        return -1;
     }
     
     void printCurvature(ScaleSpaceCurve scaleSpace) {

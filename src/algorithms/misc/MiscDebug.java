@@ -2,6 +2,8 @@ package algorithms.misc;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -9,6 +11,24 @@ import java.util.Set;
  * @author nichole
  */
 public class MiscDebug {
+    
+    public static int findEdgeContainingPoint(List<PairIntArray> edges, 
+        int startX, int stopX, int startY, int stopY) {
+        
+        for (int i = 0; i < edges.size(); ++i) {
+            
+            PairIntArray edge = edges.get(i);
+            
+            for (int eIdx = 0; eIdx < edge.getN(); ++eIdx) {
+                int x = edge.getX(eIdx);
+                int y = edge.getY(eIdx);
+                if ((x >= startX) && (x <= stopX) && (y >= startY) && (y <= stopY)) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
     
     public static String getInvokingMethodName() {
         

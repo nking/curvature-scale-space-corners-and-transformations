@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
@@ -22,30 +23,58 @@ public class CannyEdgeFilterTest extends TestCase {
     
     public void testApplyFilter() throws Exception {
                 
-        String[] fileNames = new String[] {
-            "blox.gif",
-            "house.gif",
-            "lab.gif",
-            "africa.png",
-            "susan-in.gif",
-            "valve_gaussian.png",
-            "lena.jpg"
-        };
+        Set<String> outdoorFiles = new HashSet<String>();
+        /*outdoorFiles.add("brown_lowe_2003_image1.jpg");
+        outdoorFiles.add("venturi_mountain_j6_0001.png");
+        outdoorFiles.add("seattle.jpg");
+        outdoorFiles.add("arches.jpg");
+        outdoorFiles.add("stinson_beach.jpg");
+        outdoorFiles.add("cloudy_san_jose.jpg");
+        outdoorFiles.add("stonehenge.jpg");
+        outdoorFiles.add("norwegian_mtn_range.jpg");
+        outdoorFiles.add("halfdome.jpg");
+        outdoorFiles.add("costa_rica.jpg");
+        outdoorFiles.add("new-mexico-sunrise_w725_h490.jpg");
+        outdoorFiles.add("arizona-sunrise-1342919937GHz.jpg");
+        outdoorFiles.add("sky_with_rainbow.jpg");
+        outdoorFiles.add("sky_with_rainbow2.jpg");
+        outdoorFiles.add("arches_sun_01.jpg");
+        outdoorFiles.add("stlouis_arch.jpg");
+        //outdoorFiles.add("30.jpg");
+        */
+        
+        Set<String> testFiles = new HashSet<String>();
+        //testFiles.add("blox.gif");
+        //testFiles.add("house.gif");
+        //testFiles.add("lab.gif");
+        testFiles.add("africa2.png");
+        //testFiles.add("susan-in.gif");
+        //testFiles.add("valve_gaussian.png");
+        //testFiles.add("lena.jpg");
+        
+        Set<String> fileNames = new HashSet<String>();
+        fileNames.addAll(testFiles);
+        fileNames.addAll(outdoorFiles);
         
         for (String fileName : fileNames) {
                         
             String filePath1 = ResourceFinder.findFileInTestResources(fileName);
             
+            int idx = fileName.lastIndexOf(".");
+            String fileNameRoot = fileName.substring(0, idx);
+            
+            log.info("fileName=" + fileName);
+            
             GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath1);
             
             CannyEdgeFilter filter = new CannyEdgeFilter();
         
-            if (fileName.equals("africa.png")) {
+            if (fileName.equals("africa2.png")) {
                 filter.useLineDrawingMode();
             }
-            
-            int idx = fileName.lastIndexOf(".");
-            String fileNameRoot = fileName.substring(0, idx);
+            if (outdoorFiles.contains(fileName)) {
+            //    filter.useOutdoorMode();
+            }
             
             filter.applyFilter(img);
             GreyscaleImage img2 = img.copyImage();
@@ -297,7 +326,7 @@ public class CannyEdgeFilterTest extends TestCase {
                 
                 if (patternCount == (ones.size() + zeroes.size())) {
                     
-                    pltc.debugPrint(points, 
+                    MiscDebug.debugPrint(points, 
                         new HashSet<PairInt>(), new HashSet<PairInt>(),
                         col - 2, col + 2, row - 2, row + 2);
         

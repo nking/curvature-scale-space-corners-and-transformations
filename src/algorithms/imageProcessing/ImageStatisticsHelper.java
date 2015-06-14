@@ -66,6 +66,10 @@ public class ImageStatisticsHelper {
      */
     public static float[] getQuartiles(float[] a) {
         
+        if (a.length < 3) {
+            throw new IllegalArgumentException("a.length must be at least 3");
+        }
+        
         float[] c = Arrays.copyOf(a, a.length);
         
         Arrays.sort(c);
