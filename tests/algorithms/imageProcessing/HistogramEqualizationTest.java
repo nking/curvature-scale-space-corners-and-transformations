@@ -237,7 +237,7 @@ public class HistogramEqualizationTest {
         String fileName = "house.gif";
         //String fileName = "lab.gif";
         //String fileName = "susan-in.gif";
-        //String fileName = "africa.png";
+        //String fileName = "africa2.png";
         //String fileName = "valve_gaussian.png";
         //String fileName = "lena.jpg";
         
