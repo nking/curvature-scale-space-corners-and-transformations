@@ -132,13 +132,13 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         //O(N)
         Map<PairInt, PairInt> joinPoints = findJoinPoints(output);
         
-//printJoinPoints(joinPoints, output);
+        //printJoinPoints(joinPoints, output);
         
         output = joinOnJoinPoints(joinPoints, output);
  
         findJunctions(output);
         
-printJunctions(output);
+        //printJunctions(output);
 
 /*        
 can see that can use the junction points next to make decisions
@@ -190,27 +190,34 @@ on whether to divide an edge to make longer edges too
         
         int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
         int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
+        Set<Integer> indexes = new HashSet<Integer>(); 
                 
         // 8 * O(N)
         for (int edgeIdx = 0; edgeIdx < n; edgeIdx++) {
             
             PairIntArray edge = edges.get(edgeIdx);
             
-            for (int iEdgeIdx = 0; iEdgeIdx < edge.getN(); iEdgeIdx++) {
+            for (int indexWithinEdge = 0; indexWithinEdge < edge.getN(); 
+                indexWithinEdge++) {
                 
-                int col = edge.getX(iEdgeIdx);
-                int row = edge.getY(iEdgeIdx);
+                int col = edge.getX(indexWithinEdge);
+                int row = edge.getY(indexWithinEdge);
                 
-                int pixIdx = img.getIndex(col, row);
-                
-                Set<PairInt> neighbors = new HashSet<PairInt>();
-                int nDifferentEdgeThanUEdge = 0;
-                
-                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
-                    
+                int uIdx = img.getIndex(col, row);
+                                
+                indexes.clear();
+                indexes.add(Integer.valueOf(edgeIdx));
+                                
+                // take the closest among the neighbors or if the same
+                // distance, take the one which is located on the end
+                // of it's edge
+                PairInt closestP = null;
+                int closestDistSq = Integer.MAX_VALUE;
+                        
+                for (int nIdx = 0; nIdx < dxs.length; nIdx++) {                    
                     int x = col + dxs[nIdx];
                     int y = row + dys[nIdx];
-                    
                     if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
                         continue;
                     }
@@ -218,200 +225,32 @@ on whether to divide an edge to make longer edges too
                     int vIdx = img.getIndex(x, y);
                     
                     PairInt vLoc = pointLocator.get(Integer.valueOf(vIdx));
-                    
+                   
                     if (vLoc != null) {
-                        neighbors.add(vLoc);
-                        
                         if (vLoc.getX() != edgeIdx) {
-                            nDifferentEdgeThanUEdge++;
+                            int diffX = x - col;
+                            int diffY = y - row;
+                            if ((Math.abs(diffX) < 2) && (Math.abs(diffY) < 2)) {
+                                int distSq = (diffX * diffX) + (diffY * diffY);
+                                if (distSq < closestDistSq) {
+                                    closestP = vLoc;
+                                    closestDistSq = distSq;
+                                    indexes.add(Integer.valueOf(vLoc.getX()));
+                                }
+                            }
                         }
                     }
                 }
                 
-                // if there is a junction, but there is actually only one
-                // other edge aside from edge, this is a join point w/ the closest point
-                if ((neighbors.size() > 2) && (nDifferentEdgeThanUEdge == 1)) {
-                    // we want a junction point between the closest members of edge
-                    // to the point in the other edge.
-                    // the test for this each time one of the same points is
-                    // iEdgeIdx and the write of the result should be idempotent.
+                if (indexes.size() == 2) {
                     
-                    PairInt nonEdge = null;
-                    for (PairInt p : neighbors) {
-                        if (p.getX() != edgeIdx) {
-                            nonEdge = p;
-                            break;
-                        }
-                    }
-                    int nonEdgeX = edges.get(nonEdge.getX()).getX(nonEdge.getY());
-                    int nonEdgeY = edges.get(nonEdge.getX()).getY(nonEdge.getY());
-                    
-                    // init w/ the "u" value
-                    int closestIEdgeIdx = iEdgeIdx;
-                    int closestDistSq = ((col - nonEdgeX)*(col - nonEdgeX)) + 
-                        ((row - nonEdgeY)*(row - nonEdgeY));
-                    
-                    for (PairInt p : neighbors) {
-                        if (p.getX() == edgeIdx) {
-                            int x2 = edges.get(p.getX()).getX(p.getY());
-                            int y2 = edges.get(p.getX()).getY(p.getY());
-                            int diffX = x2 - nonEdgeX;
-                            int diffY = y2 - nonEdgeY;
-                            int distSq = (diffX * diffX) + (diffY * diffY);
-                            if (distSq < closestDistSq) {
-                                closestIEdgeIdx = p.getY();
-                                closestDistSq = distSq;
-                            }
-                        }
-                    }
-                    
-                    theJoinPoints.put(new PairInt(edgeIdx, closestIEdgeIdx), 
-                        nonEdge);
-                     
-                } else if (neighbors.size() == 2) {
-                    
-                    // if they are not in the same edge already, this is a
-                    // potential join point
-                    
-                    // key = edge index
-                    // value = set of pairints of edge index and index within edge
-                    Map<Integer, Set<PairInt>> edgeIndexLocatorMap 
-                        = new HashMap<Integer, Set<PairInt>>();
-                    
-                    Set<PairInt> v = new HashSet<PairInt>();
-                    v.add(new PairInt(edgeIdx, iEdgeIdx));
-                    
-                    edgeIndexLocatorMap.put(Integer.valueOf(edgeIdx), v);
-                    
-                    for (PairInt p : neighbors) {
-                        
-                        int eIdx = p.getX();
-                        int iEIdx = p.getY();
-                        
-                        v = edgeIndexLocatorMap.get(Integer.valueOf(eIdx));
-                        
-                        if (v == null) {
-                            v = new HashSet<PairInt>();
-                        }
-                        
-                        v.add(new PairInt(eIdx, iEIdx));
-                        
-                        edgeIndexLocatorMap.put(Integer.valueOf(eIdx), v);
-                    }
-                    
-                    if (edgeIndexLocatorMap.size() >= 2) {
-                        
-                        // store joinPoints for pairs of points in different 
-                        // edges and adjacent
-                        Iterator<Entry<Integer, Set<PairInt>>> iter = 
-                            edgeIndexLocatorMap.entrySet().iterator();
-                        
-                        while (iter.hasNext()) {
-                            
-                            Entry<Integer, Set<PairInt>> entry = iter.next();
-                            
-                            int e0Idx = entry.getKey().intValue();
-                            
-                            for (PairInt p0 : entry.getValue()) {
-                                
-                                Iterator<Entry<Integer, Set<PairInt>>> iter2 = 
-                                    edgeIndexLocatorMap.entrySet().iterator();
-                                
-                                Entry<Integer, Set<PairInt>> entry2 = iter2.next();
-                                
-                                if (entry.equals(entry2)) {
-                                    continue;
-                                }
-                                
-                                int e2Idx = entry2.getKey().intValue();
-                                
-                                if (e0Idx == e2Idx) {
-                                    continue;
-                                }
-                                
-                                //TODO: need to improve decision when not appending to first or last
-                                // they might all need to be distance based, like the last
-                                // else block
-                                
-                                int iEIdx = p0.getY();
-                                PairIntArray e0 = edges.get(e0Idx);
-                                int x0 = e0.getX(iEIdx);
-                                int y0 = e0.getY(iEIdx);
-                                int lastIdx0 = e0.getN() - 1;
-                                if ((iEIdx != 0) && (iEIdx != lastIdx0)) {
-                                    int dIdxStart = iEIdx;
-                                    int dIdxStop = lastIdx0 - iEIdx;
-                                    int reassignIdx = 0;
-                                    if (dIdxStart < dIdxStop) {
-                                        reassignIdx = 0;
-                                    } else if (dIdxStart < dIdxStop) {
-                                        reassignIdx = lastIdx0;
-                                    } else {
-                                        // choose by proximity
-                                        int diffFirstX = e0.getX(0) - x0;
-                                        int diffFirstY = e0.getY(0) - y0;
-                                        int distFirstSq = (diffFirstX*diffFirstX) + (diffFirstY*diffFirstY);
-                                        int diffLastX = e0.getX(lastIdx0) - x0;
-                                        int diffLastY = e0.getY(lastIdx0) - y0;
-                                        int distLastSq = (diffLastX*diffLastX) + (diffLastY*diffLastY);
-                                        if (distFirstSq < distLastSq) {
-                                            reassignIdx = 0;
-                                        } else {
-                                            reassignIdx = lastIdx0;
-                                        }
-                                    }
-                                    p0.setY(reassignIdx);
-                                    iEIdx = reassignIdx;
-                                    x0 = e0.getX(iEIdx);
-                                    y0 = e0.getY(iEIdx);
-                                }
-                                
-                                for (PairInt p2 : entry2.getValue()) {
-                                    int iE2Idx = p2.getY();
-                                    PairIntArray e2 = edges.get(e2Idx);
-                                    int x2 = e2.getX(iE2Idx);
-                                    int y2 = e2.getY(iE2Idx);
-                                    int lastIdx2 = e2.getN() - 1;                                    
-                                    if ((iE2Idx != 0) && (iE2Idx != lastIdx2)) {
-                                        int dIdxStart = iE2Idx;
-                                        int dIdxStop = lastIdx2 - iE2Idx;
-                                        int reassignIdx = 0;
-                                        if (dIdxStart < dIdxStop) {
-                                            reassignIdx = 0;
-                                        } else if (dIdxStart < dIdxStop) {
-                                            reassignIdx = lastIdx2;
-                                        } else {
-                                            // choose by proximity
-                                            int diffFirstX = e2.getX(0) - x2;
-                                            int diffFirstY = e2.getY(0) - y2;
-                                            int distFirstSq = (diffFirstX*diffFirstX) + (diffFirstY*diffFirstY);
-                                            int diffLastX = e2.getX(lastIdx2) - x2;
-                                            int diffLastY = e2.getY(lastIdx2) - y2;
-                                            int distLastSq = (diffLastX*diffLastX) + (diffLastY*diffLastY);
-                                            if (distFirstSq < distLastSq) {
-                                                reassignIdx = 0;
-                                            } else {
-                                                reassignIdx = lastIdx2;
-                                            }
-                                        }
-                                        p2.setY(reassignIdx);
-                                        iE2Idx = reassignIdx;
-                                        x2 = e2.getX(iE2Idx);
-                                        y2 = e2.getY(iE2Idx);
-                                    }                                    
-                                    
-                                    int diffX = Math.abs(x2 - x0);
-                                    int diffY = Math.abs(y2 - y0);
-                                    if ((diffX < 2) && (diffY < 2)) {
-                                        theJoinPoints.put(p0, p2);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    theJoinPoints.put(new PairInt(edgeIdx, indexWithinEdge), 
+                        closestP);
                 }
             }
         }
+        
+ // TODO: consolidate or reassign?
         
         return theJoinPoints;
     }

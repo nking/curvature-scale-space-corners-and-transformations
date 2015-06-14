@@ -119,6 +119,7 @@ public class CannyEdgeFilter {
     
     public void useOutdoorMode() {
         
+        //TODO: this is in progress and not yet fixed values
         useOutdoorMode = true;
         
         highThreshold = 50.0f;

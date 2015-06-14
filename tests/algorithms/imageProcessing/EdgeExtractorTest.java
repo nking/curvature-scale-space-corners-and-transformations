@@ -20,20 +20,6 @@ public class EdgeExtractorTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public EdgeExtractorTest(String testName) {
-        super(testName);
-    }
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-    }
-    
     public List<PairIntArray> getJunctionEdges0() {
     
         /*
@@ -1354,13 +1340,18 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
     
     public void testFindEdges() throws Exception {
                 
-        String fileName = "africa.png";
+        String fileName = "africa2.png";
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleG(filePath);
+        GreyscaleImage img = ImageIOHelper.readImageAsBinary(filePath);
         
         log.info("fileName=" + fileName);
+        
+        {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/test.png", img);
+        }
         
         // get a line thinned image:
         CannyEdgeFilter edgeFilter = new CannyEdgeFilter();
@@ -1421,7 +1412,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         String fileName = "lab.gif";
         //String fileName = "susan-in.gif";
         //String fileName = "susan-in_plus.png";
-        //String fileName = "africa.png";
+        //String fileName = "africa2.png";
         //String fileName = "valve_gaussian.png";
         //String fileName = "lena.jpg";
         //String fileName = "middlebury_cones_im2.png";
@@ -1576,4 +1567,17 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         return xy;
     }
     
+    public static void main(String[] args) {
+        
+        try {
+            
+            EdgeExtractorTest test = new EdgeExtractorTest();
+            
+            test.testFindEdges2();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("ERROR: " + e.getMessage());
+        }
+    }
 }

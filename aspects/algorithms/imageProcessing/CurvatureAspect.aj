@@ -896,6 +896,50 @@ private static int n3 = 0;
         }
     }
 
+    before(List<PairIntArray> edges) 
+        : execution(public List<PairIntArray> algorithms.imageProcessing.EdgeExtractorWithJunctions.findEdgesIntermediateSteps( 
+        List<PairIntArray>) ) 
+        && args(edges) 
+        && target(algorithms.imageProcessing.EdgeExtractorWithJunctions) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof EdgeExtractorWithJunctions)) {
+            return;
+        }
+
+        EdgeExtractorWithJunctions instance = (EdgeExtractorWithJunctions)obj;
+
+        GreyscaleImage img = instance.getImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath 
+                + "/before_findEdgesIntermediateSteps_" + outImgNum + ".png", img);
+        } catch(IOException e) {
+            log2.severe(e.getMessage());
+        }
+    }
+
+    after(GreyscaleImage input) returning() :
+        call(public void algorithms.imageProcessing.PostLineThinnerCorrections.correctForArtifacts( 
+        GreyscaleImage) ) 
+        && args(input) 
+        && target(algorithms.imageProcessing.PostLineThinnerCorrections) {
+
+        Object[] args = (Object[])thisJoinPoint.getArgs();
+
+        GreyscaleImage img = (GreyscaleImage)args[0];
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath 
+                + "/after_correctForArtifacts_" + outImgNum + ".png", img);
+        } catch(IOException e) {
+            log2.severe(e.getMessage());
+        }
+    }
+
     before(final PairIntArray edge, 
         final Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves, int edgeNumber) 
         : call(PairIntArray CurvatureScaleSpaceCornerDetector*.findCornersInScaleSpaceMap( 

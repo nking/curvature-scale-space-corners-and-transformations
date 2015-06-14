@@ -1,9 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.CountingSort;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
-import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -73,6 +72,26 @@ public class PostLineThinnerCorrections {
  
     private void correctForArtifacts(Set<PairInt> points, int w, int h) {
      
+        /*
+        TODO: looks like these methods are unused.  add more tests and consider
+        removing...
+        [junit] INFO: method correctForHoleArtifacts1_2 nc=0
+        [junit] INFO: method correctForTs nc=0
+        [junit] INFO: method correctForZigZag000_03 nc=0
+        [junit] INFO: method correctForZigZag000_09 nc=0
+        [junit] INFO: method correctForZigZag00_1 nc=0
+        [junit] INFO: method correctForZigZag00_5 nc=0
+        [junit] INFO: method correctForZigZag00_6 nc=0
+        [junit] INFO: method correctForZigZag00_7 nc=0
+        -----
+        [junit] INFO: method correctForTs nc=0
+        [junit] INFO: method correctForZigZag000_09 nc=0
+        [junit] INFO: method correctForZigZag00_16 nc=0
+        [junit] INFO: method correctForZigZag00_5 nc=0
+        [junit] INFO: method correctForZigZag00_6 nc=0
+        
+        */
+        
         correctForSingleHole_01(points, w, h);
         correctForSingleHole_02(points, w, h);
         correctForSingleHole_03(points, w, h);
@@ -155,9 +174,7 @@ public class PostLineThinnerCorrections {
         
         //correctForRemaining(points, w, h);
     }
-    
-    private int methodNumber = 0;
-    
+        
     private void correctForZigZag00(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
@@ -198,9 +215,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_0(Set<PairInt> points, int imageWidth, 
@@ -241,9 +257,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_0_0(Set<PairInt> points, int imageWidth, 
@@ -283,9 +298,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_0_1(Set<PairInt> points, int imageWidth, 
@@ -325,9 +339,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_0_2(Set<PairInt> points, int imageWidth, 
@@ -367,9 +380,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     /**
@@ -412,9 +424,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_1(Set<PairInt> points, int imageWidth, 
@@ -456,9 +467,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_2(Set<PairInt> points, int imageWidth, 
@@ -501,9 +511,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_3(Set<PairInt> points, int imageWidth, 
@@ -545,9 +554,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_11(Set<PairInt> points, int imageWidth, 
@@ -583,9 +591,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_5(Set<PairInt> points, int imageWidth, 
@@ -627,9 +634,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_6(Set<PairInt> points, int imageWidth, 
@@ -671,9 +677,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_7(Set<PairInt> points, int imageWidth, 
@@ -716,9 +721,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_8(Set<PairInt> points, int imageWidth, 
@@ -762,9 +766,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_9(Set<PairInt> points, int imageWidth, 
@@ -807,9 +810,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_10(Set<PairInt> points, int imageWidth, 
@@ -850,9 +852,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag000_07(Set<PairInt> points, int imageWidth, 
@@ -889,9 +890,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag000_06(Set<PairInt> points, int imageWidth, 
@@ -930,9 +930,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag000_08(Set<PairInt> points, int imageWidth, 
@@ -969,9 +968,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_14(Set<PairInt> points, int imageWidth, 
@@ -1011,9 +1009,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_15(Set<PairInt> points, int imageWidth, 
@@ -1055,9 +1052,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_16(Set<PairInt> points, int imageWidth, 
@@ -1101,9 +1097,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForTs(Set<PairInt> points, int imageWidth, 
@@ -1148,9 +1143,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag00_4(Set<PairInt> points, int imageWidth, 
@@ -1191,9 +1185,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     /**
@@ -1242,9 +1235,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     protected void correctForLs2(Set<PairInt> points, int imageWidth, 
@@ -1288,9 +1280,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     protected void correctForLs2_1(Set<PairInt> points, int imageWidth, 
@@ -1333,9 +1324,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     protected void correctForLs3(Set<PairInt> points, int imageWidth, 
@@ -1379,9 +1369,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     /**
@@ -1430,9 +1419,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag000_09(Set<PairInt> points, int imageWidth, 
@@ -1469,9 +1457,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     protected void reverseXs(
@@ -1676,51 +1663,6 @@ public class PostLineThinnerCorrections {
         return nCorrections;
     }
     
-    private void debugPrint(GreyscaleImage input, int xStart, int xStop,
-        int yStart, int yStop) {
-        
-        StringBuilder sb = new StringBuilder();
-                    
-        for (int row = yStart; row <= yStop; row++) {
-            sb.append(String.format("%3d: ", row));
-            for (int col = xStart; col <= xStop; col++) {
-                sb.append(String.format(" %3d ", input.getValue(col, row)));
-            }
-            sb.append(String.format("\n"));
-        }
-        
-        System.out.println(sb.toString());
-    }
-    
-    void debugPrint(Set<PairInt> points, 
-        Set<PairInt> addedPoints, Set<PairInt> removedPoints,
-        int xStart, int xStop,
-        int yStart, int yStop) {
-        
-        for (int row = yStop; row >= yStart; row--) {
-            StringBuilder sb = new StringBuilder(String.format("row %4d:  ", row));
-            for (int col = xStart; col <= xStop; col++) {
-                
-                PairInt p = new PairInt(col, row);
-                
-                int v = 0;
-                if (!removedPoints.contains(p) 
-                    && (addedPoints.contains(p) || points.contains(p))) {
-                    v = 1;
-                }
-                String str = (v == 0) ? String.format("     ") : String.format("%4d ", v);
-                sb.append(str);
-            }
-            System.out.println(sb.toString());
-        }
-        StringBuilder sb = new StringBuilder(String.format("        "));
-        for (int col = xStart; col <= xStop; col++) {
-            sb.append(String.format("%4d ", col));
-        }
-        System.out.println(sb.toString());
-        System.out.println("\n");
-    }
-
     /**
      * removes a hole artifact in inclined lines.  note that this should
      * probably be adjusted for gaussian convolution combined radius
@@ -1822,9 +1764,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
        
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForLine0(Set<PairInt> points, int imageWidth, 
@@ -1880,9 +1821,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForHoleArtifacts1_2(Set<PairInt> points, int imageWidth,
@@ -1942,9 +1882,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
        
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForHoleArtifacts1_2_1(Set<PairInt> points, int imageWidth,
@@ -1980,9 +1919,8 @@ public class PostLineThinnerCorrections {
         int nCorrections = replaceAndRotateOnesIfNullable(points, imageWidth, 
             imageHeight, zeroes, ones, nRotations);
        
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForHoleArtifacts1_3(Set<PairInt> points, int imageWidth, 
@@ -2043,9 +1981,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
        
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
 
     private int replaceAndRotateOnesIfNullable(Set<PairInt> points, 
@@ -2242,9 +2179,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
             zeroes, ones, changeToZeroes, changeToOnes);
        
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
 
     private void correctForZigZag000_00(Set<PairInt> points, 
@@ -2293,9 +2229,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
 
     private void correctForZigZag000_01(Set<PairInt> points, 
@@ -2342,9 +2277,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag000_02(Set<PairInt> points, 
@@ -2389,9 +2323,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag000_04(Set<PairInt> points, 
@@ -2437,9 +2370,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForZigZag000_03(Set<PairInt> points, 
@@ -2487,9 +2419,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
 
     private void correctForZigZag000_05(Set<PairInt> points, 
@@ -2538,9 +2469,8 @@ public class PostLineThinnerCorrections {
             points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     protected void correctForHoleArtifacts00_10(Set<PairInt> points, int imageWidth, 
@@ -2678,9 +2608,8 @@ public class PostLineThinnerCorrections {
             points.add(p2);
         }
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
 
     private void correctForCorrectionCreatedSquares(Set<PairInt> points, 
@@ -2826,9 +2755,8 @@ public class PostLineThinnerCorrections {
             points.add(p2);
         }
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
 
     protected void straightenLines(Set<PairInt> points, int imageWidth, 
@@ -2952,9 +2880,8 @@ public class PostLineThinnerCorrections {
             points.add(p2);
         }
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     protected void findNeighbors(int x, int y, Set<PairInt> outputNeighbors,
@@ -3028,9 +2955,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_02(Set<PairInt> points, int imageWidth, 
@@ -3076,9 +3002,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_03(Set<PairInt> points, int imageWidth, 
@@ -3124,9 +3049,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_04(Set<PairInt> points, int imageWidth, 
@@ -3172,9 +3096,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_05(Set<PairInt> points, int imageWidth, 
@@ -3221,9 +3144,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_06(Set<PairInt> points, int imageWidth, 
@@ -3272,9 +3194,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_07(Set<PairInt> points, int imageWidth, 
@@ -3328,9 +3249,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_08(Set<PairInt> points, int imageWidth, 
@@ -3391,9 +3311,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_09(Set<PairInt> points, int imageWidth, 
@@ -3441,9 +3360,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_10(Set<PairInt> points, int imageWidth, 
@@ -3489,9 +3407,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_11(Set<PairInt> points, int imageWidth, 
@@ -3546,9 +3463,8 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
     
     private void correctForSingleHole_12(Set<PairInt> points, int imageWidth, 
@@ -3614,8 +3530,7 @@ public class PostLineThinnerCorrections {
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
-        log.info("method " + Integer.toString(methodNumber) + " nc=" + 
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
-        methodNumber++;
     }
 }

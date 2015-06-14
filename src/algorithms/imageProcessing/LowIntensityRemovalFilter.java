@@ -11,7 +11,7 @@ public class LowIntensityRemovalFilter {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public static float defaultLowThreshFactor = 1.0f;
+    public static float defaultLowThreshFactor = 10.9f;//1.0f;
     
     private float lowThreshFactor = 0.9f;//1.0f;
 

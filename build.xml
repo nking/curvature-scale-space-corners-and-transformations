@@ -175,7 +175,7 @@
             <src path="${src.dir}"/>
             <compilerarg value="-Xlint"/>
     	</javac>
-    	
+            	
     </target>
 
     <target name="runTestsWithAspects" depends="clean,debug,compile,compileTests"
@@ -468,7 +468,7 @@
 
             <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
 
-            <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <!--
@@ -557,7 +557,7 @@
             -->
 
             <sysproperty key="java.util.logging.config.file" 
-                value="${classes.dir}/classes/logging.properties"/>
+                value="${src.out.dir}/logging.properties"/>
             <classpath>
             	<pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
