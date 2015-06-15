@@ -1,6 +1,7 @@
 package algorithms.misc;
 
 import algorithms.misc.MedianInterpolation.SortedVector;
+import algorithms.util.PairIntArray;
 import java.util.Arrays;
 import junit.framework.TestCase;
 
@@ -226,5 +227,48 @@ public class MedianInterpolationTest extends TestCase {
         
         assertTrue(Arrays.equals(result, expected));
         
+    }
+    
+    public void testInterpolation2() throws Exception {
+        
+        /*
+        x:  0 1 2 3 4 5 6 7
+        k=5
+        averages for x:        
+            0 1 2 3  4  5  6  7    
+        sum         10 15 20 25
+        avg          2  3  4  5
+        
+        y:  2 3 4 3  2  4  4  4
+        y:           3  3  4  4        
+        */
+        
+        int[] expectedX = new int[]{2, 3, 4, 5};
+        int[] expectedY = new int[]{3, 3, 4, 4};
+        
+        MedianInterpolation interp = new MedianInterpolation();
+        
+        PairIntArray curve = new PairIntArray(8);
+        curve.add(0, 2);
+        curve.add(1, 3);
+        curve.add(2, 4);
+        curve.add(3, 3);
+        curve.add(4, 2);
+        curve.add(5, 4);
+        curve.add(6, 4);
+        curve.add(7, 4);
+        
+        int kPoints = 5;
+        
+        PairIntArray result = interp.interpolate(curve, kPoints);
+        
+        assertTrue(result.getN() == expectedX.length);
+        
+        for (int i = 0; i < result.getN(); ++i) {
+            int x = result.getX(i);
+            int y = result.getY(i);
+            assertTrue(x == expectedX[i]);
+            assertTrue(y == expectedY[i]);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.util.PairIntArray;
 import java.util.Arrays;
 
 /**
@@ -9,6 +10,13 @@ import java.util.Arrays;
  */
 public class MedianInterpolation {
     
+    /**
+     * calculate a running median of the k previous points of curveY.
+     * runtime complexity is O(N*k) at most.
+     * @param curveY
+     * @param kPoints
+     * @return 
+     */
     public int[] interpolate(int[] curveY, int kPoints) {
         
         int[] medians = new int[curveY.length - kPoints + 1];
@@ -37,6 +45,57 @@ public class MedianInterpolation {
             sVec.remove(curveY[idx]);
             
             medians[idx] = median;
+        }
+        
+        return medians;
+    }
+    
+    /**
+     * calculate a running median of the k previous points of curveY.
+     * runtime complexity is O(N*k) at most.
+     * @param curve
+     * @param kPoints
+     * @return 
+     */
+    public PairIntArray interpolate(PairIntArray curve, int kPoints) {
+        
+        PairIntArray medians = new PairIntArray(curve.getN() - kPoints + 1);
+        
+        SortedVector sVec = new SortedVector(kPoints);
+        
+        long xSum = 0;
+        
+        // add the first k-1 to the list container
+        for (int i = 0; i < (kPoints - 1); ++i) {
+            
+            sVec.append(curve.getY(i));
+            
+            xSum += curve.getX(i);
+        }
+        
+        int median;
+        
+        for (int i = (kPoints - 1); i < curve.getN(); ++i) {
+          
+            // add the kth item to the list: O(log_2(k)) + < O(k)
+            // the list state is sorted at the end of the method.
+            sVec.insertIntoOpenSlot(curve.getY(i));
+            
+            //O(1)
+            median = sVec.getMedian();
+            
+            int idx = i - kPoints + 1;
+                        
+            // remove the x[i - k + 1] item from sorted list : O(log_2(k))
+            sVec.remove(curve.getY(idx));
+            
+            //TODO: can be improved if know that the points are evenly sampled
+            xSum += curve.getX(i);
+            if (idx > 0) {
+                xSum -= curve.getX(idx - 1);
+            }
+            
+            medians.add((int)(xSum/kPoints), median);
         }
         
         return medians;
