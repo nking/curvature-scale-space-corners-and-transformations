@@ -256,42 +256,4 @@ public class PostLineThinnerCorrectionsTest extends TestCase {
         assertTrue(expected.isEmpty());
     }
     
-    public void testFindNeighbors() throws Exception {
-        
-        /*
-        protected void findNeighbors(int x, int y, Set<PairInt> outputNeighbors,
-        Set<PairInt> points, Set<PairInt> tmpAddedPoints, 
-        Set<PairInt> tmpRemovedPoints, int imageWidth, int imageHeight) {
-        */
-        
-        Set<PairInt> outputNeighbors = new HashSet<PairInt>();
-        Set<PairInt> points = new HashSet<PairInt>();
-        Set<PairInt> tmpAddedPoints = new HashSet<PairInt>();
-        Set<PairInt> tmpRemovedPoints = new HashSet<PairInt>();
-        
-        /*
-           5
-           4            -
-           3   #  #  @   
-           2       
-           1         +
-           0
-            0  1  2  3  4  5
-        */
-        points.add(new PairInt(1, 3));
-        points.add(new PairInt(2, 3));
-        points.add(new PairInt(3, 3));
-        points.add(new PairInt(4, 4));
-        
-        tmpAddedPoints.add(new PairInt(3, 1));
-        tmpRemovedPoints.add(new PairInt(4, 4));
-        
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.findNeighbors(3, 3, outputNeighbors, points, tmpAddedPoints,
-            tmpRemovedPoints, 10, 10);
-        
-        assertTrue(outputNeighbors.size() == 1);
-        
-        assertTrue(outputNeighbors.iterator().next().equals(new PairInt(2, 3)));
-    }
 }

@@ -75,7 +75,7 @@ public class PostLineThinnerCorrections {
 
     }
  
-    private void correctForArtifacts(Set<PairInt> points, int w, int h) {
+    public void correctForArtifacts(Set<PairInt> points, int w, int h) {
      
         /*
         TODO: looks like these methods are unused.  add more tests and consider
@@ -2770,152 +2770,12 @@ public class PostLineThinnerCorrections {
         if (edgeGuideImage == null) {
             return;
         }
-        
-        /*
-        To move a pixel from one location to a better if possible
-        means determining if the move does not break any line connections.
-        Since the line widths have already been reduced to widths of '1',
-        this should just be a matter of noting which points it is connected
-        to and only choose points which are adjacent to the connected.
-        
-              V
-              *                            V
-           *     *  *  can be moved to  *  *  *  *
-        
-        The neighbors of p are p0 and p1 for example, so
-        points which are within 1 pixel of p, p0, and p1 found as the centroid
-        of them +- 1 pixel radius.
-        
-        Goal is to find if a point in points can be moved within a pixel's 
-        distance, to a position which is closer to the brightest pixel in the 
-        edgeGuideImage within range without breaking connections.
-     
-        For each point in points:
-            -- find the adjacent points.
-            -- determine a centroid for them and the point.
-            -- iterate around the 8 neighboring pixels of point
-               -- initialize maxIntensity w/ the current points's edgeGuideImage
-                  intensity.
-               -- if the pixel is further than 1 from the centroid, discard it,
-                  else, compare the pixel's edgeGuideImage with maxIntensity and
-                  keep if larger.
-            -- if maxIntensityPoint is not null, move the current point to 
-               it (by adding point to the remove list and adding the new location
-               to the add list).
-        */
+       
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        curveHelper.straightenLines(points, edgeGuideImage);
 
-        double onePixDist = Math.sqrt(2);
-        
-        Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
-        Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
-        
-        Set<PairInt> outputNeighbors = new HashSet<PairInt>();
-        
-        for (PairInt p : points) {
-            
-            int x = p.getX();
-            int y = p.getY();
-            
-            findNeighbors(x, y, outputNeighbors, points, 
-                tmpPointsAdded, tmpPointsRemoved, imageWidth, imageHeight);
-            
-            int nBrs = outputNeighbors.size();
-            
-            if (nBrs == 0) {
-                continue;
-            }
-            
-            // determine centroid
-            double xc = p.getX();
-            double yc = p.getY();
-            for (PairInt p2 : outputNeighbors) {
-                xc += p2.getX();
-                yc += p2.getY();
-            }
-            xc /= (double)(nBrs + 1);
-            yc /= (double)(nBrs + 1);
-            
-            // find highest intensity neighbor within 1 pix of centroid
-            int maxIntensity = edgeGuideImage.getValue(x, y);
-            PairInt maxIntensityPoint = null;
-            
-            for (int i = 0; i < eightNeighborsX.length; ++i) {
-                int x2 = x + eightNeighborsX[i];
-                int y2 = y + eightNeighborsY[i];
-                if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) || 
-                    (y2 > (imageHeight - 1))) {
-                    continue;
-                }
-                PairInt p2 = new PairInt(x2, y2);
-                // discard if it's already a point
-                if (outputNeighbors.contains(p2) || tmpPointsAdded.contains(p2) 
-                    || points.contains(p2)) {
-                    continue;
-                }
-                
-                // this is a vacant pixel.
-                
-                // check that it is within 1 pixel of (xc, yc) 
-                double diffX = x2 - xc;
-                double diffY = y2 - yc;
-                double dist = Math.sqrt((diffX * diffX) + (diffY * diffY));
-                
-                if (dist <= (onePixDist/2.)) {
-                    int v = edgeGuideImage.getValue(x2, y2);
-                    if (v > maxIntensity) {
-                        maxIntensity = v;
-                        maxIntensityPoint = p2;
-                    }
-                }
-            }
-            if (maxIntensityPoint != null) {
-                // "change location" of the point.
-                tmpPointsRemoved.add(p);
-                tmpPointsRemoved.remove(maxIntensityPoint);
-                tmpPointsAdded.add(maxIntensityPoint);
-            }
-        }
-        
-        int nCorrections = tmpPointsRemoved.size() + tmpPointsAdded.size();
-        
-        for (PairInt p2 : tmpPointsRemoved) {
-            points.remove(p2);
-        }
-        for (PairInt p2 : tmpPointsAdded) {
-            points.add(p2);
-        }
-        
-        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
-            Integer.toString(nCorrections));
     }
     
-    protected void findNeighbors(int x, int y, Set<PairInt> outputNeighbors,
-        Set<PairInt> points, Set<PairInt> tmpAddedPoints, 
-        Set<PairInt> tmpRemovedPoints, int imageWidth, int imageHeight) {
-        
-        outputNeighbors.clear();
-                
-        for (int i = 0; i < eightNeighborsX.length; i++) {
-            
-            int x2 = x + eightNeighborsX[i];
-            int y2 = y + eightNeighborsY[i];
-            
-            if ((x2 < 0) || (x2 > (imageWidth - 1)) || (y2 < 0) || 
-                (y2 > (imageHeight - 1))) {
-                continue;
-            }
-            
-            PairInt p2 = new PairInt(x2, y2);
-            
-            if (tmpRemovedPoints.contains(p2)) {
-                continue;
-            }
-            if (tmpAddedPoints.contains(p2) || points.contains(p2)) {
-                outputNeighbors.add(p2);
-            }
-        }
-    }
-
     private void correctForSingleHole_01(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
         

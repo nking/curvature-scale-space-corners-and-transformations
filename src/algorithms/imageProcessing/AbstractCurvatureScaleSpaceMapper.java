@@ -180,8 +180,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             applyEdgeFilter();
             
             if (extractSkyline) {
-                // TODO: consider masking the image after skyline extraction
-                extractSkyline();
+                List<PairIntArray> skyEdges = extractSkyline();
+                if (skylineEdges.isEmpty()) {
+                    this.skylineEdges.addAll(skyEdges);
+                }
             }
             
             // (2) extract edges
@@ -272,51 +274,19 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * running process.
      * 
      */
-    protected void extractSkyline() {
-        
-        PairIntArray outputSkyCentroid = new PairIntArray();
-        
+    protected List<PairIntArray> extractSkyline() {
+                
         try {            
             
             CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
             
             SkylineExtractor skylineExtractor = new SkylineExtractor();
             
+            PairIntArray outputSkyCentroid = new PairIntArray();
             GreyscaleImage out = skylineExtractor.createSkyline(theta, 
                 gradientXY, this.originalImg, settings, outputSkyCentroid);
- 
-            IEdgeExtractor contourExtractor = new EdgeExtractorWithJunctions(out);
-            
-            if ((img.getWidth() > 300) && (img.getHeight() > 300)) {
-                contourExtractor.overrideEdgeSizeLowerLimit(50);
-            }
-            
-            List<PairIntArray> skyEdges = contourExtractor.findEdges();
-            
-            if (skyEdges.isEmpty()) {
-                return;
-            }
-            
-            if (contourExtractor instanceof EdgeExtractorWithJunctions) {
-            
-                //TODO: consider whether skyline should be using junction map...
-                junctionMap.clear();
-                junctionLocationMap.clear();
-            
-                Map<Integer, Set<Integer>> jm = 
-                    ((EdgeExtractorWithJunctions)contourExtractor)
-                        .getJunctionMap();
-                
-                if (!jm.isEmpty()) {
-                    
-                    junctionMap.putAll(jm);
-                    
-                    junctionLocationMap.putAll(
-                        ((EdgeExtractorWithJunctions)contourExtractor)
-                            .getLocatorForJunctionAssociatedPoints()
-                    );
-                }
-            }
+             
+            List<PairIntArray> skyEdges = skylineExtractor.getSkylineEdges();
             
             Collections.sort(skyEdges, new PairIntArrayComparator());
 
@@ -332,8 +302,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                     skyEdges.set(idx2, swap);
                 }
             }
-
-            skylineEdges.addAll(skyEdges);
+            
+            return skyEdges;
             
         } catch(IOException e) {
             log.severe(e.getMessage());
@@ -341,6 +311,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         } catch(NoSuchAlgorithmException e) {
             log.severe(e.getMessage());
         }
+        
+        return new ArrayList<PairIntArray>();
     }
     
     public CannyEdgeFilterSettings getCannyEdgeFilterSettings() {

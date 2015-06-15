@@ -68,7 +68,8 @@ public aspect CurvatureAspect {
     }
 
     before() :
-        execution(protected void algorithms.imageProcessing.AbstractCurvatureScaleSpaceMapper*.extractSkyline())
+        execution(protected List<PairIntArray> 
+        algorithms.imageProcessing.AbstractCurvatureScaleSpaceMapper*.extractSkyline())
         && args() 
 	    && target(algorithms.imageProcessing.AbstractCurvatureScaleSpaceMapper) {
 
@@ -1114,9 +1115,9 @@ private static int n3 = 0;
         }
     }
     
-    after() returning : 
+    after() returning(List<PairIntArray> skyEdges) : 
 	    target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) 
-        && execution(protected void extractSkyline()) {
+        && execution(protected List<PairIntArray> extractSkyline()) {
 
         Object obj = thisJoinPoint.getThis();
 

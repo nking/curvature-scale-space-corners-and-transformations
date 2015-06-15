@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -102,7 +103,6 @@ public class SkylineExtractorTest extends TestCase {
         assertTrue(outputMap.size() == 8);
     }
     
-    @Test
     public void testCreateBestSkyMask() throws Exception {
         
         String[] fileNames = new String[] {
@@ -232,16 +232,56 @@ public class SkylineExtractorTest extends TestCase {
         int z = 1;
     }
     
+    public void testExtractAndSmoothSkylinePoints() throws Exception {
+        
+        String fileName = "brown_lowe_2003_image1.jpg";
+        
+        int idx = fileName.lastIndexOf(".");
+        String fileNameRoot = fileName.substring(0, idx);
+        String filePathSkyMask = ResourceFinder.findFileInTestResources(
+            fileNameRoot + "_sky.png");
+        
+        String gradientFilePath = ResourceFinder.findFileInTestResources(
+            "brown_lowe_2003_image1_gradientXY.png");
+        
+        GreyscaleImage skyMask = ImageIOHelper.readImageAsBinary(
+            filePathSkyMask);
+        
+        ImageExt clrImage = ImageIOHelper.readImageExt(
+            ResourceFinder.findFileInTestResources(fileName));
+        
+        GreyscaleImage gradientXY = ImageIOHelper.readImageAsGrayScale(gradientFilePath)
+            .copyToGreyscale();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        Set<PairInt> skyPoints = imageProcessor.readNonZeroPixels(skyMask);
+        
+        SkylineExtractor skylineExtractor = new SkylineExtractor();
+        
+        
+        List<PairIntArray> skylineEdges = skylineExtractor.extractAndSmoothSkylinePoints(
+            skyPoints, gradientXY);
+
+        for (PairIntArray edge : skylineEdges) {
+            for (int i = 0; i < edge.getN(); ++i) {
+                clrImage.setRGB(edge.getX(i), edge.getY(i), 255, 0, 0);
+            }
+        }
+        MiscDebug.writeImageCopy(clrImage, "skyline_straightened.png");
+        
+    }
+    
     public static void main(String[] args) {
         
         try {
             SkylineExtractorTest test = new SkylineExtractorTest();
 
-            test.testCreateBestSkyMask();
+            //test.testCreateBestSkyMask();
             //test.estOrderByProximity();
             //test.testOrderByIncreasingXThenY();
             //test.testPopulatePolygon();
-            test.testPopulatePolygon2();
+            //test.testPopulatePolygon2();
+            test.testExtractAndSmoothSkylinePoints();
         
         } catch(Exception e) {
             e.printStackTrace();

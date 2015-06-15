@@ -40,6 +40,11 @@ public class SkylineExtractor {
     
     private boolean useAlternateSkySeeds = false;
     
+    private SunFinder sunFinder = null;
+    private RainbowFinder rainbowFinder = null;
+    
+    private List<PairIntArray> skylineEdges = null;
+    
     public static String debugName = "";
     public static void setDebugName(String name) {
         debugName = name;
@@ -217,16 +222,16 @@ public class SkylineExtractor {
         
         log.info("skyIsDarkGrey=" + skyIsDarkGrey + " " + debugName);
         
-        SunFinder sunFinder = new SunFinder();
+        sunFinder = new SunFinder();
         sunFinder.findSunPhotosphere(originalColorImage, xOffset, yOffset, 
             skyIsDarkGrey);
 
-        RainbowFinder rFinder = new RainbowFinder();
+        rainbowFinder = new RainbowFinder();
         
         // should not see sun and rainbow in same image
         if (sunFinder.getSunPoints().isEmpty()) {
                         
-            rFinder.findRainbowInImage(
+            rainbowFinder.findRainbowInImage(
                 points, 
                 removedSets.getReflectedSunRemoved(), originalColorImage, 
                 xOffset, yOffset, theta.getWidth(), theta.getHeight(),
@@ -235,12 +240,12 @@ public class SkylineExtractor {
 
         int nSkyPointsBeforeFindClouds = points.size();
         
-        findClouds(points, rFinder.getPointsToExcludeInHull(), 
+        findClouds(points, rainbowFinder.getPointsToExcludeInHull(), 
             originalColorImage, theta);  
 
-        if (!rFinder.getPointsToExcludeInHull().isEmpty()) {
+        if (!rainbowFinder.getPointsToExcludeInHull().isEmpty()) {
             // addRainbow to Hull, but only if there are sky points adjacent to hull
-            rFinder.addRainbowToSkyPoints(points,
+            rainbowFinder.addRainbowToSkyPoints(points,
                 theta.getWidth() - 1, theta.getHeight() - 1);
         }
              
@@ -285,7 +290,8 @@ public class SkylineExtractor {
         }
                 
         points.addAll(sunFinder.getSunPoints());
-
+        
+        this.skylineEdges = extractAndSmoothSkylinePoints(points, gradientXY);
         
 debugPlot(points, originalColorImage, theta.getXRelativeOffset(), theta.getYRelativeOffset(), 
 "final");
@@ -3858,6 +3864,39 @@ static int outImgNum=0;
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    protected List<PairIntArray> extractAndSmoothSkylinePoints(
+        Set<PairInt> skyPoints, GreyscaleImage gradientXY) {
+        
+        Set<PairInt> outputBorderPoints = new HashSet<PairInt>();
+        
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+        
+        getEmbeddedAndBorderPoints(skyPoints, gradientXY.getWidth(),
+            gradientXY.getHeight(), outputEmbeddedGapPoints,
+            outputBorderPoints);
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        for (int i = 0; i < 6; i++) {
+            curveHelper.straightenLines(outputBorderPoints, gradientXY);
+        }
+        
+        PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();
+        pslt.correctForArtifacts(outputBorderPoints, gradientXY.getWidth(), 
+            gradientXY.getHeight());
+        
+        GreyscaleImage output = gradientXY.createWithDimensions();
+        for (PairInt p : outputBorderPoints) {
+            output.setValue(p.getX(), p.getY(), 1);
+        }
+        
+        AbstractEdgeExtractor edgeExtractor = 
+            new EdgeExtractorWithJunctions(output);
+        
+        List<PairIntArray> edges = edgeExtractor.findEdges();
+        
+        return edges;
+    }
+
     public class RemovedSets {
         private Set<PairInt> removedNonCloudColors = new HashSet<PairInt>();
         private Set<PairInt> highContrastRemoved = new HashSet<PairInt>();
@@ -3902,4 +3941,15 @@ static int outImgNum=0;
         }
     }
     
+    public SunFinder getSunFinderResults() {
+        return sunFinder;
+    }
+    
+    public RainbowFinder getRainbowFinderResults() {
+        return rainbowFinder;
+    }
+    
+    public List<PairIntArray> getSkylineEdges() {
+        return skylineEdges;
+    }
 }
