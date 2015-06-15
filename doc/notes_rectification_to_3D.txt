@@ -258,6 +258,7 @@ Making of Disparity Maps (continued):
           for materials or albedo for more information).  But if the illumination
           is largely grey scattering of light, that is Mie scattering, CIE xy could be very useful
           for segmentation of related pixels.)
+          (Note, have implemented a color segmentation based upon CIE XY space now.)
 
           The 3 different patterns used for comparing the blocks of pixels are for the simplest:
               -- Sum of absolute differences:
@@ -392,6 +393,8 @@ Making of Disparity Maps (continued):
     In navigation systems with very high resolution images, wouldn't an early 
          down sampled image pair solution much faster than 1 second be useful 
          before a more accurate dense disparty map that might take 10 seconds?
+         (Meaning, calculate both, but the fast runtime less accurate is always
+         available and followed by the more accurate later.)
          (see the Disney mansion runtimes in 
          http://www.imgfsr.com/CVPR2014IRW/I1.pdf
          http://research.microsoft.com/pubs/232423/sinhaLPS_CVPR2014.pdf)
@@ -400,7 +403,7 @@ Making of Disparity Maps (continued):
          determination for an early look around.
 
 
-  Tests data:
+  Test data:
       -- Middlebury stereo vision datasets and/or Merton College I
       -- 2 all black images?  2 all white images?
       -- 2 identical images
@@ -574,7 +577,7 @@ For non-stereo images: sparse 3D reconstruction
 
 
 -------------------------------------------------------------
-object recognition
+tangent related subject, object recognition
 -------------------------------------------------------------
 in progress...
 
