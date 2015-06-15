@@ -271,4 +271,56 @@ public class MedianInterpolationTest extends TestCase {
             assertTrue(y == expectedY[i]);
         }
     }
+    
+    public void testInterpolation3() throws Exception {
+        
+        // test exceptions
+        
+        MedianInterpolation interp = new MedianInterpolation();
+        
+        PairIntArray curve = null;
+        
+        int kPoints = 5;
+        
+        boolean caughtException = false;
+        try {
+            PairIntArray result = interp.interpolate(curve, kPoints);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        //-----------------------------------
+        curve = new PairIntArray();
+        curve.add(0, 2);
+        curve.add(1, 3);
+        curve.add(2, 4);
+        caughtException = false;
+        try {
+            PairIntArray result = interp.interpolate(curve, kPoints);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        //------------------------------------
+        int[] curveY = null;
+        caughtException = false;
+        try {
+            int[] result = interp.interpolate(curveY, kPoints);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+        
+        //------------------------------------
+        curveY = new int[]{1, 2, 2};
+        caughtException = false;
+        try {
+            int[] result = interp.interpolate(curveY, kPoints);
+        } catch (Throwable t) {
+            caughtException = true;
+        }
+        assertTrue(caughtException);
+    }
 }
