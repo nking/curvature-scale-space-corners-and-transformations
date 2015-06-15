@@ -7,6 +7,7 @@ import algorithms.util.PairIntArrayComparator;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -179,6 +180,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             applyEdgeFilter();
             
             if (extractSkyline) {
+                // TODO: consider masking the image after skyline extraction
                 extractSkyline();
             }
             
@@ -189,7 +191,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             //      curves in the EdgeContourExtractor instead of here
             //      in order to create shapes instead of creating
             //      lines preferentially.
-            // (3) look for t-junctions and closed curves
             markTheClosedCurves();
             
             state = CurvatureScaleSpaceMapperState.INITIALIZED;
@@ -224,7 +225,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             filter.setSetters(settings);
             
             filter.overrideLowThreshold(cannyLowThreshold);
-                        
+           
             filter.reApply2LayerFilter(input, gTheta, hist);
             
             img = input;
@@ -283,7 +284,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
             GreyscaleImage out = skylineExtractor.createSkyline(theta, 
                 gradientXY, this.originalImg, settings, outputSkyCentroid);
-            
+ 
             IEdgeExtractor contourExtractor = new EdgeExtractorWithJunctions(out);
             
             if ((img.getWidth() > 300) && (img.getHeight() > 300)) {
@@ -298,6 +299,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
             if (contourExtractor instanceof EdgeExtractorWithJunctions) {
             
+                //TODO: consider whether skyline should be using junction map...
                 junctionMap.clear();
                 junctionLocationMap.clear();
             
@@ -376,11 +378,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         edges.clear();
         edges.addAll(tmpEdges);
         
-        GreyscaleImage output = img.createWithDimensions();
-        for (PairIntArray edge : edges) {
-            addCurveToImage(edge, output, 0, 255);
-        }
-        
         if (contourExtractor instanceof EdgeExtractorWithJunctions) {
 
             junctionMap.clear();
@@ -400,8 +397,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 );
             }
         }
-
-        img = output;
         
         state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;
         

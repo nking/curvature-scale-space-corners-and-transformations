@@ -2,8 +2,10 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscDebug;
 import algorithms.util.Errors;
 import algorithms.misc.MiscMath;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -185,13 +187,13 @@ public class CannyEdgeFilter {
             // line drawings should be thinned first
             applyLineThinnerFilter(input);
         }
-             
+
         if (useOutdoorMode) {
             imageProcessor.blur(input, 2.0f); //3.0
         }
 
         applyHistogramEqualization(input);
-        
+
         //[gX, gY, gXY, theta
         GreyscaleImage[] gradientProducts = createGradientProducts(input);
         
@@ -204,16 +206,15 @@ public class CannyEdgeFilter {
         gTheta = gradientProducts[3].copyImage();
                 
         input.resetTo(gradientProducts[2]);
-           
+         
         if (!useLineDrawingMode) {
             apply2LayerFilter(input);
         }
-       
+
         applyLineThinnerFilter(input);
         
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        curveHelper.additionalThinning45DegreeEdges(gradientProducts[3], input);
+        //MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        //curveHelper.additionalThinning45DegreeEdges(gradientProducts[3], input);
     }
     
     /**

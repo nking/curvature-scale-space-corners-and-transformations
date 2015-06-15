@@ -1,8 +1,12 @@
 package algorithms.misc;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -11,6 +15,26 @@ import java.util.Set;
  * @author nichole
  */
 public class MiscDebug {
+    
+    public static void writeImageCopy(ImageExt img, String outfileName) {
+        ImageExt img2 = (ImageExt)img.copyImage();
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/" + outfileName, img2);
+        } catch (IOException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
+    
+    public static void writeImageCopy(GreyscaleImage img, String outfileName) {
+        GreyscaleImage img2 = img.copyImage();
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/" + outfileName, img2);
+        } catch (IOException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
     
     public static int findEdgeContainingPoint(List<PairIntArray> edges, 
         int startX, int stopX, int startY, int stopY) {

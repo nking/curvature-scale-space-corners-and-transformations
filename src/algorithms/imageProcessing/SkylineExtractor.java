@@ -100,6 +100,10 @@ public class SkylineExtractor {
         
         if (mask != null) {
             
+            // TODO: NOTE, could just find the border pixels of the mask's sky 
+            // points which are done already within createBestSkyMask
+            // instead of running the mask through the CannyEdgeFilter
+
             ImageProcessor imageProcessor = new ImageProcessor();
             
             imageProcessor.multiply(mask, 255);
