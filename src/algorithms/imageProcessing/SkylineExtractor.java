@@ -3274,94 +3274,6 @@ static int outImgNum=0;
         return filtered;
     }
 
-    protected List<PairInt> orderByProximity(Set<PairInt> points) {
-        
-        /*
-        starting from (startX, startY), order the points into a list of 
-        sequentially closest points.
-        for points with more than one adjacent point, the order should
-        be such that horiz adjacent or vert adjacent is preferred over diag,
-        and if there is more than one horiz or vert adjacent,
-        it shouldn't matter which is chosen.
-        */
-        
-        // O( N * lg_2(N) ) + O(N)
-        DoubleLinkedCircularList tmp = new DoubleLinkedCircularList();
-        Map<Integer, HeapNode> firstXIndexes = 
-            new HashMap<Integer, HeapNode>();
-        orderByIncreasingXThenY(points, tmp, firstXIndexes);
-                
-        List<PairInt> ordered = new ArrayList<PairInt>();
-        
-        int lastX = -1;
-        int lastY = -1;
-        
-        /*
-        Because this is ordered already, the runtime complexity should be 
-        close to O(N) when there are no gaps which is usually the case for
-        the context this method was created for, else the runtime complexity is 
-        close to O(N!) when the entire remaining list has to be compared.
-        TODO: replace w/ a data structure that has indexed y ordering too.
-        */
-        while (tmp.getSentinel().getLeft() != tmp.getSentinel()) {
-                            
-            //if have adjacent points, stop search in tmp when dx > 1
-            boolean atLeastOneIsAdjacent = false;
-            
-            int minDistSq = Integer.MAX_VALUE;
-            HeapNode closest = null;
-            
-            HeapNode currentNode = tmp.getSentinel().getLeft();
-            while (currentNode != tmp.getSentinel()) {
-                
-                PairInt p = (PairInt)currentNode.getData();
-
-                if (lastX == -1) {
-                    closest = currentNode;
-                    break;
-                } else {
-                    int dx = Math.abs(p.getX() - lastX);
-                    int dy = Math.abs(p.getY() - lastY);
-                    int distSq = (dx * dx) + (dy * dy);
-                    if ((dx <= 1) && (dy <= 1)) {
-                        atLeastOneIsAdjacent = true;
-                        if (distSq < minDistSq) {
-                            closest = currentNode;
-                            minDistSq = distSq;
-                            if (distSq == 1) {
-                                // this is horiz or vertical adjacent which are preferred
-                                break;
-                            }
-                        }
-                    } else if (!atLeastOneIsAdjacent) {
-                        // there may not be an adjacent, so store the next closest
-                        if (distSq < minDistSq) {
-                            closest = currentNode;
-                            minDistSq = distSq;
-                        }
-                    } else if (atLeastOneIsAdjacent && (dx > 1)) {
-                        // we've gone past the nearest, so can break
-                        break;
-                    }
-                }
-                
-                currentNode = currentNode.getLeft();
-            }
-            
-            //O(1)
-            ordered.add((PairInt)closest.getData());
-            
-            //O(1)
-            tmp.remove(closest);
-            
-            lastX = ((PairInt)closest.getData()).getX();
-            
-            lastY = ((PairInt)closest.getData()).getY();
-        }
-        
-        return ordered;
-    }
-
     protected void orderByIncreasingXThenY(Set<PairInt> points,
         DoubleLinkedCircularList outputDLCList, 
         Map<Integer, HeapNode> outputFirstXLocator) {
@@ -3875,6 +3787,7 @@ static int outImgNum=0;
             gradientXY.getHeight(), outputEmbeddedGapPoints,
             outputBorderPoints);
         
+//TODO: might need to check for absence of rainbow and sun points first
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         for (int i = 0; i < 6; i++) {
             curveHelper.straightenLines(outputBorderPoints, gradientXY);

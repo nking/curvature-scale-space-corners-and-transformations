@@ -1157,6 +1157,47 @@ private static int n3 = 0;
         }
     }
 
+    after(Set<PairInt> skyPoints, GreyscaleImage gradientXY) 
+        returning(List<PairIntArray> skyEdges) :
+        call(protected List<PairIntArray> algorithms.imageProcessing.SkylineExtractor.extractAndSmoothSkylinePoints(
+        Set<PairInt>, GreyscaleImage)) && args(skyPoints, gradientXY)
+	    && target(algorithms.imageProcessing.SkylineExtractor) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof SkylineExtractor)) {
+            return;
+        }
+
+        SkylineExtractor instance = (SkylineExtractor)obj;
+
+        Object[] args = (Object[])thisJoinPoint.getArgs();
+        GreyscaleImage gXY = (GreyscaleImage)args[1];
+
+        if (skyEdges.isEmpty()) {
+            return; 
+        }
+
+        Image img3 = gXY.copyImageToGreen();
+
+        try {
+            
+            for (PairIntArray edge : skyEdges) {
+                ImageIOHelper.addCurveToImage(edge, img3, 1, 255, 255, 0);
+            }
+            for (PairIntArray edge : skyEdges) {
+                ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 255, 255);
+            }
+            
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/skyline_edges_and_gXY" + outImgNum + ".png", img3);
+ 
+        } catch (IOException ex) {
+            throw new RuntimeException("ERROR: l423" + ex.getMessage());
+        }
+    }
+
     after() returning : 
 	    target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) 
         && execution(protected void extractEdges()) {

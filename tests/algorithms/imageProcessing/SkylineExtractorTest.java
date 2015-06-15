@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
-import org.junit.Test;
 
 /**
  *
@@ -25,50 +24,7 @@ public class SkylineExtractorTest extends TestCase {
     
     public SkylineExtractorTest() {
     }
-    
-    public void estOrderByProximity() throws Exception {
-                
-        int x0 = 468;
-        int y0 = 98;
-        List<PairInt> expected = new ArrayList<PairInt>();
-        expected.add(new PairInt(x0, y0));
-        expected.add(new PairInt(469, 97));
-        expected.add(new PairInt(469, 96));
-        expected.add(new PairInt(469, 95));
-        expected.add(new PairInt(470, 95));
-        expected.add(new PairInt(471, 94));
-        expected.add(new PairInt(472, 93));
-        expected.add(new PairInt(473, 92));
-        expected.add(new PairInt(474, 92));
-        expected.add(new PairInt(475, 91));
-        expected.add(new PairInt(476, 92));
-        expected.add(new PairInt(477, 91));
-        expected.add(new PairInt(478, 92));
-        expected.add(new PairInt(477, 93));        
-        expected.add(new PairInt(476, 94));
-        expected.add(new PairInt(475, 95));
-        expected.add(new PairInt(474, 95));
-        expected.add(new PairInt(473, 95));
-        expected.add(new PairInt(472, 96));
-        expected.add(new PairInt(471, 97));
-        expected.add(new PairInt(470, 98));
-        expected.add(new PairInt(469, 98));
-        
-        Set<PairInt> points = new HashSet<PairInt>(expected);
-        
-        SkylineExtractor instance = new SkylineExtractor();
-        List<PairInt> result = instance.orderByProximity(points);
-        
-        assertTrue(result.size() == expected.size());
-        
-        for (int i = 0; i < result.size(); ++i) {
-            PairInt r = result.get(i);
-            PairInt e = expected.get(i);
-            assertTrue(r.equals(e));
-        }
-        
-    }
-    
+       
     public void testOrderByIncreasingXThenY() throws Exception {
         
         int[] x = new int[]{7,  6,   5, 4,  4, 3, 2,  1, 0};
@@ -267,8 +223,10 @@ public class SkylineExtractorTest extends TestCase {
                 clrImage.setRGB(edge.getX(i), edge.getY(i), 255, 0, 0);
             }
         }
-        MiscDebug.writeImageCopy(clrImage, "skyline_straightened.png");
+        MiscDebug.writeImageCopy(clrImage, 
+            "skyline_straightened_" + fileNameRoot + ".png");
         
+        assertTrue(skylineEdges.size() >= 1);
     }
     
     public static void main(String[] args) {
@@ -276,7 +234,7 @@ public class SkylineExtractorTest extends TestCase {
         try {
             SkylineExtractorTest test = new SkylineExtractorTest();
 
-            //test.testCreateBestSkyMask();
+            test.testCreateBestSkyMask();
             //test.estOrderByProximity();
             //test.testOrderByIncreasingXThenY();
             //test.testPopulatePolygon();
