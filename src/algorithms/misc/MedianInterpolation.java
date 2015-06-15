@@ -19,6 +19,14 @@ public class MedianInterpolation {
      */
     public int[] interpolate(int[] curveY, int kPoints) {
         
+        if (curveY == null) {
+            throw new IllegalArgumentException("curveY cannot be null");
+        }
+        if (curveY.length < kPoints) {
+            throw new IllegalArgumentException(
+            "curveY.length must be equal to or greater than kPoints");
+        }
+        
         int[] medians = new int[curveY.length - kPoints + 1];
         
         SortedVector sVec = new SortedVector(kPoints);
@@ -51,13 +59,21 @@ public class MedianInterpolation {
     }
     
     /**
-     * calculate a running median of the k previous points of curveY.
+     * calculate a running median of the k previous points of curve.
      * runtime complexity is O(N*k) at most.
      * @param curve
      * @param kPoints
      * @return 
      */
     public PairIntArray interpolate(PairIntArray curve, int kPoints) {
+        
+        if (curve == null) {
+            throw new IllegalArgumentException("curve cannot be null");
+        }
+        if (curve.getN() < kPoints) {
+            throw new IllegalArgumentException(
+            "curve length must be equal to or greater than kPoints");
+        }
         
         PairIntArray medians = new PairIntArray(curve.getN() - kPoints + 1);
         
