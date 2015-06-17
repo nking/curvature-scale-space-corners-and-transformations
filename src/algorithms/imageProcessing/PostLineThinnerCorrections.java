@@ -77,26 +77,6 @@ public class PostLineThinnerCorrections {
  
     public void correctForArtifacts(Set<PairInt> points, int w, int h) {
      
-        /*
-        TODO: looks like these methods are unused.  add more tests and consider
-        removing...
-        [junit] INFO: method correctForHoleArtifacts1_2 nc=0
-        [junit] INFO: method correctForTs nc=0
-        [junit] INFO: method correctForZigZag000_03 nc=0
-        [junit] INFO: method correctForZigZag000_09 nc=0
-        [junit] INFO: method correctForZigZag00_1 nc=0
-        [junit] INFO: method correctForZigZag00_5 nc=0
-        [junit] INFO: method correctForZigZag00_6 nc=0
-        [junit] INFO: method correctForZigZag00_7 nc=0
-        -----
-        [junit] INFO: method correctForTs nc=0
-        [junit] INFO: method correctForZigZag000_09 nc=0
-        [junit] INFO: method correctForZigZag00_16 nc=0
-        [junit] INFO: method correctForZigZag00_5 nc=0
-        [junit] INFO: method correctForZigZag00_6 nc=0
-        
-        */
-        
         correctForSingleHole_01(points, w, h);
         correctForSingleHole_02(points, w, h);
         correctForSingleHole_03(points, w, h);
@@ -129,6 +109,8 @@ public class PostLineThinnerCorrections {
         
         correctForZigZag00(points, w, h);
         correctForZigZag00_0(points, w, h);
+        correctForZigZag00_0_00(points, w, h);
+        correctForZigZag00_0_01(points, w, h);
         correctForZigZag00_0_0(points, w, h);
         correctForZigZag00_0_1(points, w, h);
         correctForZigZag00_0_2(points, w, h);
@@ -145,6 +127,7 @@ public class PostLineThinnerCorrections {
         correctForZigZag00_4(points, w, h);
         
         correctForZigZag00_11(points, w, h);
+        correctForZigZag00_12(points, w, h);
       
         correctForTs(points, w, h);
                 
@@ -152,11 +135,10 @@ public class PostLineThinnerCorrections {
         correctForLine0(points, w, h);
         
         // better edge extraction at the expense of unsharpening true corners:
-        correctForLs(points, w, h);
-        correctForLs2(points, w, h);
+        correctForLs_0(points, w, h);
+        correctForLs_1(points, w, h);        
+        correctForLs2_0(points, w, h);
         correctForLs2_1(points, w, h);
-        correctForLs3(points, w, h);
-        correctForLs4(points, w, h);
         
         correctForZigZag00_14(points, w, h);
         correctForZigZag00_15(points, w, h);
@@ -171,11 +153,10 @@ public class PostLineThinnerCorrections {
         correctForZigZag000_04(points, w, h);
         correctForZigZag000_07(points, w, h);
         
-        correctForLs(points, w, h);
-        correctForLs2(points, w, h);
+        correctForLs_0(points, w, h);
+        correctForLs_1(points, w, h);        
+        correctForLs2_0(points, w, h);
         correctForLs2_1(points, w, h);
-        correctForLs3(points, w, h);
-        correctForLs4(points, w, h);
         
         //correctForRemaining(points, w, h);
     }
@@ -218,6 +199,93 @@ public class PostLineThinnerCorrections {
             zeroes, ones, changeToZeroes, changeToOnes);
         
         nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    private void correctForZigZag00_0_00(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+                   
+        /*       
+            0  0  0         2
+            #  #  0         1
+            0  #* 0         0
+            0  #  #        -1
+            0  0  0        -2
+           -1  0  1  2  3        
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 1)); 
+        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, -2));        
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); 
+        zeroes.add(new PairInt(1, -1)); zeroes.add(new PairInt(1, -2));
+                
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 1));
+        
+        changeToZeroes.add(new PairInt(0, -1));
+        changeToZeroes.add(new PairInt(0, 1));
+                    
+        int nCorrections = 0;
+        
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    private void correctForZigZag00_0_01(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        /*       
+            0  0  0  #  0     1
+            0  #  #* #  0     0
+            0  #  0  0  0    -1
+           -2 -1  0  1  2   
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -1));
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1));        
+        zeroes.add(new PairInt(1, 1)); 
+        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
+                
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, 0));
+        ones.add(new PairInt(1, 0));  ones.add(new PairInt(1, -1));
+        
+        changeToZeroes.add(new PairInt(-1, 0));
+        changeToZeroes.add(new PairInt(1, 0));
+                    
+        int nCorrections = 0;
+        
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
         log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
@@ -587,6 +655,45 @@ public class PostLineThinnerCorrections {
         ones.add(new PairInt(2, 0));
         
         changeToZeroes.add(new PairInt(0, 0));
+                    
+        int nCorrections = 0;
+        
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    private void correctForZigZag00_12(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+    
+        /*       
+                0  #  0         1
+                0  #* #  #      0
+                #  #  0        -1
+                0  0  0        -2
+            -2 -1  0  1  2  3  
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
+        
+        ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(2, 0));
+ 
+        changeToZeroes.add(new PairInt(0, 1));
                     
         int nCorrections = 0;
         
@@ -1199,13 +1306,10 @@ public class PostLineThinnerCorrections {
      * but it allows clear point ordering when extracting edges from the
      * line thinned image.
      */
-    protected void correctForLs(Set<PairInt> points, int imageWidth, 
+    protected void correctForLs_0(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
-        /*  
-       a variant of the pattern in correctForZigZag00_5
-        
-        #               2
+        /*          
         0  #  0         1
         0  #* 0         0
         0  #< #        -1
@@ -1225,7 +1329,6 @@ public class PostLineThinnerCorrections {
         zeroes.add(new PairInt(0, 2));
         zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
         
-        ones.add(new PairInt(-1, -2));
         ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -1));
         ones.add(new PairInt(1, 1));
         ones.add(new PairInt(2, 2));
@@ -1244,38 +1347,39 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
-    protected void correctForLs2(Set<PairInt> points, int imageWidth, 
+    /**
+     * using this one unfortunately reduces the sharpness of real corners,
+     * but it allows clear point ordering when extracting edges from the
+     * line thinned image.
+     */
+    protected void correctForLs_1(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
-        /* 
-        a variant of the pattern in correctForZigZag00_5
+        /*          
+        0  #  0         1
+        0  #* 0         0
+        0  #< #        -1
+        0  0  #        -2
         
-        #               2
-        0  #  0  0      1
-        0  #*<#  #      0
-        0  0  0  0  #  -1
-        
-       -1  0  1  2  3
+       -1  0  1  2 
         */
         
         LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
-   
+    
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, 1));
-        zeroes.add(new PairInt(0, 1));
-        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 1)); 
+        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1)); 
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
         
-        ones.add(new PairInt(-1, -2));
-        ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(1, 0));
-        ones.add(new PairInt(2, 0));
-        ones.add(new PairInt(3, 1));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 1));
+        ones.add(new PairInt(1, 2));
         
-        changeToZeroes.add(new PairInt(0, 0));
+        changeToZeroes.add(new PairInt(0, 1));
                     
         int nCorrections = 0;
         
@@ -1289,12 +1393,10 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
-    protected void correctForLs2_1(Set<PairInt> points, int imageWidth, 
+    protected void correctForLs2_0(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
-        /* 
-        a variant of the pattern in correctForZigZag00_5
-        
+        /*        
         #               2
         0  #  0  0      1
         0  #*<#  #      0
@@ -1333,16 +1435,14 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
     
-    protected void correctForLs3(Set<PairInt> points, int imageWidth, 
+    protected void correctForLs2_1(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
        
-        /* 
-        a variant of the pattern in correctForZigZag00_5
-        
-        #               2
-        #  #  0  0      1
+        /*        
+           #            2
+        0  #  0  0      1
         0  #*<#  #      0
-        0  0  0  0  #  -1
+        0  0  0  0     -1
         
        -1  0  1  2  3
         */
@@ -1353,68 +1453,17 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
    
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, 1));
+        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, 1));
         zeroes.add(new PairInt(0, 1));
         zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
         zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, -1));
         
-        ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -2));
         ones.add(new PairInt(0, -1));
         ones.add(new PairInt(1, 0));
         ones.add(new PairInt(2, 0));
-        ones.add(new PairInt(3, 1));
         
         changeToZeroes.add(new PairInt(0, 0));
-                    
-        int nCorrections = 0;
-        
-        nCorrections += replacePattern(points, imageWidth, imageHeight,
-            zeroes, ones, changeToZeroes, changeToOnes);
-        
-        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
-            zeroes, ones, changeToZeroes, changeToOnes);
-        
-        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
-            Integer.toString(nCorrections));
-    }
-    
-    /**
-     * using this one unfortunately reduces the sharpness of real corners,
-     * but it allows clear point ordering when extracting edges from the
-     * line thinned image.
-     */
-    protected void correctForLs4(Set<PairInt> points, int imageWidth, 
-        int imageHeight) {
-       
-        /*  
-       a variant of the pattern in correctForZigZag00_5
-        
-        #               2
-        0  #  0         1
-        0  #* 0         0
-        0  #< #        -1
-        0  0  #  #     -2
-        
-       -1  0  1  2 
-        */
-        
-        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
-        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
-    
-        // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 1)); 
-        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1)); 
-        zeroes.add(new PairInt(0, 2));
-        zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
-        
-        ones.add(new PairInt(-1, -2));
-        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -1));
-        ones.add(new PairInt(1, 2)); ones.add(new PairInt(1, 1));
-        ones.add(new PairInt(2, 2));
-        
-        changeToZeroes.add(new PairInt(0, 1));
                     
         int nCorrections = 0;
         

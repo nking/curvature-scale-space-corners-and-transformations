@@ -213,8 +213,6 @@ public class CannyEdgeFilter {
 
         applyLineThinnerFilter(input);
         
-        //MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        //curveHelper.additionalThinning45DegreeEdges(gradientProducts[3], input);
     }
     
     /**

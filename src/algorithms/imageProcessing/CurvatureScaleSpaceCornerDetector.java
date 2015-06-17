@@ -6,8 +6,6 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
@@ -74,7 +72,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         // not re-using return maps for now, but they are available here
         // while refactoring the public method returns and signatures
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps = 
-            findCornersInScaleSpaceMaps();
+            findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);
         
         includeJunctionsInCorners();
     }
@@ -154,7 +152,7 @@ public class CurvatureScaleSpaceCornerDetector extends
             
             reinitialize(lowThreshold);
             
-            findCornersInScaleSpaceMaps();
+            findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);
             
             nCorners = corners.getN();
         }
@@ -202,25 +200,30 @@ public class CurvatureScaleSpaceCornerDetector extends
      * useful for other purposes, but are no longer needed for the corner
      * determination.
      * 
+     * @param theEdges
+     * @param doUseOutdoorMode
+     * @param outputCorners
      * @return scale space maps for each edge
      */
     protected Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > 
-    findCornersInScaleSpaceMaps() {
+    findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, final boolean
+        doUseOutdoorMode, final PairIntArray outputCorners) {
         
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > scaleSpaceMaps 
             = new HashMap<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >();
               
         // perform the analysis on the edgesScaleSpaceMaps
-        for (int i = 0; i < edges.size(); i++) {
+        for (int i = 0; i < theEdges.size(); i++) {
   
-            final PairIntArray edge = edges.get(i);
+            final PairIntArray edge = theEdges.get(i);
             
             final Map<SIGMA, ScaleSpaceCurve> map = 
                 createLowUpperThresholdScaleSpaceMaps(edge);
             
             scaleSpaceMaps.put(edge, map);
 
-            PairIntArray edgeCorners = findCornersInScaleSpaceMap(edge, map, i);
+            PairIntArray edgeCorners = findCornersInScaleSpaceMap(edge, map, i,
+                doUseOutdoorMode);
             
             log.log(Level.FINE, 
                 "{0}) number of corners adding ={1} for edge={2}", 
@@ -230,7 +233,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                         
             //store xc and yc for the edge
             for (int ii = 0; ii < edgeCorners.getN(); ii++) {
-                corners.add(edgeCorners.getX(ii), edgeCorners.getY(ii));
+                outputCorners.add(edgeCorners.getX(ii), edgeCorners.getY(ii));
             }
         }
         
@@ -252,11 +255,13 @@ public class CurvatureScaleSpaceCornerDetector extends
      * debugging purposes.
      * @param correctForJaggedLines
      * @param isAClosedCurve
+     * @param doUseOutdoorMode
      * @return 
      */
     protected PairFloatArray findCornersInScaleSpaceMap(
         final ScaleSpaceCurve scaleSpace, int edgeNumber, 
-        boolean correctForJaggedLines, boolean isAClosedCurve) {
+        boolean correctForJaggedLines, final boolean isAClosedCurve, 
+        final boolean doUseOutdoorMode) {
         
         float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
         
@@ -266,35 +271,15 @@ public class CurvatureScaleSpaceCornerDetector extends
             k, outputLowThreshold);
 
         List<Integer> maxCandidateCornerIndexes = findCandidateCornerIndexes(
-            k, minimaAndMaximaIndexes, outputLowThreshold[0]);
+            k, minimaAndMaximaIndexes, outputLowThreshold[0], doUseOutdoorMode);
     
         PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());
 
-        if (correctForJaggedLines && !useOutdoorMode) {
+        if (correctForJaggedLines && !doUseOutdoorMode) {
            
             PairIntArray jaggedLines = removeFalseCorners(
                 scaleSpace.getXYCurve(), maxCandidateCornerIndexes, 
                 isAClosedCurve);
-        
-            // while have the needed data structures, make a sublist of the 
-            // corners that should be better to use for matching the same 
-            // objects when in other images.
-            // this is in progress, and not completely correct yet
-         
-            List<Integer> subList = makeSublistForCornerMatching(
-                jaggedLines, maxCandidateCornerIndexes, 
-                scaleSpace.getSize(), isAClosedCurve);
-            
-            for (int j = 0; j < subList.size(); j++) {                
-                int idx = subList.get(j).intValue();
-                // exclude if k < 0.1?
-                //if (Math.abs(scaleSpace.getK(idx)) > 0.1) {
-                    int xte = Math.round(scaleSpace.getX(idx));
-                    int yte = Math.round(scaleSpace.getY(idx));            
-                    cornersForMatching.add(xte, yte);
-                //}
-            }
-            
         }
         
         int minDistFromEnds = 5;
@@ -303,7 +288,7 @@ public class CurvatureScaleSpaceCornerDetector extends
             
             int idx = maxCandidateCornerIndexes.get(ii);
             
-            if (useOutdoorMode && !scaleSpace.curveIsClosed()) {
+            if (doUseOutdoorMode && !scaleSpace.curveIsClosed()) {
                 if ((idx < minDistFromEnds)
                     || (idx > (nPoints - minDistFromEnds))) {
                     continue;
@@ -326,7 +311,8 @@ public class CurvatureScaleSpaceCornerDetector extends
      * @return 
      */
     private PairIntArray findCornersInScaleSpaceMap(final PairIntArray edge, 
-        final Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves, int edgeNumber) {
+        final Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves, 
+        final int edgeNumber, final boolean doUseOutdoorMode) {
        
         boolean isAClosedCurve = (edge instanceof PairIntArrayWithColor) &&
             (((PairIntArrayWithColor)edge).getColor() == 1);
@@ -346,7 +332,7 @@ public class CurvatureScaleSpaceCornerDetector extends
  
         PairFloatArray candidateCornersXY = 
             findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, true,
-            isAClosedCurve);
+            isAClosedCurve, doUseOutdoorMode);
 
         SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);
 
@@ -359,7 +345,8 @@ public class CurvatureScaleSpaceCornerDetector extends
 
             refinePrimaryCoordinates(candidateCornersXY.getX(), 
                 candidateCornersXY.getY(), candidateCornersXY.getN(),
-                scaleSpace, prevSigma, edgeNumber, isAClosedCurve);
+                scaleSpace, prevSigma, edgeNumber, isAClosedCurve,
+                doUseOutdoorMode);
             
             prevSigma = sigma;
 
@@ -611,16 +598,18 @@ public class CurvatureScaleSpaceCornerDetector extends
      * @param k
      * @param minMaxIndexes
      * @param lowThreshold
+     * @param doUseOutdoorMode
      * @return 
      */
     protected List<Integer> findCandidateCornerIndexes(float[] k, 
-        List<Integer> minMaxIndexes, float lowThreshold) {
+        List<Integer> minMaxIndexes, float lowThreshold, 
+        final boolean doUseOutdoorMode) {
 
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima 
 
         float factorAboveMin = 2.5f;//3.5f;// 10 misses some corners
 
-if (useOutdoorMode) {
+if (doUseOutdoorMode) {
     factorAboveMin = 3.5f;//10.f;
 }
    
@@ -690,9 +679,11 @@ if (useOutdoorMode) {
      * @param previousSigma
      * @param edgeNumber included for debugging
      */
-    private void refinePrimaryCoordinates(float[] xc, float[] yc, int xyLength,
-        ScaleSpaceCurve scaleSpace, SIGMA previousSigma,
-        int edgeNumber, boolean isAClosedCurve) {
+    private void refinePrimaryCoordinates(float[] xc, float[] yc, 
+        final int xyLength,
+        ScaleSpaceCurve scaleSpace, final SIGMA previousSigma,
+        final int edgeNumber, final boolean isAClosedCurve,
+        final boolean doUseOutdoorMode) {
         
         if (scaleSpace == null || scaleSpace.getK() == null) {
             //TODO: follow up on NPE here
@@ -701,7 +692,7 @@ if (useOutdoorMode) {
         
         PairFloatArray xy2 = 
             findCornersInScaleSpaceMap(scaleSpace, edgeNumber, false,
-            isAClosedCurve);
+            isAClosedCurve, doUseOutdoorMode);
        
         // roughly estimating maxSep as the ~FWZI of the gaussian
         //TODO: this may need to be altered to a smaller value
@@ -990,110 +981,7 @@ if (useOutdoorMode) {
         }
         log.info(sb.toString());
     }
-
-    private List<Integer> makeSublistForCornerMatching(PairIntArray jaggedLines, 
-        List<Integer> maxCandidateCornerIndexes, int lastCurveIndex,
-        boolean isAClosedCurve) {
-         
-        if (jaggedLines == null) {
-            return maxCandidateCornerIndexes;
-        }
-        
-        int minEdgeLen = 8;//10;
-        int minAssocDist = 4;
-        
-        List<Integer> subList = new ArrayList<Integer>();
-       
-        for (int i = 0; i < maxCandidateCornerIndexes.size(); i++) {
-            
-            int idx = maxCandidateCornerIndexes.get(i);
-        
-            boolean store = false;
-            
-            for (int j = 0; j < jaggedLines.getN(); j++) {
-                
-                int idx0 = jaggedLines.getX(j);
-                int idx1 = jaggedLines.getY(j);
-                
-                if ((idx >= (idx0 - 2)) && (idx <= (idx1 + 2))) {
-                    double len = idx1 - idx0 + 1;
-                    double frac = (idx - idx0 + 1)/len;
-                    if (frac < 0.5) {
-                        int nRight = (idx1 - idx) + 1;
-                        if (nRight < minEdgeLen) {
-                            // line to the right is small
-                            continue;
-                        }
-                        // look at line to the left if any
-                        int prevJIdx = j - 1;
-                        if ((prevJIdx == -1) && !isAClosedCurve) {
-                            continue;
-                        }
-                        if ((prevJIdx == -1) && isAClosedCurve) {
-                            prevJIdx = jaggedLines.getN() - 1;
-                            int diffPrev = (lastCurveIndex - 
-                                jaggedLines.getY(prevJIdx)) + idx;
-                            if (diffPrev > minAssocDist) {
-                                continue;
-                            }
-                        } else {
-                            int diffPrev = (idx0 - jaggedLines.getY(prevJIdx));
-                            if (diffPrev > minAssocDist) {
-                                continue;
-                            }
-                        }
-                        int nLeft = jaggedLines.getY(prevJIdx) -
-                            jaggedLines.getX(prevJIdx) + 1;
-                        if (nLeft < minEdgeLen) {
-                            // line to the left is small
-                            continue;
-                        }
-                    } else {
-                        int nLeft = (idx - idx0) + 1;
-                        if (nLeft < minEdgeLen) {
-                            // line to the left is small
-                            continue;
-                        }
-                        // look at line to the right if any
-                        int nextJIdx = j + 1;
-                        if ((nextJIdx == jaggedLines.getN()) && !isAClosedCurve) {
-                            continue;
-                        }
-                        if ((nextJIdx == jaggedLines.getN()) && isAClosedCurve) {
-                            nextJIdx = 0;
-                            int diffNext = (lastCurveIndex - idx + 
-                                jaggedLines.getX(nextJIdx));
-                            if (diffNext > minAssocDist) {
-                                continue;
-                            }
-                        }  else {
-                            int diffNext = jaggedLines.getX(nextJIdx) - idx1;
-                            if (diffNext > minAssocDist) {
-                                continue;
-                            }
-                        }
-                        int nRight = jaggedLines.getY(nextJIdx) -
-                            jaggedLines.getX(nextJIdx) + 1;
-                        if (nRight < minEdgeLen) {
-                            // line to the right is small
-                            continue;
-                        }
-                    }
-                    // if arrived here, the associated lines to the left and
-                    // right are >= minEdgeLen
-                    store = true;
-                    break;
-                }                
-            }
-            
-            if (store) {
-                subList.add(Integer.valueOf(idx));
-            }
-        }
-        
-        return subList;
-    }
-
+    
     private List<PairIntArray> copy(List<PairIntArray> edges) {
         List<PairIntArray> copied = new ArrayList<PairIntArray>();
         for (PairIntArray edge : edges) {

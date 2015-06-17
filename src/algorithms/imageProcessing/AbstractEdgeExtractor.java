@@ -101,10 +101,8 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         
         output = findEdgesIntermediateSteps(output);
         
-        removeEdgesShorterThan(output, edgeSizeLowerLimit);
-        
-        //adjustEdgesTowardsBrightPixels(output);
-        
+        //removeEdgesShorterThan(output, edgeSizeLowerLimit);
+                
         return output;
     }
     

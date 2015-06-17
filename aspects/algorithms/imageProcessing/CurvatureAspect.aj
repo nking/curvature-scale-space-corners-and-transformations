@@ -942,10 +942,11 @@ private static int n3 = 0;
     }
 
     before(final PairIntArray edge, 
-        final Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves, int edgeNumber) 
+        final Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves, final int edgeNumber,
+        final boolean doUseOutdoorMode) 
         : call(PairIntArray CurvatureScaleSpaceCornerDetector*.findCornersInScaleSpaceMap( 
-        PairIntArray, Map<SIGMA, ScaleSpaceCurve>, int) ) 
-        && args(edge, scaleSpaceCurves, edgeNumber) 
+        PairIntArray, Map<SIGMA, ScaleSpaceCurve>, int, boolean) ) 
+        && args(edge, scaleSpaceCurves, edgeNumber, doUseOutdoorMode) 
         && target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) {
 
         try {
@@ -1286,6 +1287,11 @@ private static int n3 = 0;
         Object[] args = (Object[])thisJoinPoint.getArgs();
 
         HistogramHolder hist = (HistogramHolder)args[0];
+
+        if ((hist == null) || (hist.getXHist() == null) 
+        || (hist.getXHist().length == 0)) {
+            return;
+        }
         
         try {
 
@@ -1362,11 +1368,12 @@ private static int n3 = 0;
         }
     }
 
-    before(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs, boolean isAClosedCurve) :
+    before(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs, 
+        final boolean isAClosedCurve, final boolean doUseOutdoorMode) :
         target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector)
         && call(protected PairFloatArray CurvatureScaleSpaceCornerDetector.findCornersInScaleSpaceMap(
-        ScaleSpaceCurve, int, boolean, boolean))
-        && args(scaleSpace, edgeNumber, rmFlseCrnrs, isAClosedCurve) {
+        ScaleSpaceCurve, int, boolean, boolean, boolean))
+        && args(scaleSpace, edgeNumber, rmFlseCrnrs, isAClosedCurve, doUseOutdoorMode) {
 
         log2.fine("before findCornersInScaleSpaceMap for edge " 
             + Integer.toString(edgeNumber) + ":");
@@ -1469,12 +1476,12 @@ private static int n3 = 0;
     }
 
     after(ScaleSpaceCurve scaleSpace, int edgeNumber, boolean rmFlseCrnrs,
-        boolean isAClosedCurve) 
+        final boolean isAClosedCurve, final boolean doUseOutdoorMode) 
         returning(PairFloatArray xy) :
         target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector)
         && call(protected PairFloatArray CurvatureScaleSpaceCornerDetector.findCornersInScaleSpaceMap(
-        ScaleSpaceCurve, int, boolean, boolean))
-        && args(scaleSpace, edgeNumber, rmFlseCrnrs, isAClosedCurve) {
+        ScaleSpaceCurve, int, boolean, boolean, boolean))
+        && args(scaleSpace, edgeNumber, rmFlseCrnrs, isAClosedCurve, doUseOutdoorMode) {
 
         log2.fine("after findCornersInScaleSpaceMap for edge " 
             + Integer.toString(edgeNumber) + ":");
