@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.CountingSort;
+import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
@@ -131,7 +132,9 @@ printJoinPoints(joinPoints, output);
  
         findJunctions(output);
         
-        //printJunctions(output);
+printJunctions(output);
+
+        spliceEdgesAtJunctionsIfImproves(output);
 
 /*        
         TODO:
@@ -446,7 +449,7 @@ on whether to divide an edge to make longer edges too
         
         // TODO:
         // there's an error above that sometimes results in the same join point
-        // specified for to different edges, so fixing that here until
+        // specified for two different edges, so fixing that here until
         // the algorithm gets revised.
         
         Set<PairInt> remove = new HashSet<PairInt>();
@@ -794,6 +797,9 @@ on whether to divide an edge to make longer edges too
                 this can happen if there is an error in the join point algorithm
                 resulting in the same join point to 2 different edges.  an update
                 in the location will eventually be an error in one of them.
+                
+                After more testing, will change this to discard the join point
+                and warn of error.
                 */
                 throw new IllegalStateException("ERROR in the updates? " + 
                     " loc0=" + loc0.getX() + "," + loc0.getY() + " n=" + n0 +
@@ -1032,5 +1038,120 @@ on whether to divide an edge to make longer edges too
 
         return 1;            
     }
+
+    private void spliceEdgesAtJunctionsIfImproves(List<PairIntArray> edges) {
+       
+        /*        
+        The main goal is to make better contours.
+        
+        Edges with junctions can sometimes be spliced and rejoined with another
+        junction edge to make a better edge where better edge may be a longer
+        edge or a closed contour useful for determining transformations
+        between images containing the contour.
+        
+        could be used with shape templates...
+        
+        For now, will make a simple algorithm which tries to increase the
+        length of the longest edges in a junction.
+        */
+        
+        for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
+            
+            Integer centerPixelIndex = entry.getKey();
+            
+            PairInt centerLoc = junctionLocationMap.get(centerPixelIndex);
+            assert(centerLoc != null);
+            
+            Set<Integer> adjIndexes = entry.getValue();
+            
+            int[] pixIndexes = new int[adjIndexes.size() + 1];
+            
+            // lengths holds the edge up until the junction.  splices the edge
+            // at the junction figuratively and counts number of pixels before
+            // and after splice and keeps the longest.
+            int[] lengths = new int[pixIndexes.length];
+            
+            pixIndexes[0] = centerPixelIndex.intValue();
+            lengths[0] = (new Splice(edges.get(centerLoc.getX()), 
+                centerLoc.getY())).getLengthOfLongestSide();
+            
+            int maxN = lengths[0];
+            
+            int count = 1;
+            
+            for (Integer pixIndex : adjIndexes) {
+                
+                pixIndexes[count] = pixIndex.intValue();
+                
+                PairInt loc = junctionLocationMap.get(pixIndex);
+                
+                lengths[count] = (new Splice(edges.get(loc.getX()), 
+                    loc.getY())).getLengthOfLongestSide();
+           
+                if (lengths[count] > maxN) {
+                    maxN = lengths[count];
+                }
+                
+                count++;
+            }
+            
+            if ((maxN > lengths.length) || (maxN > 10000000)) {
+                MultiArrayMergeSort.sortByDecr(lengths, pixIndexes);
+            } else {
+                CountingSort.sortByDecr(lengths, pixIndexes, maxN);
+            }
+            
+            int pixIdx0 = pixIndexes[0];
+            
+            int pixIdx1 = pixIndexes[1];
+            
+            PairInt loc0 = junctionLocationMap.get(pixIdx0);
+            
+            PairInt loc1 = junctionLocationMap.get(pixIdx1);
+            
+            if (loc0.getX() != loc1.getX()) {
+                
+                Splice splice0 = new Splice(edges.get(loc0.getX()), 
+                    loc0.getY());
+                
+                Splice splice1 = new Splice(edges.get(loc1.getX()), 
+                    loc1.getY());
+                
+                //TODO: paused here
+                
+                // splice splice0 into 2 edges 
+                // add the smaller part to edges
+                // and update 
+                // junctionLocationMap for the changes in the "trimmed" half
+                
+                // do the same for splice1
+                
+                // append splice1 to splice0
+                
+                // update junctionLocationMap for the changes in the first half of splice1
+            }
+        }
+    }
  
+    public static class Splice {
+        
+        private final PairIntArray edge;
+        
+        private final int spliceIndex;
+        
+        public Splice(PairIntArray theEdge, int theEdgeSpliceIndex) {
+            edge = theEdge;
+            spliceIndex = theEdgeSpliceIndex;
+        }
+        
+        public int getLengthOfLongestSide() {
+            // the count always includes the splice
+            int n0 = spliceIndex + 1;
+            int n1 = edge.getN() - spliceIndex;
+            if (n0 > n1) {
+                return n0;
+            }
+            return n1;
+        }
+    }
 }
