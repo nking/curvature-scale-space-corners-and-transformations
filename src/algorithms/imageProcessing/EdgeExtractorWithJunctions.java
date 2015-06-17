@@ -7,6 +7,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -135,12 +136,7 @@ printJoinPoints(joinPoints, output);
 printJunctions(output);
 
         spliceEdgesAtJunctionsIfImproves(output);
-
-/*        
-        TODO:
-can see that can use the junction points next to make decisions
-on whether to divide an edge to make longer edges too
-    */    
+    
         return output;
     }
     
@@ -1055,8 +1051,13 @@ on whether to divide an edge to make longer edges too
         length of the longest edges in a junction.
         */
         
+        Map<Integer, PairInt> theJunctionLocationMap = 
+            new HashMap<Integer, PairInt>();
+        
+        Set<Integer> removeEdgeIndexes = new HashSet<Integer>();
+        
         for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
-            
+                        
             Integer centerPixelIndex = entry.getKey();
             
             PairInt centerLoc = junctionLocationMap.get(centerPixelIndex);
@@ -1072,8 +1073,8 @@ on whether to divide an edge to make longer edges too
             int[] lengths = new int[pixIndexes.length];
             
             pixIndexes[0] = centerPixelIndex.intValue();
-            lengths[0] = (new Splice(edges.get(centerLoc.getX()), 
-                centerLoc.getY())).getLengthOfLongestSide();
+            lengths[0] = (new Splice(edges.get(centerLoc.getX())))
+                .getLengthOfLongestSide(centerLoc.getY());
             
             int maxN = lengths[0];
             
@@ -1085,8 +1086,14 @@ on whether to divide an edge to make longer edges too
                 
                 PairInt loc = junctionLocationMap.get(pixIndex);
                 
-                lengths[count] = (new Splice(edges.get(loc.getX()), 
-                    loc.getY())).getLengthOfLongestSide();
+                if ((centerLoc.getX() == loc.getX()) || 
+                    removeEdgeIndexes.contains(Integer.valueOf(loc.getX()))) {
+                    count++;
+                    continue;
+                }
+                                                
+                lengths[count] = (new Splice(edges.get(loc.getX())))
+                    .getLengthOfLongestSide(loc.getY());
            
                 if (lengths[count] > maxN) {
                     maxN = lengths[count];
@@ -1105,53 +1112,103 @@ on whether to divide an edge to make longer edges too
             
             int pixIdx1 = pixIndexes[1];
             
-            PairInt loc0 = junctionLocationMap.get(pixIdx0);
+            PairInt loc0 = junctionLocationMap.get(Integer.valueOf(pixIdx0));
             
-            PairInt loc1 = junctionLocationMap.get(pixIdx1);
+            PairInt loc1 = junctionLocationMap.get(Integer.valueOf(pixIdx1));
             
-            if (loc0.getX() != loc1.getX()) {
+            if (loc0.getX() != loc1.getX() && (lengths[0] != 0) && (lengths[1] != 0)) {
                 
-                Splice splice0 = new Splice(edges.get(loc0.getX()), 
-                    loc0.getY());
-                
-                Splice splice1 = new Splice(edges.get(loc1.getX()), 
-                    loc1.getY());
-                
-                //TODO: paused here
+                int[] splice0Y = new int[]{loc0.getY()};
+                Splice splice0 = new Splice(edges.get(loc0.getX()));
                 
                 // splice splice0 into 2 edges 
-                // add the smaller part to edges
-                // and update 
-                // junctionLocationMap for the changes in the "trimmed" half
+                PairIntArray[] spliced0 = splice0.splice(splice0Y);
                 
-                // do the same for splice1
+                int[] splice1Y = new int[]{loc1.getY()};
+                Splice splice1 = new Splice(edges.get(loc1.getX()));  
+                
+                PairIntArray[] spliced1 = splice1.splice(splice1Y);
+                
+                if ((spliced0[0].getN() == 0) || (spliced1[0].getN() == 0)) {
+                    theJunctionLocationMap.put(Integer.valueOf(pixIdx0), loc0);
+                    theJunctionLocationMap.put(Integer.valueOf(pixIdx1), loc1);
+                    continue;
+                }
+
+                // add the smaller part of spliced0 to edges
+                edges.add(spliced0[1]);
+                
+                // if splice0Y[0] is first point, reverse the edge before append
+                if (splice0Y[0] == 0) {
+                    spliced0[0].reverse();
+                    splice0Y[0] = spliced0[0].getN() - 1;
+                }
+                
+                // if splice1Y[0] is not the first point, reverse the edge before append
+                if (splice1Y[0] != 0) {
+                    spliced1[0].reverse();
+                    splice1Y[0] = 0;
+                }
+                
+                theJunctionLocationMap.put(Integer.valueOf(pixIdx0), 
+                    new PairInt(loc0.getX(), splice0Y[0]));
+               
+                // add the smaller part of spliced1 to edges
+                edges.add(spliced1[1]);
                 
                 // append splice1 to splice0
+                int nSplice0 = spliced0[0].getN();
                 
-                // update junctionLocationMap for the changes in the first half of splice1
+                spliced0[0].addAll(spliced1[0]);
+                
+                PairInt loc1Edit = new PairInt(loc0.getX(), nSplice0 + splice1Y[0]);
+                theJunctionLocationMap.put(Integer.valueOf(pixIdx1), loc1Edit);
+                
+                PairIntArray edge0 = edges.get(loc0.getX());
+                edge0.swapContents(spliced0[0]);
+                
+                removeEdgeIndexes.add(Integer.valueOf(loc1.getX()));
+                                
+                // add remaining points in pixIndexes to theJunctionLocationMap
+                for (int i = 2; i < pixIndexes.length; ++i) {
+                    
+                    Integer pixIndex = Integer.valueOf(pixIndexes[i]);
+                    
+                    PairInt loc = junctionLocationMap.get(pixIndex);
+                                    
+                    theJunctionLocationMap.put(pixIndex, loc);
+                }
             }
         }
+        
+        if (!removeEdgeIndexes.isEmpty()) {
+        
+            int[] sortedRmIndexes = new int[removeEdgeIndexes.size()];
+            int count = 0;
+            for (Integer removeIndex : removeEdgeIndexes) {
+                int rmIdx = removeIndex.intValue();
+                sortedRmIndexes[count] = rmIdx;
+                ++count;
+            }
+            Arrays.sort(sortedRmIndexes);
+         
+            for (int i = (sortedRmIndexes.length - 1); i > -1; --i) {
+                
+                int rmIdx = sortedRmIndexes[i];
+                
+                edges.remove(rmIdx);
+                
+                for (Entry<Integer, PairInt> entry : theJunctionLocationMap.entrySet()) {
+                    PairInt loc = entry.getValue();
+                    if (loc.getX() >= rmIdx) {
+                        loc.setX(loc.getX() - 1);
+                    }
+                }
+            }            
+        }
+        
+        junctionLocationMap.clear();
+        junctionLocationMap.putAll(theJunctionLocationMap);
     }
  
-    public static class Splice {
-        
-        private final PairIntArray edge;
-        
-        private final int spliceIndex;
-        
-        public Splice(PairIntArray theEdge, int theEdgeSpliceIndex) {
-            edge = theEdge;
-            spliceIndex = theEdgeSpliceIndex;
-        }
-        
-        public int getLengthOfLongestSide() {
-            // the count always includes the splice
-            int n0 = spliceIndex + 1;
-            int n1 = edge.getN() - spliceIndex;
-            if (n0 > n1) {
-                return n0;
-            }
-            return n1;
-        }
-    }
 }

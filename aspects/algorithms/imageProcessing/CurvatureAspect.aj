@@ -922,6 +922,32 @@ private static int n3 = 0;
         }
     }
 
+    after(List<PairIntArray> edges) returning() :
+        execution(private void algorithms.imageProcessing.EdgeExtractorWithJunctions.spliceEdgesAtJunctionsIfImproves( 
+        List<PairIntArray>) ) 
+        && args(edges) 
+        && target(algorithms.imageProcessing.EdgeExtractorWithJunctions) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof EdgeExtractorWithJunctions)) {
+            return;
+        }
+
+        EdgeExtractorWithJunctions instance = (EdgeExtractorWithJunctions)obj;
+
+        Image img = instance.getImage().copyImageToGreen();
+        boolean writeImage = true;
+        try {
+            ImageIOHelper.addAlternatingColorCurvesToImage(
+                edges,
+                "after_junction_splice_" + outImgNum + ".png", 
+                writeImage, img);
+        } catch(IOException e) {
+            log2.severe(e.getMessage());
+        }
+    }
+
     after(GreyscaleImage input) returning() :
         call(public void algorithms.imageProcessing.PostLineThinnerCorrections.correctForArtifacts( 
         GreyscaleImage) ) 
