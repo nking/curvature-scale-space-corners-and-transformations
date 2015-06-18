@@ -371,6 +371,8 @@ public class KMeansPlusPlus {
         int[] indexOfDistOfSeeds, SecureRandom sr, 
         int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
         
+        //TODO: update these notes.  no longer using random in this method
+        
         // we want to choose randomly from the indexes based upon probabilities 
         // that scale by distance
         // so create an array that represents by number, the probability of a 
