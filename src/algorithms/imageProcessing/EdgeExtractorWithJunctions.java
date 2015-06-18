@@ -45,6 +45,8 @@ import java.util.Set;
  */
 public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
     
+    private boolean debug = false;
+    
     /**
      * map with key = center of junction pixel coordinates; 
      * value = set of adjacent pixels when there are more than the preceding 
@@ -127,15 +129,15 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         //O(N)
         Map<PairInt, PairInt> joinPoints = findJoinPoints(output);
         
-printJoinPoints(joinPoints, output);
+       //printJoinPoints(joinPoints, output);
         
         output = joinOnJoinPoints(joinPoints, output);
  
         findJunctions(output);
         
-//printJunctions(output);
+        //printJunctions(output);
 
-        //spliceEdgesAtJunctionsIfImproves(output);
+        spliceEdgesAtJunctionsIfImproves(output);
     
         return output;
     }
@@ -979,7 +981,7 @@ printJoinPoints(joinPoints, output);
             int y = edges.get(edgeIdx).getY(indexWithinEdge);
             sb.append(String.format("edge=%d idx=%d (out of %d) pixIdx=%d (%d,%d)\n", 
                 edgeIdx, indexWithinEdge, edgeN, pixelIndex.intValue(), x, y));
-        }
+        }//edgeIdx=49 indexWithinEdge=28
         
         return sb.toString();
     }
@@ -1095,19 +1097,18 @@ printJoinPoints(joinPoints, output);
             pixelIndexes.add(pixelIndex);
             theEdgeToPixelIndexMap.put(edgeIndex, pixelIndexes);
         }
-                
+        
+        if (debug) {
+            assertConsistentEdgeCapacity(theEdgeToPixelIndexMap, 
+                junctionLocationMap, junctionMap, edges);
+        }
+        
         for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
                         
             Integer centerPixelIndex = entry.getKey();
             PairInt centerLoc = junctionLocationMap.get(centerPixelIndex);
             assert(centerLoc != null);
-            
-log.info("processing junction w/ center pixel index=" + centerPixelIndex + 
-" and loc=" + centerLoc.getX() + ":" + centerLoc.getY());
-
-String str = printJunctionsToString(junctionLocationMap, junctionMap, edges);
-log.info(str);            
-//1,2,3      
+        
             Set<Integer> adjIndexes = entry.getValue();
             
             int[] pixIndexes = new int[adjIndexes.size() + 1];
@@ -1213,9 +1214,6 @@ log.info(str);
                 int splice00N = spliced0[0].getN();
                 int splice10N = spliced1[0].getN();
                 
-log.info("splice edge " + edge0Idx + " (" + splice00N + " points) "
-+ "to edge " + edge1Idx + " (" + splice10N + " points)");
-
                 // if splice0Y[0] is first point, reverse the edge before append
                 if (splice0Y[0] == 0) {
                     spliced0[0].reverse();
@@ -1226,9 +1224,6 @@ log.info("splice edge " + edge0Idx + " (" + splice00N + " points) "
                         PairInt sLoc = sEntry.getValue();
                         int idxRev = splice00N - sLoc.getY() - 1;
                         
-log.info(String.format("  rev0: update Y for pixIdx=%d   loc %d:%d to %d:%d (edgeN=%d) (largerSpliceLocations0)", 
-sEntry.getKey().intValue(), sLoc.getX(), sLoc.getY(), sLoc.getX(), idxRev, splice00N));
-
                         sLoc.setY(idxRev);
                         assert(idxRev < splice00N);                        
                     }
@@ -1243,9 +1238,6 @@ sEntry.getKey().intValue(), sLoc.getX(), sLoc.getY(), sLoc.getX(), idxRev, splic
                     for (Entry<Integer, PairInt> sEntry : largerSpliceLocations1.entrySet()) {
                         PairInt sLoc = sEntry.getValue();
                         int idxRev = splice10N - sLoc.getY() - 1;
-                        
-log.info(String.format("  rev1: update Y for pixIdx=%d   loc %d:%d to %d:%d (edgeN=%d) (largerSpliceLocations1)", 
-sEntry.getKey().intValue(), sLoc.getX(), sLoc.getY(), sLoc.getX(), idxRev, splice10N));                        
                         
                         sLoc.setY(idxRev);
                         assert(idxRev < splice10N);
@@ -1268,9 +1260,6 @@ sEntry.getKey().intValue(), sLoc.getX(), sLoc.getY(), sLoc.getX(), idxRev, splic
                     PairInt loc = junctionLocationMap.get(sPixelIndex);
                     assert (loc != null);
                     
-log.info(String.format("  splice0_0: update Y for pixIdx=%d   loc %d:%d to %d:%d (edgeN=%d)  (**make sure edgeIdx is same)", 
-sPixelIndex.intValue(), loc.getX(), loc.getY(), loc.getX(), sLoc.getY(), splice00N));
-
                     // edge index remains same, but the index within edge may have changed
                     loc.setY(sLoc.getY());
                     assert(sLoc.getY() < edge0.getN());
@@ -1280,9 +1269,6 @@ sPixelIndex.intValue(), loc.getX(), loc.getY(), loc.getX(), sLoc.getY(), splice0
                     PairInt sLoc = sEntry.getValue();
                     PairInt loc = junctionLocationMap.get(sPixelIndex);
                     assert (loc != null);
-                    
-log.info(String.format("  splice0_1: update X,Y for pixIdx=%d   loc %d:%d to %d:%d (edgeN=%d)  (**make sure edgeIdx is different)", 
-sPixelIndex.intValue(), loc.getX(), loc.getY(), splice01InsertedIdx, sLoc.getY(), splice00N));                    
                     
                     // location is new edge with edited index within edge
                     loc.setX(splice01InsertedIdx);
@@ -1306,9 +1292,6 @@ sPixelIndex.intValue(), loc.getX(), loc.getY(), splice01InsertedIdx, sLoc.getY()
                     PairInt sLoc = sEntry.getValue();
                     PairInt loc = junctionLocationMap.get(sPixelIndex);
                     assert (loc != null);
-                    
-log.info(String.format("  splice1_1: update X,Y for pixIdx=%d   loc %d:%d to %d:%d (edgeN=%d)  (**make sure edgeIdx is different)", 
-sPixelIndex.intValue(), loc.getX(), loc.getY(), splice11InsertedIdx, sLoc.getY(), splice10N));                   
                     
                     // location is new edge with edited index within edge
                     loc.setX(splice11InsertedIdx);
@@ -1334,10 +1317,7 @@ sPixelIndex.intValue(), loc.getX(), loc.getY(), splice11InsertedIdx, sLoc.getY()
                     PairInt sLoc = sEntry.getValue();
                     PairInt loc = junctionLocationMap.get(sPixelIndex);
                     assert (loc != null);
-                    
-log.info(String.format("  splice1_0: update X,Y for pixIdx=%d   loc %d:%d to %d:%d (edgeN=%d)", 
-sPixelIndex.intValue(), loc.getX(), loc.getY(), edge0Idx, sLoc.getY() + splice00N, edge0.getN()));                     
-                    
+                   
                     // location after append is loc0.getX() with offset of splice00N
                     loc.setX(edge0Idx);
                     loc.setY(sLoc.getY() + splice00N);
@@ -1361,30 +1341,32 @@ sPixelIndex.intValue(), loc.getX(), loc.getY(), edge0Idx, sLoc.getY() + splice00
                 }
                 
                 // remove edge1Idx from edges as it's now part of edge edge0Idx
-                edges.remove(edge1Idx);
-log.info("removed edge " + edge1Idx);
-int z = 1;
+                PairIntArray removedEdge = edges.remove(edge1Idx);
+                assert(removedEdge != null);
+
+                if (debug) {
+                    // assert that theEdgeToPixelIndexMap does not have any
+                    // entries for the edge that was just removed.
+                    // all entries in theEdgeToPixelIndexMap and the junction
+                    // maps should have been updated above for edge1Idx
+                    Set<Integer> pixelIndexes = theEdgeToPixelIndexMap.get(edge1Idx);
+                    assert(pixelIndexes == null || pixelIndexes.isEmpty());
+                }
+
                 // ---- update all entries in junctionLocationMap and pixelIndexes for the removal
                 // ---- there shouldn't be any entries in for loc1.getX() at this point though
                 /*
-                0
-                1
-                2 <-- rm
-                3  <-- becomes 2
-                4  <-- becomes 3
+                0                0
+                ...             ...
+                49               49
+                50 <-- rm        prev 51, now 50.
+                51 
                 */
-                for (int eIdx = edge1Idx; eIdx <= edges.size(); ++eIdx) {
+                for (int eIdx = (edge1Idx + 1); eIdx <= edges.size(); ++eIdx) {
                                         
                     Integer edgeIndex = Integer.valueOf(eIdx);
                     
                     Set<Integer> pixelIndexes = theEdgeToPixelIndexMap.get(edgeIndex);
-                   
-                    if (eIdx == edge1Idx) {
-                        if (!((pixelIndexes == null) || pixelIndexes.isEmpty())) {
-                            throw new IllegalStateException(
-                            "Error in alg updates of junction data structures");
-                        }
-                    }
                    
                     if (pixelIndexes != null) {
                         for (Integer pixelIndex : pixelIndexes) {
@@ -1399,8 +1381,98 @@ int z = 1;
                         theEdgeToPixelIndexMap.put(edgeIndexEarlier, pixelIndexes);
                     }                                        
                 }
+                
+                if (debug) {
+                    assertConsistentEdgeCapacity(theEdgeToPixelIndexMap, 
+                        junctionLocationMap, junctionMap, edges);
+                }
             }
         }        
+    }
+
+    private void assertConsistentEdgeCapacity(
+        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap, 
+        Map<Integer, PairInt> junctionLocationMap, 
+        Map<Integer, Set<Integer>> junctionMap, 
+        List<PairIntArray> edges) {
+        
+        for (Entry<Integer, PairInt> entry : junctionLocationMap.entrySet()) {
+            Integer pixelIndex = entry.getKey();
+            assert(pixelIndex != null);
+            PairInt loc = entry.getValue();
+            int edgeIdx = loc.getX();
+            int idx = loc.getY();
+            PairIntArray edge = edges.get(edgeIdx);
+            assert(edge != null);
+            assert (idx < edge.getN()) :
+                "idx=" + idx + " edgeN=" + edge.getN() + " edgeIndex=" + edgeIdx;
+        }
+        /*
+        previous edge 50 had n=24
+        current edge 49 has n=24.
+        
+        java.lang.AssertionError: idx=28 edgeN=24 edgeIndex=49
+        
+        
+        processing junction w/ center pixel index=50427 and loc=3:15
+        ...[junit] edge=49 idx=28 (out of 39) pixIdx=42810 (13,247)
+        
+        before splice edge 4 (137 points) to edge 3 (16 points)
+        
+        -----------
+        splice edge 49 (29 points) to edge 50 (8 points), that is append 50 to end of 49
+        50 edge size is 8
+        49 edge size is 49.  spliced to 29 and 20
+          'off by 1'?  spliced last point is idx=28 within edge 49 before...
+        
+        splice0_0: update Y for pixIdx=42810   loc 49:28 to 49:28 (edgeN=29)  (**make sure edgeIdx is same)
+        
+        */
+        
+        for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
+            
+            Integer pixelIndex = entry.getKey();
+            Set<Integer> adjPixelIndexes = entry.getValue();
+            
+            PairInt loc = junctionLocationMap.get(pixelIndex);
+            assert(loc != null);
+            
+            int edgeIdx = loc.getX();
+            int idx = loc.getY();
+            PairIntArray edge = edges.get(edgeIdx);
+            assert(edge != null);
+            assert(idx < edge.getN());
+            
+            for (Integer adjPixelIndex : adjPixelIndexes) {
+                PairInt adjLoc = junctionLocationMap.get(adjPixelIndex);
+                assert(adjLoc != null);
+                edgeIdx = adjLoc.getX();
+                idx = adjLoc.getY();
+                edge = edges.get(edgeIdx);
+                assert(edge != null);
+                assert(idx < edge.getN());
+            }
+        }
+        
+        for (Entry<Integer, Set<Integer>> entry : theEdgeToPixelIndexMap.entrySet()) {
+            Integer edgeIndex = entry.getKey();
+            Set<Integer> pixelIndexes = entry.getValue();
+            
+            PairIntArray edge = edges.get(edgeIndex.intValue());
+            assert(edge != null);
+            
+            for (Integer pixelIndex : pixelIndexes) {
+                PairInt loc = junctionLocationMap.get(pixelIndex);
+                assert(loc != null);
+
+                int edgeIdx = loc.getX();
+                int idx = loc.getY();
+                
+                assert(edgeIdx == edgeIndex.intValue());
+                
+                assert(idx < edge.getN());
+            }
+        }
     }
  
 }
