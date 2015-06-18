@@ -23,8 +23,8 @@ import java.util.Set;
  * 
  Edge extraction
     Local Methods:
-        (1) DFS walk through connected pixel to form a sequence of pixels called
-            an edge.
+        (1) DFS walk through adjacent non-zero pixels to form a sequence of 
+            pixels called an edge.
           
         (2) find join points
         
@@ -32,12 +32,13 @@ import java.util.Set;
         
         (4) find junction points
          
-        (5)
-            
-        (6) find edge endpoints which are separated from one another by a gap of
-            one and fill in the gap while merging the edges.
+        (5) using the junction points, splice together the edges to improve
+            the edges.  Currently, improve means to make the edges longer
+            (which is good for an image expected to have one contour for 
+             example, and doesn't harm corner finding for non-contour goals).
          
-        (7) remove edges shorter than a minimum length
+        (7) remove edges shorter than a minimum length (this may of may not
+            be currently enabled)
         
   @see AbstractEdgeExtractor
   * 
