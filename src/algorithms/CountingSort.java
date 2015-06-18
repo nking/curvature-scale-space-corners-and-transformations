@@ -1,6 +1,7 @@
 package algorithms;
 
 import algorithms.util.PairInt;
+import java.util.Arrays;
 
 /**
  * a sort for integers in range 0 to k that has an O(N) runtime at the expense 
@@ -40,6 +41,10 @@ public class CountingSort {
             throw new IllegalArgumentException("max must be > 0");
         }
         
+        if (a.length < 2) {
+            return Arrays.copyOf(a, a.length);
+        }
+        
         long[] c = new long[max + 1];
 
         // c holds frequency of each number by index, e.g. c[0] holds the number of 0's in a
@@ -57,17 +62,13 @@ public class CountingSort {
         }
         
         int[] b = new int[a.length];
-        
-        int maxInt = Integer.MAX_VALUE;
-        
+                
         // use the order imposed by c to write the values of a into b.  c holds
         // frequency, that is place markers too so that is updated as b is written
         for (int i = (a.length - 1); i > -1; i--) {
             
             int aIdx = a[i];
-            
-            assert (c[aIdx] > maxInt);
-            
+                        
             int cfa = (int)c[aIdx];
             b[cfa - 1] = aIdx;
             c[aIdx]--;
@@ -103,6 +104,9 @@ public class CountingSort {
         if (max <= 0) {
             throw new IllegalArgumentException("max must be > 0");
         }
+        if (a.length < 2) {
+            return;
+        }
         
         long[] c = new long[max + 1];
 
@@ -122,17 +126,13 @@ public class CountingSort {
         
         int[] aa = new int[a.length];
         int[] bb = new int[a.length];
-        
-        int maxInt = Integer.MAX_VALUE;
-        
+                
         // use the order imposed by c to write the values of a into aa.  c holds
         // frequency, that is place markers too so that is updated as aa is written
         for (int i = (a.length - 1); i > -1; i--) {
             
             int aIdx = a[i];
-            
-            assert (c[aIdx] > maxInt);
-            
+                        
             int cfa = (int)c[aIdx];
             aa[cfa - 1] = aIdx;
             bb[cfa - 1] = b[i];
@@ -170,6 +170,9 @@ public class CountingSort {
         if (maxValueInA <= 0) {
             throw new IllegalArgumentException("max must be > 0");
         }
+        if (a.length < 2) {
+            return;
+        }
         
         long[] c = new long[maxValueInA + 1];
 
@@ -189,9 +192,7 @@ public class CountingSort {
         
         int[] aa = new int[a.length];
         int[] bb = new int[a.length];
-        
-        int maxInt = Integer.MAX_VALUE;
-        
+                
         int n = a.length;
         
         // use the order imposed by c to write the values of a into aa.  c holds
@@ -199,9 +200,7 @@ public class CountingSort {
         for (int i = (n - 1); i > -1; i--) {
             
             int aIdx = a[i];
-            
-            assert (c[aIdx] > maxInt);
-            
+                        
             int cfa = (int)c[aIdx];
             
             int ii = n - (cfa - 1) - 1;
@@ -231,6 +230,9 @@ public class CountingSort {
         if (maxA <= 0) {
             throw new IllegalArgumentException("maxA must be > 0");
         }
+        if (a.length < 2) {
+            return;
+        }
         
         long[] c = new long[maxA + 1];
 
@@ -250,17 +252,13 @@ public class CountingSort {
         
         int[] aa = new int[a.length];
         Object[] bb = new Object[a.length];
-        
-        int maxInt = Integer.MAX_VALUE;
-        
+                
         // use the order imposed by c to write the values of a into aa.  c holds
         // frequency, that is place markers too so that is updated as aa is written
         for (int i = (a.length - 1); i > -1; i--) {
             
             int aIdx = a[i];
-            
-            assert (c[aIdx] > maxInt);
-            
+                        
             int cfa = (int)c[aIdx];
             aa[cfa - 1] = aIdx;
             bb[cfa - 1] = b[i];

@@ -215,6 +215,11 @@
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" 
            haltonerror="true" haltonfailure="true">
         	<jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+            
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
                 <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
@@ -229,6 +234,8 @@
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
 
             <jvmarg value="-XX:-UseSplitVerifier" />
+
+            <jvmarg value="-enableassertions" />
 
             <!-- avoiding classpath clashes with tests in the submodule by
             limiting the tests run here -->
@@ -274,7 +281,7 @@
                 <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
             </argfiles>
         	<inpath>
-        		<pathelement location="${src.out.dir}"/>
+      		<pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.25.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
@@ -286,6 +293,7 @@
         </iajc>
 
         <java classname="${test}" fork="true" failonerror="true">
+            <jvmarg value="-enableassertions"/>
             <jvmarg value="-Xms512m"/>
             <jvmarg value="-Xmx1024m"/>
             <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
@@ -346,6 +354,7 @@
         </iajc>
            
         <java classname="${test}" fork="true" failonerror="true">
+            <jvmarg value="-enableassertions"/>
             <jvmarg value="-Xms512m"/>
             <jvmarg value="-Xmx1024m"/>
             <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
@@ -406,6 +415,11 @@
         <echo message="running tests, output is in ${tests.out.dir}" />
         <junit fork="yes" showoutput="false" filtertrace="off" 
             printsummary="yes" haltonerror="true" haltonfailure="true">
+            
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+            
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
@@ -413,7 +427,11 @@
             <formatter type="plain" usefile="true"/>
             <sysproperty key="java.util.logging.config.file" 
                 value="${src.out.dir}/logging.properties"/>
+
             <jvmarg value="-XX:-UseSplitVerifier" />
+
+            <jvmarg value="-enableassertions" />
+
             <batchtest fork="yes" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
                     <include name="**/*Test.class"/>
@@ -439,6 +457,10 @@
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" 
             haltonerror="true" haltonfailure="true">
             
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+            
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
@@ -448,7 +470,9 @@
             <jvmarg value="-XX:-UseSplitVerifier" />
             
             <formatter type="plain" usefile="true"/>
-            <jvmarg value="-XX:-UseSplitVerifier" />
+
+            <jvmarg value="-enableassertions" />
+
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <test name="${test}" fork="yes" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
@@ -465,8 +489,11 @@
         </fail>
         <junit fork="yes" showoutput="true" filtertrace="off">
             <!--<jvmarg value="-ea"/>-->
-
-            <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+            
+            <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
 
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <classpath>
