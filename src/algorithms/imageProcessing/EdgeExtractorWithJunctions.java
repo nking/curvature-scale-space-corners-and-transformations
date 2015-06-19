@@ -144,11 +144,13 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
     }
     
     /**
-     * Iterate over each point looking for its neighbors and noting when
-     * it has 2 that are not in it's edge as a join point.
-     * The results are stored in member variable joinPoint.
+     * Find the join points of edges which are adjacent to one another and to
+     * no other edges.  This method is intended to follow the first creation
+     * of edges from the line thinned edge image to find the unambiguously
+     * connectable edges.  (Note that the method findJunctions(...) is later 
+     * used to find where there are more than 2 adjacent pixels to any pixel.)
      * 
-     * runtime complexity is O(N)
+     * runtime complexity is O(N).
      * 
      * @param edges 
      * @return hashmap with key = edge index and index within edge of pixel;
@@ -161,8 +163,190 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         or points near the endpoints, so this could be rewritten to 
         iterate only over endpoints instead of every point in every edge.
         */
+             
+        /*
+        redesigning algorithm to only visit endpoints, but to allow for the
+        case that the real endpoints are sometimes a corner in which the first
+        or last points could be re-ordered and connect with the adjacent edge.
         
+        Goal is to find where there are two edges which are adjacent to each
+        other at their endpoints.  If there is more than one "edge" adjacent
+        to an edge, then that is defined as a junction and is not handled here
+        but is instead handled in the method findJunctions.
         
+        The simplest geometry is one in which the connecting edges are single
+        widths:
+        [0]
+        [1]
+        ...
+        [n-1] 
+              <0> <1> ...   
+        
+        A more complex join point might have the following
+        geometry due to the edge having a corner at the end and the order
+        of the adjacent points being "out of order" with respect to which 
+        could connect to the next edge sequentially.  (Note that changes in the
+        line thinner affect this assumption about the input, so trying to design
+        for the best solution even if the corner is present...)
+        
+        [0]
+        [1]
+        ...
+        [n-3] [n-1]
+              [n-2]  <0> <1> ...
+        
+        With a queue filled with only endpoints, 
+        when <0> is pulled from the queue, the [n-2] to <0> connection
+        will be found.
+        when [n-1] is pulled from the queue, the <0> connection will be found.
+        Want both to be findable, and to be able to later resolve which is closer
+        and keep that to discard the other.
+        Note that when the endpoint is the next to last or next to first, it
+        should be checked for re-orderability before accepted as a possible
+        join point.
+        
+        If for some reason, the line thinner had an error such as the following,
+        the algorithm should prefer to connect the points which are already
+        endpoints of the edge, and for any non-endpoints, there should be an
+        immediate check for whether re-ordering of the last points in the line
+        is possible to put that point in the end without disconnecting the 
+        sequential adjacent order of the line.
+        
+        [0]
+        [1]
+        ...              <2> ...
+        [n-3] [n-1]  <1>
+              [n-2]  <0> 
+        
+        With a queue filled with only endpoints, 
+        when <0> is pulled from the queue, the [n-2] to <0> connection
+        will be found.  The check is then made that [n-2] could be swapped
+        with [n-1] without breaking sequential edge connectivity in its edge.
+        
+        when [n-1] is pulled from the queue, the <1> connection will be found.
+        The check is then made that <1> could be swapped with <0> in its
+        edge and it is then found that it could not be.
+        
+        So the found join point stored here would be [n-1] to <0>.
+        
+        This results in all points that are in theJoinPoints being ones in
+        which the edge could potentially be re-ordered if needed.
+        
+        Extra data structures tracking the edge number and the found first and
+        last endpoints are kept to find when more than one solution has
+        been found for what should be a single endpoint.
+        This might happen for one of the cases above and is resolved by keeping
+        the closest join point.
+        When edges with size of '3' are present, there may be the possibility 
+        of ambiguous choices?
+        
+        [0] [2] <1> <2>
+            [1] <0>
+        
+        In this case, both join points [2] and <1> and [1]  and <0> are found
+        as equal in distance and re-orderable.  Either join point with a
+        re-order is acceptable, so would choose one and discard the other
+        (remove from theJoinPoints and invJoinPoints and the edge...EndPointMaps)
+        
+        ----
+        Will create the following data structures:
+        
+        Data structures:
+            Map<PairInt, PairInt> endPointMap
+                with key = x, y of point
+                with value = edge index, index within edge
+
+            ArrayDeque<PairInt> endPointQueue queue holding x,y of end points
+
+            Map<PairInt, PairInt> theJoinPoints 
+                with key = edge index, index within edge of one join point 
+                           (the join point with the smaller edge number) 
+                with value = edge index, index within edge of other join point
+
+            Map<PairInt, PairInt> invJoinPoints 
+                inverse of the key, values in theJoinPoints to make reverse lookups 
+                fast.
+
+            Map<Integer, Set<PairInt>> edgeFirstEndPointMap
+                with key = edge number
+                with value = set of the keys for the join point entry in theJoinPoints map
+
+            Map<Integer, Set<PairInt>> edgeLastEndPointMap
+                with key = edge number
+                with value = set of the keys for the join point entry in theJoinPoints map
+
+        // 2*O(N_edges)
+        for each edge:
+           -- store both endpoints in endPointMap with key being pairint x,y 
+              coords and value being pairint edgeIdx, indexWithinEdge.
+           -- add the 2nd and 2nd to last endpoints to endPointMap also.
+           -- store only the endpoint coords in endPointQueue (FIFO)
+        
+        // 2*O(N_edges) * 8
+        while endPointQueue is not empty, 
+            pop endpoint and call it uNode
+                -- note it's edge number
+                -- init a var to hold number of neighbor edges not same as uNode's
+                -- init a var to hold closest neighbor's coordinates
+                -- look for presence in endpoints for the coordinates of the 8
+                   neighbors in endPointMap.
+                -- if there are no neighbors from another edge found,
+                   try the same with the point right before or after within
+                   the edge.  if the endpoint is not re-orderable, remove it
+                   from endPontMap and continue (skip to next iteration).
+                   If the point is re-orderable and is size '3', 
+                   a warning should be logged to help debug if there is a 
+                   problem later.
+                -- if the results show only '1' other edge in neighbors,
+                   -- for this uNode and the closest neighbor node,
+                      order the uNode and closest by increasing edge number 
+                      -- add the pair to theJoinPoints
+                      -- add the inverse of the pair to invJoinPoints
+                      -- add the entry to edgeFirstEndPointMap and edgeLastEndPointMap
+        
+        Because the 2nd and 2nd to last join points are in endPointMap as joinable,
+        there is the possibility that more than two joins may be present
+        for edge.  
+        edgeFirstEndPointMap and edgeLastEndPointMap store all such points
+        to allow choosing between them at this point.
+               
+        // 2 * O(N_edges_in_join_points)
+        for each entry in edgeFirstEndPointMap:
+            -- if the value has more than one item
+               -- note the edge numbers and print a warning statement.
+               -- calc distance between join points and choose the closest.
+                  -- if the distance is equal,
+                     -- if one pair has more endpoints that are already endpoints
+                     then choose that.
+                     -- else can keep either and discard the later.
+                  To discard a point, remove the entry in edgeFirstEndPointMap 
+                  and edgeLastEndPointMap and theJoinPoints and the invJoinPoints.
+        
+        if debug mode is true, assert the consistency of the datastructures
+        at this point.
+           -- no endpoint should be present in more than one join point in
+              theJoinPoints
+           -- no edge should have more than one first endpoint or more than one
+              last endpoint.
+        
+        // 2 * O(N_join_points)
+        Then the algorithm should re-order the points that are not currently
+        endpoints and adjust the entries in theJoinPoints for that.
+        
+        if debug mode is true, assert again the consistency of the datastructures
+        at this point.
+           -- no endpoint should be present in more than one join point in
+              theJoinPoints
+           -- no edge should have more than one first endpoint or more than one
+              last endpoint.
+        
+        return theJoinPoints as result of method
+        
+        Note that this change of logic, that is that the endpoints are now
+        at the ends of the edges, means that logic in the method which
+        joins the join points can be simplified.
+        */
+           
         // join points for adjacent edge endPoints that are not junctions
         // key = edge index and index within edge of pixel
         // value = the adjacent pixel's edge index and index within its edge
