@@ -345,9 +345,14 @@ writeJoinPointsImage(joinPoints, output);
                 
                 boolean addToFirst = (locY < 2);
                 boolean addToLast = (locY > (nEdge - 3));
-                if ((nEdge == 2) && (locY == 1)) {
-                    addToFirst = false;
-                    addToLast = true;
+                if (nEdge == 2) {
+                    if (locY == 1) {
+                        addToFirst = false;
+                        addToLast = true;
+                    } else {
+                        addToFirst = true;
+                        addToLast = false;
+                    }
                 }
             
                 if ((ii == 0) && smallestEdgeIdxIsV && (vClosestCanBeReordered == 1) && (n0 == 3)) {
