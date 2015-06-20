@@ -394,8 +394,13 @@ printJoinPoints(theJoinPoints, edges);
         reduceMultipleEndpointsForEdge(edges, edgeFirstEndPointMap,
             edgeLastEndPointMap, endPointMap, theJoinPoints, invJoinPoints);
 
-log.info("before reduce multiple:");
+log.info("after reduce multiple:");
 printJoinPoints(theJoinPoints, edges);
+
+log.info("first endpoint map:");
+printEdgeEndpointMap(edges, edgeFirstEndPointMap);
+log.info("last endpoint map:");
+printEdgeEndpointMap(edges, edgeLastEndPointMap);
 
         if (debug) {
             // 2 of the same join points for edges of size 3 in which 
@@ -404,7 +409,7 @@ printJoinPoints(theJoinPoints, edges);
             boolean skipForSize3 = true;
             assertConsistentJoinPointStructures(edges, edgeFirstEndPointMap,
                 edgeLastEndPointMap, theJoinPoints, invJoinPoints, skipForSize3);
-        }
+        }        
         
         // edges that are size 3 and have join points that are not in the
         // first or last position, can be moved to either, so keep
@@ -513,6 +518,9 @@ printJoinPoints(theJoinPoints, edges);
                 loc1.setY(swapIdx);
             }
         }
+ 
+log.info("at end of method:");
+printJoinPoints(theJoinPoints, edges);        
         
         if (debug) {
             boolean skipForSize3 = false;
@@ -687,6 +695,39 @@ printJoinPoints(theJoinPoints, edges);
         
         junctionMap = theJunctionMap;
         junctionLocationMap = theJunctionLocationMap;
+    }
+    
+    private void printEdgeEndpointMap(List<PairIntArray> edges,
+        Map<Integer, Set<JoinPointEntry>> edgeEndPointMap) {
+        
+        StringBuilder sb = new StringBuilder("");
+        
+        for (Entry<Integer, Set<JoinPointEntry>> entry : edgeEndPointMap.entrySet()) {
+                        
+            sb.append("Edge ").append(entry.getKey().toString()).append(":\n");
+                        
+            for (JoinPointEntry joinPoint : entry.getValue()) {
+                
+                PairInt loc0 = joinPoint.getKey();
+                PairInt loc1 = joinPoint.getValue();
+                                        
+                PairIntArray edge0 = edges.get(loc0.getX());
+                int x0 = edge0.getX(loc0.getY());
+                int y0 = edge0.getY(loc0.getY());
+
+                PairIntArray edge1 = edges.get(loc1.getX());
+                int x1 = edge1.getX(loc1.getY());
+                int y1 = edge1.getY(loc1.getY());
+
+                sb.append(String.format("  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n",
+                    x0, y0, x1, y1, loc0.getX(), loc1.getX(), 
+                    loc0.getY(), edges.get(loc0.getX()).getN(),
+                    loc1.getY(), edges.get(loc1.getX()).getN()
+                ));
+            }
+        }
+        
+        log.info(sb.toString());
     }
 
     private void printJoinPoints(Map<PairInt, PairInt> joinPoints,
@@ -1654,9 +1695,8 @@ printJoinPoints(theJoinPoints, edges);
             joinPointsSet.add(loc1);
         }
         for (Entry<Integer, Set<JoinPointEntry>> entry : edgeFirstEndPointMap.entrySet()) {
-            assert(entry.getValue().size() == 1);
-            Set<JoinPointEntry> joinPointSet = entry.getValue();
-            for (JoinPointEntry joinPoint : joinPointSet) {
+            assert(entry.getValue().size() < 2);
+            for (JoinPointEntry joinPoint : entry.getValue()) {
                 PairInt loc0 = joinPoint.getKey();
                 assert(theJoinPoints.containsKey(loc0) || invJoinPoints.containsKey(loc0));
                 assert(!(theJoinPoints.containsKey(loc0) && invJoinPoints.containsKey(loc0)));
@@ -1666,9 +1706,8 @@ printJoinPoints(theJoinPoints, edges);
             }
         }
         for (Entry<Integer, Set<JoinPointEntry>> entry : edgeLastEndPointMap.entrySet()) {
-            assert(entry.getValue().size() == 1);
-            Set<JoinPointEntry> joinPointSet = entry.getValue();
-            for (JoinPointEntry joinPoint : joinPointSet) {
+            assert(entry.getValue().size() < 2);
+            for (JoinPointEntry joinPoint : entry.getValue()) {
                 PairInt loc0 = joinPoint.getKey();
                 assert(theJoinPoints.containsKey(loc0) || invJoinPoints.containsKey(loc0));
                 assert(!(theJoinPoints.containsKey(loc0) && invJoinPoints.containsKey(loc0)));
@@ -1713,7 +1752,7 @@ printJoinPoints(theJoinPoints, edges);
                 StringBuilder sb = new StringBuilder("edge ");
                 sb.append(entry.getKey().toString())
                     .append(" has ").append(Integer.toString(joinPointSet.size()))
-                    .append(" first endpoints, so deciding between them. xy:");
+                    .append(" first endpoints, so deciding between them:");
                 for (JoinPointEntry joinPoint : entry.getValue()) {
                     PairInt loc0 = joinPoint.getKey();
                     PairInt loc1 = joinPoint.getValue();            
@@ -1723,10 +1762,15 @@ printJoinPoints(theJoinPoints, edges);
                     int y0 = edge0.getY(loc0.getY());
                     int x1 = edge1.getX(loc1.getY());
                     int y1 = edge1.getY(loc1.getY());                
-                    sb.append(" (").append(Integer.toString(x0)).append(",")
+                    sb.append("\n")
+                        .append(" ").append(Integer.toString(loc0.getX())).append(":")
+                        .append(Integer.toString(loc0.getY()))
+                        .append(" (").append(Integer.toString(x0)).append(",")
                         .append(Integer.toString(y0)).append(")<-->")
+                        .append(" ").append(Integer.toString(loc1.getX())).append(":")
+                        .append(Integer.toString(loc1.getY()))
                         .append(" (").append(Integer.toString(x1)).append(",")
-                        .append(Integer.toString(y1)).append(")\n");
+                        .append(Integer.toString(y1)).append(")");
                 }
                 log.warning(sb.toString());
             
@@ -1737,21 +1781,26 @@ printJoinPoints(theJoinPoints, edges);
                 int closestDistSq = Integer.MAX_VALUE;
                 int closestCanBeReordered0 = -99;
                 int closestCanBeReordered1 = -99;
-
-                Set<JoinPointEntry> removedFirstSet = tmpFirstRemoveMap.get(entry.getKey());
-                if (removedFirstSet == null) {
-                    removedFirstSet = new HashSet<JoinPointEntry>();
-                }
-                Set<JoinPointEntry> removedLastSet = tmpLastRemoveMap.get(entry.getKey());
-                if (removedLastSet == null) {
-                    removedLastSet = new HashSet<JoinPointEntry>();
-                }
                 
                 for (JoinPointEntry joinPoint : joinPointSet) {
 
                     PairInt loc0 = joinPoint.getKey();
                     PairIntArray edge0 = edges.get(loc0.getX());
                     int n0 = edge0.getN();
+                    
+                    Set<JoinPointEntry> removedFirstSet = 
+                        tmpFirstRemoveMap.get(Integer.valueOf(loc0.getX()));
+                    if (removedFirstSet == null) {
+                        removedFirstSet = new HashSet<JoinPointEntry>();
+                        tmpFirstRemoveMap.put(Integer.valueOf(loc0.getX()), removedFirstSet);
+                    }
+                    
+                    Set<JoinPointEntry> removedLastSet = 
+                        tmpLastRemoveMap.get(Integer.valueOf(loc0.getX()));
+                    if (removedLastSet == null) {
+                        removedLastSet = new HashSet<JoinPointEntry>();
+                        tmpLastRemoveMap.put(Integer.valueOf(loc0.getX()), removedLastSet);
+                    }
 
                     if ((n0 != 3) && (loc0.getY() < 2) && removedFirstSet.contains(joinPoint)) {
                         continue;
@@ -1804,15 +1853,22 @@ printJoinPoints(theJoinPoints, edges);
                     PairIntArray edge0 = edges.get(loc0.getX());
                     int n0 = edge0.getN();
 
-                    if ((n0 != 3) && (loc0.getY() < 2) && removedFirstSet.contains(joinPoint)) {
+                    Set<JoinPointEntry> removedFirstSet0 = 
+                        tmpFirstRemoveMap.get(Integer.valueOf(loc0.getX()));
+                   
+                    Set<JoinPointEntry> removedLastSet0 = 
+                        tmpLastRemoveMap.get(Integer.valueOf(loc0.getX()));
+                    
+                    if ((n0 != 3) && (loc0.getY() < 2) && removedFirstSet0.contains(joinPoint)) {
                         continue;
                     }
-                    if ((n0 != 3) && (loc0.getY() > (n0 - 3)) && removedLastSet.contains(joinPoint)) {
+                    if ((n0 != 3) && (loc0.getY() > (n0 - 3)) && removedLastSet0.contains(joinPoint)) {
                         continue;
                     }
 
                     PairInt loc1 = joinPoint.getValue();
                     PairIntArray edge1 = edges.get(loc1.getX());
+                    int n1 = edge1.getN();
 
                     assert(edge0 != null);
                     assert(edge1 != null);
@@ -1822,35 +1878,70 @@ printJoinPoints(theJoinPoints, edges);
                             "removing point (%d,%d) but it is in the middle of an edge of size 3",
                             edge0.getX(1), edge0.getY(1)));
                     }
+                    
+                    Set<JoinPointEntry> removedFirstSet1 = 
+                        tmpFirstRemoveMap.get(Integer.valueOf(loc1.getX()));
+                    if (removedFirstSet1 == null) {
+                        removedFirstSet1 = new HashSet<JoinPointEntry>();
+                        tmpFirstRemoveMap.put(Integer.valueOf(loc1.getX()), removedFirstSet1);
+                    }
+                    
+                    Set<JoinPointEntry> removedLastSet1 = 
+                        tmpLastRemoveMap.get(Integer.valueOf(loc1.getX()));
+                    if (removedLastSet1 == null) {
+                        removedLastSet1 = new HashSet<JoinPointEntry>();
+                        tmpLastRemoveMap.put(Integer.valueOf(loc1.getX()), removedLastSet1);
+                    }
 
-                    boolean isFirstEndPoint = false;
+                    boolean isFirstEndPoint0 = false;
                     if (loc0.getY() == 0) {
-                        isFirstEndPoint = true;
+                        isFirstEndPoint0 = true;
                     } else if ((loc0.getY() != (n0 - 1)) && (loc0.getY() < 2)) {
-                        isFirstEndPoint = true;
+                        isFirstEndPoint0 = true;
+                    }
+                    boolean isFirstEndPoint1 = false;
+                    if (loc1.getY() == 0) {
+                        isFirstEndPoint1 = true;
+                    } else if ((loc1.getY() != (n1 - 1)) && (loc1.getY() < 2)) {
+                        isFirstEndPoint1 = true;
                     }
 
-                    if (isFirstEndPoint && removedFirstSet.contains(joinPoint)) {
+                    if (isFirstEndPoint0 && removedFirstSet0.contains(joinPoint)) {
                         continue;
-                    }
-                    if (!isFirstEndPoint && removedLastSet.contains(joinPoint)) {
+                    } else if (!isFirstEndPoint0 && removedLastSet0.contains(joinPoint)) {
                         continue;
                     }
 
-                    if (isFirstEndPoint) {
-                        removedFirstSet.add(joinPoint);
+                    if (isFirstEndPoint0) {
+                        removedFirstSet0.add(joinPoint);
                     } else {
-                        removedLastSet.add(joinPoint);
+                        removedLastSet0.add(joinPoint);
+                    }
+                    if (isFirstEndPoint1) {
+                        removedFirstSet1.add(joinPoint);
+                    } else {
+                        removedLastSet1.add(joinPoint);
                     }
 
-                    PairInt t = theJoinPoints.remove(loc0);
-                    assert(t != null);
-                    t = invJoinPoints.remove(loc1);
-                    assert(t != null);
-                }
-
-                tmpFirstRemoveMap.put(entry.getKey(), removedFirstSet);
-                tmpLastRemoveMap.put(entry.getKey(), removedLastSet);
+                    PairInt rm1 = theJoinPoints.get(loc0);
+                    // only remove if the pair matches
+                    if ((rm1 != null) && rm1.equals(loc1)) {
+                        PairInt t = theJoinPoints.remove(loc0);
+                        assert(t != null);
+                    }
+                    PairInt rm0 = invJoinPoints.get(loc1);
+                    // only remove if the pair matches
+                    if ((rm0 != null) && rm0.equals(loc0)) {
+                        PairInt t = invJoinPoints.remove(loc1);
+                        assert(t != null);
+                    }
+                    
+                    tmpFirstRemoveMap.put(Integer.valueOf(loc0.getX()), removedFirstSet0);
+                    tmpLastRemoveMap.put(Integer.valueOf(loc0.getX()), removedLastSet0);
+                    
+                    tmpFirstRemoveMap.put(Integer.valueOf(loc1.getX()), removedFirstSet1);
+                    tmpLastRemoveMap.put(Integer.valueOf(loc1.getX()), removedLastSet1);
+                }                
             }
             
             // --- update the edge maps for the changes ---
