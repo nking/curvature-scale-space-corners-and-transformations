@@ -5,10 +5,10 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.PointPairInt;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -132,8 +132,9 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         Map<PairInt, PairInt> joinPoints = findJoinPoints(output);
         
         if (debug) {
-            printJoinPoints(joinPoints, output);
-            writeJoinPointsImage(joinPoints, output);
+            algorithms.misc.MiscDebug.printJoinPoints(joinPoints, output);
+            algorithms.misc.MiscDebug.writeJoinPointsImage(joinPoints, output,
+                img);
         }
         
         output = joinOnJoinPoints(joinPoints, output);
@@ -141,7 +142,8 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         findJunctions(output);
         
         if (debug) {
-            printJunctions(output);
+            algorithms.misc.MiscDebug.printJunctions(this.junctionMap, edges, 
+                img);
         }
         
         spliceEdgesAtJunctionsIfImproves(output);
@@ -179,15 +181,16 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         //with key = edge index, index within edge of one join point 
         //                 (the join point with the smaller edge number) 
         //       with value = edge index, index within edge of other join point
-        Set<JoinPointEntry> theJoinPoints = new HashSet<JoinPointEntry>(2 * n);
+        Set<PointPairInt> theJoinPoints = new HashSet<PointPairInt>(2 * n);
 
         //with key = edge number
-        //with value = set of the entries in theJoinPoints for which one has a first end point in this edge
-        Map<Integer, Set<JoinPointEntry>> edgeFirstEndPointMap = 
-            new HashMap<Integer, Set<JoinPointEntry>>();
+        //with value = set of the entries in theJoinPoints for which one has a 
+        //first end point in this edge
+        Map<Integer, Set<PointPairInt>> edgeFirstEndPointMap = 
+            new HashMap<Integer, Set<PointPairInt>>();
     
-        Map<Integer, Set<JoinPointEntry>>  edgeLastEndPointMap = 
-            new HashMap<Integer, Set<JoinPointEntry>> ();
+        Map<Integer, Set<PointPairInt>>  edgeLastEndPointMap = 
+            new HashMap<Integer, Set<PointPairInt>> ();
 
         // 2* O(N_edges)
         for (int edgeIdx = 0; edgeIdx < n; edgeIdx++) {
@@ -326,7 +329,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             int n0 = edges.get(loc0.getX()).getN();
             int n1 = edges.get(loc1.getX()).getN();
             
-            theJoinPoints.add(new JoinPointEntry(loc0, loc1));
+            theJoinPoints.add(new PointPairInt(loc0, loc1));
             
             // add the location points to the edgeFirstEndPointMap and 
             // edgeLastEndPointMap maps
@@ -364,22 +367,22 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
 
                 if (addToFirst) {
                     Integer key = Integer.valueOf(locX);
-                    Set<JoinPointEntry> joinPointSet = edgeFirstEndPointMap.get(key);
+                    Set<PointPairInt> joinPointSet = edgeFirstEndPointMap.get(key);
                     if (joinPointSet == null) {
-                        joinPointSet = new HashSet<JoinPointEntry>();
+                        joinPointSet = new HashSet<PointPairInt>();
                     }
-                    JoinPointEntry joinPoint = new JoinPointEntry(loc0, loc1);
+                    PointPairInt joinPoint = new PointPairInt(loc0, loc1);
                     joinPointSet.add(joinPoint);
                     edgeFirstEndPointMap.put(key, joinPointSet);
                 }
             
                 if (addToLast) {
                     Integer key = Integer.valueOf(locX);
-                    Set<JoinPointEntry> joinPointSet = edgeLastEndPointMap.get(key);
+                    Set<PointPairInt> joinPointSet = edgeLastEndPointMap.get(key);
                     if (joinPointSet == null) {
-                        joinPointSet = new HashSet<JoinPointEntry>();
+                        joinPointSet = new HashSet<PointPairInt>();
                     }
-                    JoinPointEntry joinPoint = new JoinPointEntry(loc0, loc1);
+                    PointPairInt joinPoint = new PointPairInt(loc0, loc1);
                     joinPointSet.add(joinPoint);
                     edgeLastEndPointMap.put(key, joinPointSet);
                 }
@@ -394,8 +397,9 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             // the join point is movable to the first or last point in edge.
             // the next block removes that possibility
             boolean skipForSize3 = true;
-            assertConsistentJoinPointStructures(edges, edgeFirstEndPointMap,
-                edgeLastEndPointMap, theJoinPoints, skipForSize3);
+            algorithms.misc.MiscDebug.assertConsistentJoinPointStructures(edges, 
+                edgeFirstEndPointMap, edgeLastEndPointMap, theJoinPoints, 
+                skipForSize3);
         }        
         
         // edges that are size 3 and have join points that are not in the
@@ -403,7 +407,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         // track of them to avoid moving to the same position twice
         Map<PairInt, Set<Integer>> edgeSize3NonEndPoints = new HashMap<PairInt, 
             Set<Integer>>();
-        for (JoinPointEntry entry : theJoinPoints) {
+        for (PointPairInt entry : theJoinPoints) {
             PairInt loc0 = entry.getKey();
             PairInt loc1 = entry.getValue();            
             int n0 = edges.get(loc0.getX()).getN();
@@ -422,7 +426,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         
         // 2 * O(N_join_points)
         // re-order the endpoints which are not first or last position in edge        
-        for (JoinPointEntry entry : theJoinPoints) {
+        for (PointPairInt entry : theJoinPoints) {
             PairInt loc0 = entry.getKey();
             PairInt loc1 = entry.getValue();
             
@@ -498,12 +502,13 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
  
         if (debug) {
             boolean skipForSize3 = false;
-            assertConsistentJoinPointStructures(edges, edgeFirstEndPointMap,
-                edgeLastEndPointMap, theJoinPoints, skipForSize3);
+            algorithms.misc.MiscDebug.assertConsistentJoinPointStructures(edges, 
+                edgeFirstEndPointMap, edgeLastEndPointMap, theJoinPoints, 
+                skipForSize3);
         }
         
         Map<PairInt, PairInt> result = new HashMap<PairInt, PairInt>();
-        for (JoinPointEntry entry : theJoinPoints) {
+        for (PointPairInt entry : theJoinPoints) {
             PairInt loc0 = entry.getKey();
             PairInt loc1 = entry.getValue();
             result.put(loc0, loc1);
@@ -678,143 +683,6 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         junctionLocationMap = theJunctionLocationMap;
     }
     
-    private void printEdgeEndpointMap(List<PairIntArray> edges,
-        Map<Integer, Set<JoinPointEntry>> edgeEndPointMap) {
-        
-        StringBuilder sb = new StringBuilder("");
-        
-        for (Entry<Integer, Set<JoinPointEntry>> entry : edgeEndPointMap.entrySet()) {
-                        
-            sb.append("Edge ").append(entry.getKey().toString()).append(":\n");
-                        
-            for (JoinPointEntry joinPoint : entry.getValue()) {
-                
-                PairInt loc0 = joinPoint.getKey();
-                PairInt loc1 = joinPoint.getValue();
-                                        
-                PairIntArray edge0 = edges.get(loc0.getX());
-                int x0 = edge0.getX(loc0.getY());
-                int y0 = edge0.getY(loc0.getY());
-
-                PairIntArray edge1 = edges.get(loc1.getX());
-                int x1 = edge1.getX(loc1.getY());
-                int y1 = edge1.getY(loc1.getY());
-
-                sb.append(String.format("  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n",
-                    x0, y0, x1, y1, loc0.getX(), loc1.getX(), 
-                    loc0.getY(), edges.get(loc0.getX()).getN(),
-                    loc1.getY(), edges.get(loc1.getX()).getN()
-                ));
-            }
-        }
-        
-        log.info(sb.toString());
-    }
-
-    private void printJoinPoints(Map<PairInt, PairInt> joinPoints,
-        List<PairIntArray> edges) {
-        
-        StringBuilder sb = new StringBuilder("join points:\n");
-        
-        for (Entry<PairInt, PairInt> entry : joinPoints.entrySet()) {
-            
-            PairInt loc0 = entry.getKey();
-            
-            PairInt loc1 = entry.getValue();
-            
-            PairIntArray edge0 = edges.get(loc0.getX());
-            int x0 = edge0.getX(loc0.getY());
-            int y0 = edge0.getY(loc0.getY());
-            
-            PairIntArray edge1 = edges.get(loc1.getX());
-            int x1 = edge1.getX(loc1.getY());
-            int y1 = edge1.getY(loc1.getY());
-            
-            sb.append(String.format("  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n",
-                x0, y0, x1, y1, loc0.getX(), loc1.getX(), 
-                loc0.getY(), edges.get(loc0.getX()).getN(),
-                loc1.getY(), edges.get(loc1.getX()).getN()
-            ));
-        }
-        
-        log.info(sb.toString());
-    }
-    
-    private void printJoinPoints(Set<JoinPointEntry> joinPoints,
-        List<PairIntArray> edges) {
-        
-        StringBuilder sb = new StringBuilder("join points:\n");
-        
-        for (JoinPointEntry entry : joinPoints) {
-            
-            PairInt loc0 = entry.getKey();
-            
-            PairInt loc1 = entry.getValue();
-            
-            PairIntArray edge0 = edges.get(loc0.getX());
-            int x0 = edge0.getX(loc0.getY());
-            int y0 = edge0.getY(loc0.getY());
-            
-            PairIntArray edge1 = edges.get(loc1.getX());
-            int x1 = edge1.getX(loc1.getY());
-            int y1 = edge1.getY(loc1.getY());
-            
-            sb.append(String.format("  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n",
-                x0, y0, x1, y1, loc0.getX(), loc1.getX(), 
-                loc0.getY(), edges.get(loc0.getX()).getN(),
-                loc1.getY(), edges.get(loc1.getX()).getN()
-            ));
-        }
-        
-        log.info(sb.toString());
-    }
-    
-    private void printJoinPoints(PairInt[][] edgeJoins, int idxLo, int idxHi,
-        Map<Integer, PairIntArray> edges) {
-        
-        // print array indexes
-        int[] aIndexes = new int[edges.size()];
-        int count = 0;
-        for (Entry<Integer, PairIntArray> entry : edges.entrySet()) {
-            Integer edgeIndex = entry.getKey();
-            aIndexes[count] = edgeIndex.intValue();
-            count++;
-        }
-        CountingSort.sort(aIndexes, 2*edges.size());
-        
-        StringBuilder sb = new StringBuilder("output indexes of size ");
-        sb.append(Integer.toString(edges.size())).append("\n");
-        for (int i = 0; i < aIndexes.length; i++) {
-            sb.append(Integer.toString(aIndexes[i])).append(" ");
-        }
-        log.info(sb.toString());
-        
-        sb = new StringBuilder("join points:\n");
-        
-        for (int i = idxLo; i <= idxHi; i++) {
-                        
-            PairInt loc0 = edgeJoins[i][0];
-            PairInt loc1 = edgeJoins[i][1];
-
-            PairIntArray edge0 = edges.get(Integer.valueOf(loc0.getX()));
-                  
-            int x0 = edge0.getX(loc0.getY());
-            int y0 = edge0.getY(loc0.getY());
-            
-            PairIntArray edge1 = edges.get(Integer.valueOf(loc1.getX()));
-            int x1 = edge1.getX(loc1.getY());
-            int y1 = edge1.getY(loc1.getY());
-            
-            sb.append(String.format("  (%d,%d) to (%d,%d) in edges %d and %d  at positions=%d out of %d and %d out of %d\n",
-                x0, y0, x1, y1, loc0.getX(), loc1.getX(), 
-                loc0.getY(), edge0.getN(),
-                loc1.getY(), edge1.getN()
-            ));
-        }
-        
-        log.info(sb.toString());
-    }
-    
     private Map<Integer, PairIntArray> createIndexedMap(List<PairIntArray> edges) {
         
         Map<Integer, PairIntArray> output = new HashMap<Integer, PairIntArray>();
@@ -863,7 +731,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         
         for (int i = (n - 1); i > -1; --i) {
            
-//printJoinPoints(edgeJoins, 0, i, edgesMap);
+//algorithms.misc.MiscDebug.printJoinPoints(edgeJoins, 0, i, edgesMap);
            
             PairInt[] entry = edgeJoins[i];
 
@@ -1013,123 +881,6 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         return output;
     }
     
-    private void writeJoinPointsImage(Map<PairInt, PairInt> theJoinPointMap, 
-        List<PairIntArray> edges) {
-        
-        try {
-            
-            Image img2 = img.copyImageToGreen();
-
-            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
-            int nExtraForDot = 1;
-            int rClr = 255;
-            int gClr = 0;
-            int bClr = 100;
-            for (Entry<PairInt, PairInt> entry : theJoinPointMap.entrySet()) {
-                PairInt loc0 = entry.getKey();
-                PairInt loc1 = entry.getValue();
-                assert(!loc0.equals(loc1));
-
-                PairIntArray edge0 = edges.get(loc0.getX());
-                PairIntArray edge1 = edges.get(loc1.getX());
-            
-                ImageIOHelper.addPointToImage(
-                    edge0.getX(loc0.getY()), edge0.getY(loc0.getY()), 
-                    img2, nExtraForDot,
-                    rClr, gClr, bClr);
-                
-                ImageIOHelper.addPointToImage(
-                    edge1.getX(loc1.getY()), edge1.getY(loc1.getY()), 
-                    img2, nExtraForDot,
-                    rClr, gClr, bClr);
-            }
-
-            String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
-            String sep = System.getProperty("file.separator");
-            ImageIOHelper.writeOutputImage(dirPath + sep + "joinpoints.png", img2);
-            
-        } catch (IOException e) {
-            
-        }
-    }
-
-    private void printJunctions(List<PairIntArray> edges) {
-        printJunctions(this.junctionMap, edges);
-    }
-    
-    private void printJunctions(Map<Integer, Set<Integer>> jMap, 
-        List<PairIntArray> edges) {
-        
-        try {
-            
-            Image img2 = img.copyImageToGreen();
-
-            ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
-            int nExtraForDot = 1;
-            int rClr = 255;
-            int gClr = 0;
-            int bClr = 100;
-            for (Entry<Integer, Set<Integer>> entry : jMap.entrySet()) {
-                int pixIdx = entry.getKey().intValue();
-                int col = img2.getCol(pixIdx);
-                int row = img2.getRow(pixIdx);
-                ImageIOHelper.addPointToImage(col, row, img2, nExtraForDot,
-                    rClr, gClr, bClr);
-            }
-
-            String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
-            String sep = System.getProperty("file.separator");
-            ImageIOHelper.writeOutputImage(dirPath + sep + "junctions.png", img2);
-            
-        } catch (IOException e) {
-            
-        }
-    }
-    
-    private String printJunctionsToString(Map<Integer, Set<Integer>> jMap, 
-        List<PairIntArray> edges) {
-
-        StringBuilder sb = new StringBuilder("junctions:\n");
-        
-        for (Entry<Integer, Set<Integer>> entry : jMap.entrySet()) {
-            int pixIdx = entry.getKey().intValue();
-            int col = img.getCol(pixIdx);
-            int row = img.getRow(pixIdx);
-            sb.append(String.format("%d (%d,%d)\n", pixIdx, col, row));
-        }
-        
-        return sb.toString();
-    }
-    
-    private String printJunctionsToString(
-        Map<Integer, PairInt> jLocationMap, Map<Integer, Set<Integer>> jMap, 
-        List<PairIntArray> edges) {
-
-        StringBuilder sb = new StringBuilder("junctions:\n");
-        
-        for (Entry<Integer, Set<Integer>> entry : jMap.entrySet()) {
-            int pixIdx = entry.getKey().intValue();
-            int col = img.getCol(pixIdx);
-            int row = img.getRow(pixIdx);
-            sb.append(String.format("%d (%d,%d)\n", pixIdx, col, row));
-        }
-        
-        sb.append("junction locations:\n");
-        for (Entry<Integer, PairInt> entry : jLocationMap.entrySet()) {
-            Integer pixelIndex = entry.getKey();
-            PairInt loc = entry.getValue();
-            int edgeIdx = loc.getX();
-            int indexWithinEdge = loc.getY();
-            int edgeN = edges.get(edgeIdx).getN();
-            int x = edges.get(edgeIdx).getX(indexWithinEdge);
-            int y = edges.get(edgeIdx).getY(indexWithinEdge);
-            sb.append(String.format("edge=%d idx=%d (out of %d) pixIdx=%d (%d,%d)\n", 
-                edgeIdx, indexWithinEdge, edgeN, pixelIndex.intValue(), x, y));
-        }//edgeIdx=49 indexWithinEdge=28
-        
-        return sb.toString();
-    }
-
     /**
      * return whether the point can be swapped with the nearest endpoint.
      * <pre>
@@ -1291,8 +1042,9 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         }
         
         if (debug) {
-            assertConsistentEdgeCapacity(theEdgeToPixelIndexMap, 
-                junctionLocationMap, junctionMap, edges);
+            algorithms.misc.MiscDebug.assertConsistentEdgeCapacity(
+                theEdgeToPixelIndexMap, junctionLocationMap, junctionMap, 
+                edges);
         }
         
         for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
@@ -1575,204 +1327,34 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 }
                 
                 if (debug) {
-                    assertConsistentEdgeCapacity(theEdgeToPixelIndexMap, 
-                        junctionLocationMap, junctionMap, edges);
+                    algorithms.misc.MiscDebug.assertConsistentEdgeCapacity(
+                        theEdgeToPixelIndexMap, junctionLocationMap, 
+                        junctionMap, edges);
                 }
             }
         }        
     }
 
-    private void assertConsistentEdgeCapacity(
-        Map<Integer, Set<Integer>> theEdgeToPixelIndexMap, 
-        Map<Integer, PairInt> junctionLocationMap, 
-        Map<Integer, Set<Integer>> junctionMap, 
-        List<PairIntArray> edges) {
-        
-        for (Entry<Integer, PairInt> entry : junctionLocationMap.entrySet()) {
-            Integer pixelIndex = entry.getKey();
-            assert(pixelIndex != null);
-            PairInt loc = entry.getValue();
-            int edgeIdx = loc.getX();
-            int idx = loc.getY();
-            PairIntArray edge = edges.get(edgeIdx);
-            assert(edge != null);
-            assert (idx < edge.getN()) :
-                "idx=" + idx + " edgeN=" + edge.getN() + " edgeIndex=" + edgeIdx;
-        }
-        /*
-        previous edge 50 had n=24
-        current edge 49 has n=24.
-        
-        java.lang.AssertionError: idx=28 edgeN=24 edgeIndex=49
-        
-        
-        processing junction w/ center pixel index=50427 and loc=3:15
-        ...[junit] edge=49 idx=28 (out of 39) pixIdx=42810 (13,247)
-        
-        before splice edge 4 (137 points) to edge 3 (16 points)
-        
-        -----------
-        splice edge 49 (29 points) to edge 50 (8 points), that is append 50 to end of 49
-        50 edge size is 8
-        49 edge size is 49.  spliced to 29 and 20
-          'off by 1'?  spliced last point is idx=28 within edge 49 before...
-        
-        splice0_0: update Y for pixIdx=42810   loc 49:28 to 49:28 (edgeN=29)  (**make sure edgeIdx is same)
-        
-        */
-        
-        for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
-            
-            Integer pixelIndex = entry.getKey();
-            Set<Integer> adjPixelIndexes = entry.getValue();
-            
-            PairInt loc = junctionLocationMap.get(pixelIndex);
-            assert(loc != null);
-            
-            int edgeIdx = loc.getX();
-            int idx = loc.getY();
-            PairIntArray edge = edges.get(edgeIdx);
-            assert(edge != null);
-            assert(idx < edge.getN());
-            
-            for (Integer adjPixelIndex : adjPixelIndexes) {
-                PairInt adjLoc = junctionLocationMap.get(adjPixelIndex);
-                assert(adjLoc != null);
-                edgeIdx = adjLoc.getX();
-                idx = adjLoc.getY();
-                edge = edges.get(edgeIdx);
-                assert(edge != null);
-                assert(idx < edge.getN());
-            }
-        }
-        
-        for (Entry<Integer, Set<Integer>> entry : theEdgeToPixelIndexMap.entrySet()) {
-            Integer edgeIndex = entry.getKey();
-            Set<Integer> pixelIndexes = entry.getValue();
-            
-            PairIntArray edge = edges.get(edgeIndex.intValue());
-            assert(edge != null);
-            
-            for (Integer pixelIndex : pixelIndexes) {
-                PairInt loc = junctionLocationMap.get(pixelIndex);
-                assert(loc != null);
-
-                int edgeIdx = loc.getX();
-                int idx = loc.getY();
-                
-                assert(edgeIdx == edgeIndex.intValue());
-                
-                assert(idx < edge.getN());
-            }
-        }
-    }
-
-    private void assertConsistentJoinPointStructures(
-        List<PairIntArray> edges,
-        Map<Integer, Set<JoinPointEntry>> edgeFirstEndPointMap, 
-        Map<Integer, Set<JoinPointEntry>> edgeLastEndPointMap, 
-        Set<JoinPointEntry> theJoinPoints, boolean skipForSize3) {
-        
-        Set<PairInt> joinPointsSet = new HashSet<PairInt>();
-        for (JoinPointEntry entry : theJoinPoints) {
-            PairInt loc0 = entry.getKey();
-            PairInt loc1 = entry.getValue();
-            assert(!loc0.equals(loc1));
-            
-            PairIntArray edge0 = edges.get(loc0.getX());
-            PairIntArray edge1 = edges.get(loc1.getX());
-            int n0 = edge0.getN();
-            int n1 = edge1.getN();
-            
-            assert(loc0.getY() < n0);
-            assert(loc1.getY() < n1);
-            
-            if (!(skipForSize3 && (n0 == 3))) {
-                assert(!joinPointsSet.contains(loc0));
-            }
-            if (!(skipForSize3 && (n1 == 3))) {
-                assert(!joinPointsSet.contains(loc1));
-            }
-            
-            joinPointsSet.add(loc0);
-            joinPointsSet.add(loc1);
-        }
-        joinPointsSet.clear();
-        for (JoinPointEntry entry : theJoinPoints) {
-            PairInt loc0 = entry.getKey();
-            PairInt loc1 = entry.getValue();
-            assert(!loc0.equals(loc1));
-            assert(!joinPointsSet.contains(loc0));
-            assert(!joinPointsSet.contains(loc1));
-            joinPointsSet.add(loc0);
-            joinPointsSet.add(loc1);
-        }
-
-        for (Entry<Integer, Set<JoinPointEntry>> entry : edgeFirstEndPointMap.entrySet()) {
-            assert(entry.getValue().size() < 2);
-            for (JoinPointEntry joinPoint : entry.getValue()) {
-                PairInt loc0 = joinPoint.getKey();
-                PairInt loc1 = joinPoint.getValue();
-                assert(loc0 != null);
-                assert(loc1 != null);
-                                
-                boolean contains = theJoinPoints.contains(joinPoint);                   
-                if (!contains) {
-                    int hash = joinPoint.hashCode();
-                    for (JoinPointEntry entry2 : theJoinPoints) {
-                        //log.info("   hash=" + entry2.hashCode());
-                        if (hash == entry2.hashCode()) {
-                            contains = entry2.equals(joinPoint);
-                            //log.info("Set's use of HashMap.getEntry() did not find this point.");
-                        }
-                    }
-                }
-                assert(contains);
-            }
-        }
-        for (Entry<Integer, Set<JoinPointEntry>> entry : edgeLastEndPointMap.entrySet()) {
-            assert(entry.getValue().size() < 2);
-            for (JoinPointEntry joinPoint : entry.getValue()) {
-                PairInt loc0 = joinPoint.getKey();
-                PairInt loc1 = joinPoint.getValue();
-                assert(loc0 != null);
-                assert(loc1 != null);
-                boolean contains = theJoinPoints.contains(joinPoint);                   
-                if (!contains) {
-                    int hash = joinPoint.hashCode();
-                    for (JoinPointEntry entry2 : theJoinPoints) {
-                        //log.info("   hash=" + entry2.hashCode());
-                        if (hash == entry2.hashCode()) {
-                            contains = entry2.equals(joinPoint);
-                            //log.info("Set's use of HashMap.getEntry() did not find this point.");
-                        }
-                    }
-                }
-                assert(contains);
-            }
-        }
-    }
-
     protected void reduceMultipleEndpointsForEdge(
         List<PairIntArray> edges,
-        Map<Integer, Set<JoinPointEntry>> edgeFirstEndPointMap,
-        Map<Integer, Set<JoinPointEntry>> edgeLastEndPointMap, 
-        Map<PairInt, PairInt> endPointMap, Set<JoinPointEntry> theJoinPoints) {
+        Map<Integer, Set<PointPairInt>> edgeFirstEndPointMap,
+        Map<Integer, Set<PointPairInt>> edgeLastEndPointMap, 
+        Map<PairInt, PairInt> endPointMap, Set<PointPairInt> theJoinPoints) {
         
-        Map<Integer, Set<JoinPointEntry>> tmpFirstRemoveMap = new HashMap<Integer, Set<JoinPointEntry>>();
+        Map<Integer, Set<PointPairInt>> tmpFirstRemoveMap = new HashMap<Integer, Set<PointPairInt>>();
         
-        Map<Integer, Set<JoinPointEntry>> tmpLastRemoveMap = new HashMap<Integer, Set<JoinPointEntry>>();
+        Map<Integer, Set<PointPairInt>> tmpLastRemoveMap = new HashMap<Integer, Set<PointPairInt>>();
         
         for (int type = 0; type < 2; ++type) {
         
-            Map<Integer, Set<JoinPointEntry>> edgeMap = edgeFirstEndPointMap;
+            Map<Integer, Set<PointPairInt>> edgeMap = edgeFirstEndPointMap;
             if (type == 1) {
                 edgeMap = edgeLastEndPointMap;
             }
             
-            for (Entry<Integer, Set<JoinPointEntry>> entry : edgeMap.entrySet()) {
+            for (Entry<Integer, Set<PointPairInt>> entry : edgeMap.entrySet()) {
 
-                Set<JoinPointEntry> joinPointSet = entry.getValue();
+                Set<PointPairInt> joinPointSet = entry.getValue();
 
                 if (joinPointSet.size() < 2) {
                     continue;
@@ -1787,7 +1369,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 sb.append(entry.getKey().toString())
                     .append(" has ").append(Integer.toString(joinPointSet.size()))
                     .append(" first endpoints, so deciding between them:");
-                for (JoinPointEntry joinPoint : entry.getValue()) {
+                for (PointPairInt joinPoint : entry.getValue()) {
                     PairInt loc0 = joinPoint.getKey();
                     PairInt loc1 = joinPoint.getValue();            
                     PairIntArray edge0 = edges.get(loc0.getX());
@@ -1811,28 +1393,28 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 // choose closest join point pair, and break ties with those that
                 // have higher number of members that are already endpoints.
 
-                JoinPointEntry closestJoinPoint = null;
+                PointPairInt closestJoinPoint = null;
                 int closestDistSq = Integer.MAX_VALUE;
                 int closestCanBeReordered0 = -99;
                 int closestCanBeReordered1 = -99;
                 
-                for (JoinPointEntry joinPoint : joinPointSet) {
+                for (PointPairInt joinPoint : joinPointSet) {
 
                     PairInt loc0 = joinPoint.getKey();
                     PairIntArray edge0 = edges.get(loc0.getX());
                     int n0 = edge0.getN();
                     
-                    Set<JoinPointEntry> removedFirstSet = 
+                    Set<PointPairInt> removedFirstSet = 
                         tmpFirstRemoveMap.get(Integer.valueOf(loc0.getX()));
                     if (removedFirstSet == null) {
-                        removedFirstSet = new HashSet<JoinPointEntry>();
+                        removedFirstSet = new HashSet<PointPairInt>();
                         tmpFirstRemoveMap.put(Integer.valueOf(loc0.getX()), removedFirstSet);
                     }
                     
-                    Set<JoinPointEntry> removedLastSet = 
+                    Set<PointPairInt> removedLastSet = 
                         tmpLastRemoveMap.get(Integer.valueOf(loc0.getX()));
                     if (removedLastSet == null) {
-                        removedLastSet = new HashSet<JoinPointEntry>();
+                        removedLastSet = new HashSet<PointPairInt>();
                         tmpLastRemoveMap.put(Integer.valueOf(loc0.getX()), removedLastSet);
                     }
 
@@ -1877,7 +1459,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
 
                 assert (closestJoinPoint != null);
 
-                for (JoinPointEntry joinPoint : joinPointSet) {
+                for (PointPairInt joinPoint : joinPointSet) {
 
                     if (joinPoint.equals(closestJoinPoint)) {
                         continue;
@@ -1887,10 +1469,10 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     PairIntArray edge0 = edges.get(loc0.getX());
                     int n0 = edge0.getN();
 
-                    Set<JoinPointEntry> removedFirstSet0 = 
+                    Set<PointPairInt> removedFirstSet0 = 
                         tmpFirstRemoveMap.get(Integer.valueOf(loc0.getX()));
                    
-                    Set<JoinPointEntry> removedLastSet0 = 
+                    Set<PointPairInt> removedLastSet0 = 
                         tmpLastRemoveMap.get(Integer.valueOf(loc0.getX()));
                     
                     if ((n0 != 3) && (loc0.getY() < 2) && removedFirstSet0.contains(joinPoint)) {
@@ -1913,17 +1495,17 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                             edge0.getX(1), edge0.getY(1)));
                     }
                     
-                    Set<JoinPointEntry> removedFirstSet1 = 
+                    Set<PointPairInt> removedFirstSet1 = 
                         tmpFirstRemoveMap.get(Integer.valueOf(loc1.getX()));
                     if (removedFirstSet1 == null) {
-                        removedFirstSet1 = new HashSet<JoinPointEntry>();
+                        removedFirstSet1 = new HashSet<PointPairInt>();
                         tmpFirstRemoveMap.put(Integer.valueOf(loc1.getX()), removedFirstSet1);
                     }
                     
-                    Set<JoinPointEntry> removedLastSet1 = 
+                    Set<PointPairInt> removedLastSet1 = 
                         tmpLastRemoveMap.get(Integer.valueOf(loc1.getX()));
                     if (removedLastSet1 == null) {
-                        removedLastSet1 = new HashSet<JoinPointEntry>();
+                        removedLastSet1 = new HashSet<PointPairInt>();
                         tmpLastRemoveMap.put(Integer.valueOf(loc1.getX()), removedLastSet1);
                     }
 
@@ -1970,19 +1552,19 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             
             // --- update the edge maps for the changes ---
             
-            Map<Integer, Set<JoinPointEntry>> tmpMap = new HashMap<Integer, Set<JoinPointEntry>>();
+            Map<Integer, Set<PointPairInt>> tmpMap = new HashMap<Integer, Set<PointPairInt>>();
             
-            for (Entry<Integer, Set<JoinPointEntry>> entry : edgeFirstEndPointMap.entrySet()) {
+            for (Entry<Integer, Set<PointPairInt>> entry : edgeFirstEndPointMap.entrySet()) {
                 
-                Set<JoinPointEntry> rmJoinPointSet = tmpFirstRemoveMap.get(entry.getKey());
+                Set<PointPairInt> rmJoinPointSet = tmpFirstRemoveMap.get(entry.getKey());
                 
                 if (rmJoinPointSet == null || rmJoinPointSet.isEmpty()) {
                     tmpMap.put(entry.getKey(), entry.getValue());
                     continue;
                 }
                 
-                Set<JoinPointEntry> tmpJoinPointSet = new HashSet<JoinPointEntry>();
-                for (JoinPointEntry joinPoint : entry.getValue()) {
+                Set<PointPairInt> tmpJoinPointSet = new HashSet<PointPairInt>();
+                for (PointPairInt joinPoint : entry.getValue()) {
                     if (!rmJoinPointSet.contains(joinPoint)) {
                         tmpJoinPointSet.add(joinPoint);
                     }
@@ -1992,19 +1574,19 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             edgeFirstEndPointMap.clear();
             edgeFirstEndPointMap.putAll(tmpMap);
             
-            tmpMap = new HashMap<Integer, Set<JoinPointEntry>>();
+            tmpMap = new HashMap<Integer, Set<PointPairInt>>();
             
-            for (Entry<Integer, Set<JoinPointEntry>> entry : edgeLastEndPointMap.entrySet()) {
+            for (Entry<Integer, Set<PointPairInt>> entry : edgeLastEndPointMap.entrySet()) {
                 
-                Set<JoinPointEntry> rmJoinPointSet = tmpLastRemoveMap.get(entry.getKey());
+                Set<PointPairInt> rmJoinPointSet = tmpLastRemoveMap.get(entry.getKey());
                 
                 if (rmJoinPointSet == null || rmJoinPointSet.isEmpty()) {
                     tmpMap.put(entry.getKey(), entry.getValue());
                     continue;
                 }
                 
-                Set<JoinPointEntry> tmpJoinPointSet = new HashSet<JoinPointEntry>();
-                for (JoinPointEntry joinPoint : entry.getValue()) {
+                Set<PointPairInt> tmpJoinPointSet = new HashSet<PointPairInt>();
+                for (PointPairInt joinPoint : entry.getValue()) {
                     if (!rmJoinPointSet.contains(joinPoint)) {
                         tmpJoinPointSet.add(joinPoint);
                     }
@@ -2015,91 +1597,5 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             edgeLastEndPointMap.putAll(tmpMap);
         }
         
-    }
-
-    protected static class JoinPointEntry {
-        
-        private final PairInt key;
-        private PairInt value;
-
-        public JoinPointEntry(PairInt theKey, PairInt theValue) {
-            
-            if (theKey == null) {
-                throw new IllegalArgumentException("theKey cannot be null");
-            }
-            if (theValue == null) {
-                throw new IllegalArgumentException("theValue cannot be null");
-            }
-            
-            this.key = theKey;
-            this.value = theValue;
-        }
-
-        public PairInt getKey() {
-            return key;
-        }
-
-        public PairInt getValue() {
-            return value;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            
-            if (!(obj instanceof JoinPointEntry)) {
-                return false;
-            }
-
-            JoinPointEntry other = (JoinPointEntry)obj;
-            
-            return (other.getKey().equals(key) && other.getValue().equals(value));
-        }
-        
-        
-        @Override
-        public int hashCode() {
-
-            int hash = fnvHashCode(this.key, this.value);
-
-            return hash;
-        }
-
-        protected static int fnv321aInit = 0x811c9dc5;
-        protected static int fnv32Prime = 0x01000193;
-
-        protected int fnvHashCode(PairInt i0, PairInt i1) {
-
-            /*
-             * hash = offset_basis
-             * for each octet_of_data to be hashed
-             *     hash = hash xor octet_of_data
-             *     hash = hash * FNV_prime
-             * return hash
-             *
-             * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
-             */
-            int hash = 0;
-
-            int sum = fnv321aInit;
-
-            // xor the bottom with the current octet.
-            sum ^= i0.getX();
-
-            // multiply by the 32 bit FNV magic prime mod 2^32
-            sum *= fnv32Prime;
-            
-            sum ^= i0.getY();
-            sum *= fnv32Prime;
-
-            sum ^= i1.getX();
-            sum *= fnv32Prime;
-            
-            sum ^= i1.getY();
-            sum *= fnv32Prime;
-
-            hash = sum;
-
-            return hash;
-        }
     }
 }

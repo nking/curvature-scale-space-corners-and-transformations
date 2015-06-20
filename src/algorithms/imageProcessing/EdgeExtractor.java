@@ -16,6 +16,7 @@ import java.util.logging.Level;
  * single pixel width lines and extracts edges from it, attempting to make
  * the longest edges it can. 
  * 
+ * 
  * @see AbstractEdgeExtractor
 
 Edge extraction
@@ -102,8 +103,7 @@ public class EdgeExtractor extends AbstractEdgeExtractor {
     }
  
     /**
-     * merge edges adjacent end points of given edges and fid the junctions
-     * along the way.  the junctions are stored as member variables.
+     * merge edges adjacent end points of given edges.
      * For best results, make sure the edges were created from an image whose
      * lines were thinned to 1 pixel widths.
      * 
