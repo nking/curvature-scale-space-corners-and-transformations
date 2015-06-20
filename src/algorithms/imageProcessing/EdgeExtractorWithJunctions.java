@@ -47,7 +47,7 @@ import java.util.Set;
  */
 public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
     
-    private boolean debug = true;
+    private boolean debug = false;
     
     /**
      * map with key = center of junction pixel coordinates; 
@@ -131,16 +131,20 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         //O(N)
         Map<PairInt, PairInt> joinPoints = findJoinPoints(output);
         
-printJoinPoints(joinPoints, output);
-writeJoinPointsImage(joinPoints, output);
-   
-        //output = joinOnJoinPoints(joinPoints, output);
- 
-        //findJunctions(output);
+        if (debug) {
+            printJoinPoints(joinPoints, output);
+            writeJoinPointsImage(joinPoints, output);
+        }
         
-        //printJunctions(output);
-
-        //spliceEdgesAtJunctionsIfImproves(output);
+        output = joinOnJoinPoints(joinPoints, output);
+ 
+        findJunctions(output);
+        
+        if (debug) {
+            printJunctions(output);
+        }
+        
+        spliceEdgesAtJunctionsIfImproves(output);
     
         return output;
     }
@@ -824,15 +828,19 @@ writeJoinPointsImage(joinPoints, output);
     /**
      * join edges using information in the member variable joinPoints
      * and update the junction and joinPoint information after the
-     * changes.
-     * @param joinPoints
+     * changes.  Note that the join points must be first or last positions
+     * in an edge in edges.
+     * @param joinPoints map with key = the PairInt with x being the edge index
+     * and y being the index of the first join point within the edge, value =
+     * the PairInt with x being the edge index
+     * and y being the index of the other join point within the edge
      * @param edges
      * @return 
      */
     protected List<PairIntArray> joinOnJoinPoints(Map<PairInt, PairInt> 
         joinPoints, List<PairIntArray> edges) {
         
-        //order the join points
+        //order the join points by the edge number of the first join point
         
         int[] indexes = new int[joinPoints.size()];
         PairInt[][] edgeJoins = new PairInt[joinPoints.size()][2];
