@@ -37,11 +37,7 @@ public class PairInt {
         
         PairInt other = (PairInt)obj;
         
-        if ((x == other.getX()) && (y == other.getY())) {
-            return true;
-        }
-        
-        return false;
+        return (x == other.getX()) && (y == other.getY());
     }
 
     @Override
