@@ -47,7 +47,7 @@ import java.util.Set;
  */
 public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
     
-    private boolean debug = true;
+    private boolean debug = false;
     
     /**
      * map with key = center of junction pixel coordinates; 
@@ -1067,7 +1067,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             Integer centerPixelIndex = entry.getKey();
             PairInt centerLoc = junctionLocationMap.get(centerPixelIndex);
             assert(centerLoc != null);
-       
+
             Set<Integer> adjIndexes = entry.getValue();
             
             int[] pixIndexes = new int[adjIndexes.size() + 1];
@@ -1082,7 +1082,8 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 .getLengthOfLongestSide(centerLoc.getY());
             
             int maxN = lengths[0];
-            int maxNPixIdx = -1;
+            int maxNPixIdx = pixIndexes[0];
+            boolean foundAnotherEdge = false;
             
             int count = 1;
             
@@ -1102,6 +1103,8 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     continue;
                 }
                 
+                foundAnotherEdge = true;
+                
                 Splice splice = new Splice(edges.get(loc.getX()));
                                                 
                 lengths[count] = splice.getLengthOfLongestSide(loc.getY());
@@ -1114,10 +1117,10 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 count++;
             }
             
-            if (maxNPixIdx == -1) {
+            if (!foundAnotherEdge) {
                 continue;
             }
-            
+
             //-- correct the lengths for the junctions from edge maxNEdgeIdx --
             PairInt maxNLoc = junctionLocationMap.get(maxNPixIdx);
             Splice maxNSplice = new Splice(edges.get(maxNLoc.getX()));
