@@ -47,7 +47,7 @@ import java.util.Set;
  */
 public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
     
-    private boolean debug = false;
+    private boolean debug = true;
     
     /**
      * map with key = center of junction pixel coordinates; 
@@ -139,15 +139,28 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         
         output = joinOnJoinPoints(joinPoints, output);
  
-        findJunctions(output);
+        int nMaxIter = 0;
+        int nIter = 0;
+        int nSplices = 0;
         
-        if (debug) {
-            algorithms.misc.MiscDebug.printJunctions(this.junctionMap, edges, 
+        while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
+        
+            findJunctions(output);
+            
+            if (nIter == 0) {
+                nMaxIter = junctionMap.size();
+            }
+
+            if (debug) {
+                algorithms.misc.MiscDebug.printJunctions(this.junctionMap, output, 
                 img);
+            }
+
+            nSplices = spliceEdgesAtJunctionsIfImproves(output);
+            
+            ++nIter;
         }
         
-        spliceEdgesAtJunctionsIfImproves(output);
-    
         return output;
     }
     
@@ -1005,8 +1018,8 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         return 1;            
     }
 
-    private void spliceEdgesAtJunctionsIfImproves(List<PairIntArray> edges) {
-               
+    private int spliceEdgesAtJunctionsIfImproves(List<PairIntArray> edges) {
+                       
         /*        
         The main goal is to make better contours.
         
@@ -1020,6 +1033,8 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         For now, will make a simple algorithm which tries to increase the
         length of the longest edges in a junction.
         */
+        
+        int nSplices = 0;
         
         // key = edge index.  
         // value = pixel indexes.
@@ -1052,7 +1067,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             Integer centerPixelIndex = entry.getKey();
             PairInt centerLoc = junctionLocationMap.get(centerPixelIndex);
             assert(centerLoc != null);
-        
+       
             Set<Integer> adjIndexes = entry.getValue();
             
             int[] pixIndexes = new int[adjIndexes.size() + 1];
@@ -1067,8 +1082,14 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 .getLengthOfLongestSide(centerLoc.getY());
             
             int maxN = lengths[0];
+            int maxNPixIdx = -1;
             
             int count = 1;
+            
+            // for junctions on the same edge, need to count the portions
+            // of their edge which are on oppossite sides of the junction,
+            // so need to track the maxN, then correct the lengths of splice
+            // from same edge afterwards
             
             for (Integer pixIndex : adjIndexes) {
                 
@@ -1080,15 +1101,35 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     count++;
                     continue;
                 }
+                
+                Splice splice = new Splice(edges.get(loc.getX()));
                                                 
-                lengths[count] = (new Splice(edges.get(loc.getX())))
-                    .getLengthOfLongestSide(loc.getY());
+                lengths[count] = splice.getLengthOfLongestSide(loc.getY());
            
                 if (lengths[count] > maxN) {
                     maxN = lengths[count];
+                    maxNPixIdx = pixIndex;
                 }
                 
                 count++;
+            }
+            
+            if (maxNPixIdx == -1) {
+                continue;
+            }
+            
+            //-- correct the lengths for the junctions from edge maxNEdgeIdx --
+            PairInt maxNLoc = junctionLocationMap.get(maxNPixIdx);
+            Splice maxNSplice = new Splice(edges.get(maxNLoc.getX()));
+            int maxNSpliceOtherSideN = maxNSplice.splice(new int[]{maxNLoc.getY()})[1].getN();
+            // correct the splice lengths if they are from the same edge
+            for (int ii = 0; ii < count; ++ii) {
+                int pixIdx = pixIndexes[ii];
+                PairInt loc = junctionLocationMap.get(pixIdx);
+                if ((loc.getX() != maxNLoc.getX()) || (pixIdx == maxNPixIdx)) {
+                    continue;
+                }
+                lengths[ii] = maxNSpliceOtherSideN;
             }
             
             if ((maxN > lengths.length) || (maxN > 10000000)) {
@@ -1108,7 +1149,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             PairInt loc1 = junctionLocationMap.get(Integer.valueOf(pixIdx1));
             final int edge1Idx = loc1.getX();
             final int indexWithinEdge1 = loc1.getY();
-            
+                       
             if (edge0Idx != edge1Idx && (lengths[0] != 0) && (lengths[1] != 0)) {
                 
                 Set<Integer> edgePixelIndexes = 
@@ -1190,6 +1231,8 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 
                 // append splice1 to splice0                
                 spliced0[0].addAll(spliced1[0]);
+                
+                ++nSplices;
                 
                 PairIntArray edge0 = edges.get(edge0Idx);
                 edge0.swapContents(spliced0[0]);
@@ -1332,7 +1375,9 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                         junctionMap, edges);
                 }
             }
-        }        
+        } 
+        
+        return nSplices;
     }
 
     protected void reduceMultipleEndpointsForEdge(

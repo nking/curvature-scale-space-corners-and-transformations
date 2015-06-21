@@ -38,8 +38,7 @@ public class Splice {
      */
     public PairIntArray[] splice(int[] spliceIndexInOut) {
         
-        return splice(spliceIndexInOut, new HashSet<Integer>(), 
-            null, null, null);
+        return splice(spliceIndexInOut, null, null, null, null);
     }
  
     /**
@@ -91,11 +90,13 @@ public class Splice {
         
         if ((spliceIndexInOut[0] == 0) || (spliceIndexInOut[0] == (edge.getN() - 1))) {
             // --- add entries to output junction maps
-            for (Integer pixelIndex : edgePixelIndexes) {
-                PairInt loc = editJunctionLocationMap.get(pixelIndex);
-                assert(loc != null);
-                outputLargerSpliceJunctionLocationMap.put(
-                    pixelIndex, new PairInt(loc.getX(), loc.getY()));
+            if (edgePixelIndexes != null) {
+                for (Integer pixelIndex : edgePixelIndexes) {
+                    PairInt loc = editJunctionLocationMap.get(pixelIndex);
+                    assert(loc != null);
+                    outputLargerSpliceJunctionLocationMap.put(
+                        pixelIndex, new PairInt(loc.getX(), loc.getY()));
+                }
             }
             return new PairIntArray[]{edge.copy(), new PairIntArray()};
         }

@@ -64,7 +64,7 @@ public class PostLineThinnerCorrections {
         }
         
         correctForArtifacts(points, w, h);
-        
+       
         for (int i = 0; i < 2; i++) {
             straightenLines(points, w, h);
         }
@@ -77,6 +77,9 @@ public class PostLineThinnerCorrections {
  
     public void correctForArtifacts(Set<PairInt> points, int w, int h) {
      
+        correctForHoleArtifacts1_2_2(points, w, h);
+        correctForHoleArtifacts1_2_3(points, w, h);
+        
         correctForSingleHole_01(points, w, h);
         correctForSingleHole_02(points, w, h);
         correctForSingleHole_03(points, w, h);
@@ -89,7 +92,7 @@ public class PostLineThinnerCorrections {
         correctForSingleHole_10(points, w, h);
         correctForSingleHole_11(points, w, h);
         correctForSingleHole_12(points, w, h);
-        
+
         correctForZigZag000_00(points, w, h);
         correctForZigZag000_01(points, w, h);
         correctForZigZag000_02(points, w, h);
@@ -105,6 +108,10 @@ public class PostLineThinnerCorrections {
         //correctForHoleArtifacts1_1(points, w, h);       
         correctForHoleArtifacts1_2(points, w, h);
         correctForHoleArtifacts1_2_1(points, w, h);
+        correctForHoleArtifacts1_2_4(points, w, h);
+        correctForHoleArtifacts1_2_5(points, w, h);
+        correctForHoleArtifacts1_2_6(points, w, h);
+        correctForHoleArtifacts1_2_7(points, w, h);
         correctForHoleArtifacts1_3(points, w, h);
         
         correctForZigZag00(points, w, h);
@@ -1653,7 +1660,7 @@ public class PostLineThinnerCorrections {
                 if (!tmpPointsRemoved.contains(p3)
                     && (points.contains(p3) || tmpPointsAdded.contains(p3))) {
                     foundPattern = false;
-                    
+              
                     break;
                 }
             }
@@ -1975,6 +1982,246 @@ public class PostLineThinnerCorrections {
        
         log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
+    }
+    
+    private void correctForHoleArtifacts1_2_4(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
+        
+        /*     
+                #  #  #        2
+             #  0  0  #        1
+             #  #  #*          0
+        
+         -3 -2 -1  0  1  2
+        */
+
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0, 0)
+        ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, -1));
+        
+        int nRotations = 1;
+        
+        int nCorrections = replaceAndRotateOnesIfNullable(points, imageWidth, 
+            imageHeight, zeroes, ones, nRotations);
+       
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    private void correctForHoleArtifacts1_2_5(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
+        
+        /*     
+                #  #  #        2
+             #  0  0  #        1
+                #  #*          0
+        
+         -3 -2 -1  0  1  2
+        */
+
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0, 0)
+        ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        
+        zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, -1));
+        
+        int nRotations = 1;
+        
+        int nCorrections = replaceAndRotateOnesIfNullable(points, imageWidth, 
+            imageHeight, zeroes, ones, nRotations);
+       
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    private void correctForHoleArtifacts1_2_6(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
+        
+        /*     
+                #  #  #        3
+                #  0  #        2
+                #  0  #        1
+                   #* #        0
+        
+         -3 -2 -1  0  1  2
+        */
+
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0, 0)
+        ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -2)); ones.add(new PairInt(-1, -3));
+        ones.add(new PairInt(0, -3));
+        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(1, -2)); ones.add(new PairInt(1, -3));
+        
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        
+        int nRotations = 1;
+        
+        int nCorrections = replaceAndRotateOnesIfNullable(points, imageWidth, 
+            imageHeight, zeroes, ones, nRotations);
+       
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    private void correctForHoleArtifacts1_2_7(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
+        
+        /*     
+                   #  #        3
+                #  0  #        2
+                #  0  #        1
+                   #* #        0
+        
+         -3 -2 -1  0  1  2
+        */
+
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0, 0)
+        ones.add(new PairInt(-1, -1)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -3));
+        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(1, -2)); ones.add(new PairInt(1, -3));
+        
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        
+        int nRotations = 1;
+        
+        int nCorrections = replaceAndRotateOnesIfNullable(points, imageWidth, 
+            imageHeight, zeroes, ones, nRotations);
+       
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    private void correctForHoleArtifacts1_2_2(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
+        
+        /*   0  0  0  0  0     4                        4
+             0  #  #  #  0     3         .  .  .        3 
+             0  #  0  #  #     2         .     #  #     2
+             0  #  0  #  0     1         .  @  .        1
+             0  #  #* #  0     0         #  .* .        0
+                #  0  0  0     -1        #              -1
+        
+         -3 -2 -1  0  1  2        -3 -2 -1  0  1  2
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -1));
+        zeroes.add(new PairInt(-2, -2));  zeroes.add(new PairInt(-2, -3)); zeroes.add(new PairInt(-2, -4));
+        zeroes.add(new PairInt(-1, -4));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1)); 
+        zeroes.add(new PairInt(0, -2)); zeroes.add(new PairInt(0, -4));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -4));
+        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(2, -3)); zeroes.add(new PairInt(2, -4));
+        
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(-1, -2)); ones.add(new PairInt(-1, -3));
+        ones.add(new PairInt(0, -3));
+        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+        ones.add(new PairInt(1, -3));
+        ones.add(new PairInt(2, -2));
+        
+        changeToOnes.add(new PairInt(0, -1));
+        
+        changeToZeroes.add(new PairInt(-1, -1)); changeToZeroes.add(new PairInt(-1, -2));
+        changeToZeroes.add(new PairInt(-1, -3));
+        changeToZeroes.add(new PairInt(0, 0)); changeToZeroes.add(new PairInt(0, -3));
+        changeToZeroes.add(new PairInt(1, 0)); changeToZeroes.add(new PairInt(1, -1));
+        changeToZeroes.add(new PairInt(1, -3));
+                    
+        int nCorrections = 0;
+      
+        nCorrections += replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+       
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+       
+    }
+    
+    private void correctForHoleArtifacts1_2_3(Set<PairInt> points, int imageWidth,
+        int imageHeight) {
+        
+        /*                                               
+           0  0  0  0  0  0  0     3                                 3
+           0  #  #  #  #  #  0     2            .  .  .  .  .        2
+           0  #  0  0  0  #  0     1            .     @  @  .        1
+           #  #  #  #  #* #  0     0         #  #  #  .  .* .        0
+              0  #  0  0  0  0     -1           0  #                 -1
+
+          -4 -3 -2 -1  0  1  2        
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-4, -1)); zeroes.add(new PairInt(-4, -2)); zeroes.add(new PairInt(-4, -3));
+        zeroes.add(new PairInt(-3, 1)); zeroes.add(new PairInt(-3, -3));
+        zeroes.add(new PairInt(-2, -1)); zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -3));
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -3)); 
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -3));
+        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(2, -2)); zeroes.add(new PairInt(2, -3));
+        
+        ones.add(new PairInt(-4, 0)); 
+        ones.add(new PairInt(-3, 0)); ones.add(new PairInt(-3, -1)); ones.add(new PairInt(-3, -2));
+        ones.add(new PairInt(-2, 1)); ones.add(new PairInt(-2, 0)); ones.add(new PairInt(-2, -2));
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(-1, -2));
+        ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 0)); ones.add(new PairInt(1, -1)); ones.add(new PairInt(1, -2));
+      
+        changeToOnes.add(new PairInt(-1, -1));
+        changeToOnes.add(new PairInt(0, -1));
+        
+        changeToZeroes.add(new PairInt(-3, -1)); changeToZeroes.add(new PairInt(-3, -2));
+        changeToZeroes.add(new PairInt(-2, -2));
+        changeToZeroes.add(new PairInt(-1, 0)); changeToZeroes.add(new PairInt(-1, -2));
+        changeToZeroes.add(new PairInt(0, 0)); changeToZeroes.add(new PairInt(0, -2));
+        changeToZeroes.add(new PairInt(1, 0)); changeToZeroes.add(new PairInt(1, -1));
+        changeToZeroes.add(new PairInt(1, -2));
+        
+        int nCorrections = 0;
+        
+        nCorrections += replacePattern(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+       
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+       
     }
     
     private void correctForHoleArtifacts1_3(Set<PairInt> points, int imageWidth, 
@@ -2828,7 +3075,7 @@ public class PostLineThinnerCorrections {
     private void correctForSingleHole_01(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
         
-        /*    
+        /*
           0  0  0  0  0         3                           3
           0  0  #  #  0         2           .  .            2
           0  #  0  #  #         1        .  0  .  #         1

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -433,6 +434,50 @@ public class MiscDebug {
         }
         System.out.println(sb.toString());
         System.out.println("\n");
+    }
+
+    public static String printJunctionsToString(Map<Integer, Set<Integer>> jMap, 
+        List<PairIntArray> edges, GreyscaleImage img) {
+
+        StringBuilder sb = new StringBuilder("junctions:\n");
+        
+        for (Entry<Integer, Set<Integer>> entry : jMap.entrySet()) {
+            int pixIdx = entry.getKey().intValue();
+            int col = img.getCol(pixIdx);
+            int row = img.getRow(pixIdx);
+            sb.append(String.format("%d (%d,%d)\n", pixIdx, col, row));
+        }
+        
+        return sb.toString();
+    }
+    
+    public static String printJunctionsToString(
+        Map<Integer, PairInt> jLocationMap, Map<Integer, Set<Integer>> jMap, 
+        List<PairIntArray> edges, GreyscaleImage img) {
+
+        StringBuilder sb = new StringBuilder("junctions:\n");
+        
+        for (Entry<Integer, Set<Integer>> entry : jMap.entrySet()) {
+            int pixIdx = entry.getKey().intValue();
+            int col = img.getCol(pixIdx);
+            int row = img.getRow(pixIdx);
+            sb.append(String.format("%d (%d,%d)\n", pixIdx, col, row));
+        }
+        
+        sb.append("junction locations:\n");
+        for (Entry<Integer, PairInt> entry : jLocationMap.entrySet()) {
+            Integer pixelIndex = entry.getKey();
+            PairInt loc = entry.getValue();
+            int edgeIdx = loc.getX();
+            int indexWithinEdge = loc.getY();
+            int edgeN = edges.get(edgeIdx).getN();
+            int x = edges.get(edgeIdx).getX(indexWithinEdge);
+            int y = edges.get(edgeIdx).getY(indexWithinEdge);
+            sb.append(String.format("edge=%d idx=%d (out of %d) pixIdx=%d (%d,%d)\n", 
+                edgeIdx, indexWithinEdge, edgeN, pixelIndex.intValue(), x, y));
+        }
+        
+        return sb.toString();
     }
 
 }

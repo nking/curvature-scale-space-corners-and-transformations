@@ -225,6 +225,42 @@ public aspect CurvatureAspect {
 
     }
 
+    after() returning() :
+        execution(private void algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector*.calculateSkylineCorners())
+        && args()
+	    && target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof CurvatureScaleSpaceCornerDetector)) {
+            return;
+        }
+
+        CurvatureScaleSpaceCornerDetector instance = 
+            (CurvatureScaleSpaceCornerDetector)obj;
+
+        PairIntArray corners = instance.getSkylineCornersInOriginalReferenceFrame();
+
+        Image img2 = instance.getImage().copyImageToGreen();
+
+        int xOffset = instance.getTrimmedXOffset();
+        int yOffset = instance.getTrimmedYOffset();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addCurveToImage(corners, img2, 1, 255, 0, 0);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/skyline_corners" + outImgNum + ".png", img2);
+
+        } catch (Exception e) {
+             e.printStackTrace();
+            log2.severe("ERROR: " + e.getMessage());
+        }
+
+    }
+
     after(float[] rainbowCoeff, 
         Set<PairInt> rainbowPoints, ImageExt originalColorImage, int xOffset, 
         int yOffset) returning(RainbowFinder.Hull rainbowHull) :
@@ -922,10 +958,11 @@ private static int n3 = 0;
         }
     }
 
-    after(List<PairIntArray> edges) returning() :
-        execution(private void algorithms.imageProcessing.EdgeExtractorWithJunctions.spliceEdgesAtJunctionsIfImproves( 
-        List<PairIntArray>) ) 
-        && args(edges) 
+    after(Map<PairInt, PairInt> joinPoints, List<PairIntArray> edges) 
+        returning(List<PairIntArray> output) :
+        execution(protected List<PairIntArray> algorithms.imageProcessing.EdgeExtractorWithJunctions.joinOnJoinPoints( 
+        Map<PairInt, PairInt>, List<PairIntArray>) ) 
+        && args(joinPoints, edges) 
         && target(algorithms.imageProcessing.EdgeExtractorWithJunctions) {
 
         Object obj = thisJoinPoint.getThis();
@@ -941,8 +978,32 @@ private static int n3 = 0;
         try {
             ImageIOHelper.addAlternatingColorCurvesToImage(
                 edges,
-                "after_junction_splice_" + outImgNum + ".png", 
+                "after_join_points_" + outImgNum + ".png", 
                 writeImage, img);
+        } catch(IOException e) {
+            log2.severe(e.getMessage());
+        }
+    }
+
+    after(List<PairIntArray> edges) returning() :
+        execution(private int algorithms.imageProcessing.EdgeExtractorWithJunctions.spliceEdgesAtJunctionsIfImproves( 
+        List<PairIntArray>) ) 
+        && args(edges) 
+        && target(algorithms.imageProcessing.EdgeExtractorWithJunctions) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof EdgeExtractorWithJunctions)) {
+            return;
+        }
+
+        EdgeExtractorWithJunctions instance = (EdgeExtractorWithJunctions)obj;
+
+        Image img = instance.getImage().copyImageToGreen();
+        boolean writeImage = true;
+        try {
+            ImageIOHelper.addAlternatingColorCurvesToImage(edges,
+                "after_junction_splice_" + outImgNum + ".png", writeImage, img);
         } catch(IOException e) {
             log2.severe(e.getMessage());
         }
