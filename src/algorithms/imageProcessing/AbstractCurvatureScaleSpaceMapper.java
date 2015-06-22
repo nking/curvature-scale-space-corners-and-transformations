@@ -38,7 +38,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * if extractSkline is true, this is populated with the sky line
      * edge(s).
      */
-    protected List<PairIntArray> skylineEdges = new ArrayList<PairIntArray>();
+    protected final List<PairIntArray> skylineEdges = new ArrayList<PairIntArray>();
         
     protected boolean doNotNormalizeByHistogram = false;
     
@@ -178,14 +178,11 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             // (1) apply an edge filter
             applyEdgeFilter();
             
-            if (extractSkyline) {
+            if (extractSkyline && skylineEdges.isEmpty()) {
                 
                 List<PairIntArray> skyEdges = extractSkyline();
-                
-                if (skylineEdges.isEmpty()) {
-                    
-                    this.skylineEdges.addAll(skyEdges);
-                }
+                                    
+                skylineEdges.addAll(skyEdges);
             }
             
             // (2) extract edges

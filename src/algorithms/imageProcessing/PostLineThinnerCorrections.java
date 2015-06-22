@@ -161,7 +161,9 @@ public class PostLineThinnerCorrections {
         correctForZigZag000_07(points, w, h);
         
         correctForLs_0(points, w, h);
-        correctForLs_1(points, w, h);        
+        correctForLs_1(points, w, h);
+        correctForLs_2(points, w, h); 
+        correctForLs_3(points, w, h);
         correctForLs2_0(points, w, h);
         correctForLs2_1(points, w, h);
         
@@ -1387,6 +1389,91 @@ public class PostLineThinnerCorrections {
         ones.add(new PairInt(1, 2));
         
         changeToZeroes.add(new PairInt(0, 1));
+                    
+        int nCorrections = 0;
+        
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    protected void correctForLs_2(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+       
+        /*          
+            0  #  0         1
+            0  #* 0         0
+            0  #< #  0     -1
+            #  0  0  0     -2
+          #                -3
+         -2 -1  0  1  2 
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+    
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1)); 
+        zeroes.add(new PairInt(0, 2));
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 1));
+        
+        ones.add(new PairInt(-2, 3));
+        ones.add(new PairInt(-1, 2));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 1));
+        
+        changeToZeroes.add(new PairInt(1, 1));
+                    
+        int nCorrections = 0;
+        
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += rotate90ThreeTimes(points, imageWidth, imageHeight, 
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    protected void correctForLs_3(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+       
+        /*          
+            0  0  0         1
+            0  #* 0         0
+            0  #< #  #     -1
+            #  0  0  0     -2
+         #                 -3       
+        -2 -1  0  1  2 
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+    
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1)); 
+        zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(2, 2));
+        
+        ones.add(new PairInt(-2, 3));
+        ones.add(new PairInt(-1, 2));
+        ones.add(new PairInt(0, 1));
+        ones.add(new PairInt(1, 1));
+        ones.add(new PairInt(2, 1));
+        
+        changeToZeroes.add(new PairInt(0, 0));
                     
         int nCorrections = 0;
         

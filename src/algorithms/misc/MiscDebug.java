@@ -295,7 +295,8 @@ public class MiscDebug {
                         }
                     }
                 }
-                assert(contains);
+                //TODO: follow where data becomes inconsistent:
+                //assert(contains);
             }
         }
     }
@@ -478,6 +479,18 @@ public class MiscDebug {
         }
         
         return sb.toString();
+    }
+
+    public static void assertAllRowsPopulated(
+        Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax, 
+        int imageMaxColumn, int imageMaxRow) {
+        
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
+            
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            
+            assert(!((colRanges == null) || colRanges.isEmpty()));
+        }        
     }
 
 }

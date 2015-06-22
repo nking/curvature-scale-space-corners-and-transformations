@@ -1,5 +1,6 @@
 package algorithms.compGeometry;
 
+import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ import java.util.Stack;
  * @author nichole
  */
 public class PerimeterFinder {
+    
+    private boolean debug = true;
   
     /**
      * For the given points, find the ranges of columns that bound the points
@@ -898,6 +901,21 @@ public class PerimeterFinder {
         }
     }
     
+    /**
+     * find the pixels which are the borders of rowColRanges including concave
+     * pixels, but excluding any pixels that are the image border pixels.
+     * Note that rowColRanges has to represent a contiguous point set.
+     * 
+     * @param rowColRanges the column bounds for each row of a contiguous
+     * point set.
+     * @param rowMinMax the minimum and maximum rows present in the contiguous
+     * point set.
+     * @param imageMaxColumn the maximum column in the image from which the
+     * point set was derived.
+     * @param imageMaxRow the maximum row in the image from which the point
+     * set was derived.
+     * @return 
+     */
     public Set<PairInt> getBorderPixels(Map<Integer, List<PairInt>> rowColRanges,
         int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
         
@@ -907,20 +925,220 @@ public class PerimeterFinder {
             return borderPixels;
         }
         
+        if (debug) {
+            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges, 
+                rowMinMax, imageMaxColumn, imageMaxRow);
+        }
+        
         /*
-           -- find left border pixels
-           -- find right border pixels 
-           -- find top border pixels
-           -- find bottom border pixels
-           -- find unbounded embedded border pixels
-           -- for each row, look at row above and below and if they
-                begin at a later pixel, make the current row's pixels up to
-                that point border pixels.
-                -- do the same for the rightmost end of each row.
-        */
+        Need to handle concave bounds:
+           [][][][][][][][]
+           [][]    [][]  [][]
+              [][][][][][]  
+             []     []      
+              [][]          
+           [][]  [][]  [][] <--- the 2nd to last point should be found as border too
+              [][]  [][][]  <--- same for 3rd to last here and 2nd in row
         
-        //TODO: calc the runtime estimates here
+          ___________________
+          |[][][][][][][][]  |  Find the min and max column bounds for the
+          |[][]    [][]  [][]|  region.  make a point set of all points that
+          |   [][][][][][]   |  are not in a colRange.
+          |  []     []       |  Find the contiguous groups among those points.
+          |   [][]           |  Then iterate over the boundaries of the region
+          |[][]  [][]  [][]  |  to test whether a point is found n a group,
+          |   [][]  [][][]   |  and when it is, put it in a set called
+          --------------------  connectedToBounds.
+                                        Then iterate over each point in colRanges
+        ----------------------------    and for each test if it is adjacent to
+        |     ___________________       a point in connectedToBounds.
+        |     |[][][][][][][][]  |      If the point is connected, put it in the
+        |     |[][]    [][]  [][]|  border points set.
+        |     |   [][][][][][]   |  
+        |     |  []     [][][]   |  Then, if the top row is > 0, add the top 
+        |     |   [][]           |  row colRange pixels to border points set.
+        |     |[][]  []  [][][]  |  
+        |     |   [][]  [][][]   |  Then, if the bottow row is < max of image rows,
+        |     --------------------  add the bottom row colRange pixels to 
+        |                           border points.
+        ---------------------------- 
+                                    Then if any colRanges are equal to the leftmost
+                                    region bounds and that is > 0,
+                                    those points should be added to border pixels set.
         
+        Then if any colRanges are equal to the rightmost region bounds and that 
+        is < imageMaxColumn, those points should be added to border pixels set.
+        
+        */ 
+        
+        int[] colMinMax = getMinMaxColumnsInRanges(rowColRanges, rowMinMax);
+        
+        // ---- find nonMembers that are connected to the bounds of the -----
+        // ---- region bounded by rowMinMax and colMinMax               -----
+        
+        Set<PairInt> nonMembersConnectedToBounds =
+            findNonMembersConnectedToBounds(rowColRanges, rowMinMax, colMinMax, 
+                imageMaxColumn, imageMaxRow);
+        
+        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        
+        // --- for each member in colRanges, if it's adjacent to a point
+        // --- in nonMembersConnectedToBounds it's a border point
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
+            
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            
+            if (colRanges == null || colRanges.isEmpty()) {
+                throw new IllegalStateException(
+                "each row should have a point in it, else not contiguous");
+            }
+            
+            for (PairInt colRange : colRanges) {
+                for (int col = colRange.getX(); col <= colRange.getY(); ++col) {
+                    
+                    // test if adjacent to a point in nonMembersConnectedToBounds
+                    for (int idx = 0; idx < dxs.length; ++idx) {
+                        
+                        int x = col + dxs[idx];
+                        int y = row + dys[idx];
+                        
+                        PairInt t = new PairInt(x, y);
+                        if (nonMembersConnectedToBounds.contains(t)) {
+                            borderPixels.add(new PairInt(col, row));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // --- then add any pixels on the bounds if the bounds is not the
+        //     same as the image bounds
+        
+        int[] rows;
+        if (rowMinMax[0] > 0) {
+            if (rowMinMax[1] < imageMaxRow) {
+                rows = new int[]{rowMinMax[0], rowMinMax[1]};
+            } else {
+                rows = new int[]{rowMinMax[0]};
+            }
+        } else if (rowMinMax[1] < imageMaxRow) {
+            rows = new int[]{rowMinMax[1]};
+        } else {
+            rows = new int[]{};
+        }
+        
+        for (int ir = 0; ir < rows.length; ++ir) {
+            
+            int row = rows[ir];
+            
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            
+            if (colRanges == null || colRanges.isEmpty()) {
+                throw new IllegalStateException(
+                "each row should have a point in it, else not contiguous");
+            }
+            
+            for (PairInt colRange : colRanges) {
+                for (int col = colRange.getX(); col <= colRange.getY(); ++col) {
+                    borderPixels.add(new PairInt(col, row));
+                }
+            }
+        }
+        
+        if (colMinMax[0] > 0) {
+            for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
+
+                List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+
+                if (colRanges == null || colRanges.isEmpty()) {
+                    throw new IllegalStateException(
+                    "each row should have a point in it, else not contiguous");
+                }
+
+                int firstX = colRanges.get(0).getX();
+                
+                if (firstX == colMinMax[0]) {
+                    borderPixels.add(new PairInt(firstX, row));
+                }
+            }
+        }
+        
+        if (colMinMax[1] < imageMaxColumn) {
+            
+            for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
+
+                List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+
+                if (colRanges == null || colRanges.isEmpty()) {
+                    throw new IllegalStateException(
+                    "each row should have a point in it, else not contiguous");
+                }
+
+                int n = colRanges.size();
+
+                int lastX = colRanges.get(n - 1).getY();
+
+                if (lastX == colMinMax[1]) {
+                    borderPixels.add(new PairInt(lastX, row));
+                }
+            }
+        }
+      
+        return borderPixels;
+    }
+    
+    /**
+     * get a point set of the points not in column ranges for the region bounded
+     * by min row, max row, and the minimum of columns and the maximum of columns.
+     * @param rowColRanges
+     * @param rowMinMax
+     * @param imageMaxColumn
+     * @param imageMaxRow
+     * @return 
+     */
+    public Set<PairInt> getVoidsInRectangularRegion(Map<Integer, List<PairInt>> rowColRanges,
+        int[] rowMinMax, int[] colMinMax, int imageMaxColumn, int imageMaxRow) {
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+                
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
+            
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            
+            if ((colRanges == null) || colRanges.isEmpty()) {
+                continue;
+            }
+            
+            int n = colRanges.size();
+            
+            PairInt colRange = colRanges.get(0);
+        
+            for (int x = colMinMax[0]; x < colRange.getX(); ++x) {
+                set.add(new PairInt(x, row));
+            }
+                        
+            for (int i = 1; i < n; ++i) {
+                int lx = colRange.getY();
+                colRange = colRanges.get(i);
+                int rx = colRange.getX();
+                for (int x = (lx + 1); x < rx; ++x) {
+                    set.add(new PairInt(x, row));
+                }
+            }
+            
+            for (int x = (colRange.getY() + 1); x <= colMinMax[1]; ++x) {
+                set.add(new PairInt(x, row));
+            }
+        }
+        
+        return set;
+    }
+    
+    public int[] getMinMaxColumnsInRanges(Map<Integer, List<PairInt>> rowColRanges,
+        int[] rowMinMax) {
+                
         int minX = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE;
         
@@ -932,263 +1150,20 @@ public class PerimeterFinder {
                 continue;
             }
             
-            // ---- see if first columnRange is a border
-            int tc = colRanges.get(0).getX();
-            if (tc > 0) {
-                borderPixels.add(new PairInt(tc, row));  
-            }
-            
             int n = colRanges.size();
             
-            // ---- see if last columnRange is a border
-            tc = colRanges.get(n - 1).getY();
-            if (tc < imageMaxColumn) {
-                borderPixels.add(new PairInt(tc, row));
-            }
-                        
-            // find min and max of columns
-            tc = colRanges.get(0).getX();
+            int tc = colRanges.get(0).getX();
+            
             if (tc < minX) {
                 minX = tc;
             }
-            tc = colRanges.get(Integer.valueOf(n - 1)).getY();
+            tc = colRanges.get(n - 1).getY();
             if (tc > maxX) {
                 maxX = tc;
             }
         }
         
-        // ------ find top border pixels
-       
-        LinkedHashSet<Integer> allCols = new LinkedHashSet<Integer>();
-        for (int col = minX; col <= maxX; col++) {
-            allCols.add(Integer.valueOf(col));
-        }
-        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
-            
-            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
-            if ((colRanges == null) || colRanges.isEmpty()) {
-                continue;
-            }
-            
-            // if it's the top row and it's equal to 0, then
-            // remove the entry for allCols and do not add a border pixel
-            for (PairInt colRange : colRanges) {
-                for (int col = colRange.getX(); col <= colRange.getY(); col++) {
-                    if (!allCols.contains(Integer.valueOf(col))) {
-                        continue;
-                    }
-                    if (!((row == rowMinMax[0]) && (row == 0))) {                        
-                        borderPixels.add(new PairInt(col, row));                       
-                    }
-                    allCols.remove(Integer.valueOf(col));
-                }
-            }
-        }
-
-        // ------ find bottom border pixels
-       
-        allCols = new LinkedHashSet<Integer>();
-        for (int col = minX; col <= maxX; col++) {
-            allCols.add(Integer.valueOf(col));
-        }
-        for (int row = rowMinMax[1]; row >= rowMinMax[0]; row--) {
-            
-            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
-            if ((colRanges == null) || colRanges.isEmpty()) {
-                continue;
-            }
-            
-            // if it's the bottom row and it's equal to imageMaxRow, then
-            // remove the entry for allCols and do not add a border pixel
-            for (PairInt colRange : colRanges) {
-                for (int col = colRange.getX(); col <= colRange.getY(); col++) {
-                    if (!allCols.contains(Integer.valueOf(col))) {
-                        continue;
-                    }
-                    if (!((row == rowMinMax[1]) && (row == imageMaxRow))) {                        
-                        borderPixels.add(new PairInt(col, row)); 
-                    }
-                    allCols.remove(Integer.valueOf(col));
-                }
-            }
-        }
-
-        // ----- for each row, find start of columns in rows above and below
-        //       and if those are larger than the current row's start column
-        //       the leading pixels become border pixels.
-        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
-            
-            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
-            if ((colRanges == null) || colRanges.isEmpty()) {
-                continue;
-            }
-            
-            PairInt colRange = colRanges.get(0);
-            int col0 = colRange.getX();
-            
-            List<PairInt> prevColRanges = rowColRanges.get(
-                Integer.valueOf(row - 1));
-            List<PairInt> nextColRanges = rowColRanges.get(
-                Integer.valueOf(row + 1));
-            
-            // this will be -1 if no overlapping range
-            int prevCol = findIndexOfOverlappingRange(prevColRanges, colRange);
-            int nextCol = findIndexOfOverlappingRange(nextColRanges, colRange);
-            if (prevCol == 0) {
-                prevCol = prevColRanges.get(0).getX();
-            } else {
-                prevCol = -1;
-            }
-            if (nextCol == 0) {
-                nextCol = nextColRanges.get(0).getX();
-            } else {
-                nextCol = -1;
-            }
-            
-            if (nextCol > prevCol) {
-                if (col0 < nextCol) {
-                    for (int c = col0; c < nextCol; c++) {
-                        borderPixels.add(new PairInt(c, row));
-                    }
-                }
-            } else if (prevCol > -1) {
-                if (col0 < prevCol) {
-                    for (int c = col0; c < nextCol; c++) {
-                        borderPixels.add(new PairInt(c, row));
-                    }
-                }
-            }
-            
-        }
-        
-        // ----- for each row, find end of columns in rows above and below
-        //       and if those are less than the current row's end column
-        //       the lagging pixels become border pixels.
-        for (int row = (rowMinMax[0] + 1); row < rowMinMax[1]; row++) {
-            
-            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
-            
-            if ((colRanges == null) || colRanges.isEmpty()) {
-                continue;
-            }
-            
-            PairInt colRange = colRanges.get(colRanges.size() - 1);
-            int col0 = colRange.getY();
-            
-            List<PairInt> prevColRanges = rowColRanges.get(
-                Integer.valueOf(row - 1));
-            List<PairInt> nextColRanges = rowColRanges.get(
-                Integer.valueOf(row + 1));
-            
-            // this will be -1 if no overlapping range
-            int prevCol = findIndexOfOverlappingRange(prevColRanges, colRange);
-            int nextCol = findIndexOfOverlappingRange(nextColRanges, colRange);
-            if (prevCol > -1) {
-                int n = prevColRanges.size();
-                if (prevCol == (n - 1)) {
-                    prevCol = prevColRanges.get(prevCol).getY();
-                } else {
-                    prevCol = -1;
-                }
-            }
-            if (nextCol > -1) {
-                int n = nextColRanges.size();
-                if (nextCol == (n - 1)) {
-                    nextCol = nextColRanges.get(nextCol).getY();
-                } else {
-                    nextCol = -1;
-                }
-            }
-            
-            if (nextCol > prevCol) {
-                if (col0 > nextCol) {
-                    for (int c = (nextCol + 1); c <= col0; c++) {
-                        borderPixels.add(new PairInt(c, row));
-                    }
-                }
-            } else if (prevCol > -1) {
-                if (col0 > prevCol) {
-                    for (int c = (prevCol + 1); c <= col0; c++) {
-                        borderPixels.add(new PairInt(c, row));
-                    }
-                }
-            }
-        }
-
-        // -------- embedded pixels or gaps which are not bounded ---------
-        // runtime complexity is > O(m) where m is the number of contig gap ranges by row
-        List<List<Gap>> contiguousGaps = findContiguousGaps(rowColRanges,
-            minX, maxX, rowMinMax[0], rowMinMax[1]);
-        
-        List<List<Gap>> embeddedGapGroups = findBoundedGaps(contiguousGaps, 
-            rowMinMax[0], rowMinMax[1], imageMaxColumn, rowColRanges);
-        
-        // unbounded are the contiguous minus embedded
-        for (List<Gap> gapGroup : embeddedGapGroups) {
-            contiguousGaps.remove(gapGroup);
-        }
-        for (List<Gap> unboundedGapGroup : contiguousGaps) {
-            for (Gap unboundedGap : unboundedGapGroup) {
-                int row = unboundedGap.getRow();
-                int pPrev = unboundedGap.getStart() - 1;
-                int pNext = unboundedGap.getStopInclusive() + 1;
-                /*
-                -- add pPrev to borderPixels
-                -- add pNext to borderPixels
-                -- find the nearest pixel above it within rowColRanges and if 
-                   exists, add it to border pixels
-                -- find the nearest pixel below it within rowColRanges and if 
-                   exists, add it to border pixels.
-                */
-                borderPixels.add(new PairInt(pPrev, row));
-                
-                borderPixels.add(new PairInt(pNext, row));
-
-                //-- for each pixel in gap find the nearest pixel above it  
-                //   within rowColRanges and if exists, add it to border pixels
-                for (int c = unboundedGap.getStart(); 
-                    c <= unboundedGap.getStopInclusive(); c++) {
-                    boolean found = false;
-                    for (int r = (row - 1); r >= rowMinMax[0]; r--) {
-                        List<PairInt> crs = rowColRanges.get(Integer.valueOf(r));
-                        for (PairInt colRange : crs) {
-                            if ((c >= colRange.getX()) && (c <= colRange.getY())) {
-                                borderPixels.add(new PairInt(c, r));
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (found) {
-                            break;
-                        }
-                    }
-                }
-                //-- for each pixel in gap find the nearest pixel below it  
-                //   within rowColRanges and if exists, add it to border pixels
-                for (int c = unboundedGap.getStart(); 
-                    c <= unboundedGap.getStopInclusive(); c++) {
-                    boolean found = false;
-                    for (int r = (row + 1); r <= rowMinMax[1]; r++) {
-                        List<PairInt> crs = rowColRanges.get(Integer.valueOf(r));
-                        for (PairInt colRange : crs) {
-                            if ((c >= colRange.getX()) && (c <= colRange.getY())) {
-                                borderPixels.add(new PairInt(c, r));
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (found) {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        return borderPixels;
+        return new int[]{minX, maxX};
     }
     
     protected Gap findLastGap(Set<Gap> gaps) {
@@ -1356,7 +1331,148 @@ public class PerimeterFinder {
                 maxX = cr.getY();
             }
         }
+        
         return new int[]{minX, maxX};
+    }
+
+    private Map<Integer, List<PairInt>> copy(
+        Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax) {
+        
+         Map<Integer, List<PairInt>> output = new HashMap<Integer, List<PairInt>>();
+         for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
+             
+             Integer key = Integer.valueOf(row);
+             
+             List<PairInt> colRanges = rowColRanges.get(key);
+             
+             List<PairInt> outputColRanges = new ArrayList<PairInt>();
+             
+             for (PairInt p : colRanges) {
+                 outputColRanges.add(new PairInt(p.getX(), p.getY()));
+             }
+             
+             output.put(key, outputColRanges);
+         }
+         
+         return output;
+    }
+
+    public Set<PairInt> findNonMembersConnectedToBounds(
+        Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax, 
+        int[] colMinMax, int imageMaxColumn, int imageMaxRow) {
+        
+        Set<PairInt> nonMembers = getVoidsInRectangularRegion(rowColRanges,
+            rowMinMax, colMinMax, imageMaxColumn, imageMaxRow);
+
+        //Find the contiguous groups among nonMembers.
+        DFSConnectedGroupsFinder contigFinder = new DFSConnectedGroupsFinder();
+        contigFinder.setMinimumNumberInCluster(1);
+        contigFinder.findConnectedPointGroups(nonMembers, imageMaxColumn, 
+            imageMaxRow);
+        
+        Set<Set<PairInt>> contigNonMembers = new HashSet<Set<PairInt>>();
+        for (int i = 0; i < contigFinder.getNumberOfGroups(); ++i) {
+            Set<PairInt> group = contigFinder.getXY(i);
+            contigNonMembers.add(group);
+        }
+
+        Set<PairInt> contigNonMembersConnectedToBounds = new HashSet<PairInt>();
+        
+        // --- find the top and bottom row pixels not in colRanges and test memberships ---
+        int[] rows = new int[]{rowMinMax[0], rowMinMax[1]};
+        
+        for (int ir = 0; ir < rows.length; ++ir) {
+            
+            int row = rows[ir];
+            
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            
+            if ((colRanges == null) || colRanges.isEmpty()) {
+                continue;
+            }
+            
+            int n = colRanges.size();
+            
+            PairInt colRange = colRanges.get(0);
+        
+            for (int x = colMinMax[0]; x < colRange.getX(); ++x) {
+                PairInt t = new PairInt(x, row);
+                Set<PairInt> keep = null;
+                for (Set<PairInt> set : contigNonMembers) {
+                    if (set.contains(t)) {
+                        keep = set;
+                        break;
+                    }
+                }
+                if (keep != null) {
+                    contigNonMembersConnectedToBounds.addAll(keep);
+                    contigNonMembers.remove(keep);
+                }
+            }
+                        
+            for (int i = 1; i < n; ++i) {
+                int lx = colRange.getY();
+                colRange = colRanges.get(i);
+                int rx = colRange.getX();
+                for (int x = (lx + 1); x < rx; ++x) {
+                    PairInt t = new PairInt(x, row);
+                    Set<PairInt> keep = null;
+                    for (Set<PairInt> set : contigNonMembers) {
+                        if (set.contains(t)) {
+                            keep = set;
+                            break;
+                        }
+                    }
+                    if (keep != null) {
+                        contigNonMembersConnectedToBounds.addAll(keep);
+                        contigNonMembers.remove(keep);
+                    }
+                }
+            }
+            
+            for (int x = (colRange.getY() + 1); x <= colMinMax[1]; ++x) {
+                PairInt t = new PairInt(x, row);
+                Set<PairInt> keep = null;
+                for (Set<PairInt> set : contigNonMembers) {
+                    if (set.contains(t)) {
+                        keep = set;
+                        break;
+                    }
+                }
+                if (keep != null) {
+                    contigNonMembersConnectedToBounds.addAll(keep);
+                    contigNonMembers.remove(keep);
+                }
+            }
+        }
+        
+        // --- scan the pixels in first and last columns and test membership ---
+        // --- in contigNonMembers
+        int[] cols = new int[]{colMinMax[0], colMinMax[1]};
+        
+        for (int ic = 0; ic < cols.length; ++ic) {
+            
+            int col = cols[ic];
+            
+            for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
+                
+                PairInt t = new PairInt(col, row);
+                Set<PairInt> keep = null;
+                for (Set<PairInt> set : contigNonMembers) {
+                    if (set.contains(t)) {
+                        keep = set;
+                        break;
+                    }
+                }
+                
+                if (keep != null) {
+                    contigNonMembersConnectedToBounds.addAll(keep);
+                    contigNonMembers.remove(keep);
+                }
+            }
+        }
+        
+        return contigNonMembersConnectedToBounds;
     }
 
     static class Gap {

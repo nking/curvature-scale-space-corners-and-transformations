@@ -37,6 +37,8 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         
     protected long numberOfPixelsAboveThreshold = 0;
     
+    protected boolean removeShorterEdges = false;
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
             
     /**
@@ -101,9 +103,15 @@ public abstract class AbstractEdgeExtractor implements IEdgeExtractor {
         
         output = findEdgesIntermediateSteps(output);
         
-        //removeEdgesShorterThan(output, edgeSizeLowerLimit);
-                
+        if (removeShorterEdges) {
+            removeEdgesShorterThan(output, edgeSizeLowerLimit);
+        }
+        
         return output;
+    }
+    
+    public void removeShorterEdges(boolean doRemove) {
+        removeShorterEdges = doRemove;
     }
     
     protected abstract List<PairIntArray> findEdgesIntermediateSteps(
