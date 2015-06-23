@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PointPairInt;
@@ -137,8 +138,12 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 img);
         }
         
+        log.info("edges.size()=" + output.size() + " before join-points");
+        
         output = joinOnJoinPoints(joinPoints, output);
  
+        log.info("edges.size()=" + output.size() + " after join-points");
+        
         int nMaxIter = 1;
         int nIter = 0;
         int nSplices = 0;
@@ -268,7 +273,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             int uEdgeIdx = uLoc.getX();
             
             Set<Integer> neighborEdgeNumbers = new HashSet<Integer>();
-            
+
             PairInt vClosestXY = null;
             PairInt vClosestLoc = null;
             int closestDistSq = Integer.MAX_VALUE;
@@ -278,7 +283,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 int vX = uX + dxs[nIdx];
                 int vY = uY + dys[nIdx];
                 if ((vX < 0) || (vX > (w - 1)) || (vY < 0) || (vY > (h - 1))) {
-                        continue;
+                    continue;
                 }
                 PairInt vXY = new PairInt(vX, vY);
                 
@@ -318,7 +323,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     vClosestCanBeReordered = canBeReordered;
                 }
             }
-            
+           
             if ((neighborEdgeNumbers.size() != 1) || (vClosestXY == null)) {
                 continue;
             }
@@ -594,7 +599,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 int uIdx = img.getIndex(col, row);
                 
                 Set<PairInt> neighbors = new HashSet<PairInt>();
-                
+                                
                 for (int nIdx = 0; nIdx < dxs.length; nIdx++) {
                     
                     int x = col + dxs[nIdx];
@@ -612,11 +617,11 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                         neighbors.add(vLoc);
                     }
                 }
-                
+
                 if (neighbors.size() > 2) {
                     
                     Set<Integer> indexes = new HashSet<Integer>();
-                    
+                                        
                     for (PairInt p : neighbors) {
                         
                         int edge2Idx = p.getX();
@@ -641,7 +646,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                                 Integer.valueOf(freq.intValue() + 1));
                         }
                     }
-                    
+                                        
                     theJunctionMap.put(Integer.valueOf(uIdx), indexes);
                     
                     theJunctionLocationMap.put(Integer.valueOf(uIdx), 
@@ -660,9 +665,6 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             
             Integer pixelIndex = entry.getKey();
             
-            int col = img.getCol(pixelIndex.intValue());
-            int row = img.getRow(pixelIndex.intValue());
-                          
             Set<Integer> neighborIndexes = entry.getValue();
             int nN = neighborIndexes.size();
             
@@ -673,13 +675,13 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 if (remove.contains(pixelIndex2)) {
                     continue;
                 }
-                
+                            
                 Set<Integer> neighborIndexes2 = theJunctionMap.get(pixelIndex2);
                 
                 if (neighborIndexes2 == null) {
                     continue;
                 }
-                
+                                
                 if (neighborIndexes2.size() > nN) {
                     if (neighborIndexes2.size() > maxN) {
                         maxN = neighborIndexes2.size();
@@ -688,14 +690,17 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             }
             
             if (maxN > Integer.MIN_VALUE) {
-                // remove this pixel
-                remove.add(pixelIndex);
-                assert(!doNotRemove.contains(pixelIndex));
+
+                if (!doNotRemove.contains(pixelIndex)) {
+                    remove.add(pixelIndex);
+                }
+                
             } else {
                 doNotRemove.add(pixelIndex);
                 // remove the neighbors from the junction map
                 for (Integer pixelIndex2 : neighborIndexes) {
                     int mapFreq2 = theJunctionFrequencyMap.get(pixelIndex2);
+                    
                     if (!doNotRemove.contains(pixelIndex2) && (mapFreq2 == 1)) {
                         remove.add(pixelIndex2);
                     }
@@ -1083,7 +1088,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             PairInt centerLoc = junctionLocationMap.get(centerPixelIndex);
             assert(centerLoc != null);
 
-            /*if (debug) {
+            if (debug) {
                 
                 log.info("processing junction w/ center pixel index=" + centerPixelIndex
                     + " and loc=" + centerLoc.getX() + ":" + centerLoc.getY());
@@ -1092,7 +1097,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     junctionLocationMap, junctionMap, edges, img);
                 log.info(str);
                 
-            }*/
+            }
             
             Set<Integer> adjIndexes = entry.getValue();
             
@@ -1123,7 +1128,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 pixIndexes[count] = pixIndex.intValue();
                 
                 PairInt loc = junctionLocationMap.get(pixIndex);
-                
+            
                 if ((centerLoc.getX() == loc.getX())) {
                     count++;
                     continue;
@@ -1178,7 +1183,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             PairInt loc1 = junctionLocationMap.get(Integer.valueOf(pixIdx1));
             final int edge1Idx = loc1.getX();
             final int indexWithinEdge1 = loc1.getY();
-                       
+                      
             if (edge0Idx != edge1Idx && (lengths[0] != 0) && (lengths[1] != 0)) {
                 
                 Set<Integer> edgePixelIndexes = 

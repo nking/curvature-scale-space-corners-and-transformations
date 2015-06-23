@@ -493,4 +493,22 @@ public class MiscDebug {
         }        
     }
 
+    public static int[] findEdgeLocationOfPoint(List<PairIntArray> edges, 
+        int x, int y) {
+        
+        for (int eIdx = 0; eIdx < edges.size(); ++eIdx) {
+            
+            PairIntArray edge = edges.get(eIdx);
+            
+            for (int idx = 0; idx < edge.getN(); ++idx) {
+                if (edge.getX(idx) == x && edge.getY(idx) == y) {
+                    return new int[]{eIdx, idx};
+                }
+            }
+            
+        }
+        
+        return null;
+    }
+
 }

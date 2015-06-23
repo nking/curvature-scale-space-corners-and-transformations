@@ -958,6 +958,30 @@ private static int n3 = 0;
         }
     }
 
+    before(List<PairIntArray> edges) 
+        : call(protected Map<PairInt, PairInt> algorithms.imageProcessing.EdgeExtractorWithJunctions.findJoinPoints( 
+        List<PairIntArray>) ) 
+        && args(edges) 
+        && target(algorithms.imageProcessing.EdgeExtractorWithJunctions) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof EdgeExtractorWithJunctions)) {
+            return;
+        }
+
+        EdgeExtractorWithJunctions instance = (EdgeExtractorWithJunctions)obj;
+
+        Image img = instance.getImage().copyImageToGreen();
+        boolean writeImage = true;
+        try {
+            ImageIOHelper.addAlternatingColorCurvesToImage(edges,
+                "before_join_points_" + outImgNum + ".png", writeImage, img);
+        } catch(IOException e) {
+            log2.severe("ERROR while writing img: " + e.getMessage());
+        }
+    }
+
     after(Map<PairInt, PairInt> joinPoints, List<PairIntArray> edges) 
         returning(List<PairIntArray> output) :
         execution(protected List<PairIntArray> algorithms.imageProcessing.EdgeExtractorWithJunctions.joinOnJoinPoints( 
@@ -977,7 +1001,7 @@ private static int n3 = 0;
         boolean writeImage = true;
         try {
             ImageIOHelper.addAlternatingColorCurvesToImage(
-                edges,
+                output,
                 "after_join_points_" + outImgNum + ".png", 
                 writeImage, img);
         } catch(IOException e) {
