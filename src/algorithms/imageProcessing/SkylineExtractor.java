@@ -3830,20 +3830,23 @@ static int outImgNum=0;
         AbstractEdgeExtractor edgeExtractor = 
             new EdgeExtractorWithJunctions(output);
         
-        edgeExtractor.removeShorterEdges(true);
+        //edgeExtractor.removeShorterEdges(true);
         
         List<PairIntArray> edges = edgeExtractor.findEdges();
         
-        // smooth by 15
+        // smooth by large number.  TODO: consider a resoltuion dep factor
         AverageUtil avgUtil = new AverageUtil();
         int k = 15;
         
         output = gradientXY.createWithDimensions();       
         
         for (int i = 0; i < edges.size(); ++i) {
-            PairIntArray edge = avgUtil.calculateBoxCarAverage(edges.get(i), k);
-            for (int j = 0; j < edge.getN(); ++j) {
-                output.setValue(edge.getX(j), edge.getY(j), 1);
+            PairIntArray edge = edges.get(i);
+            if (edge.getN() >= k) {
+                edge = avgUtil.calculateBoxCarAverage(edges.get(i), k);
+                for (int j = 0; j < edge.getN(); ++j) {
+                    output.setValue(edge.getX(j), edge.getY(j), 1);
+                }
             }
         }
         

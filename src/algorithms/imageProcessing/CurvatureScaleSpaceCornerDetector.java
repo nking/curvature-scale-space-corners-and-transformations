@@ -61,6 +61,8 @@ public class CurvatureScaleSpaceCornerDetector extends
      */
     protected PairIntArray skylineCorners = new PairIntArray();
 
+    protected boolean enableJaggedLineCorrections = true;
+    
     public CurvatureScaleSpaceCornerDetector(final ImageExt input) {
 
         super(input);
@@ -70,6 +72,13 @@ public class CurvatureScaleSpaceCornerDetector extends
         List<PairIntArray> theEdges) {
 
         super(input, theEdges);
+    }
+    
+    public void enableJaggedLineCorrections() {
+        enableJaggedLineCorrections = true;
+    }
+    public void disableJaggedLineCorrections() {
+        enableJaggedLineCorrections = false;
     }
 
     public void findCorners() {
@@ -340,10 +349,10 @@ public class CurvatureScaleSpaceCornerDetector extends
         if (maxScaleSpace.getK() == null) {
             return new PairIntArray(0);
         }
-
+        
         PairFloatArray candidateCornersXY =
-            findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, true,
-            isAClosedCurve, doUseOutdoorMode);
+            findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, 
+                enableJaggedLineCorrections, isAClosedCurve, doUseOutdoorMode);
 
         SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);
 
@@ -1059,37 +1068,20 @@ if (doUseOutdoorMode) {
             return;
         }
 
-        MedianSmooth interp = new MedianSmooth();
-        // TODO: if image resolution is known, it should be used here
-        int kPoints = 15;
-
-        List<PairIntArray> interpolated = new ArrayList<PairIntArray>();
-        for (PairIntArray sEdge : skylineEdges) {
-            if (sEdge.getN() >= kPoints) {
-                PairIntArray out = interp.calculate(sEdge, kPoints);
-                interpolated.add(out);
-            }
-        }
-
-        /*
-        try {
-            Image img2 = new Image(img.getWidth(), img.getHeight());
-            ImageIOHelper.addAlternatingColorCurvesToImage(skylineEdges, img2);
-            String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(dirPath + "/skyline_interpolated+" 
-                + System.currentTimeMillis() + ".png", img2);
-        } catch (IOException e) {
-        }
-        */
-        
         PairIntArray theSkylineCorners = new PairIntArray();
-
+    
+        enableJaggedLineCorrections = false;
+        
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
-            findCornersInScaleSpaceMaps(interpolated, false, theSkylineCorners);
+            findCornersInScaleSpaceMaps(skylineEdges, false, theSkylineCorners);
 
         if (theSkylineCorners.getN() > 0) {
             skylineCorners.addAll(theSkylineCorners);
         }
+        
+        enableJaggedLineCorrections = true;
+        
+        log.info("number of skyline corners=" + theSkylineCorners.getN());
 
     }
 
