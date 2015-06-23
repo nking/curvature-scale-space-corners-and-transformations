@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.misc.AverageUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
@@ -2990,6 +2991,32 @@ for (int i = 0; i < edge.getN(); i++) {
                 outputNeighbors.add(p2);
             }
         }
+    }
+
+    public List<PairIntArray> smoothAndReExtractEdges(List<PairIntArray> edges,
+        GreyscaleImage gradientXY, int smoothingFactor) {
+        
+        AverageUtil avgUtil = new AverageUtil();
+        
+        GreyscaleImage output = gradientXY.createWithDimensions();       
+        
+        for (int i = 0; i < edges.size(); ++i) {
+            PairIntArray edge = edges.get(i);
+            if (edge.getN() >= smoothingFactor) {
+                edge = avgUtil.calculateBoxCarAverage(edges.get(i), smoothingFactor);
+                for (int j = 0; j < edge.getN(); ++j) {
+                    output.setValue(edge.getX(j), edge.getY(j), 1);
+                }
+            }
+        }
+        
+        PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();
+        pslt.correctForArtifacts(output);        
+        IEdgeExtractor edgeExtractor = new EdgeExtractorWithJunctions(output);
+        edgeExtractor.removeShorterEdges(true);
+        edges = edgeExtractor.findEdges();     
+        
+        return edges;
     }
 
 }

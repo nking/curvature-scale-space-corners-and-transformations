@@ -3834,31 +3834,15 @@ static int outImgNum=0;
         
         List<PairIntArray> edges = edgeExtractor.findEdges();
         
-        // smooth by large number.  TODO: consider a resoltuion dep factor
-        AverageUtil avgUtil = new AverageUtil();
-        int k = 15;
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        output = gradientXY.createWithDimensions();       
+        int k = 10;
         
-        for (int i = 0; i < edges.size(); ++i) {
-            PairIntArray edge = edges.get(i);
-            if (edge.getN() >= k) {
-                edge = avgUtil.calculateBoxCarAverage(edges.get(i), k);
-                for (int j = 0; j < edge.getN(); ++j) {
-                    output.setValue(edge.getX(j), edge.getY(j), 1);
-                }
-            }
-        }
-        
-        pslt = new PostLineThinnerCorrections();
-        pslt.correctForArtifacts(output);        
-        edgeExtractor = new EdgeExtractorWithJunctions(output);
-        edgeExtractor.removeShorterEdges(true);
-        edges = edgeExtractor.findEdges();     
+        edges = curveHelper.smoothAndReExtractEdges(edges, gradientXY, k);    
         
         return edges;
     }
-
+    
     public class RemovedSets {
         private Set<PairInt> removedNonCloudColors = new HashSet<PairInt>();
         private Set<PairInt> highContrastRemoved = new HashSet<PairInt>();

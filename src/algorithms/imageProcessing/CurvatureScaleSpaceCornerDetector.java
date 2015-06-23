@@ -1075,6 +1075,31 @@ if (doUseOutdoorMode) {
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
             findCornersInScaleSpaceMaps(skylineEdges, false, theSkylineCorners);
 
+        // TODO: improve this for resolution
+        /*  may need other than smoothing, a change in curvature factor maybe
+        float nGoalCorners = (gradientXY.getNPixels() < 500000) ? 50.f : 
+            100.f;
+        
+        // want about 50 points
+        float factor = (float)theSkylineCorners.getN()/nGoalCorners;
+        
+        if (factor > 1.2) {
+            
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+            int k = (int)Math.ceil(factor);
+            if (k < 2) {
+                k = 2;
+            }
+            
+            List<PairIntArray> smoothedEdges = 
+                curveHelper.smoothAndReExtractEdges(skylineEdges, 
+                gradientXY, k);
+            
+            maps = findCornersInScaleSpaceMaps(smoothedEdges, false, 
+                theSkylineCorners);
+        }
+        */
+        
         if (theSkylineCorners.getN() > 0) {
             skylineCorners.addAll(theSkylineCorners);
         }
@@ -1082,7 +1107,6 @@ if (doUseOutdoorMode) {
         enableJaggedLineCorrections = true;
         
         log.info("number of skyline corners=" + theSkylineCorners.getN());
-
     }
 
 }

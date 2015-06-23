@@ -246,8 +246,14 @@ public aspect CurvatureAspect {
         int xOffset = instance.getTrimmedXOffset();
         int yOffset = instance.getTrimmedYOffset();
 
+        List<PairIntArray> skyEdges = instance.getSkylineEdgesInOriginalReferenceFrame();
+
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
+
+            for (PairIntArray edge : skyEdges) {
+                ImageIOHelper.addCurveToImage(edge, img2, 0, 255, 0, 0);
+            }
 
             ImageIOHelper.addCurveToImage(corners, img2, 1, 255, 0, 0);
 
