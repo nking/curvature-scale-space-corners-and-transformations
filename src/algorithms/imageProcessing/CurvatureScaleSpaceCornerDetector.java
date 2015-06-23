@@ -63,6 +63,8 @@ public class CurvatureScaleSpaceCornerDetector extends
 
     protected boolean enableJaggedLineCorrections = true;
     
+    protected float factorIncreaseForCurvatureMinimum = 1.f;
+    
     public CurvatureScaleSpaceCornerDetector(final ImageExt input) {
 
         super(input);
@@ -80,7 +82,15 @@ public class CurvatureScaleSpaceCornerDetector extends
     public void disableJaggedLineCorrections() {
         enableJaggedLineCorrections = false;
     }
-
+    
+    public void increaseFactorForCurvatureMinimum(float factor) {
+        factorIncreaseForCurvatureMinimum = factor;
+    }
+    
+    public void resetFactorForCurvatureMinimum() {
+        factorIncreaseForCurvatureMinimum = 1.f;
+    }
+    
     public void findCorners() {
 
         initialize();
@@ -627,10 +637,10 @@ public class CurvatureScaleSpaceCornerDetector extends
 
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima
 
-        float factorAboveMin = 2.5f;//3.5f;// 10 misses some corners
+        float factorAboveMin = factorIncreaseForCurvatureMinimum * 2.5f;//3.5f;// 10 misses some corners
 
 if (doUseOutdoorMode) {
-    factorAboveMin = 3.5f;//10.f;
+    factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;
 }
 
         List<Integer> cornerCandidates = new ArrayList<Integer>();
@@ -1076,7 +1086,9 @@ if (doUseOutdoorMode) {
             findCornersInScaleSpaceMaps(skylineEdges, false, theSkylineCorners);
 
         // TODO: improve this for resolution
-        /*  may need other than smoothing, a change in curvature factor maybe
+        
+        // smoothing does not make fewer points, so using min curvature factor
+        
         float nGoalCorners = (gradientXY.getNPixels() < 500000) ? 50.f : 
             100.f;
         
@@ -1085,20 +1097,23 @@ if (doUseOutdoorMode) {
         
         if (factor > 1.2) {
             
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            int k = (int)Math.ceil(factor);
-            if (k < 2) {
-                k = 2;
-            }
+            //TODO: consider saving the space curves to make recalc faster
             
-            List<PairIntArray> smoothedEdges = 
-                curveHelper.smoothAndReExtractEdges(skylineEdges, 
-                gradientXY, k);
+            increaseFactorForCurvatureMinimum(2.0f * factor);
             
-            maps = findCornersInScaleSpaceMaps(smoothedEdges, false, 
-                theSkylineCorners);
+            PairIntArray theSkylineCorners2 = new PairIntArray();
+            
+            maps = findCornersInScaleSpaceMaps(skylineEdges, false, 
+                theSkylineCorners2);
+            
+            log.info("before curvature factor change, number of skyline corners=" 
+                + theSkylineCorners.getN());
+            log.info("after=" + theSkylineCorners2.getN());
+            
+            theSkylineCorners = theSkylineCorners2;
+            
+            resetFactorForCurvatureMinimum();
         }
-        */
         
         if (theSkylineCorners.getN() > 0) {
             skylineCorners.addAll(theSkylineCorners);
