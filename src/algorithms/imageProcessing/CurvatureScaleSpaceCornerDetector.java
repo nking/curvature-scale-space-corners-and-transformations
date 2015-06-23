@@ -1099,7 +1099,7 @@ if (doUseOutdoorMode) {
             
             //TODO: consider saving the space curves to make recalc faster
             
-            increaseFactorForCurvatureMinimum(2.0f * factor);
+            increaseFactorForCurvatureMinimum(4.0f * factor);
             
             PairIntArray theSkylineCorners2 = new PairIntArray();
             
