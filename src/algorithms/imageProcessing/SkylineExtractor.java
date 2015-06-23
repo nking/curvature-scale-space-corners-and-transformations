@@ -3779,24 +3779,49 @@ static int outImgNum=0;
     protected List<PairIntArray> extractAndSmoothSkylinePoints(
         Set<PairInt> skyPoints, GreyscaleImage gradientXY) {
         
+        /*
+        could use border points directly followed by a line thinner 
+        and then the EdgeExtractorWithJunctions, but
+        a smoother curve is produced using a gradient produced from the
+        mask (that is use a CannyEdgeDetector) followed by a line thinner 
+        and then the EdgeExtractorWithJunctions.
+        */
+
+        boolean useGradient = true;
+        
+        if (useGradient) {
+            
+            GreyscaleImage mask = gradientXY.createWithDimensions();
+            mask.fill(250);
+            for (PairInt p : skyPoints) {
+                int x = p.getX();
+                int y = p.getY(); 
+                mask.setValue(x, y, 0);
+            }
+
+            CannyEdgeFilter cFilter = new CannyEdgeFilter();
+            //cFilter.useLineDrawingMode();
+            cFilter.applyFilter(mask);
+
+            IEdgeExtractor edgeExtractor = new EdgeExtractorWithJunctions(mask);
+            edgeExtractor.removeShorterEdges(true);
+            List<PairIntArray> edges = edgeExtractor.findEdges();
+
+            return edges;
+        }
+        
         Set<PairInt> outputBorderPoints = new HashSet<PairInt>();
         
         Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
-        
+                
         getEmbeddedAndBorderPoints(skyPoints, gradientXY.getWidth(),
             gradientXY.getHeight(), outputEmbeddedGapPoints,
             outputBorderPoints);
-        
-//TODO: might need to check for absence of rainbow and sun points first
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        for (int i = 0; i < 6; i++) {
-            curveHelper.straightenLines(outputBorderPoints, gradientXY);
-        }
-        
+       
         PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();
         pslt.correctForArtifacts(outputBorderPoints, gradientXY.getWidth(), 
             gradientXY.getHeight());
-        
+         
         GreyscaleImage output = gradientXY.createWithDimensions();
         for (PairInt p : outputBorderPoints) {
             output.setValue(p.getX(), p.getY(), 1);
@@ -3805,9 +3830,14 @@ static int outImgNum=0;
         AbstractEdgeExtractor edgeExtractor = 
             new EdgeExtractorWithJunctions(output);
         
+        edgeExtractor.removeShorterEdges(true);
+        
         List<PairIntArray> edges = edgeExtractor.findEdges();
         
+        //TODO: add a boxcar smoothing step here
+        
         return edges;
+                
     }
 
     public class RemovedSets {

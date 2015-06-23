@@ -27,4 +27,6 @@ public interface IEdgeExtractor {
 
     void overrideEdgeSizeLowerLimit(int length);
     
+    public void removeShorterEdges(boolean doRemove);
+    
 }

@@ -256,7 +256,7 @@ public class MiscDebug {
         }
 
         for (Map.Entry<Integer, Set<PointPairInt>> entry : edgeFirstEndPointMap.entrySet()) {
-            assert(entry.getValue().size() < 2);
+            //assert(entry.getValue().size() < 2);
             for (PointPairInt joinPoint : entry.getValue()) {
                 PairInt loc0 = joinPoint.getKey();
                 PairInt loc1 = joinPoint.getValue();
@@ -278,7 +278,7 @@ public class MiscDebug {
             }
         }
         for (Map.Entry<Integer, Set<PointPairInt>> entry : edgeLastEndPointMap.entrySet()) {
-            assert(entry.getValue().size() < 2);
+            //assert(entry.getValue().size() < 2);
             for (PointPairInt joinPoint : entry.getValue()) {
                 PairInt loc0 = joinPoint.getKey();
                 PairInt loc1 = joinPoint.getValue();

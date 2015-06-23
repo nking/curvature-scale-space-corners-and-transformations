@@ -1088,6 +1088,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             PairInt centerLoc = junctionLocationMap.get(centerPixelIndex);
             assert(centerLoc != null);
 
+            /*
             if (debug) {
                 
                 log.info("processing junction w/ center pixel index=" + centerPixelIndex
@@ -1098,6 +1099,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 log.info(str);
                 
             }
+            */
             
             Set<Integer> adjIndexes = entry.getValue();
             
