@@ -1290,20 +1290,17 @@ private static int n3 = 0;
             return; 
         }
 
-        Image img3 = gXY.copyImageToGreen();
+        Image img3 = new Image(gXY.getWidth(), gXY.getHeight());
 
         try {
             
             for (PairIntArray edge : skyEdges) {
-                ImageIOHelper.addCurveToImage(edge, img3, 1, 255, 255, 0);
-            }
-            for (PairIntArray edge : skyEdges) {
-                ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 255, 255);
+                ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 0, 0);
             }
             
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(
-                dirPath + "/skyline_edges_and_gXY" + outImgNum + ".png", img3);
+                dirPath + "/skyline_edges" + outImgNum + ".png", img3);
  
         } catch (IOException ex) {
             throw new RuntimeException("ERROR: l423" + ex.getMessage());

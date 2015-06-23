@@ -8,7 +8,7 @@ import java.util.Arrays;
  * 
  * @author nichole
  */
-public class MedianInterpolation {
+public class MedianSmooth {
     
     /**
      * calculate a running median of the k previous points of curveY.
@@ -17,7 +17,7 @@ public class MedianInterpolation {
      * @param kPoints
      * @return 
      */
-    public int[] interpolate(int[] curveY, int kPoints) {
+    public int[] calculate(int[] curveY, int kPoints) {
         
         if (curveY == null) {
             throw new IllegalArgumentException("curveY cannot be null");
@@ -65,7 +65,7 @@ public class MedianInterpolation {
      * @param kPoints
      * @return 
      */
-    public PairIntArray interpolate(PairIntArray curve, int kPoints) {
+    public PairIntArray calculate(PairIntArray curve, int kPoints) {
         
         if (curve == null) {
             throw new IllegalArgumentException("curve cannot be null");

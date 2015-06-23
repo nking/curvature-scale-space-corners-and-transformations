@@ -1,6 +1,6 @@
 package algorithms.misc;
 
-import algorithms.misc.MedianInterpolation.SortedVector;
+import algorithms.misc.MedianSmooth.SortedVector;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
 import junit.framework.TestCase;
@@ -9,9 +9,9 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class MedianInterpolationTest extends TestCase {
+public class MedianSmoothTest extends TestCase {
     
-    public MedianInterpolationTest() {
+    public MedianSmoothTest() {
     }
     
     public void testSortedVector() throws Exception {
@@ -181,7 +181,7 @@ public class MedianInterpolationTest extends TestCase {
         
     }
     
-    public void testInterpolation0() throws Exception {
+    public void testCalculate0() throws Exception {
         
         /*
         k=3
@@ -191,11 +191,11 @@ public class MedianInterpolationTest extends TestCase {
             4 4 4 4 4 4 4 4
             0 1 2 3 4 5 6 7
         */
-        MedianInterpolation interp = new MedianInterpolation();
+        MedianSmooth interp = new MedianSmooth();
         
         int[] curveY = new int[]{4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
         int kPoints = 3;
-        int[] result = interp.interpolate(curveY, kPoints);
+        int[] result = interp.calculate(curveY, kPoints);
                 
         int[] expected = new int[]{4, 4, 4, 4, 4, 4, 4, 4};
         
@@ -205,7 +205,7 @@ public class MedianInterpolationTest extends TestCase {
         
     }
     
-    public void testInterpolation1() throws Exception {
+    public void testCalculate1() throws Exception {
         
         /*
         k=3
@@ -215,11 +215,11 @@ public class MedianInterpolationTest extends TestCase {
             3 3 3 3 4 4 4 4
             0 1 2 3 4 5 6 7
         */
-        MedianInterpolation interp = new MedianInterpolation();
+        MedianSmooth interp = new MedianSmooth();
         
         int[] curveY = new int[]{2, 3, 4, 3, 2, 4, 4, 4, 4, 4};
         int kPoints = 3;
-        int[] result = interp.interpolate(curveY, kPoints);
+        int[] result = interp.calculate(curveY, kPoints);
                 
         int[] expected = new int[]{3, 3, 3, 3, 4, 4, 4, 4};
         
@@ -229,7 +229,7 @@ public class MedianInterpolationTest extends TestCase {
         
     }
     
-    public void testInterpolation2() throws Exception {
+    public void testCalculate2() throws Exception {
         
         /*
         x:  0 1 2 3 4 5 6 7
@@ -246,7 +246,7 @@ public class MedianInterpolationTest extends TestCase {
         int[] expectedX = new int[]{2, 3, 4, 5};
         int[] expectedY = new int[]{3, 3, 4, 4};
         
-        MedianInterpolation interp = new MedianInterpolation();
+        MedianSmooth interp = new MedianSmooth();
         
         PairIntArray curve = new PairIntArray(8);
         curve.add(0, 2);
@@ -260,7 +260,7 @@ public class MedianInterpolationTest extends TestCase {
         
         int kPoints = 5;
         
-        PairIntArray result = interp.interpolate(curve, kPoints);
+        PairIntArray result = interp.calculate(curve, kPoints);
         
         assertTrue(result.getN() == expectedX.length);
         
@@ -272,11 +272,11 @@ public class MedianInterpolationTest extends TestCase {
         }
     }
     
-    public void testInterpolation3() throws Exception {
+    public void testCalculate3() throws Exception {
         
         // test exceptions
         
-        MedianInterpolation interp = new MedianInterpolation();
+        MedianSmooth interp = new MedianSmooth();
         
         PairIntArray curve = null;
         
@@ -284,7 +284,7 @@ public class MedianInterpolationTest extends TestCase {
         
         boolean caughtException = false;
         try {
-            PairIntArray result = interp.interpolate(curve, kPoints);
+            PairIntArray result = interp.calculate(curve, kPoints);
         } catch (Throwable t) {
             caughtException = true;
         }
@@ -297,7 +297,7 @@ public class MedianInterpolationTest extends TestCase {
         curve.add(2, 4);
         caughtException = false;
         try {
-            PairIntArray result = interp.interpolate(curve, kPoints);
+            PairIntArray result = interp.calculate(curve, kPoints);
         } catch (Throwable t) {
             caughtException = true;
         }
@@ -307,7 +307,7 @@ public class MedianInterpolationTest extends TestCase {
         int[] curveY = null;
         caughtException = false;
         try {
-            int[] result = interp.interpolate(curveY, kPoints);
+            int[] result = interp.calculate(curveY, kPoints);
         } catch (Throwable t) {
             caughtException = true;
         }
@@ -317,7 +317,7 @@ public class MedianInterpolationTest extends TestCase {
         curveY = new int[]{1, 2, 2};
         caughtException = false;
         try {
-            int[] result = interp.interpolate(curveY, kPoints);
+            int[] result = interp.calculate(curveY, kPoints);
         } catch (Throwable t) {
             caughtException = true;
         }

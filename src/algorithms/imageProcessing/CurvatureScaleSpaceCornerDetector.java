@@ -6,7 +6,7 @@ import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MedianInterpolation;
+import algorithms.misc.MedianSmooth;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import java.io.IOException;
@@ -1059,14 +1059,14 @@ if (doUseOutdoorMode) {
             return;
         }
 
-        MedianInterpolation interp = new MedianInterpolation();
+        MedianSmooth interp = new MedianSmooth();
         // TODO: if image resolution is known, it should be used here
         int kPoints = 15;
 
         List<PairIntArray> interpolated = new ArrayList<PairIntArray>();
         for (PairIntArray sEdge : skylineEdges) {
             if (sEdge.getN() >= kPoints) {
-                PairIntArray out = interp.interpolate(sEdge, kPoints);
+                PairIntArray out = interp.calculate(sEdge, kPoints);
                 interpolated.add(out);
             }
         }

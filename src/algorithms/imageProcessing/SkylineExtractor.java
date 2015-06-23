@@ -10,6 +10,7 @@ import algorithms.imageProcessing.optimization.ColorData;
 import algorithms.imageProcessing.optimization.SKYCONDITIONAL;
 import algorithms.imageProcessing.optimization.SkylineANDedClauses;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.AverageUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
@@ -3787,7 +3788,7 @@ static int outImgNum=0;
         and then the EdgeExtractorWithJunctions.
         */
 
-        boolean useGradient = true;
+        boolean useGradient = false;
         
         if (useGradient) {
             
@@ -3800,7 +3801,6 @@ static int outImgNum=0;
             }
 
             CannyEdgeFilter cFilter = new CannyEdgeFilter();
-            //cFilter.useLineDrawingMode();
             cFilter.applyFilter(mask);
 
             IEdgeExtractor edgeExtractor = new EdgeExtractorWithJunctions(mask);
@@ -3834,10 +3834,26 @@ static int outImgNum=0;
         
         List<PairIntArray> edges = edgeExtractor.findEdges();
         
-        //TODO: add a boxcar smoothing step here
+        // smooth by 15
+        AverageUtil avgUtil = new AverageUtil();
+        int k = 15;
+        
+        output = gradientXY.createWithDimensions();       
+        
+        for (int i = 0; i < edges.size(); ++i) {
+            PairIntArray edge = avgUtil.calculateBoxCarAverage(edges.get(i), k);
+            for (int j = 0; j < edge.getN(); ++j) {
+                output.setValue(edge.getX(j), edge.getY(j), 1);
+            }
+        }
+        
+        pslt = new PostLineThinnerCorrections();
+        pslt.correctForArtifacts(output);        
+        edgeExtractor = new EdgeExtractorWithJunctions(output);
+        edgeExtractor.removeShorterEdges(true);
+        edges = edgeExtractor.findEdges();     
         
         return edges;
-                
     }
 
     public class RemovedSets {
