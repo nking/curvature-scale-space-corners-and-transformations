@@ -48,7 +48,7 @@ import java.util.Set;
  */
 public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
     
-    private boolean debug = true;
+    private boolean debug = false;
     
     /**
      * map with key = center of junction pixel coordinates; 
@@ -1538,7 +1538,11 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     }
                 }
 
-                assert (closestJoinPoint != null);
+                //TODO: revisit this 
+                if (closestJoinPoint == null) {
+                    continue;
+                }                
+                //assert (closestJoinPoint != null);
 
                 for (PointPairInt joinPoint : joinPointSet) {
 

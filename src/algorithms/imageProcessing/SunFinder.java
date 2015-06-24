@@ -405,4 +405,23 @@ public class SunFinder {
         //plot is made in aspects
         
     }
+
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("Number of sunPoints=")
+            .append(Integer.toString(sunPoints.size())).append("\n");
+        
+        if (sunCoeff != null) {
+            sb.append("sun fit coeff=").append(Arrays.toString(sunCoeff))
+                .append("\n");
+            sb.append("sun point density=")
+                .append(Double.toString(pointDensity)).append("\n");
+        }
+        
+        return sb.toString();
+    }
+    
 }

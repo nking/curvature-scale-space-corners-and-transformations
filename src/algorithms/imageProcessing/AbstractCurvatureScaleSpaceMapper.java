@@ -169,7 +169,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         extractSkyline = true;
     }
-  
+    
     protected void initialize() {
         
         if (state.ordinal() < 

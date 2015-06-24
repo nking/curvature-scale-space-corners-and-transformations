@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.PairInt;
@@ -274,7 +275,7 @@ public class RainbowFinder {
 
         Set<PairInt> rainbowPoints = findRainbowColoredPoints(colorImg, 
             reflectedSunRemoved, xOffset, yOffset, skyIsDarkGrey);
-        
+
         if (rainbowPoints.isEmpty()) {
             return null;
         }
@@ -311,6 +312,9 @@ public class RainbowFinder {
         //TODO: determine this more accurately:
         if (resid > 5) {
             
+            AbstractSkyRainbowColors colors = skyIsDarkGrey ?
+                new DarkSkyRainbowColors() : new BrightSkyRainbowColors();
+            
             Set<PairInt> bestFittingPoints = new HashSet<PairInt>();
             
             coef = polyFitter.solveForBestFittingContiguousSubSets(
@@ -342,6 +346,10 @@ public class RainbowFinder {
             int nGreen = 0;
             int nRed = 0;
             int nWhite = 0;
+            int nBroadlyRed = 0;
+
+            //MiscDebug.plotSkyColor(bestFittingPoints, colorImg, xOffset, yOffset);
+
             CIEChromaticity cieC = new CIEChromaticity();
             ArrayPair cPurpRed = cieC.getRedThroughPurplishRedPolynomial();
             ArrayPair cOranRed = cieC.getOrangePolynomial();
@@ -355,6 +363,7 @@ public class RainbowFinder {
             float minCIEY = Float.MAX_VALUE;
             float maxCIEY = Float.MIN_VALUE;
             for (PairInt p : bestFittingPoints) {
+                
                 int x = p.getX();
                 int y = p.getY();
                 
@@ -367,9 +376,9 @@ public class RainbowFinder {
                 float cieX = colorImg.getCIEX(idx);
                 float cieY = colorImg.getCIEY(idx);
 
-                log.fine(String.format(
-                    "(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f",
-                    x, y, r, g, b, rDivB, cieX, cieY));
+log.info(String.format(
+                    "(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f  hue=%f",
+                    x, y, r, g, b, rDivB, cieX, cieY, colorImg.getHue(idx)));
 
                 boolean isWhite = cieC.isCentralWhite(cieX, cieY);
                 
@@ -414,10 +423,17 @@ public class RainbowFinder {
                         nRed++;
                     }
                 }
+                
+                if (colors.isInBroadRedRainbowSpace(cieX, cieY)) {
+                    nBroadlyRed++;
+                }
             }
             
             float cieXRange = maxCIEX - minCIEX;
             float cieYRange = maxCIEY - minCIEY;
+            
+            float nBroadlyRedFrac = 
+                ((float)nBroadlyRed/(float)bestFittingPoints.size());
     
             log.info("nGTX=" + nGTX + " nLTY=" + nLTY + " n=" 
                 + bestFittingPoints.size() + " "
@@ -429,12 +445,15 @@ public class RainbowFinder {
                 + " nOrange/nPurpRed=" + ((float)nOranRed/(float)nPurpRed)
                 + " nOrange/nTot=" + ((float)nOranRed/(float)bestFittingPoints.size())
                 + " nPurpRed/nTot=" + ((float)nPurpRed/(float)bestFittingPoints.size())
+                + " nBroadlyRed/nTot=" + nBroadlyRedFrac
             );
 
             rainbowPoints.clear();
-               
-            debugPlot(bestFittingPoints, colorImg, xOffset, yOffset, 
-                "rainbow_before_clr_filter");
+
+            //TODO: this may need revision
+            if (nBroadlyRedFrac < 0.01) {
+                return null;
+            }
 
             float greenFraction = (float)nGreen/(float)bestFittingPoints.size();
             if ( 
@@ -452,14 +471,15 @@ public class RainbowFinder {
                 return null;
             }*/
             
+            //TODO: this could use alot of tests and revision
             if ((nGTX > 10) && 
                 ((nLTY > 10) || 
                   (!skyIsDarkGrey &&
                     (
-                        (((float)nOranRed/(float)nPurpRed) > 1.5)
+                        (((float)nOranRed/(float)nPurpRed) > 1.1)
                         && (nGreen > nPurpRed))
                   )
-                  || (skyIsDarkGrey && (((float)nOranRed/(float)nPurpRed) > 1.5))
+                  || (skyIsDarkGrey && (((float)nOranRed/(float)nPurpRed) > 1.1))
                 )
                 ) {
                 
@@ -512,9 +532,9 @@ public class RainbowFinder {
                 }
                 
                 int idx = colorImg.getInternalIndex(col, row);
-          if (col==295 && row>= 173 && row <= 175) {
-              int z = 1;
-          }      
+if (col==295 && row>= 173 && row <= 175) {
+  int z = 1;
+}      
                 float cieX = colorImg.getCIEX(idx);
                 float cieY = colorImg.getCIEY(idx);
 
@@ -934,4 +954,21 @@ public class RainbowFinder {
         //plot is made in aspects
         
     }
+    
+    @Override
+    public String toString() {
+        
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("Number of rainbowPoints=")
+            .append(Integer.toString(outputRainbowPoints.size())).append("\n");
+        
+        if (rainbowCoeff != null) {
+            sb.append("rainbow fit coeff=").append(Arrays.toString(rainbowCoeff))
+                .append("\n");
+        }
+        
+        return sb.toString();
+    }
+    
 }

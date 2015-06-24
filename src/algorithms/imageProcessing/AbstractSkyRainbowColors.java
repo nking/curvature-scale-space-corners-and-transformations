@@ -207,4 +207,23 @@ public abstract class AbstractSkyRainbowColors {
         
         return false;
     }
+    
+    /**
+     * candidate rainbow points lacking pixels in this region are probably 
+     * not rainbows. This tests for point location in CIE XY color space that 
+     * could broadly be described as red.
+     * 
+     * @param cieX
+     * @param cieY
+     * @return 
+     */
+    public boolean isInBroadRedRainbowSpace(float cieX, float cieY) {
+                
+        PointInPolygon pInPoly = new PointInPolygon();
+      
+        float[] xPoly = new float[]{0.32f, 0.4f, 0.6f, 0.6f,  0.32f};
+        float[] yPoly = new float[]{0.28f,  0.42f, 0.42f, 0.28f, 0.28f};
+        
+        return pInPoly.isInSimpleCurve(cieX, cieY, xPoly, yPoly, xPoly.length);        
+    }
 }

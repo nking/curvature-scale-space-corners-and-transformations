@@ -49,7 +49,7 @@ public class Image {
         // not used for base class
     }
     
-    int getInternalIndex(int col, int row) {
+    public int getInternalIndex(int col, int row) {
         return (row * width) + col;
     }
   

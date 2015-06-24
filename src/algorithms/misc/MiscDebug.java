@@ -1,15 +1,20 @@
 package algorithms.misc;
 
 import algorithms.CountingSort;
+import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PointPairInt;
 import algorithms.util.ResourceFinder;
+import algorithms.util.ScatterPointPlotterPNG;
+import java.awt.Color;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -509,6 +514,158 @@ public class MiscDebug {
         }
         
         return null;
+    }
+
+    /**
+     * a debug method to print scatter diagrams and histograms if needed
+     * of the colors in search of best indicator that blue or red skies
+     * have many clouds.
+     * @param points
+     * @param colorImg
+     * @param xOffset
+     * @param yOffset
+     */
+    public static void plotSkyColor(Set<PairInt> points, ImageExt colorImg, 
+        int xOffset, int yOffset) {
+
+        int n = points.size();
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        float[] cieX = new float[n];
+        float[] cieY = new float[n];
+        float[] hue = new float[n];
+        float[] saturation = new float[n];
+        float[] brightness = new float[n];
+        float[] r = new float[n];
+        float[] g = new float[n];
+        float[] b = new float[n];
+        
+        int i = 0;
+        for (PairInt p : points) {
+            int x = p.getX() + xOffset;
+            int y = p.getY() + yOffset;
+            
+            int idx = colorImg.getInternalIndex(x, y);
+
+            int rr = colorImg.getR(idx);
+            int gg = colorImg.getG(idx);
+            int bb = colorImg.getB(idx);
+                        
+            r[i] = rr;
+            g[i] = gg;
+            b[i] = bb;
+            
+            float[] cieXY = cieC.rgbToXYChromaticity(rr, gg, bb);
+            cieX[i] = cieXY[0];
+            cieY[i] = cieXY[1];
+            
+            float[] hsb = new float[3];
+            Color.RGBtoHSB(rr, gg, bb, hsb);
+            hue[i] = hsb[0];
+            saturation[i] = hsb[1];
+            brightness[i] = hsb[2];
+            
+            i++;
+        }
+        
+        double t0 = System.currentTimeMillis();
+        double t = t0 - ((int)(t0/1.E9)) * 1E9;
+        int plotNumber = (int)t;
+        
+        try {
+            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+            
+            plotter.plot(0.2f, 0.6f, 0.2f, 0.6f, 
+                cieX, cieY, "CIE X vs Y", "CIEX", "CIEY");
+            plotter.writeFile(Integer.valueOf(plotNumber));
+            
+            plotter = new ScatterPointPlotterPNG();
+            plotter.plot(0.0f, 256f, 0.0f, 1.1f, 
+                b, brightness, "B vs brightness", "B", "brightness");
+            plotter.writeFile(Integer.valueOf(plotNumber + 1));
+            
+            plotter = new ScatterPointPlotterPNG();
+            plotter.plot(0.0f, 256f, 0.0f, 1.1f, 
+                r, brightness, "R vs brightness", "R", "brightness");
+            plotter.writeFile(Integer.valueOf(plotNumber + 2));
+            
+            plotter = new ScatterPointPlotterPNG();
+            plotter.plot(0.0f, 256f, 0.0f, 256f, 
+                b, r, "B vs R", "B", "R");
+            plotter.writeFile(Integer.valueOf(plotNumber + 3));
+            
+            plotter = new ScatterPointPlotterPNG();
+            plotter.plot(0.0f, 1.1f, 0.0f, 1.1f, 
+                hue, saturation, "hue vs saturation", "hue", "saturation");
+            plotter.writeFile(Integer.valueOf(plotNumber + 4));
+            
+            plotter = new ScatterPointPlotterPNG();
+            plotter.plot(0.0f, 0.8f, 0.0f, 1.1f, 
+                cieX, brightness, "CIE X vs brightness", "CIEX", "brightness");
+            plotter.writeFile(Integer.valueOf(plotNumber + 5));
+            
+            plotter = new ScatterPointPlotterPNG();
+            plotter.plot(0.0f, 0.9f, 0.0f, 1.1f, 
+                cieY, brightness, "CIE Y vs brightness", "CIEY", "brightness");
+            plotter.writeFile(Integer.valueOf(plotNumber + 6));
+                        
+            // for hue histograms, because it's space is formed in 0 to 360 degrees,
+            // need to wrap around the bins.
+            // for that reason, will look for an empty bin and cut and merge
+            // the wrap
+            
+            HistogramHolder hueHist = Histogram.createSimpleHistogram(
+                0.f, 1.0f, 10, hue, Errors.populateYErrorsBySqrt(hue));
+                        
+            int[] yh = Arrays.copyOf(hueHist.getYHist(), hueHist.getYHist().length);
+            int zeroBinIdx = -1;
+            for (int ii = 0; ii < yh.length; ii++) {
+                if (yh[ii] == 0) {
+                    zeroBinIdx = ii;
+                    break;
+                }
+            }
+            if (zeroBinIdx > -1) {
+                int[] yShifted = new int[yh.length];
+                float[] yShiftedF = new float[yh.length];
+                int count = 0;
+                for (int ii = (zeroBinIdx + 1); ii < yh.length; ii++) {
+                    yShifted[count] = yh[ii];
+                    yShiftedF[count] = yh[ii];
+                    count++;
+                }
+                for (int ii = 0; ii <= zeroBinIdx; ii++) {
+                    yShifted[count] = yh[ii];
+                    yShiftedF[count] = yh[ii];
+                    count++;
+                }
+                hueHist.setYHist(yShifted);
+                hueHist.setYHistFloat(yShiftedF);
+            }
+            
+            float fwhmHue = Histogram.measureFWHMOfStrongestPeak(hueHist);
+            
+            hueHist.plotHistogram("hue shifted by " + (zeroBinIdx + 0) + " bins",
+                plotNumber);
+            
+            log.info("fwhm hue=" + fwhmHue);
+
+            HistogramHolder saturationHist = Histogram.createSimpleHistogram(
+                0.f, 1.0f, 10, 
+                saturation, Errors.populateYErrorsBySqrt(saturation));
+            
+            saturationHist.plotHistogram("saturation", plotNumber + 1);
+            
+            float[] fwhmSaturation = Histogram.measureFWHMOfAllPeaks(
+                saturationHist, 0.1f);
+            
+            log.info("fwhm saturation=" + Arrays.toString(fwhmSaturation));
+            
+        } catch (IOException e) {
+            
+            log.severe(e.getMessage());
+        }
     }
 
 }

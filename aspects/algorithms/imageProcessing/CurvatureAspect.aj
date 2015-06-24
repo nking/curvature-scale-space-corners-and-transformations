@@ -612,6 +612,38 @@ private static int n3 = 0;
         }
     }
 
+    after(ImageExt colorImg, Set<PairInt> reflectedSunRemoved,
+        int xOffset, int yOffset, boolean skyIsDarkGrey)
+        returning(Set<PairInt> rainbowColorPoints) :
+        execution(Set<PairInt> RainbowFinder.findRainbowColoredPoints(
+        ImageExt, Set<PairInt>, int, int, boolean) )
+        && args(colorImg, reflectedSunRemoved, xOffset, yOffset, skyIsDarkGrey)
+	    && target(algorithms.imageProcessing.RainbowFinder) {
+
+        Object obj = thisJoinPoint.getThis();
+
+        if (!(obj instanceof RainbowFinder)) {
+            return;
+        }
+
+        Image clr = colorImg.copyImage();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.addToImage(rainbowColorPoints, xOffset, yOffset, clr);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/sky_rainbow_colors_" + outImgNum + ".png", clr);
+
+            MiscDebug.plotSkyColor(rainbowColorPoints, colorImg, xOffset, yOffset);
+
+        } catch (IOException e) {
+             e.printStackTrace();
+            log2.severe("ERROR: " + e.getMessage());
+        }
+    }
+
     before(List<PairIntArray> zeroPointLists, Image originalColorImage, 
         GreyscaleImage theta, boolean addAlongX, int addAmount) :
         execution(private Set<PairInt> SkylineExtractor.removeSetsWithNonCloudColors(
