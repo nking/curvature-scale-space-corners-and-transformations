@@ -32,9 +32,19 @@ public class PointInPolygon {
                 continue;
             }
 
+            /*
+            returns 0 if does not intersect, returns 1 if it does intersect,
+             returns 2 if the point lies on a line directly (and in that
+             case, the invoker should not test further),
+             returns 3 for yPt being equal to one of the segments and xPt being
+             to the right of both segments (and in that case, the invoker should
+             not count the result twice).
+            */
             int result = rayIntersects(xPt, yPt, xPolygon, yPolygon, i, i + 1);
-              
-            if (result == 2) {
+        
+            if (result == 0) {
+                continue;
+            } else if (result == 2) {
                 return true;
             }
             
@@ -47,9 +57,7 @@ public class PointInPolygon {
                 possibleDoubleCount = true;                
             }
           
-            if (result > 0) {
-                sumIntersectingRays++;
-            }
+            sumIntersectingRays++;
         }
         
         return ((sumIntersectingRays & 1) == 1);
@@ -137,6 +145,13 @@ public class PointInPolygon {
             (Math.abs(slopeAB - slopePtB) < eps)) {
             
             return 2;
+        }
+        
+        if ((xPt > ax) && (bx > xPt)) {
+            float xLine = ax + ((yPt - ay)/slopeAB);
+            if (xPt < xLine) {
+                return 1;
+            }
         }
         
         return 0;
