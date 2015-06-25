@@ -3638,7 +3638,7 @@ static int outImgNum=0;
         and then the EdgeExtractorWithJunctions.
         */
 
-        boolean useGradient = false;
+        boolean useGradient = true;
         
         if (useGradient) {
             
@@ -3657,6 +3657,17 @@ static int outImgNum=0;
             edgeExtractor.removeShorterEdges(true);
             List<PairIntArray> edges = edgeExtractor.findEdges();
 
+            // transform the coordinates back into the reference frame of gradientXY
+            for (PairIntArray edge : edges) {
+                for (int i = 0; i < edge.getN(); ++i) {
+                    int x = edge.getX(i) + mask.getXRelativeOffset() - 
+                        gradientXY.getXRelativeOffset();
+                    int y = edge.getY(i) + mask.getYRelativeOffset() - 
+                        gradientXY.getYRelativeOffset();
+                    edge.set(i, x, y);
+                }
+            }
+            
             return edges;
         }
         
@@ -3667,7 +3678,7 @@ static int outImgNum=0;
         getEmbeddedAndBorderPoints(skyPoints, gradientXY.getWidth(),
             gradientXY.getHeight(), outputEmbeddedGapPoints,
             outputBorderPoints);
-        
+                
         PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();
         pslt.correctForArtifacts(outputBorderPoints, gradientXY.getWidth(), 
             gradientXY.getHeight());
@@ -3681,7 +3692,7 @@ static int outImgNum=0;
             new EdgeExtractorWithJunctions(output);
                 
         List<PairIntArray> edges = edgeExtractor.findEdges();
-
+  
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         int k = 10;

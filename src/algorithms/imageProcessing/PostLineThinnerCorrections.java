@@ -1565,7 +1565,7 @@ public class PostLineThinnerCorrections {
         zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1));
         zeroes.add(new PairInt(0, 2));
         zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -1));
+        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
         
         changeToZeroes.add(new PairInt(0, 0));
                     

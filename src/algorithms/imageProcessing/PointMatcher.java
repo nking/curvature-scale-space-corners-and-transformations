@@ -7506,7 +7506,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             
         double compareMean = compareFit.getMeanDistFromModel();
         
-        int comp = Integer.compare((int)(compareMean/10), (int)(bestMean/10));
+        int comp = Double.compare(compareMean, bestMean);
         if (comp < 0) {
             return true;
         } else if (comp > 0) {

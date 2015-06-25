@@ -253,7 +253,8 @@ public class PointMatcher3Test extends TestCase {
         
         String fileName1 = "venturi_mountain_j6_0001.png";
         String fileName2 = "venturi_mountain_j6_0010.png";
-
+        
+        
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         int image1Width = img1.getWidth();
@@ -298,16 +299,7 @@ public class PointMatcher3Test extends TestCase {
         Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
         String dirPath = ResourceFinder.findDirectory("bin");
         Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-                
-        // ====== transform the points to a smaller range to make partitioning
-        //        easier
-        /*int[] offsetsAndDimensions1 = new int[]{0, 100, 517, 150};
-        int[] offsetsAndDimensions2 = new int[]{0, 78, 517, 150};
-        ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.shrinkImage(points1, offsetsAndDimensions1);
-        imageProcessor.shrinkImage(points2, offsetsAndDimensions2);
-        */
-        
+       
         // ===== use partitioned matching =====
         PairIntArray outputMatchedScene = new PairIntArray();
         PairIntArray outputMatchedModel = new PairIntArray();
@@ -321,6 +313,8 @@ public class PointMatcher3Test extends TestCase {
                 image1Width >> 1, image1Height >> 1,
                 image2Width >> 1, image2Height >> 1,
                 outputMatchedScene, outputMatchedModel);
+        
+        log.info("rough euclidean from skyline alone=" + trFit.toString());
         
 /*
 the skyline is hopefully useful in getting the transformation solution
