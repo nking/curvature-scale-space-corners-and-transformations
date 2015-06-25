@@ -12,6 +12,7 @@ import algorithms.imageProcessing.optimization.SkylineANDedClauses;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
@@ -3666,7 +3667,7 @@ static int outImgNum=0;
         getEmbeddedAndBorderPoints(skyPoints, gradientXY.getWidth(),
             gradientXY.getHeight(), outputEmbeddedGapPoints,
             outputBorderPoints);
-       
+        
         PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();
         pslt.correctForArtifacts(outputBorderPoints, gradientXY.getWidth(), 
             gradientXY.getHeight());
@@ -3678,11 +3679,9 @@ static int outImgNum=0;
         
         AbstractEdgeExtractor edgeExtractor = 
             new EdgeExtractorWithJunctions(output);
-        
-        //edgeExtractor.removeShorterEdges(true);
-        
+                
         List<PairIntArray> edges = edgeExtractor.findEdges();
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         int k = 10;

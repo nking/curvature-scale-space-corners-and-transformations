@@ -1268,6 +1268,10 @@ private static int n3 = 0;
     after() returning(List<PairIntArray> skyEdges) : 
 	    target(algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector) 
         && execution(protected List<PairIntArray> extractSkyline()) {
+        
+        if (skyEdges.isEmpty()) {
+            return; 
+        }
 
         Object obj = thisJoinPoint.getThis();
 
@@ -1280,23 +1284,26 @@ private static int n3 = 0;
 
         Image img3 = instance.getOriginalImage().copyImage();
 
-        List<PairIntArray> edges = instance.getSkylineEdgesInOriginalReferenceFrame();
-
-        if (edges.isEmpty()) {
-            return; 
-        }
+        int xOffset = instance.getTrimmedXOffset();
+        int yOffset = instance.getTrimmedYOffset();
 
         try {
-            
-            for (PairIntArray edge : edges) {
-                ImageIOHelper.addCurveToImage(edge, img3, 1, 255, 255, 0);
+
+            List<PairIntArray> skyEdges2 = new ArrayList<PairIntArray>();
+            for (PairIntArray edge : skyEdges) {
+                PairIntArray edge2 = new PairIntArray();
+                for (int i = 0; i < edge.getN(); ++i) {
+                    edge2.add(edge.getX(i) + xOffset, edge.getY(i) + yOffset);
+                    skyEdges2.add(edge2);
+                }
             }
-            for (PairIntArray edge : edges) {
+            
+            for (PairIntArray edge : skyEdges2) {
+                ImageIOHelper.addCurveToImage(edge, img3, 1, 255, 255, 0);                
+            }
+            for (PairIntArray edge : skyEdges2) {
                 ImageIOHelper.addCurveToImage(edge, img3, 0, 255, 255, 255);
             }
-            
-            debugDisplay(edges, "skyline edges extracted", true, img3.getWidth(), 
-                img3.getHeight());
             
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(

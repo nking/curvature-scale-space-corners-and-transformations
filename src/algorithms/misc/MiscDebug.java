@@ -346,8 +346,8 @@ public class MiscDebug {
         }
     }
 
-    public static void writeImageCopy(ImageExt img, String outfileName) {
-        ImageExt img2 = (ImageExt)img.copyImage();
+    public static void writeImageCopy(Image img, String outfileName) {
+        Image img2 = img.copyImage();
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(dirPath + "/" + outfileName, img2);
