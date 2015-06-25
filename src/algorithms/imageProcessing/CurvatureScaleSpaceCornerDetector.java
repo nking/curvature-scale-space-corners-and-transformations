@@ -65,6 +65,8 @@ public class CurvatureScaleSpaceCornerDetector extends
     
     protected float factorIncreaseForCurvatureMinimum = 1.f;
     
+    protected boolean performWholeImageCorners = true;
+    
     public CurvatureScaleSpaceCornerDetector(final ImageExt input) {
 
         super(input);
@@ -76,6 +78,19 @@ public class CurvatureScaleSpaceCornerDetector extends
         super(input, theEdges);
     }
     
+    /**
+     * set the edge detector to create edges that are better for outdoor
+     * conditions and calculate corners only for the skyline.  
+     * Note that the skyline extraction is currently
+     * a long running process.
+     */
+    void calculateSkylineCornersOnly() {
+        
+        useOutdoorModeAndExtractSkyline();
+        
+        performWholeImageCorners = false;
+    }
+  
     public void enableJaggedLineCorrections() {
         enableJaggedLineCorrections = true;
     }
@@ -99,6 +114,10 @@ public class CurvatureScaleSpaceCornerDetector extends
             calculateSkylineCorners();
         }
 
+        if (!performWholeImageCorners) {
+            return;
+        }
+        
         // not re-using return maps for now, but they are available here
         // while refactoring the public method returns and signatures
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
@@ -133,6 +152,11 @@ public class CurvatureScaleSpaceCornerDetector extends
      */
     public void findCornersIteratively(int approxNumberOfCornersDesired,
         int filterOnlyAboveThisNumberOfCorners) {
+        
+        if (!performWholeImageCorners) {
+            throw new IllegalStateException(
+                "performWholeImageCorners is currently set to false");
+        }
 
         float lowerThresholdStepSize = 1.0f;
 

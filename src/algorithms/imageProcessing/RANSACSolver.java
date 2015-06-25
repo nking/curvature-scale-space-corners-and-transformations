@@ -158,8 +158,14 @@ public class RANSACSolver {
         int nMaxMatchable = (matchedLeftXY.numCols() < matchedRightXY.numCols())
             ? matchedLeftXY.numCols() : matchedRightXY.numCols();
         
+        if (nPoints == 7) {
+            nIter = 1;
+        }
+        
+ //TODO: readjust the number of iterations after each inlier outlier result
+        
         for (int i = 0; i < nIter; i++) {
-            
+  
             MiscMath.chooseRandomly(sr, selected, nPoints);
             
             xy1 = new PairFloatArray();
@@ -222,14 +228,22 @@ public class RANSACSolver {
         StereoProjectionTransformer spTransformer = new 
             StereoProjectionTransformer();
         
-        SimpleMatrix finalFM = 
-            spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
-            outputLeftXY, outputRightXY);
+        StereoProjectionTransformerFit finalFit = null;
         
-        StereoProjectionTransformerFit finalFit = 
-            spTransformer.evaluateFitForAlreadyMatched(finalFM, 
-            matchedLeftXY, matchedRightXY, tolerance);
+        if (nPoints == 7) {
+            
+            finalFit = bestFit;
+            
+        } else {
+            
+            SimpleMatrix finalFM = spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
+                outputLeftXY, outputRightXY);
+            
+            finalFit = spTransformer.evaluateFitForAlreadyMatched(finalFM, 
+                matchedLeftXY, matchedRightXY, tolerance);
 
+        }
+        
         log.info("nIter=" + nIter);
 
         log.info("best fit from 7-point: " + bestFit.toString());

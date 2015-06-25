@@ -153,8 +153,8 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
             findJunctions(output);
             
             if (debug) {
-                algorithms.misc.MiscDebug.printJunctions(this.junctionMap, output, 
-                img);
+                algorithms.misc.MiscDebug.printJunctions(this.junctionMap, 
+                    output, img);
             }
             
             //TODO: could improve thisfor nIter > 0 by only visiting the

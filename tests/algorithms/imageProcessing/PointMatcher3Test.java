@@ -1,38 +1,35 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.PointPartitioner;
-import static algorithms.imageProcessing.StereoProjectionTransformer.rewriteInto3ColumnMatrix;
-import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
-import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
 import java.awt.Color;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 import org.ejml.simple.*;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 /**
  *
  * @author nichole
  */
-public class PointMatcher3Test {
-
+public class PointMatcher3Test extends TestCase {
+     
+    private Logger log = Logger.getLogger(this.getClass().getName());
+    
+    public PointMatcher3Test() {
+    }
+    
+    /*
+    for more datasets:
+    http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+    */
+  
     private void smallestSubsets() throws Exception {
         
         //String fileName1 = "brown_lowe_2003_image1.jpg";
@@ -164,280 +161,10 @@ public class PointMatcher3Test {
         int z = 1;
     }*/
     
-    private void examineInvPointLists() throws Exception {
-        
-        //TODO: implement the code for this, including inverting the image.
-        
-        // not cheking in the images for the temporary change
-        /*
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String fileName1Inv = "brown_lowe_2003_image1_inv.jpg";
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-        String fileName2Inv = "brown_lowe_2003_image2_inv.jpg";
-        */
-        String fileName1 = "venturi_mountain_j6_0001.png";
-        String fileName1Inv = "venturi_mountain_j6_0001_inv.png";
-        String fileName2 = "venturi_mountain_j6_0010.png";
-        String fileName2Inv = "venturi_mountain_j6_0010_inv.png";
-        
-        // revisit infl points.  is there a threshold removing points?
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        String filePath1Inv = ResourceFinder.findFileInTestResources(fileName1Inv);
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-        Image img1Inv = ImageIOHelper.readImage(filePath1Inv);
-        int image1Width = img1.getWidth();
-        int image1Height = img1.getHeight();
-       
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-        String filePath2Inv = ResourceFinder.findFileInTestResources(fileName2Inv);
-        Image img2Inv = ImageIOHelper.readImage(filePath2Inv);
-        int image2Width = img2.getWidth();
-        int image2Height = img2.getHeight();
-        
-        List<PairIntArray> edges1 = null;
-        List<PairIntArray> edges2 = null;
-        PairIntArray points1 = null;
-        PairIntArray points2 = null;
-        
-        boolean makeInflectionPoints = false;
-        
-        int dist = 8;//10;
-        
-        PairIntArray tmp1 = null;
-        PairIntArray tmp2 = null;
-        
-        if (makeInflectionPoints) {
-            
-            CurvatureScaleSpaceInflectionMapperForOpenCurves inflMapper = new
-                CurvatureScaleSpaceInflectionMapperForOpenCurves(img1, img2);
-
-            PairIntArray[] xyPeaks = inflMapper.createUnmatchedXYFromContourPeaks();        
-            points1 = xyPeaks[0];
-            points2 = xyPeaks[1];
-
-            edges1 = inflMapper.getEdges1InOriginalReferenceFrame();
-            
-            edges2 = inflMapper.getEdges2InOriginalReferenceFrame();
-
-            tmp1 = points1.copy();
-            tmp2 = points2.copy();
-            
-            /*
-            inflMapper = new
-                CurvatureScaleSpaceInflectionMapperForOpenCurves(img1Inv, img2Inv);
-
-            xyPeaks = inflMapper.createUnmatchedXYFromContourPeaks();        
-            PairIntArray tmp1Inv = xyPeaks[0];
-            PairIntArray tmp2Inv = xyPeaks[1];
-            
-            // points similar within 2 pixels in both sets:
-            PairIntArray common1 = new PairIntArray();
-            for (int i = 0; i < tmp1.getN(); i++) {
-                int x = tmp1.getX(i);
-                int y = tmp1.getY(i);
-                for (int ii = 0; ii < tmp1Inv.getN(); ii++) {
-                    int xInv = tmp1Inv.getX(ii);
-                    int yInv = tmp1Inv.getY(ii);
-                    float dx = Math.abs(xInv - x);
-                    float dy = Math.abs(yInv - y);
-                    if ((dx <= dist) && (dy <= dist)) {
-                        common1.add(x, y);
-                        break;
-                    }
-                }
-            }
-            points1 = common1;
-
-            // points similar within 2 pixels in both sets:
-            PairIntArray common2 = new PairIntArray();
-            for (int i = 0; i < tmp2.getN(); i++) {
-                int x = tmp2.getX(i);
-                int y = tmp2.getY(i);
-                for (int ii = 0; ii < tmp2Inv.getN(); ii++) {
-                    int xInv = tmp2Inv.getX(ii);
-                    int yInv = tmp2Inv.getY(ii);
-                    float dx = Math.abs(xInv - x);
-                    float dy = Math.abs(yInv - y);
-                    if ((dx <= dist) && (dy <= dist)) {
-                        common2.add(x, y);
-                        break;
-                    }
-                }
-            }
-            points2 = common2;
-            */
-        } else {
-            
-            CurvatureScaleSpaceCornerDetector detector = new
-                CurvatureScaleSpaceCornerDetector(img1);
-            detector.useOutdoorMode();            
-            detector.findCorners();
-            edges1 = detector.getEdgesInOriginalReferenceFrame();
-            points1 = detector.getCornersInOriginalReferenceFrame();
-            
-            tmp1 = points1.copy();
-            
-            /*
-            detector = new CurvatureScaleSpaceCornerDetector(img1Inv);
-            detector.useOutdoorMode();            
-            detector.findCorners();
-            PairIntArray tmp1Inv = detector.getCornersInOriginalReferenceFrame();
-            
-            // points similar within 2 pixels in both sets:
-            PairIntArray common1 = new PairIntArray();
-            for (int i = 0; i < tmp1.getN(); i++) {
-                int x = tmp1.getX(i);
-                int y = tmp1.getY(i);
-                for (int ii = 0; ii < tmp1Inv.getN(); ii++) {
-                    int xInv = tmp1Inv.getX(ii);
-                    int yInv = tmp1Inv.getY(ii);
-                    float dx = Math.abs(xInv - x);
-                    float dy = Math.abs(yInv - y);
-                    if ((dx <= dist) && (dy <= dist)) {
-                        common1.add(x, y);
-                        break;
-                    }
-                }
-            }
-            points1 = common1;
-            */
-            
-            detector = new
-                CurvatureScaleSpaceCornerDetector(img2);
-            detector.useOutdoorMode();            
-            detector.findCorners();
-            edges2 = detector.getEdgesInOriginalReferenceFrame();
-            points2 = detector.getCornersInOriginalReferenceFrame();
-            
-            tmp2 = points2.copy();
-            
-            /*
-            detector = new CurvatureScaleSpaceCornerDetector(img2Inv);
-            detector.useOutdoorMode();            
-            detector.findCorners();
-            PairIntArray tmp2Inv = detector.getCornersInOriginalReferenceFrame();
-            
-            // points similar within 2 pixels in both sets:
-            PairIntArray common2 = new PairIntArray();
-            for (int i = 0; i < tmp2.getN(); i++) {
-                int x = tmp2.getX(i);
-                int y = tmp2.getY(i);
-                for (int ii = 0; ii < tmp2Inv.getN(); ii++) {
-                    int xInv = tmp2Inv.getX(ii);
-                    int yInv = tmp2Inv.getY(ii);
-                    float dx = Math.abs(xInv - x);
-                    float dy = Math.abs(yInv - y);
-                    if ((dx <= dist) && (dy <= dist)) {
-                        common2.add(x, y);
-                        break;
-                    }
-                }
-            }
-            points2 = common2;
-            */
-        }
-        
-        Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-
-        for (PairIntArray edge : edges1) {
-            ImageIOHelper.addCurveToImage(edge, image1, 2, 
-                Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
-                Color.YELLOW.getBlue());
-        }
-
-        ImageIOHelper.addCurveToImage(points1, image1, 1, 255, 0, 0);
-
-        String dirPath = ResourceFinder.findDirectory("bin");
-        String outFilePath = dirPath + "/tmp1_edges_infl.png";
-
-        ImageIOHelper.writeOutputImage(outFilePath, image1);
-
-        Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-
-        for (PairIntArray edge : edges2) {
-            ImageIOHelper.addCurveToImage(edge, image2, 2, 
-                Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
-                Color.YELLOW.getBlue());
-        }
-
-        ImageIOHelper.addCurveToImage(points2, image2, 1, 255, 0, 0);
-
-        outFilePath = dirPath + "/tmp2_edges_infl.png";
-
-        ImageIOHelper.writeOutputImage(outFilePath, image2);
-            
-        log.info("POINTS1: ");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < points1.getN(); i++) {
-            String str = String.format("%d %d\n", points1.getX(i), points1.getY(i));
-            sb.append(str);
-        }
-        log.info(sb.toString());
-        log.info("POINTS2: ");
-        sb = new StringBuilder();
-        for (int i = 0; i < points2.getN(); i++) {
-            String str = String.format("%d %d\n", points2.getX(i), points2.getY(i));
-            sb.append(str);
-        }
-        log.info(sb.toString());
-                
-        PairIntArray outputMatchedScene = new PairIntArray();
-        PairIntArray outputMatchedModel = new PairIntArray();
-            
-        PointMatcher pointMatcher = new PointMatcher();
-                
-        pointMatcher.performPartitionedMatching(tmp1, tmp2,
-        image1Width >> 1, image1Height >> 1,
-            image2Width >> 1, image2Height >> 1,
-            outputMatchedScene, outputMatchedModel);
-        
-        if (outputMatchedScene.getN() < 7) {
-            // no solution
-            return;
-        }
-        
-        PairFloatArray finalOutputMatchedScene = new PairFloatArray();
-        PairFloatArray finalOutputMatchedModel = new PairFloatArray();
-        
-        
-        RANSACSolver ransacSolver = new RANSACSolver();
-        
-        StereoProjectionTransformerFit sFit = ransacSolver
-            .calculateEpipolarProjection(
-                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
-                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
-                finalOutputMatchedScene, finalOutputMatchedModel);
-        
-          overplotEpipolarLines(sFit.getFundamentalMatrix(), 
-            outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
-            ImageIOHelper.readImage(filePath1),
-            ImageIOHelper.readImage(filePath2), 
-            image1Width, 
-            img1.getHeight(), img2.getWidth(), img2.getHeight());
-        
-        /*
-        StereoProjectionTransformer st = new StereoProjectionTransformer();
-        SimpleMatrix fm = 
-            st.calculateEpipolarProjectionForPerfectlyMatched(
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel));
-        
-        overplotEpipolarLines(fm, 
-            outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(), 
-            ImageIOHelper.readImage(filePath1),
-            ImageIOHelper.readImage(filePath2), 
-            image1Width, 
-            img1.getHeight(), img2.getWidth(), img2.getHeight());
-        */
-        System.out.println("test done");
-    }
-    
-    @Test
     public void testSkyline() throws Exception {
         
         String[] fileNames = new String[] {
-            //"brown_lowe_2003_image1.jpg",
+            "brown_lowe_2003_image1.jpg",
             //"brown_lowe_2003_image1_rot.jpg",
             //"brown_lowe_2003_image2.jpg",
             /*"venturi_mountain_j6_0001.png",
@@ -452,7 +179,7 @@ public class PointMatcher3Test {
             "costa_rica.jpg",
             "new-mexico-sunrise_w725_h490.jpg",
             "arizona-sunrise-1342919937GHz.jpg",*/
-            "sky_with_rainbow.jpg",
+            //"sky_with_rainbow.jpg",
             //"sky_with_rainbow2.jpg",
             //"patagonia_snowy_foreground.jpg",
             //"mt_rainier_snowy_field.jpg"
@@ -472,6 +199,7 @@ public class PointMatcher3Test {
             ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
             int image1Width = img1.getWidth();
             int image1Height = img1.getHeight();
+            
       /*
       ImageProcessor ip = new ImageProcessor();
       ip.testFilter(img1);
@@ -479,6 +207,7 @@ public class PointMatcher3Test {
           return;
       }
       */
+            
             List<PairIntArray> edges1 = null;
             PairIntArray points1 = null;
 
@@ -517,16 +246,14 @@ public class PointMatcher3Test {
     
     private void examineIterativeCorners() throws Exception {
         
-        
+        /*
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String fileName2 = "brown_lowe_2003_image2.jpg";
-        
-        /*
-        String fileName1 = "venturi_mountain_j6_0001.png";
-        String fileName2 = "venturi_mountain_j6_0010.png";
         */
         
-        // revisit infl points.  is there a threshold removing points?
+        String fileName1 = "venturi_mountain_j6_0001.png";
+        String fileName2 = "venturi_mountain_j6_0010.png";
+
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         int image1Width = img1.getWidth();
@@ -537,8 +264,10 @@ public class PointMatcher3Test {
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         
-        List<PairIntArray> edges1 = null;
-        List<PairIntArray> edges2 = null;
+        //List<PairIntArray> edges1 = null;
+        List<PairIntArray> edgesSkyline1 = null;
+        //List<PairIntArray> edges2 = null;
+        List<PairIntArray> edgesSkyline2 = null;
         PairIntArray points1 = null;
         PairIntArray points2 = null;
         
@@ -547,84 +276,78 @@ public class PointMatcher3Test {
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);
-        detector.useOutdoorMode();
+        //detector.useOutdoorMode();
         //detector.useOutdoorModeAndExtractSkyline();
+        detector.calculateSkylineCornersOnly();
         //detector.findCornersIteratively(nPreferredCorners, nCrit);
         detector.findCorners();
-        edges1 = detector.getEdgesInOriginalReferenceFrame();
-        points1 = detector.getCornersInOriginalReferenceFrame();
+        //edges1 = detector.getEdgesInOriginalReferenceFrame();
+        points1 = detector.getSkylineCornersInOriginalReferenceFrame();
+        edgesSkyline1 = detector.getSkylineEdgesInOriginalReferenceFrame();
         
         detector = new CurvatureScaleSpaceCornerDetector(img2);
         //detector.useOutdoorMode();
-        detector.useOutdoorModeAndExtractSkyline();
+        //detector.useOutdoorModeAndExtractSkyline();
+        detector.calculateSkylineCornersOnly();
         //detector.findCornersIteratively(nPreferredCorners, nCrit);
         detector.findCorners();
-        edges2 = detector.getEdgesInOriginalReferenceFrame();
-        points2 = detector.getCornersInOriginalReferenceFrame();
+        //edges2 = detector.getEdgesInOriginalReferenceFrame();
+        points2 = detector.getSkylineCornersInOriginalReferenceFrame();
+        edgesSkyline2 = detector.getSkylineEdgesInOriginalReferenceFrame();
         
         Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-
-        for (PairIntArray edge : edges1) {
-            ImageIOHelper.addCurveToImage(edge, image1, 2, 
-                Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
-                Color.YELLOW.getBlue());
-        }
-
-        ImageIOHelper.addCurveToImage(points1, image1, 1, 255, 0, 0);
-
         String dirPath = ResourceFinder.findDirectory("bin");
-        String outFilePath = dirPath + "/tmp1_edges_infl.png";
-
-        ImageIOHelper.writeOutputImage(outFilePath, image1);
-
         Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-
-        for (PairIntArray edge : edges2) {
-            ImageIOHelper.addCurveToImage(edge, image2, 2, 
-                Color.YELLOW.getRed(), Color.YELLOW.getGreen(), 
-                Color.YELLOW.getBlue());
-        }
-
-        ImageIOHelper.addCurveToImage(points2, image2, 1, 255, 0, 0);
-
-        outFilePath = dirPath + "/tmp2_edges_infl.png";
-
-        ImageIOHelper.writeOutputImage(outFilePath, image2);
-            
-        log.info("POINTS1: " + points1.getN() + " points");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < points1.getN(); i++) {
-            String str = String.format("%d %d\n", points1.getX(i), points1.getY(i));
-            sb.append(str);
-        }
-        log.info(sb.toString());
-        log.info("POINTS2: " + points2.getN() + " points");
-        sb = new StringBuilder();
-        for (int i = 0; i < points2.getN(); i++) {
-            String str = String.format("%d %d\n", points2.getX(i), points2.getY(i));
-            sb.append(str);
-        }
-        log.info(sb.toString());
                 
+        // ====== transform the points to a smaller range to make partitioning
+        //        easier
+        /*int[] offsetsAndDimensions1 = new int[]{0, 100, 517, 150};
+        int[] offsetsAndDimensions2 = new int[]{0, 78, 517, 150};
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.shrinkImage(points1, offsetsAndDimensions1);
+        imageProcessor.shrinkImage(points2, offsetsAndDimensions2);
+        */
+        
+        // ===== use partitioned matching =====
         PairIntArray outputMatchedScene = new PairIntArray();
         PairIntArray outputMatchedModel = new PairIntArray();
-            
+        
         PointMatcher pointMatcher = new PointMatcher();
         //pointMatcher.setCostToNumMatchedAndDiffFromModel();
         //pointMatcher.setCostToDiffFromModel();
         
-        pointMatcher.performPartitionedMatching(points1, points2,
-        image1Width >> 1, image1Height >> 1,
-            image2Width >> 1, image2Height >> 1,
-            outputMatchedScene, outputMatchedModel);
+        TransformationPointFit trFit = 
+            pointMatcher.performPartitionedMatching0(points1, points2,
+                image1Width >> 1, image1Height >> 1,
+                image2Width >> 1, image2Height >> 1,
+                outputMatchedScene, outputMatchedModel);
+        
+/*
+the skyline is hopefully useful in getting the transformation solution
+into the local search region
+
+now should try rough euclidean match using the transformation from
+skyline as a start of solutin with whole image corners and prefer the 
+later if better.
+
+then make a larger output matched scene and model set of points to
+determine the epipolar projection
+
+(for brown & lee, the skyline-only region of overlap is small so 
+difficult to make a precise epipolar projection solution.  it's
+better to have points of correspondence spread over as much of the
+images as possible)
+*/
+        
         /*
         pointMatcher.performMatching(points1, points2,
         image1Width >> 1, image1Height >> 1,
             image2Width >> 1, image2Height >> 1,
             outputMatchedScene, outputMatchedModel, 1.0f);
         */
+        
         if (outputMatchedScene.getN() < 7) {
-            // no solution
+            // no epipolar solution. need at least 7 points
             return;
         }
         
@@ -660,6 +383,7 @@ public class PointMatcher3Test {
             image1Width, 
             img1.getHeight(), img2.getWidth(), img2.getHeight());
         */
+        
         System.out.println("test done");
     }
     
@@ -788,26 +512,7 @@ public class PointMatcher3Test {
         log.info(sb.toString());
        
     }
-    
-    private Logger log = Logger.getLogger(this.getClass().getName());
-    
-    public PointMatcher3Test() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
    
-    /*
-    for more datasets:
-    http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
-    */
-  
-    //@Test
     public void est1() throws Exception {
 
         // test for dataset which already matches exactly
@@ -832,7 +537,6 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 1);
     }
     
-    //@Test
     public void est2() throws Exception {
 
         // test for exact match plus noise
@@ -857,7 +561,6 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 2);
     }
     
-    //@Test
     public void est3() throws Exception {
 
         // test for exact match translated in X
@@ -885,7 +588,6 @@ public class PointMatcher3Test {
         
     }
     
-    //@Test
     public void est4() throws Exception {
 
         // test for exact match translated in X plus random points
@@ -910,7 +612,6 @@ public class PointMatcher3Test {
             scale, rotation, translateX, translateY, 4);
     }
     
-    //@Test
     public void est5() throws Exception {
 
         // test for exact match translated in X
@@ -938,7 +639,6 @@ public class PointMatcher3Test {
         
     }
     
-    //@Test
     public void est6() throws Exception {
 
         // test for exact match translated in X plus random points
@@ -1645,8 +1345,11 @@ public class PointMatcher3Test {
         try {
             PointMatcher3Test test = new PointMatcher3Test();
 
-            test.testSkyline();
-            
+            test.examineIterativeCorners();
+            //test.testSkyline();
+     
+            int z = 1;
+     
             /*
             test.test1();
             test.test2();
@@ -1664,20 +1367,17 @@ public class PointMatcher3Test {
             test.test14();
             */
             //test.test15();
-            //test.test155();
-            
+            //test.test155();            
             //test.test156();
             
             //test.adjustPointsOfInterest();
             //test.examineInvPointLists();
             //test.smallestSubsets();
-            //test.examineIterativeCorners();
             
             /*
             tests for :
             -- for same set w/ projection
-            -- for same set w/ projection and noise
-                        
+            -- for same set w/ projection and noise                        
             tests for scales which are close to 1 and less than 2
             */
         

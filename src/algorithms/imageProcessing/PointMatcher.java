@@ -277,6 +277,377 @@ public final class PointMatcher {
      * @param outputMatchedLeftXY
      * @param outputMatchedRightXY
      */
+    public TransformationPointFit performPartitionedMatching0(
+        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
+        int image1CentroidX, int image1CentroidY,
+        int image2CentroidX, int image2CentroidY,
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY) {
+        
+        /*
+        -- perform whole sets matching
+        -- perform vertical partition matching
+        -- perform horizontal partition matching
+        -- if the vert or horiz results are better that whole sets, consider
+           partition into 4 
+        
+        TODO: methods are using a special fitting function specifically for skyline
+        matches, but the function may not be ideal for whole image corner
+        matching, so need to allow the choice of fitness function
+        to be passed as an argument.
+        */
+        
+        // ====== whole sets match =======
+        PairIntArray allPointsLeftMatched = new PairIntArray();
+        PairIntArray allPointsRightMatched = new PairIntArray();
+        TransformationPointFit allPointsFit = performMatching(
+            unmatchedLeftXY, unmatchedRightXY,
+            image1CentroidX, image1CentroidY, 
+            image2CentroidX, image2CentroidY,
+            allPointsLeftMatched, allPointsRightMatched, 1.0f); 
+        float allPointsNStat = (float)allPointsFit.getNumberOfMatchedPoints()/
+            (float)allPointsFit.getNMaxMatchable();
+                
+        log.info("all points set nStat=" + allPointsNStat + " Euclidean fit=" + 
+            allPointsFit.toString());
+        
+        
+        // ====== vertical partitioned matches =======
+        TransformationPointFit verticalPartitionedFit = 
+            performVerticalPartitionedMatching(2,
+            unmatchedLeftXY, unmatchedRightXY,
+            image1CentroidX, image1CentroidY,
+            image2CentroidX, image2CentroidY);
+        
+        /*
+        // ====== horizontal partitioned matches =======
+        TransformationPointFit horizontalPartitionedFit = 
+            performHorizontalPartitionedMatching(2,
+            unmatchedLeftXY, unmatchedRightXY,
+            image1CentroidX, image1CentroidY,
+            image2CentroidX, image2CentroidY);
+        */
+        
+        TransformationPointFit bestFit = allPointsFit;
+        
+        if (fitIsBetter2(bestFit, verticalPartitionedFit)) {
+            //fitIsBetterNStat(bestFit, verticalPartitionedFit)) {
+            
+            bestFit = verticalPartitionedFit;
+        }
+        
+        if (bestFit == null) {
+            return null;
+        }
+        
+        // TODO: compare to horizontal fits when implemented
+        
+        
+        Transformer transformer = new Transformer();
+        
+        PairFloatArray transformedLeft = transformer.applyTransformation2(
+            bestFit.getParameters(), unmatchedLeftXY, image1CentroidX, 
+            image1CentroidY);
+        
+        double tolerance = generalTolerance;
+
+        float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
+            transformedLeft, unmatchedRightXY, tolerance);
+
+        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance, 
+            matchIndexesAndDiffs, outputMatchedLeftXY, outputMatchedRightXY);
+        
+        return bestFit;
+    }
+    
+    /**
+     * NOT READY FOR USE
+     * 
+     * @param numberOfPartitions the number of vertical partitions to make.  
+     * the maximum value accepted is 3 and minimum is 1.
+     * @param unmatchedLeftXY
+     * @param unmatchedRightXY
+     * @param image1CentroidX
+     * @param image1CentroidY
+     * @param image2CentroidX
+     * @param image2CentroidY
+     * @return best fitting transformation between unmatched left and right 
+     */
+    public TransformationPointFit performVerticalPartitionedMatching(
+        final int numberOfPartitions,
+        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
+        int image1CentroidX, int image1CentroidY,
+        int image2CentroidX, int image2CentroidY) {
+       
+        if (numberOfPartitions > 3) {
+            throw new IllegalArgumentException("numberOfPartitions max value is 3");
+        }
+        if (numberOfPartitions < 1) {
+            throw new IllegalArgumentException("numberOfPartitions min value is 1");
+        }
+        
+        int nXDiv = numberOfPartitions;
+        int nYDiv = 1;
+        float setsFractionOfImage = 0.5f;
+        int n = (int)Math.pow(nXDiv * nYDiv, 2);
+        
+        TransformationPointFit[] vertPartitionedFits = new TransformationPointFit[n];
+        float[] nStat = new float[n];
+                            
+        PointPartitioner partitioner = new PointPartitioner();
+        PairIntArray[] vertPartitionedLeft = partitioner.partitionVerticalOnly(
+            unmatchedLeftXY, nXDiv);
+        PairIntArray[] vertPartitionedRight = partitioner.partitionVerticalOnly(
+            unmatchedRightXY, nXDiv);
+        
+        int bestFitIdx = -1;
+        
+        int count = 0;
+        for (int p1 = 0; p1 < vertPartitionedLeft.length; p1++) {
+            for (int p2 = 0; p2 < vertPartitionedRight.length; p2++) {
+ //if (!(p1 == 1 && p2 == 0)) { count++; continue;}
+
+                // determine fit only with partitioned points
+
+                PairIntArray part1 = vertPartitionedLeft[p1];
+                PairIntArray part2 = vertPartitionedRight[p2];
+
+                PairIntArray part1Matched = new PairIntArray();
+                PairIntArray part2Matched = new PairIntArray();
+                
+                TransformationPointFit fit = performMatching(part1, part2,
+                    image1CentroidX, image1CentroidY, 
+                    image2CentroidX, image2CentroidY,
+                    part1Matched, part2Matched, setsFractionOfImage);
+                
+                if (fit == null) {
+                    count++;
+                    continue;
+                }
+                
+                nStat[count] = (float)fit.getNumberOfMatchedPoints()/
+                    (float)fit.getNMaxMatchable();
+                
+                log.info(Integer.toString(count) 
+                    + ", p1=" + p1 + " p2=" + p2 + ") nStat=" + nStat[count] +
+                    " Euclidean fit=" + fit.toString());
+                
+                vertPartitionedFits[count] = fit;
+                                
+                if (bestFitIdx == -1) {
+                    bestFitIdx = count;
+                } else {
+                    // if nStat != inf, best has smallest st dev from mean
+                    if (fitIsBetter2(vertPartitionedFits[bestFitIdx], 
+                        vertPartitionedFits[count])) {
+                        bestFitIdx = count;
+                    }
+                }
+                
+                count++;
+            }
+        }
+        
+        if (bestFitIdx == -1) {
+            return null;
+        }
+        
+        /*
+        nDiv=2
+        0: [0][1]       1: [0][1]
+           [0]             [1]      
+        
+        2: [0][1]       3: [0][1]     
+              [0]             [1]
+        
+        nDiv=3
+        0: [0][1][2]    1: [0][1][2]    2: [0][1][2]
+           [0]             [1]             [2]
+        
+        3: [0][1][2]    4: [0][1][2]    5: [0][1][2]
+              [0]             [1]             [2]
+        
+        6: [0][1][2]    7: [0][1][2]    8: [0][1][2]
+                 [0]             [1]             [2]
+        
+        Consistent solutions for nDiv=2
+            would have similar solutions for comparisons 0: and 3:
+            (which is index 0 and n+1)
+        
+        Consistent solutions for nDiv=3
+            would have similar solutions for comparisons 0: and 4: and 8:
+            (which is index 0 and (n+1) and 2*(n+1))
+          OR
+            3: and 7:
+            (which is index n and (2*n)+1)
+        */
+        
+        TransformationPointFit bestFit = vertPartitionedFits[bestFitIdx];
+        
+        float scaleTolerance = 0.1f; 
+        float rotInDegreesTolerance = 20;
+        float translationTolerance = 20;
+        
+        int idx2 = -1;
+        int idx3 = -1;
+            
+        if (numberOfPartitions == 2) {
+            
+            if (bestFitIdx == 0) {
+                
+                // is this similar to vertPartitionedFits[3] ?
+                idx2 = 3;
+                
+            } else if (bestFitIdx == 3) {
+                
+                // is this similar to vertPartitionedFits[0] ?
+                idx2 = 0;
+            }
+            
+        } else if (numberOfPartitions == 3) {
+            
+            if (bestFitIdx == 0) {
+                
+                // is this similar to vertPartitionedFits[4] and vertPartitionedFits[8] ?
+                idx2 = 4;
+                idx3 = 8;
+                
+            } else if (bestFitIdx == 4) {
+                
+                // is this similar to vertPartitionedFits[0] and vertPartitionedFits[8] ?
+                idx2 = 0;
+                idx3 = 8;
+                
+            } else if (bestFitIdx == 8) {
+                
+                // is this similar to vertPartitionedFits[0] and vertPartitionedFits[4] ?
+                idx2 = 0;
+                idx3 = 4;
+                
+            } else if (bestFitIdx == 3) {
+                
+                // is this similar to vertPartitionedFits[7] ?
+                idx2 = 7;
+                idx3 = -1;
+                
+            } else if (bestFitIdx == 7) {
+                
+                // is this similar to vertPartitionedFits[3] ?
+                idx2 = 3;
+                idx3 = -1;
+            }
+            
+            if (idx2 > -1) {
+                
+                boolean fitIsSimilar = fitIsSimilar(bestFit, 
+                    vertPartitionedFits[idx2], scaleTolerance, 
+                    rotInDegreesTolerance, translationTolerance);
+
+                if (fitIsSimilar) {
+
+                    log.info("similar solutions for idx=" 
+                        + Integer.toString(bestFitIdx) + " and " 
+                        + Integer.toString(idx2) + ":" +
+                    " Euclidean fit" + Integer.toString(bestFitIdx) 
+                        + "=" + bestFit.toString() + 
+                    " Euclidean fit" + Integer.toString(idx2) + "=" 
+                        + vertPartitionedFits[idx2].toString());
+
+                    //TODO: combine these?
+                }
+
+                if (idx3 > -1) {
+
+                    fitIsSimilar = fitIsSimilar(bestFit, 
+                        vertPartitionedFits[idx3], scaleTolerance, 
+                        rotInDegreesTolerance, translationTolerance);
+
+                    if (fitIsSimilar) {
+
+                        log.info("similar solutions for idx=" 
+                            + Integer.toString(bestFitIdx) + " and " 
+                            + Integer.toString(idx3) + ":" +
+                        " Euclidean fit" + Integer.toString(bestFitIdx) 
+                            + "=" + bestFit.toString() + 
+                        " Euclidean fit" + Integer.toString(idx3) + "=" 
+                            + vertPartitionedFits[idx3].toString());
+
+                        //TODO: combine these?
+                    }
+                }
+            }
+        }
+        
+        return bestFit;
+    }
+    
+    /**
+     * NOT READY FOR USE
+     * 
+     * @param numberOfPartitions the number of vertical partitions to make.  
+     * the maximum value accepted is 3.
+     * @param unmatchedLeftXY
+     * @param unmatchedRightXY
+     * @param image1CentroidX
+     * @param image1CentroidY
+     * @param image2CentroidX
+     * @param image2CentroidY
+     * @param outputMatchedLeftXY
+     * @param outputMatchedRightXY
+     * @return best fitting transformation between unmatched points sets
+     * left and right
+     */
+    public TransformationPointFit performVerticalPartitionedMatching(
+        final int numberOfPartitions,
+        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
+        int image1CentroidX, int image1CentroidY,
+        int image2CentroidX, int image2CentroidY,
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY) {
+       
+        if (numberOfPartitions > 3) {
+            throw new IllegalArgumentException("numberOfPartitions max value is 3");
+        }
+        if (numberOfPartitions < 1) {
+            throw new IllegalArgumentException("numberOfPartitions min value is 1");
+        }
+        
+        TransformationPointFit bestFit = performVerticalPartitionedMatching(
+            numberOfPartitions, unmatchedLeftXY, unmatchedRightXY,
+            image1CentroidX, image1CentroidY, image2CentroidX, image2CentroidY);
+        
+        if (bestFit == null) {
+            return null;
+        }
+        
+        Transformer transformer = new Transformer();
+        
+        PairFloatArray transformedLeft = transformer.applyTransformation2(
+            bestFit.getParameters(), unmatchedLeftXY, image1CentroidX, 
+            image1CentroidY);
+        
+        double tolerance = generalTolerance;
+
+        float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
+            transformedLeft, unmatchedRightXY, tolerance);
+
+        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance, 
+            matchIndexesAndDiffs, outputMatchedLeftXY, outputMatchedRightXY);
+        
+        return bestFit;
+    }
+    
+    
+    /**
+     * NOT READY FOR USE
+     * 
+     * @param unmatchedLeftXY
+     * @param unmatchedRightXY
+     * @param image1CentroidX
+     * @param image1CentroidY
+     * @param image2CentroidX
+     * @param image2CentroidY
+     * @param outputMatchedLeftXY
+     * @param outputMatchedRightXY
+     */
     public void performPartitionedMatching(
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
         int image1CentroidX, int image1CentroidY,
@@ -318,7 +689,9 @@ public final class PointMatcher {
         To learn which partitions are the correct matches,
         
         */
-                
+
+        int nDiv = 2;
+        
         int n = 16;
         
         TransformationPointFit[] bestFits = new TransformationPointFit[n];
@@ -328,9 +701,6 @@ public final class PointMatcher {
         int count = 0;
                     
         PointPartitioner partitioner = new PointPartitioner();
-
-        int nDiv = 2;
-        
         PairIntArray[] parts1 = partitioner.partition(unmatchedLeftXY, nDiv);
         PairIntArray[] parts2 = partitioner.partition(unmatchedRightXY, nDiv);
 
@@ -338,7 +708,7 @@ public final class PointMatcher {
         
         for (int p1 = 0; p1 < parts1.length; p1++) {
             for (int p2 = 0; p2 < parts2.length; p2++) {
-if (!((p1 == 1 && p2 == 0) || (p1 == 3 && p2 ==2))) { continue;}
+//if (!((p1 == 1 && p2 == 0) || (p1 == 3 && p2 ==2))) { continue;}
 
                 // determine fit only with partitioned points
 
@@ -437,7 +807,7 @@ if (!((p1 == 1 && p2 == 0) || (p1 == 3 && p2 ==2))) { continue;}
         log.info("similarTransformations.size()=" + similarTransformations.size());
         
         List<Integer> keepIndexes = null;
-        if (similarTransformations.size() > 1) {
+        if (!similarTransformations.isEmpty()) {
             
             double minAvg = Double.MAX_VALUE;
             List<Integer> minInd = null;
@@ -727,10 +1097,8 @@ if (!((p1 == 1 && p2 == 0) || (p1 == 3 && p2 ==2))) { continue;}
         
         outputMatchedRightXY.swapContents(part2Matched);        
         
-
         return fit2;
     }
- private int debugCount = 0; 
  
     /**
      * 
@@ -1347,6 +1715,34 @@ if (!((p1 == 1 && p2 == 0) || (p1 == 3 && p2 ==2))) { continue;}
         return fit;
     }
 
+    public boolean fitIsBetterNStat(TransformationPointFit bestFit, 
+        TransformationPointFit compareFit) {
+        
+        if (compareFit == null) {
+            return false;
+        }
+        if (bestFit == null) {
+            return true;
+        }
+                
+        float bestNStat = (float)bestFit.getNumberOfMatchedPoints()/
+            (float)bestFit.getNMaxMatchable();
+        
+        float compareNStat = (float)compareFit.getNumberOfMatchedPoints()/
+            (float)compareFit.getNMaxMatchable();
+        
+        if (Float.isInfinite(compareNStat)) {
+            return false;
+        }
+        
+        // a larger nStat is a better fit
+        if (Float.compare(bestNStat, compareNStat) > 0) {
+            return true;
+        }
+        
+        return false;
+    }
+  
     public boolean fitIsBetter(TransformationPointFit bestFit, 
         TransformationPointFit compareFit) {
         
@@ -1705,7 +2101,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             log.severe("scale cannot be smaller than 1");
             
             return null;
-        }        
+        }
         
         int nMaxMatchable = 0;
         for (int i = 0; i < edges1.length; i++) {
@@ -7022,6 +7418,116 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             
             filtered2.add(x, y);
         }
+    }
+
+    private boolean fitIsSimilar(TransformationPointFit fit1, 
+        TransformationPointFit fit2,
+        float scaleTolerance, float rotInDegreesTolerance,
+        float translationTolerance) {
+        
+        if (fit1 == null || fit2 == null) {
+            return false;
+        }
+        
+        TransformationParameters params1 = fit1.getParameters();
+        
+        TransformationParameters params2 = fit2.getParameters();
+        
+        float rotA = params1.getRotationInDegrees();
+        float rotB = params2.getRotationInDegrees();
+        if (rotA > rotB) {
+            float swap = rotA;
+            rotA = rotB;
+            rotB = swap;
+        }
+        if (((rotB - rotA) > rotInDegreesTolerance) && 
+            (((rotA + 360) - rotB) > rotInDegreesTolerance)) {
+            return false;
+        }
+        
+        if ((Math.abs(params1.getScale() - params2.getScale()) <= scaleTolerance)
+            && (Math.abs(params1.getTranslationX() - params2.getTranslationX()) <= translationTolerance)
+            && (Math.abs(params1.getTranslationY() - params2.getTranslationY()) <= translationTolerance)
+            ) {
+
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * a fitness function that tries to allow a smaller number of points roughly
+     * fit to be seen in contrast to a larger number of points that 
+     * are not a better fit, but have better stats due to matching alot of
+     * scattered points.
+     * if numberOfMatched/maxMatchable is not infinite:
+     * if the mean/10 of the comparison fit is better than the best mean/10,
+     * a true is returned, else
+     * compares the standard
+     * deviation from the mean difference to the model fit and returns true
+     * if compareFit has a smaller value.
+     * @param bestFit
+     * @param compareFit
+     * @return 
+     */
+    protected boolean fitIsBetter2(TransformationPointFit bestFit, 
+        TransformationPointFit compareFit) {
+        
+        if (compareFit == null) {
+            return false;
+        }
+        if (bestFit == null) {
+            return true;
+        }
+                
+        float compareNStat = (float)compareFit.getNumberOfMatchedPoints()/
+            (float)compareFit.getNMaxMatchable();
+        
+        if (Float.isInfinite(compareNStat)) {
+            return false;
+        }
+        
+        float bestNStat = (float)bestFit.getNumberOfMatchedPoints()/
+            (float)bestFit.getNMaxMatchable();
+        
+        if (Float.isInfinite(bestNStat)) {
+            return true;
+        }
+        
+        if ((bestFit.getNumberOfMatchedPoints() == 0) && 
+            (compareFit.getNumberOfMatchedPoints() > 0)) {
+            return true;
+        } else if (compareFit.getNumberOfMatchedPoints() == 0) {
+            return false;
+        }
+        
+        double bestMean = bestFit.getMeanDistFromModel();
+            
+        double compareMean = compareFit.getMeanDistFromModel();
+        
+        int comp = Integer.compare((int)(compareMean/10), (int)(bestMean/10));
+        if (comp < 0) {
+            return true;
+        } else if (comp > 0) {
+            return false;
+        }
+            
+        double bestStdDevMean = bestFit.getStDevFromMean();
+        
+        double compareStdDevMean = compareFit.getStDevFromMean();
+        
+        // a smaller std dev from mean is a better fit
+        if (Double.compare(compareStdDevMean, bestStdDevMean) < 0) {
+        
+            return true;
+        
+        } else if (compareStdDevMean == bestStdDevMean) {
+            
+            return (Double.compare(compareMean, bestMean) < 0);
+        }
+        
+        return false;
     }
 
 }
