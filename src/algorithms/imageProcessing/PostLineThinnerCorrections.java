@@ -1604,10 +1604,10 @@ public class PostLineThinnerCorrections {
         zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 1)); 
         zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -2));
         zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(-2, 1)); zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -1));
+        zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
         
         changeToZeroes.add(new PairInt(1, 0));
-                    
+        
         int nCorrections = 0;
         
         nCorrections += replacePattern(points, imageWidth, imageHeight,
@@ -1762,11 +1762,11 @@ public class PostLineThinnerCorrections {
         int imageHeight) {
        
         /*          
-            0  #  0         1
-            0  #* 0         0
-            0  #< #  0     -1
-            #  0  0  0     -2
-          #                -3
+             0  #  0         1
+             0  #* 0  0      0
+             0  #  #< 0     -1
+             #  0  0  0     -2
+          #                 -3
          -2 -1  0  1  2 
         */
         
@@ -1779,7 +1779,7 @@ public class PostLineThinnerCorrections {
         zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1)); 
         zeroes.add(new PairInt(0, 2));
         zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 1));
+        zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 1)); zeroes.add(new PairInt(2, 0)); 
         
         ones.add(new PairInt(-2, 3));
         ones.add(new PairInt(-1, 2));
@@ -2139,7 +2139,7 @@ public class PostLineThinnerCorrections {
                     continue;
                 }
                 PairInt p3 = new PairInt(x, y);
-                tmpPointsAdded.remove(p3);
+                tmpPointsAdded.remove(p3);                
                 tmpPointsRemoved.add(p3);
             }
 
@@ -2149,7 +2149,7 @@ public class PostLineThinnerCorrections {
                 if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
                     continue;
                 }
-                PairInt p3 = new PairInt(x, y);
+                PairInt p3 = new PairInt(x, y);                
                 tmpPointsRemoved.remove(p3);
                 tmpPointsAdded.add(p3);
             }
@@ -2818,7 +2818,7 @@ public class PostLineThinnerCorrections {
                 for (PairInt p2 : zeroes) {
                     int x = col + p2.getX();
                     int y = row + p2.getY();
-                    PairInt p3 = new PairInt(x, y);
+                    PairInt p3 = new PairInt(x, y);                    
                     tmpPointsRemoved.remove(p3);
                     tmpPointsAdded.add(p3);
                 }
