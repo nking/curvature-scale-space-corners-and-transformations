@@ -67,6 +67,24 @@ public class ScatterPointPlotterPNG {
     }
     
     public void plot(float minX, float maxX, float minY, float maxY,
+        PairIntArray xyPoints, String plotLabel,
+        String xAxisLabel, String yAxisLabel) {
+
+        int n0 = (xyPoints != null) ? xyPoints.getN() : 0;
+        
+        float[] x0 = new float[n0];
+    	float[] y0 = new float[n0];
+        
+        for (int i = 0; i < n0; i++) {
+            x0[i] = xyPoints.getX(i);
+            y0[i] = xyPoints.getY(i);
+        }
+        
+        plot(minX, maxX, minY, maxY, x0, y0, null, null, plotLabel,
+            xAxisLabel, yAxisLabel);
+    }
+    
+    public void plot(float minX, float maxX, float minY, float maxY,
         float[] xPoints, float[] yPoints, String plotLabel,
         String xAxisLabel, String yAxisLabel) {
 

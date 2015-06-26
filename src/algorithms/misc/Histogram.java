@@ -109,7 +109,8 @@ public class Histogram {
         float[] valueErrors) {
 
         if (values == null || valueErrors == null || values.length != valueErrors.length) {
-            throw new IllegalArgumentException("values and valueErrors cannot be null and must be the same length");
+            throw new IllegalArgumentException(
+            "values and valueErrors cannot be null and must be the same length");
         }
         
         int nBins = (int)(2*Math.pow(values.length, 0.3333));

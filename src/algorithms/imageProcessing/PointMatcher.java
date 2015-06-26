@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.PointPartitioner;
+import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -10,6 +11,7 @@ import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
@@ -602,7 +604,7 @@ public final class PointMatcher {
         int image1CentroidX, int image1CentroidY,
         int image2CentroidX, int image2CentroidY,
         PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY) {
-       
+
         if (numberOfPartitions > 3) {
             throw new IllegalArgumentException("numberOfPartitions max value is 3");
         }
@@ -2844,6 +2846,9 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         float[] xr = new float[set1.getN()];
         float[] yr = new float[xr.length];
         
+        int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN() 
+            : set2.getN();
+        
         /*
         Since the points are unmatched, determine the translation for each 
         possible point pair and keep the most frequent answer as the
@@ -2883,7 +2888,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         // and take the peak if its larger than next peak,
         // else, take the average of largest frequencies.
         
-        if ((set1.getN() > 5) && (set2.getN() > 5)) {
+        if (maxNMatchable > 30) {
           
             /*
             if there's only one strong peak, return the FWHM center,
@@ -2891,24 +2896,25 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             strong peaks.
             */
             
-            int nBins = (int)(setsFractionOfImage*(float)centroidX1*4.f/30.f);
+            /*int nBins = (int)(setsFractionOfImage*(float)centroidX1*4.f/30.f);
             if (nBins < 15) {
                 nBins = 15;
-            }
+            }*/
 
             HistogramHolder hX = Histogram
-                .createSimpleHistogram(nBins,
+                .createSimpleHistogram(
                 transX, Errors.populateYErrorsBySqrt(transX));
 
+            /*
             nBins = (int)(setsFractionOfImage*(float)centroidY1*4.f/30.f);
             if (nBins < 15) {
                 nBins = 15;
-            }
+            }*/
             
             HistogramHolder hY = Histogram
-                .createSimpleHistogram(nBins,
+                .createSimpleHistogram(
                 transY, Errors.populateYErrorsBySqrt(transY));
-
+            
             try {
                 hX.plotHistogram("transX", 1);
                 hY.plotHistogram("transY", 2);
@@ -2924,6 +2930,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             if (tolTransY < minTolerance) {
                 tolTransY = minTolerance;
             }
+            
             float[] transXY = determineTranslationFromHistograms(hX, hY,
                 xr, yr, set2, tolTransX, tolTransY);
             
@@ -2931,59 +2938,53 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             peakTransY = transXY[1];
            
         } else {
-            // keep unique x, y pairs
-            List<Integer> freq = new ArrayList<Integer>();
-            List<String> xy = new ArrayList<String>();
-            for (int i = 0; i < transX.length; i++) {
-                int tx = Math.round(transX[i]);
-                int ty = Math.round(transY[i]);
-                String key = String.format("%d:%d", tx, ty);
-                int idx = xy.indexOf(key);
-                if (idx > -1) {
-                    Integer c = freq.get(idx);
-                    freq.set(idx, Integer.valueOf(c.intValue() + 1));
-                } else {
-                    Integer c = Integer.valueOf(1);
-                    freq.add(c);
-                    xy.add(key);
-                }
+            
+            /*
+            Can use my clustering code here from another project for best
+            solution of finding the clusters of transX, transY and then the
+            cluster with largest number of members among those.
+            
+            or can make a quicker solution by deciding an association radius
+            for points (that is, a radius around which points are considered
+            the same value) and then make a frequency map for same points.
+            slightly better than a histogram for small numbers because the
+            similar values will not be split into adjacent bins by choice of
+            interval start.
+            */
+            
+            /*
+            TODO: may change back to histogram which is O(N).  This is
+            O(N^2).
+            */
+            FixedDistanceGroupFinder groupFinder = new FixedDistanceGroupFinder(
+                transX, transY);
+
+            groupFinder.findGroupsOfPoints(50);
+            
+            List<Set<Integer>> sortedGroupIndexList = 
+                groupFinder.getDescendingSortGroupList();
+            
+            assert(!sortedGroupIndexList.isEmpty());
+                
+            Set<Integer> mostFreqIndexes = sortedGroupIndexList.get(0);
+            
+            if (mostFreqIndexes.size() > 1.25 * maxNMatchable) {
+                groupFinder = new FixedDistanceGroupFinder(transX, transY);
+                groupFinder.findGroupsOfPoints(37);
+                sortedGroupIndexList = groupFinder.getDescendingSortGroupList();
+                mostFreqIndexes = sortedGroupIndexList.get(0);
             }
-            int n0Idx = -1;
-            int maxN0 = Integer.MIN_VALUE;
-            for (int i = 0; i < freq.size(); i++) {
-                int v = freq.get(i).intValue();
-                if (v > maxN0) {
-                    maxN0 = v;
-                    n0Idx = i;
-                }
+            
+            double avgTransX = 0;
+            double avgTransY = 0;
+            for (Integer index : mostFreqIndexes) {
+                avgTransX += transX[index.intValue()];
+                avgTransY += transY[index.intValue()];
             }
-            int n1Idx = -1;
-            int maxN1 = Integer.MIN_VALUE;
-            for (int i = 0; i < freq.size(); i++) {
-                int v = freq.get(i).intValue();
-                if (v < maxN0) {
-                    if (v > maxN1) {
-                        maxN1 = v;
-                        n1Idx = i;
-                    }
-                }
-            }
-            if ((n1Idx > -1) && ((maxN0 - maxN1) > 1)) {
-                //TODO: consider whether (maxN0 - maxN1) should == set1.getN()
-                String[] xyItems = xy.get(n0Idx).split(":");
-                peakTransX = Float.valueOf(xyItems[0]);
-                peakTransY = Float.valueOf(xyItems[1]);
-            } else {
-                //take average of all points
-                peakTransX = 0;
-                peakTransY = 0;
-                for (int i = 0; i < transX.length; i++) {
-                    peakTransX += transX[i];
-                    peakTransY += transY[i];
-                }
-                peakTransX /= (float)transX.length;
-                peakTransY /= (float)transY.length;
-            }
+            avgTransX /= (float)mostFreqIndexes.size();
+            avgTransY /= (float)mostFreqIndexes.size();
+            peakTransX = (float)avgTransX;
+            peakTransY = (float)avgTransY;
         }
                 
         log.fine("peakTransX=" + peakTransX + "  peakTransY=" + peakTransY);
@@ -6527,9 +6528,6 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         boolean refineEuclideanParams = 
             !((nMaxMatchable == fit.getNumberOfMatchedPoints()) && 
             (fit.getMeanDistFromModel() < 5));
-                
-        // TODO: follow the results here for the stereo projective set
-        // Brown & Lowe 2003.  small projective coeffs should be needed.
         
         if (refineEuclideanParams) {
             
@@ -7257,9 +7255,17 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         
         List<Integer> yPeakIndexes = MiscMath.findStrongPeakIndexes(hY, 0.09f);
         
-        //if either indexes sizes != 1, try combinations of each peak above half max 
-                
-        if (false /*(xPeakIndexes.size() == 1) && (yPeakIndexes.size() == 1)*/) {
+        boolean strongXPeak = (xPeakIndexes.size() == 1) || 
+            ((hX.getYHist()[xPeakIndexes.get(0).intValue()]/
+            hX.getYHist()[xPeakIndexes.get(1).intValue()]
+            ) >= 1.5);
+        
+        boolean strongYPeak = (yPeakIndexes.size() == 1) || 
+            ((hY.getYHist()[yPeakIndexes.get(0).intValue()]/
+            hY.getYHist()[yPeakIndexes.get(1).intValue()]
+            ) >= 1.5);
+                        
+        if (strongXPeak && strongYPeak) {
         
             int peakIdx = xPeakIndexes.get(0);
             
