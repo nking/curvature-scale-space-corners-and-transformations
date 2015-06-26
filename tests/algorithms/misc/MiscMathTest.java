@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 
 import algorithms.util.PolygonAndPointPlotter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -581,4 +582,30 @@ public class MiscMathTest extends TestCase {
         
     }
 
+    /*
+    public static int[] writeDegreeIntervals(int rotStart, int rotStop, 
+        int rotDelta) {
+    */
+    public void testWriteDegreeIntervals() throws Exception {
+        
+        int startRot = 0;
+        int stopRot = 359;
+        int deltaRot = 10;
+        int[] expectedRot = new int[]{
+            0, 10, 20, 30, 40, 50, 60, 70, 80, 90,
+            100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
+            200, 210, 220, 230, 240, 250, 260, 270, 280, 290,
+            300, 310, 320, 330, 340, 350
+        };
+        int[] result = MiscMath.writeDegreeIntervals(startRot, stopRot, deltaRot);
+        assertTrue(Arrays.equals(expectedRot, result));
+        
+        startRot = 350;
+        stopRot = 5;
+        deltaRot = 1;
+        expectedRot = new int[]{350, 351, 352, 353, 354, 355, 356, 357, 358, 
+            359, 0, 1, 2, 3, 4, 5};
+        result = MiscMath.writeDegreeIntervals(startRot, stopRot, deltaRot);
+        assertTrue(Arrays.equals(expectedRot, result));
+    }
 }

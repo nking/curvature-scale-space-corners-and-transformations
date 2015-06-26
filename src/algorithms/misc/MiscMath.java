@@ -969,5 +969,33 @@ public class MiscMath {
         
         return theta;
     }
+
+    /**
+     * write an array of the rotation angles that start with rotStart and
+     * increment by rotDelta until rotStop, inclusive.
+     * 
+     * @param rotStart start of rotation angles in units of degrees
+     * @param rotStop stop of rotation angles in units of degrees
+     * @param rotDelta interval between rotation angles in units of degrees
+     * @return 
+     */
+    public static int[] writeDegreeIntervals(int rotStart, int rotStop, 
+        int rotDelta) {
+        
+        int rotStopMinusStart = (rotStop < rotStart) ? 
+            ((360 - rotStart) + rotStop) : (rotStop - rotStart);
+        
+        int nRot = (rotStopMinusStart/rotDelta) + 1;
+        int[] rotation = new int[nRot];
+        for (int i = 0; i < nRot; ++i) {
+            float r = rotStart + (i * rotDelta);
+            if (r > 359) {
+                r -= 360;
+            }
+            rotation[i] = (int)r;
+        }
+        
+        return rotation;
+    }
     
 }

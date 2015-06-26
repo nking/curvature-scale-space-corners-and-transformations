@@ -131,6 +131,7 @@ public class PointMatcher3Test extends TestCase {
             float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
             float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
             
+            log.info("FINAL FIT=" + fit.toString());
             log.info("diff result and expected =" +
                 String.format(
                 " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f",
@@ -346,10 +347,10 @@ the skyline is hopefully useful in getting the transformation solution
 into the local search region
 
 now should try rough euclidean match using the transformation from
-skyline as a start of solutin with whole image corners and prefer the
+skyline as a start of solution with whole image corners and prefer the
 later if better.
 
-then make a larger output matched scene and model set of points to
+then make a larger output matched scene and model set of matched points to
 determine the epipolar projection
 
 (for brown & lee, the skyline-only region of overlap is small so
@@ -1072,7 +1073,7 @@ images as possible)
         PointMatcher pointMatcher = new PointMatcher();
 
         TransformationPointFit fit =
-            pointMatcher.calculateProjectiveTransformationWrapper(
+            pointMatcher.calculateEuclideanTransformation(
             scene, model, xSceneCentroid, ySceneCentroid,
             xModelCentroid, yModelCentroid, 1.0f);
 

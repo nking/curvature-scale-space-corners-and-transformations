@@ -120,11 +120,21 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
         
         PointMatcher pointMatcher = new PointMatcher();
         
+        //TODO: consider a wrapper method which uses partitioning:
+        int rotStart = 0;
+        int rotStop = 359;
+        int rotDelta = 10;
+        int scaleStart = 1;
+        int scaleStop = 5;
+        int scaleDelta = 1;
+        boolean setsAreMatched = false;
+
         TransformationPointFit fit = 
-            pointMatcher.calculateRoughTransformationForUnmatched(
-                xyPeaks1, xyPeaks2, 
-                (image1OriginalWidth >> 1), 
-                (image1OriginalHeight >> 1), 1.0f);
+            pointMatcher.calculateTransformationWithGridSearch(
+            xyPeaks1, xyPeaks2, 
+            (image1OriginalWidth >> 1), (image1OriginalHeight >> 1),
+            rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
+            setsAreMatched, 1.0f);
         
         log.info("FIT: " + fit.toString());
         
