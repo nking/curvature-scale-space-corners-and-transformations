@@ -105,10 +105,9 @@ public class PointMatcher3Test extends TestCase {
                 int y = sr.nextInt(imageHeight);
                 unmatchedRightXY.add(x, y);
             }
-            
-                        
+                       
             // TODO: consider scrambling the order of the right points
-     
+
             // --- TODO: in the difference between the left and right regions,
             //     need to generate points in the right
 

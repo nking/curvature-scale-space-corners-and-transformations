@@ -587,11 +587,11 @@ public final class PointMatcher {
         // use either a finer grid search or a downhill simplex to improve the
         // solution which was found coursely within about 10 degrees
         float rot = bestFit.getParameters().getRotationInDegrees();
-        int rotStart = (int)rot - 5;
+        int rotStart = (int)rot - 10;
         if (rotStart < 0) {
             rotStart = 360 + rotStart;
         }
-        int rotStop = (int)rot + 5;
+        int rotStop = (int)rot + 10;
         if (rotStop > 359) {
             rotStop = rotStop - 360;
         }
@@ -608,11 +608,13 @@ public final class PointMatcher {
             "starting finer grid search with rot=%d to %d and scale=%d to %d", 
             rotStart, rotStop, scaleStart, scaleStop));
         
+        boolean chooseHigherResolution = true;
+        
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             unmatchedLeftXY, unmatchedRightXY, 
             image1CentroidX, image1CentroidY,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            setsAreMatched, setsFractionOfImage);
+            setsAreMatched, setsFractionOfImage, chooseHigherResolution);
 
         if (fitIsBetter(bestFit, fit)) {
             bestFit = fit;
@@ -1204,11 +1206,12 @@ public final class PointMatcher {
         int scaleStop = 5;
         int scaleDelta = 1;
         boolean setsAreMatched = false;
-
+        boolean overrideDefaultTr = false;
+        
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             scene, model, sceneImageCentroidX, sceneImageCentroidY,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            setsAreMatched, setsFractionOfImage);
+            setsAreMatched, setsFractionOfImage, overrideDefaultTr);
 
         if (fit != null) {
             log.info("best from calculateTransformationWithGridSearch: "
@@ -1354,6 +1357,8 @@ public final class PointMatcher {
      * images without using a partition method, this is 1.0, else if the
      * quadrant partitioning was used, this is 0.25.  The variable is used
      * internally in determining histogram bin sizes for translation.
+     * @param overrideDefaultTr override the default settings to choose
+     * the slower, but more accurate translation solver.
      *
      * @return
      */
@@ -1362,7 +1367,8 @@ public final class PointMatcher {
         int image1CentroidX, int image1CentroidY,
         int rotStart, int rotStop, int rotDelta,
         int scaleStart, int scaleStop, int scaleDelta,
-        boolean setsAreMatched, float setsFractionOfImage) {
+        boolean setsAreMatched, float setsFractionOfImage, 
+        boolean overrideDefaultTr) {
         
         if (rotStart < 0 || rotStart > 359) {
             throw new IllegalArgumentException(
@@ -1422,7 +1428,7 @@ public final class PointMatcher {
                     //   fit for one branch so reduce redundant code
                     params = calculateTranslationForUnmatched(set1, set2,
                         rot*Math.PI/180., scale, image1CentroidX,
-                        image1CentroidY, setsFractionOfImage);
+                        image1CentroidY, setsFractionOfImage, overrideDefaultTr);
                 }
 
                 PairFloatArray allPoints1Tr = transformer.applyTransformation(
@@ -1519,11 +1525,14 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * images without using a partition method, this is 1.0, else if the
      * quadrant partitioning was used, this is 0.25.  The variable is used
      * internally in determining histogram bin sizes for translation.
+     * @param overrideDefaultTr override the default settings to choose
+     * the slower, but more accurate translation solver.
      * @return
      */
     public TransformationParameters calculateTranslationForUnmatched(
         PairIntArray set1, PairIntArray set2, double rotation, double scale,
-        int centroidX1, int centroidY1, float setsFractionOfImage) {
+        int centroidX1, int centroidY1, float setsFractionOfImage,
+        boolean overrideDefaultTr) {
 
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
@@ -1602,14 +1611,17 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         // and take the peak if its larger than next peak,
         // else, take the average of largest frequencies.
 
-        if (false /*maxNMatchable > 50*/) {
+        if (!overrideDefaultTr && (maxNMatchable > 40)) {
+            
+            // use more than normal number of bins:
+            int nBins = (int)(3*2*Math.pow(transX.length, 0.3333));
 
             HistogramHolder hX = Histogram
-                .createSimpleHistogram(
+                .createSimpleHistogram(nBins,
                 transX, Errors.populateYErrorsBySqrt(transX));
 
             HistogramHolder hY = Histogram
-                .createSimpleHistogram(
+                .createSimpleHistogram(nBins,
                 transY, Errors.populateYErrorsBySqrt(transY));
 
             try {
@@ -1666,12 +1678,15 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             Set<Integer> prev = null;
             
             float limit = 1.25f * maxNMatchable;
-            if (maxNMatchable > 20) {
+            if (maxNMatchable > 40) {
+                limit = 0.95f * maxNMatchable;
+            } else if (maxNMatchable > 20) {
                 limit = 1.05f * maxNMatchable;
             }
             
             while ((nIter == 0) || 
-                ((nIter < nMaxIter) && (mostFreqIndexes.size() > limit))) {
+                ((nIter < nMaxIter) && (mostFreqIndexes.size() > limit))
+                && (maxSep > 0)) {
                 
                 groupFinder = new FixedDistanceGroupFinder(transX, transY);
                 groupFinder.findGroupsOfPoints(maxSep);
@@ -1851,20 +1866,22 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         float peakTransX = Float.MAX_VALUE;
         float peakTransY = Float.MAX_VALUE;
 
-        List<Integer> xPeakIndexes = MiscMath.findStrongPeakIndexes(hX, 0.09f);
+        List<Integer> xPeakIndexes = MiscMath.findStrongPeakIndexesDescSort(hX, 
+            0.09f);
 
-        List<Integer> yPeakIndexes = MiscMath.findStrongPeakIndexes(hY, 0.09f);
-
+        List<Integer> yPeakIndexes = MiscMath.findStrongPeakIndexesDescSort(hY, 
+            0.09f);
+        
         boolean strongXPeak = (xPeakIndexes.size() == 1) ||
-            ((hX.getYHist()[xPeakIndexes.get(0).intValue()]/
-            hX.getYHist()[xPeakIndexes.get(1).intValue()]
-            ) >= 2);
+            ((hX.getYHistFloat()[xPeakIndexes.get(0).intValue()]/
+            hX.getYHistFloat()[xPeakIndexes.get(1).intValue()]
+            ) >= 1.5f);
 
         boolean strongYPeak = (yPeakIndexes.size() == 1) ||
-            ((hY.getYHist()[yPeakIndexes.get(0).intValue()]/
-            hY.getYHist()[yPeakIndexes.get(1).intValue()]
-            ) >= 2);
-        
+            ((hY.getYHistFloat()[yPeakIndexes.get(0).intValue()]/
+            hY.getYHistFloat()[yPeakIndexes.get(1).intValue()]
+            ) >= 1.5f);
+
         boolean fitPeaks = false;
 
         if (strongXPeak || strongYPeak) {
@@ -1893,7 +1910,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                         hY2.plotHistogram("histogram transY", 3);
                     } catch (IOException e) {}
 
-                    yPeakIndexes = MiscMath.findStrongPeakIndexes(hY2, 0.09f);
+                    yPeakIndexes = MiscMath.findStrongPeakIndexesDescSort(hY2, 0.09f);
 
                     peakTransY = hY2.getXHist()[yPeakIndexes.get(0)];
                     
@@ -1920,7 +1937,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                         hX2.plotHistogram("histogram transX", 4);
                     } catch (IOException e) {}
 
-                    xPeakIndexes = MiscMath.findStrongPeakIndexes(hX2, 0.09f);
+                    xPeakIndexes = MiscMath.findStrongPeakIndexesDescSort(hX2, 0.09f);
 
                     peakTransX = hX2.getXHist()[xPeakIndexes.get(0)];
                     
@@ -1981,7 +1998,12 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
 
         bSection = Arrays.copyOf(bSection, count);
 
-        HistogramHolder hist = Histogram.createSimpleHistogram(bSection,
+        int nBins = (int)(2*Math.pow(count, 0.3333));
+        if (count > 200) {
+            nBins *= 3;
+        }
+        
+        HistogramHolder hist = Histogram.createSimpleHistogram(nBins, bSection,
             Errors.populateYErrorsBySqrt(bSection));
 
         return hist;

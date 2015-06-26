@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.CountingSort;
 import algorithms.util.PairInt;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -996,6 +997,38 @@ public class MiscMath {
         }
         
         return rotation;
+    }
+
+    public static List<Integer> findStrongPeakIndexesDescSort(
+        HistogramHolder hist, float fracMax) {
+
+        List<Integer> indexes = findStrongPeakIndexes(hist, fracMax);
+        
+        if (indexes.size() < 2) {
+            return indexes;
+        }
+        
+        int[] idxs = new int[indexes.size()];
+        int[] c = new int[idxs.length];
+        
+        int maxC = Integer.MIN_VALUE;
+        for (int i = 0; i < indexes.size(); ++i) {
+            idxs[i] = indexes.get(i).intValue();
+            c[i] = hist.getYHist()[idxs[i]];
+            if (c[i] > maxC) {
+                maxC = c[i];
+            }
+        }
+        
+        CountingSort.sortByDecr(c, idxs, maxC);
+        
+        indexes.clear();
+        
+        for (int i = 0; i < idxs.length; ++i) {
+            indexes.add(Integer.valueOf(idxs[i]));
+        }
+        
+        return indexes;
     }
     
 }

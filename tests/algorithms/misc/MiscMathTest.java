@@ -378,6 +378,12 @@ public class MiscMathTest extends TestCase {
         assertTrue(peakIndexes.size() == 1);
         assertTrue(peakIndexes.get(0).intValue() == 7);
         
+        List<Integer> sortedPeakIndexes = 
+            MiscMath.findStrongPeakIndexesDescSort(h, 0.09f);
+        assertNotNull(sortedPeakIndexes);
+        assertTrue(sortedPeakIndexes.size() == 1);
+        assertTrue(sortedPeakIndexes.get(0).intValue() == 7);
+        
         // this should have 3 peaks
         xHist = new float[]{
             -466.63333f, -399.9f, -333.16666f, -266.43335f, -199.70001f, 
@@ -400,6 +406,13 @@ public class MiscMathTest extends TestCase {
         assertTrue(peakIndexes.size() == 2);
         assertTrue(peakIndexes.get(0).intValue() == 3);
         assertTrue(peakIndexes.get(1).intValue() == 7);
+        
+        sortedPeakIndexes = MiscMath.findStrongPeakIndexesDescSort(h, 0.09f);
+        
+        assertNotNull(sortedPeakIndexes);
+        assertTrue(sortedPeakIndexes.size() == 2);
+        assertTrue(sortedPeakIndexes.get(0).intValue() == 7);
+        assertTrue(sortedPeakIndexes.get(1).intValue() == 3);
     }
     
     public void testChooseRandomly() throws Exception {
