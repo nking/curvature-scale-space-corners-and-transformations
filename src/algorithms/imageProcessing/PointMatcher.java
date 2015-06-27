@@ -393,7 +393,6 @@ public final class PointMatcher {
         int count = 0;
         for (int p1 = 0; p1 < vertPartitionedLeft.length; p1++) {
             for (int p2 = 0; p2 < vertPartitionedRight.length; p2++) {
- //if (!(p1 == 1 && p2 == 0)) { count++; continue;}
 
                 // determine fit only with partitioned points
 
@@ -593,14 +592,12 @@ public final class PointMatcher {
         log.info(String.format(
             "starting finer grid search with rot=%d to %d and scale=%d to %d", 
             rotStart, rotStop, scaleStart, scaleStop));
-        
-        boolean chooseHigherResolution = true;
-        
+                
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             unmatchedLeftXY, unmatchedRightXY, 
             image1CentroidX, image1CentroidY,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            setsAreMatched, setsFractionOfImage, chooseHigherResolution);
+            setsAreMatched, setsFractionOfImage);
 
         if (fitIsBetter(bestFit, fit)) {
             bestFit = fit;
@@ -1168,8 +1165,18 @@ public final class PointMatcher {
 
         return fit;
     }
+    
     /**
-     * calculate for unmatched points
+     * calculate for unmatched points.  Note, this method does a grid search
+     * over rotation and scale in intervals of 10 degrees and 1,
+     * respectively and for each translation solution within those,
+     * it has uses O(N^4) algorithm to find the best translation in x and y, 
+     * so it is a good idea to use a smaller
+     * set of good matching points here or to use the method
+     * which can limit the search space to known limits.
+     * NOTE: the translation algorithm runtime complexity will be improved soon.
+     * calculateTranslationForUnmatched0 will be used instead soon.
+     * 
      * @param scene
      * @param model
      * @param sceneImageCentroidX
@@ -1200,12 +1207,11 @@ public final class PointMatcher {
         int scaleStop = 5;
         int scaleDelta = 1;
         boolean setsAreMatched = false;
-        boolean overrideDefaultTr = false;
         
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             scene, model, sceneImageCentroidX, sceneImageCentroidY,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            setsAreMatched, setsFractionOfImage, overrideDefaultTr);
+            setsAreMatched, setsFractionOfImage);
 
         if (fit != null) {
             log.info("best from calculateTransformationWithGridSearch: "
@@ -1330,10 +1336,16 @@ public final class PointMatcher {
     }
 
     /**
-     * find the Euclidean transformation using a grid search to find the best
-     * match between set1 and set2, but evaluate the fit by applying the
-     * transformation to allPoints1 and comparing to allPoints2.
-     *
+     * calculate for unmatched points the Euclidean transformation to transform
+     * set1 into the reference frame of set2.  Note, this method does a grid search
+     * over rotation and scale in the given intervals,
+     * and for each translation solution within those,
+     * it has uses O(N^4) algorithm to find the best translation in x and y, 
+     * so it is a good idea to use a smaller
+     * set of good matching points here.
+     * NOTE: the translation algorithm runtime complexity will be improved soon.
+     * calculateTranslationForUnmatched0 will be the replacement for the O(N^4)
+     * algorithm.
      * @param set1
      * @param set2
      * @param image1CentroidX
@@ -1351,8 +1363,6 @@ public final class PointMatcher {
      * images without using a partition method, this is 1.0, else if the
      * quadrant partitioning was used, this is 0.25.  The variable is used
      * internally in determining histogram bin sizes for translation.
-     * @param overrideDefaultTr override the default settings to choose
-     * the slower, but more accurate translation solver.
      *
      * @return
      */
@@ -1361,8 +1371,7 @@ public final class PointMatcher {
         int image1CentroidX, int image1CentroidY,
         int rotStart, int rotStop, int rotDelta,
         int scaleStart, int scaleStop, int scaleDelta,
-        boolean setsAreMatched, float setsFractionOfImage, 
-        boolean overrideDefaultTr) {
+        boolean setsAreMatched, float setsFractionOfImage) {
         
         if (rotStart < 0 || rotStart > 359) {
             throw new IllegalArgumentException(
@@ -1415,14 +1424,15 @@ public final class PointMatcher {
                 TransformationParameters params;
 
                 if (setsAreMatched) {
+                    
                     params = calculateTranslationForMatched(set1, set2,
                         rot*Math.PI/180., scale, image1CentroidX, image1CentroidY);
+                    
                 } else {
-                    //TODO: when refactor, this method already determines
-                    //   fit for one branch so reduce redundant code
+                    
                     params = calculateTranslationForUnmatched(set1, set2,
                         rot*Math.PI/180., scale, image1CentroidX,
-                        image1CentroidY, setsFractionOfImage, overrideDefaultTr);
+                        image1CentroidY, setsFractionOfImage);
                 }
 
                 PairFloatArray allPoints1Tr = transformer.applyTransformation(
@@ -1505,11 +1515,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
      * be the first set given in arguments.
      *
-     * ALSO NOTE: if you know a better solution exists for translation
-     * parameters that matches fewer points, but has a small avg dist from
-     * model and smaller standard deviation from the avg dist from model,
-     * then transXTol and transYTol should be set to a smaller value and passed
-     * to this method.
+     * This method has runtime complexity of O(N^4) currently, but will
+     * be improved soon.  calculateTranslationForUnmatched0 will replace this.
      *
      * @param set1 set of points from image 1 to match to image2.
      * @param set2 set of points from image 2 to be matched with image 1
@@ -1524,14 +1531,11 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * images without using a partition method, this is 1.0, else if the
      * quadrant partitioning was used, this is 0.25.  The variable is used
      * internally in determining histogram bin sizes for translation.
-     * @param overrideDefaultTr override the default settings to choose
-     * the slower, but more accurate translation solver.
      * @return
      */
     public TransformationParameters calculateTranslationForUnmatched(
         PairIntArray set1, PairIntArray set2, double rotation, double scale,
-        int centroidX1, int centroidY1, float setsFractionOfImage,
-        boolean overrideDefaultTr) {
+        int centroidX1, int centroidY1, float setsFractionOfImage) {
 
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
@@ -1554,7 +1558,24 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
 
             return null;
         }
+        
+        /*
+        For higher number of points such as N=70,
+            can do a rough grid search of 
+            nX=10,nY=10, then have 100 steps.  each step involves 
+            using evaluateFitForUnMatchedTransformedGreedy which is less than O(N^2)
+        
+            then with best solution could consider a couple of different ways:
+        
+               -- a finer simplex within the found range.  not guaranteed precise,
+                  but is fast
+               -- or another grid search for the local region by 10 and 10
+                  resulting in another 100 steps.
+               -- reduce the number of points to only the best fitting,
+                  perhaps limited to 30.
+                  -- then use the N^2 FindGroups below on those?
 
+        */
         float s = (float)scale;
         float scaleTimesCosine = (float)(s * Math.cos(rotation));
         float scaleTimesSine = (float)(s * Math.sin(rotation));
@@ -1602,130 +1623,68 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             }
         }
 
-        float peakTransX = Float.MAX_VALUE;
-        float peakTransY = Float.MAX_VALUE;
+        /*
+        Can use my clustering code here from another project for best
+        solution of finding the clusters of transX, transY and then the
+        cluster with largest number of members among those.
 
-        boolean useHigherRes = overrideDefaultTr || (maxNMatchable < 41);
-        
-//TODO: should revise these so that they get decided based upon
-// the same points, and if anomalies such as the y dimension being
-// much much shorter than the x dimension are present,
-// need to decide primarily by the x in that case.
-        
-        // when there aren't enough points for useful histogram,
-        // will make a frequency map of round to integer,
-        // and take the peak if its larger than next peak,
-        // else, take the average of largest frequencies.
+        or can make a quicker solution by deciding an association radius
+        for points (that is, a radius around which points are considered
+        the same value) and then make a frequency map for same points.
+        slightly better than a histogram for small numbers because the
+        similar values will not be split into adjacent bins by choice of
+        interval start.
+        */
 
-        if (!useHigherRes) {
-            
-            // use more than normal number of bins:
-            int nBins = (int)(3*2*Math.pow(transX.length, 0.3333));
+        /*
+        TODO: may change back to histogram which is O(N).  This is
+        O(N^2) but N is maxNMatchable^2 is in summary O(N^4).
+        */
+        FixedDistanceGroupFinder groupFinder = null;
 
-            HistogramHolder hX = Histogram
-                .createSimpleHistogram(nBins,
-                transX, Errors.populateYErrorsBySqrt(transX));
+        int maxSep = 50;
 
-            HistogramHolder hY = Histogram
-                .createSimpleHistogram(nBins,
-                transY, Errors.populateYErrorsBySqrt(transY));
-            
-            if ((hX.getXHist().length < 2) || hY.getXHist().length < 2) {
-                
-                useHigherRes = true;
-                
-            } else {
+        List<Set<Integer>> sortedGroupIndexList = null;
 
-                try {
-                    hX.plotHistogram("transX", 1);
-                    hY.plotHistogram("transY", 2);
-                } catch (IOException e) {
-                    log.severe(e.getMessage());
-                }
+        int nIter = 0;
+        int nMaxIter = 10;
 
-                float tolTransX = generalTolerance;//4.f * centroidX1 * 0.02f;
-                float tolTransY = generalTolerance;//4.f * centroidY1 * 0.02f;
-                if (tolTransX < minTolerance) {
-                    tolTransX = minTolerance;
-                }
-                if (tolTransY < minTolerance) {
-                    tolTransY = minTolerance;
-                }
+        Set<Integer> mostFreqIndexes = null;
+        Set<Integer> prev = null;
 
-                float[] transXY = determineTranslationFromHistograms(hX, hY,
-                    transX, transY, xr, yr, set2, tolTransX, tolTransY);
-
-                peakTransX = transXY[0];
-                peakTransY = transXY[1];
-            }
+        float limit = 1.25f * maxNMatchable;
+        if (maxNMatchable > 40) {
+            limit = 0.95f * maxNMatchable;
+        } else if (maxNMatchable > 20) {
+            limit = 1.05f * maxNMatchable;
         }
 
-        if (useHigherRes) {
+        while ((nIter == 0) || 
+            ((nIter < nMaxIter) && (mostFreqIndexes.size() > limit))
+            && (maxSep > 0)) {
 
-            /*
-            Can use my clustering code here from another project for best
-            solution of finding the clusters of transX, transY and then the
-            cluster with largest number of members among those.
+            groupFinder = new FixedDistanceGroupFinder(transX, transY);
+            groupFinder.findGroupsOfPoints(maxSep);
+            sortedGroupIndexList = groupFinder.getDescendingSortGroupList();
+            prev = mostFreqIndexes;
+            mostFreqIndexes = sortedGroupIndexList.get(0);
 
-            or can make a quicker solution by deciding an association radius
-            for points (that is, a radius around which points are considered
-            the same value) and then make a frequency map for same points.
-            slightly better than a histogram for small numbers because the
-            similar values will not be split into adjacent bins by choice of
-            interval start.
-            */
+            maxSep *= 0.75;
 
-            /*
-            TODO: may change back to histogram which is O(N).  This is
-            O(N^2).
-            */
-            FixedDistanceGroupFinder groupFinder = null;
-
-            int maxSep = 50;
-
-            List<Set<Integer>> sortedGroupIndexList = null;
-
-            int nIter = 0;
-            int nMaxIter = 10;
-            
-            Set<Integer> mostFreqIndexes = null;
-            Set<Integer> prev = null;
-            
-            float limit = 1.25f * maxNMatchable;
-            if (maxNMatchable > 40) {
-                limit = 0.95f * maxNMatchable;
-            } else if (maxNMatchable > 20) {
-                limit = 1.05f * maxNMatchable;
-            }
-            
-            while ((nIter == 0) || 
-                ((nIter < nMaxIter) && (mostFreqIndexes.size() > limit))
-                && (maxSep > 0)) {
-                
-                groupFinder = new FixedDistanceGroupFinder(transX, transY);
-                groupFinder.findGroupsOfPoints(maxSep);
-                sortedGroupIndexList = groupFinder.getDescendingSortGroupList();
-                prev = mostFreqIndexes;
-                mostFreqIndexes = sortedGroupIndexList.get(0);
-                
-                maxSep *= 0.75;
-                
-                nIter++;
-            }
-
-            double avgTransX = 0;
-            double avgTransY = 0;
-            for (Integer index : mostFreqIndexes) {
-                avgTransX += transX[index.intValue()];
-                avgTransY += transY[index.intValue()];
-            }
-            avgTransX /= (float)mostFreqIndexes.size();
-            avgTransY /= (float)mostFreqIndexes.size();
-            peakTransX = (float)avgTransX;
-            peakTransY = (float)avgTransY;
-            
+            nIter++;
         }
 
+        double avgTransX = 0;
+        double avgTransY = 0;
+        for (Integer index : mostFreqIndexes) {
+            avgTransX += transX[index.intValue()];
+            avgTransY += transY[index.intValue()];
+        }
+        avgTransX /= (float)mostFreqIndexes.size();
+        avgTransY /= (float)mostFreqIndexes.size();
+        float peakTransX = (float)avgTransX;
+        float peakTransY = (float)avgTransY;
+            
         log.fine("peakTransX=" + peakTransX + "  peakTransY=" + peakTransY);
 
         TransformationParameters params = new TransformationParameters();
@@ -1736,7 +1695,247 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
 
         return params;
     }
+    
+    protected TransformationPointFit findBestTranslationWithinGridSearch(
+        PairIntArray set1, PairIntArray set2,
+        int image1CentroidX, int image1CentroidY,
+        double rotation, double scale,
+        int transXStart, int transXStop, int transXDelta,
+        int transYStart, int transYStop, int transYDelta,
+        boolean setsAreMatched, float setsFractionOfImage) {
 
+        /*   _____
+            |     |
+            |_____| largest negative or positive translationX of set1 is the width of set2
+                  _____
+                 |     |
+                 |_____|
+        */
+
+        if (transXDelta < 1) {
+            throw new IllegalArgumentException(
+            "transXDelta must be greater than 0");
+        }
+        if (rotation < 0 || rotation > 359) {
+            throw new IllegalArgumentException(
+            "rotation must be between 0 and 359, inclusive");
+        }
+        if (scale < 1) {
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+
+            log.severe("scale cannot be smaller than 1");
+
+            return null;
+        }
+
+        double tolTransX = generalTolerance;//4.0f * image1CentroidX * 0.02f;
+        double tolTransY = generalTolerance;//4.0f * image1CentroidY * 0.02f;
+        if (tolTransX < minTolerance) {
+            tolTransX = minTolerance;
+        }
+        if (tolTransY < minTolerance) {
+            tolTransY = minTolerance;
+        }
+
+        Transformer transformer = new Transformer();
+
+        int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
+            : set2.getN();
+
+        int convergence = nMaxMatchable;
+
+        TransformationPointFit bestFit = null;
+
+        TransformationPointFit bestFitForScale = null;
+
+        for (float transX = transXStart; transX <= transXStop; transX += transXDelta) {
+            
+            for (float transY = transYStart; transY <= transYStop; transY += transYDelta) {
+             
+                TransformationParameters params = new TransformationParameters();
+                params.setRotationInDegrees((float) rotation);
+                params.setScale((float) scale);
+                params.setTranslationX(transX);
+                params.setTranslationY(transY);
+
+                PairFloatArray allPoints1Tr = transformer.applyTransformation(
+                    params, image1CentroidX, image1CentroidY, set1);
+
+                TransformationPointFit fit;
+
+                if (setsAreMatched) {
+
+                    fit = evaluateFitForMatchedTransformed(params,
+                        allPoints1Tr, set2);
+
+                } else {
+
+                    fit = evaluateFitForUnMatchedTransformedGreedy(params,
+                    //fit = evaluateFitForUnMatchedTransformedOptimal(params,
+                        allPoints1Tr, set2, tolTransX, tolTransY);
+                }
+
+                if (fitIsBetter(bestFit, fit)) {
+
+log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY()
++ " rot=" + rotation + " scale=" + scale + "\nfit=" + fit.toString());
+
+                    bestFit = fit;
+                    
+                    if ((bestFit.getNumberOfMatchedPoints() == convergence)
+                        && (bestFit.getMeanDistFromModel() == 0)) {
+                        if (bestFit.getParameters().getRotationInRadians() > 2 * Math.PI) {
+                            float rot2 = bestFit.getParameters().getRotationInRadians();
+                            while (rot2 >= 2 * Math.PI) {
+                                rot2 -= 2 * Math.PI;
+                            }
+                            bestFit.getParameters().setRotationInRadians(rot2);
+                        }
+
+                        bestFit.setMaximumNumberMatchable(nMaxMatchable);
+
+                        return bestFit;
+                    }
+                }
+            }
+
+            if (fitIsBetter(bestFitForScale, bestFit)) {
+
+                bestFitForScale = bestFit;
+
+            } else {
+                // scale was probably smaller so return best solution
+                break;
+            }
+        }
+        
+        if ((bestFit != null) && (bestFit.getParameters().getRotationInRadians()
+            > 2.*Math.PI)) {
+            float rot = bestFit.getParameters().getRotationInRadians();
+            while (rot >= 2*Math.PI) {
+                rot -= 2*Math.PI;
+            }
+            bestFit.getParameters().setRotationInRadians(rot);
+        }
+
+        bestFit.setMaximumNumberMatchable(nMaxMatchable);
+
+        return bestFit;
+    }
+
+    /**
+     * given the scale, rotation and set 1's reference frame centroids,
+     * calculate the translation between set1 and set2 assuming that not all
+     * points will match.  transXTol and transYTol allow a tolerance when
+     * matching the predicted position of a point in set2.
+     *
+     * It's expected that the invoker of this method is trying to solve for
+     * translation for sets of points like corners in images.  This assumption
+     * means that the number of point pair combinations is always far less
+     * than the pixel combinations of translations over x and y.
+     *
+     * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
+     * be the first set given in arguments.
+     *
+     * This method is in progress...
+     *
+     * @param set1 set of points from image 1 to match to image2.
+     * @param set2 set of points from image 2 to be matched with image 1
+     * @param rotation given in radians with value between 0 and 2*pi, exclusive
+     * @param scale
+     * @param centroidX1 the x coordinate of the center of image 1 from which
+     * set 1 point are from.
+     * @param centroidY1 the y coordinate of the center of image 1 from which
+     * set 1 point are from.
+     * @param imageWidth1 width of image 1, used to derive range of x 
+     * translations in case centroidX1 is ever used as a non-center reference.
+     * @param imageHeight1 height of image 1, used to derive range of y
+     * translations in case centroidY1 is ever used as a non-center reference.
+     * @param imageWidth2 width of image 2, used to derive range of x 
+     * translations
+     * @param imageHeight2 height of image 2, used to derive range of y
+     * translations
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     * @return
+     */
+    public TransformationParameters calculateTranslationForUnmatched0(
+        PairIntArray set1, PairIntArray set2, double rotation, double scale,
+        int centroidX1, int centroidY1, 
+        int imageWidth1, int imageHeight1, int imageWidth2, int imageHeight2,
+        float setsFractionOfImage) {
+
+        if (set1 == null) {
+            throw new IllegalArgumentException("set1 cannot be null");
+        }
+        if (set2 == null) {
+            throw new IllegalArgumentException("set2 cannot be null");
+        }
+        if (set1.getN() < 2) {
+            return null;
+        }
+        if (set2.getN() < 2) {
+            return null;
+        }
+
+        if (scale < 1) {
+            
+            // numerical errors in rounding to integer can give wrong solutions
+            //throw new IllegalStateException("scale cannot be smaller than 1");
+
+            log.severe("scale cannot be smaller than 1");
+
+            return null;
+        }
+        
+        /*
+        creating an NX=10 by NY=10 grid search and with the best fit,
+             iterate to create for the smaller best fit region 
+             an NX=10 by NY=10 grid search.
+             the iteration stops near a resolution of 1 or no improvements.
+        
+        For an image of size 10,000 X 10,000 pixels
+             -- NX=10,NY=10 with intervals of size 1000      100 steps
+             -- NX=10,NY=10 with intervals of size 100       100 steps
+             -- NX=10,NY=10 with intervals of size 10        100 steps
+             -- NX=10,NY=10 with intervals of size 1         100 steps
+        ==> power of 10 of max image dimension times 100 steps = 400
+        
+        So the complexity is more dependent upon the image size rather than
+        the point size.
+        
+        Each step involves an evaluation of the fit that is a greedy match
+        of points, so is O(N^2), hence total runtime complexity is a
+        log_10(max image dimension) * O(N^2)
+        
+        
+        With such a large step size in the beginning the chance of having
+        a false best fit is higher, so the step sizes might need to
+        be dependent on the data density in some way.
+        
+        */
+                
+        /*        
+        findBestTranslationWithinGridSearch(
+        PairIntArray set1, PairIntArray set2,
+        int image1CentroidX, int image1CentroidY,
+        double rotation, double scale,
+        int transXStart, int transXStop, int transXDelta,
+        int transYStart, int transYStop, int transYDelta,
+        boolean setsAreMatched, float setsFractionOfImage)
+        
+        */
+        
+        int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN()
+            : set2.getN();
+
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+    
     /**
      * given the scale, rotation and set 1's reference frame centroids,
      * calculate the translation between set1 and set2 assuming that not all
