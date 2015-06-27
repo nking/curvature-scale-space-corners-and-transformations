@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.PointPartitioner;
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import static algorithms.imageProcessing.PointMatcher.minTolerance;
@@ -8,30 +7,17 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
-import algorithms.util.ArrayPair;
 import algorithms.util.Errors;
-import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.ResourceFinder;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
-import org.ejml.simple.*;
 
 /**
  * class to match the points extracted from two images.
@@ -618,6 +604,14 @@ public final class PointMatcher {
 
         if (fitIsBetter(bestFit, fit)) {
             bestFit = fit;
+        }
+        
+        if (bestFit.getNMaxMatchable() == 0) {
+            
+            int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
+                unmatchedLeftXY.getN() : unmatchedRightXY.getN();
+        
+            bestFit.setMaximumNumberMatchable(nMaxMatchable);
         }
         
         return bestFit;
@@ -1446,7 +1440,7 @@ public final class PointMatcher {
                     fit = evaluateFitForUnMatchedTransformedGreedy(params,
                     //fit = evaluateFitForUnMatchedTransformedOptimal(params,
                         allPoints1Tr, set2, tolTransX, tolTransY);
-
+log.info("    " + fit.toString());
                 }
 
                 if (fitIsBetter(bestFit, fit)) {
@@ -1465,6 +1459,9 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                             }
                             bestFit.getParameters().setRotationInRadians(rot2);
                         }
+                        
+                        bestFit.setMaximumNumberMatchable(nMaxMatchable);
+                        
                         return bestFit;
                     }
                 }
@@ -1489,6 +1486,8 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             bestFit.getParameters().setRotationInRadians(rot);
         }
 
+        bestFit.setMaximumNumberMatchable(nMaxMatchable);
+        
         return bestFit;
     }
 
@@ -1606,12 +1605,19 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         float peakTransX = Float.MAX_VALUE;
         float peakTransY = Float.MAX_VALUE;
 
+        boolean useHigherRes = overrideDefaultTr || (maxNMatchable < 41);
+        
+//TODO: should revise these so that they get decided based upon
+// the same points, and if anomalies such as the y dimension being
+// much much shorter than the x dimension are present,
+// need to decide primarily by the x in that case.
+        
         // when there aren't enough points for useful histogram,
         // will make a frequency map of round to integer,
         // and take the peak if its larger than next peak,
         // else, take the average of largest frequencies.
 
-        if (!overrideDefaultTr && (maxNMatchable > 40)) {
+        if (!useHigherRes) {
             
             // use more than normal number of bins:
             int nBins = (int)(3*2*Math.pow(transX.length, 0.3333));
@@ -1623,30 +1629,38 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             HistogramHolder hY = Histogram
                 .createSimpleHistogram(nBins,
                 transY, Errors.populateYErrorsBySqrt(transY));
+            
+            if ((hX.getXHist().length < 2) || hY.getXHist().length < 2) {
+                
+                useHigherRes = true;
+                
+            } else {
 
-            try {
-                hX.plotHistogram("transX", 1);
-                hY.plotHistogram("transY", 2);
-            } catch (IOException e) {
-                log.severe(e.getMessage());
+                try {
+                    hX.plotHistogram("transX", 1);
+                    hY.plotHistogram("transY", 2);
+                } catch (IOException e) {
+                    log.severe(e.getMessage());
+                }
+
+                float tolTransX = generalTolerance;//4.f * centroidX1 * 0.02f;
+                float tolTransY = generalTolerance;//4.f * centroidY1 * 0.02f;
+                if (tolTransX < minTolerance) {
+                    tolTransX = minTolerance;
+                }
+                if (tolTransY < minTolerance) {
+                    tolTransY = minTolerance;
+                }
+
+                float[] transXY = determineTranslationFromHistograms(hX, hY,
+                    transX, transY, xr, yr, set2, tolTransX, tolTransY);
+
+                peakTransX = transXY[0];
+                peakTransY = transXY[1];
             }
+        }
 
-            float tolTransX = generalTolerance;//4.f * centroidX1 * 0.02f;
-            float tolTransY = generalTolerance;//4.f * centroidY1 * 0.02f;
-            if (tolTransX < minTolerance) {
-                tolTransX = minTolerance;
-            }
-            if (tolTransY < minTolerance) {
-                tolTransY = minTolerance;
-            }
-
-            float[] transXY = determineTranslationFromHistograms(hX, hY,
-                transX, transY, xr, yr, set2, tolTransX, tolTransY);
-
-            peakTransX = transXY[0];
-            peakTransY = transXY[1];
-
-        } else {
+        if (useHigherRes) {
 
             /*
             Can use my clustering code here from another project for best
@@ -1873,14 +1887,16 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
             0.09f);
         
         boolean strongXPeak = (xPeakIndexes.size() == 1) ||
+            (!xPeakIndexes.isEmpty() &&
             ((hX.getYHistFloat()[xPeakIndexes.get(0).intValue()]/
             hX.getYHistFloat()[xPeakIndexes.get(1).intValue()]
-            ) >= 1.5f);
+            ) >= 1.5f));
 
         boolean strongYPeak = (yPeakIndexes.size() == 1) ||
+            (!yPeakIndexes.isEmpty() &&
             ((hY.getYHistFloat()[yPeakIndexes.get(0).intValue()]/
             hY.getYHistFloat()[yPeakIndexes.get(1).intValue()]
-            ) >= 1.5f);
+            ) >= 1.5f));
 
         boolean fitPeaks = false;
 
@@ -1910,13 +1926,25 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                         hY2.plotHistogram("histogram transY", 3);
                     } catch (IOException e) {}
 
-                    yPeakIndexes = MiscMath.findStrongPeakIndexesDescSort(hY2, 0.09f);
+                    List<Integer> yPeakIndexes2 = 
+                        MiscMath.findStrongPeakIndexesDescSort(hY2, 0.09f);
 
-                    peakTransY = hY2.getXHist()[yPeakIndexes.get(0)];
+                    peakTransY = hY2.getXHist()[yPeakIndexes2.get(0)];
                     
                 } else {
-                    
-                    fitPeaks = true;
+             
+                    if (!xPeakIndexes.isEmpty() && !yPeakIndexes.isEmpty()) {
+                        
+                        //TODO: this case may be re-done with more testing
+                        
+                        peakTransX = hX.getXHist()[xPeakIndexes.get(0)];
+              
+                        peakTransY = hY.getXHist()[yPeakIndexes.get(0)];
+                        
+                    } else {
+                        
+                        fitPeaks = true;
+                    }
                 }
                 
             } else {
@@ -1933,14 +1961,16 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                     transYComb, transXComb);
 
                 if (hX2.getXHist().length > 1) {
+                    
                     try {
                         hX2.plotHistogram("histogram transX", 4);
                     } catch (IOException e) {}
 
-                    xPeakIndexes = MiscMath.findStrongPeakIndexesDescSort(hX2, 0.09f);
+                    List<Integer> xPeakIndexes2 = 
+                        MiscMath.findStrongPeakIndexesDescSort(hX2, 0.09f);
 
-                    peakTransX = hX2.getXHist()[xPeakIndexes.get(0)];
-                    
+                    peakTransX = hX2.getXHist()[xPeakIndexes2.get(0)];
+                   
                 } else {
                     
                     fitPeaks = true;
@@ -1961,7 +1991,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
 
             float[] tys = MiscMath.extractAllXForYAboveHalfMax(hY);
             tys[tys.length - 1] = 0;
-
+            
             TransformationPointFit fitForTranslation =
                 evaluateForBestTranslation(
                 txs, tys, tolTransX, tolTransY, xr, yr, set2);
