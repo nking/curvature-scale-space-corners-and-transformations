@@ -1917,6 +1917,22 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         a false best fit is higher, so the step sizes might need to
         be dependent on the data density in some way.
         
+        Or, the largest step sizes in the above outline could use a downhill
+        simplex with the 100 grid search points as starter points, then
+        with the top 10 or so fits, would perform the downhill simplex search.
+        Then the next iteration over the best fit would be over a smaller region
+        as outlined above and would or would not need the downhill simplex
+        to find local best.
+        
+        The estimate above for the complexity would be increased at the '100 steps'
+        stage.  To each 100 steps of the above, another 10 or so times 5 might be
+        added, so would expect that
+        the best runtime complexity would be 
+             log_10(max image dimension) * 100 * O(N^2) for medium or small images,
+        but large images would be
+             log_10(max image dimension) * 150 * O(N^2) for medium or small images
+        so a constant factor larger.
+        
         */
                 
         /*        
