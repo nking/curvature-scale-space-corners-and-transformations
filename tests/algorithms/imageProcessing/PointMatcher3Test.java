@@ -181,7 +181,7 @@ if (nPoints < 70) {
 
         float scale = 1.0f;
 
-        for (int nTest = 0; nTest < 1; ++nTest) {
+        for (int nTest = 0; nTest < 5; ++nTest) {
 
             PairIntArray set1 = new PairIntArray();
 
@@ -278,6 +278,9 @@ if (nPoints < 70) {
 
             boolean setsAreMatched = false;
             int nMaxIter = 50;
+            if (nPoints > 30) {
+                nMaxIter = 100;
+            }
             
             float tolTransX = plusMinusTransX1;
             float tolTransY = plusMinusTransY1;

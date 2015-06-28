@@ -143,11 +143,10 @@ public class SkylineDownhillSimplex {
         SkylineFits[] fits = createStarterPoints(skylineExtractor,
             nStarterPoints);
         
-        int nMaxIter = 5;//100;
+        int nMaxIter = 50;//100;
         int nIter = 0;
         
         int bestFitIdx = 0;
-        int secondWorstFitIdx = fits.length - 2;
         int worstFitIdx = fits.length - 1;
 
         SetComparisonResults lastBest = null;
@@ -155,7 +154,7 @@ public class SkylineDownhillSimplex {
         
         float alpha = 1.0f;//1   // > 0
         float gamma = 2;   // > 1
-        float beta = -0.5f; 
+        float beta = 0.5f; 
         float tau = 0.5f;
         
         boolean go = true;
@@ -169,7 +168,6 @@ public class SkylineDownhillSimplex {
                 nStarterPoints = 10;
                 fits = Arrays.copyOf(fits, nStarterPoints);
                 worstFitIdx = nStarterPoints - 1;
-                secondWorstFitIdx = worstFitIdx - 1;
             }
             
             if ((lastBest != null) && 
@@ -177,9 +175,11 @@ public class SkylineDownhillSimplex {
                 
                 nIterSameMin++;
                 
-                if (nIterSameMin >= 5) {
+                /*
+                if (nIterSameMin >= 15) {
                     break;
-                }
+                }*/
+                
             } else {
                 nIterSameMin = 0;
             }
@@ -192,67 +192,62 @@ public class SkylineDownhillSimplex {
                 alpha);
             
             SkylineFits fitReflected = process(skylineExtractor, tClauses);
-                        
-            boolean relectIsWithinBounds = isWithinBounds(fitReflected);
+
+            int comp0 = fits[bestFitIdx].compareTo(fitReflected);
+            int compLast = fits[worstFitIdx].compareTo(fitReflected);
             
-            if (fitIsBetter(fits[secondWorstFitIdx], fitReflected) 
-                && relectIsWithinBounds
-                && !fitIsBetter(fits[bestFitIdx], fitReflected)) {
-                
+            if ((comp0 < 1) && (compLast == 1)) {
+
+                // replace last with f_refl
                 fits[worstFitIdx] = fitReflected;
-                
-            } else {
-                
-                if (fitIsBetter(fits[bestFitIdx], fitReflected)
-                    && relectIsWithinBounds) {
-                    
-                    // "Expansion"
-                    tClauses = expand(fits[worstFitIdx], summedCoeff, gamma);
-                    
-                    SkylineFits fitExpansion = process(skylineExtractor, tClauses);
-                    
-                    boolean expandIsWithinBounds = isWithinBounds(fitExpansion);
-                    
-                    if (fitIsBetter(fitReflected, fitExpansion)
-                        && expandIsWithinBounds) {
 
-                        fits[worstFitIdx] = fitExpansion;
-                        
-                    } else {
-                        
-                        fits[worstFitIdx] = fitReflected;
-                    }
+            } else if (comp0 == 1) {
+
+                // reflected is better than best fit, so "expand"
+                // "Expansion"
+                tClauses = expand(fitReflected, summedCoeff, -1*gamma);
+
+                SkylineFits fitExpansion = process(skylineExtractor, tClauses);
                     
+                int compR = fitReflected.compareTo(fitExpansion);
+                
+                if (compR == 1) {
+
+                    // expansion fit is better than reflected fit
+                    fits[worstFitIdx] = fitExpansion;
+
                 } else {
+
+                    fits[worstFitIdx] = fitReflected;
+                }
+
+            } else if (compLast < 1) {
                 
-                    // we know that the reflection fit is worse than the 2nd worse
+                // reflected fit is worse than the worst (last) fit, so contract
+                // "Contraction"
+                tClauses = contract(fits[worstFitIdx], summedCoeff, -1*beta);
+                    
+                SkylineFits fitContraction = process(skylineExtractor, tClauses);
+                    
+                int compC = fits[worstFitIdx].compareTo(fitContraction);
 
-                    // "Contraction"
-                    tClauses = contract(fits[worstFitIdx], summedCoeff, beta);
-                    
-                    SkylineFits fitContraction = process(skylineExtractor, tClauses);
-                    
-                    boolean IsWithinBounds = isWithinBounds(fitContraction);
-                    
-                    if (fitIsBetter(fits[worstFitIdx], fitContraction)
-                        && IsWithinBounds) {
+                if (compC > -1) {
 
-                        fits[worstFitIdx] = fitContraction;
-                        
-                    } else {
-                                                
-                        // "Reduction"
-                        for (int i = 1; i < fits.length; i++) {
-                            
-                            tClauses = reduce(fits[bestFitIdx], fits[i], tau);
-                            
-                            SkylineFits fitReduction = process(skylineExtractor, 
-                                tClauses);
-                            
-                            //TODO: consider what to do when solution is out of
-                            // bounds
-                            fits[i] = fitReduction;
-                        }
+                    fits[worstFitIdx] = fitContraction;
+
+                } else {
+                                 
+                    // "Reduction"
+                    for (int i = 1; i < fits.length; i++) {
+
+                        tClauses = reduce(fits[bestFitIdx], fits[i], tau);
+
+                        SkylineFits fitReduction = process(skylineExtractor, 
+                            tClauses);
+
+                        //TODO: consider what to do when solution is out of
+                        // bounds
+                        fits[i] = fitReduction;
                     }
                 }
             }
@@ -293,7 +288,7 @@ public class SkylineDownhillSimplex {
         set of clauses, a random mix would put some of them in each possibly.
         
         the reason for mixing this small set of coefficients is that the 
-        simplex, when it alters the coefficients, performs the same changes
+        downill simplex, when it alters the coefficients, performs the same changes
         on all of the coefficients in that starter point's list of coefficients, 
         so an "all low bounds" when altered
         might not find the local best for all 40 something coefficients.

@@ -210,13 +210,13 @@ public class SkylineDownhillSimplexTest extends TestCase {
         }        
 System.out.println("SIMPLEX");       
         // ---- get the comparison of points after refinement ----
-        SkylineDownhillSimplex nelderMaed = new SkylineDownhillSimplex(images, 
+        SkylineDownhillSimplex nelderMead = new SkylineDownhillSimplex(images, 
             thetaImages, seedPoints, excludePoints, expectedSky, 
             expectedBorderPoints,
             clauses, coeffLowerLimits, coeffUpperLimits
         );
         
-        SkylineFits fit = nelderMaed.fit();
+        SkylineFits fit = nelderMead.fit();
         
         printFit(fit);
         

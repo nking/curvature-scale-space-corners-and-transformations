@@ -1734,7 +1734,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
 
                 float tx0 = transX + (transXDelta/2);
                 float ty0 = transY + (transYDelta/2);
-                
+
                 TransformationParameters params = new TransformationParameters();
                 params.setRotationInDegrees((float) rotation);
                 params.setScale((float) scale);
@@ -1809,7 +1809,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
      * @return
      */
     public TransformationPointFit calculateTranslationForUnmatched0(
-        PairIntArray set1, PairIntArray set2, 
+        PairIntArray set1, PairIntArray set2,
         float rotationInRadians, float scale,
         int centroidX1, int centroidY1,
         int imageWidth1, int imageHeight1, int imageWidth2, int imageHeight2,
@@ -1827,10 +1827,10 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         if (set2.getN() < 2) {
             return null;
         }
-        
-        PairFloatArray scaledRotatedSet1 = scaleAndRotate(set1, 
+
+        PairFloatArray scaledRotatedSet1 = scaleAndRotate(set1,
             rotationInRadians, scale, centroidX1, centroidY1);
-        
+
         if (scale < 1) {
 
             // numerical errors in rounding to integer can give wrong solutions
@@ -1863,7 +1863,7 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
         int numberOfBestToReturn = 10;
 
         int dsLimit = 10;
-        
+
         int limit = 1;
 
         boolean setsAreMatched = false;
@@ -1878,30 +1878,30 @@ log.info("==> " + " tx=" + fit.getTranslationX() + " ty=" + fit.getTranslationY(
                  setsAreMatched, 1.0f, numberOfBestToReturn);
 
             TransformationPointFit fit;
-            
+
             if (dx < dsLimit)  {
-                
+
                 fit = fits[0];
-                
+
             } else {
-               
+
+                //TODO: consider a larger value when number of points is higher?
                 int nMaxIter = 50;
-                
+
                 // the bounds are to keep the solution within the current
                 // best range
                 float boundsXHalf = (bestTransXStop - bestTransXStart)/2;
                 float boundsYHalf = (bestTransYStop - bestTransYStart)/2;
                 float boundsXCenter = (bestTransXStart + bestTransXStop)/2;
                 float boundsYCenter = (bestTransYStart + bestTransYStop)/2;
-                
+
                 fit = refineTranslationWithDownhillSimplex(
                     scaledRotatedSet1, set2,
-                    centroidX1, centroidY1, fits, 
+                    centroidX1, centroidY1, fits,
                     boundsXCenter, boundsYCenter, tolTransX, tolTransY,
-                    boundsXHalf, boundsYHalf, 
-                    (float)scale, (float)rotationInRadians, 
+                    boundsXHalf, boundsYHalf,
+                    (float)scale, (float)rotationInRadians,
                     setsAreMatched, nMaxIter);
-                    
             }
 
             if (fitIsBetter(bestFit, fit)) {
@@ -2159,7 +2159,7 @@ log.info("==> fit=" + fit.toString());
 
                     continue;
                 }
-                
+
                 float diff = (float)Math.sqrt(dx*dx + dy*dy);
 
                 if (diff < minDiff) {
@@ -2243,15 +2243,15 @@ log.info("==> fit=" + fit.toString());
 
         return false;
     }
-    
+
     /**
-     * compare bestFit to compareFit and return 
+     * compare bestFit to compareFit and return
      * -1 if bestFit is better
      * 0 if they are equal
      * 1 if compareFit is better
      * @param bestFit
      * @param compareFit
-     * @return 
+     * @return
      */
     public int compare(TransformationPointFit bestFit,
         TransformationPointFit compareFit) {
@@ -2613,9 +2613,9 @@ log.info("==> fit=" + fit.toString());
                 fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
 
                 nIterSameMin++;
-                if (nIterSameMin >= 5) {
+                /*if (nIterSameMin >= 5) {
                     break;
-                }
+                }*/
 
             } else {
                 nIterSameMin = 0;
@@ -2931,18 +2931,18 @@ log.info("==> fit=" + fit.toString());
 
         return store;
     }
-    
+
     protected void scaleAndRotate(PairIntArray set1, float rotation,
         float scale, int centroidX1, int centroidY1,
         float[] outputScaledRotatedX, float[] outputScaledRotatedY) {
-        
+
         if (scale < 1) {
             // numerical errors in rounding to integer can give wrong solutions
             //throw new IllegalStateException("scale cannot be smaller than 1");
 
             log.severe("scale cannot be smaller than 1");
         }
-        
+
         if (outputScaledRotatedX == null) {
             throw new IllegalArgumentException(
                 "outputScaledRotatedX cannot be null");
@@ -2955,11 +2955,11 @@ log.info("==> fit=" + fit.toString());
             throw new IllegalArgumentException(
                 "outputScaledRotatedX must be the same length as set1");
         }
-        
+
         float s = (float)scale;
         float scaleTimesCosine = (float)(s * Math.cos(rotation));
         float scaleTimesSine = (float)(s * Math.sin(rotation));
-        
+
         //apply scale and rotation to set1 points
         for (int i = 0; i < set1.getN(); i++) {
 
@@ -2976,27 +2976,27 @@ log.info("==> fit=" + fit.toString());
 
         }
     }
-    
+
     protected PairFloatArray scaleAndRotate(PairIntArray set1, float rotation,
         float scale, int centroidX1, int centroidY1) {
-        
+
         if (scale < 1) {
             // numerical errors in rounding to integer can give wrong solutions
             //throw new IllegalStateException("scale cannot be smaller than 1");
 
             log.severe("scale cannot be smaller than 1");
         }
-        
+
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
         }
-        
+
         PairFloatArray transformed1 = new PairFloatArray();
-        
+
         float s = (float)scale;
         float scaleTimesCosine = (float)(s * Math.cos(rotation));
         float scaleTimesSine = (float)(s * Math.sin(rotation));
-        
+
         //apply scale and rotation to set1 points
         for (int i = 0; i < set1.getN(); i++) {
 
@@ -3013,24 +3013,24 @@ log.info("==> fit=" + fit.toString());
 
             transformed1.add(sclRotX, sclRotY);
         }
-        
+
         return transformed1;
     }
-    
+
     protected TransformationPointFit refineTranslationWithDownhillSimplex(
         PairFloatArray scaledRotatedSet1, PairIntArray set2,
-        int centroidX1, int centroidY1, TransformationPointFit[] fits, 
+        int centroidX1, int centroidY1, TransformationPointFit[] fits,
         float transX, float transY, float tolTransX, float tolTransY,
         float plusMinusTransX, float plusMinusTransY,
         final float scale, final float rotationRadians,
         boolean setsAreMatched, int nMaxIter) {
-        
-        int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ? 
+
+        int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
             scaledRotatedSet1.getN() : set2.getN();
 
         //TODO: revise this:
         double eps = Math.log(nMaxMatchable)/Math.log(10);
-        
+
         float alpha = 1;   // > 0
         float gamma = 2;   // > 1
         float beta = 0.5f;
@@ -3042,9 +3042,9 @@ log.info("==> fit=" + fit.toString());
         float txMax = transX + plusMinusTransX;
         float tyMin = transY - plusMinusTransY;
         float tyMax = transY + plusMinusTransY;
-        
+
         int nIter = 0;
-        
+
         int bestFitIdx = 0;
         int worstFitIdx = fits.length - 1;
 
@@ -3057,7 +3057,7 @@ log.info("==> fit=" + fit.toString());
             if (fits.length == 0) {
                 break;
             }
-        
+
             sortByDescendingMatches(fits, 0, (fits.length - 1));
 
             if ((lastNMatches == fits[bestFitIdx].getNumberOfMatchedPoints())
@@ -3065,13 +3065,17 @@ log.info("==> fit=" + fit.toString());
                     - fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
 
                 nIterSameMin++;
-                
+
+if (nIterSameMin >= 5) {
+    log.info("nIterSameMin=" + nIterSameMin);
+}
+
                 /*if (nIterSameMin >= 5) {
                     break;
                 }*/
 
             } else {
-                
+
                 nIterSameMin = 0;
             }
 
@@ -3095,44 +3099,44 @@ log.info("==> fit=" + fit.toString());
                 * (transY - (float) fits[worstFitIdx].getTranslationY()));
 
             TransformationPointFit fitReflected = evaluateFit(
-                scaledRotatedSet1, txReflect, tyReflect, 
+                scaledRotatedSet1, txReflect, tyReflect,
                 tolTransX, tolTransY,
                 set2, scale, rotationRadians, setsAreMatched);
 
             //TODO: consider putting back in a check for bounds
-           
+
             int comp0 = compare(fits[bestFitIdx], fitReflected);
             int compLast = compare(fits[worstFitIdx], fitReflected);
 
             if ((comp0 < 1) && (compLast == 1)) {
-                
+
                 // replace last with f_refl
                 fits[worstFitIdx] = fitReflected;
-                
+
             } else if (comp0 == 1) {
-                
+
                 // reflected is better than best fit, so "expand"
                 // "Expansion"
                 float txExpansion = transX + (gamma * (txReflect - transX));
                 float tyExpansion = transY + (gamma * (tyReflect - transY));
 
-                TransformationPointFit fitExpansion = 
+                TransformationPointFit fitExpansion =
                     evaluateFit(scaledRotatedSet1,
                         txExpansion, tyExpansion, tolTransX, tolTransY,
                         set2, scale, rotationRadians, setsAreMatched);
-                
+
                 int compR = compare(fitReflected, fitExpansion);
-                
+
                 if (compR == 1) {
-                    
+
                     // expansion fit is better than reflected fit
                     fits[worstFitIdx] = fitExpansion;
-                    
+
                 } else {
-                    
+
                     fits[worstFitIdx] = fitReflected;
                 }
-                
+
             } else if (compLast < 1) {
 
                 // reflected fit is worse than the worst (last) fit, so contract
@@ -3148,13 +3152,13 @@ log.info("==> fit=" + fit.toString());
                         tolTransX, tolTransY,
                         set2,
                         scale, rotationRadians, setsAreMatched);
-                
+
                 int compC = compare(fits[worstFitIdx], fitContraction);
 
                 if (compC > -1) {
-                    
+
                     fits[worstFitIdx] = fitContraction;
-                    
+
                 } else {
 
                     // "Reduction"
@@ -3217,15 +3221,15 @@ log.info("==> fit=" + fit.toString());
         // additional step that's helpful if not enough iterations are used,
         // is to test the summed transX, transY which represent the center
         // of the simplex against the best fit
-        TransformationPointFit fitAvg = evaluateFit(scaledRotatedSet1, 
-            transX, transY, tolTransX, tolTransY, set2, 
+        TransformationPointFit fitAvg = evaluateFit(scaledRotatedSet1,
+            transX, transY, tolTransX, tolTransY, set2,
             scale, rotationRadians, setsAreMatched);
-        
+
         int comp = compare(fits[bestFitIdx], fitAvg);
         if (comp == 1) {
             fits[bestFitIdx] = fitAvg;
         }
-        
+
         return fits[bestFitIdx];
     }
 
@@ -3237,6 +3241,19 @@ log.info("==> fit=" + fit.toString());
         int centroidX1, int centroidY1) {
 
         double convergence = 0;
+        
+        int n1 = 0;
+        for (PairIntArray edge : edges1) {
+            n1 += edge.getN();
+        }
+        int n2 = 0;
+        for (PairIntArray edge : edges2) {
+            n2 += edge.getN();
+        }
+        int nMaxMatchable = (n1 < n2) ? n1 : n2;
+        
+        //TODO: revise this:
+        double eps = Math.log(nMaxMatchable)/Math.log(10);
 
         float txMin = transX - plusMinusTransX;
         float txMax = transX + plusMinusTransX;
@@ -3283,7 +3300,7 @@ log.info("==> fit=" + fit.toString());
 
         float alpha = 1;   // > 0
         float gamma = 2;   // > 1
-        float beta = -0.5f;
+        float beta = 0.5f;
         float tau = 0.5f;
 
         boolean go = true;
@@ -3292,7 +3309,6 @@ log.info("==> fit=" + fit.toString());
         int nIter = 0;
 
         int bestFitIdx = 0;
-        int secondWorstFitIdx = fits.length - 2;
         int worstFitIdx = fits.length - 1;
 
         int lastNMatches = Integer.MIN_VALUE;
@@ -3307,22 +3323,14 @@ log.info("==> fit=" + fit.toString());
 
             sortByDescendingMatches(fits, 0, (fits.length - 1));
 
-            /*if (fits.length > 0) {
-                log.info("best fit:  n=" +
-                    fits[bestFitIdx].getNumberOfMatchedPoints()
-                    + " dm=" + fits[bestFitIdx].getMeanDistFromModel()
-                    + " params:\n"
-                    + fits[bestFitIdx].getParameters().toString());
-            }*/
-
             if ((lastNMatches == fits[bestFitIdx].getNumberOfMatchedPoints())
                 && (Math.abs(lastAvgDistModel
                     - fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
 
                 nIterSameMin++;
-                if (nIterSameMin >= 5) {
+                /*if (nIterSameMin >= 10) {
                     break;
-                }
+                }*/
 
             } else {
                 nIterSameMin = 0;
@@ -3334,119 +3342,115 @@ log.info("==> fit=" + fit.toString());
             // determine center for all points excepting the worse fit
             float txSum = 0.0f;
             float tySum = 0.0f;
-            for (int i = 0; i < (fits.length - 1); i++) {
+            for (int i = 0; i < (fits.length - 1); ++i) {
                 txSum += fits[i].getTranslationX();
                 tySum += fits[i].getTranslationY();
             }
-            transX = txSum/(float)(fits.length - 1);
-            transY = tySum/(float)(fits.length - 1);
+            transX = txSum / (float) (fits.length - 1);
+            transY = tySum / (float) (fits.length - 1);
 
             // "Reflection"
             float txReflect = transX + (alpha
-                * (transX - (float)fits[worstFitIdx].getTranslationX()));
+                * (transX - (float) fits[worstFitIdx].getTranslationX()));
             float tyReflect = transY + (alpha
-                * (transY - (float)fits[worstFitIdx].getTranslationY()));
+                * (transY - (float) fits[worstFitIdx].getTranslationY()));
 
-            TransformationPointFit fitReflected
-                = evaluateFit(edges1, edges2,
-                    txReflect, tyReflect,  tolTransX, tolTransY,
-                    scale, rotationRadians, centroidX1, centroidY1);
+            TransformationPointFit fitReflected = evaluateFit(
+                edges1, edges2, txReflect, tyReflect,
+                tolTransX, tolTransY,
+                scale, rotationRadians, centroidX1, centroidY1);
 
-            boolean relectIsWithinBounds
-                = (txReflect >= txMin) && (txReflect <= txMax)
-                && (tyReflect >= tyMin) && (tyReflect <= tyMax);
+            //TODO: consider putting back in a check for bounds
 
-            if (fitIsBetter(fits[secondWorstFitIdx], fitReflected)
-                && relectIsWithinBounds
-                && !fitIsBetter(fits[bestFitIdx], fitReflected)) {
+            int comp0 = compare(fits[bestFitIdx], fitReflected);
+            int compLast = compare(fits[worstFitIdx], fitReflected);
 
+            if ((comp0 < 1) && (compLast == 1)) {
+
+                // replace last with f_refl
                 fits[worstFitIdx] = fitReflected;
 
-            } else {
+            } else if (comp0 == 1) {
 
-                if (fitIsBetter(fits[bestFitIdx], fitReflected)
-                    && relectIsWithinBounds) {
+                // reflected is better than best fit, so "expand"
+                // "Expansion"
+                float txExpansion = transX + (gamma * (txReflect - transX));
+                float tyExpansion = transY + (gamma * (tyReflect - transY));
 
-                    // "Expansion"
-                    float txExpansion = transX + (gamma
-                        * (transX - (float)fits[worstFitIdx].getTranslationX()));
-                    float tyExpansion = transY + (gamma
-                        * (transY - (float)fits[worstFitIdx].getTranslationY()));
+                TransformationPointFit fitExpansion =
+                    evaluateFit(edges1, edges2,
+                        txExpansion, tyExpansion, tolTransX, tolTransY,
+                        scale, rotationRadians, centroidX1, centroidY1);
 
-                    TransformationPointFit fitExpansion
-                        = evaluateFit(edges1, edges2,
-                            txExpansion, tyExpansion,  tolTransX, tolTransY,
-                            scale, rotationRadians, centroidX1, centroidY1);
+                int compR = compare(fitReflected, fitExpansion);
 
-                    if (fitIsBetter(fitReflected, fitExpansion)
-                        && (txExpansion >= txMin) && (txExpansion <= txMax)
-                        && (tyExpansion >= tyMin) && (tyExpansion <= tyMax)) {
+                if (compR == 1) {
 
-                        fits[worstFitIdx] = fitExpansion;
-
-                    } else {
-
-                        fits[worstFitIdx] = fitReflected;
-                    }
+                    // expansion fit is better than reflected fit
+                    fits[worstFitIdx] = fitExpansion;
 
                 } else {
 
-                    // the reflection fit is worse than the 2nd worse
-                    // "Contraction"
-                    float txContraction = transX + (beta
-                        * (transX - (float)fits[worstFitIdx].getTranslationX()));
-                    float tyContraction = transY + (beta
-                        * (transY - (float)fits[worstFitIdx].getTranslationY()));
+                    fits[worstFitIdx] = fitReflected;
+                }
 
-                    TransformationPointFit fitContraction
-                        = evaluateFit(edges1, edges2,
-                            txContraction, tyContraction, tolTransX, tolTransY,
-                            scale, rotationRadians, centroidX1, centroidY1);
+            } else if (compLast < 1) {
 
-                    if (fitIsBetter(fits[worstFitIdx], fitContraction)
-                        && (txContraction >= txMin) && (txContraction <= txMax)
-                        && (tyContraction >= tyMin) && (tyContraction <= tyMax)) {
+                // reflected fit is worse than the worst (last) fit, so contract
+                // "Contraction"
+                float txContraction = transX + (beta
+                    * ((float) fits[worstFitIdx].getTranslationX() - transX));
+                float tyContraction = transY + (beta
+                    * ((float) fits[worstFitIdx].getTranslationY() - transY));
 
-                        fits[worstFitIdx] = fitContraction;
+                TransformationPointFit fitContraction
+                    = evaluateFit(edges1, edges2,
+                        txContraction, tyContraction,
+                        tolTransX, tolTransY,
+                        scale, rotationRadians, centroidX1, centroidY1);
 
-                    } else {
+                int compC = compare(fits[worstFitIdx], fitContraction);
 
-                        // "Reduction"
-                        for (int i = 1; i < fits.length; i++) {
+                if (compC > -1) {
 
-                            float txReduction
-                                = (float)(fits[bestFitIdx].getTranslationX()
-                                + (tau
-                                * (fits[i].getTranslationX()
-                                - fits[bestFitIdx].getTranslationX())));
+                    fits[worstFitIdx] = fitContraction;
 
-                            float tyReduction
-                                = (float)(fits[bestFitIdx].getTranslationY()
-                                + (tau
-                                * (fits[i].getTranslationY()
-                                - fits[bestFitIdx].getTranslationY())));
+                } else {
 
-                            //NOTE: there's a possibility of a null fit.
-                            //  instead of re-writing the fits array, will
-                            //  assign a fake infinitely bad fit which will
-                            //  fall to the bottom of the list after the next
-                            //  sort.
-                            TransformationPointFit fit
-                                = evaluateFit(edges1, edges2,
-                                    txReduction, tyReduction,
-                                    tolTransX, tolTransY,
-                                    scale, rotationRadians,
-                                    centroidX1, centroidY1);
+                    // "Reduction"
+                    for (int i = 1; i < fits.length; i++) {
 
-                            if (fit != null) {
-                                fits[i] = fit;
-                            } else {
-                                fits[i] = new TransformationPointFit(
-                                    new TransformationParameters(),
-                                    0, Double.MAX_VALUE, Double.MAX_VALUE,
-                                    Double.MAX_VALUE
-                                );
-                            }
+                        float txReduction
+                            = (float) (fits[bestFitIdx].getTranslationX()
+                            + (tau
+                            * (fits[i].getTranslationX()
+                            - fits[bestFitIdx].getTranslationX())));
+
+                        float tyReduction
+                            = (float) (fits[bestFitIdx].getTranslationY()
+                            + (tau
+                            * (fits[i].getTranslationY()
+                            - fits[bestFitIdx].getTranslationY())));
+
+                        //NOTE: there's a possibility of a null fit.
+                        //  instead of re-writing the fits array, will
+                        //  assign a fake infinitely bad fit which will
+                        //  fall to the bottom of the list after the next
+                        //  sort.
+                        TransformationPointFit fit
+                            = evaluateFit(edges1, edges2,
+                                txReduction, tyReduction,
+                                tolTransX, tolTransY,
+                                scale, rotationRadians, centroidX1, centroidY1);
+
+                        if (fit != null) {
+                            fits[i] = fit;
+                        } else {
+                            fits[i] = new TransformationPointFit(
+                                new TransformationParameters(),
+                                0, Double.MAX_VALUE, Double.MAX_VALUE,
+                                Double.MAX_VALUE
+                            );
                         }
                     }
                 }
@@ -3459,14 +3463,26 @@ log.info("==> fit=" + fit.toString());
 
             nIter++;
 
-            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == convergence)
-                && (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
+            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == nMaxMatchable)
+                && (fits[bestFitIdx].getMeanDistFromModel() <  eps)) {
                 go = false;
-            } else if ((transX > txMax) || (transX < txMin)) {
+            } /*else if ((transX > txMax) || (transX < txMin)) {
                 go = false;
             } else if ((transY > tyMax) || (transY < tyMin)) {
                 go = false;
-            }
+            }*/
+        }
+
+        // additional step that's helpful if not enough iterations are used,
+        // is to test the summed transX, transY which represent the center
+        // of the simplex against the best fit
+        TransformationPointFit fitAvg = evaluateFit(edges1, edges2,
+            transX, transY, tolTransX, tolTransY,
+            scale, rotationRadians, centroidX1, centroidY1);
+
+        int comp = compare(fits[bestFitIdx], fitAvg);
+        if (comp == 1) {
+            fits[bestFitIdx] = fitAvg;
         }
 
         return fits[bestFitIdx];
@@ -3607,13 +3623,12 @@ log.info("==> fit=" + fit.toString());
                 float dx = x2 - transformedX;
                 float dy = y2 - transformedY;
 
-                float diff = (float)Math.sqrt(dx*dx + dy*dy);
-
                 if ((Math.abs(dx) > tolTransX) || (Math.abs(dy) > tolTransY)) {
-
                     continue;
                 }
 
+                float diff = (float)Math.sqrt(dx*dx + dy*dy);
+                
                 if (diff < minDiff) {
                     minDiff = diff;
                 }
