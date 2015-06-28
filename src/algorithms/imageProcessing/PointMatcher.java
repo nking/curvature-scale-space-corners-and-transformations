@@ -724,7 +724,7 @@ public final class PointMatcher {
         int image1CentroidY = image1Height >> 1;
         int image2CentroidX = image2Width >> 1;
         int image2CentroidY = image2Height >> 1;
-        
+
         PairIntArray filtered1 = new PairIntArray();
         PairIntArray filtered2 = new PairIntArray();
         populateIntersectionOfRegions(transFit.getParameters(),
@@ -1139,7 +1139,7 @@ public final class PointMatcher {
             // reverse the order to solve for possible scale < 1.
 
             TransformationPointFit revFit = calcTransWithRoughGrid(
-                model, scene, 
+                model, scene,
                 image1Width, image1Height, image2Width, image2Height,
                 setsFractionOfImage);
 
@@ -1154,7 +1154,7 @@ public final class PointMatcher {
                 int image1CentroidY = image1Height >> 1;
                 int image2CentroidX = image2Width >> 1;
                 int image2CentroidY = image2Height >> 1;
-        
+
                 MatchedPointsTransformationCalculator tc = new
                     MatchedPointsTransformationCalculator();
 
@@ -1235,7 +1235,7 @@ public final class PointMatcher {
 
         return fit;
     }
-    
+
     /**
      * given unordered unmatched points for a transformed set1 and
      * the model set2 from image1 and image2
@@ -1423,7 +1423,7 @@ public final class PointMatcher {
 
         // rewrite the rotation points into array because start is sometimes
         // higher number than stop in unit circle
-        int[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop, 
+        int[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
             rotDelta);
 
         Transformer transformer = new Transformer();
@@ -1443,23 +1443,23 @@ public final class PointMatcher {
                 float rotationInRadians = (float)(rot*Math.PI/180.f);
 
                 TransformationPointFit fit;
-                
+
                 if (setsAreMatched) {
 
-                    TransformationParameters params = 
+                    TransformationParameters params =
                         calculateTranslationForMatched(set1, set2,
-                        rotationInRadians, scale, 
+                        rotationInRadians, scale,
                         image1Width, image1Height, image2Width, image2Height);
 
                     int image1CentroidX = image1Width >> 1;
                     int image1CentroidY = image1Height >> 1;
-        
+
                     PairFloatArray allPoints1Tr = transformer.applyTransformation(
                         params, image1CentroidX, image1CentroidY, set1);
 
                     fit = evaluateFitForMatchedTransformed(params,
                         allPoints1Tr, set2);
-                    
+
                 } else {
 
                     fit = calculateTranslationForUnmatched0(set1, set2,
@@ -1467,7 +1467,9 @@ public final class PointMatcher {
                         image1Width, image1Height, image2Width, image2Height,
                         setsFractionOfImage);
                 }
-
+if (rot == 300) {
+    int z = 1;
+}
                 if (fitIsBetter(bestFit, fit)) {
 log.info("**==> fit=" + fit.toString());
                     bestFit = fit;
@@ -1588,7 +1590,7 @@ log.info("**==> fit=" + fit.toString());
 
         int image1CentroidX = image1Width >> 1;
         int image1CentroidY = image1Height >> 1;
-        
+
         /*
         Since the points are unmatched, determine the translation for each
         possible point pair and keep the most frequent answer as the
@@ -1736,7 +1738,7 @@ log.info("**==> fit=" + fit.toString());
 
         int image1CentroidX = image1Width >> 1;
         int image1CentroidY = image1Height >> 1;
-        
+
         int count = 0;
 
         TransformationPointFit[] fits = new TransformationPointFit[nTranslations];
@@ -1772,14 +1774,14 @@ log.info("**==> fit=" + fit.toString());
                 }
 
                 fits[count] = fit;
-                
+
                 count++;
             }
         }
 
         // sort the fits
         sortByDescendingMatches(fits, 0, (fits.length - 1));
-        
+
         fits = Arrays.copyOf(fits, numberOfBestToReturn);
 
         return fits;
@@ -1842,7 +1844,7 @@ log.info("**==> fit=" + fit.toString());
 
         int image1CentroidX = image1Width >> 1;
         int image1CentroidY = image1Height >> 1;
-        
+
         PairFloatArray scaledRotatedSet1 = scaleAndRotate(set1,
             rotationInRadians, scale, image1CentroidX, image1CentroidY);
 
@@ -1879,9 +1881,16 @@ log.info("**==> fit=" + fit.toString());
 
         while ((dx > limit) && (dy > limit)) {
 
+            /*
+            TODO: the tolerance should be reduced after the first iteration
+            if the bestFit mean dist from model is much smaller then
+            (0.5 * dx).
+            That helps prevent false matches.
+            */
+            
             float tolTransX = (int)(0.5 * dx);
             float tolTransY = (int)(0.5 * dy);
-                
+
             TransformationPointFit[] fits = evaluateTranslationsOverGrid(
                 set1, set2,
                 image1Width, image1Height, image2Width, image2Height,
@@ -1931,9 +1940,9 @@ log.info("  *==> fit=" + fit.toString());
                 float transX = bestFit.getParameters().getTranslationX();
                 float transY = bestFit.getParameters().getTranslationY();
 
-log.info(String.format("   previous X translation range %d:%d", 
+log.info(String.format("   previous X translation range %d:%d",
 bestTransXStart, bestTransXStop));
-log.info(String.format("   previous Y translation range %d:%d", 
+log.info(String.format("   previous Y translation range %d:%d",
 bestTransYStart, bestTransYStop));
 log.info(String.format("   previous cell size dx=%d dy=%d", dx, dy));
 
@@ -1944,10 +1953,10 @@ log.info(String.format("   previous cell size dx=%d dy=%d", dx, dy));
 
                 dx = (bestTransXStop - bestTransXStart)/10;
                 dy = (bestTransYStop - bestTransYStart)/10;
-                
-log.info(String.format("   next X translation range %d:%d", 
+
+log.info(String.format("   next X translation range %d:%d",
 bestTransXStart, bestTransXStop));
-log.info(String.format("   next Y translation range %d:%d", 
+log.info(String.format("   next Y translation range %d:%d",
 bestTransYStart, bestTransYStop));
 log.info(String.format("   next cell size dx=%d dy=%d", dx, dy));
 
@@ -1956,12 +1965,12 @@ log.info("   end scale, rot iteration");
 
                 /* TODO:
                 when the nelder-mead didn't produce a better result, we arrive
-                here and 
+                here and
                 need to do a grid search over the final result using
                 a search range of the final transX and transY plus and
                 minus the last dx,dy (or the half of those if tests pass).
                 */
-                    
+
                 break;
             }
         }
@@ -2047,7 +2056,7 @@ log.info("   end scale, rot iteration");
     public TransformationParameters calculateTranslationForMatched(
         PairIntArray matched1,
         PairIntArray matched2, double rotation,
-        double scale, 
+        double scale,
         int image1Width, int image1Height, int image2Width, int image2Height) {
 
         if (scale < 1) {
@@ -2058,7 +2067,7 @@ log.info("   end scale, rot iteration");
 
             return null;
         }
-        
+
         int image1CentroidX = image1Width >> 1;
         int image1CentroidY = image1Height >> 1;
 
@@ -2255,53 +2264,51 @@ log.info("   end scale, rot iteration");
         if (bestFit == null) {
             return true;
         }
-          
-        /*
-        TODO:  need to alter this so that close values in number matched,
-        but large differences in mean dist from model
-        will use mean diff from model
-        
-        for example:
-        bestFit: 
-              nMatchedPoints=15 nMaxMatchable=15.0 
-              meanDistFromModel=84.14178034464518 
-              stDevFromMean=56.981437125683364 
-              tolerance=288.4995667241114 
-              rotationInRadians=0.05235988 rotationInDegrees=3.0000000834826057 
-              scale=1.0 translationX=-159.04364 translationY=-63.772995
-        fitCompare:
-              nMatchedPoints=14 nMaxMatchable=0.0 
-              meanDistFromModel=4.542982544217791 
-              stDevFromMean=0.2876419359024278 
-              tolerance=288.4995667241114 
-              rotationInRadians=0.06981317 rotationInDegrees=3.999999969014533 
-              scale=1.0 translationX=-209.35757 translationY=-11.052967
 
-        can see that the fitCompare should be preferred
-        */
+        int compNMatches = compareFit.getNumberOfMatchedPoints();
+        int bestNMatches = bestFit.getNumberOfMatchedPoints();
 
-        int nMatches = compareFit.getNumberOfMatchedPoints();
+        double compAvg = compareFit.getMeanDistFromModel();
+        double bestAvg = bestFit.getMeanDistFromModel();
 
-        if (nMatches > bestFit.getNumberOfMatchedPoints()) {
+        double compS = compareFit.getStDevFromMean();
+        double bestS = bestFit.getStDevFromMean();
+
+        double compNormAvg = compAvg/compNMatches;
+        double bestNormAvg = bestAvg/bestNMatches;
+
+        int diffEps = (int)(bestNMatches/30.);
+        if (diffEps < 0) {
+            diffEps = 1;
+        }
+
+        if ((compNMatches > 1) && (bestNMatches > 1) &&
+            (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
+
+            double r = bestNormAvg/compNormAvg;
+
+            //TODO: may need to revise this
+            if (r > 4) {
+                return true;
+            } else if (r < 0.25) {
+                return false;
+            }
+
+        }
+
+        if (compNMatches > bestNMatches) {
 
             return true;
 
-        } else if (nMatches == bestFit.getNumberOfMatchedPoints()) {
+        } else if (compNMatches == bestNMatches) {
 
             if (!Double.isNaN(compareFit.getMeanDistFromModel())) {
 
-                double compAvg = compareFit.getMeanDistFromModel();
-                double bestAvg = bestFit.getMeanDistFromModel();
-                
                 if (compAvg < bestAvg) {
                     return true;
                 } else if (compAvg > bestAvg) {
                     return false;
                 }
-                
-                double compS = compareFit.getStDevFromMean();
-
-                double bestS = bestFit.getStDevFromMean();
 
                 if (compS < bestS) {
                     return true;
@@ -2310,6 +2317,31 @@ log.info("   end scale, rot iteration");
                 }
             }
         }
+
+        /*
+        TODO:  altering the above so that close values in number matched,
+        but large differences in mean dist from model
+        will use mean diff from model
+
+        for example:
+
+        bestFit:
+              nMatchedPoints=15 nMaxMatchable=15.0
+              meanDistFromModel=84.14178034464518
+              stDevFromMean=56.981437125683364
+              tolerance=288.4995667241114
+              rotationInRadians=0.05235988 rotationInDegrees=3.0000000834826057
+              scale=1.0 translationX=-159.04364 translationY=-63.772995
+        fitCompare:
+              nMatchedPoints=14 nMaxMatchable=0.0
+              meanDistFromModel=4.542982544217791
+              stDevFromMean=0.2876419359024278
+              tolerance=288.4995667241114
+              rotationInRadians=0.06981317 rotationInDegrees=3.999999969014533
+              scale=1.0 translationX=-209.35757 translationY=-11.052967
+
+        can see that the fitCompare should be preferred
+        */
 
         return false;
     }
@@ -2341,27 +2373,50 @@ log.info("   end scale, rot iteration");
             return 1;
         }
 
-        int nMatches = compareFit.getNumberOfMatchedPoints();
+        int compNMatches = compareFit.getNumberOfMatchedPoints();
+        int bestNMatches = bestFit.getNumberOfMatchedPoints();
 
-        if (nMatches > bestFit.getNumberOfMatchedPoints()) {
+        double compAvg = compareFit.getMeanDistFromModel();
+        double bestAvg = bestFit.getMeanDistFromModel();
+
+        double compS = compareFit.getStDevFromMean();
+        double bestS = bestFit.getStDevFromMean();
+
+        double compNormAvg = compAvg/compNMatches;
+        double bestNormAvg = bestAvg/bestNMatches;
+
+        int diffEps = (int)(bestNMatches/30.);
+        if (diffEps < 0) {
+            diffEps = 1;
+        }
+        
+        if ((compNMatches > 1) && (bestNMatches > 1) &&
+            (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
+
+            double r = bestNormAvg/compNormAvg;
+
+            //TODO: may need to revise this
+            if (r > 4) {
+                return 1;
+            } else if (r < 0.25) {
+                return -1;
+            }
+
+        }
+
+        if (compNMatches > bestNMatches) {
 
             return 1;
 
-        } else if (nMatches == bestFit.getNumberOfMatchedPoints()) {
+        } else if (compNMatches == bestNMatches) {
 
             if (!Double.isNaN(compareFit.getMeanDistFromModel())) {
 
-                double compAvg = compareFit.getMeanDistFromModel();
-                double bestAvg = bestFit.getMeanDistFromModel();
-                
                 if (compAvg < bestAvg) {
                     return 1;
                 } else if (compAvg > bestAvg) {
                     return -1;
                 }
-                
-                double bestS = bestFit.getStDevFromMean();
-                double compS = compareFit.getStDevFromMean();
 
                 if (compS < bestS) {
                     return 1;
@@ -3079,21 +3134,21 @@ log.info("   end scale, rot iteration");
             if (fits.length == 0) {
                 break;
             }
-            
+
             sortByDescendingMatches(fits, 0, (fits.length - 1));
 
             if (nIter > 0) {
-                
+
                 TransformationParameters[] currentParams = extractParameters(fits);
 
                 boolean areTheSame = areEqual(lastParams, currentParams);
-            
+
                 if (areTheSame) {
                     break;
                 }
-                
+
                 lastParams = currentParams;
-            }            
+            }
 
             // determine center for all points excepting the worse fit
             float txSum = 0.0f;
@@ -3218,7 +3273,7 @@ log.info("   end scale, rot iteration");
                 + fits[bestFitIdx].getNumberOfMatchedPoints()
                 + " diff from model=" + fits[bestFitIdx].getMeanDistFromModel()
             );
-            
+
             nIter++;
 
             if ((fits[bestFitIdx].getNumberOfMatchedPoints() == nMaxMatchable)
@@ -3755,34 +3810,34 @@ log.info("   end scale, rot iteration");
 
     private TransformationParameters[] extractParameters(
         TransformationPointFit[] fits) {
-        
+
         if (fits == null) {
             return new TransformationParameters[0];
         }
-        
+
         TransformationParameters[] params = new TransformationParameters[fits.length];
-        
+
         for (int i = 0; i < fits.length; ++i) {
             params[i] = fits[i].getParameters();
         }
-        
+
         return params;
     }
 
-    private boolean areEqual(TransformationParameters[] lastParams, 
+    private boolean areEqual(TransformationParameters[] lastParams,
         TransformationParameters[] currentParams) {
-        
+
         if (lastParams.length != currentParams.length) {
             throw new IllegalArgumentException(
                 "lastParams.length must be equal to currentParams.length");
         }
-        
+
         for (int i = 0; i < lastParams.length; ++i) {
-            
+
             TransformationParameters p0 = lastParams[i];
-            
+
             TransformationParameters p1 = currentParams[i];
-            
+
             if ((p0 == null) && (p1 != null)) {
                 return false;
             } else if ((p0 != null) && (p1 == null)) {
@@ -3793,7 +3848,7 @@ log.info("   end scale, rot iteration");
                 return false;
             }
         }
-        
+
         return true;
     }
 
