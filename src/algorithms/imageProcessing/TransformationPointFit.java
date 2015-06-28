@@ -6,15 +6,15 @@ package algorithms.imageProcessing;
  */
 public class TransformationPointFit {
     
-    private TransformationParameters parameters = null;
+    private final TransformationParameters parameters;
     
-    private int nMatchedPoints = 0;
+    private final int nMatchedPoints;
     
     private int nMaxMatchable = 0;
     
-    private double meanDistFromModel = Double.MAX_VALUE;
+    private final double meanDistFromModel;
     
-    private double stDevFromMean = Double.MAX_VALUE;
+    private final double stDevFromMean;
     
     private double tolerance = Double.MAX_VALUE;
     

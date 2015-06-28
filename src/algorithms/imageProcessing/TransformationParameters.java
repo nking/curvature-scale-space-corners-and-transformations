@@ -82,6 +82,21 @@ public class TransformationParameters {
     public void setScale(float scale) {
         this.scale = scale;
     }
+   
+    @Override
+    public boolean equals(Object obj) {
+        
+        if (!(obj instanceof TransformationParameters)) {
+            return false;
+        }
+        
+        TransformationParameters other = (TransformationParameters)obj;
+        
+        return ((other.rotationInRadians == rotationInRadians) &&
+            (other.translationX == translationX) && 
+            (other.translationY == translationY) &&
+            (other.scale == scale));
+    }
 
     @Override
     public String toString() {

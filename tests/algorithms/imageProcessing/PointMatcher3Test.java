@@ -106,10 +106,7 @@ public class PointMatcher3Test extends TestCase {
                 int y = sr.nextInt(imageHeight);
                 unmatchedRightXY.add(x, y);
             }
-
-if (nPoints < 70) {
-    continue;
-}
+            
             // TODO: consider scrambling the order of the right points
 
             // --- TODO: in the difference between the left and right regions,
@@ -121,9 +118,8 @@ if (nPoints < 70) {
             TransformationPointFit fit =
                 pointMatcher.performVerticalPartitionedMatching(
                 numberOfPartitions, unmatchedLeftXY, unmatchedRightXY,
-                imageWidth >> 1, imageHeight >> 1,
-                imageWidth >> 1, imageHeight >> 1, outputMatchedLeftXY,
-                outputMatchedRightXY);
+                imageWidth, imageHeight, imageWidth, imageHeight, 
+                outputMatchedLeftXY, outputMatchedRightXY);
 
             assert(fit != null);
             TransformationParameters fitParams = fit.getParameters();
@@ -153,7 +149,7 @@ if (nPoints < 70) {
             assertTrue(diffScale < 0.2);
             assertTrue(diffTransX <= epsTrans);
             assertTrue(diffTransY <= epsTrans);
-
+            
             numberOfPartitions++;
             if (numberOfPartitions > 3) {
                 numberOfPartitions = 1;
@@ -284,12 +280,10 @@ if (nPoints < 70) {
             
             float tolTransX = plusMinusTransX1;
             float tolTransY = plusMinusTransY1;
-            
+
             TransformationPointFit fit =
                 pointMatcher.refineTranslationWithDownhillSimplex(
-                    unmatched1Transformed, set2,
-                    imageWidth >> 1, imageHeight >> 1,
-                    fits,
+                    unmatched1Transformed, set2, fits,
                     transX1, transY1, tolTransX, tolTransY,
                     plusMinusTransX1, plusMinusTransY1,
                     params.getScale(), params.getRotationInRadians(),
@@ -509,8 +503,7 @@ if (nPoints < 70) {
 
         TransformationPointFit trFit =
             pointMatcher.performPartitionedMatching0(points1, points2,
-                image1Width >> 1, image1Height >> 1,
-                image2Width >> 1, image2Height >> 1,
+                image1Width, image1Height, image2Width, image2Height,
                 outputMatchedScene, outputMatchedModel);
 
         log.info("rough euclidean from skyline alone=" + trFit.toString());
@@ -1247,8 +1240,10 @@ images as possible)
 
         TransformationPointFit fit =
             pointMatcher.calculateEuclideanTransformation(
-            scene, model, xSceneCentroid, ySceneCentroid,
-            xModelCentroid, yModelCentroid, 1.0f);
+            scene, model, 
+            xSceneCentroid*2, ySceneCentroid*2,
+            xModelCentroid*2, yModelCentroid*2, 
+            1.0f);
 
         System.out.println("=> " + fit.toString());
 
@@ -1411,34 +1406,6 @@ images as possible)
         }
     }
 
-    private void scaleAndRotate(double[][] m,
-        double scale, double rotationInRadians,
-        double centroidX, double centroidY) {
-        /*
-        xr[i] = centroidX1*s + (
-                ((x - centroidX1) * scaleTimesCosine) +
-                ((y - centroidY1) * scaleTimesSine));
-        yr[i] = centroidY1*s + (
-                (-(x - centroidX1) * scaleTimesSine) +
-                ((y - centroidY1) * scaleTimesCosine));
-        */
-        double scaleTimesCosine = scale * Math.cos(rotationInRadians);
-        double scaleTimesSine = scale * Math.sin(rotationInRadians);
-
-        for (int i = 0; i < m.length; i++) {
-            double x = m[i][0];
-            double y = m[i][1];
-            double rx = centroidX*scale + (
-                ((x - centroidX) * scaleTimesCosine) +
-                ((y - centroidY) * scaleTimesSine));
-            double ry = centroidY*scale + (
-                (-(x - centroidX) * scaleTimesSine) +
-                ((y - centroidY) * scaleTimesCosine));
-            m[i][0] = rx;
-            m[i][1] = ry;
-        }
-    }
-
     private void scaleAndRotate(PairIntArray m,
         double scale, double rotationInRadians,
         double centroidX, double centroidY) {
@@ -1538,7 +1505,7 @@ images as possible)
         try {
             PointMatcher3Test test = new PointMatcher3Test();
 
-            //test.testPerformVerticalPartitionedMatching();
+            test.testPerformVerticalPartitionedMatching();
             test.testRefineTranslationWithDownhillSimplex();
 
             int z = 1;
