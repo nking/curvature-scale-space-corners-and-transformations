@@ -7,6 +7,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.util.Errors;
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PointPairInt;
@@ -569,9 +570,7 @@ public class MiscDebug {
             i++;
         }
         
-        double t0 = System.currentTimeMillis();
-        double t = t0 - ((int)(t0/1.E9)) * 1E9;
-        int plotNumber = (int)t;
+        int plotNumber = getCurrentTimeFormatted();
         
         try {
             ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
@@ -667,5 +666,45 @@ public class MiscDebug {
             log.severe(e.getMessage());
         }
     }
+    
+    public static void plotPointSets(PairFloatArray set1, PairIntArray set2, 
+        int imageWidth1, int imageHeight1, int imageWidth2, int imageHeight2, 
+        int fileNumber) {
+        
+        float[] x1 = new float[set1.getN()];
+        float[] y1 = new float[x1.length];
+        for (int i = 0; i < set1.getN(); ++i) {
+            x1[i] = set1.getX(i);
+            y1[i] = set1.getY(i);
+        }
+        
+        float[] x2 = new float[set2.getN()];
+        float[] y2 = new float[x2.length];
+        for (int i = 0; i < set2.getN(); ++i) {
+            x2[i] = set2.getX(i);
+            y2[i] = set2.getY(i);
+        }
+        
+        try {
+            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+            
+            plotter.plot(0, imageWidth1, 0, imageHeight1, 
+                x1, y1, "set1", "X", "Y");
+            plotter.writeFile(Integer.valueOf(fileNumber));
+            
+            plotter.plot(0, imageWidth2, 0, imageHeight2, 
+                x2, y2, "set2", "X", "Y");
+            plotter.writeFile(Integer.valueOf(fileNumber + 1));
+           
+        } catch (IOException e) {
+            
+            log.severe(e.getMessage());
+        }
+    }
 
+    public static int getCurrentTimeFormatted() {
+        double t0 = System.currentTimeMillis();
+        double t = t0 - ((int)(t0/1.E9)) * 1E9;
+        return (int)t;
+    }
 }
