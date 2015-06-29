@@ -45,15 +45,15 @@ public class TransformationPointFit {
         return nMatchedPoints;
     }
     
-    public double getRotationInRadians() {
+    public float getRotationInRadians() {
         if (parameters == null) {
             return 0;
         }
         
-        return (parameters.getRotationInDegrees() * Math.PI/180.);
+        return parameters.getRotationInRadians();
     }
     
-    public double getScale() {
+    public float getScale() {
         if (parameters == null) {
             return 0;
         }
@@ -61,7 +61,7 @@ public class TransformationPointFit {
         return parameters.getScale();
     }
     
-    public double getTranslationX() {
+    public float getTranslationX() {
         if (parameters == null) {
             return 0;
         }
@@ -69,7 +69,7 @@ public class TransformationPointFit {
         return parameters.getTranslationX();
     }
     
-    public double getTranslationY() {
+    public float getTranslationY() {
         if (parameters == null) {
             return 0;
         }

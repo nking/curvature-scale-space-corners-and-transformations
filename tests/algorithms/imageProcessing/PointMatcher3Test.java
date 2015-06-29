@@ -73,7 +73,8 @@ public class PointMatcher3Test extends TestCase {
 
             int nPoints = (nTest + 1) * 7;
 
-            log.info("test for nPoints=" + nPoints + " params=" + params.toString());
+            log.info("test for nPoints=" + nPoints + " params=" + params.toString()
+                + " number of vertical partitions=" + numberOfPartitions);
 
             for (int i = 0; i < nPoints; ++i) {
                 int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
