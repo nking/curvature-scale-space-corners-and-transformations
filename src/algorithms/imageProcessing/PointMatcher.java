@@ -629,10 +629,6 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
      * the maximum value accepted is 3.
      * @param unmatchedLeftXY
      * @param unmatchedRightXY
-     * @param image1CentroidX
-     * @param image1CentroidY
-     * @param image2CentroidX
-     * @param image2CentroidY
      * @param image1Width
      * @param image1Height
      * @param outputMatchedLeftXY
@@ -1072,6 +1068,7 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
             }
         }
     }
+    
     /**
      * given the indexes and residuals from optimal matching, populate
      * outputMatched1 and outputMatched2;
@@ -1652,12 +1649,17 @@ log.info("      bestFit=" + bestFit.toString());
      * @param set2 set of points from image 2 to be matched with image 1
      * @param rotation given in radians with value between 0 and 2*pi, exclusive
      * @param scale
+     * @param image1Width
+     * @param image1Height
+     * @param image2Width
+     * @param image2Height
      * @param setsFractionOfImage the fraction of their images that set 1
      * and set2 were extracted from. If set1 and set2 were derived from the
      * images without using a partition method, this is 1.0, else if the
      * quadrant partitioning was used, this is 0.25.  The variable is used
      * internally in determining histogram bin sizes for translation.
      * @return
+     * @deprecated 
      */
     public TransformationParameters calculateTranslationForUnmatched(
         PairIntArray set1, PairIntArray set2, float rotation, float scale,
@@ -1997,23 +1999,12 @@ log.info("      bestFit=" + bestFit.toString());
         while ((dx > limit) && (dy > limit)) {
 
             /*
-            TODO: the comparisons sometimes need same tolerance to have derived
-            them so keeping the coarser comparison temporarily.
+            The comparisons seem to need same tolerance used when creating
+            the fits, so no longer decreasing these upon decreased
+            cell size of improved mean distance from model.
             */
-            float tolTransX = (int)(dx/toleranceGridFactor);
-            float tolTransY = (int)(dy/toleranceGridFactor);
-            tolTransX = (int)(dx0/toleranceGridFactor);
-            tolTransY = (int)(dy0/toleranceGridFactor);
-
-            /*if (bestFit != null) {
-                double tmp = 2 * bestFit.getMeanDistFromModel();
-                if (tmp < tolTransX) {
-                    tolTransX = (float)tmp;
-                }
-                if (tmp < tolTransY) {
-                    tolTransY = (float)tmp;
-                }
-            }*/
+            float tolTransX = (int)(dx0/toleranceGridFactor);
+            float tolTransY = (int)(dy0/toleranceGridFactor);
 
             TransformationPointFit fit =
                 calculateTranslationFromGridThenDownhillSimplex(
