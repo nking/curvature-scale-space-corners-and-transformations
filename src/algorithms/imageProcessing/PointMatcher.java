@@ -242,7 +242,7 @@ public final class PointMatcher {
     // the solution is sensitive to this value.
     private float generalTolerance = 8;
 
-    private static float toleranceGridFactor = 4.f;
+    public static float toleranceGridFactor = 4.f;
 
     public void setCostToDiffFromModel() {
         costIsDiff = true;

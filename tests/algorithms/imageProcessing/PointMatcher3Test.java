@@ -107,7 +107,7 @@ public class PointMatcher3Test extends TestCase {
                 int y = sr.nextInt(imageHeight);
                 unmatchedRightXY.add(x, y);
             }
-            
+
             // TODO: consider scrambling the order of the right points
 
             // --- TODO: in the difference between the left and right regions,
@@ -119,7 +119,7 @@ public class PointMatcher3Test extends TestCase {
             TransformationPointFit fit =
                 pointMatcher.performVerticalPartitionedMatching(
                 numberOfPartitions, unmatchedLeftXY, unmatchedRightXY,
-                imageWidth, imageHeight, imageWidth, imageHeight, 
+                imageWidth, imageHeight, imageWidth, imageHeight,
                 outputMatchedLeftXY, outputMatchedRightXY);
 
             assert(fit != null);
@@ -150,7 +150,7 @@ public class PointMatcher3Test extends TestCase {
             assertTrue(diffScale < 0.2);
             assertTrue(diffTransX <= epsTrans);
             assertTrue(diffTransY <= epsTrans);
-            
+
             numberOfPartitions++;
             if (numberOfPartitions > 3) {
                 numberOfPartitions = 1;
@@ -178,7 +178,7 @@ public class PointMatcher3Test extends TestCase {
 
         float scale = 1.0f;
 
-        for (int nTest = 0; nTest < 5; ++nTest) {
+        for (int nTest = 0; nTest < 10; ++nTest) {
 
             PairIntArray set1 = new PairIntArray();
 
@@ -233,7 +233,7 @@ public class PointMatcher3Test extends TestCase {
                 int y = sr.nextInt(imageHeight);
                 set2.add(x, y);
             }
-            
+
             PairFloatArray unmatched1Transformed = pointMatcher.scaleAndRotate(
                 set1, params.getRotationInRadians(), params.getScale(),
                 imageWidth >> 1, imageHeight >> 1);
@@ -261,7 +261,10 @@ public class PointMatcher3Test extends TestCase {
                     transY1 -= dy;
                 }
             }
-           
+
+            float tolTransX = (int)(2*imageWidth/10);
+            float tolTransY = (int)(2*imageHeight/10);
+
             // simulate the results of a grid search that divides the
             // possible x and y translations into 10 sections and keeps
             // the best 10 results.
@@ -271,16 +274,21 @@ public class PointMatcher3Test extends TestCase {
             int nFits = 10;
             TransformationPointFit[] fits = simulateNearestGridSearchResults(
                 nFits, imageWidth, imageHeight, params,
-                unmatched1Transformed, set2);
+                unmatched1Transformed, set2, tolTransX, tolTransY);
 
             boolean setsAreMatched = false;
             int nMaxIter = 50;
-            if (nPoints > 30) {
+            if (nPoints > 60) {
+                nMaxIter = 150;
+            } else if (nPoints > 30) {
                 nMaxIter = 100;
             }
-            
-            float tolTransX = plusMinusTransX1;
-            float tolTransY = plusMinusTransY1;
+
+if (nPoints == 14) {
+    int z = 1;
+}
+            tolTransX = (int)(2*imageWidth/PointMatcher.toleranceGridFactor);
+            tolTransY = (int)(2*imageHeight/PointMatcher.toleranceGridFactor);
 
             TransformationPointFit fit =
                 pointMatcher.refineTranslationWithDownhillSimplex(
@@ -306,11 +314,13 @@ public class PointMatcher3Test extends TestCase {
                 diffN, diffRotDeg, diffScale, diffTransX, diffTransY)
             );
 
-            double epsTrans = 1;
-            if (nPoints < 10) {
-                epsTrans = 10;
-            } else if (nPoints < 30) {
-                epsTrans = 5;
+            double epsTrans = 1.1*(2048/100.);
+            if (nPoints > 30) {
+                epsTrans = 2*(2048/100.);
+            } else if (nPoints > 20) {
+                epsTrans = 1.5*(2048/100.);
+            } else if (nPoints > 10) {
+                epsTrans = 1.25*(2048/100.);
             }
 
             assertTrue(diffN < 0.5*nPoints);
@@ -1241,9 +1251,9 @@ images as possible)
 
         TransformationPointFit fit =
             pointMatcher.calculateEuclideanTransformation(
-            scene, model, 
+            scene, model,
             xSceneCentroid*2, ySceneCentroid*2,
-            xModelCentroid*2, yModelCentroid*2, 
+            xModelCentroid*2, yModelCentroid*2,
             1.0f);
 
         System.out.println("=> " + fit.toString());
@@ -1509,32 +1519,6 @@ images as possible)
             test.testPerformVerticalPartitionedMatching();
             test.testRefineTranslationWithDownhillSimplex();
 
-            int z = 1;
-
-            /*
-            test.test1();
-            test.test2();
-            test.test3();
-            test.test4();
-            test.test5();
-            test.test6();
-            test.test7();
-            test.test8();
-            test.test9();
-            test.test10();
-            test.test11();
-            test.test12();
-            test.test13();
-            test.test14();
-            */
-            //test.test15();
-            //test.test155();
-            //test.test156();
-
-            //test.adjustPointsOfInterest();
-            //test.examineInvPointLists();
-            //test.smallestSubsets();
-
             /*
             tests for :
             -- for same set w/ projection
@@ -1610,95 +1594,93 @@ images as possible)
     }
 
     private TransformationPointFit[] simulateNearestGridSearchResults(
-        int nFits, int imageWidth2, int imageHeight2, 
-        TransformationParameters params, 
-        final PairFloatArray unmatched1ScaledRotated, 
-        final PairIntArray set2) {
-        
+        int nFits, int imageWidth2, int imageHeight2,
+        TransformationParameters params,
+        final PairFloatArray unmatched1ScaledRotated,
+        final PairIntArray set2, float tolTransX, float tolTransY) {
+
         /*
         simulating the results of a grid search that divides
-        the space of 
+        the space of
             -imageWidth2 to +imageWidth2 by intervals of 10
         and
             -imageHeight2 to +imageHeight2 by intervals of 10
         and finds that the top 10 of those are the 10 closest to the
         real transX, transY given in params.
         */
-        
+
         int transXStart = -1*imageWidth2 + 1;
         int transXStop = imageWidth2 - 1;
         int transYStart = -1*imageHeight2 + 1;
         int transYStop = imageHeight2 - 1;
 
-        //2047*2/10=409  
+        //2047*2/10=409
         /*
         -2047  -1638  -1229  -820  -411  -2  407  816  1225  1634  2043
                                        -49
         */
         int dx = (transXStop - transXStart)/10;
         int dy = (transYStop - transYStart)/10;
-        
+
         // these are usually a small value such as 8, but need the evaluation
         // to still consider points and calculate diffs for points
         // within the size of the bin
-        float tolTransX = dx;
-        float tolTransY = dy;
-        
+
         int transXBinNumber = (int)((params.getTranslationX() - transXStart)/dx);
         int transYBinNumber = (int)((params.getTranslationY() - transYStart)/dy);
-        
+
         PointMatcher pointMatcher = new PointMatcher();
-        
+
         TransformationPointFit[] fits = new TransformationPointFit[nFits];
-        
+
         int count = 0;
         for (int i = (transXBinNumber - 1); i <= (transXBinNumber + 1); ++i) {
             if (i < 0 || i > 10) { continue;}
             for (int j = (transYBinNumber - 1); j <= (transYBinNumber + 1); ++j) {
                 if (j < 0 || j > 10) { continue;}
-                
+
                 int tx = transXStart + (i * dx) + (dx/2);
                 int ty = transYStart + (j * dy) + (dy/2);
-                
-                fits[count] = 
+
+                fits[count] =
                     pointMatcher.evaluateFitForUnMatchedGreedy(
                         unmatched1ScaledRotated, tx, ty, tolTransX, tolTransY,
                         set2, params.getScale(), params.getRotationInRadians());
-                        
+
                 count++;
             }
         }
-        
+
         int[] xs = new int[]{transXBinNumber - 2, transXBinNumber + 2};
         int[] ys = new int[]{transYBinNumber - 2, transYBinNumber + 2};
         for (int i : xs) {
             if (i < 0 || i > 9) { continue;}
             if (count > 9) {break;}
-            
+
             for (int j : ys) {
                 if (j < 0 || j > 9) { continue;}
                 if (count > 9) {break;}
-                
+
                 int tx = transXStart + (i * dx) + (dx/2);
                 int ty = transYStart + (j * dy) + (dy/2);
-                            
+
                 TransformationParameters params1 = new TransformationParameters();
                 params1.setRotationInRadians(params.getRotationInRadians());
                 params1.setScale(params.getScale());
                 params1.setTranslationX(tx);
                 params1.setTranslationY(ty);
-                
-                fits[count] = 
+
+                fits[count] =
                     pointMatcher.evaluateFitForUnMatchedTransformedGreedy(
                         params1, unmatched1ScaledRotated, set2,
                         tolTransX, tolTransY);
-                
-                count++;                
+
+                count++;
             }
         }
-        
+
         pointMatcher.sortByDescendingMatches(fits, 0, (fits.length - 1));
-        
+
         return fits;
     }
 
