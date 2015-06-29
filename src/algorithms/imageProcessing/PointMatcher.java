@@ -1361,14 +1361,19 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
     }
 
     /**
-     * calculate for unmatched points the Euclidean transformation to transform
-     * set1 into the reference frame of set2.  Note, this method does a grid search
-     * over rotation and scale in the given intervals,
-     * and for each translation solution within those,
-     * it has uses O(N^2) algorithm to find the best translation in x and y.
+     * Calculate for unmatched points the Euclidean transformation to transform
+     * set1 into the reference frame of set2.  Note, this method does a grid 
+     * search over rotation and scale in the given intervals, and for each 
+     * translation solution within those, it uses an O(N^2) algorithm to find 
+     * the best translation in x and y.
      * If there are solutions with similar fits and different parameters, they
-     * are all returned, with the best solution being at index 0 in the returned
-     * list.
+     * are retained and compared with finer grid searches to decide among
+     * them so the total runtime complexity is
+     * larger than O(N^2) but smaller than O(N^3).
+     * The constant factors in the runtime are roughly
+     *   ((scaleStop - scaleStart)/scaleDelta) 
+     *   times (number of rotation intervals)
+     *   times (number of grid search cells which is 10*10 at best).
      *
      * @param set1
      * @param set2
