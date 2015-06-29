@@ -2827,7 +2827,7 @@ log.info("   end scale, rot iteration");
 
                 fits[count] = calculateTranslationAndTransformEdges(
                     rotation, scale, edges1, edges2,
-                    centroidX1, centroidY1, centroidX2, centroidY2);
+                    centroidX1, centroidY1);
 
                 if (fits[count] != null) {
                     count++;
@@ -2841,7 +2841,7 @@ log.info("   end scale, rot iteration");
 
         float alpha = 1;   // > 0
         float gamma = 2;   // > 1
-        float beta = -0.5f;
+        float beta = 0.5f;
         float tau = 0.5f;
 
         boolean go = true;
@@ -2850,7 +2850,6 @@ log.info("   end scale, rot iteration");
         int nIter = 0;
 
         int bestFitIdx = 0;
-        int secondWorstFitIdx = fits.length - 2;
         int worstFitIdx = fits.length - 1;
 
         int lastNMatches = Integer.MIN_VALUE;
@@ -2914,126 +2913,118 @@ log.info("   end scale, rot iteration");
             // "Reflection"
             double rReflect = r + (alpha *
                 (r - fits[worstFitIdx].getRotationInRadians()));
-            double sReflect = s +
-                (s - alpha * (fits[worstFitIdx].getScale()));
+            double sReflect = s + (alpha *
+                (s - fits[worstFitIdx].getScale()));
 
             TransformationPointFit fitReflected =
                 calculateTranslationAndTransformEdges(
-                rReflect, sReflect,
-                edges1, edges2,
-                centroidX1, centroidY1, centroidX2, centroidY2);
+                rReflect, sReflect, edges1, edges2,
+                centroidX1, centroidY1);
 
-            boolean relectIsWithinBounds =
-                /*(rReflect >= rMin) && (rReflect <= rMax)
-                &&*/ (sReflect >= sMin) && (sReflect <= sMax);
+            //TODO: consider putting back in a check for bounds
 
-            if (fitIsBetter(fits[secondWorstFitIdx], fitReflected)
-                && relectIsWithinBounds
-                && !fitIsBetter(fits[bestFitIdx], fitReflected) ) {
+            int comp0 = compare(fits[bestFitIdx], fitReflected);
+            int compLast = compare(fits[worstFitIdx], fitReflected);
 
+            if ((comp0 < 1) && (compLast == 1)) {
+
+                // replace last with f_refl
                 fits[worstFitIdx] = fitReflected;
 
-            } else {
+            } else if (comp0 == 1) {
+                
+                // reflected is better than best fit, so "expand"
+                // "Expansion"
+                double rExpansion = r + (gamma * (rReflect - r));
+                double sExpansion = s + (gamma * (sReflect - s));
+                
+                TransformationPointFit fitExpansion =
+                    calculateTranslationAndTransformEdges(
+                    rExpansion, sExpansion, edges1, edges2,
+                    centroidX1, centroidY1);
+                
+                int compR = compare(fitReflected, fitExpansion);
 
-                if (fitIsBetter(fits[bestFitIdx], fitReflected)
-                    && relectIsWithinBounds) {
-
-                    // "Expansion"
-                    double rExpansion = r + (gamma *
-                        (r - fits[worstFitIdx].getRotationInRadians()));
-                    double sExpansion = s + (gamma *
-                        (s - fits[worstFitIdx].getScale()));
-
-                    TransformationPointFit fitExpansion =
-                        calculateTranslationAndTransformEdges(
-                        rExpansion, sExpansion, edges1, edges2,
-                        centroidX1, centroidY1, centroidX2, centroidY2);
-
-                    if (fitIsBetter(fitReflected, fitExpansion)
-                        && (/*(rExpansion >= rMin) && (rExpansion <= rMax)
-                        &&*/ (sExpansion >= sMin) && (sExpansion <= sMax))) {
-                        fits[worstFitIdx] = fitExpansion;
-
-                    } else {
-
-                        fits[worstFitIdx] = fitReflected;
-                    }
+                if (compR == 1) {
+            
+                    // expansion fit is better than reflected fit
+                    fits[worstFitIdx] = fitExpansion;
 
                 } else {
 
-                    // the reflection fit is worse than the 2nd worse
+                    fits[worstFitIdx] = fitReflected;
+                }
 
-                    // "Contraction"
-                    double rContraction = r + (beta *
-                        (r - fits[worstFitIdx].getRotationInRadians()));
-                    double sContraction = s + (beta *
-                        (s - fits[worstFitIdx].getScale()));
+            } else if (compLast < 1) {
 
-                    TransformationPointFit fitContraction =
-                        calculateTranslationAndTransformEdges(
-                        rContraction, sContraction, edges1, edges2,
-                        centroidX1, centroidY1, centroidX2, centroidY2);
+                // reflected fit is worse than the worst (last) fit, so contract
+                // "Contraction"
+                double rContraction = r + (beta *
+                    (fits[worstFitIdx].getRotationInRadians() - r));
+                double sContraction = s + (beta *
+                    (fits[worstFitIdx].getScale() - s));
+                
+                TransformationPointFit fitContraction =
+                    calculateTranslationAndTransformEdges(
+                    rContraction, sContraction, edges1, edges2,
+                    centroidX1, centroidY1);
 
-                    if (fitIsBetter(fits[worstFitIdx], fitContraction)
-                        /*&&
-                        (rContraction >= rMin) && (rContraction <= rMax)*/
-                        && (sContraction >= sMin) && (sContraction <= sMax)
-                    ) {
+                int compC = compare(fits[worstFitIdx], fitContraction);
 
-                        fits[worstFitIdx] = fitContraction;
+                if (compC > -1) {
+             
+                    fits[worstFitIdx] = fitContraction;
 
-                    } else {
+                } else {
 
-                        // "Reduction"
-                        for (int i = 1; i < fits.length; i++) {
+                    // "Reduction"
+                    for (int i = 1; i < fits.length; ++i) {
 
-                            if (fits[i] == null) {
-                                /* TODO: consider setting this
-                                fits[i] = new TransformationPointFit(
-                                    new TransformationParameters(),
-                                    0, Double.MAX_VALUE, Double.MAX_VALUE,
-                                    Double.MAX_VALUE
-                                );
-                                */
-                                continue;
-                            }
-
-                            double rReduction =
-                                fits[bestFitIdx].getRotationInRadians()
-                                + (tau *
-                                (fits[i].getRotationInRadians()
-                                - fits[bestFitIdx].getRotationInRadians()));
-
-                            double sReduction =
-                                fits[bestFitIdx].getScale()
-                                + (tau *
-                                (fits[i].getScale()
-                                - fits[bestFitIdx].getScale()));
-
-                            //NOTE: there's a possibility of a null fit.
-                            //  instead of re-writing the fits array, will
-                            //  assign a fake infinitely bad fit which will
-                            //  fall to the bottom of the list after the next
-                            //  sort.
-                            TransformationPointFit fit =
-                                calculateTranslationAndTransformEdges(
-                                rReduction, sReduction,
-                                edges1, edges2,
-                                centroidX1, centroidY1,
-                                centroidX2, centroidY2);
-
-                            fits[i] = fit;
+                        if (fits[i] == null) {
+                            /*TODO: consider setting this
+                            fits[i] = new TransformationPointFit(
+                                new TransformationParameters(),
+                                0, Double.MAX_VALUE, Double.MAX_VALUE,
+                                Double.MAX_VALUE
+                            );
+                            */
+                            continue;
                         }
+
+                        float rReduction
+                            = (fits[bestFitIdx].getRotationInRadians()
+                            + (tau
+                            * (fits[i].getRotationInRadians()
+                            - fits[bestFitIdx].getRotationInRadians())));
+
+                        float sReduction
+                            = (fits[bestFitIdx].getScale()
+                            + (tau
+                            * (fits[i].getScale()
+                            - fits[bestFitIdx].getScale())));
+
+                        //NOTE: there's a possibility of a null fit.
+                        //  instead of re-writing the fits array, will
+                        //  assign a fake infinitely bad fit which will
+                        //  fall to the bottom of the list after the next
+                        //  sort.
+                        TransformationPointFit fit =
+                            calculateTranslationAndTransformEdges(
+                            rReduction, sReduction, edges1, edges2,
+                            centroidX1, centroidY1);
+                        
+                        fits[i] = fit;
                     }
                 }
             }
+
             log.finest("best fit so far: nMatches="
-                + fits[bestFitIdx].getNumberOfMatchedPoints() +
-                " diff from model=" + fits[bestFitIdx].getMeanDistFromModel()
-                );
+                + fits[bestFitIdx].getNumberOfMatchedPoints()
+                + " diff from model=" + fits[bestFitIdx].getMeanDistFromModel()
+            );
 
             nIter++;
-
+            
             if ((fits[bestFitIdx].getNumberOfMatchedPoints() == convergence)
                 && (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
                 go = false;
@@ -3042,6 +3033,17 @@ log.info("   end scale, rot iteration");
             } else if ((s > sMax) || (s < sMin)) {
                 go = false;
             }
+        }
+        
+        // additional step that's helpful if not enough iterations are used,
+        // is to test the summed transX, transY which represent the center
+        // of the simplex against the best fit
+        TransformationPointFit fitAvg = calculateTranslationAndTransformEdges(
+            r, s, edges1, edges2, centroidX1, centroidY1);
+
+        int comp = compare(fits[bestFitIdx], fitAvg);
+        if (comp == 1) {
+            fits[bestFitIdx] = fitAvg;
         }
 
         // if rotation > 2PI, subtract 2PI
@@ -3078,7 +3080,7 @@ log.info("   end scale, rot iteration");
     private TransformationPointFit calculateTranslationAndTransformEdges(
         double rotInRad, double scl,
         PairIntArray[] edges1, PairIntArray[] edges2,
-        int centroidX1, int centroidY1, int centroidX2, int centroidY2) {
+        int centroidX1, int centroidY1) {
 
         if (edges1 == null) {
             throw new IllegalArgumentException("edges1 cannot be null");
@@ -3248,7 +3250,7 @@ log.info("   end scale, rot iteration");
     }
 
     /**
-     * searches among the given translation range for the best fit to a
+     * Searches among the given translation range for the best fit to a
      * Euclidean transformation formed by scale, rotationRadians and the
      * best fitting translation X and Y given starter points fits.
      * Note the method is not precise so should be wrapped with a follow-up
@@ -3348,9 +3350,9 @@ log.info("   end scale, rot iteration");
 
             // "Reflection"
             float txReflect = transX + (alpha
-                * (transX - (float) fits[worstFitIdx].getTranslationX()));
+                * (transX - fits[worstFitIdx].getTranslationX()));
             float tyReflect = transY + (alpha
-                * (transY - (float) fits[worstFitIdx].getTranslationY()));
+                * (transY - fits[worstFitIdx].getTranslationY()));
 
             TransformationPointFit fitReflected = evaluateFit(
                 scaledRotatedSet1, txReflect, tyReflect,
@@ -3404,8 +3406,7 @@ log.info("   end scale, rot iteration");
                     = evaluateFit(scaledRotatedSet1,
                         txContraction, tyContraction,
                         tolTransX, tolTransY,
-                        set2,
-                        scale, rotationRadians, setsAreMatched);
+                        set2, scale, rotationRadians, setsAreMatched);
 
                 int compC = compare(fits[worstFitIdx], fitContraction);
 
