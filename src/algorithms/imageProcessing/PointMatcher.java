@@ -3247,6 +3247,27 @@ log.info("   end scale, rot iteration");
         return transformed1;
     }
 
+    /**
+     * searches among the given translation range for the best fit to a
+     * Euclidean transformation formed by scale, rotationRadians and the
+     * best fitting translation X and Y given starter points fits.
+     * Note the method is not precise so should be wrapped with a follow-up
+     * method that further searches in the solution's local region.
+     * @param scaledRotatedSet1
+     * @param set2
+     * @param fits
+     * @param transX
+     * @param transY
+     * @param tolTransX
+     * @param tolTransY
+     * @param plusMinusTransX
+     * @param plusMinusTransY
+     * @param scale
+     * @param rotationRadians
+     * @param setsAreMatched
+     * @param nMaxIter
+     * @return 
+     */
     protected TransformationPointFit refineTranslationWithDownhillSimplex(
         PairFloatArray scaledRotatedSet1, PairIntArray set2,
         TransformationPointFit[] fits,
