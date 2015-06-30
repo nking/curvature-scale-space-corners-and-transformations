@@ -5,12 +5,16 @@ import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import static algorithms.imageProcessing.PointMatcher.minTolerance;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairFloat;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
@@ -339,7 +343,7 @@ public final class PointMatcher {
         double tolerance = generalTolerance;
 
         float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-            transformedLeft, unmatchedRightXY, tolerance);
+            transformedLeft, unmatchedRightXY, tolerance, tolerance);
 
         matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance,
             matchIndexesAndDiffs, outputMatchedLeftXY, outputMatchedRightXY);
@@ -405,7 +409,7 @@ public final class PointMatcher {
                     setsFractionOfImage);
 
                 if (fit == null) {
-                    log.info(Integer.toString(count)
+                    log.fine(Integer.toString(count)
                         + ", p1=" + p1 + " p2=" + p2 + ")  NO SOLN " +
                         " n1=" + part1.getN() + " n2=" + part2.getN());
                     count++;
@@ -415,7 +419,7 @@ public final class PointMatcher {
                 nStat[count] = (float)fit.getNumberOfMatchedPoints()/
                     (float)fit.getNMaxMatchable();
 
-                log.info(Integer.toString(count)
+                log.fine(Integer.toString(count)
                     + ", p1=" + p1 + " p2=" + p2 + ") nStat=" + nStat[count] +
                     " n1=" + part1.getN() + " n2=" + part2.getN() +
                     " Euclidean fit=" + fit.toString());
@@ -423,13 +427,17 @@ public final class PointMatcher {
                 vertPartitionedFits[count] = fit;
 
                 if (bestFitIdx == -1) {
+                    
                     bestFitIdx = count;
+                    
                 } else {
+                    
                     // if nStat != inf, best has smallest st dev from mean
+                    
                     if (fitIsBetter(vertPartitionedFits[bestFitIdx],
                         vertPartitionedFits[count])) {
 
-log.info("****==> fit=" + vertPartitionedFits[count].toString());
+                        log.fine("****==> fit=" + vertPartitionedFits[count].toString());
 
                         bestFitIdx = count;
                     }
@@ -597,7 +605,7 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
         int scaleDelta = 1;
         boolean setsAreMatched = false;
 
-        log.info(String.format(
+        log.fine(String.format(
             "starting finer grid search with rot=%d to %d and scale=%d to %d",
             rotStart, rotStop, scaleStart, scaleStop));
 
@@ -668,10 +676,11 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
             bestFit.getParameters(), unmatchedLeftXY, image1CentroidX,
             image1CentroidY);
 
+        //TODO: consider using bestFit.getTolerance() here:
         double tolerance = generalTolerance;
 
         float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-            transformedLeft, unmatchedRightXY, tolerance);
+            transformedLeft, unmatchedRightXY, tolerance, tolerance);
 
         matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance,
             matchIndexesAndDiffs, outputMatchedLeftXY, outputMatchedRightXY);
@@ -752,12 +761,13 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
             transformer.applyTransformation2(transFit.getParameters(),
             filtered1, image1CentroidX, image1CentroidY);
 
+        //TODO: consider using transFit.getTolerance() here
         double tolerance = generalTolerance;
 
         //evaluate the fit and store a statistical var: nmatched/nmaxmatchable
 
         float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-            transformedFiltered1, filtered2, tolerance);
+            transformedFiltered1, filtered2, tolerance, tolerance);
 
         PairFloatArray part1MatchedTransformed = new PairFloatArray();
         PairIntArray part2Matched = new PairIntArray();
@@ -949,6 +959,49 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
         return fit;
     }
 
+    protected TransformationPointFit evaluateFitForUnMatchedTransformedOptimal(
+        TransformationParameters params, PairFloatArray unmatched1Transformed,
+        PairIntArray unmatched2, double tolTransX, double tolTransY) {
+
+        if (unmatched1Transformed == null) {
+            throw new IllegalArgumentException(
+            "unmatched1Transformed cannot be null");
+        }
+        if (unmatched2 == null) {
+            throw new IllegalArgumentException(
+            "unmatched2 cannot be null");
+        }
+
+        int n = unmatched1Transformed.getN();
+
+        float[][] matchedIndexesAndDiffs = calculateMatchUsingOptimal(
+            unmatched1Transformed, unmatched2, tolTransX, tolTransY);
+
+        int nMatched = matchedIndexesAndDiffs.length;
+        double avg = 0;
+        double stDev = 0;
+
+        for (int i = 0; i < nMatched; i++) {
+            avg += matchedIndexesAndDiffs[i][2];
+        }
+        avg = (nMatched == 0) ? Double.MAX_VALUE : (avg / (double)nMatched);
+
+        for (int i = 0; i < nMatched; i++) {
+
+            double d = matchedIndexesAndDiffs[i][2] - avg;
+
+            stDev += (d * d);
+        }
+        stDev = (nMatched == 0) ? Double.MAX_VALUE :
+            (Math.sqrt(stDev/((double)nMatched - 1.)));
+
+        TransformationPointFit fit = new TransformationPointFit(params, nMatched,
+            avg, stDev, Math.sqrt(tolTransX*tolTransX + tolTransY*tolTransY)
+        );
+
+        return fit;
+    }
+
     private void populateIntersectionOfRegions(
         TransformationParameters params,
         PairIntArray set1, PairIntArray set2, int image1CentroidX,
@@ -1055,6 +1108,10 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
         double tolerance,
         float[][] matchedIndexesAndDiffs,
         PairIntArray outputMatched1, PairIntArray outputMatched2) {
+        
+        if (matchedIndexesAndDiffs == null) {
+            return;
+        }
 
         for (int i = 0; i < matchedIndexesAndDiffs.length; i++) {
 
@@ -1068,7 +1125,7 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
             }
         }
     }
-    
+
     /**
      * given the indexes and residuals from optimal matching, populate
      * outputMatched1 and outputMatched2;
@@ -1235,7 +1292,7 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
             setsAreMatched, setsFractionOfImage);
 
         if (fit != null) {
-            log.info("best from calculateTransformationWithGridSearch: "
+            log.fine("best from calculateTransformationWithGridSearch: "
                 + fit.toString());
         }
 
@@ -1253,13 +1310,15 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
      *
      * @param transformed1
      * @param set2
-     * @param tolerance
+     * @param toleranceX
+     * @param toleranceY
      * @return a two dimensional array holding the matched indexes and
      * the distances between the model and the point for that pair.
      * each row holds float[]{idx1, idx2, diff}
      */
     public float[][] calculateMatchUsingOptimal(
-        PairFloatArray transformed1, PairIntArray set2, double tolerance) {
+        PairFloatArray transformed1, PairIntArray set2, double toleranceX,
+        double toleranceY) {
 
         int nPoints1 = transformed1.getN();
         int nPoints2 = set2.getN();
@@ -1269,6 +1328,11 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
         // the algorithm modifies diffsAsCost, so make a copy
         float[][] diffsAsCostCopy = new float[nPoints1][nPoints2];
 
+        // key = indexes i,j; value = diffX, diffY
+        Map<PairInt, PairFloat> diffsXY = new HashMap<PairInt, PairFloat>();
+
+        int nWithinTol = 0;
+        
         for (int i = 0; i < transformed1.getN(); i++) {
 
             diffsAsCost[i] = new float[nPoints2];
@@ -1282,17 +1346,31 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
                 int x2 = set2.getX(j);
                 int y2 = set2.getY(j);
 
-                double dist = Math.sqrt(Math.pow(x - x2, 2)
-                    + Math.pow(y - y2, 2));
+                float diffX = x - x2;
+                float diffY = y - y2;
 
-                if (dist > tolerance) {
+                if ((Math.abs(diffX) > toleranceX) &&
+                    (Math.abs(diffY) > toleranceY)) {
+
                     diffsAsCost[i][j] = Float.MAX_VALUE;
                     diffsAsCostCopy[i][j] = Float.MAX_VALUE;
+
                 } else {
+
+                    double dist = Math.sqrt(diffX*diffX + diffY*diffY);
+
                     diffsAsCost[i][j] = (float)dist;
                     diffsAsCostCopy[i][j] = (float)dist;
+
+                    diffsXY.put(new PairInt(i, j), new PairFloat(diffX, diffY));
+                    
+                    nWithinTol++;
                 }
             }
+        }
+        
+        if (nWithinTol == 0) {
+            return new float[0][];
         }
 
         boolean transposed = false;
@@ -1312,18 +1390,31 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
             if (idx1 == -1 || idx2 == -1) {
                 continue;
             }
+            if (idx1 == Float.MAX_VALUE || idx2 == Float.MAX_VALUE) {
+                continue;
+            }
             if (transposed) {
                 int swap = idx1;
                 idx1 = idx2;
                 idx2 = swap;
             }
 
-            if (diffsAsCost[idx1][idx2] < tolerance) {
+            PairFloat diffXY = diffsXY.get(new PairInt(idx1, idx2));
+            
+            if (diffXY == null) {
+                continue;
+            }
+            
+            if ((diffXY.getX() <= toleranceX) && (diffXY.getY() <= toleranceY)) {
                 count++;
             }
         }
 
         float[][] output = new float[count][];
+        
+        if (count == 0) {
+            return output;
+        }
 
         count = 0;
 
@@ -1335,21 +1426,23 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
                 continue;
             }
 
-            double diff;
-
             if (transposed) {
                 int swap = idx1;
                 idx1 = idx2;
                 idx2 = swap;
             }
 
-            diff = diffsAsCost[idx1][idx2];
-
-            if (diff < tolerance) {
+            PairFloat diffXY = diffsXY.get(new PairInt(idx1, idx2));
+            
+            if (diffXY == null) {
+                continue;
+            }
+            
+            if ((diffXY.getX() <= toleranceX) && (diffXY.getY() <= toleranceY)) {
                 output[count] = new float[3];
                 output[count][0] = idx1;
                 output[count][1] = idx2;
-                output[count][2] = (float)diff;
+                output[count][2] = diffsAsCost[idx1][idx2];
                 count++;
             }
         }
@@ -1359,16 +1452,16 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
 
     /**
      * Calculate for unmatched points the Euclidean transformation to transform
-     * set1 into the reference frame of set2.  Note, this method does a grid 
-     * search over rotation and scale in the given intervals, and for each 
-     * translation solution within those, it uses an O(N^2) algorithm to find 
+     * set1 into the reference frame of set2.  Note, this method does a grid
+     * search over rotation and scale in the given intervals, and for each
+     * translation solution within those, it uses an O(N^2) algorithm to find
      * the best translation in x and y.
      * If there are solutions with similar fits and different parameters, they
      * are retained and compared with finer grid searches to decide among
      * them so the total runtime complexity is
      * larger than O(N^2) but smaller than O(N^3).
      * The constant factors in the runtime are roughly
-     *   ((scaleStop - scaleStart)/scaleDelta) 
+     *   ((scaleStop - scaleStart)/scaleDelta)
      *   times (number of rotation intervals)
      *   times (number of grid search cells which is 10*10 at best).
      *
@@ -1479,20 +1572,27 @@ log.info("****==> fit=" + vertPartitionedFits[count].toString());
                         setsFractionOfImage);
                 }
 
+                //TODO: move the "areSimilar" comparison to out here
+                
                 if (fitIsBetter(bestFit, fit)) {
-log.info("**==> fit=" + fit.toString());
+
+                    log.fine("**==> fit=" + fit.toString());
 
                     //0==same fit;  1==similar fits;  -1==different fits
                     int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, fit);
                     if (areSimilar == 1) {
-log.info("fit was similar to bestFit");
+
+                        log.fine("fit was similar to bestFit");
+                        
                         if (similarToBestFit.isEmpty()) {
                             similarToBestFit.add(bestFit);
                         }
                         similarToBestFit.add(fit);
                     } else {
                         if (areSimilar == -1) {
-log.info("clear similarToBestFit");                        
+
+                            log.fine("clear similarToBestFit");
+                            
                             similarToBestFit.clear();
                         } else {
                             // if areSimilar==0, no need to recheck for convergence
@@ -1524,7 +1624,7 @@ log.info("clear similarToBestFit");
 
                     if (converged) {
 
-log.info("** converged");
+                        log.fine("** converged");
 
                         similarToBestFit.add(0, bestFit);
                         for (TransformationPointFit fit2 : similarToBestFit) {
@@ -1543,11 +1643,11 @@ log.info("** converged");
                             image1Width, image1Height, image2Width, image2Height,
                             setsAreMatched, setsFractionOfImage);
 
-log.info("**==> deciding among " + similarToBestFit.size() + " similar fits:");
-for (TransformationPointFit sFit : similarToBestFit) {
-    log.info("  sFit=" + sFit.toString());
-}    
-log.info("      bestFit=" + bestFit.toString());
+                        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+                        for (TransformationPointFit sFit : similarToBestFit) {
+                            log.fine("  sFit=" + sFit.toString());
+                        }
+                        log.fine("      bestFit=" + bestFit.toString());
 
                         return bestFit;
 
@@ -1568,19 +1668,24 @@ log.info("      bestFit=" + bestFit.toString());
                         );
 
                         if (fitIsBetter(bestFit, fit2)) {
-log.info("***==> fit=" + fit2.toString());
+
+                            log.fine("***==> fit=" + fit2.toString());
 
                             //0==same fit;  1==similar fits;  -1==different fits
                             int areSimilar2 = fitsAreSimilarWithDiffParameters(
                                 bestFit, fit2);
                             if (areSimilar2 == 1) {
-        log.info("fit was similar to bestFit");
+        
+                                log.fine("fit was similar to bestFit");
+                                
                                 if (similarToBestFit.isEmpty()) {
                                     similarToBestFit.add(bestFit);
                                 }
                                 similarToBestFit.add(fit2);
                             } else if (areSimilar2 == -1) {
-        log.info("clear similarToBestFit");                        
+        
+                                log.fine("clear similarToBestFit");
+                                
                                 similarToBestFit.clear();
                             }
 
@@ -1595,7 +1700,9 @@ log.info("***==> fit=" + fit2.toString());
                 bestFitForScale = bestFit;
 
             } else {
-                log.info("previous scale solution was better, so end scale iter");
+                
+                log.fine("previous scale solution was better, so end scale iter");
+                
                 //TODO: revisit this with tests
                 // scale was probably smaller so return best solution
                 break;
@@ -1619,11 +1726,11 @@ log.info("***==> fit=" + fit2.toString());
             image1Width, image1Height, image2Width, image2Height,
             setsAreMatched, setsFractionOfImage);
 
-log.info("**==> deciding among " + similarToBestFit.size() + " similar fits:");
-for (TransformationPointFit sFit : similarToBestFit) {
-    log.info("  sFit=" + sFit.toString());
-}    
-log.info("      bestFit=" + bestFit.toString());
+        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+        for (TransformationPointFit sFit : similarToBestFit) {
+            log.fine("  sFit=" + sFit.toString());
+        }
+        log.fine("      bestFit=" + bestFit.toString());
 
         return bestFit;
     }
@@ -1659,7 +1766,7 @@ log.info("      bestFit=" + bestFit.toString());
      * quadrant partitioning was used, this is 0.25.  The variable is used
      * internally in determining histogram bin sizes for translation.
      * @return
-     * @deprecated 
+     * @deprecated
      */
     public TransformationParameters calculateTranslationForUnmatched(
         PairIntArray set1, PairIntArray set2, float rotation, float scale,
@@ -1803,7 +1910,7 @@ log.info("      bestFit=" + bestFit.toString());
         log.fine("peakTransX=" + peakTransX + "  peakTransY=" + peakTransY);
 
         TransformationParameters params = new TransformationParameters();
-        params.setRotationInRadians((float)rotation);
+        params.setRotationInRadians(rotation);
         params.setScale(s);
         params.setTranslationX(peakTransX);
         params.setTranslationY(peakTransY);
@@ -1846,6 +1953,9 @@ log.info("      bestFit=" + bestFit.toString());
             return null;
         }
 
+        int nMaxMatchable = (set1.getN() < set2.getN()) ?
+            set1.getN() : set2.getN();
+
         Transformer transformer = new Transformer();
 
         int nTranslations =
@@ -1884,9 +1994,17 @@ log.info("      bestFit=" + bestFit.toString());
 
                 } else {
 
-                    fit = evaluateFitForUnMatchedTransformedGreedy(params,
-                    //fit = evaluateFitForUnMatchedTransformedOptimal(params,
-                        allPoints1Tr, set2, tolTransX, tolTransY);
+                    // default is to use greedy matching but use optimal for small sets
+                    if (nMaxMatchable <= 10) {
+
+                        fit = evaluateFitForUnMatchedTransformedOptimal(params,
+                            allPoints1Tr, set2, tolTransX, tolTransY);
+
+                    } else {
+                        fit = evaluateFitForUnMatchedTransformedGreedy(params,
+                        //fit = evaluateFitForUnMatchedTransformedOptimal(params,
+                            allPoints1Tr, set2, tolTransX, tolTransY);
+                    }
                 }
 
                 fits[count] = fit;
@@ -1992,6 +2110,8 @@ log.info("      bestFit=" + bestFit.toString());
         int dx0 = dx;
         int dy0 = dy;
 
+        float cellFactor = 1.25f;
+
         int limit = 1;
 
         boolean setsAreMatched = false;
@@ -2018,35 +2138,36 @@ log.info("      bestFit=" + bestFit.toString());
 
             if (fitIsBetter(bestFit, fit)) {
 
-log.info("  *==> fit=" + fit.toString());
+                log.fine("  *==> fit=" + fit.toString());
 
                 bestFit = fit;
 
                 float transX = bestFit.getParameters().getTranslationX();
                 float transY = bestFit.getParameters().getTranslationY();
 
-log.info(String.format("   previous X translation range %d:%d",
-bestTransXStart, bestTransXStop));
-log.info(String.format("   previous Y translation range %d:%d",
-bestTransYStart, bestTransYStop));
-log.info(String.format("   previous cell size dx=%d dy=%d", dx, dy));
+                log.fine(String.format("   previous X translation range %d:%d",
+                bestTransXStart, bestTransXStop));
+                log.fine(String.format("   previous Y translation range %d:%d",
+                bestTransYStart, bestTransYStop));
+                log.fine(String.format("   previous cell size dx=%d dy=%d", dx, dy));
 
-                bestTransXStart = (int)(transX - dx);
-                bestTransXStop = (int)(transX + dx);
-                bestTransYStart = (int)(transY - dy);
-                bestTransYStop = (int)(transY + dy);
+                bestTransXStart = (int)(transX - cellFactor*dx);
+                bestTransXStop = (int)(transX + cellFactor*dx);
+                bestTransYStart = (int)(transY - cellFactor*dy);
+                bestTransYStop = (int)(transY + cellFactor*dy);
 
                 dx = (bestTransXStop - bestTransXStart)/nIntervals;
                 dy = (bestTransYStop - bestTransYStart)/nIntervals;
 
-log.info(String.format("   next X translation range %d:%d",
-bestTransXStart, bestTransXStop));
-log.info(String.format("   next Y translation range %d:%d",
-bestTransYStart, bestTransYStop));
-log.info(String.format("   next cell size dx=%d dy=%d", dx, dy));
-int z = 1;
+                log.fine(String.format("   next X translation range %d:%d",
+                bestTransXStart, bestTransXStop));
+                log.fine(String.format("   next Y translation range %d:%d",
+                bestTransYStart, bestTransYStop));
+                log.fine(String.format("   next cell size dx=%d dy=%d", dx, dy));
+
             } else {
-log.info("   end scale, rot iteration");
+
+                log.fine("   end scale, rot iteration");
 
                 /* TODO:
                 when the nelder-mead didn't produce a better result, we arrive
@@ -2402,22 +2523,33 @@ log.info("   end scale, rot iteration");
         double compS = compareFit.getStDevFromMean();
         double bestS = bestFit.getStDevFromMean();
 
-        double compNormAvg = compAvg/compNMatches;
-        double bestNormAvg = bestAvg/bestNMatches;
+        double r = bestAvg/compAvg;
 
-        //double bestTol = bestFit.getTolerance();
-        //double compTol = compareFit.getTolerance();
-
-        int diffEps = (int)(bestNMatches/10.);
-        if (diffEps < 0) {
+        int diffEps = (int)(1.5*Math.ceil(bestNMatches/10.));
+        if (diffEps == 0) {
             diffEps = 1;
         }
+        
+        int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, compareFit);
+        if ((areSimilar != -1) && (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
+            if (compareFit.getTolerance() < bestFit.getTolerance()) {
+                return true;
+            }
+        }
 
-        if ((compNMatches > 7) && (bestNMatches > 7) &&
+        if (
+            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10) 
+            && (bestNMatches <= 10) 
+            && (Math.abs(bestNMatches - compNMatches) < 2)) {
+            
+            if (r > 1.4) {
+                return true;
+            } else if (r < 0.7) {
+                return false;
+            }
+            
+        } else if ((compNMatches > 5) && (bestNMatches > 5) &&
             (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
-
-            // TODO: this should probably be bestAvg/compAvg
-            double r = bestNormAvg/compNormAvg;
 
             //TODO: may need to revise this
             if (r > 2) {
@@ -2426,6 +2558,28 @@ log.info("   end scale, rot iteration");
                 return false;
             }
 
+        } else if (
+            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10) 
+            && (bestNMatches <= 10) 
+            && (Math.abs(bestNMatches - compNMatches) < 3)) {
+            
+            if (r > 10) {
+                return true;
+            } else if (r < 0.1) {
+                return false;
+            }
+            
+        } else if (
+            (Math.abs(bestNMatches - compNMatches) < 4)
+            && (bestNMatches >= 7) && (bestNMatches <= 15)
+            && (compNMatches >= 7) && (compNMatches <= 15)) {
+            
+            if (r > 10) {
+                return true;
+            } else if (r < 0.1) {
+                return false;
+            }
+            
         }
 
         if (compNMatches > bestNMatches) {
@@ -2514,19 +2668,31 @@ log.info("   end scale, rot iteration");
         double compS = compareFit.getStDevFromMean();
         double bestS = bestFit.getStDevFromMean();
 
-        double compNormAvg = compAvg/compNMatches;
-        double bestNormAvg = bestAvg/bestNMatches;
+        double r = bestAvg/compAvg;
 
-        int diffEps = (int)(bestNMatches/10.);
-        if (diffEps < 0) {
+        int diffEps = (int)(1.5*Math.ceil(bestNMatches/10.));
+        if (diffEps == 0) {
             diffEps = 1;
         }
 
-        if ((compNMatches > 7) && (bestNMatches > 7) &&
+        int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, compareFit);
+        if ((areSimilar != -1) && (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
+            if (compareFit.getTolerance() < bestFit.getTolerance()) {
+                return 1;
+            }
+        }
+        
+        if (
+            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10) 
+            && (bestNMatches <= 10) 
+            && (Math.abs(bestNMatches - compNMatches) < 2)) {
+            if (r > 1.4) {
+                return 1;
+            } else if (r < 0.7) {
+                return -1;
+            }
+        } else if ((compNMatches > 5) && (bestNMatches > 5) &&
             (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
-
-            // TODO: this should probably be bestAvg/compAvg
-            double r = bestNormAvg/compNormAvg;
 
             //TODO: may need to revise this
             if (r > 2) {
@@ -2535,6 +2701,27 @@ log.info("   end scale, rot iteration");
                 return -1;
             }
 
+        } else if (
+            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10) 
+            && (bestNMatches <= 10) && (Math.abs(bestNMatches - compNMatches) < 3)) {
+            
+            if (r > 10) {
+                return 1;
+            } else if (r < 0.1) {
+                return -1;
+            }
+            
+        } else if (
+            (Math.abs(bestNMatches - compNMatches) < 4)
+            && (bestNMatches >= 7) && (bestNMatches <= 15)
+            && (compNMatches >= 7) && (compNMatches <= 15)) {
+            
+            if (r > 10) {
+                return 1;
+            } else if (r < 0.1) {
+                return -1;
+            }
+            
         }
 
         if (compNMatches > bestNMatches) {
@@ -2932,21 +3119,21 @@ log.info("   end scale, rot iteration");
                 fits[worstFitIdx] = fitReflected;
 
             } else if (comp0 == 1) {
-                
+
                 // reflected is better than best fit, so "expand"
                 // "Expansion"
                 double rExpansion = r + (gamma * (rReflect - r));
                 double sExpansion = s + (gamma * (sReflect - s));
-                
+
                 TransformationPointFit fitExpansion =
                     calculateTranslationAndTransformEdges(
                     rExpansion, sExpansion, edges1, edges2,
                     centroidX1, centroidY1);
-                
+
                 int compR = compare(fitReflected, fitExpansion);
 
                 if (compR == 1) {
-            
+
                     // expansion fit is better than reflected fit
                     fits[worstFitIdx] = fitExpansion;
 
@@ -2963,7 +3150,7 @@ log.info("   end scale, rot iteration");
                     (fits[worstFitIdx].getRotationInRadians() - r));
                 double sContraction = s + (beta *
                     (fits[worstFitIdx].getScale() - s));
-                
+
                 TransformationPointFit fitContraction =
                     calculateTranslationAndTransformEdges(
                     rContraction, sContraction, edges1, edges2,
@@ -2972,7 +3159,7 @@ log.info("   end scale, rot iteration");
                 int compC = compare(fits[worstFitIdx], fitContraction);
 
                 if (compC > -1) {
-             
+
                     fits[worstFitIdx] = fitContraction;
 
                 } else {
@@ -3012,7 +3199,7 @@ log.info("   end scale, rot iteration");
                             calculateTranslationAndTransformEdges(
                             rReduction, sReduction, edges1, edges2,
                             centroidX1, centroidY1);
-                        
+
                         fits[i] = fit;
                     }
                 }
@@ -3024,7 +3211,7 @@ log.info("   end scale, rot iteration");
             );
 
             nIter++;
-            
+
             if ((fits[bestFitIdx].getNumberOfMatchedPoints() == convergence)
                 && (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
                 go = false;
@@ -3034,7 +3221,7 @@ log.info("   end scale, rot iteration");
                 go = false;
             }
         }
-        
+
         // additional step that's helpful if not enough iterations are used,
         // is to test the summed transX, transY which represent the center
         // of the simplex against the best fit
@@ -3268,7 +3455,7 @@ log.info("   end scale, rot iteration");
      * @param rotationRadians
      * @param setsAreMatched
      * @param nMaxIter
-     * @return 
+     * @return
      */
     protected TransformationPointFit refineTranslationWithDownhillSimplex(
         PairFloatArray scaledRotatedSet1, PairIntArray set2,
@@ -3415,7 +3602,9 @@ log.info("   end scale, rot iteration");
                     fits[worstFitIdx] = fitContraction;
 
                 } else {
-
+                    if (false) {
+                        
+                    
                     // "Reduction"
                     for (int i = 1; i < fits.length; ++i) {
 
@@ -3455,6 +3644,7 @@ log.info("   end scale, rot iteration");
                                 scale, rotationRadians, setsAreMatched);
 
                         fits[i] = fit;
+                    }
                     }
                 }
             }
@@ -4109,7 +4299,7 @@ log.info("   end scale, rot iteration");
             scale=1.0
             translationX=7.0 translationY=33.0
             number of vertical partitions=3
-        
+
         ----
         in contrast, these 2 sets of meanDistFromModel and stDevFromMean
         are significantly different:
@@ -4125,8 +4315,8 @@ log.info("   end scale, rot iteration");
 
         //TODO: this may need to be adjusted and in the 2 fitness
         // functions which use it... should be it's own method...
-        int nEps = (int)(bestFit.getNumberOfMatchedPoints()/10.);
-        if (nEps < 0) {
+        int nEps = (int)(1.5*Math.ceil(bestFit.getNumberOfMatchedPoints()/10.));
+        if (nEps == 0) {
             nEps = 1;
         }
 
