@@ -427,13 +427,13 @@ public final class PointMatcher {
                 vertPartitionedFits[count] = fit;
 
                 if (bestFitIdx == -1) {
-                    
+
                     bestFitIdx = count;
-                    
+
                 } else {
-                    
+
                     // if nStat != inf, best has smallest st dev from mean
-                    
+
                     if (fitIsBetter(vertPartitionedFits[bestFitIdx],
                         vertPartitionedFits[count])) {
 
@@ -1108,7 +1108,7 @@ public final class PointMatcher {
         double tolerance,
         float[][] matchedIndexesAndDiffs,
         PairIntArray outputMatched1, PairIntArray outputMatched2) {
-        
+
         if (matchedIndexesAndDiffs == null) {
             return;
         }
@@ -1332,7 +1332,7 @@ public final class PointMatcher {
         Map<PairInt, PairFloat> diffsXY = new HashMap<PairInt, PairFloat>();
 
         int nWithinTol = 0;
-        
+
         for (int i = 0; i < transformed1.getN(); i++) {
 
             diffsAsCost[i] = new float[nPoints2];
@@ -1363,12 +1363,12 @@ public final class PointMatcher {
                     diffsAsCostCopy[i][j] = (float)dist;
 
                     diffsXY.put(new PairInt(i, j), new PairFloat(diffX, diffY));
-                    
+
                     nWithinTol++;
                 }
             }
         }
-        
+
         if (nWithinTol == 0) {
             return new float[0][];
         }
@@ -1400,18 +1400,18 @@ public final class PointMatcher {
             }
 
             PairFloat diffXY = diffsXY.get(new PairInt(idx1, idx2));
-            
+
             if (diffXY == null) {
                 continue;
             }
-            
+
             if ((diffXY.getX() <= toleranceX) && (diffXY.getY() <= toleranceY)) {
                 count++;
             }
         }
 
         float[][] output = new float[count][];
-        
+
         if (count == 0) {
             return output;
         }
@@ -1433,11 +1433,11 @@ public final class PointMatcher {
             }
 
             PairFloat diffXY = diffsXY.get(new PairInt(idx1, idx2));
-            
+
             if (diffXY == null) {
                 continue;
             }
-            
+
             if ((diffXY.getX() <= toleranceX) && (diffXY.getY() <= toleranceY)) {
                 output[count] = new float[3];
                 output[count][0] = idx1;
@@ -1566,38 +1566,55 @@ public final class PointMatcher {
 
                 } else {
 
-                    fit = calculateTranslationForUnmatched0(set1, set2,
-                        rotationInRadians, scale,
-                        image1Width, image1Height, image2Width, image2Height,
-                        setsFractionOfImage);
+                    if (nMaxMatchable < 10) {
+                        
+                        TransformationParameters params 
+                            = calculateTranslationForUnmatched(set1, set2,
+                            rotationInRadians, scale,
+                            image1Width, image1Height, image2Width, image2Height,
+                            setsFractionOfImage);
+                        
+                        int image1CentroidX = image1Width >> 1;
+                        int image1CentroidY = image1Height >> 1;
+
+                        PairFloatArray allPoints1Tr = transformer.applyTransformation(
+                            params, image1CentroidX, image1CentroidY, set1);
+
+                        fit = evaluateFitForUnMatchedTransformedGreedy(params,
+                        //fit = evaluateFitForUnMatchedTransformedOptimal(params,
+                            allPoints1Tr, set2, tolTransX, tolTransY);
+                    
+                    } else {
+                        
+                        fit = calculateTranslationForUnmatched0(set1, set2,
+                            rotationInRadians, scale,
+                            image1Width, image1Height, image2Width, image2Height,
+                            setsFractionOfImage);
+                    }
                 }
 
-                //TODO: move the "areSimilar" comparison to out here
-                
-                if (fitIsBetter(bestFit, fit)) {
+                //0==same fit;  1==similar fits;  -1==different fits
+                int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, fit);
+                if (areSimilar == 0) {
+                    //no need to recheck for convergence or change bestFit
+                    continue;
+                } else if (areSimilar == 1) {
+                    log.fine("fit was similar to bestFit");
+                    if (similarToBestFit.isEmpty()) {
+                        similarToBestFit.add(bestFit);
+                    }
+                    similarToBestFit.add(fit);
+                }
+
+                boolean fitIsBetter = fitIsBetter(bestFit, fit);
+
+                if (fitIsBetter) {
 
                     log.fine("**==> fit=" + fit.toString());
 
-                    //0==same fit;  1==similar fits;  -1==different fits
-                    int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, fit);
-                    if (areSimilar == 1) {
-
-                        log.fine("fit was similar to bestFit");
-                        
-                        if (similarToBestFit.isEmpty()) {
-                            similarToBestFit.add(bestFit);
-                        }
-                        similarToBestFit.add(fit);
-                    } else {
-                        if (areSimilar == -1) {
-
-                            log.fine("clear similarToBestFit");
-                            
-                            similarToBestFit.clear();
-                        } else {
-                            // if areSimilar==0, no need to recheck for convergence
-                            continue;
-                        }
+                    if (areSimilar == -1) {
+                        log.fine("clear similarToBestFit");
+                        similarToBestFit.clear();
                     }
 
                     bestFit = fit;
@@ -1653,6 +1670,10 @@ public final class PointMatcher {
 
                     } else {
 
+                        if (bestFit.getNumberOfMatchedPoints() == 0) {
+                            continue;
+                        }
+                        
                         /*
                         TODO:
                         this might be better to perform at the end of the
@@ -1667,28 +1688,27 @@ public final class PointMatcher {
                             setsAreMatched, setsFractionOfImage
                         );
 
-                        if (fitIsBetter(bestFit, fit2)) {
+                        //0==same fit;  1==similar fits;  -1==different fits
+                        int areSimilar2 = fitsAreSimilarWithDiffParameters(bestFit, fit2);
+                        if (areSimilar2 == 1) {
+                            log.fine("fit was similar to bestFit");
+                            if (similarToBestFit.isEmpty()) {
+                                similarToBestFit.add(bestFit);
+                            }
+                            similarToBestFit.add(fit2);
+                        }
+
+                        boolean fitIsBetter2 = fitIsBetter(bestFit, fit2);
+
+                        if (fitIsBetter2) {
 
                             log.fine("***==> fit=" + fit2.toString());
 
-                            //0==same fit;  1==similar fits;  -1==different fits
-                            int areSimilar2 = fitsAreSimilarWithDiffParameters(
-                                bestFit, fit2);
-                            if (areSimilar2 == 1) {
-        
-                                log.fine("fit was similar to bestFit");
-                                
-                                if (similarToBestFit.isEmpty()) {
-                                    similarToBestFit.add(bestFit);
-                                }
-                                similarToBestFit.add(fit2);
-                            } else if (areSimilar2 == -1) {
-        
+                            if (areSimilar == -1) {
                                 log.fine("clear similarToBestFit");
-                                
                                 similarToBestFit.clear();
                             }
-
+                    
                             bestFit = fit2;
                         }
                     }
@@ -1700,9 +1720,9 @@ public final class PointMatcher {
                 bestFitForScale = bestFit;
 
             } else {
-                
+
                 log.fine("previous scale solution was better, so end scale iter");
-                
+
                 //TODO: revisit this with tests
                 // scale was probably smaller so return best solution
                 break;
@@ -1766,7 +1786,6 @@ public final class PointMatcher {
      * quadrant partitioning was used, this is 0.25.  The variable is used
      * internally in determining histogram bin sizes for translation.
      * @return
-     * @deprecated
      */
     public TransformationParameters calculateTranslationForUnmatched(
         PairIntArray set1, PairIntArray set2, float rotation, float scale,
@@ -1955,13 +1974,21 @@ public final class PointMatcher {
 
         int nMaxMatchable = (set1.getN() < set2.getN()) ?
             set1.getN() : set2.getN();
-
-        Transformer transformer = new Transformer();
+        
+        if (nMaxMatchable == 0) {
+            return null;
+        }
 
         int nTranslations =
             (((transXStop - transXStart)/transXDelta) + 1) *
             (((transYStop - transYStart)/transYDelta) + 1);
+        
+        if (nTranslations == 0) {
+            return null;
+        }
 
+        Transformer transformer = new Transformer();
+        
         int image1CentroidX = image1Width >> 1;
         int image1CentroidY = image1Height >> 1;
 
@@ -2008,7 +2035,7 @@ public final class PointMatcher {
                 }
 
                 fits[count] = fit;
-
+  
                 count++;
             }
         }
@@ -2017,7 +2044,7 @@ public final class PointMatcher {
         sortByDescendingMatches(fits, 0, (fits.length - 1));
 
         fits = Arrays.copyOf(fits, numberOfBestToReturn);
-
+//count=47, obj#324 mean=73.72 nm=8, tx=-97, ty=-65;  count=48, obj#376 mean=51.2 nm=8, tx=-97, ty=-40;
         return fits;
     }
 
@@ -2102,6 +2129,7 @@ public final class PointMatcher {
         int bestTransYStart = -1*image2Width + 1;
         int bestTransYStop = image2Width - 1;
 
+        // TODO: consider using point density to estimate this
         int nIntervals = 10;
 
         int dx = (bestTransXStop - bestTransXStart)/nIntervals;
@@ -2164,7 +2192,7 @@ public final class PointMatcher {
                 log.fine(String.format("   next Y translation range %d:%d",
                 bestTransYStart, bestTransYStop));
                 log.fine(String.format("   next cell size dx=%d dy=%d", dx, dy));
-
+int z = 1;
             } else {
 
                 log.fine("   end scale, rot iteration");
@@ -2225,7 +2253,7 @@ public final class PointMatcher {
             throw new IllegalArgumentException("transYDelta cannot be 0");
         }
 
-        int numberOfBestToReturn = 5;//10;
+        int numberOfBestToReturn = 10;
 
         int dsLimit = (transXStop - transXStart) / transXDelta;
 
@@ -2241,6 +2269,10 @@ public final class PointMatcher {
             tolTransX, tolTransY,
             setsAreMatched, setsFractionOfImage, numberOfBestToReturn);
 
+        if (fits == null) {
+            return null;
+        }
+        
         TransformationPointFit fit;
 
         if (transXDelta < dsLimit) {
@@ -2529,7 +2561,7 @@ public final class PointMatcher {
         if (diffEps == 0) {
             diffEps = 1;
         }
-        
+
         int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, compareFit);
         if ((areSimilar != -1) && (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
             if (compareFit.getTolerance() < bestFit.getTolerance()) {
@@ -2538,16 +2570,16 @@ public final class PointMatcher {
         }
 
         if (
-            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10) 
-            && (bestNMatches <= 10) 
+            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10)
+            && (bestNMatches <= 10)
             && (Math.abs(bestNMatches - compNMatches) < 2)) {
-            
+
             if (r > 1.4) {
                 return true;
             } else if (r < 0.7) {
                 return false;
             }
-            
+
         } else if ((compNMatches > 5) && (bestNMatches > 5) &&
             (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
 
@@ -2559,27 +2591,27 @@ public final class PointMatcher {
             }
 
         } else if (
-            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10) 
-            && (bestNMatches <= 10) 
+            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10)
+            && (bestNMatches <= 10)
             && (Math.abs(bestNMatches - compNMatches) < 3)) {
-            
+
             if (r > 10) {
                 return true;
             } else if (r < 0.1) {
                 return false;
             }
-            
+
         } else if (
             (Math.abs(bestNMatches - compNMatches) < 4)
             && (bestNMatches >= 7) && (bestNMatches <= 15)
             && (compNMatches >= 7) && (compNMatches <= 15)) {
-            
+
             if (r > 10) {
                 return true;
             } else if (r < 0.1) {
                 return false;
             }
-            
+
         }
 
         if (compNMatches > bestNMatches) {
@@ -2681,10 +2713,10 @@ public final class PointMatcher {
                 return 1;
             }
         }
-        
+
         if (
-            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10) 
-            && (bestNMatches <= 10) 
+            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10)
+            && (bestNMatches <= 10)
             && (Math.abs(bestNMatches - compNMatches) < 2)) {
             if (r > 1.4) {
                 return 1;
@@ -2702,26 +2734,26 @@ public final class PointMatcher {
             }
 
         } else if (
-            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10) 
+            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10)
             && (bestNMatches <= 10) && (Math.abs(bestNMatches - compNMatches) < 3)) {
-            
+
             if (r > 10) {
                 return 1;
             } else if (r < 0.1) {
                 return -1;
             }
-            
+
         } else if (
             (Math.abs(bestNMatches - compNMatches) < 4)
             && (bestNMatches >= 7) && (bestNMatches <= 15)
             && (compNMatches >= 7) && (compNMatches <= 15)) {
-            
+
             if (r > 10) {
                 return 1;
             } else if (r < 0.1) {
                 return -1;
             }
-            
+
         }
 
         if (compNMatches > bestNMatches) {
@@ -3603,8 +3635,8 @@ public final class PointMatcher {
 
                 } else {
                     if (false) {
-                        
-                    
+
+
                     // "Reduction"
                     for (int i = 1; i < fits.length; ++i) {
 
@@ -4333,7 +4365,7 @@ public final class PointMatcher {
         double divStDev = Math.abs(bestFit.getStDevFromMean()/
             fit.getStDevFromMean());
 
-        if ((Math.abs(1 - divMean) < 0.05) && (Math.abs(1 - divStDev) < 0.05)) {
+        if ((Math.abs(1 - divMean) < 0.05) && (Math.abs(1 - divStDev) < 0.3)) {
             if (bestFit.getParameters().equals(fit.getParameters())) {
                 return 0;
             } else {
@@ -4382,6 +4414,10 @@ public final class PointMatcher {
         boolean setsAreMatched, float setsFractionOfImage) {
 
         double halfRange = 3 * bestFit.getMeanDistFromModel();
+        
+        if (Double.isInfinite(halfRange)) {
+            return null;
+        }
 
         int transXStart = (int)(bestFit.getTranslationX()
             - halfRange);
