@@ -135,7 +135,7 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
             image1OriginalWidth, image1OriginalHeight,
             image2OriginalWidth, image2OriginalHeight,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            setsAreMatched, 1.0f);
+            1.0f);
         
         log.info("FIT: " + fit.toString());
         

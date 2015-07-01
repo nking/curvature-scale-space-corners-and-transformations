@@ -1307,12 +1307,11 @@ public final class PointMatcher {
         int scaleStart = 1;
         int scaleStop = 5;
         int scaleDelta = 1;
-        boolean setsAreMatched = false;
 
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             scene, model, image1Width, image1Height, image2Width, image2Height,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            setsAreMatched, setsFractionOfImage);
+            setsFractionOfImage);
 
         if (fit != null) {
             log.fine("best from calculateTransformationWithGridSearch: "
@@ -1501,7 +1500,6 @@ public final class PointMatcher {
      * @param scaleStart
      * @param scaleStop
      * @param scaleDelta
-     * @param setsAreMatched
      * @param setsFractionOfImage the fraction of their images that set 1
      * and set2 were extracted from. If set1 and set2 were derived from the
      * images without using a partition method, this is 1.0, else if the
@@ -1515,8 +1513,8 @@ public final class PointMatcher {
         int image1Width, int image1Height, int image2Width, int image2Height,
         int rotStart, int rotStop, int rotDelta,
         int scaleStart, int scaleStop, int scaleDelta,
-        boolean setsAreMatched, float setsFractionOfImage) {
-
+        float setsFractionOfImage) {
+        
         if (rotStart < 0 || rotStart > 359) {
             throw new IllegalArgumentException(
             "rotStart must be between 0 and 359, inclusive");
@@ -1571,12 +1569,13 @@ public final class PointMatcher {
 
                 TransformationPointFit fit;
 
-                if (setsAreMatched) {
+                if (nMaxMatchable < 10) {
 
-                    TransformationParameters params =
-                        calculateTranslationForMatched(set1, set2,
+                    TransformationParameters params 
+                        = calculateTranslationForUnmatched(set1, set2,
                         rotationInRadians, scale,
-                        image1Width, image1Height, image2Width, image2Height);
+                        image1Width, image1Height, image2Width, image2Height,
+                        setsFractionOfImage);
 
                     int image1CentroidX = image1Width >> 1;
                     int image1CentroidY = image1Height >> 1;
@@ -1584,36 +1583,16 @@ public final class PointMatcher {
                     PairFloatArray allPoints1Tr = transformer.applyTransformation(
                         params, image1CentroidX, image1CentroidY, set1);
 
-                    fit = evaluateFitForMatchedTransformed(params,
-                        allPoints1Tr, set2);
+                    fit = evaluateFitForUnMatchedTransformedGreedy(params,
+                    //fit = evaluateFitForUnMatchedTransformedOptimal(params,
+                        allPoints1Tr, set2, tolTransX, tolTransY);
 
                 } else {
-
-                    if (nMaxMatchable < 10) {
                         
-                        TransformationParameters params 
-                            = calculateTranslationForUnmatched(set1, set2,
-                            rotationInRadians, scale,
-                            image1Width, image1Height, image2Width, image2Height,
-                            setsFractionOfImage);
-                        
-                        int image1CentroidX = image1Width >> 1;
-                        int image1CentroidY = image1Height >> 1;
-
-                        PairFloatArray allPoints1Tr = transformer.applyTransformation(
-                            params, image1CentroidX, image1CentroidY, set1);
-
-                        fit = evaluateFitForUnMatchedTransformedGreedy(params,
-                        //fit = evaluateFitForUnMatchedTransformedOptimal(params,
-                            allPoints1Tr, set2, tolTransX, tolTransY);
-                    
-                    } else {
-                        
-                        fit = calculateTranslationForUnmatched0(set1, set2,
-                            image1Width, image1Height, image2Width, image2Height,
-                            rotationInRadians, scale,
-                            setsFractionOfImage);
-                    }
+                    fit = calculateTranslationForUnmatched0(set1, set2,
+                        image1Width, image1Height, image2Width, image2Height,
+                        rotationInRadians, scale,
+                        setsFractionOfImage);
                 }
 
                 //0==same fit;  1==similar fits;  -1==different fits
@@ -1681,7 +1660,7 @@ public final class PointMatcher {
                         bestFit = finerGridSearchToDistinguishBest(
                             similarToBestFit, set1, set2,
                             image1Width, image1Height, image2Width, image2Height,
-                            setsAreMatched, setsFractionOfImage);
+                            setsFractionOfImage);
 
                         log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
                         for (TransformationPointFit sFit : similarToBestFit) {
@@ -1708,7 +1687,7 @@ public final class PointMatcher {
                         TransformationPointFit fit2 = finerGridSearch(
                             nIntervals, bestFit, set1, set2,
                             image1Width, image1Height, image2Width, image2Height,
-                            setsAreMatched, setsFractionOfImage
+                            setsFractionOfImage
                         );
 
                         //0==same fit;  1==similar fits;  -1==different fits
@@ -1767,7 +1746,7 @@ public final class PointMatcher {
         bestFit = finerGridSearchToDistinguishBest(similarToBestFit,
             set1, set2,
             image1Width, image1Height, image2Width, image2Height,
-            setsAreMatched, setsFractionOfImage);
+            setsFractionOfImage);
 
         log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
         for (TransformationPointFit sFit : similarToBestFit) {
@@ -1778,7 +1757,257 @@ public final class PointMatcher {
         return bestFit;
     }
 
-      /**
+    /**
+     * Calculate for matched points the Euclidean transformation to transform
+     * set1 into the reference frame of set2.  
+     * @param set1
+     * @param set2
+     * @param image1Width
+     * @param image1Height
+     * @param image2Width
+     * @param rotStart start of rotation search in degrees
+     * @param rotStop stop (exclusive) or rotations search in degrees
+     * @param image2Height
+     * @param rotDelta change in rotation to add to reach next step in rotation
+     *     search in degrees
+     * @param scaleStart
+     * @param scaleStop
+     * @param scaleDelta
+     * @param setsFractionOfImage the fraction of their images that set 1
+     * and set2 were extracted from. If set1 and set2 were derived from the
+     * images without using a partition method, this is 1.0, else if the
+     * quadrant partitioning was used, this is 0.25.  The variable is used
+     * internally in determining histogram bin sizes for translation.
+     *
+     * @return
+     */
+    public TransformationPointFit calculateTransformationWithGridSearchForMatched(
+        PairIntArray set1, PairIntArray set2,
+        int image1Width, int image1Height, int image2Width, int image2Height,
+        int rotStart, int rotStop, int rotDelta,
+        int scaleStart, int scaleStop, int scaleDelta,
+        float setsFractionOfImage) {
+        
+        if (rotStart < 0 || rotStart > 359) {
+            throw new IllegalArgumentException(
+            "rotStart must be between 0 and 359, inclusive");
+        }
+        if (rotStop < 0 || rotStop > 359) {
+            throw new IllegalArgumentException(
+            "rotStop must be between 0 and 359, inclusive");
+        }
+        if (rotDelta < 1) {
+            throw new IllegalArgumentException( "rotDelta must be > 0");
+        }
+        if (!(scaleStart > 0)) {
+            throw new IllegalArgumentException("scaleStart must be > 0");
+        }
+        if (!(scaleStop > 0)) {
+            throw new IllegalArgumentException("scaleStop must be > 0");
+        }
+        if (!(scaleDelta > 0)) {
+            throw new IllegalArgumentException("scaleDelta must be > 0");
+        }
+
+        // rewrite the rotation points into array because start is sometimes
+        // higher number than stop in unit circle
+        int[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
+            rotDelta);
+
+        Transformer transformer = new Transformer();
+
+        int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
+            : set2.getN();
+
+        TransformationPointFit bestFit = null;
+
+        List<TransformationPointFit> similarToBestFit =
+            new ArrayList<TransformationPointFit>();
+
+        TransformationPointFit bestFitForScale = null;
+
+        for (int scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
+            for (int rot : rotation) {
+
+                float rotationInRadians = (float)(rot*Math.PI/180.f);
+
+                TransformationParameters params =
+                    calculateTranslationForMatched(set1, set2,
+                    rotationInRadians, scale,
+                    image1Width, image1Height, image2Width, image2Height);
+
+                int image1CentroidX = image1Width >> 1;
+                int image1CentroidY = image1Height >> 1;
+
+                PairFloatArray allPoints1Tr = transformer.applyTransformation(
+                    params, image1CentroidX, image1CentroidY, set1);
+
+                TransformationPointFit fit = evaluateFitForMatchedTransformed(
+                    params, allPoints1Tr, set2);
+
+                //0==same fit;  1==similar fits;  -1==different fits
+                int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, fit);
+                if (areSimilar == 0) {
+                    //no need to recheck for convergence or change bestFit
+                    continue;
+                } else if (areSimilar == 1) {
+                    log.fine("fit was similar to bestFit");
+                    if (similarToBestFit.isEmpty()) {
+                        similarToBestFit.add(bestFit);
+                    }
+                    similarToBestFit.add(fit);
+                }
+
+                boolean fitIsBetter = fitIsBetter(bestFit, fit);
+
+                if (fitIsBetter) {
+
+                    log.fine("**==> fit=" + fit.toString());
+
+                    if (areSimilar == -1) {
+                        log.fine("clear similarToBestFit");
+                        similarToBestFit.clear();
+                    }
+
+                    bestFit = fit;
+
+                    int bestNMatches = bestFit.getNumberOfMatchedPoints();
+
+                    double bestAvg = bestFit.getMeanDistFromModel();
+
+                    double bestS = bestFit.getStDevFromMean();
+
+                    float fracMatched = (float)bestNMatches/(float)nMaxMatchable;
+
+                    boolean converged = false;
+
+                    if ((bestAvg < 1) && (bestS < 1)) {
+                        if (fracMatched > 0.9) {
+                            converged = true;
+                        }
+                    } else if ((bestAvg < 0.5) && (bestS < 0.5)) {
+                        if (nMaxMatchable > 10 && bestNMatches > 10) {
+                            converged = true;
+                        }
+                    }
+
+                    if (converged) {
+
+                        log.fine("** converged");
+
+                        similarToBestFit.add(0, bestFit);
+                        for (TransformationPointFit fit2 : similarToBestFit) {
+                            if (fit2.getParameters().getRotationInRadians() > 2.*Math.PI) {
+                                float rot2 = fit2.getParameters().getRotationInRadians();
+                                while (rot2 >= 2*Math.PI) {
+                                    rot2 -= 2*Math.PI;
+                                }
+                                fit2.getParameters().setRotationInRadians(rot2);
+                            }
+                            fit2.setMaximumNumberMatchable(nMaxMatchable);
+                        }
+
+                        bestFit = finerGridSearchToDistinguishBestForMatched(
+                            similarToBestFit, set1, set2,
+                            image1Width, image1Height, image2Width, image2Height,
+                            setsFractionOfImage);
+
+                        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+                        for (TransformationPointFit sFit : similarToBestFit) {
+                            log.fine("  sFit=" + sFit.toString());
+                        }
+                        log.fine("      bestFit=" + bestFit.toString());
+
+                        return bestFit;
+
+                    } else {
+
+                        if (bestFit.getNumberOfMatchedPoints() == 0) {
+                            continue;
+                        }
+                        
+                        /*
+                        TODO:
+                        this might be better to perform at the end of the
+                        method right before returning the best result
+                        */
+
+                        int nIntervals = 3;
+
+                        TransformationPointFit fit2 = finerGridSearchForMatched(
+                            nIntervals, bestFit, set1, set2,
+                            image1Width, image1Height, image2Width, image2Height,
+                            setsFractionOfImage
+                        );
+
+                        //0==same fit;  1==similar fits;  -1==different fits
+                        int areSimilar2 = fitsAreSimilarWithDiffParameters(bestFit, fit2);
+                        if (areSimilar2 == 1) {
+                            log.fine("fit was similar to bestFit");
+                            if (similarToBestFit.isEmpty()) {
+                                similarToBestFit.add(bestFit);
+                            }
+                            similarToBestFit.add(fit2);
+                        }
+
+                        boolean fitIsBetter2 = fitIsBetter(bestFit, fit2);
+
+                        if (fitIsBetter2) {
+
+                            log.fine("***==> fit=" + fit2.toString());
+
+                            if (areSimilar == -1) {
+                                log.fine("clear similarToBestFit");
+                                similarToBestFit.clear();
+                            }
+                    
+                            bestFit = fit2;
+                        }
+                    }
+                }
+            }
+
+            if (fitIsBetter(bestFitForScale, bestFit)) {
+
+                bestFitForScale = bestFit;
+
+            } else {
+
+                log.fine("previous scale solution was better, so end scale iter");
+
+                //TODO: revisit this with tests
+                // scale was probably smaller so return best solution
+                break;
+            }
+        }
+
+        similarToBestFit.add(0, bestFit);
+        for (TransformationPointFit fit : similarToBestFit) {
+            if (fit.getParameters().getRotationInRadians() > 2.*Math.PI) {
+                float rot = fit.getParameters().getRotationInRadians();
+                while (rot >= 2*Math.PI) {
+                    rot -= 2*Math.PI;
+                }
+                fit.getParameters().setRotationInRadians(rot);
+            }
+            fit.setMaximumNumberMatchable(nMaxMatchable);
+        }
+
+        bestFit = finerGridSearchToDistinguishBestForMatched(similarToBestFit,
+            set1, set2,
+            image1Width, image1Height, image2Width, image2Height,
+            setsFractionOfImage);
+
+        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+        for (TransformationPointFit sFit : similarToBestFit) {
+            log.fine("  sFit=" + sFit.toString());
+        }
+        log.fine("      bestFit=" + bestFit.toString());
+
+        return bestFit;
+    }
+
+    /**
      * Calculate for unmatched points the Euclidean transformation to transform
      * set1 into the reference frame of set2.  Note, this method does a grid
      * search over rotation and scale in the given intervals, and for each
@@ -1820,7 +2049,8 @@ public final class PointMatcher {
         int rotStart, int rotStop, int rotDelta,
         int scaleStart, int scaleStop, int scaleDelta,
         int transXStart, int transXStop, int transYStart, int transYStop, 
-        int nTransIntervals, float tolTransX, float tolTransY, 
+        int nTransIntervals, 
+        float tolTransX, float tolTransY, 
         float setsFractionOfImage) {
 
         if (rotStart < 0 || rotStart > 359) {
@@ -1873,7 +2103,8 @@ public final class PointMatcher {
                     image1Width, image1Height, image2Width, image2Height,
                     rotationInRadians, scale,
                     transXStart, transXStop, transYStart, transYStop,
-                    nTransIntervals, tolTransX, tolTransY,
+                    nTransIntervals, 
+                    tolTransX, tolTransY,
                     setsFractionOfImage);
 
                 //0==same fit;  1==similar fits;  -1==different fits
@@ -1941,7 +2172,7 @@ public final class PointMatcher {
                         bestFit = finerGridSearchToDistinguishBest(
                             similarToBestFit, set1, set2,
                             image1Width, image1Height, image2Width, image2Height,
-                            setsAreMatched, setsFractionOfImage);
+                            setsFractionOfImage);
 
                         log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
                         for (TransformationPointFit sFit : similarToBestFit) {
@@ -1968,7 +2199,7 @@ public final class PointMatcher {
                         TransformationPointFit fit2 = finerGridSearch(
                             nIntervals, bestFit, set1, set2,
                             image1Width, image1Height, image2Width, image2Height,
-                            setsAreMatched, setsFractionOfImage
+                            setsFractionOfImage
                         );
 
                         //0==same fit;  1==similar fits;  -1==different fits
@@ -2023,11 +2254,11 @@ public final class PointMatcher {
             }
             fit.setMaximumNumberMatchable(nMaxMatchable);
         }
-
+        
         bestFit = finerGridSearchToDistinguishBest(similarToBestFit,
             set1, set2,
             image1Width, image1Height, image2Width, image2Height,
-            setsAreMatched, setsFractionOfImage);
+            setsFractionOfImage);
 
         log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
         for (TransformationPointFit sFit : similarToBestFit) {
@@ -4763,11 +4994,25 @@ int z = 1;
         return -1;
     }
 
+    /**
+     * for unmatched sets of points, use a finer grid search to find the best
+     * fit among the given parameters in similarToBestFit.
+     * 
+     * @param similarToBestFit
+     * @param set1
+     * @param set2
+     * @param image1Width
+     * @param image1Height
+     * @param image2Width
+     * @param image2Height
+     * @param setsFractionOfImage
+     * @return 
+     */
     protected TransformationPointFit finerGridSearchToDistinguishBest(
         List<TransformationPointFit> similarToBestFit,
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
-        boolean setsAreMatched, float setsFractionOfImage) {
+        float setsFractionOfImage) {
 
         if (similarToBestFit.isEmpty()) {
             return null;
@@ -4784,7 +5029,38 @@ int z = 1;
             TransformationPointFit fit = finerGridSearch(
                 nIntervals,  sFit, set1, set2,
                 image1Width, image1Height, image2Width, image2Height,
-                setsAreMatched, setsFractionOfImage);
+                setsFractionOfImage);
+
+            if (fitIsBetter(bestFit, fit)) {
+                bestFit = fit;
+            }
+        }
+
+        return bestFit;
+    }
+    
+    protected TransformationPointFit finerGridSearchToDistinguishBestForMatched(
+        List<TransformationPointFit> similarToBestFit,
+        PairIntArray set1, PairIntArray set2,
+        int image1Width, int image1Height, int image2Width, int image2Height,
+        float setsFractionOfImage) {
+
+        if (similarToBestFit.isEmpty()) {
+            return null;
+        } else if (similarToBestFit.size() == 1) {
+            return similarToBestFit.get(0);
+        }
+
+        int nIntervals = 3;
+
+        TransformationPointFit bestFit = null;
+
+        for (TransformationPointFit sFit : similarToBestFit) {
+
+            TransformationPointFit fit = finerGridSearchForMatched(
+                nIntervals,  sFit, set1, set2,
+                image1Width, image1Height, image2Width, image2Height,
+                setsFractionOfImage);
 
             if (fitIsBetter(bestFit, fit)) {
                 bestFit = fit;
@@ -4798,7 +5074,7 @@ int z = 1;
         int nIntervals, TransformationPointFit bestFit,
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
-        boolean setsAreMatched, float setsFractionOfImage) {
+        float setsFractionOfImage) {
 
         double halfRange = 3 * bestFit.getMeanDistFromModel();
         
@@ -4826,6 +5102,11 @@ int z = 1;
         if (transYDelta == 0) {
             transYDelta++;
         }
+        
+        float tolTransX2 = (float)bestFit.getTolerance();
+        float tolTransY2 = (float)bestFit.getTolerance();
+        
+        boolean setsAreMatched = false;
 
         int image1CentroidX = image1Width >> 1;
         int image1CentroidY = image1Height >> 1;
@@ -4833,9 +5114,6 @@ int z = 1;
         PairFloatArray scaledRotatedSet1 = scaleAndRotate(set1,
             bestFit.getRotationInRadians(), bestFit.getScale(),
             image1CentroidX, image1CentroidY);
-
-        float tolTransX2 = (float)bestFit.getTolerance();
-        float tolTransY2 = (float)bestFit.getTolerance();
 
         TransformationPointFit fit2 =
             calculateTranslationFromGridThenDownhillSimplex(
@@ -4850,4 +5128,59 @@ int z = 1;
         return fit2;
     }
 
+    private TransformationPointFit finerGridSearchForMatched(
+        int nIntervals, TransformationPointFit bestFit,
+        PairIntArray set1, PairIntArray set2,
+        int image1Width, int image1Height, int image2Width, int image2Height,
+        float setsFractionOfImage) {
+
+        double halfRange = 3 * bestFit.getMeanDistFromModel();
+
+        if (Double.isInfinite(halfRange)) {
+            return null;
+        }
+
+        int transXStart = (int)(bestFit.getTranslationX()
+            - halfRange);
+
+        int transXStop = (int)(bestFit.getTranslationX()
+            + halfRange);
+
+        int transYStart = (int)(bestFit.getTranslationY()
+            - halfRange);
+
+        int transYStop = (int)(bestFit.getTranslationY()
+            + halfRange);
+
+        int transXDelta = (transXStop - transXStart)/nIntervals;
+        int transYDelta = (transYStop - transYStart)/nIntervals;
+        if (transXDelta == 0) {
+            transXDelta++;
+        }
+        if (transYDelta == 0) {
+            transYDelta++;
+        }
+        
+        int image1CentroidX = image1Width >> 1;
+        int image1CentroidY = image1Height >> 1;
+
+        PairFloatArray scaledRotatedSet1 = scaleAndRotate(set1,
+            bestFit.getRotationInRadians(), bestFit.getScale(),
+            image1CentroidX, image1CentroidY);
+
+        float unusedTolerance = Float.MIN_VALUE;
+        boolean setsAreMatched = true;
+        
+        TransformationPointFit fit2 =
+            calculateTranslationFromGridThenDownhillSimplex(
+            scaledRotatedSet1, set1, set2,
+            image1Width, image1Height, image2Width, image2Height,
+            bestFit.getRotationInRadians(), bestFit.getScale(),
+            transXStart, transXStop, transXDelta,
+            transYStart, transYStop, transYDelta,
+            unusedTolerance, unusedTolerance, setsAreMatched,
+            setsFractionOfImage);
+
+        return fit2;
+    }
 }
