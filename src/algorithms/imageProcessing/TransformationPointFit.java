@@ -16,11 +16,14 @@ public class TransformationPointFit {
     
     private final double stDevFromMean;
     
-    private double tolerance = Double.MAX_VALUE;
+    private float transTolX = Float.MAX_VALUE;
+    
+    private float transTolY = Float.MAX_VALUE;
     
     public TransformationPointFit(TransformationParameters theParameters, 
         int numberOfMatchedPoints, double theMeanDistFromModel, 
-        double theStDevFromMean, double theTolerance) {
+        double theStDevFromMean, float theTranslationXTolerance,
+        float theTranslationYTolerance) {
         
         parameters = theParameters;
         
@@ -30,7 +33,9 @@ public class TransformationPointFit {
         
         stDevFromMean = theStDevFromMean;
         
-        tolerance = theTolerance;
+        transTolX = theTranslationXTolerance;
+        
+        transTolY = theTranslationYTolerance;
     }
 
     /**
@@ -82,8 +87,17 @@ public class TransformationPointFit {
      * is less than tolerance.
      * @return 
      */
-    public double getTolerance() {
-        return tolerance;
+    public float getTranslationXTolerance() {
+        return transTolX;
+    }
+    
+    /**
+     * tolerance used when including only residuals whose absolute value
+     * is less than tolerance.
+     * @return 
+     */
+    public float getTranslationYTolerance() {
+        return transTolY;
     }
 
     /**
@@ -100,10 +114,6 @@ public class TransformationPointFit {
         return stDevFromMean;
     }
     
-    public void setTolerance(double tol) {
-        tolerance = tol;
-    }
-
     /**
      * @return the nMaxMatchable
      */
@@ -111,6 +121,14 @@ public class TransformationPointFit {
         return nMaxMatchable;
     }
 
+    public void setTranslationXTolerance(float theTolerance) {
+        transTolX = theTolerance;
+    }
+    
+    public void setTranslationYTolerance(float theTolerance) {
+        transTolY = theTolerance;
+    }
+    
     /**
      * @param maximumNumberMatchable the nMaxMatchable to set
      */
@@ -130,8 +148,10 @@ public class TransformationPointFit {
             .append(Double.toString(meanDistFromModel))
             .append(" stDevFromMean=")
             .append(Double.toString(stDevFromMean))
-            .append(" tolerance=")
-            .append(Double.toString(tolerance))
+            .append(" translationXTolerance=")
+            .append(Float.toString(transTolX))
+            .append(" translationYTolerance=")
+            .append(Float.toString(transTolY))
             .append(" ")
             .append(parameters.toString());
         
