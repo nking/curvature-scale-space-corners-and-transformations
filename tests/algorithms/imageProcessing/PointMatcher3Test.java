@@ -90,10 +90,6 @@ public class PointMatcher3Test extends TestCase {
 
                 int nPoints = (nTest + 1) * 7;
                 
-                /*if (nPoints < 12 && numberOfPartitions==3) {
-                    numberOfPartitions = 2;
-                }*/
-
                 log.info("test for nPoints=" + nPoints + " params=" + params.toString()
                     + " number of vertical partitions=" + numberOfPartitions);
 

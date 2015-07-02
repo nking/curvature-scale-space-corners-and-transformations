@@ -259,11 +259,11 @@ public final class PointMatcher {
      * @param outputMatchedRightXY
      * @param useLargestToleranceForOutput use the largest tolerance for
      * applying the transformation to point sets during matching.  the largest
-     * tolerance is the class variable generalTolerance.  
+     * tolerance is the class variable generalTolerance.
      * If useLargestToleranceForOutput is false, the transformation's best
      * fit is used during matching (which should provide a smaller but more
      * certain matched output).  If this method is used as a precursor to
-     * projection (epipolar) solvers of sets that do have projection components, 
+     * projection (epipolar) solvers of sets that do have projection components,
      * one might prefer to set this to true to allow more to be matched.
      * @return
      */
@@ -340,7 +340,7 @@ public final class PointMatcher {
             image1CentroidY);
 
         float transTolX, transTolY, tolerance;
-        
+
         if (useLargestToleranceForOutput) {
             tolerance = generalTolerance;
             transTolX = generalTolerance * (float)Math.sqrt(1./2);
@@ -363,7 +363,7 @@ public final class PointMatcher {
     /**
      * given unmatched point sets unmatchedLeftXY and unmatchedRightXY,
      * partitions the data in numberOfPartitions vertically, finds the
-     * best match for each combination of vertical partitions as subsets 
+     * best match for each combination of vertical partitions as subsets
      * of their parent sets, then finds the best partition solution
      * among those, then refines the solution with a more detailed search
      * using all points.
@@ -681,11 +681,11 @@ public final class PointMatcher {
      * @param image2Height
      * @param useLargestToleranceForOutput use the largest tolerance for
      * applying the transformation to point sets during matching.  the largest
-     * tolerance is the class variable generalTolerance.  
+     * tolerance is the class variable generalTolerance.
      * If useLargestToleranceForOutput is false, the transformation's best
      * fit is used during matching (which should provide a smaller but more
      * certain matched output).  If this method is used as a precursor to
-     * projection (epipolar) solvers of sets that do have projection components, 
+     * projection (epipolar) solvers of sets that do have projection components,
      * one might prefer to set this to true to allow more to be matched.
      * @return best fitting transformation between unmatched points sets
      * left and right
@@ -723,7 +723,7 @@ public final class PointMatcher {
             image1CentroidY);
 
         float transTolX, transTolY, tolerance;
-        
+
         if (useLargestToleranceForOutput) {
             tolerance = generalTolerance;
             transTolX = generalTolerance * (float)Math.sqrt(1./2);
@@ -747,11 +747,11 @@ public final class PointMatcher {
 
         return bestFit;
     }
-    
+
     /**
      * Given unmatched point sets unmatchedLeftXY and unmatchedRightXY,
-     * finds the best Euclidean transformation, then finds the best partition 
-     * solution among those, then refines the solution with a more detailed 
+     * finds the best Euclidean transformation, then finds the best partition
+     * solution among those, then refines the solution with a more detailed
      * search using all points.
      *
      * @param unmatchedLeftXY
@@ -869,11 +869,11 @@ public final class PointMatcher {
      * @param image2Height
      * @param useLargestToleranceForOutput use the largest tolerance for
      * applying the transformation to point sets during matching.  the largest
-     * tolerance is the class variable generalTolerance.  
+     * tolerance is the class variable generalTolerance.
      * If useLargestToleranceForOutput is false, the transformation's best
      * fit is used during matching (which should provide a smaller but more
      * certain matched output).  If this method is used as a precursor to
-     * projection (epipolar) solvers of sets that do have projection components, 
+     * projection (epipolar) solvers of sets that do have projection components,
      * one might prefer to set this to true to allow more to be matched.
      * @return best fitting transformation between unmatched points sets
      * left and right
@@ -910,7 +910,7 @@ public final class PointMatcher {
             image1CentroidY);
 
         float transTolX, transTolY, tolerance;
-        
+
         if (useLargestToleranceForOutput) {
             tolerance = generalTolerance;
             transTolX = generalTolerance * (float)Math.sqrt(1./2);
@@ -1849,11 +1849,12 @@ public final class PointMatcher {
                     fitT = reevaluateForNewTolerance(fit,
                         tolX, tolY, set1, set2, image1Width, image1Height);
                 }
-/*
+
 if (bestFitT != null && fitT != null) {
 log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n           fit=" + fitT.toString());
 }
-*/
+
+
                 boolean fitIsBetter = fitIsBetter(bestFitT, fitT);
 
                 if (fitIsBetter) {
@@ -1930,7 +1931,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                         for (TransformationPointFit sFit : similarToBestFit) {
                             log.fine("  sFit=" + sFit.toString());
                         }
-                        
+
                         log.fine("      bestFit=" + bestFit.toString());
 
                         return bestFit;
@@ -1990,6 +1991,9 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
                 log.fine("previous scale solution was better, so end scale iter");
 
+                // revert to previous scale
+                bestFit = bestFitForScale;
+                
                 //TODO: revisit this with tests
                 // scale was probably smaller so return best solution
                 break;
@@ -2243,6 +2247,9 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
                 log.fine("previous scale solution was better, so end scale iter");
 
+                // revert to previous scale
+                bestFit = bestFitForScale;
+                
                 //TODO: revisit this with tests
                 // scale was probably smaller so return best solution
                 break;
@@ -2504,11 +2511,14 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                 bestFitForScale = bestFit;
 
                 log.fine("   ==> bestFitForScale=" + bestFitForScale.toString());
-                
+
             } else {
 
                 log.fine("previous scale solution was better, so end scale iter");
 
+                // revert to previous scale
+                bestFit = bestFitForScale;
+                
                 //TODO: revisit this with tests
                 // scale was probably smaller so return best solution
                 break;
@@ -2536,7 +2546,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         for (TransformationPointFit sFit : similarToBestFit) {
             log.fine("  sFit=" + sFit.toString());
         }
-        
+
         if (bestFit != null) {
             bestFit.setMaximumNumberMatchable(nMaxMatchable);
             log.fine("      bestFit=" + bestFit.toString());
@@ -2544,7 +2554,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
         return bestFit;
     }
-    
+
     protected TransformationPointFit[] evaluateTranslationsOverGrid(
         PairIntArray set1, PairIntArray set2,
         final int image1Width, final int image1Height, final int image2Width,
@@ -2644,7 +2654,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                 }
 
                 fits[count] = fit;
-
+//-229,-53, count=69, obj#753  mean=15.6, n=20, stdv=3.2; compare to obj#330;  tolerance too large
                 count++;
             }
         }
@@ -2860,9 +2870,16 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         int limit = 1;
 
         boolean setsAreMatched = false;
+        
+        int nIter = 0;
 
         while ((dx > limit) && (dy > limit)) {
-
+            
+            if (nIter > 0) {
+                tolTransX = dx;
+                tolTransY = dy;
+            }
+            
             TransformationPointFit fit =
                 calculateTranslationFromGridThenDownhillSimplex(
                 scaledRotatedSet1, set1, set2,
@@ -2873,9 +2890,17 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                 tolTransX, tolTransY,
                 setsAreMatched, setsFractionOfImage);
 
+if (bestFit != null && fit != null) {
+log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n              fit=" + fit.toString());
+}
+
             if (fitIsBetter(bestFit, fit)) {
 
-                log.fine("  *==> fit=" + fit.toString());
+                if (bestFit == null) {
+                    log.fine("  *==> new cycle fit=" + fit.toString());
+                } else {
+                    log.fine("  *==> fit=" + fit.toString());
+                }
 
                 bestFit = fit;
 
@@ -2916,6 +2941,8 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
                 break;
             }
+            
+            nIter++;
         }
 
         if (bestFit != null) {
@@ -2981,9 +3008,9 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         if (fits == null) {
             return null;
         }
-        
+
         /*
-        if the first 4 or so top fits all have nMatchedPoints=1 or 0, then 
+        if the first 4 or so top fits all have nMatchedPoints=1 or 0, then
         don't use the downhill simplex.
         */
         boolean tooFewMatches = true;
@@ -2997,7 +3024,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         if (tooFewMatches) {
             return fits[0];
         }
-       
+
         TransformationPointFit fit;
 
         if (transXDelta < dsLimit) {
@@ -3031,7 +3058,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         if (fit != null) {
             fit.setMaximumNumberMatchable(maxNMatchable);
         }
-        
+
         return fit;
     }
 
@@ -3192,7 +3219,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             throw new IllegalArgumentException(
             "scaledRotatedSet1 cannot be null");
         }
-        
+
         int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
             scaledRotatedSet1.getN() : set2.getN();
 
@@ -3260,7 +3287,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
         TransformationPointFit fit = new TransformationPointFit(params, nMatched,
             avg, stDev, tolTransX, tolTransY);
-        
+
         fit.setMaximumNumberMatchable(nMaxMatchable);
 
         return fit;
@@ -3290,7 +3317,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         double bestS = bestFit.getStDevFromMean();
 
         double r = bestAvg/compAvg;
-        
+
         int diffEps = (int)Math.round(2.*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
         if (diffEps == 0) {
             diffEps = 1;
@@ -3691,7 +3718,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         PairIntArray[] edges2, final TransformationParameters params,
         final int centroidX1, final int centroidY1,
         final int centroidX2, final int centroidY2) {
-        
+
         if (edges1 == null || edges1.length == 0) {
             throw new IllegalArgumentException("edges1 cannot be null or empty");
         }
@@ -3983,7 +4010,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             }
             fits[bestFitIdx].getParameters().setRotationInRadians(rot);
         }
-        
+
         return fits[bestFitIdx].getParameters();
     }
 
@@ -4206,7 +4233,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
         int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
             scaledRotatedSet1.getN() : set2.getN();
-        
+
         if (nMaxMatchable == 0) {
             return null;
         }
@@ -4441,7 +4468,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             n2 += edge.getN();
         }
         int nMaxMatchable = (n1 < n2) ? n1 : n2;
-        
+
         if (nMaxMatchable == 0) {
             return null;
         }
@@ -4730,14 +4757,14 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         float translationX, float translationY,
         float tolTransX, float tolTransY, float scale,
         float rotationRadians, int centroidX1, int centroidY1) {
-        
+
         if (edges1 == null || edges1.length == 0) {
             throw new IllegalArgumentException("edges1 cannot be null or empty");
         }
         if (edges2 == null || edges2.length == 0) {
             throw new IllegalArgumentException("edges2 cannot be null or empty");
         }
-        
+
         int n1 = 0;
         for (PairIntArray edge : edges1) {
             n1 += edge.getN();
@@ -4747,11 +4774,11 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             n2 += edge.getN();
         }
         int nMaxMatchable = (n1 < n2) ? n1 : n2;
-        
+
         if (nMaxMatchable == 0) {
             return null;
         }
-        
+
         List<Double> residuals = new ArrayList<Double>();
 
         int nTotal = 0;
@@ -4827,7 +4854,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             throw new IllegalArgumentException(
             "edge2 cannot be null or empty");
         }
-        
+
         int nMaxMatchable = (edge1.getN() < edge2.getN()) ?
             edge1.getN() : edge2.getN();
 
@@ -4910,7 +4937,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             "for matched sets, set2 must be the same length as scaledRotated"
             + " X and Y");
         }
-        
+
         int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
             scaledRotatedSet1.getN() : set2.getN();
 
@@ -4952,7 +4979,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             set2.getN(), avgDiff, stDev, Float.MAX_VALUE, Float.MAX_VALUE);
 
         fit.setMaximumNumberMatchable(nMaxMatchable);
-        
+
         return fit;
     }
 
