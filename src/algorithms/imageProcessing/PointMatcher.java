@@ -656,7 +656,6 @@ public final class PointMatcher {
 if (bestFit != null && fit != null) {
 log.fine("    partition compare  \n      **==> bestFit=" + bestFit.toString() + "\n           fit=" + fit.toString());
 }
-       //TODO: make the tolerance corrections here
 
         boolean fitIsBetter = fitIsBetter(bestFit, fit);
 
@@ -1810,72 +1809,19 @@ log.fine("    partition keeping bestFit=" + bestFit.toString());
                     rotationInRadians, scale,
                     setsFractionOfImage);
 
-                /*
-                -1 : both are not null and bestFit tolerances are smaller
-                 0 : both are not null and tolerances are same.
-                 1 : both are not null and fit tolerances are smaller
-                 2 : both are not null and the x and y fits and smaller and larger in a mix
-                 3 : either bestFit or fit is null
-                */
-                int compTol = compareTolerance(bestFit, fit);
+                TransformationPointFit[] reevalFits = new TransformationPointFit[2];
+                boolean[] fitIsBetter = new boolean[1];
+                
+                reevaluateFitsForCommonTolerance(bestFit, fit, 
+                    set1, set2, image1Width, image1Height, reevalFits, 
+                    fitIsBetter);
+                
+                bestFit = reevalFits[0];
+                fit = reevalFits[1];
 
-                TransformationPointFit bestFitT = bestFit;
-                TransformationPointFit fitT = fit;
-
-                if (compTol == 1) {
-
-                    bestFitT = reevaluateForNewTolerance(bestFit,
-                        fit.getTranslationXTolerance(),
-                        fit.getTranslationYTolerance(),
-                        set1, set2,
-                        image1Width, image1Height);
-
-                } else if (compTol == -1) {
-
-                     fitT = reevaluateForNewTolerance(fit,
-                        bestFit.getTranslationXTolerance(),
-                        bestFit.getTranslationYTolerance(),
-                        set1, set2,
-                        image1Width, image1Height);
-
-                } else if (compTol == 2) {
-
-                    // TODO: may need to revise this
-
-                    // reduce both to smallest tolerances
-
-                    float tolX = bestFit.getTranslationXTolerance();
-                    if (fit.getTranslationXTolerance() < tolX) {
-                        tolX = fit.getTranslationXTolerance();
-                    }
-
-                    float tolY = bestFit.getTranslationYTolerance();
-                    if (fit.getTranslationYTolerance() < tolY) {
-                        tolY = fit.getTranslationYTolerance();
-                    }
-
-                    bestFitT = reevaluateForNewTolerance(bestFit,
-                        tolX, tolY, set1, set2, image1Width, image1Height);
-
-                    fitT = reevaluateForNewTolerance(fit,
-                        tolX, tolY, set1, set2, image1Width, image1Height);
-                }
-
-if (bestFitT != null && fitT != null) {
-if (compTol == 1) {
-    log.fine("    rot re-evaluated bestFit at lower tolerance");
-} else if (compTol == 2) {
-    log.fine("    rot re-evaluated bestFit and fit at common tolerance");
+if (bestFit != null && fit != null) {
+log.fine("    rot compare  \n      **==> bestFit=" + bestFit.toString() + "\n           fit=" + fit.toString());
 }
-log.fine("    rot compare  \n      **==> bestFit=" + bestFitT.toString() + "\n           fit=" + fitT.toString());
-}
-
-
-                boolean fitIsBetter = fitIsBetter(bestFitT, fitT);
-
-                if (fitIsBetter) {
-                    fit = fitT;
-                }
 
                 int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, fit);
 
@@ -1892,11 +1838,11 @@ log.fine("    rot compare  \n      **==> bestFit=" + bestFitT.toString() + "\n  
                 }
 
 //TODO: temporary debugging:
-if (!fitIsBetter && (bestFit != null)) {
+if (!fitIsBetter[0] && (bestFit != null)) {
 log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 }
 
-                if (fitIsBetter) {
+                if (fitIsBetter[0]) {
 
                     log.fine("**==> rot fit=" + fit.toString());
 
@@ -5553,4 +5499,79 @@ if (bestFit.getNumberOfMatchedPoints() == 35) {
         return new float[]{minTX, maxTX, minTY, maxTY};
     }
 
+    protected void reevaluateFitsForCommonTolerance(
+        TransformationPointFit bestFit, TransformationPointFit fit, 
+        PairIntArray set1, PairIntArray set2, 
+        int image1Width, int image1Height, 
+        final TransformationPointFit[] reevalFits, final boolean[] fitIsBetter) {
+        
+        /*
+        -1 : both are not null and bestFit tolerances are smaller
+         0 : both are not null and tolerances are same.
+         1 : both are not null and fit tolerances are smaller
+         2 : both are not null and the x and y fits and smaller and larger in a mix
+         3 : either bestFit or fit is null
+        */
+        int compTol = compareTolerance(bestFit, fit);
+
+        TransformationPointFit bestFitT = bestFit;
+        TransformationPointFit fitT = fit;
+
+        if (compTol == 1) {
+
+            bestFitT = reevaluateForNewTolerance(bestFit,
+                fit.getTranslationXTolerance(),
+                fit.getTranslationYTolerance(),
+                set1, set2,
+                image1Width, image1Height);
+
+        } else if (compTol == -1) {
+
+             fitT = reevaluateForNewTolerance(fit,
+                bestFit.getTranslationXTolerance(),
+                bestFit.getTranslationYTolerance(),
+                set1, set2,
+                image1Width, image1Height);
+
+        } else if (compTol == 2) {
+
+            // TODO: may need to revise this
+
+            // reduce both to smallest tolerances
+
+            float tolX = bestFit.getTranslationXTolerance();
+            if (fit.getTranslationXTolerance() < tolX) {
+                tolX = fit.getTranslationXTolerance();
+            }
+
+            float tolY = bestFit.getTranslationYTolerance();
+            if (fit.getTranslationYTolerance() < tolY) {
+                tolY = fit.getTranslationYTolerance();
+            }
+
+            bestFitT = reevaluateForNewTolerance(bestFit,
+                tolX, tolY, set1, set2, image1Width, image1Height);
+
+            fitT = reevaluateForNewTolerance(fit,
+                tolX, tolY, set1, set2, image1Width, image1Height);
+        }
+        
+        fitIsBetter[0] = fitIsBetter(bestFitT, fitT);
+
+        reevalFits[0] = bestFit;
+        
+        if (fitIsBetter[0]) {
+           reevalFits[1] = fitT;
+        }
+
+if (bestFit != null && fit != null) {
+if (compTol == 1) {
+    log.fine("    rot re-evaluated bestFit at lower tolerance");
+} else if (compTol == 2) {
+    log.fine("    rot re-evaluated bestFit and fit at common tolerance");
+}
+}
+ 
+    }
+    
 }
