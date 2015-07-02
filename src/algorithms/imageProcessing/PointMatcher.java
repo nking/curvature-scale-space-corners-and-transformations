@@ -1570,34 +1570,11 @@ public final class PointMatcher {
 
                 float rotationInRadians = (float)(rot*Math.PI/180.f);
 
-                TransformationPointFit fit;
-
-                if (nMaxMatchable < 10) {
-
-                    TransformationParameters params
-                        = calculateTranslationForUnmatched(set1, set2,
-                        rotationInRadians, scale,
-                        image1Width, image1Height, image2Width, image2Height,
-                        setsFractionOfImage);
-
-                    int image1CentroidX = image1Width >> 1;
-                    int image1CentroidY = image1Height >> 1;
-
-                    PairFloatArray allPoints1Tr = transformer.applyTransformation(
-                        params, image1CentroidX, image1CentroidY, set1);
-
-       //TODO: consider using current bestFit.getToleranc() here
-                    fit = evaluateFitForUnMatchedTransformedGreedy(params,
-                    //fit = evaluateFitForUnMatchedTransformedOptimal(params,
-                        allPoints1Tr, set2, tolTransX, tolTransY);
-
-                } else {
-
-                    fit = calculateTranslationForUnmatched0(set1, set2,
-                        image1Width, image1Height, image2Width, image2Height,
-                        rotationInRadians, scale,
-                        setsFractionOfImage);
-                }
+                TransformationPointFit fit = calculateTranslationForUnmatched0(
+                    set1, set2,
+                    image1Width, image1Height, image2Width, image2Height,
+                    rotationInRadians, scale,
+                    setsFractionOfImage);
 
                 /*
                 -1 : both are not null and bestFit tolerances are smaller
@@ -1614,16 +1591,16 @@ public final class PointMatcher {
                 if (compTol == 1) {
 
                     bestFitT = reevaluateForNewTolerance(bestFit,
-                        (float)fit.getTranslationXTolerance(),
-                        (float)fit.getTranslationYTolerance(),
+                        fit.getTranslationXTolerance(),
+                        fit.getTranslationYTolerance(),
                         set1, set2,
                         image1Width, image1Height);
 
                 } else if (compTol == -1) {
 
                      fitT = reevaluateForNewTolerance(fit,
-                        (float)bestFit.getTranslationXTolerance(),
-                        (float)bestFit.getTranslationYTolerance(),
+                        bestFit.getTranslationXTolerance(),
+                        bestFit.getTranslationYTolerance(),
                         set1, set2,
                         image1Width, image1Height);
 
@@ -2301,6 +2278,8 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
                 bestFitForScale = bestFit;
 
+                log.fine("   ==> bestFitForScale=" + bestFitForScale.toString());
+                
             } else {
 
                 log.fine("previous scale solution was better, so end scale iter");
