@@ -1626,11 +1626,11 @@ public final class PointMatcher {
                     fitT = reevaluateForNewTolerance(fit,
                         tolX, tolY, set1, set2, image1Width, image1Height);
                 }
-
+/*
 if (bestFitT != null && fitT != null) {
 log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n           fit=" + fitT.toString());
 }
-
+*/
                 boolean fitIsBetter = fitIsBetter(bestFitT, fitT);
 
                 if (fitIsBetter) {
@@ -1707,6 +1707,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                         for (TransformationPointFit sFit : similarToBestFit) {
                             log.fine("  sFit=" + sFit.toString());
                         }
+                        
                         log.fine("      bestFit=" + bestFit.toString());
 
                         return bestFit;
@@ -1724,8 +1725,6 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                         */
 
                         int nIntervals = 3;
-
-//TODO: use bestFit.tolerance here?
 
                         TransformationPointFit fit2 = finerGridSearch(
                             nIntervals, bestFit, set1, set2,
@@ -1796,6 +1795,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             log.fine("  sFit=" + sFit.toString());
         }
         if (bestFit != null) {
+            bestFit.setMaximumNumberMatchable(nMaxMatchable);
             log.fine("      bestFit=" + bestFit.toString());
         }
 
@@ -2047,8 +2047,10 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         for (TransformationPointFit sFit : similarToBestFit) {
             log.fine("  sFit=" + sFit.toString());
         }
-        log.fine("      bestFit=" + bestFit.toString());
-
+        if (bestFit != null) {
+            bestFit.setMaximumNumberMatchable(nMaxMatchable);
+            log.fine("      bestFit=" + bestFit.toString());
+        }
         return bestFit;
     }
 
@@ -2311,7 +2313,11 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         for (TransformationPointFit sFit : similarToBestFit) {
             log.fine("  sFit=" + sFit.toString());
         }
-        log.fine("      bestFit=" + bestFit.toString());
+        
+        if (bestFit != null) {
+            bestFit.setMaximumNumberMatchable(nMaxMatchable);
+            log.fine("      bestFit=" + bestFit.toString());
+        }
 
         return bestFit;
     }
@@ -2681,7 +2687,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         int bestTransYStop = image2Width - 1;
 
         // TODO: consider using point density to estimate this
-        int nIntervals = 10;
+        int nIntervals = 11;
 
         int dx = (bestTransXStop - bestTransXStart)/nIntervals;
         int dy = (bestTransYStop - bestTransYStart)/nIntervals;
@@ -2934,7 +2940,23 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         if (fits == null) {
             return null;
         }
-
+        
+        /*
+        if the first 4 or so top fits all have nMatchedPoints=1 or 0, then 
+        don't use the downhill simplex.
+        */
+        boolean tooFewMatches = true;
+        for (int i = 0; i < 4; ++i) {
+            TransformationPointFit fit = fits[i];
+            if (fit != null && fit.getNumberOfMatchedPoints() > 1) {
+                tooFewMatches = false;
+                break;
+            }
+        }
+        if (tooFewMatches) {
+            return fits[0];
+        }
+       
         TransformationPointFit fit;
 
         if (transXDelta < dsLimit) {
@@ -2965,6 +2987,10 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                 setsAreMatched, nMaxIter);
         }
 
+        if (fit != null) {
+            fit.setMaximumNumberMatchable(maxNMatchable);
+        }
+        
         return fit;
     }
 
@@ -3125,6 +3151,9 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             throw new IllegalArgumentException(
             "scaledRotatedSet1 cannot be null");
         }
+        
+        int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
+            scaledRotatedSet1.getN() : set2.getN();
 
         Set<Integer> chosen = new HashSet<Integer>();
 
@@ -3190,6 +3219,8 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
         TransformationPointFit fit = new TransformationPointFit(params, nMatched,
             avg, stDev, tolTransX, tolTransY);
+        
+        fit.setMaximumNumberMatchable(nMaxMatchable);
 
         return fit;
     }
@@ -3218,7 +3249,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         double bestS = bestFit.getStDevFromMean();
 
         double r = bestAvg/compAvg;
-
+        
         int diffEps = (int)Math.round(2.*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
         if (diffEps == 0) {
             diffEps = 1;
@@ -3619,6 +3650,13 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         PairIntArray[] edges2, final TransformationParameters params,
         final int centroidX1, final int centroidY1,
         final int centroidX2, final int centroidY2) {
+        
+        if (edges1 == null || edges1.length == 0) {
+            throw new IllegalArgumentException("edges1 cannot be null or empty");
+        }
+        if (edges2 == null || edges2.length == 0) {
+            throw new IllegalArgumentException("edges2 cannot be null or empty");
+        }
 
         //TODO: set this empirically from tests
         double convergence = 0;
@@ -3904,7 +3942,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             }
             fits[bestFitIdx].getParameters().setRotationInRadians(rot);
         }
-
+        
         return fits[bestFitIdx].getParameters();
     }
 
@@ -3929,11 +3967,11 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         PairIntArray[] edges1, PairIntArray[] edges2,
         int centroidX1, int centroidY1) {
 
-        if (edges1 == null) {
-            throw new IllegalArgumentException("edges1 cannot be null");
+        if (edges1 == null || edges1.length == 0) {
+            throw new IllegalArgumentException("edges1 cannot be null or empty");
         }
-        if (edges2 == null) {
-            throw new IllegalArgumentException("edges2 cannot be null");
+        if (edges2 == null || edges2.length == 0) {
+            throw new IllegalArgumentException("edges2 cannot be null or empty");
         }
         if ((edges1.length != edges2.length)) {
             throw new IllegalArgumentException(
@@ -4127,6 +4165,10 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
         int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
             scaledRotatedSet1.getN() : set2.getN();
+        
+        if (nMaxMatchable == 0) {
+            return null;
+        }
 
         //TODO: revise this:
         double eps = Math.log(nMaxMatchable)/Math.log(10);
@@ -4318,13 +4360,13 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             nIter++;
 
             if ((fits[bestFitIdx].getNumberOfMatchedPoints() == nMaxMatchable)
-                && (fits[bestFitIdx].getMeanDistFromModel() <  eps)) {
+                && (fits[bestFitIdx].getMeanDistFromModel() < eps)) {
                 go = false;
-            } /*else if ((transX > txMax) || (transX < txMin)) {
+            } else if ((transX > txMax) || (transX < txMin)) {
                 go = false;
             } else if ((transY > tyMax) || (transY < tyMin)) {
                 go = false;
-            }*/
+            }
         }
 
         // additional step that's helpful if not enough iterations are used,
@@ -4358,6 +4400,10 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
             n2 += edge.getN();
         }
         int nMaxMatchable = (n1 < n2) ? n1 : n2;
+        
+        if (nMaxMatchable == 0) {
+            return null;
+        }
 
         //TODO: revise this:
         double eps = Math.log(nMaxMatchable)/Math.log(10);
@@ -4643,7 +4689,28 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         float translationX, float translationY,
         float tolTransX, float tolTransY, float scale,
         float rotationRadians, int centroidX1, int centroidY1) {
-
+        
+        if (edges1 == null || edges1.length == 0) {
+            throw new IllegalArgumentException("edges1 cannot be null or empty");
+        }
+        if (edges2 == null || edges2.length == 0) {
+            throw new IllegalArgumentException("edges2 cannot be null or empty");
+        }
+        
+        int n1 = 0;
+        for (PairIntArray edge : edges1) {
+            n1 += edge.getN();
+        }
+        int n2 = 0;
+        for (PairIntArray edge : edges2) {
+            n2 += edge.getN();
+        }
+        int nMaxMatchable = (n1 < n2) ? n1 : n2;
+        
+        if (nMaxMatchable == 0) {
+            return null;
+        }
+        
         List<Double> residuals = new ArrayList<Double>();
 
         int nTotal = 0;
@@ -4711,13 +4778,20 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         final float scale, final float rotationRadians,
         int centroidX1, int centroidY1, List<Double> outputResiduals) {
 
-        if (edge1 == null) {
+        if (edge1 == null || edge1.getN() == 0) {
             throw new IllegalArgumentException(
-            "edge1 cannot be null");
+            "edge1 cannot be null or empty");
         }
-        if (edge2 == null) {
+        if (edge2 == null || edge2.getN() == 0) {
             throw new IllegalArgumentException(
-            "edge2 cannot be null");
+            "edge2 cannot be null or empty");
+        }
+        
+        int nMaxMatchable = (edge1.getN() < edge2.getN()) ?
+            edge1.getN() : edge2.getN();
+
+        if (nMaxMatchable == 0) {
+            return;
         }
 
         float scaleTimesCosine = (float)(scale * Math.cos(rotationRadians));
@@ -4782,18 +4856,25 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         float transX, float transY, PairIntArray set2,
         final float scale, final float rotationRadians) {
 
-        if (set2 == null) {
+        if (set2 == null || set2.getN() == 0) {
             throw new IllegalArgumentException(
-            "set2 cannot be null");
+            "set2 cannot be null or empty");
         }
-        if (scaledRotatedSet1 == null) {
+        if (scaledRotatedSet1 == null || scaledRotatedSet1.getN() == 0) {
             throw new IllegalArgumentException(
-            "scaledRotatedSet1 cannot be null");
+            "scaledRotatedSet1 cannot be null or empty");
         }
         if (set2.getN() != scaledRotatedSet1.getN()) {
             throw new IllegalArgumentException(
             "for matched sets, set2 must be the same length as scaledRotated"
             + " X and Y");
+        }
+        
+        int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
+            scaledRotatedSet1.getN() : set2.getN();
+
+        if (nMaxMatchable == 0) {
+            return null;
         }
 
         double sum = 0;
@@ -4829,6 +4910,8 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         TransformationPointFit fit = new TransformationPointFit(params,
             set2.getN(), avgDiff, stDev, Float.MAX_VALUE, Float.MAX_VALUE);
 
+        fit.setMaximumNumberMatchable(nMaxMatchable);
+        
         return fit;
     }
 

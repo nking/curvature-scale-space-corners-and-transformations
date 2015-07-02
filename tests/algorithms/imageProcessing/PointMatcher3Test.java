@@ -46,7 +46,7 @@ public class PointMatcher3Test extends TestCase {
         //seed = 1435634400691L;
         //seed = 1435697643135L;
         //seed = 1435799127020L;
-        seed = 1435802308803L;
+        //seed = 1435802308803L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -56,7 +56,7 @@ public class PointMatcher3Test extends TestCase {
 
         float scale = 1.0f;
         
-        for (int rotType = 2; rotType < 3; ++rotType) {
+        for (int rotType = 0; rotType < 4; ++rotType) {
 
             for (int nTest = 0; nTest < 15; ++nTest) {
 
@@ -79,6 +79,9 @@ public class PointMatcher3Test extends TestCase {
                 } else if (rotType == 2) {
                     rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
                         (180 - rotInDegrees);
+                } else if (rotType == 3) {
+                    rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
+                        (90 - rotInDegrees);
                 }
 
                 TransformationParameters params = new TransformationParameters();
