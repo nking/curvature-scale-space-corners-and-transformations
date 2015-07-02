@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PointPartitioner;
-import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import static algorithms.imageProcessing.PointMatcher.minTolerance;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
@@ -258,12 +257,21 @@ public final class PointMatcher {
      * @param image2Height
      * @param outputMatchedLeftXY
      * @param outputMatchedRightXY
+     * @param useLargestToleranceForOutput use the largest tolerance for
+     * applying the transformation to point sets during matching.  the largest
+     * tolerance is the class variable generalTolerance.  
+     * If useLargestToleranceForOutput is false, the transformation's best
+     * fit is used during matching (which should provide a smaller but more
+     * certain matched output).  If this method is used as a precursor to
+     * projection (epipolar) solvers of sets that do have projection components, 
+     * one might prefer to set this to true to allow more to be matched.
      * @return
      */
-    public TransformationPointFit performPartitionedMatching0(
+    public TransformationPointFit performPartitionedMatching(
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
         int image1Width, int image1Height, int image2Width, int image2Height,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY) {
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
+        boolean useLargestToleranceForOutput) {
 
         /*
         -- perform whole sets matching
@@ -331,9 +339,17 @@ public final class PointMatcher {
             bestFit.getParameters(), unmatchedLeftXY, image1CentroidX,
             image1CentroidY);
 
-        float transTolX = generalTolerance;
-
-        float tolerance = transTolX * (float)Math.sqrt(1./2);
+        float transTolX, transTolY, tolerance;
+        
+        if (useLargestToleranceForOutput) {
+            tolerance = generalTolerance;
+            transTolX = generalTolerance * (float)Math.sqrt(1./2);
+            transTolY = transTolX;
+        } else {
+            transTolX = bestFit.getTranslationXTolerance();
+            transTolY = bestFit.getTranslationYTolerance();
+            tolerance = (float)Math.sqrt(transTolX*transTolX + transTolY*transTolY);
+        }
 
         float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
             transformedLeft, unmatchedRightXY, transTolX, transTolX);
@@ -345,7 +361,12 @@ public final class PointMatcher {
     }
 
     /**
-     * NOT READY FOR USE
+     * given unmatched point sets unmatchedLeftXY and unmatchedRightXY,
+     * partitions the data in numberOfPartitions vertically, finds the
+     * best match for each combination of vertical partitions as subsets 
+     * of their parent sets, then finds the best partition solution
+     * among those, then refines the solution with a more detailed search
+     * using all points.
      *
      * @param numberOfPartitions the number of vertical partitions to make.
      * the maximum value accepted is 3 and minimum is 1.
@@ -373,7 +394,7 @@ public final class PointMatcher {
 
         int nXDiv = numberOfPartitions;
         int nYDiv = 1;
-        float setsFractionOfImage = 0.5f;
+        float setsFractionOfImage = 1.f/(float)numberOfPartitions;
         int n = (int)Math.pow(nXDiv * nYDiv, 2);
 
         TransformationPointFit[] vertPartitionedFits = new TransformationPointFit[n];
@@ -650,6 +671,192 @@ public final class PointMatcher {
     /**
      * NOT READY FOR USE
      *
+     * @param unmatchedLeftXY
+     * @param unmatchedRightXY
+     * @param image1Width
+     * @param image1Height
+     * @param outputMatchedLeftXY
+     * @param image2Width
+     * @param outputMatchedRightXY
+     * @param image2Height
+     * @param useLargestToleranceForOutput use the largest tolerance for
+     * applying the transformation to point sets during matching.  the largest
+     * tolerance is the class variable generalTolerance.  
+     * If useLargestToleranceForOutput is false, the transformation's best
+     * fit is used during matching (which should provide a smaller but more
+     * certain matched output).  If this method is used as a precursor to
+     * projection (epipolar) solvers of sets that do have projection components, 
+     * one might prefer to set this to true to allow more to be matched.
+     * @return best fitting transformation between unmatched points sets
+     * left and right
+     */
+    public TransformationPointFit performMatching0(
+        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
+        int image1Width, int image1Height, int image2Width, int image2Height,
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
+        boolean useLargestToleranceForOutput) {
+
+        if (unmatchedLeftXY == null || unmatchedLeftXY.getN() < 3) {
+            throw new IllegalArgumentException(
+            "unmatchedLeftXY cannot be null and must have at least 3 points.");
+        }
+        if (unmatchedRightXY == null || unmatchedRightXY.getN() < 3) {
+            throw new IllegalArgumentException(
+            "unmatchedRightXY cannot be null and must have at least 3 points.");
+        }
+
+        TransformationPointFit bestFit = performMatching0(
+            unmatchedLeftXY, unmatchedRightXY,
+            image1Width, image1Height, image2Width, image2Height);
+
+        if (bestFit == null) {
+            return null;
+        }
+
+        int image1CentroidX = image1Width >> 1;
+        int image1CentroidY = image1Height >> 1;
+
+        Transformer transformer = new Transformer();
+
+        PairFloatArray transformedLeft = transformer.applyTransformation2(
+            bestFit.getParameters(), unmatchedLeftXY, image1CentroidX,
+            image1CentroidY);
+
+        float transTolX, transTolY, tolerance;
+        
+        if (useLargestToleranceForOutput) {
+            tolerance = generalTolerance;
+            transTolX = generalTolerance * (float)Math.sqrt(1./2);
+            transTolY = transTolX;
+        } else {
+            transTolX = bestFit.getTranslationXTolerance();
+            transTolY = bestFit.getTranslationYTolerance();
+            tolerance = (float)Math.sqrt(transTolX*transTolX + transTolY*transTolY);
+        }
+
+        float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
+            transformedLeft, unmatchedRightXY, transTolX, transTolX);
+
+        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance,
+            matchIndexesAndDiffs, outputMatchedLeftXY, outputMatchedRightXY);
+
+        int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
+            unmatchedLeftXY.getN() : unmatchedRightXY.getN();
+
+        bestFit.setMaximumNumberMatchable(nMaxMatchable);
+
+        return bestFit;
+    }
+    
+    /**
+     * Given unmatched point sets unmatchedLeftXY and unmatchedRightXY,
+     * finds the best Euclidean transformation, then finds the best partition 
+     * solution among those, then refines the solution with a more detailed 
+     * search using all points.
+     *
+     * @param unmatchedLeftXY
+     * @param unmatchedRightXY
+     * @param image1Width
+     * @param image1Height
+     * @param image2Width
+     * @param image2Height
+     * @return best fitting transformation between unmatched left and right
+     */
+    public TransformationPointFit performMatching0(
+        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
+        int image1Width, int image1Height, int image2Width, int image2Height) {
+
+        float setsFractionOfImage = 1.0f;
+
+        PairIntArray part1 = unmatchedLeftXY;
+        PairIntArray part2 = unmatchedRightXY;
+
+        TransformationPointFit fit = calcTransWithRoughGrid(
+            part1, part2,
+            image1Width, image1Height, image2Width, image2Height,
+            setsFractionOfImage);
+
+        if (fit == null) {
+            return null;
+        }
+
+        float nStat = (float)fit.getNumberOfMatchedPoints()/
+            (float)fit.getNMaxMatchable();
+
+        log.info("best fit so fars: " + fit.toString());
+
+        // use either a finer grid search or a downhill simplex to improve the
+        // solution which was found coursely within about 10 degrees
+        float rot = fit.getParameters().getRotationInDegrees();
+        int rotStart = (int)rot - 10;
+        if (rotStart < 0) {
+            rotStart = 360 + rotStart;
+        }
+        int rotStop = (int)rot + 10;
+        if (rotStop > 359) {
+            rotStop = rotStop - 360;
+        }
+        int rotDelta = 1;
+        int scaleStart = (int)(0.9 * fit.getScale());
+        if (scaleStart < 1) {
+            scaleStart = 1;
+        }
+        int scaleStop = (int)(1.1 * fit.getScale());
+        int scaleDelta = 1;
+
+        int nTransIntervals = 4;
+
+        float transX = fit.getParameters().getTranslationX();
+        float transY = fit.getParameters().getTranslationY();
+
+        //TODO: revision needed here
+        float toleranceX = fit.getTranslationXTolerance();
+        float toleranceY = fit.getTranslationYTolerance();
+        float dx = (image2Width/toleranceGridFactor);
+        float dy = (image2Height/toleranceGridFactor);
+        if (toleranceX < (dx/10.f)) {
+            dx = (dx/10.f);
+        }
+        if (toleranceY < (dy/10.f)) {
+            dy = (dy/10.f);
+        }
+        float tolTransX = 2 * toleranceX;
+        float tolTransY = 2 * toleranceY;
+
+        int transXStart = (int)(transX - dx);
+        int transXStop = (int)(transX + dx);
+        int transYStart = (int)(transY - dy);
+        int transYStop = (int)(transY + dy);
+
+        log.fine(String.format(
+            "starting finer grid search with rot=%d to %d and scale=%d to %d",
+            rotStart, rotStop, scaleStart, scaleStop));
+
+        TransformationPointFit fit2 = calculateTransformationWithGridSearch(
+            unmatchedLeftXY, unmatchedRightXY,
+            image1Width, image1Height, image2Width, image2Height,
+            rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
+            transXStart, transXStop, transYStart, transYStop, nTransIntervals,
+            tolTransX, tolTransY, setsFractionOfImage);
+
+        if (fitIsBetter(fit, fit2)) {
+            fit = fit2;
+        }
+
+        if (fit.getNMaxMatchable() == 0) {
+
+            int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
+                unmatchedLeftXY.getN() : unmatchedRightXY.getN();
+
+            fit.setMaximumNumberMatchable(nMaxMatchable);
+        }
+
+        return fit;
+    }
+
+    /**
+     * NOT READY FOR USE
+     *
      * @param numberOfPartitions the number of vertical partitions to make.
      * the maximum value accepted is 3.
      * @param unmatchedLeftXY
@@ -660,6 +867,14 @@ public final class PointMatcher {
      * @param image2Width
      * @param outputMatchedRightXY
      * @param image2Height
+     * @param useLargestToleranceForOutput use the largest tolerance for
+     * applying the transformation to point sets during matching.  the largest
+     * tolerance is the class variable generalTolerance.  
+     * If useLargestToleranceForOutput is false, the transformation's best
+     * fit is used during matching (which should provide a smaller but more
+     * certain matched output).  If this method is used as a precursor to
+     * projection (epipolar) solvers of sets that do have projection components, 
+     * one might prefer to set this to true to allow more to be matched.
      * @return best fitting transformation between unmatched points sets
      * left and right
      */
@@ -667,7 +882,8 @@ public final class PointMatcher {
         final int numberOfPartitions,
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
         int image1Width, int image1Height, int image2Width, int image2Height,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY) {
+        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
+        boolean useLargestToleranceForOutput) {
 
         if (numberOfPartitions > 3) {
             throw new IllegalArgumentException("numberOfPartitions max value is 3");
@@ -693,10 +909,17 @@ public final class PointMatcher {
             bestFit.getParameters(), unmatchedLeftXY, image1CentroidX,
             image1CentroidY);
 
-        //TODO: consider using bestFit.getTolerance() here:
-        float transTolX = generalTolerance;
-
-        float tolerance = transTolX * (float)Math.sqrt(1./2);
+        float transTolX, transTolY, tolerance;
+        
+        if (useLargestToleranceForOutput) {
+            tolerance = generalTolerance;
+            transTolX = generalTolerance * (float)Math.sqrt(1./2);
+            transTolY = transTolX;
+        } else {
+            transTolX = bestFit.getTranslationXTolerance();
+            transTolY = bestFit.getTranslationYTolerance();
+            tolerance = (float)Math.sqrt(transTolX*transTolX + transTolY*transTolY);
+        }
 
         float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
             transformedLeft, unmatchedRightXY, transTolX, transTolX);
@@ -2321,189 +2544,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
         return bestFit;
     }
-
-    /**
-     * given the scale, rotation and set 1's reference frame centroids,
-     * calculate the translation between set1 and set2 assuming that not all
-     * points will match.  transXTol and transYTol allow a tolerance when
-     * matching the predicted position of a point in set2.
-     *
-     * It's expected that the invoker of this method is trying to solve for
-     * translation for sets of points like corners in images.  This assumption
-     * means that the number of point pair combinations is always far less
-     * than the pixel combinations of translations over x and y.
-     *
-     * NOTE: scale has be >= 1, so if one image has a smaller scale, it has to
-     * be the first set given in arguments.
-     *
-     * This method has runtime complexity of O(N^4) currently, but will
-     * be improved soon.  calculateTranslationForUnmatched0 will replace this.
-     *
-     * @param set1 set of points from image 1 to match to image2.
-     * @param set2 set of points from image 2 to be matched with image 1
-     * @param rotationInRadians given in radians with value between 0 and 2*pi, exclusive
-     * @param scale
-     * @param image1Width
-     * @param image1Height
-     * @param image2Width
-     * @param image2Height
-     * @param setsFractionOfImage the fraction of their images that set 1
-     * and set2 were extracted from. If set1 and set2 were derived from the
-     * images without using a partition method, this is 1.0, else if the
-     * quadrant partitioning was used, this is 0.25.  The variable is used
-     * internally in determining histogram bin sizes for translation.
-     * @return
-     */
-    public TransformationParameters calculateTranslationForUnmatched(
-        PairIntArray set1, PairIntArray set2, float rotationInRadians, float scale,
-        int image1Width, int image1Height, int image2Width, int image2Height,
-        float setsFractionOfImage) {
-
-        if (set1 == null) {
-            throw new IllegalArgumentException("set1 cannot be null");
-        }
-        if (set2 == null) {
-            throw new IllegalArgumentException("set2 cannot be null");
-        }
-        if (set1.getN() < 2) {
-            return null;
-        }
-        if (set2.getN() < 2) {
-            return null;
-        }
-
-        if (scale < 1) {
-            // numerical errors in rounding to integer can give wrong solutions
-            //throw new IllegalStateException("scale cannot be smaller than 1");
-
-            log.severe("scale cannot be smaller than 1");
-
-            return null;
-        }
-
-        float s = scale;
-        float scaleTimesCosine = (float)(s * Math.cos(rotationInRadians));
-        float scaleTimesSine = (float)(s * Math.sin(rotationInRadians));
-
-        int nTrans = set1.getN() * set2.getN();
-        int count = 0;
-        float[] transX = new float[nTrans];
-        float[] transY = new float[nTrans];
-
-        // store xr and yr for evaluation of fits
-        float[] xr = new float[set1.getN()];
-        float[] yr = new float[xr.length];
-
-        int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN()
-            : set2.getN();
-
-        int image1CentroidX = image1Width >> 1;
-        int image1CentroidY = image1Height >> 1;
-
-        /*
-        Since the points are unmatched, determine the translation for each
-        possible point pair and keep the most frequent answer as the
-        estimation for translation in X and in Y.
-        */
-
-        for (int i = 0; i < set1.getN(); i++) {
-
-            int x = set1.getX(i);
-            int y = set1.getY(i);
-
-            xr[i] = image1CentroidX*s + (
-                ((x - image1CentroidX) * scaleTimesCosine) +
-                ((y - image1CentroidY) * scaleTimesSine));
-
-            yr[i] = image1CentroidY*s + (
-                (-(x - image1CentroidX) * scaleTimesSine) +
-                ((y - image1CentroidY) * scaleTimesCosine));
-
-            for (int j = 0; j < set2.getN(); j++) {
-
-                int x2 = set2.getX(j);
-                int y2 = set2.getY(j);
-
-                transX[count] = x2 - xr[i];
-                transY[count] = y2 - yr[i];
-
-                count++;
-            }
-        }
-
-        /*
-        Can use my clustering code here from another project for best
-        solution of finding the clusters of transX, transY and then the
-        cluster with largest number of members among those.
-
-        or can make a quicker solution by deciding an association radius
-        for points (that is, a radius around which points are considered
-        the same value) and then make a frequency map for same points.
-        slightly better than a histogram for small numbers because the
-        similar values will not be split into adjacent bins by choice of
-        interval start.
-        */
-
-        /*
-        TODO: may change back to histogram which is O(N).  This is
-        O(N^2) but N is maxNMatchable^2 is in summary O(N^4).
-        */
-        FixedDistanceGroupFinder groupFinder = null;
-
-        int maxSep = 50;
-
-        List<Set<Integer>> sortedGroupIndexList = null;
-
-        int nIter = 0;
-        int nMaxIter = 10;
-
-        Set<Integer> mostFreqIndexes = null;
-        Set<Integer> prev = null;
-
-        float limit = 1.25f * maxNMatchable;
-        if (maxNMatchable > 40) {
-            limit = 0.95f * maxNMatchable;
-        } else if (maxNMatchable > 20) {
-            limit = 1.05f * maxNMatchable;
-        }
-
-        while ((nIter == 0) ||
-            ((nIter < nMaxIter) && (mostFreqIndexes.size() > limit))
-            && (maxSep > 0)) {
-
-            groupFinder = new FixedDistanceGroupFinder(transX, transY);
-            groupFinder.findGroupsOfPoints(maxSep);
-            sortedGroupIndexList = groupFinder.getDescendingSortGroupList();
-            prev = mostFreqIndexes;
-            mostFreqIndexes = sortedGroupIndexList.get(0);
-
-            maxSep *= 0.75;
-
-            nIter++;
-        }
-
-        double avgTransX = 0;
-        double avgTransY = 0;
-        for (Integer index : mostFreqIndexes) {
-            avgTransX += transX[index.intValue()];
-            avgTransY += transY[index.intValue()];
-        }
-        avgTransX /= (float)mostFreqIndexes.size();
-        avgTransY /= (float)mostFreqIndexes.size();
-        float peakTransX = (float)avgTransX;
-        float peakTransY = (float)avgTransY;
-
-        log.fine("peakTransX=" + peakTransX + "  peakTransY=" + peakTransY);
-
-        TransformationParameters params = new TransformationParameters();
-        params.setRotationInRadians(rotationInRadians);
-        params.setScale(s);
-        params.setTranslationX(peakTransX);
-        params.setTranslationY(peakTransY);
-
-        return params;
-    }
-
+    
     protected TransformationPointFit[] evaluateTranslationsOverGrid(
         PairIntArray set1, PairIntArray set2,
         final int image1Width, final int image1Height, final int image2Width,
