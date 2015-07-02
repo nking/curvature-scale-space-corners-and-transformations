@@ -653,7 +653,20 @@ public final class PointMatcher {
             transXStart, transXStop, transYStart, transYStop, nTransIntervals,
             tolTransX, tolTransY, setsFractionOfImage);
 
-        if (fitIsBetter(bestFit, fit)) {
+if (bestFit != null && fit != null) {
+log.fine("    partition compare  \n      **==> bestFit=" + bestFit.toString() + "\n           fit=" + fit.toString());
+}
+       //TODO: make the tolerance corrections here
+
+        boolean fitIsBetter = fitIsBetter(bestFit, fit);
+
+if (fitIsBetter) {
+log.fine("    partition bestFit=" + fit.toString());
+} else {
+log.fine("    partition keeping bestFit=" + bestFit.toString());
+}
+
+        if (fitIsBetter) {
             bestFit = fit;
         }
 
@@ -1776,8 +1789,6 @@ public final class PointMatcher {
         int[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
             rotDelta);
 
-        Transformer transformer = new Transformer();
-
         int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
             : set2.getN();
 
@@ -1851,7 +1862,12 @@ public final class PointMatcher {
                 }
 
 if (bestFitT != null && fitT != null) {
-log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n           fit=" + fitT.toString());
+if (compTol == 1) {
+    log.fine("    rot re-evaluated bestFit at lower tolerance");
+} else if (compTol == 2) {
+    log.fine("    rot re-evaluated bestFit and fit at common tolerance");
+}
+log.fine("    rot compare  \n      **==> bestFit=" + bestFitT.toString() + "\n           fit=" + fitT.toString());
 }
 
 
@@ -1875,9 +1891,14 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                     similarToBestFit.add(fit);
                 }
 
+//TODO: temporary debugging:
+if (!fitIsBetter && (bestFit != null)) {
+log.fine("**==> rot keeping bestFit=" + bestFit.toString());
+}
+
                 if (fitIsBetter) {
 
-                    log.fine("**==> fit=" + fit.toString());
+                    log.fine("**==> rot fit=" + fit.toString());
 
                     if (areSimilar == -1) {
                         log.fine("clear similarToBestFit");
@@ -1993,7 +2014,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
                 // revert to previous scale
                 bestFit = bestFitForScale;
-                
+
                 //TODO: revisit this with tests
                 // scale was probably smaller so return best solution
                 break;
@@ -2249,7 +2270,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
                 // revert to previous scale
                 bestFit = bestFitForScale;
-                
+
                 //TODO: revisit this with tests
                 // scale was probably smaller so return best solution
                 break;
@@ -2518,7 +2539,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
 
                 // revert to previous scale
                 bestFit = bestFitForScale;
-                
+
                 //TODO: revisit this with tests
                 // scale was probably smaller so return best solution
                 break;
@@ -2654,7 +2675,7 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
                 }
 
                 fits[count] = fit;
-//-229,-53, count=69, obj#753  mean=15.6, n=20, stdv=3.2; compare to obj#330;  tolerance too large
+
                 count++;
             }
         }
@@ -2870,16 +2891,24 @@ log.fine("    compare  \n      **==> bestFit=" + bestFitT.toString() + "\n      
         int limit = 1;
 
         boolean setsAreMatched = false;
-        
+
         int nIter = 0;
 
         while ((dx > limit) && (dy > limit)) {
-            
+
             if (nIter > 0) {
                 tolTransX = dx;
                 tolTransY = dy;
             }
-            
+
+if (bestFit == null) {
+if (Math.abs(rotationInRadians - 0.34906584) < 0.1) {
+if (set1.getN()==36 && set2.getN()==34) {
+int z = 1;
+}
+}
+}
+
             TransformationPointFit fit =
                 calculateTranslationFromGridThenDownhillSimplex(
                 scaledRotatedSet1, set1, set2,
@@ -2894,7 +2923,13 @@ if (bestFit != null && fit != null) {
 log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n              fit=" + fit.toString());
 }
 
-            if (fitIsBetter(bestFit, fit)) {
+            boolean fitIsBetter = fitIsBetter(bestFit, fit);
+
+if (!fitIsBetter && (bestFit != null)) {
+log.fine("     * keeping bestFit=" + bestFit.toString());
+}
+
+            if (fitIsBetter) {
 
                 if (bestFit == null) {
                     log.fine("  *==> new cycle fit=" + fit.toString());
@@ -2941,7 +2976,7 @@ log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n   
 
                 break;
             }
-            
+
             nIter++;
         }
 
@@ -2950,6 +2985,18 @@ log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n   
             bestFit.setMaximumNumberMatchable(maxNMatchable);
         }
 
+if (bestFit != null) {
+log.fine("     * returning bestFit=" + bestFit.toString());
+if (bestFit.getNumberOfMatchedPoints() == 35) {
+    if (Math.abs(bestFit.getMeanDistFromModel() - 3.0) < 0.01) {
+        if (Math.abs(bestFit.getStDevFromMean() - 0.0) < 0.01) {
+            if (Math.abs(bestFit.getParameters().getRotationInDegrees() - 18) < 0.01) {
+                int z = 1;
+            }
+        }
+    }
+}
+}        
         return bestFit;
     }
 
@@ -3042,10 +3089,25 @@ log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n   
 
             // the bounds are to keep the solution within the current
             // best range
-            float boundsXHalf = (transXStop - transXStart) / 2;
+            /*float boundsXHalf = (transXStop - transXStart) / 2;
             float boundsYHalf = (transYStop - transYStart) / 2;
             float boundsXCenter = (transXStart + transXStop) / 2;
-            float boundsYCenter = (transYStart + transYStop) / 2;
+            float boundsYCenter = (transYStart + transYStop) / 2;*/
+
+            /* the top fits solution define the region to search within
+            further.
+            */
+            //{translationXMin, translationXMax, translationYMin, translationYMax}
+            float[] transXYMinMaxes = getTranslationMinAndMaxes(fits);
+
+            float x0 = transXYMinMaxes[0] - tolTransX;
+            //float x1 = transXYMinMaxes[1] + tolTransX;
+            float y0 = transXYMinMaxes[2] - tolTransY;
+            //float y1 = transXYMinMaxes[3] + tolTransY;
+            float boundsXCenter = (transXYMinMaxes[0] + transXYMinMaxes[1])/2.f;
+            float boundsYCenter = (transXYMinMaxes[2] + transXYMinMaxes[3])/2.f;
+            float boundsXHalf = x0 - boundsXCenter;
+            float boundsYHalf = y0 - boundsYCenter;
 
             fit = refineTranslationWithDownhillSimplex(
                 scaledRotatedSet1, set2, fits,
@@ -3390,6 +3452,15 @@ log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n   
 
             if (!Double.isNaN(compareFit.getMeanDistFromModel())) {
 
+                //TODO: may need to revise this:
+                if (Math.abs(compAvg - bestAvg) < 1.0) {
+                    if (compS < bestS) {
+                        return true;
+                    } else if (compS > bestS) {
+                        return false;
+                    }
+                }
+                
                 if (compAvg < bestAvg) {
                     return true;
                 } else if (compAvg > bestAvg) {
@@ -3536,6 +3607,15 @@ log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n   
 
             if (!Double.isNaN(compareFit.getMeanDistFromModel())) {
 
+                //TODO: may need to revise this:
+                if (Math.abs(compAvg - bestAvg) < 1.0) {
+                    if (compS < bestS) {
+                        return 1;
+                    } else if (compS > bestS) {
+                        return -1;
+                    }
+                }
+                
                 if (compAvg < bestAvg) {
                     return 1;
                 } else if (compAvg > bestAvg) {
@@ -5432,6 +5512,45 @@ log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n   
             translationYTolerance);
 
         return fit2;
+    }
+
+    /**
+     * find the minima and maxima of translationX and translationY for the given
+     * fits.
+     * @param fits
+     * @return new float[]{minTX, maxTX, minTY, maxTY}
+     */
+    protected float[] getTranslationMinAndMaxes(TransformationPointFit[] fits) {
+
+        if (fits == null || fits.length == 0) {
+            return null;
+        }
+        float minTX = Float.MAX_VALUE;
+        float maxTX = Float.MIN_VALUE;
+        float minTY = Float.MAX_VALUE;
+        float maxTY = Float.MIN_VALUE;
+
+        for (TransformationPointFit fit : fits) {
+            if (fit == null) {
+                continue;
+            }
+            float tx = fit.getTranslationX();
+            float ty = fit.getTranslationY();
+            if (tx < minTX) {
+                minTX = tx;
+            }
+            if (ty < minTY) {
+                minTY = ty;
+            }
+            if (tx > maxTX) {
+                maxTX = tx;
+            }
+            if (ty > maxTY) {
+                maxTY = ty;
+            }
+        }
+
+        return new float[]{minTX, maxTX, minTY, maxTY};
     }
 
 }
