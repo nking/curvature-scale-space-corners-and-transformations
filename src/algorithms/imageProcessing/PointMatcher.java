@@ -679,6 +679,7 @@ log.fine("    partition compare  \n      **==> bestFit=" + bestFit.toString() + 
             fit = reevalFits[1];   
         
         } else {
+            
             fitIsBetter[0] = fitIsBetter(bestFit, fit);
         }
         
@@ -781,10 +782,17 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 
         int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
             unmatchedLeftXY.getN() : unmatchedRightXY.getN();
+        
+        // rewrite best fit to have the matched number of points
+        TransformationPointFit fit2 = new TransformationPointFit(
+            bestFit.getParameters(), outputMatchedLeftXY.getN(),
+            bestFit.getMeanDistFromModel(), bestFit.getStDevFromMean(),
+            bestFit.getTranslationXTolerance(),
+            bestFit.getTranslationYTolerance());
+        
+        fit2.setMaximumNumberMatchable(nMaxMatchable);
 
-        bestFit.setMaximumNumberMatchable(nMaxMatchable);
-
-        return bestFit;
+        return fit2;
     }
 
     /**
@@ -878,7 +886,33 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
             transXStart, transXStop, transYStart, transYStop, nTransIntervals,
             tolTransX, tolTransY, setsFractionOfImage);
 
-        if (fitIsBetter(fit, fit2)) {
+        TransformationPointFit[] reevalFits = new TransformationPointFit[2];
+        boolean[] fitIsBetter = new boolean[1];
+        if ((fit != null) && (fit2 != null) && 
+            (
+            ((fit.getTranslationXTolerance()/fit2.getTranslationXTolerance()) > 2)
+            &&
+            ((fit.getTranslationYTolerance()/fit2.getTranslationYTolerance()) > 2))
+            ||
+            (
+            ((fit.getTranslationXTolerance()/fit2.getTranslationXTolerance()) < 0.5)
+            &&
+            ((fit.getTranslationYTolerance()/fit2.getTranslationYTolerance()) < 0.5))
+            ) {
+            
+            reevaluateFitsForCommonTolerance(fit, fit2, 
+                unmatchedLeftXY, unmatchedRightXY, image1Width, image1Height, 
+                reevalFits, fitIsBetter);
+
+            fit = reevalFits[0];
+            fit2 = reevalFits[1];   
+        
+        } else {
+            
+            fitIsBetter[0] = fitIsBetter(fit, fit2);
+        }
+        
+        if (fitIsBetter[0]) {
             fit = fit2;
         }
 
@@ -969,9 +1003,16 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
         int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
             unmatchedLeftXY.getN() : unmatchedRightXY.getN();
 
-        bestFit.setMaximumNumberMatchable(nMaxMatchable);
+        // rewrite best fit to have the matched number of points
+        TransformationPointFit fit2 = new TransformationPointFit(
+            bestFit.getParameters(), outputMatchedLeftXY.getN(),
+            bestFit.getMeanDistFromModel(), bestFit.getStDevFromMean(),
+            bestFit.getTranslationXTolerance(),
+            bestFit.getTranslationYTolerance());
+        
+        fit2.setMaximumNumberMatchable(nMaxMatchable);
 
-        return bestFit;
+        return fit2;
     }
 
     /**

@@ -133,7 +133,7 @@ public class PointMatcher3Test extends TestCase {
                 PairIntArray outputMatchedLeftXY = new PairIntArray();
                 PairIntArray outputMatchedRightXY = new PairIntArray();
 
-                boolean useLargestToleranceForOutput = true;
+                boolean useLargestToleranceForOutput = false;
                 
                 TransformationPointFit fit =
                     pointMatcher.performVerticalPartitionedMatching(
@@ -158,7 +158,7 @@ public class PointMatcher3Test extends TestCase {
                     diffN, diffRotDeg, diffScale, diffTransX, diffTransY)
                 );
 
-                double epsTrans = 1;
+                double epsTrans = 3;
                 if (nPoints < 10) {
                     epsTrans = 10;
                 } else if (nPoints < 30) {
