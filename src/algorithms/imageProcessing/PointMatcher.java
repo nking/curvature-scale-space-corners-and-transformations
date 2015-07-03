@@ -634,13 +634,14 @@ public final class PointMatcher {
         if (toleranceY < (dy/10.f)) {
             dy = (dy/10.f);
         }
-        float tolTransX = 2 * toleranceX;
-        float tolTransY = 2 * toleranceY;
-
+        
         int transXStart = (int)(transX - dx);
         int transXStop = (int)(transX + dx);
         int transYStart = (int)(transY - dy);
         int transYStop = (int)(transY + dy);
+
+        float tolTransX = dx;//2 * toleranceX;
+        float tolTransY = dy;//2 * toleranceY;
 
         log.fine(String.format(
             "starting finer grid search with rot=%d to %d and scale=%d to %d",
@@ -888,8 +889,8 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 
         TransformationPointFit[] reevalFits = new TransformationPointFit[2];
         boolean[] fitIsBetter = new boolean[1];
-        if ((fit != null) && (fit2 != null) && 
-            (
+        if ((fit2 != null) && 
+            ((
             ((fit.getTranslationXTolerance()/fit2.getTranslationXTolerance()) > 2)
             &&
             ((fit.getTranslationYTolerance()/fit2.getTranslationYTolerance()) > 2))
@@ -898,7 +899,7 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
             ((fit.getTranslationXTolerance()/fit2.getTranslationXTolerance()) < 0.5)
             &&
             ((fit.getTranslationYTolerance()/fit2.getTranslationYTolerance()) < 0.5))
-            ) {
+            )) {
             
             reevaluateFitsForCommonTolerance(fit, fit2, 
                 unmatchedLeftXY, unmatchedRightXY, image1Width, image1Height, 
@@ -2767,13 +2768,21 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
             return null;
         }
 
+        int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN() 
+            : set2.getN();
+        
         int bestTransXStart = -1*image2Width + 1;
         int bestTransXStop = image2Width - 1;
         int bestTransYStart = -1*image2Width + 1;
         int bestTransYStop = image2Width - 1;
 
-        // TODO: consider using point density to estimate this
+        // TODO: consider using point density to estimate this and image dimensions
         int nIntervals = 11;
+        if (nMaxMatchable > 40) {
+            nIntervals = 15;
+        } else if (nMaxMatchable > 30) {
+            nIntervals = 13;
+        }
 
         int dx = (bestTransXStop - bestTransXStart)/nIntervals;
         int dy = (bestTransYStop - bestTransYStart)/nIntervals;
@@ -2790,8 +2799,8 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
         Then the comparison would be correct at that level and finer here where
         needed.
         */
-        float tolTransX = (int)(0.5*dx/toleranceGridFactor);
-        float tolTransY = (int)(0.5*dy/toleranceGridFactor);
+        float tolTransX = dx/2.f;//dx/toleranceGridFactor;
+        float tolTransY = dy/2.f;//dy/toleranceGridFactor;
 
         /*when tolerance is too high, mean dist from model becomes more
         important than the number of matches*/
@@ -2915,14 +2924,6 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
                 tolTransY = dy;
             }
 
-if (bestFit == null) {
-if (Math.abs(rotationInRadians - 0.34906584) < 0.1) {
-if (set1.getN()==36 && set2.getN()==34) {
-int z = 1;
-}
-}
-}
-
             TransformationPointFit fit =
                 calculateTranslationFromGridThenDownhillSimplex(
                 scaledRotatedSet1, set1, set2,
@@ -2933,11 +2934,11 @@ int z = 1;
                 tolTransX, tolTransY,
                 setsAreMatched, setsFractionOfImage);
 
+            boolean fitIsBetter = true;//fitIsBetter(bestFit, fit);
+            
 if (bestFit != null && fit != null) {
 log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n              fit=" + fit.toString());
 }
-
-            boolean fitIsBetter = fitIsBetter(bestFit, fit);
 
 if (!fitIsBetter && (bestFit != null)) {
 log.fine("     * keeping bestFit=" + bestFit.toString());
