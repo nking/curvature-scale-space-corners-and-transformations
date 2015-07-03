@@ -1878,6 +1878,8 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
                     rotationInRadians, scale,
                     setsFractionOfImage);
 
+log.fine("      rot reeval fit and bestFit.  fit=" + fit.toString());
+
                 TransformationPointFit[] reevalFits = new TransformationPointFit[2];
                 boolean[] fitIsBetter = new boolean[1];
                 
@@ -1890,6 +1892,12 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 
 if (bestFit != null && fit != null) {
 log.fine("    rot compare  \n      **==> bestFit=" + bestFit.toString() + "\n           fit=" + fit.toString());
+} else if (fit != null) {
+    log.fine("   rot compare fit=" + fit.toString());    
+}
+//TODO: temporary debugging:
+if (!fitIsBetter[0] && (bestFit != null)) {
+log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 }
 
                 int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, fit);
@@ -1905,11 +1913,6 @@ log.fine("    rot compare  \n      **==> bestFit=" + bestFit.toString() + "\n   
                     }
                     similarToBestFit.add(fit);
                 }
-
-//TODO: temporary debugging:
-if (!fitIsBetter[0] && (bestFit != null)) {
-log.fine("**==> rot keeping bestFit=" + bestFit.toString());
-}
 
                 if (fitIsBetter[0]) {
 
@@ -2778,7 +2781,9 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
         // TODO: consider using point density to estimate this and image dimensions
         int nIntervals = 11;
-        if (nMaxMatchable > 40) {
+        if (nMaxMatchable > 50) {
+            nIntervals = 18;
+        } else if (nMaxMatchable > 40) {
             nIntervals = 15;
         } else if (nMaxMatchable > 30) {
             nIntervals = 13;
@@ -2911,7 +2916,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
         float cellFactor = 1.25f;
 
-        int limit = 1;
+        int limit = 4;
 
         boolean setsAreMatched = false;
 
@@ -2919,10 +2924,10 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
         while ((dx > limit) && (dy > limit)) {
 
-            if (nIter > 0) {
+            //if (nIter > 0) {
                 tolTransX = dx;
                 tolTransY = dy;
-            }
+            //}
 
             TransformationPointFit fit =
                 calculateTranslationFromGridThenDownhillSimplex(
@@ -2934,7 +2939,18 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
                 tolTransX, tolTransY,
                 setsAreMatched, setsFractionOfImage);
 
-            boolean fitIsBetter = true;//fitIsBetter(bestFit, fit);
+            boolean fitIsBetter = true;// = fitIsBetter(bestFit, fit);
+            // since it's descending into finer solution, should only need to
+            // check that the mean dist does not increase
+            if ((bestFit!= null) && (fit != null)) {
+                double diffM = fit.getMeanDistFromModel() - bestFit.getMeanDistFromModel();
+                if (diffM > 1) {
+                    fitIsBetter = false;
+                } else if ((Math.abs(diffM) < 1) && 
+                    (fit.getStDevFromMean() > bestFit.getStDevFromMean())) {
+                    fitIsBetter = false;
+                }
+            }
             
 if (bestFit != null && fit != null) {
 log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n              fit=" + fit.toString());
@@ -5594,49 +5610,58 @@ if (bestFit.getNumberOfMatchedPoints() == 35) {
         int image1Width, int image1Height, 
         final TransformationPointFit[] reevalFits, final boolean[] fitIsBetter) {
         
+        if (bestFit == null) {
+            reevalFits[0] = bestFit;
+            reevalFits[1] = fit;
+            fitIsBetter[0] = true;
+            return;
+        } else if (fit == null) {
+            reevalFits[0] = bestFit;
+            reevalFits[1] = fit;
+            fitIsBetter[0] = false;
+            return;
+        }
+        
         /*
         check for whether fit has converged already for equal number of points
         matched.
         */
-        if (fit != null && bestFit != null) {
-            int bestNMatches = bestFit.getNumberOfMatchedPoints();
-            int compNMatches = fit.getNumberOfMatchedPoints();
-            int diffEps = (int)Math.round(2.*Math.ceil(Math.max(bestNMatches, 
-                compNMatches)/10.));
-            if (diffEps == 0) {
-                diffEps = 1;
-            }
-            if ((bestNMatches > 2) && (compNMatches > 2)) {
-                if (Math.abs(bestNMatches - compNMatches) < diffEps) {
-                    if ((fit.getMeanDistFromModel() < 1) 
-                        && (fit.getStDevFromMean() < 1) 
-                        && (bestFit.getMeanDistFromModel() > 1)) {
-                        
-                        // fit is the better fit
-                        fitIsBetter[0] = true;
-                        reevalFits[0] = bestFit;
-                        reevalFits[1] = fit;
-                        return;
-                    }
+        int bestNMatches = bestFit.getNumberOfMatchedPoints();
+        int compNMatches = fit.getNumberOfMatchedPoints();
+        int diffEps = (int)Math.round(2.*Math.ceil(Math.max(bestNMatches, 
+            compNMatches)/10.));
+        if (diffEps == 0) {
+            diffEps = 1;
+        }
+        if ((bestNMatches > 2) && (compNMatches > 2)) {
+            if (Math.abs(bestNMatches - compNMatches) < diffEps) {
+                if ((fit.getMeanDistFromModel() < 1) 
+                    && (fit.getStDevFromMean() < 1) 
+                    && (bestFit.getMeanDistFromModel() > 1)) {
+
+                    // fit is the better fit
+                    fitIsBetter[0] = true;
+                    reevalFits[0] = bestFit;
+                    reevalFits[1] = fit;
+                    return;
                 }
             }
+        }
             
-            /*
-            when tolerances are both already very small, not redoing the fit,
-            just comparing as is
-            */
-            int limit = 7;
-            if ((bestFit.getTranslationXTolerance() < limit) && 
-                (bestFit.getTranslationYTolerance() < limit) &&
-                (fit.getTranslationXTolerance() < limit) &&
-                (fit.getTranslationYTolerance() < limit)) {
-                
-                fitIsBetter[0] = fitIsBetter(bestFit, fit);
-                reevalFits[0] = bestFit;
-                reevalFits[1] = fit;
-                return;
-            }
-            
+        /*
+        when tolerances are both already very small, not redoing the fit,
+        just comparing as is
+        */
+        int limit = 7;
+        if ((bestFit.getTranslationXTolerance() < limit) && 
+            (bestFit.getTranslationYTolerance() < limit) &&
+            (fit.getTranslationXTolerance() < limit) &&
+            (fit.getTranslationYTolerance() < limit)) {
+
+            fitIsBetter[0] = fitIsBetter(bestFit, fit);
+            reevalFits[0] = bestFit;
+            reevalFits[1] = fit;
+            return;
         }
         
         /*
