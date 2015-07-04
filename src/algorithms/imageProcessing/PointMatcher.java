@@ -618,34 +618,36 @@ public final class PointMatcher {
         int scaleStop = (int)(1.1 * bestFit.getScale());
         int scaleDelta = 1;
 
-        int nTransIntervals = 4;
+        //TODO: this may need to scale with point density and image dimensions
+        int nTransIntervals = 3;
 
         float transX = bestFit.getParameters().getTranslationX();
         float transY = bestFit.getParameters().getTranslationY();
-
-        //TODO: revision needed here
-        float toleranceX = bestFit.getTranslationXTolerance();
-        float toleranceY = bestFit.getTranslationYTolerance();
-        float dx = (image2Width/toleranceGridFactor);
-        float dy = (image2Height/toleranceGridFactor);
-        if (toleranceX < (dx/10.f)) {
-            dx = (dx/10.f);
-        }
-        if (toleranceY < (dy/10.f)) {
-            dy = (dy/10.f);
-        }
-
-        int transXStart = (int)(transX - dx);
-        int transXStop = (int)(transX + dx);
-        int transYStart = (int)(transY - dy);
-        int transYStop = (int)(transY + dy);
-
-        float tolTransX = dx;//2 * toleranceX;
-        float tolTransY = dy;//2 * toleranceY;
-
+        
+        float dim = 
+            (bestFit.getTranslationXTolerance() > bestFit.getTranslationYTolerance())
+            ? bestFit.getTranslationXTolerance() :
+            bestFit.getTranslationYTolerance();
+        dim *= 2.0;
+        
+        float gridWidth = nTransIntervals * dim;
+        float gridHeight = nTransIntervals * dim;
+        int transXStart = (int)(transX - (gridWidth/2));
+        int transXStop = (int)(transX + (gridWidth/2));
+        int transYStart = (int)(transY - (gridHeight/2));
+        int transYStop = (int)(transY + (gridHeight/2));
+        
+        nTransIntervals = 8;
+        
+        int dx = (int)((float)(transXStop - transXStart)/(float)nTransIntervals);
+        int dy = (int)((float)(transYStop - transYStart)/(float)nTransIntervals);
+        float tolTransX = dx;//(image2Width/toleranceGridFactor);
+        float tolTransY = dy;//(image2Height/toleranceGridFactor);
+        
         log.fine(String.format(
-            "starting finer grid search with rot=%d to %d and scale=%d to %d",
-            rotStart, rotStop, scaleStart, scaleStop));
+            "starting finer grid search with rot=%d to %d and scale=%d to %d and translation=%d:%d, %d:%d",
+            rotStart, rotStop, scaleStart, scaleStop, transXStart, transXStop,
+            transYStart, transYStop));
 
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             unmatchedLeftXY, unmatchedRightXY,
@@ -661,7 +663,7 @@ log.fine("    partition compare  \n      **==> bestFit=" + bestFit.toString() + 
         TransformationPointFit[] reevalFits = new TransformationPointFit[2];
         boolean[] fitIsBetter = new boolean[1];
         if ((bestFit != null) && (fit != null) &&
-            (
+            ((
             ((bestFit.getTranslationXTolerance()/fit.getTranslationXTolerance()) > 2)
             &&
             ((bestFit.getTranslationYTolerance()/fit.getTranslationYTolerance()) > 2))
@@ -670,7 +672,7 @@ log.fine("    partition compare  \n      **==> bestFit=" + bestFit.toString() + 
             ((bestFit.getTranslationXTolerance()/fit.getTranslationXTolerance()) < 0.5)
             &&
             ((bestFit.getTranslationYTolerance()/fit.getTranslationYTolerance()) < 0.5))
-            ) {
+            )) {
 
             reevaluateFitsForCommonTolerance(bestFit, fit,
                 unmatchedLeftXY, unmatchedRightXY, image1Width, image1Height,
@@ -688,13 +690,13 @@ if (bestFit != null && fit != null) {
 log.fine("    tol corrected partition compare  \n      **==> bestFit=" + bestFit.toString() + "\n           fit=" + fit.toString());
 }
 
-if (fitIsBetter[0]) {
+if (fitIsBetter[0] && (fit != null)) {
 log.fine("    ***** partition bestFit=" + fit.toString());
-} else {
+} else if (bestFit != null) {
 log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 }
 
-        if (fitIsBetter[0]) {
+        if (fitIsBetter[0] && (fit != null)) {
             bestFit = fit;
         }
 
@@ -913,7 +915,7 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
             fitIsBetter[0] = fitIsBetter(fit, fit2);
         }
 
-        if (fitIsBetter[0]) {
+        if (fitIsBetter[0] && (fit != null)) {
             fit = fit2;
         }
 
@@ -1877,9 +1879,9 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
                     image1Width, image1Height, image2Width, image2Height,
                     rotationInRadians, scale,
                     setsFractionOfImage);
-
+if (fit != null) {
 log.fine("      rot reeval fit and bestFit.  fit=" + fit.toString());
-
+}
                 TransformationPointFit[] reevalFits = new TransformationPointFit[2];
                 boolean[] fitIsBetter = new boolean[1];
 
@@ -1914,10 +1916,10 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
                     similarToBestFit.add(fit);
                 }
 
-                if (fitIsBetter[0]) {
+                if (fitIsBetter[0] && (fit != null)) {
 
                     log.fine("**==> rot fit=" + fit.toString());
-
+                    
                     if (areSimilar == -1) {
                         log.fine("clear similarToBestFit");
                         similarToBestFit.clear();
@@ -2039,7 +2041,9 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
             }
         }
 
-        similarToBestFit.add(0, bestFit);
+        if (bestFit != null) {
+            similarToBestFit.add(0, bestFit);
+        }
         for (TransformationPointFit fit : similarToBestFit) {
             if (fit.getParameters().getRotationInRadians() > 2.*Math.PI) {
                 float rot = fit.getParameters().getRotationInRadians();
@@ -2173,8 +2177,10 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
                 if (fitIsBetter) {
 
-                    log.fine("**==> fit=" + fit.toString());
-
+                    if (fit != null) {
+                        log.fine("**==> fit=" + fit.toString());
+                    }
+                    
                     if (areSimilar == -1) {
                         log.fine("clear similarToBestFit");
                         similarToBestFit.clear();
@@ -2206,7 +2212,9 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
                         log.fine("** converged");
 
-                        similarToBestFit.add(0, bestFit);
+                        if (bestFit != null) {
+                            similarToBestFit.add(0, bestFit);
+                        }
                         for (TransformationPointFit fit2 : similarToBestFit) {
                             if (fit2.getParameters().getRotationInRadians() > 2.*Math.PI) {
                                 float rot2 = fit2.getParameters().getRotationInRadians();
@@ -2295,7 +2303,9 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
             }
         }
 
-        similarToBestFit.add(0, bestFit);
+        if (bestFit != null) {
+            similarToBestFit.add(0, bestFit);
+        }
         for (TransformationPointFit fit : similarToBestFit) {
             if (fit.getParameters().getRotationInRadians() > 2.*Math.PI) {
                 float rot = fit.getParameters().getRotationInRadians();
@@ -2466,10 +2476,10 @@ if (!fitIsBetter[0] && (bestFit != null)) {
 log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
 }
 
-                if (fitIsBetter[0]) {
+                if (fitIsBetter[0] && (fit != null)) {
 
                     log.fine("**==> fit=" + fit.toString());
-
+                    
                     if (areSimilar == -1) {
                         log.fine("clear similarToBestFit");
                         similarToBestFit.clear();
@@ -2592,7 +2602,9 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
             }
         }
 
-        similarToBestFit.add(0, bestFit);
+        if (bestFit != null) {
+            similarToBestFit.add(0, bestFit);
+        }
         for (TransformationPointFit fit : similarToBestFit) {
             if (fit.getParameters().getRotationInRadians() > 2.*Math.PI) {
                 float rot = fit.getParameters().getRotationInRadians();
@@ -2990,9 +3002,9 @@ log.fine("     * keeping bestFit=" + bestFit.toString());
 
             if (fitIsBetter) {
 
-                if (bestFit == null) {
+                if (bestFit == null && fit != null) {
                     log.fine("  *==> new cycle fit=" + fit.toString());
-                } else {
+                } else if (fit != null) {
                     log.fine("  *==> fit=" + fit.toString());
                 }
 
@@ -3046,10 +3058,10 @@ log.fine("     * keeping bestFit=" + bestFit.toString());
 
 if (bestFit != null) {
 log.fine("     * returning bestFit=" + bestFit.toString());
-if (bestFit.getNumberOfMatchedPoints() == 84) {
-    if (Math.abs(bestFit.getMeanDistFromModel() - 2.42) < 0.1) {
-        if (Math.abs(bestFit.getStDevFromMean() - 0.31) < 0.1) {
-            if (Math.abs(bestFit.getParameters().getRotationInDegrees() - 9) < 0.1) {
+if (bestFit.getNumberOfMatchedPoints() == 22) {
+    if (Math.abs(bestFit.getMeanDistFromModel() - 5.86) < 0.1) {
+        if (Math.abs(bestFit.getStDevFromMean() - 2.09) < 0.1) {
+            if (Math.abs(bestFit.getParameters().getRotationInDegrees() - 281) < 0.1) {
                 int z = 1;
             }
         }
@@ -5748,7 +5760,33 @@ if (bestFit.getNumberOfMatchedPoints() == 84) {
         double compS = fit.getStDevFromMean();
         double bestS = bestFit.getStDevFromMean();
 
-        double r = bestAvg/compAvg;
+        double aDiv = bestAvg/compAvg;
+        
+        // TODO:  this skips the equal tolerance re-eval if solutions are already
+        //    alot better and have significant number of points matched
+        if ((compNMatches > 10) && (bestNMatches > 10)) {
+            float nDiv = (float)bestNMatches/(float)compNMatches;
+            double sDiv = bestS/compS;
+            double nLimit0 = 2;
+            double nLimit1 = 0.5;
+            if (bestNMatches > 50) {
+                nLimit0 = 1.5;
+            }
+            if (compNMatches > 50) {
+                nLimit1 = 1./1.5;
+            }
+            if ((nDiv > nLimit0) && (aDiv < 0.5) && (sDiv < 0.5)) {
+                fitIsBetter[0] = false;
+                reevalFits[0] = bestFit;
+                reevalFits[1] = fit;
+                return;
+            } else if ((nDiv < nLimit1) && (aDiv > 2) && (sDiv > 2)) {
+                fitIsBetter[0] = true;
+                reevalFits[0] = bestFit;
+                reevalFits[1] = fit;
+                return;
+            }
+        }
 
         if ((compNMatches > 2) && (compAvg == 0) && (compS == 0) && (bestAvg > 1)) {
             // fit is the better fit
@@ -5764,7 +5802,7 @@ if (bestFit.getNumberOfMatchedPoints() == 84) {
             reevalFits[1] = fit;
             return;
         }
-        if ((compNMatches > 2) && (compS == 0) && (compAvg < 4) && (bestS > 0) &&
+        if ((compNMatches > 2) && (compS == 0) && (compAvg < 5) && (bestS > 0) &&
             (bestAvg > compAvg)) {
             // fit is the better fit
             fitIsBetter[0] = true;
@@ -5772,7 +5810,7 @@ if (bestFit.getNumberOfMatchedPoints() == 84) {
             reevalFits[1] = fit;
             return;
         }
-        if ((bestNMatches > 2) && (bestS == 0) && (bestAvg < 4) && (compS > 0) &&
+        if ((bestNMatches > 2) && (bestS == 0) && (bestAvg < 5) && (compS > 0) &&
             (compAvg > bestAvg)) {
             // bestFit is the better fit
             fitIsBetter[0] = false;
@@ -5987,7 +6025,7 @@ if (bestFit.getNumberOfMatchedPoints() == 84) {
 
         reevalFits[0] = bestFit;
 
-        if (fitIsBetter[0]) {
+        if (fitIsBetter[0] && (fitT != null)) {
            reevalFits[1] = fitT;
         }
 
