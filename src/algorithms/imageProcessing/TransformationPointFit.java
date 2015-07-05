@@ -141,18 +141,18 @@ public class TransformationPointFit {
         
         StringBuilder sb = new StringBuilder();
         
-        sb.append("nMatchedPoints=").append(Integer.toString(nMatchedPoints))
+        sb.append("\nnMatchedPoints=").append(Integer.toString(nMatchedPoints))
             .append(" nMaxMatchable=")
             .append(Double.toString(nMaxMatchable))
-            .append(" meanDistFromModel=")
+            .append("\nmeanDistFromModel=")
             .append(Double.toString(meanDistFromModel))
             .append(" stDevFromMean=")
             .append(Double.toString(stDevFromMean))
-            .append(" translationXTolerance=")
+            .append("\ntranslationXTolerance=")
             .append(Float.toString(transTolX))
             .append(" translationYTolerance=")
             .append(Float.toString(transTolY))
-            .append(" ")
+            .append("\n")
             .append(parameters.toString());
         
         return sb.toString();

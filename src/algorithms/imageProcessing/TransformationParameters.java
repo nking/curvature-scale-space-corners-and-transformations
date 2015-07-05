@@ -106,7 +106,7 @@ public class TransformationParameters {
         sb.append("rotationInRadians=").append(rotationInRadians)
             .append(" rotationInDegrees=").append(rotationInRadians*180./Math.PI)
             .append(" scale=").append(scale)
-            .append(" translationX=").append(translationX)
+            .append("\ntranslationX=").append(translationX)
             .append(" translationY=").append(translationY);
         
         return sb.toString();

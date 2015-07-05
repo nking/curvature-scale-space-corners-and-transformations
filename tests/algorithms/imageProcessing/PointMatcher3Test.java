@@ -91,8 +91,8 @@ public class PointMatcher3Test extends TestCase {
 
                 int nPoints = (nTest + 1) * 7;
                 
-                log.info("test for nPoints=" + nPoints + " params=" + params.toString()
-                    + " number of vertical partitions=" + numberOfPartitions);
+                log.info("test for nPoints=" + nPoints + "\nparams=" + params.toString()
+                    + "\nnumber of vertical partitions=" + numberOfPartitions);
 
                 for (int i = 0; i < nPoints; ++i) {
                     int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
@@ -149,11 +149,8 @@ public class PointMatcher3Test extends TestCase {
                 assert(fit != null);
                 TransformationParameters fitParams = fit.getParameters();
                 int diffN = Math.abs(nPoints - fit.getNumberOfMatchedPoints());
-                float diffRotDeg =
-                    (fitParams.getRotationInDegrees() - rotInDegrees);
-                
-               
-                    
+                float diffRotDeg = getAngleDifference(
+                    fitParams.getRotationInDegrees(), rotInDegrees);
                 float diffScale = Math.abs(fitParams.getScale() - scale);
                 float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
                 float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
@@ -173,7 +170,7 @@ public class PointMatcher3Test extends TestCase {
                 }
 
                 assertTrue(diffN < 0.5*nPoints);
-                //assertTrue(diffRotDeg <= 10.0); <--- correct for quadrant differences
+                assertTrue(diffRotDeg <= 10.0);
                 assertTrue(diffScale < 0.2);
                 assertTrue(diffTransX <= epsTrans);
                 assertTrue(diffTransY <= epsTrans);
@@ -326,7 +323,8 @@ public class PointMatcher3Test extends TestCase {
             TransformationParameters fitParams = fit.getParameters();
 
             int diffN = Math.abs(nPoints - fit.getNumberOfMatchedPoints());
-            float diffRotDeg = Math.abs(fitParams.getRotationInDegrees() - rotInDegrees);
+            float diffRotDeg = getAngleDifference(
+                    fitParams.getRotationInDegrees(), rotInDegrees);
             float diffScale = Math.abs(fitParams.getScale() - scale);
             float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
             float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
@@ -1002,6 +1000,115 @@ images as possible)
         pointMatcher.sortByDescendingMatches(fits, 0, (fits.length - 1));
 
         return fits;
+    }
+
+    private float getAngleDifference(float rotDegrees0, float rotDegrees1) {
+         /*
+         I  |  0
+        ---------
+         II | III
+        */
+        int q0 = 0;
+        if (rotDegrees0 >= 270) {
+            q0 = 3;
+        } else if (rotDegrees0 >= 180) {
+            q0 = 2;
+        } else if (rotDegrees0 >= 90) {
+            q0 = 1;
+        }
+        int q1 = 0;
+        if (rotDegrees1 >= 270) {
+            q0 = 3;
+        } else if (rotDegrees1 >= 180) {
+            q0 = 2;
+        } else if (rotDegrees1 >= 90) {
+            q0 = 1;
+        }
+        
+        /*
+         I  |  0
+        ---------
+         II | III
+        */
+        float angleDiff = -1;
+        if (q0 == 0){
+            if (q1 == 0) {
+                angleDiff = Math.abs(rotDegrees1 - rotDegrees0);
+            } else if (q1 == 1) {
+                angleDiff = (rotDegrees1 - rotDegrees0);
+            } else if (q1 == 2) {
+                float diff = rotDegrees1 - rotDegrees0;
+                if (diff > 180) {
+                    diff = 360 - diff;
+                }
+                angleDiff = diff;
+            } else {
+                angleDiff = Math.abs(360 - rotDegrees1 + rotDegrees0);
+            }
+        } else if (q0 == 1) {
+            /*
+             I  |  0
+             ---------
+             II | III
+             */
+            if (q1 == 0) {
+                angleDiff = (rotDegrees1 - rotDegrees0);
+            } else if (q1 == 1) {
+                angleDiff = Math.abs(rotDegrees0 - rotDegrees1);
+            } else if (q1 == 2) {
+                angleDiff = (rotDegrees1 - rotDegrees0);
+            } else {
+                float diff = rotDegrees1 - rotDegrees0;
+                if (diff > 180) {
+                    diff = 360 - diff;
+                }
+                angleDiff = diff;
+            }
+        } else if (q0 == 2) {
+            /*
+             I  |  0
+             ---------
+             II | III
+             */
+            if (q1 == 0) {
+                float diff = rotDegrees1 - rotDegrees0;
+                if (diff > 180) {
+                    diff = 360 - diff;
+                }
+                angleDiff = diff;
+            } else if (q1 == 1) {
+                angleDiff = (rotDegrees0 - rotDegrees1);
+            } else if (q1 == 2) {
+                angleDiff = Math.abs(rotDegrees0 - rotDegrees1);
+            } else {
+                angleDiff = (rotDegrees1 - rotDegrees0);
+            }
+        } else if (q0 == 3) {
+            /*
+             I  |  0
+             ---------
+             II | III
+             */
+            if (q1 == 0) {
+                angleDiff = (360 - rotDegrees0 + rotDegrees1);
+            } else if (q1 == 1) {
+                float diff = (rotDegrees0 - rotDegrees1);
+                if (diff > 180) {
+                    diff = 360 - diff;
+                }
+                angleDiff = diff;
+            } else if (q1 == 2) {
+                angleDiff = (rotDegrees0 - rotDegrees1);
+            } else {
+                angleDiff = Math.abs(rotDegrees0 - rotDegrees1);
+            }
+        }
+        
+        if (angleDiff >= 360) {
+            angleDiff = 360 - angleDiff;
+        }
+        
+        return angleDiff;
     }
 
 }
