@@ -3183,7 +3183,7 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             float boundsYCenter = (transXYMinMaxes[2] + transXYMinMaxes[3])/2.f;
             float boundsXHalf = x0 - boundsXCenter;
             float boundsYHalf = y0 - boundsYCenter;
-<
+
             fit = refineTranslationWithDownhillSimplex(
                 scaledRotatedSet1, set2, fits,
                 boundsXCenter, boundsYCenter, tolTransX, tolTransY,
