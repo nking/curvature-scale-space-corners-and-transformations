@@ -231,24 +231,68 @@ public class PointMatcher3Test extends TestCase {
                         transXDelta = 2;
                         transYDelta = 2;
                         halfRange = 10;
+                        //image size range 250 to 10000
+                        int w0 = Math.abs(transX) * (1 + sr.nextInt(10)) + 250;
+                        int h0 = Math.abs(transY) * (1 + sr.nextInt(10)) + 250;
+                        imageWidth = sr.nextInt(250) + w0;
+                        imageHeight = sr.nextInt(250) + h0;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
                     } else if (rotType == 2) {
                         rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
                             (180 - rotInDegrees);
                         transXDelta = 3;
                         transYDelta = 3;
                         halfRange = 20;
+                        //image size range 250 to 10000
+                        int w0 = Math.abs(transX) * (1 + sr.nextInt(10)) + 250;
+                        int h0 = Math.abs(transY) * (1 + sr.nextInt(10)) + 250;
+                        imageWidth = sr.nextInt(1000) + w0;
+                        imageHeight = sr.nextInt(1000) + h0;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
                     } else if (rotType == 3) {
                         rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
                             (90 - rotInDegrees);
                         transXDelta = 4;
                         transYDelta = 4;
                         halfRange = 100;
+                        //image size range 250 to 10000
+                        int w0 = Math.abs(transX) * (1 + sr.nextInt(10)) + 250;
+                        int h0 = Math.abs(transY) * (1 + sr.nextInt(10)) + 250;
+                        imageWidth = sr.nextInt(2100) + w0;
+                        imageHeight = sr.nextInt(2100) + h0;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
                     } else if (rotType == 3) {
                         rotInDegrees = sr.nextBoolean() ? (45 + rotInDegrees) :
                             (45 - rotInDegrees);
                         transXDelta = 5;
                         transYDelta = 5;
                         halfRange = 115;
+                        //image size range 250 to 10000
+                        int w0 = Math.abs(transX) * (1 + sr.nextInt(10)) + 250;
+                        int h0 = Math.abs(transY) * (1 + sr.nextInt(10)) + 250;
+                        imageWidth = sr.nextInt(5000) + w0;
+                        imageHeight = sr.nextInt(5000) + h0;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
                     }
 
                     TransformationParameters params = new TransformationParameters();
@@ -408,12 +452,16 @@ public class PointMatcher3Test extends TestCase {
                             + " transYDelta=" + transYDelta
                         );
                     } else {
-                        log.info("dens=" + dens + " nPoints=" + nPoints 
+                        log.info("density=" + dens + " nPoints=" + nPoints 
                             + " w=" + imageWidth + " h=" + imageHeight
                             + " transXDelta=" + transXDelta 
                             + " transYDelta=" + transYDelta
                         );
                     }
+                    /*
+                    need to plot density vs transDelta for converged and those 
+                    that took more than one iteration to converge.
+                    */
                 }
             }
         }
