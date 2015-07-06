@@ -3,12 +3,15 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.PointPartitioner;
 import static algorithms.imageProcessing.PointMatcher.minTolerance;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloat;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PolygonPlotterPNG;
 import algorithms.util.RangeInt;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -242,6 +245,8 @@ public final class PointMatcher {
     private final float generalTolerance = 8;
 
     public static float toleranceGridFactor = 4.f;
+
+    protected boolean debug = true;
 
     public void setCostToNumMatchedAndDiffFromModel() {
         costIsNumAndDiff = true;
@@ -3021,11 +3026,11 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         RangeInt bestTransYStartStop = new RangeInt(transYStartStop);
 
         int nIntervals = nTransIntervals;
-        
+
         int limit = 1;
-        
+
         int dx = (bestTransXStartStop.getStop() - bestTransXStartStop.getStart())/nIntervals;
-        int dy = (bestTransYStartStop.getStop() - bestTransYStartStop.getStart())/nIntervals;        
+        int dy = (bestTransYStartStop.getStop() - bestTransYStartStop.getStart())/nIntervals;
 
         if (dx < limit) {
             dx = limit;
@@ -3201,7 +3206,7 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             dsNMaxIter = 100;
         }
     }
-        
+
     protected TransformationPointFit
         calculateTranslationFromGridThenDownhillSimplex(
         PairFloatArray scaledRotatedSet1, PairIntArray set1, PairIntArray set2,
@@ -3253,7 +3258,7 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             return null;
         }
 
-        int dsLimit = 
+        int dsLimit =
             (transXStartStop.getStop() - transXStartStop.getStart()) / transXDelta;
 
         int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN()
@@ -4567,6 +4572,12 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
                 break;
             }
 
+            if (debug) {
+                if ((nIter == 0) || (nIter % 10 == 0)) {
+                    plotTranslationSimplex(fits, txMin, txMax, tyMin, tyMax);
+                }
+            }
+
             if (nIter > 0) {
 
                 TransformationParameters[] currentParams = extractParameters(fits);
@@ -4736,6 +4747,10 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
         int comp = compare(fits[bestFitIdx], fitAvg);
         if (comp == 1) {
             fits[bestFitIdx] = fitAvg;
+        }
+
+        if (debug) {
+            writeTranslationSimplexPlot();
         }
 
         return fits[bestFitIdx];
@@ -6150,4 +6165,53 @@ if (compTol == 1) {
 
     }
 
+    private PolygonPlotterPNG plotter = null;
+    //TODO: put this in an aspect
+    private void plotTranslationSimplex(TransformationPointFit[] fits,
+        float minX, float maxX, float minY, float maxY) {
+
+        try {
+            if (plotter == null) {
+                plotter = new PolygonPlotterPNG(minX, maxX, minY, maxY,
+                    "translation simplex", "transX", "transY");
+            }
+            int count = 0;
+            for (TransformationPointFit fit : fits) {
+                if (fit == null) {
+                    continue;
+                }
+                count++;
+            }
+            double[] x = new double[count];
+            double[] y = new double[x.length];
+            count = 0;
+            for (TransformationPointFit fit : fits) {
+                if (fit == null) {
+                    continue;
+                }
+                x[count] = fit.getTranslationX();
+                y[count] = fit.getTranslationY();
+                count++;
+            }
+
+            plotter.addPolygon(x, y);
+
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        }
+    }
+
+    private void writeTranslationSimplexPlot() {
+
+        if (plotter == null) {
+            return;
+        }
+
+        try {
+            plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        }
+
+    }
 }

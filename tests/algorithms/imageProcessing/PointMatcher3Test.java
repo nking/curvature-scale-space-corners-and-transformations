@@ -206,8 +206,6 @@ public class PointMatcher3Test extends TestCase {
 
         // ---- random testing for stereo imaging ----
 
-        int numberOfPartitions = sr.nextInt(3) + 1;
-
         float scale = 1.0f;
 
         int transXDelta = 1;
@@ -219,9 +217,9 @@ public class PointMatcher3Test extends TestCase {
         List<DensityTranslationResults> converged1 =
             new ArrayList<DensityTranslationResults>();
 
-        for (int nRuns = 0; nRuns < 10;/*50;*/ ++nRuns) {
-            for (int rotType = 0; rotType < 4; ++rotType) {
-                for (int nTest = 0; nTest < 15; ++nTest) {
+        for (int nRuns = 0; nRuns < 1;/*50;*/ ++nRuns) {
+            for (int rotType = 3; rotType < 4; ++rotType) {
+                for (int nTest = 0; nTest < 1; ++nTest) {
 
                     PairIntArray unmatchedLeftXY = new PairIntArray();
 
@@ -288,6 +286,9 @@ public class PointMatcher3Test extends TestCase {
                             imageHeight++;
                         }
                     }
+                    
+                    transXDelta = 2;
+                    transYDelta = 2;
 
                     int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(2048)));
                     int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
@@ -395,8 +396,8 @@ public class PointMatcher3Test extends TestCase {
                         (!converged && (nIter < nMaxIter) && (transXDelta > 1))) {
 
                         if (nIter > 0) {
-                            transXDelta--;
-                            transYDelta--;
+                            dsMaxIter += 50;
+                            pointMatcher.setDsNMaxIter(dsMaxIter);
                         }
 
                         TransformationPointFit fit =
@@ -479,26 +480,27 @@ will still produce a converging result in the downhill simplex.
 
         //need to plot density vs transDelta for converged and those
         //that took more than one iteration to converge.
-        float[] x = new float[converged0.size()];
-        float[] y = new float[x.length];
-        for (int i = 0; i < x.length; ++i) {
-            x[i] = (float)converged0.get(i).density;
-            y[i] = (float)converged0.get(i).translationDelta;
-        }
-        ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
-        plotter.plot(x, y, "converged", "density", "trDelta");
-        plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
+        if (false /*!converged0.isEmpty()*/) {
+            float[] x = new float[converged0.size()];
+            float[] y = new float[x.length];
+            for (int i = 0; i < x.length; ++i) {
+                x[i] = (float)converged0.get(i).density;
+                y[i] = (float)converged0.get(i).translationDelta;
+            }
+            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+            plotter.plot(x, y, "converged", "density", "trDelta");
+            plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
 
-        x = new float[converged1.size()];
-        y = new float[x.length];
-        for (int i = 0; i < x.length; ++i) {
-            x[i] = (float)converged1.get(i).density;
-            y[i] = (float)converged1.get(i).translationDelta;
+            x = new float[converged1.size()];
+            y = new float[x.length];
+            for (int i = 0; i < x.length; ++i) {
+                x[i] = (float)converged1.get(i).density;
+                y[i] = (float)converged1.get(i).translationDelta;
+            }
+            plotter = new ScatterPointPlotterPNG();
+            plotter.plot(x, y, "converged after decr trDelta", "density", "trDelta");
+            plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
         }
-        plotter = new ScatterPointPlotterPNG();
-        plotter.plot(x, y, "converged after decr trDelta", "density", "trDelta");
-        plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
-
     }
 
     protected class DensityTranslationResults {
