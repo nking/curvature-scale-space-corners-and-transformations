@@ -11,6 +11,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonPlotterPNG;
 import algorithms.util.RangeInt;
+import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -4574,7 +4575,8 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
 
             if (debug) {
                 if ((nIter == 0) || (nIter % 10 == 0)) {
-                    plotTranslationSimplex(fits, txMin, txMax, tyMin, tyMax);
+                    plotTranslationSimplex(fits, txMin, txMax, tyMin, tyMax, 
+                        null);
                 }
             }
 
@@ -4750,6 +4752,8 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
         }
 
         if (debug) {
+            plotTranslationSimplex(fits, txMin, txMax, tyMin, tyMax, 
+                Color.YELLOW);
             writeTranslationSimplexPlot();
         }
 
@@ -6168,7 +6172,7 @@ if (compTol == 1) {
     private PolygonPlotterPNG plotter = null;
     //TODO: put this in an aspect
     private void plotTranslationSimplex(TransformationPointFit[] fits,
-        float minX, float maxX, float minY, float maxY) {
+        float minX, float maxX, float minY, float maxY, java.awt.Color clr) {
 
         try {
             if (plotter == null) {
@@ -6194,7 +6198,11 @@ if (compTol == 1) {
                 count++;
             }
 
-            plotter.addPolygon(x, y);
+            if (clr == null) {
+                plotter.addPolygon(x, y);
+            } else {
+                plotter.addPolygon(x, y, clr);
+            }
 
         } catch (IOException e) {
             log.severe(e.getMessage());

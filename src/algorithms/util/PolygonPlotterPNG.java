@@ -1,6 +1,7 @@
 package algorithms.util;
 
 import algorithms.misc.MiscMath;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Paint;
 import java.awt.image.BufferedImage;
@@ -138,14 +139,33 @@ public class PolygonPlotterPNG {
         
         Color clr = chooseNextColor();
         
-        
-        XYPolygonAnnotation a = new XYPolygonAnnotation(xy, null, null, clr);
+        XYPolygonAnnotation a = new XYPolygonAnnotation(xy, 
+            new BasicStroke(3f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL), 
+            clr);
         
         XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) 
             chart.getXYPlot().getRenderer();
-        renderer.setSeriesLinesVisible(0, false);
-        renderer.setSeriesShapesVisible(1, false);
+                
+        renderer.addAnnotation(a);
+    }
+    
+    public void addPolygon(double[] xPoints, double[] yPoints, Color clr) {
+
+        int n0 = (xPoints != null) ? xPoints.length : 0;
         
+        double[] xy = new double[2*n0];
+        
+        for (int i = 0; i < n0; ++i) {
+            xy[2*i] = xPoints[i];
+            xy[2*i + 1] = yPoints[i];
+        }
+                
+        XYPolygonAnnotation a = new XYPolygonAnnotation(xy, 
+            new BasicStroke(4f), clr);
+        
+        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) 
+            chart.getXYPlot().getRenderer();
+                
         renderer.addAnnotation(a);
     }
     
@@ -154,7 +174,7 @@ public class PolygonPlotterPNG {
         if (lastColor > 5) {
             lastColor = 0;
         }
-        Color c = Color.BLUE;
+        Color c = Color.BLACK;
         switch(lastColor) {
             case 1:
                 c = Color.PINK;
@@ -169,6 +189,18 @@ public class PolygonPlotterPNG {
                 c = Color.CYAN;
                 break;
             case 5:
+                c = Color.ORANGE;
+                break;
+            case 6:
+                c = Color.DARK_GRAY;
+                break;
+            case 7:
+                c = Color.BLUE;
+                break;
+            case 8:
+                c = Color.LIGHT_GRAY;
+                break;
+            case 9:
                 c = Color.MAGENTA;
                 break;
             default:
