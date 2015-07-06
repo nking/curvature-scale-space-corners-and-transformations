@@ -8,6 +8,7 @@ import algorithms.util.PairFloat;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.RangeInt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -609,40 +610,69 @@ public final class PointMatcher {
         float transX = bestFit.getParameters().getTranslationX();
         float transY = bestFit.getParameters().getTranslationY();
 
-        float dim =
-            (bestFit.getTranslationXTolerance() > bestFit.getTranslationYTolerance())
-            ? bestFit.getTranslationXTolerance() :
-            bestFit.getTranslationYTolerance();
+        float dim = Math.max(bestFit.getTranslationXTolerance(),
+            bestFit.getTranslationYTolerance());
         dim *= 2.5;
 
         float gridWidth = nTransIntervals * dim;
-        float gridHeight = nTransIntervals * dim;
-        int transXStart = (int)(transX - (gridWidth/2));
-        int transXStop = (int)(transX + (gridWidth/2));
-        int transYStart = (int)(transY - (gridHeight/2));
-        int transYStop = (int)(transY + (gridHeight/2));
+        float gridHeight = gridWidth;
 
-        nTransIntervals = 9;
+        RangeInt transXStartStop = new RangeInt((int)(transX - (gridWidth/2.f)),
+            (int)(transX + (gridWidth/2.f)));
+        RangeInt transYStartStop = new RangeInt((int)(transY - (gridHeight/2.f)),
+            (int)(transY + (gridHeight/2.f)));
 
-        int dx = (int)((float)(transXStop - transXStart)/(float)nTransIntervals);
-        int dy = (int)((float)(transYStop - transYStart)/(float)nTransIntervals);
+        nTransIntervals = 10;
+
+        int dx = (transXStartStop.getStop() - transXStartStop.getStart())
+            /nTransIntervals;
+        int dy = (transYStartStop.getStop() - transYStartStop.getStart())
+            /nTransIntervals;
+
+        if (dx <= 1) {
+            // the interval is too small, widen dimension and repeat calcs here
+            gridWidth = 50;
+            transXStartStop = new RangeInt((int)(transX - (gridWidth/2.f)),
+                (int)(transX + (gridWidth/2.f)));
+
+            transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
+
+            dx = (transXStartStop.getStop() - transXStartStop.getStart())
+                /nTransIntervals;
+        } else {
+            transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
+        }
+
+        if (dy <= 1) {
+            // the interval is too small, widen dimension and repeat calcs here
+            gridHeight = 50;
+            transYStartStop = new RangeInt((int)(transY - (gridWidth/2.f)),
+                (int)(transY + (gridWidth/2.f)));
+
+            transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
+
+            dy = (transYStartStop.getStop() - transYStartStop.getStart())
+                /nTransIntervals;
+        } else {
+            transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
+        }
+
         float tolTransX = dx;//(image2Width/toleranceGridFactor);
         float tolTransY = dy;//(image2Height/toleranceGridFactor);
 
-if ((transXStart==-232) && (transXStop==-190) && (transYStart==-11) && (transYStop==31)) {
-int z = 1;
-}
-
         log.fine(String.format(
-            "starting finer grid search with rot=%d to %d and scale=%d to %d and translation=%d:%d, %d:%d",
-            rotStart, rotStop, scaleStart, scaleStop, transXStart, transXStop,
-            transYStart, transYStop));
+            "starting finer grid search with rot=%d to %d and scale=%d to %d and translation=%d:%d, %d:%d and nTransIntervals=%d",
+            rotStart, rotStop, scaleStart, scaleStop,
+            transXStartStop.getStart(), transXStartStop.getStop(),
+            transYStartStop.getStart(), transYStartStop.getStop(),
+            nTransIntervals));
 
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             unmatchedLeftXY, unmatchedRightXY,
             image1Width, image1Height, image2Width, image2Height,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            transXStart, transXStop, transYStart, transYStop, nTransIntervals,
+            transXStartStop, transYStartStop,
+            nTransIntervals,
             tolTransX, tolTransY, setsFractionOfImage);
 
 if (bestFit != null && fit != null) {
@@ -862,10 +892,12 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
         float tolTransX = 2 * toleranceX;
         float tolTransY = 2 * toleranceY;
 
-        int transXStart = (int)(transX - dx);
-        int transXStop = (int)(transX + dx);
-        int transYStart = (int)(transY - dy);
-        int transYStop = (int)(transY + dy);
+        RangeInt transXStartStop = new RangeInt((int)(transX - dx),
+            (int)(transX + dx));
+        RangeInt transYStartStop = new RangeInt((int)(transY - dy),
+            (int)(transY + dy));
+        transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
+        transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
 
         log.fine(String.format(
             "starting finer grid search with rot=%d to %d and scale=%d to %d",
@@ -875,7 +907,8 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
             unmatchedLeftXY, unmatchedRightXY,
             image1Width, image1Height, image2Width, image2Height,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            transXStart, transXStop, transYStart, transYStop, nTransIntervals,
+            transXStartStop, transYStartStop,
+            nTransIntervals,
             tolTransX, tolTransY, setsFractionOfImage);
 
         TransformationPointFit[] reevalFits = new TransformationPointFit[2];
@@ -2363,7 +2396,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
         int image1Width, int image1Height, int image2Width, int image2Height,
         int rotStart, int rotStop, int rotDelta,
         int scaleStart, int scaleStop, int scaleDelta,
-        int transXStart, int transXStop, int transYStart, int transYStop,
+        RangeInt transXStartStop, RangeInt transYStartStop,
         int nTransIntervals,
         float tolTransX, float tolTransY,
         float setsFractionOfImage) {
@@ -2412,12 +2445,12 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
             for (int rot : rotation) {
 
                 float rotationInRadians = (float)(rot*Math.PI/180.f);
-                
+
                 TransformationPointFit fit = calculateTranslationForUnmatched0(
                     set1, set2,
                     image1Width, image1Height, image2Width, image2Height,
                     rotationInRadians, scale,
-                    transXStart, transXStop, transYStart, transYStop,
+                    transXStartStop, transYStartStop,
                     nTransIntervals,
                     tolTransX, tolTransY,
                     setsFractionOfImage);
@@ -2637,8 +2670,8 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         final int image1Width, final int image1Height, final int image2Width,
         final int image2Height,
         final float rotationInRadians, final float scale,
-        int transXStart, int transXStop, int transXDelta,
-        int transYStart, int transYStop, int transYDelta,
+        RangeInt transXStartStop, int transXDelta,
+        RangeInt transYStartStop, int transYDelta,
         float tolTransX, float tolTransY,
         final boolean setsAreMatched, final float setsFractionOfImage,
         final int numberOfBestToReturn) {
@@ -2650,6 +2683,40 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
                  |     |
                  |_____|
         */
+
+        if (transXStartStop.getStart() < -1*image2Width) {
+            throw new IllegalArgumentException(
+            "transXStart is out of bounds.. transXStart=" + transXStartStop.getStart());
+        }
+        if (transXStartStop.getStart() > image2Width) {
+            throw new IllegalArgumentException(
+            "transXStart is out of bounds.. transXStart=" + transXStartStop.getStart());
+        }
+        if (transXStartStop.getStop() < -1*image2Width) {
+            throw new IllegalArgumentException(
+            "transXStop is out of bounds.. transXStop=" + transXStartStop.getStop());
+        }
+        if (transXStartStop.getStop() > image2Width) {
+            throw new IllegalArgumentException(
+            "transXStop is out of bounds.. transXStop=" + transXStartStop.getStop());
+        }
+
+        if (transYStartStop.getStart() < -1*image2Height) {
+            throw new IllegalArgumentException(
+            "transYStart is out of bounds.. transYStart=" + transYStartStop.getStart());
+        }
+        if (transYStartStop.getStart() > image2Height) {
+            throw new IllegalArgumentException(
+            "transYStart is out of bounds.. transYStart=" + transYStartStop.getStart());
+        }
+        if (transYStartStop.getStop() < -1*image2Height) {
+            throw new IllegalArgumentException(
+            "transYStop is out of bounds.. transYStop=" + transYStartStop.getStop());
+        }
+        if (transYStartStop.getStop() > image2Height) {
+            throw new IllegalArgumentException(
+            "transYStop is out of bounds.. transYStop=" + transYStartStop.getStop());
+        }
 
         if (transXDelta < 1) {
             throw new IllegalArgumentException(
@@ -2676,8 +2743,8 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         }
 
         int nTranslations =
-            (((transXStop - transXStart)/transXDelta) + 1) *
-            (((transYStop - transYStart)/transYDelta) + 1);
+            (((transXStartStop.getStop() - transXStartStop.getStart())/transXDelta) + 1) *
+            (((transYStartStop.getStop() - transYStartStop.getStart())/transYDelta) + 1);
 
         if (nTranslations == 0) {
             return null;
@@ -2692,9 +2759,11 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
 
         TransformationPointFit[] fits = new TransformationPointFit[nTranslations];
 
-        for (float transX = transXStart; transX <= transXStop; transX += transXDelta) {
+        for (float transX = transXStartStop.getStart();
+            transX <= transXStartStop.getStop(); transX += transXDelta) {
 
-            for (float transY = transYStart; transY <= transYStop; transY += transYDelta) {
+            for (float transY = transYStartStop.getStart();
+                transY <= transYStartStop.getStop(); transY += transYDelta) {
 
                 float tx0 = transX + (transXDelta/2);
                 float ty0 = transY + (transYDelta/2);
@@ -2718,12 +2787,13 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
                 } else {
 
                     // default is to use greedy matching but use optimal for small sets
-                    if (nMaxMatchable <= 10) {
+                    if (true /*nMaxMatchable <= 10*/) {
 
                         fit = evaluateFitForUnMatchedTransformedOptimal(params,
                             allPoints1Tr, set2, tolTransX, tolTransY);
 
                     } else {
+
                         fit = evaluateFitForUnMatchedTransformedGreedy(params,
                         //fit = evaluateFitForUnMatchedTransformedOptimal(params,
                             allPoints1Tr, set2, tolTransX, tolTransY);
@@ -2814,8 +2884,13 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
 
         int bestTransXStart = -1*image2Width + 1;
         int bestTransXStop = image2Width - 1;
-        int bestTransYStart = -1*image2Width + 1;
-        int bestTransYStop = image2Width - 1;
+        int bestTransYStart = -1*image2Height + 1;
+        int bestTransYStop = image2Height - 1;
+
+        RangeInt bestTransXStartStop = new RangeInt(-1*image2Width + 1,
+            image2Width - 1);
+        RangeInt bestTransYStartStop = new RangeInt(-1*image2Height + 1,
+            image2Height - 1);
 
         // TODO: consider using point density to estimate this and image dimensions
         int nIntervals = 11;
@@ -2852,7 +2927,7 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
             set1, set2,
             image1Width, image1Height, image2Width, image2Height,
             rotationInRadians, scale,
-            bestTransXStart, bestTransXStop, bestTransYStart, bestTransYStop,
+            bestTransXStartStop, bestTransYStartStop,
             nIntervals, tolTransX, tolTransY,
             setsFractionOfImage);
 
@@ -2880,8 +2955,8 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
      * @param rotationInRadians given in radians with value between 0 and 2*pi,
      * exclusive
      * @param scale
-     * @param transXStart
-     * @param transXStop
+     * @param transXStartStop
+     * @param transYStartStop
      * @param image1Width width of image 1, used to derive range of x
      * translations in case centroidX1 is ever used as a non-center reference.
      * @param transYStop
@@ -2904,7 +2979,7 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
         float rotationInRadians, float scale,
-        int transXStart, int transXStop, int transYStart, int transYStop,
+        RangeInt transXStartStop, RangeInt transYStartStop,
         int nTransIntervals, float tolTransX, float tolTransY,
         float setsFractionOfImage) {
 
@@ -2942,57 +3017,52 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
 
         TransformationPointFit bestFit = null;
 
-        int bestTransXStart = transXStart;
-        int bestTransXStop = transXStop;
-        int bestTransYStart = transYStart;
-        int bestTransYStop = transYStop;
+        RangeInt bestTransXStartStop = new RangeInt(transXStartStop);
+        RangeInt bestTransYStartStop = new RangeInt(transYStartStop);
 
         int nIntervals = nTransIntervals;
-
-        int dx = (bestTransXStop - bestTransXStart)/nIntervals;
-        int dy = (bestTransYStop - bestTransYStart)/nIntervals;
-
-        float cellFactor = 1.25f;
-
-        int limit = 4;
-        if (!((dx > limit) && (dy > limit))) {
-            limit = Math.min(dx, dy) - 1;
-            if (limit == 0) {
-                limit = 1;
-            }
-        }
         
+        int limit = 1;
+        
+        int dx = (bestTransXStartStop.getStop() - bestTransXStartStop.getStart())/nIntervals;
+        int dy = (bestTransYStartStop.getStop() - bestTransYStartStop.getStart())/nIntervals;        
+
+        if (dx < limit) {
+            dx = limit;
+        }
+        if (dy < limit) {
+            dy = limit;
+        }
+
 log.fine(String.format("   grid+DS: tx=%d:%d(+%d) ty=%d:%d(+%d)  tLimit=%d",
-bestTransXStart, bestTransXStop, dx, bestTransYStart, bestTransYStop, dy, limit));
+bestTransXStartStop.getStart(), bestTransXStartStop.getStop(), dx,
+bestTransYStartStop.getStart(), bestTransYStartStop.getStop(), dy, limit));
+
+        tolTransX = tolFactor * dx;
+        tolTransY = tolFactor * dy;
 
         boolean setsAreMatched = false;
 
         int nIter = 0;
 
-        while ((dx > limit) && (dy > limit)) {
-
-            if (nIter > 0) {
-                tolTransX = dx;
-                tolTransY = dy;
-            } else {
-                tolTransX = dx >> 1;
-                tolTransY = dy >> 1;
-            }
+        while ((dx >= limit) && (dy >= limit)) {
 
             TransformationPointFit fit =
                 calculateTranslationFromGridThenDownhillSimplex(
                 scaledRotatedSet1, set1, set2,
                 image1Width, image1Height, image2Width, image2Height,
                 rotationInRadians, scale,
-                bestTransXStart, bestTransXStop, dx,
-                bestTransYStart, bestTransYStop, dy,
+                bestTransXStartStop, dx,
+                bestTransYStartStop, dy,
                 tolTransX, tolTransY,
                 setsAreMatched, setsFractionOfImage);
 
             boolean fitIsBetter = true;// = fitIsBetter(bestFit, fit);
             // since it's descending into finer solution, should only need to
             // check that the mean dist does not increase
-            if ((bestFit!= null) && (fit != null)) {
+            if ((fit != null) && (fit.getMeanDistFromModel() == Double.MAX_VALUE)) {
+                fitIsBetter = false;
+            } else if ((bestFit!= null) && (fit != null)) {
                 double diffM = fit.getMeanDistFromModel() - bestFit.getMeanDistFromModel();
                 if (diffM > 1) {
                     fitIsBetter = false;
@@ -3023,25 +3093,40 @@ log.fine("     * keeping bestFit=" + bestFit.toString());
                 float transX = bestFit.getParameters().getTranslationX();
                 float transY = bestFit.getParameters().getTranslationY();
 
-                log.fine(String.format("   previous X translation range %d:%d",
-                bestTransXStart, bestTransXStop));
+                log.fine(String.format("   previous X translation range %d:%d (nIter=%d)",
+                bestTransXStartStop.getStart(), bestTransXStartStop.getStop(), nIter));
                 log.fine(String.format("   previous Y translation range %d:%d",
-                bestTransYStart, bestTransYStop));
+                bestTransYStartStop.getStart(), bestTransYStartStop.getStop()));
                 log.fine(String.format("   previous cell size dx=%d dy=%d", dx, dy));
 
-                bestTransXStart = (int)(transX - cellFactor*dx);
-                bestTransXStop = (int)(transX + cellFactor*dx);
-                bestTransYStart = (int)(transY - cellFactor*dy);
-                bestTransYStop = (int)(transY + cellFactor*dy);
+                float diffX = cellFactor*dx;
+                float diffY = cellFactor*dy;
 
-                dx = (bestTransXStop - bestTransXStart)/nIntervals;
-                dy = (bestTransYStop - bestTransYStart)/nIntervals;
+                bestTransXStartStop.setStart((int)(transX - diffX));
+                bestTransXStartStop.setStop((int)(transX + diffX));
+                bestTransYStartStop.setStart((int)(transY - diffY));
+                bestTransYStartStop.setStop((int)(transY + diffY));
+                bestTransXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
+                dx = (bestTransXStartStop.getStop() - bestTransXStartStop.getStart())/nIntervals;
+                bestTransYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
+                dy = (bestTransYStartStop.getStop() - bestTransYStartStop.getStart())/nIntervals;
+
+                tolTransX = dx;// >> 1;
+                tolTransY = dy;// >> 1;
+
+                if (tolTransX == 0) {
+                    tolTransX = 1;
+                }
+                if (tolTransY == 0) {
+                    tolTransY = 1;
+                }
 
                 log.fine(String.format("   next X translation range %d:%d",
-                bestTransXStart, bestTransXStop));
+                bestTransXStartStop.getStart(), bestTransXStartStop.getStop()));
                 log.fine(String.format("   next Y translation range %d:%d",
-                bestTransYStart, bestTransYStop));
-                log.fine(String.format("   next cell size dx=%d dy=%d", dx, dy));
+                bestTransYStartStop.getStart(), bestTransYStartStop.getStop()));
+                log.fine(String.format("   next cell size dx=%d dy=%d  tolX=%f tolY=%f",
+                    dx, dy, tolTransX, tolTransY));
 
             } else {
 
@@ -3062,7 +3147,6 @@ log.fine("     * keeping bestFit=" + bestFit.toString());
         }
 
         if (bestFit != null) {
-
             bestFit.setMaximumNumberMatchable(maxNMatchable);
         }
 
@@ -3081,13 +3165,50 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
         return bestFit;
     }
 
-    private TransformationPointFit
+    private int dsNMaxIter = 50;
+    protected void setDsNMaxIter(int n) {
+        dsNMaxIter = n;
+    }
+    protected int getDsNMaxIter() {
+        return dsNMaxIter;
+    }
+    float nEpsFactor = 2.0f;
+    protected void setNEpsFactor(float f) {
+        nEpsFactor = f;
+    }
+    protected float getNEpsFactor() {
+        return nEpsFactor;
+    }
+    protected float cellFactor = 1.25f;
+    protected float tolFactor = 0.75f;
+    protected void setCellFactor(float f) {
+        cellFactor = f;
+    }
+    protected void setTolFactor(float f) {
+        tolFactor = f;
+    }
+    protected float getCellFactor() {
+        return cellFactor;
+    }
+    protected float getTolFactor() {
+        return tolFactor;
+    }
+    protected void setDownhillSimplexNMaxIter(int maxNMatchable) {
+        dsNMaxIter = 50;
+        if (maxNMatchable > 60) {
+            dsNMaxIter = 150;
+        } else if (maxNMatchable > 30) {
+            dsNMaxIter = 100;
+        }
+    }
+        
+    protected TransformationPointFit
         calculateTranslationFromGridThenDownhillSimplex(
         PairFloatArray scaledRotatedSet1, PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
         float rotationInRadians, float scale,
-        int transXStart, int transXStop, int transXDelta,
-        int transYStart, int transYStop, int transYDelta,
+        RangeInt transXStartStop, int transXDelta,
+        RangeInt transYStartStop, int transYDelta,
         float tolTransX, float tolTransY, boolean setsAreMatched,
         float setsFractionOfImage) {
 
@@ -3123,24 +3244,23 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             set1, set2,
             image1Width, image1Height, image2Width, image2Height,
             rotationInRadians, scale,
-            transXStart, transXStop, transXDelta,
-            transYStart, transYStop, transYDelta,
+            transXStartStop, transXDelta,
+            transYStartStop, transYDelta,
             tolTransX, tolTransY,
             setsAreMatched, setsFractionOfImage, numberOfBestToReturn);
 
         if (fits == null) {
             return null;
         }
-        
-        int dsLimit = (transXStop - transXStart) / transXDelta;
+
+        int dsLimit = 
+            (transXStartStop.getStop() - transXStartStop.getStart()) / transXDelta;
 
         int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN()
             : set2.getN();
 
-        /*
-        if the first 4 or so top fits all have nMatchedPoints=1 or 0, then
-        don't use the downhill simplex.
-        */
+        //if the first 4 or so top fits all have nMatchedPoints=1 or 0, then
+        //don't use the downhill simplex.
         boolean tooFewMatches = true;
         for (int i = 0; i < 4; ++i) {
             TransformationPointFit fit = fits[i];
@@ -3153,16 +3273,9 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             return fits[0];
         }
 
-        int nMaxIter = 50;
-        if (maxNMatchable > 60) {
-            nMaxIter = 150;
-        } else if (maxNMatchable > 30) {
-            nMaxIter = 100;
-        }
-
         TransformationPointFit fit;
 
-        if (transXDelta < dsLimit) {
+        if (false /*transXDelta < dsLimit*/) {
 
             fit = fits[0];
 
@@ -3176,20 +3289,18 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             float[] transXYMinMaxes = getTranslationMinAndMaxes(fits);
 
             float x0 = transXYMinMaxes[0] - tolTransX;
-            //float x1 = transXYMinMaxes[1] + tolTransX;
             float y0 = transXYMinMaxes[2] - tolTransY;
-            //float y1 = transXYMinMaxes[3] + tolTransY;
             float boundsXCenter = (transXYMinMaxes[0] + transXYMinMaxes[1])/2.f;
             float boundsYCenter = (transXYMinMaxes[2] + transXYMinMaxes[3])/2.f;
-            float boundsXHalf = x0 - boundsXCenter;
-            float boundsYHalf = y0 - boundsYCenter;
+            float boundsXHalf = Math.abs(x0 - boundsXCenter);
+            float boundsYHalf = Math.abs(y0 - boundsYCenter);
 
             fit = refineTranslationWithDownhillSimplex(
                 scaledRotatedSet1, set2, fits,
                 boundsXCenter, boundsYCenter, tolTransX, tolTransY,
                 boundsXHalf, boundsYHalf,
                 scale, rotationInRadians,
-                setsAreMatched, nMaxIter);
+                setsAreMatched, dsNMaxIter);
         }
 
         if (fit != null) {
@@ -3457,7 +3568,7 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
 
         double r = bestAvg/compAvg;
 
-        int diffEps = (int)Math.round(2.*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
+        int diffEps = (int)Math.round(nEpsFactor*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
         if (diffEps == 0) {
             diffEps = 1;
         }
@@ -5421,20 +5532,18 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             return null;
         }
 
-        int transXStart = (int)(bestFit.getTranslationX()
-            - halfRange);
+        RangeInt transXStartStop = new RangeInt((int)(bestFit.getTranslationX()
+            - halfRange), (int)(bestFit.getTranslationX() + halfRange));
 
-        int transXStop = (int)(bestFit.getTranslationX()
-            + halfRange);
+        RangeInt transYStartStop = new RangeInt((int)(bestFit.getTranslationY()
+            - halfRange), (int)(bestFit.getTranslationY() + halfRange));
 
-        int transYStart = (int)(bestFit.getTranslationY()
-            - halfRange);
+        transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
 
-        int transYStop = (int)(bestFit.getTranslationY()
-            + halfRange);
+        transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
 
-        int transXDelta = (transXStop - transXStart)/nIntervals;
-        int transYDelta = (transYStop - transYStart)/nIntervals;
+        int transXDelta = (transXStartStop.getStop() - transXStartStop.getStart())/nIntervals;
+        int transYDelta = (transYStartStop.getStop() - transYStartStop.getStart())/nIntervals;
         if (transXDelta == 0) {
             transXDelta++;
         }
@@ -5459,8 +5568,8 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             scaledRotatedSet1, set1, set2,
             image1Width, image1Height, image2Width, image2Height,
             bestFit.getRotationInRadians(), bestFit.getScale(),
-            transXStart, transXStop, transXDelta,
-            transYStart, transYStop, transYDelta,
+            transXStartStop, transXDelta,
+            transYStartStop, transYDelta,
             tolTransX2, tolTransY2, setsAreMatched,
             setsFractionOfImage);
 
@@ -5479,20 +5588,18 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             return null;
         }
 
-        int transXStart = (int)(bestFit.getTranslationX()
-            - halfRange);
+        RangeInt transXStartStop = new RangeInt((int)(bestFit.getTranslationX()
+            - halfRange), (int)(bestFit.getTranslationX() + halfRange));
 
-        int transXStop = (int)(bestFit.getTranslationX()
-            + halfRange);
+        RangeInt transYStartStop = new RangeInt((int)(bestFit.getTranslationY()
+            - halfRange), (int)(bestFit.getTranslationY() + halfRange));
 
-        int transYStart = (int)(bestFit.getTranslationY()
-            - halfRange);
+        transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
 
-        int transYStop = (int)(bestFit.getTranslationY()
-            + halfRange);
+        transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
 
-        int transXDelta = (transXStop - transXStart)/nIntervals;
-        int transYDelta = (transYStop - transYStart)/nIntervals;
+        int transXDelta = (transXStartStop.getStop() - transXStartStop.getStart())/nIntervals;
+        int transYDelta = (transYStartStop.getStop() - transYStartStop.getStart())/nIntervals;
         if (transXDelta == 0) {
             transXDelta++;
         }
@@ -5515,8 +5622,8 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             scaledRotatedSet1, set1, set2,
             image1Width, image1Height, image2Width, image2Height,
             bestFit.getRotationInRadians(), bestFit.getScale(),
-            transXStart, transXStop, transXDelta,
-            transYStart, transYStop, transYDelta,
+            transXStartStop, transXDelta,
+            transYStartStop, transYDelta,
             unusedTolerance, unusedTolerance, setsAreMatched,
             setsFractionOfImage);
 

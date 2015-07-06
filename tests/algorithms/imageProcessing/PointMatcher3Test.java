@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
+import algorithms.util.RangeInt;
 import java.awt.Color;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -29,7 +30,7 @@ public class PointMatcher3Test extends TestCase {
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
 
-    public void testPerformVerticalPartitionedMatching() throws Exception {
+    public void estPerformVerticalPartitionedMatching() throws Exception {
 
         PointMatcher pointMatcher = new PointMatcher();
 
@@ -131,7 +132,7 @@ public class PointMatcher3Test extends TestCase {
                 // --- TODO: in the difference between the left and right regions,
                 //     need to generate points in the right
 
-/*if (!((nPoints == 105) && (rotType == 2))) {
+/*if (nPoints != 49) {
     continue;
 }*/
                 PairIntArray outputMatchedLeftXY = new PairIntArray();
@@ -183,7 +184,8 @@ public class PointMatcher3Test extends TestCase {
         }
     }
 
-     public void estRefineTranslationWithDownhillSimplex() throws Exception {
+    public void testCalculateTranslationFromGridThenDownhillSimplex()
+        throws Exception {
 
         PointMatcher pointMatcher = new PointMatcher();
 
@@ -192,171 +194,229 @@ public class PointMatcher3Test extends TestCase {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1435259647733L;
+        //seed = 1436162255215L;
         sr.setSeed(seed);
-        System.out.println("SEED=" + seed);
+        log.info("SEED=" + seed);
 
         // ---- random testing for stereo imaging ----
 
         int numberOfPartitions = sr.nextInt(3) + 1;
 
         float scale = 1.0f;
+        
+        int transXDelta = 1;
+        int transYDelta = 1;
+        int halfRange = 4;
+        
+        for (int nRuns = 0; nRuns < 10; ++nRuns) {
+            for (int rotType = 0; rotType < 4; ++rotType) {
+                for (int nTest = 0; nTest < 15; ++nTest) {
 
-        for (int nTest = 0; nTest < 10; ++nTest) {
+                    PairIntArray unmatchedLeftXY = new PairIntArray();
 
-            PairIntArray set1 = new PairIntArray();
+                    int transX = (int)(0.25f * sr.nextFloat() * imageWidth);
+                    int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
+                    if (sr.nextBoolean()) {
+                        transX *= -1;
+                    }
+                    if (sr.nextBoolean()) {
+                        transY *= -1;
+                    }
 
-            int transX = (int)(0.25f * sr.nextFloat() * imageWidth);
-            int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
-            if (sr.nextBoolean()) {
-                transX *= -1;
-            }
-            if (sr.nextBoolean()) {
-                transY *= -1;
-            }
-            float rotInDegrees = (int)(sr.nextFloat() * 20);
+                    float rotInDegrees = (int)(sr.nextFloat() * 20);
 
-            TransformationParameters params = new TransformationParameters();
-            params.setRotationInDegrees(rotInDegrees);
-            params.setScale(scale);
-            params.setTranslationX(transX);
-            params.setTranslationY(transY);
+                    if (rotType == 1) {
+                        rotInDegrees = sr.nextBoolean() ? (270 + rotInDegrees) :
+                            (270 - rotInDegrees);
+                        transXDelta = 2;
+                        transYDelta = 2;
+                        halfRange = 10;
+                    } else if (rotType == 2) {
+                        rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
+                            (180 - rotInDegrees);
+                        transXDelta = 3;
+                        transYDelta = 3;
+                        halfRange = 20;
+                    } else if (rotType == 3) {
+                        rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
+                            (90 - rotInDegrees);
+                        transXDelta = 4;
+                        transYDelta = 4;
+                        halfRange = 100;
+                    } else if (rotType == 3) {
+                        rotInDegrees = sr.nextBoolean() ? (45 + rotInDegrees) :
+                            (45 - rotInDegrees);
+                        transXDelta = 5;
+                        transYDelta = 5;
+                        halfRange = 115;
+                    }
 
-            int nPoints = (nTest + 1) * 7;
+                    TransformationParameters params = new TransformationParameters();
+                    params.setRotationInDegrees(rotInDegrees);
+                    params.setScale(scale);
+                    params.setTranslationX(transX);
+                    params.setTranslationY(transY);
 
-            log.info("test for nPoints=" + nPoints + " params=" + params.toString());
+                    int nPoints = (nTest + 1) * 7;
 
-            for (int i = 0; i < nPoints; ++i) {
-                int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
-                int y = (imageHeight/4) + sr.nextInt(imageHeight/4);
-                set1.add(x, y);
-            }
+                    log.info("\ntest for nPoints=" + nPoints + "\nparams=" + params.toString()
+                        + "\ntransXDelta=" + transXDelta + " transYDelta=" + transYDelta 
+                        + " translation range=" + (2*halfRange));
 
-            // ===  transform the right points  ======
+                    for (int i = 0; i < nPoints; ++i) {
+                        int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
+                        int y = (imageHeight/4) + sr.nextInt(imageHeight/4);
+                        unmatchedLeftXY.add(x, y);
+                    }
 
-            Transformer transformer = new Transformer();
+                    // ===  transform the right points  ======
 
-            PairIntArray set2 = transformer.applyTransformation(
-                params, set1, imageWidth >> 1, imageHeight >> 1);
+                    Transformer transformer = new Transformer();
 
-            // consider adding small deviations to the right
+                    PairIntArray unmatchedRightXY = transformer.applyTransformation(
+                        params, unmatchedLeftXY, imageWidth >> 1, imageHeight >> 1);
 
-            // add small number of points in left that are not in right
-            //   and vice versa
-            int nAdd = (int)(sr.nextFloat()*nPoints/10);
-            if (nAdd == 0) {
-                nAdd = 1;
-            }
-            for (int i = 0; i < nAdd; ++i) {
-                int x = sr.nextInt(imageWidth);
-                int y = sr.nextInt(imageHeight);
-                set1.add(x, y);
-            }
-            for (int i = 0; i < nAdd; ++i) {
-                int x = sr.nextInt(imageWidth);
-                int y = sr.nextInt(imageHeight);
-                set2.add(x, y);
-            }
+                    // consider adding small deviations to the right
 
-            PairFloatArray unmatched1Transformed = pointMatcher.scaleAndRotate(
-                set1, params.getRotationInRadians(), params.getScale(),
-                imageWidth >> 1, imageHeight >> 1);
+                    // add small number of points in left that are not in right
+                    //   and vice versa
+                    int nAdd = (int)(sr.nextFloat()*nPoints/10);
+                    if (nAdd == 0) {
+                        nAdd = 1;
+                    }
+                    for (int i = 0; i < nAdd; ++i) {
+                        int x = sr.nextInt(imageWidth);
+                        int y = sr.nextInt(imageHeight);
+                        unmatchedLeftXY.add(x, y);
+                    }
+                    for (int i = 0; i < nAdd; ++i) {
+                        int x = sr.nextInt(imageWidth);
+                        int y = sr.nextInt(imageHeight);
+                        unmatchedRightXY.add(x, y);
+                    }
 
-            // for even tests, give it the correct translations
+                    // TODO: consider scrambling the order of the right points
 
-            // for odd tests, give it translations close but not the same
+                    // --- TODO: in the difference between the left and right regions,
+                    //     need to generate points in the right
 
-            float transX1 = params.getTranslationX();
-            float transY1 = params.getTranslationY();
-            float plusMinusTransX1 = imageWidth/10;
-            float plusMinusTransY1 = imageHeight/10;
+    /*if (nPoints != 49) {
+        continue;
+    }*/
+                    /*
+                    private int dsNMaxIter = 50;
+                    pointMatcher.setDsNMaxIter(int n);
+                    float nEpsFactor = 2.0f;
+                    pointMatcher.setNEpsFactor(float f);
+                    protected float cellFactor = 1.25f;
+                    protected float tolFactor = 0.75f;
+                    pointMatcher.setCellFactor(float f);
+                    pointMatcher.setTolFactor(float f);
+                    */
+                    float tolTransX = pointMatcher.getTolFactor() * transXDelta;
+                    float tolTransY = pointMatcher.getTolFactor() * transYDelta;
+                    if (tolTransX < 1) {
+                        tolTransX = 1;
+                    }
+                    if (tolTransY < 1) {
+                        tolTransY = 1;
+                    }
 
-            if ((nTest & 1) == 1) {
-                float dx = sr.nextFloat() * plusMinusTransX1;
-                if (sr.nextBoolean()) {
-                    transX1 += dx;
-                } else {
-                    transX1 -= dx;
+                    boolean setsAreMatched = false;
+                    float setsFractionOfImage = 1.0f;
+
+                    RangeInt transXStartStop = new RangeInt(
+                        (int)(params.getTranslationX() - halfRange), 
+                        (int)(params.getTranslationX() + halfRange));
+                    RangeInt transYStartStop = new RangeInt(
+                        (int)(params.getTranslationY() - halfRange), 
+                        (int)(params.getTranslationY() + halfRange));
+
+                    PairFloatArray scaledRotatedLeft = pointMatcher.scaleAndRotate(
+                        unmatchedLeftXY, params.getRotationInRadians(), params.getScale(),
+                        imageWidth, imageHeight);
+
+                    int nIter = 0;
+                    int nMaxIter = 10;
+
+                    int dsMaxIter = pointMatcher.getDsNMaxIter();
+                    double densLimit = 95./(2048. * 1256.); //4.081969048566879E-5
+                    double dens = (double)nPoints/(2048. * 1256.);
+
+                    boolean converged = false;
+
+                    while ((nIter == 0) || 
+                        (!converged && (nIter < nMaxIter) && (transXDelta > 0) 
+                        && (halfRange > 0))) {
+
+                        if (nIter > 0) {
+                            /*
+                            needs a smaller range
+                            for a dataset:
+                                when dens=3.80983777866242E-5, needed transXDelta=1 transYDelta=1
+                            */
+                            transXDelta--;
+                            transYDelta--;
+                        }
+
+                        TransformationPointFit fit = 
+                            pointMatcher.calculateTranslationFromGridThenDownhillSimplex(
+                                scaledRotatedLeft,  unmatchedLeftXY, unmatchedRightXY,
+                                imageWidth, imageHeight, imageWidth, imageHeight,
+                                params.getRotationInRadians(), params.getScale(),
+                                transXStartStop, transXDelta,
+                                transYStartStop, transYDelta,
+                                tolTransX, tolTransY, setsAreMatched,
+                                setsFractionOfImage);
+
+                        assert(fit != null);
+                        TransformationParameters fitParams = fit.getParameters();
+                        int diffN = Math.abs(nPoints - fit.getNumberOfMatchedPoints());
+                        float diffRotDeg = getAngleDifference(
+                            fitParams.getRotationInDegrees(), rotInDegrees);
+                        float diffScale = Math.abs(fitParams.getScale() - scale);
+                        float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
+                        float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
+
+                        log.info("FINAL FIT=" + fit.toString());
+                        log.info("diff result and expected =" +
+                            String.format(
+                            " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f",
+                            diffN, diffRotDeg, diffScale, diffTransX, diffTransY)
+                        );
+
+                        double epsTrans = 3;
+                        /*if (nPoints < 10) {
+                            epsTrans = 10;
+                        } else if (nPoints < 40) {
+                            epsTrans = 7;
+                        }*/
+
+                        if ((diffN < 0.5*nPoints) && (diffRotDeg <= 1.0) && 
+                            (diffScale < 0.2) && (diffTransX <= epsTrans) &&
+                            (diffTransY <= epsTrans)) {
+                            converged = true;
+                        }
+
+                        nIter++;
+                    }
+                    assertTrue(converged);
+                    if (nIter > 1) {
+                        log.info("needed change for translation delta for dens=" + dens 
+                            + " nPoints=" + nPoints + " w=" + imageWidth + " h=" + imageHeight
+                            + " transXDelta=" + transXDelta 
+                            + " transYDelta=" + transYDelta
+                        );
+                    } else {
+                        log.info("dens=" + dens + " nPoints=" + nPoints 
+                            + " w=" + imageWidth + " h=" + imageHeight
+                            + " transXDelta=" + transXDelta 
+                            + " transYDelta=" + transYDelta
+                        );
+                    }
                 }
-                float dy = sr.nextFloat() * plusMinusTransY1;
-                if (sr.nextBoolean()) {
-                    transY1 += dy;
-                } else {
-                    transY1 -= dy;
-                }
-            }
-
-            float tolTransX = (2*imageWidth/10);
-            float tolTransY = (2*imageHeight/10);
-
-            // simulate the results of a grid search that divides the
-            // possible x and y translations into 10 sections and keeps
-            // the best 10 results.
-            // for data without repeated patterns, one would expect that
-            // the best results would be centered around the correct result,
-            // so will build this as the nearest 10 fits from those 100 searches.
-            int nFits = 10;
-            TransformationPointFit[] fits = simulateNearestGridSearchResults(
-                nFits, imageWidth, imageHeight, params,
-                unmatched1Transformed, set2, tolTransX, tolTransY);
-
-            boolean setsAreMatched = false;
-            int nMaxIter = 50;
-            if (nPoints > 60) {
-                nMaxIter = 150;
-            } else if (nPoints > 30) {
-                nMaxIter = 100;
-            }
-
-            tolTransX = (int)(2*imageWidth/PointMatcher.toleranceGridFactor);
-            tolTransY = (int)(2*imageHeight/PointMatcher.toleranceGridFactor);
-         
-            TransformationPointFit fit =
-                pointMatcher.refineTranslationWithDownhillSimplex(
-                    unmatched1Transformed, set2, fits,
-                    transX1, transY1, tolTransX, tolTransY,
-                    plusMinusTransX1, plusMinusTransY1,
-                    params.getScale(), params.getRotationInRadians(),
-                    setsAreMatched, nMaxIter);
-
-            assert(fit != null);
-            TransformationParameters fitParams = fit.getParameters();
-
-            int diffN = Math.abs(nPoints - fit.getNumberOfMatchedPoints());
-            float diffRotDeg = getAngleDifference(
-                    fitParams.getRotationInDegrees(), rotInDegrees);
-            float diffScale = Math.abs(fitParams.getScale() - scale);
-            float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
-            float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
-
-            log.info("FINAL FIT=" + fit.toString());
-            log.info("diff result and expected =" +
-                String.format(
-                " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f",
-                diffN, diffRotDeg, diffScale, diffTransX, diffTransY)
-            );
-
-            double epsTrans = 1.1*(2048/100.);
-            if (nPoints > 30) {
-                epsTrans = 2*(2048/100.);
-            } else if (nPoints > 20) {
-                epsTrans = 1.5*(2048/100.);
-            } else if (nPoints > 10) {
-                epsTrans = 1.25*(2048/100.);
-            }
-
-            assertTrue(diffN < 0.5*nPoints);
-            assertTrue(diffRotDeg <= 10.0);
-            assertTrue(diffScale < 0.2);
-            assertTrue(diffTransX <= epsTrans);
-            assertTrue(diffTransY <= epsTrans);
-
-            numberOfPartitions++;
-            if (numberOfPartitions > 3) {
-                numberOfPartitions = 1;
             }
         }
-
     }
 
     /*
@@ -873,8 +933,8 @@ images as possible)
         try {
             PointMatcher3Test test = new PointMatcher3Test();
 
-            test.testPerformVerticalPartitionedMatching();
-            //test.testRefineTranslationWithDownhillSimplex();
+            //test.testPerformVerticalPartitionedMatching();
+            test.testCalculateTranslationFromGridThenDownhillSimplex();
 
             /*
             tests for :
