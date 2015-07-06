@@ -1,12 +1,15 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.RangeInt;
+import algorithms.util.ScatterPointPlotterPNG;
 import java.awt.Color;
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
@@ -189,12 +192,14 @@ public class PointMatcher3Test extends TestCase {
 
         PointMatcher pointMatcher = new PointMatcher();
 
+        //image size range 250 to 10000
         int imageWidth = 2048;
         int imageHeight = 1256;
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         //seed = 1436162255215L;
+        //seed = 1436200575218L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -208,7 +213,12 @@ public class PointMatcher3Test extends TestCase {
         int transYDelta = 1;
         int halfRange = 4;
         
-        for (int nRuns = 0; nRuns < 10; ++nRuns) {
+        List<DensityTranslationResults> converged0 = 
+            new ArrayList<DensityTranslationResults>();
+        List<DensityTranslationResults> converged1 = 
+            new ArrayList<DensityTranslationResults>();
+        
+        for (int nRuns = 0; nRuns < 10;/*50;*/ ++nRuns) {
             for (int rotType = 0; rotType < 4; ++rotType) {
                 for (int nTest = 0; nTest < 15; ++nTest) {
 
@@ -235,13 +245,14 @@ public class PointMatcher3Test extends TestCase {
                         int w0 = Math.abs(transX) * (1 + sr.nextInt(10)) + 250;
                         int h0 = Math.abs(transY) * (1 + sr.nextInt(10)) + 250;
                         imageWidth = sr.nextInt(250) + w0;
-                        imageHeight = sr.nextInt(250) + h0;
+                        //imageHeight = sr.nextInt(250) + h0;
                         if ((imageWidth & 1) == 1) {
                             imageWidth++;
                         }
-                        if ((imageHeight & 1) == 1) {
+                        /*if ((imageHeight & 1) == 1) {
                             imageHeight++;
-                        }
+                        }*/
+                        imageHeight = imageWidth;
                     } else if (rotType == 2) {
                         rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
                             (180 - rotInDegrees);
@@ -252,13 +263,14 @@ public class PointMatcher3Test extends TestCase {
                         int w0 = Math.abs(transX) * (1 + sr.nextInt(10)) + 250;
                         int h0 = Math.abs(transY) * (1 + sr.nextInt(10)) + 250;
                         imageWidth = sr.nextInt(1000) + w0;
-                        imageHeight = sr.nextInt(1000) + h0;
+                        //imageHeight = sr.nextInt(1000) + h0;
                         if ((imageWidth & 1) == 1) {
                             imageWidth++;
                         }
-                        if ((imageHeight & 1) == 1) {
+                        /*if ((imageHeight & 1) == 1) {
                             imageHeight++;
-                        }
+                        }*/
+                        imageHeight = imageWidth;
                     } else if (rotType == 3) {
                         rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
                             (90 - rotInDegrees);
@@ -269,13 +281,14 @@ public class PointMatcher3Test extends TestCase {
                         int w0 = Math.abs(transX) * (1 + sr.nextInt(10)) + 250;
                         int h0 = Math.abs(transY) * (1 + sr.nextInt(10)) + 250;
                         imageWidth = sr.nextInt(2100) + w0;
-                        imageHeight = sr.nextInt(2100) + h0;
+                        //imageHeight = sr.nextInt(2100) + h0;
                         if ((imageWidth & 1) == 1) {
                             imageWidth++;
                         }
-                        if ((imageHeight & 1) == 1) {
+                        /*if ((imageHeight & 1) == 1) {
                             imageHeight++;
-                        }
+                        }*/
+                        imageHeight = imageWidth;
                     } else if (rotType == 3) {
                         rotInDegrees = sr.nextBoolean() ? (45 + rotInDegrees) :
                             (45 - rotInDegrees);
@@ -286,13 +299,14 @@ public class PointMatcher3Test extends TestCase {
                         int w0 = Math.abs(transX) * (1 + sr.nextInt(10)) + 250;
                         int h0 = Math.abs(transY) * (1 + sr.nextInt(10)) + 250;
                         imageWidth = sr.nextInt(5000) + w0;
-                        imageHeight = sr.nextInt(5000) + h0;
+                        //imageHeight = sr.nextInt(5000) + h0;
                         if ((imageWidth & 1) == 1) {
                             imageWidth++;
                         }
-                        if ((imageHeight & 1) == 1) {
+                        /*if ((imageHeight & 1) == 1) {
                             imageHeight++;
-                        }
+                        }*/
+                        imageHeight = imageWidth;
                     }
 
                     TransformationParameters params = new TransformationParameters();
@@ -384,8 +398,7 @@ public class PointMatcher3Test extends TestCase {
                     int nMaxIter = 10;
 
                     int dsMaxIter = pointMatcher.getDsNMaxIter();
-                    double densLimit = 95./(2048. * 1256.); //4.081969048566879E-5
-                    double dens = (double)nPoints/(2048. * 1256.);
+                    double dens = (double)nPoints/(double)imageWidth;
 
                     boolean converged = false;
 
@@ -430,12 +443,7 @@ public class PointMatcher3Test extends TestCase {
                         );
 
                         double epsTrans = 3;
-                        /*if (nPoints < 10) {
-                            epsTrans = 10;
-                        } else if (nPoints < 40) {
-                            epsTrans = 7;
-                        }*/
-
+                        
                         if ((diffN < 0.5*nPoints) && (diffRotDeg <= 1.0) && 
                             (diffScale < 0.2) && (diffTransX <= epsTrans) &&
                             (diffTransY <= epsTrans)) {
@@ -451,19 +459,60 @@ public class PointMatcher3Test extends TestCase {
                             + " transXDelta=" + transXDelta 
                             + " transYDelta=" + transYDelta
                         );
+                        converged1.add(
+                            new DensityTranslationResults(dens, nPoints, 
+                                imageWidth, imageHeight, transXDelta));
                     } else {
                         log.info("density=" + dens + " nPoints=" + nPoints 
                             + " w=" + imageWidth + " h=" + imageHeight
                             + " transXDelta=" + transXDelta 
                             + " transYDelta=" + transYDelta
                         );
+                        converged0.add(
+                            new DensityTranslationResults(dens, nPoints, 
+                                imageWidth, imageHeight, transXDelta));
                     }
-                    /*
-                    need to plot density vs transDelta for converged and those 
-                    that took more than one iteration to converge.
-                    */
                 }
             }
+        }
+        
+        //need to plot density vs transDelta for converged and those 
+        //that took more than one iteration to converge.
+        float[] x = new float[converged0.size()];
+        float[] y = new float[x.length];
+        for (int i = 0; i < x.length; ++i) {
+            x[i] = (float)converged0.get(i).density;
+            y[i] = (float)converged0.get(i).translationDelta;
+        }
+        ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+        plotter.plot(x, y, "converged", "density", "trDelta");
+        plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
+        
+        x = new float[converged1.size()];
+        y = new float[x.length];
+        for (int i = 0; i < x.length; ++i) {
+            x[i] = (float)converged1.get(i).density;
+            y[i] = (float)converged1.get(i).translationDelta;
+        }
+        plotter = new ScatterPointPlotterPNG();
+        plotter.plot(x, y, "converged after decr trDelta", "density", "trDelta");
+        plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
+        
+    }
+    
+    protected class DensityTranslationResults {
+        final double density;
+        final int nPoints;
+        final int imageWidth;
+        final int imageHeight;
+        final double translationDelta;
+        public DensityTranslationResults(double theDensity, int numberOfPoints,
+            int theImageWidth, int theImageHeight, double theTranslationDelta) {
+            density = theDensity;
+            nPoints = numberOfPoints;
+            imageWidth = theImageWidth;
+            imageHeight = theImageHeight;
+            translationDelta = theTranslationDelta;
         }
     }
 
