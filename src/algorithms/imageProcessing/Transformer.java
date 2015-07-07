@@ -258,13 +258,13 @@ public class Transformer {
       * @param centroidY the vertical center of the reference frame for edges.  
       * this should be the center of the image if edges points are in the
       * original image reference frame.
-      * @param edge
+      * @param points
       * @return 
       */
     public PairFloatArray applyTransformation2(double rotInRadians,
         double scale, double translationX, double translationY,
-        double centroidX, double centroidY, PairIntArray edge) {
-        
+        double centroidX, double centroidY, PairIntArray points) {
+       
         double cos = Math.cos(rotInRadians);
         double sin = Math.sin(rotInRadians);
                 
@@ -274,13 +274,13 @@ public class Transformer {
         
         PairFloatArray te = new PairFloatArray();
 
-        for (int i = 0; i < edge.getN(); i++) {
+        for (int i = 0; i < points.getN(); ++i) {
 
-            double x = edge.getX(i);
-            double y = edge.getY(i);
+            double x = points.getX(i);
+            double y = points.getY(i);
 
             double xr = centroidX * scale 
-                + (((x - centroidX) *scale * cos) 
+                + (((x - centroidX) * scale * cos) 
                 + ((y - centroidY) * scale * sin));
 
             double yr = centroidY * scale 

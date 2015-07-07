@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.util.Errors;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
@@ -200,7 +201,9 @@ public class MiscMathTest extends TestCase {
         
         HistogramHolder hist = Histogram.createSimpleHistogram(nBins, values, valueErrors);
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-        plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), null, null, "");
+        plotter.addPlot(hist.getXHist(), hist.getYHistFloat(), 
+            Errors.populateYErrorsBySqrt(hist.getXHist()), 
+            Errors.populateYErrorsBySqrt(hist.getYHistFloat()), "");
         plotter.writeFile();
     }
     
