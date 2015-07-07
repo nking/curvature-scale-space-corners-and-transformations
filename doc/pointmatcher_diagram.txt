@@ -5,6 +5,9 @@ starred on the left hand side.
 The goal is to simplify the design where possible and optimize the 
 parameters that affect the result.
 
+   *  float cellFactor = 1.25f;
+   *  float tolFactor = 0.5f;
+   *  int dsNMaxIter = 50; 
    -- performVerticalPartitionedMatching
       -- performVerticalPartitionedMatching
          -- calcTransWithRoughGrid(s1, s2, w1, h1, w2, h2, f)
@@ -17,67 +20,37 @@ parameters that affect the result.
          |  |
          |  |  for scale, rot:
          |  |  -- calculateTranslationForUnmatched0(s1, s2, w1, h1, w2, h2, r, s, f)
-         |  |  |  int bestTransXStart = -1*image2Width + 1;
-         |  |  |  int bestTransXStop = image2Width - 1;
-         |  |  |  int bestTransYStart = -1*image2Width + 1;
-         |  |  |  int bestTransYStop = image2Width - 1;
-   *     |  |  |  int nIntervals = 11; // increases w/ nPoints
-         |  |  |  int dx = (bestTransXStop - bestTransXStart)/nIntervals;
-         |  |  |  int dy = (bestTransYStop - bestTransYStart)/nIntervals;
-   *     |  |  |  float tolTransX = dx/2.f;//dx/toleranceGridFactor;
-   *     |  |  |  float tolTransY = dy/2.f;//dy/toleranceGridFactor;
+         |  |  |  int transXStart = -1*image2Width + 1;
+         |  |  |  int transXStop = image2Width - 1;
+         |  |  |  int transYStart = -1*image2Width + 1;
+         |  |  |  int transYStop = image2Width - 1;
+         |  |  |  int transDeltaX = 4;
+         |  |  |  int transDeltaY = 4;
+   *     |  |  |  float tolTransX = tolFactor * transDeltaX
+   *     |  |  |  float tolTransY = tolFactor * transDeltaY
          |  |  |  -- calculateTranslationForUnmatched0(s1, s2, w1, h1, w2, h2, r, s, 
          |  |  |  |      txStart, txStop, tyStart, tyStop, nIntervals, tolTransX, tolTransY, f)
-   *     |  |  |  |  float cellFactor = 1.25f;
-   *     |  |  |  |  int limit = 4;
-         |  |  |  |  while ((dx > limit) && (dy > limit)) {
-         |  |  |  |      if (nIter > 0) {
-         |  |  |  |          tolTransX = dx;    <=== WHEN make tolTransX = dx*factor tunable, should remove this
-         |  |  |  |          tolTransY = dy;
-         |  |  |  |      } else {
-         |  |  |  |          tolTransX = dx >> 1;
-         |  |  |  |          tolTransY = dy >> 1;
-         |  |  |  |      }
-         |  |  |  |      fit = calculateTranslationFromGridThenDownhillSimplex(srs1, s1, s2, w1, h1, w2, h2, r, s,
-         |  |  |  |      |   btxStart, btxStop, btxDelta, btyStart, btyStop, btyDelta, tolTransX, tolTransY, m, f)
-         |  |  |  |      |              
-         |  |  |  |      |   fits = evaluateTranslationsOverGrid(s1, s2, w1, h1, w2, h2, r, s, 
-         |  |  |  |      |      |   btxStart, btxStop, btxDelta, btyStart, btyStop, btyDelta, tolTransX, tolTransY, m, f)
-         |  |  |  |      |      |       
-         |  |  |  |      |      |  TransformationPointFit[] evaluateTranslationsOverGrid(s1, s2, w1, h1, w2, h2, r, s,
-         |  |  |  |      |      |  btxStart, btxStop, btxDelta, btyStart, btyStop, btyDelta, tolTransX, tolTransY, m, f, n)
-         |  |  |  |      |      |                          
-         |  |  |  |      |      |  float transX, transY;
-         |  |  |  |      |      |       
-   ***   |  |  |  |      |      |  CONSIDER USING OPTIMAL HERE.  should not use for rough matches, but for finer, shoul
-         |  |  |  |      |      |  fits[count] = evaluateFitForUnMatchedTransformedGreedy(p,
-         |  |  |  |      |      |           // = evaluateFitForUnMatchedTransformedOptimal(p,
-         |  |  |  |      |      |                srs1, s2, tolTransX, tolTransY);
-         |  |  |  |      |      |  return fits;
-         |  |  |  |      |              
-         |  |  |  |      |   int nMaxIter = 50; //scales up for larger point sets
-         |  |  |  |      |              
-         |  |  |  |      |   int dsLimit = (transXStop - transXStart) / transXDelta;
-         |  |  |  |      |              
-         |  |  |  |      |   // bounds is determined from this:
-         |  |  |  |      |   float x0 = transXYMinMaxes[0] - tolTransX;
-         |  |  |  |      |   float y0 = transXYMinMaxes[2] - tolTransY;
-         |  |  |  |      |              
-         |  |  |  |      |   fit = refineTranslationWithDownhillSimplex(srs1, s2, fits, bxc, byc, tolTransX, tolTransY,
-         |  |  |  |      |       bxh, byh, s, r, m, nMaxIter)
-         |  |  |  |      |              
-         |  |  |  |      |   return fit;
+         |  |  |  |       
+         |  |  |  |  fit = calculateTranslationFromGridThenDownhillSimplex(srs1, s1, s2, w1, h1, w2, h2, r, s,
+         |  |  |  |  |   btxStart, btxStop, btxDelta, btyStart, btyStop, btyDelta, tolTransX, tolTransY, m, f)
+         |  |  |  |  |              
+         |  |  |  |  |  fits = evaluateTranslationsOverGrid(s1, s2, w1, h1, w2, h2, r, s, 
+         |  |  |  |  |  |   btxStart, btxStop, btxDelta, btyStart, btyStop, btyDelta, tolTransX, tolTransY, m, f)
+         |  |  |  |  |  |       
+         |  |  |  |  |  |  TransformationPointFit[] evaluateTranslationsOverGrid(s1, s2, w1, h1, w2, h2, r, s,
+         |  |  |  |  |  |  btxStart, btxStop, btxDelta, btyStart, btyStop, btyDelta, tolTransX, tolTransY, m, f, n)
+         |  |  |  |  |  |                          
+         |  |  |  |  |  |  float transX, transY;
+         |  |  |  |  |  |       
+         |  |  |  |  |  |  fits[count] = evaluateFitForUnMatchedTransformedOptimal(p,
+         |  |  |  |  |  |           // = evaluateFitForUnMatchedTransformedGreedy(p,
+         |  |  |  |  |  |                srs1, s2, tolTransX, tolTransY);
+         |  |  |  |  |  |  return fits;
+         |  |  |  |  |              
+         |  |  |  |  |return fit;
          |  |  |  |                     
-         |  |  |  |      // determine if fit is better than bestFit, and if is better, reassign bestFit and:
-         |  |  |  |      btxStart = bestFit.getTransX() - cellFactor*dx;
-         |  |  |  |      btxStop  = bestFit.getTransX() + cellFactor*dx;
-         |  |  |  |      btyStart = bestFit.getTransY() - cellFactor*dy;
-         |  |  |  |      btyStop  = bestFit.getTransY() + cellFactor*dy;
-         |  |  |  |      dx = (bestTransXStop - bestTransXStart)/nIntervals;
-         |  |  |  |      dy = (bestTransYStop - bestTransYStart)/nIntervals; 
-         |  |  |  |  }
-         |  |  |  |  return fit; 
-         |  |  |  |  // end calculateTranslationForUnmatched0
+         |  |  |  |return fit; 
+         |  |  |  |// end calculateTranslationForUnmatched0
          |  |                           
          |  |  reevaluateFitsForCommonTolerance
          |  |                          
@@ -97,7 +70,7 @@ parameters that affect the result.
     *    |  |          int nIntervals = 3;
          |  |          finerGridSearch(nIntervals, fit, s1, s2, w1, h1, w2, h2, f)
          |  |
-         |  |   finerGridSearchToDistinguishBestsimilarToBestFit, s1, s2, w1, h1, w2, h2, f)
+         |  |   finerGridSearchToDistinguishBest(similarToBestFit, s1, s2, w1, h1, w2, h2, f)
          |  |   return bestFit
 
     *    int nTransIntervals = 3; 

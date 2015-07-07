@@ -2016,18 +2016,7 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 
     /**
      * Calculate for unmatched points the Euclidean transformation to transform
-     * set1 into the reference frame of set2.  Note, this method does a grid
-     * search over rotation and scale in the given intervals, and for each
-     * translation solution within those, it uses an O(N^2) algorithm to find
-     * the best translation in x and y.
-     * If there are solutions with similar fits and different parameters, they
-     * are retained and compared with finer grid searches to decide among
-     * them so the total runtime complexity is
-     * larger than O(N^2) but smaller than O(N^3).
-     * The constant factors in the runtime are roughly
-     *   ((scaleStop - scaleStart)/scaleDelta)
-     *   times (number of rotation intervals)
-     *   times (number of grid search cells which is 10*10 at best).
+     * set1 into the reference frame of set2.
      *
      * @param set1
      * @param set2
@@ -2568,18 +2557,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
     /**
      * Calculate for unmatched points the Euclidean transformation to transform
-     * set1 into the reference frame of set2.  Note, this method does a grid
-     * search over rotation and scale in the given intervals, and for each
-     * translation solution within those, it uses an O(N^2) algorithm to find
-     * the best translation in x and y.
-     * If there are solutions with similar fits and different parameters, they
-     * are retained and compared with finer grid searches to decide among
-     * them so the total runtime complexity is
-     * larger than O(N^2) but smaller than O(N^3).
-     * The constant factors in the runtime are roughly
-     *   ((scaleStop - scaleStart)/scaleDelta)
-     *   times (number of rotation intervals)
-     *   times (number of grid search cells which is 10*10 at best).
+     * set1 into the reference frame of set2.  
      *
      * @param set1
      * @param set2
@@ -2639,6 +2617,9 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
             rotDelta);
 
         boolean setsAreMatched = false;
+        
+        int transDeltaX = 4;
+        int transDeltaY = 4;
 
         Transformer transformer = new Transformer();
 
@@ -2661,8 +2642,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
                     set1, set2,
                     image1Width, image1Height, image2Width, image2Height,
                     rotationInRadians, scale,
-                    transXStartStop, transYStartStop,
-                    nTransIntervals,
+                    transXStartStop, transDeltaX, transYStartStop, transDeltaY,
                     tolTransX, tolTransY,
                     setsFractionOfImage);
 
@@ -2689,17 +2669,6 @@ log.fine(dbg);
 
                 TransformationPointFit[] reevalFits = new TransformationPointFit[2];
                 boolean[] fitIsBetter = new boolean[1];
-
-if (bestFit != null) {
-if (bestFit.getNumberOfMatchedPoints() == 42) {
-    if (Math.abs(bestFit.getMeanDistFromModel() - 1.0) < 0.1) {
-        if (Math.abs(bestFit.getStDevFromMean() - 0.0) < 0.1) {
-            if (Math.abs(bestFit.getParameters().getRotationInDegrees() - 6) < 0.1) {
-                int z = 1;
-            }
-        }
-    }
-}}
 
                 reevaluateFitsForCommonTolerance(bestFit, fit,
                     set1, set2, image1Width, image1Height, reevalFits,
@@ -3061,12 +3030,12 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
      * internally in determining histogram bin sizes for translation.
      * @return
      */
-    public TransformationPointFit calculateTranslationForUnmatched0(
+     public TransformationPointFit calculateTranslationForUnmatched0(
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
         float rotationInRadians, float scale,
         float setsFractionOfImage) {
-
+       
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
         }
@@ -3090,56 +3059,23 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
             return null;
         }
 
-        int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
-            : set2.getN();
+        int transDeltaX = 4;
+        int transDeltaY = 4;
 
-        int bestTransXStart = -1*image2Width + 1;
-        int bestTransXStop = image2Width - 1;
-        int bestTransYStart = -1*image2Height + 1;
-        int bestTransYStop = image2Height - 1;
-
-        RangeInt bestTransXStartStop = new RangeInt(-1*image2Width + 1,
+        RangeInt transXStartStop = new RangeInt(-1*image2Width + 1,
             image2Width - 1);
-        RangeInt bestTransYStartStop = new RangeInt(-1*image2Height + 1,
+        RangeInt transYStartStop = new RangeInt(-1*image2Height + 1,
             image2Height - 1);
 
-        // TODO: consider using point density to estimate this and image dimensions
-        int nIntervals = 11;
-        if (nMaxMatchable > 50) {
-            nIntervals = 18;
-        } else if (nMaxMatchable > 40) {
-            nIntervals = 15;
-        } else if (nMaxMatchable > 30) {
-            nIntervals = 13;
-        }
-
-        int dx = (bestTransXStop - bestTransXStart)/nIntervals;
-        int dy = (bestTransYStop - bestTransYStart)/nIntervals;
-
-        /*TODO:
-        The comparisons seem to need same tolerance used when comparing
-        the fits, so no longer decreasing these upon decreased
-        cell size or smaller mean distance from model.
-        If need to change this back to a tolerance that does decrease with
-        grid cell size, then would need to add a step to
-        the comparisons of bestFit and fit where this method is used.
-        An extra step would be needed to re-do the evalation of whichever
-        had a larger tolerance in it's fit using the lower tolerance.
-        Then the comparison would be correct at that level and finer here where
-        needed.
-        */
-        float tolTransX = dx/2.f;//dx/toleranceGridFactor;
-        float tolTransY = dy/2.f;//dy/toleranceGridFactor;
-
-        /*when tolerance is too high, mean dist from model becomes more
-        important than the number of matches*/
+        float tolTransX = getTolFactor() * transDeltaX;
+        float tolTransY = getTolFactor() * transDeltaY;
 
         TransformationPointFit fit = calculateTranslationForUnmatched0(
             set1, set2,
             image1Width, image1Height, image2Width, image2Height,
             rotationInRadians, scale,
-            bestTransXStartStop, bestTransYStartStop,
-            nIntervals, tolTransX, tolTransY,
+            transXStartStop, transDeltaX, transYStartStop, transDeltaY,
+            tolTransX, tolTransY,
             setsFractionOfImage);
 
         return fit;
@@ -3190,10 +3126,11 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
         float rotationInRadians, float scale,
-        RangeInt transXStartStop, RangeInt transYStartStop,
-        int nTransIntervals, float tolTransX, float tolTransY,
+        RangeInt transXStartStop, int transDeltaX,
+        RangeInt transYStartStop, int transDeltaY,
+        float tolTransX, float tolTransY,
         float setsFractionOfImage) {
-
+         
         if (set1 == null) {
             throw new IllegalArgumentException("set1 cannot be null");
         }
@@ -3206,12 +3143,18 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         if (set2.getN() < 2) {
             return null;
         }
-
-        int image1CentroidX = image1Width >> 1;
-        int image1CentroidY = image1Height >> 1;
-
-        PairFloatArrayUnmodifiable scaledRotatedSet1 = scaleAndRotate(set1,
-            rotationInRadians, scale, image1CentroidX, image1CentroidY);
+        if (transDeltaX < 1) {
+            throw new IllegalArgumentException("transDeltaX must be greater than 0");
+        }
+        if (transDeltaY < 1) {
+            throw new IllegalArgumentException("transDeltaY must be greater than 0");
+        }
+        if (tolTransX < 0) {
+            throw new IllegalArgumentException("tolTransX must be greater than -1");
+        }
+        if (tolTransY < 0) {
+            throw new IllegalArgumentException("tolTransY must be greater than -1");
+        }
 
         if (scale < 1) {
 
@@ -3223,157 +3166,38 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
             return null;
         }
 
-        int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN()
-            : set2.getN();
+        int image1CentroidX = image1Width >> 1;
+        int image1CentroidY = image1Height >> 1;
 
-        TransformationPointFit bestFit = null;
-
-        RangeInt bestTransXStartStop = new RangeInt(transXStartStop);
-        RangeInt bestTransYStartStop = new RangeInt(transYStartStop);
-
-        int nIntervals = nTransIntervals;
-
-        int limit = 1;
-
-        int dx = (bestTransXStartStop.getStop() - bestTransXStartStop.getStart())/nIntervals;
-        int dy = (bestTransYStartStop.getStop() - bestTransYStartStop.getStart())/nIntervals;
-
-        if (dx < limit) {
-            dx = limit;
-        }
-        if (dy < limit) {
-            dy = limit;
-        }
-
-log.fine(String.format("   grid+DS: tx=%d:%d(+%d) ty=%d:%d(+%d)  tLimit=%d",
-bestTransXStartStop.getStart(), bestTransXStartStop.getStop(), dx,
-bestTransYStartStop.getStart(), bestTransYStartStop.getStop(), dy, limit));
-
-        tolTransX = tolFactor * dx;
-        tolTransY = tolFactor * dy;
+        PairFloatArrayUnmodifiable scaledRotatedSet1 = scaleAndRotate(set1,
+            rotationInRadians, scale, image1CentroidX, image1CentroidY);
 
         boolean setsAreMatched = false;
 
-        int nIter = 0;
-
-        while ((dx >= limit) && (dy >= limit)) {
-
-            TransformationPointFit fit =
-                calculateTranslationFromGridThenDownhillSimplex(
-                scaledRotatedSet1, set1, set2,
-                image1Width, image1Height, image2Width, image2Height,
-                rotationInRadians, scale,
-                bestTransXStartStop, dx,
-                bestTransYStartStop, dy,
-                tolTransX, tolTransY,
-                setsAreMatched, setsFractionOfImage);
-
-            boolean fitIsBetter = true;// = fitIsBetter(bestFit, fit);
-            // since it's descending into finer solution, should only need to
-            // check that the mean dist does not increase
-            if ((fit != null) && (fit.getMeanDistFromModel() == Double.MAX_VALUE)) {
-                fitIsBetter = false;
-            } else if ((bestFit!= null) && (fit != null)) {
-                double diffM = fit.getMeanDistFromModel() - bestFit.getMeanDistFromModel();
-                if (diffM > 1) {
-                    fitIsBetter = false;
-                } else if ((diffM < 1) &&
-                    (fit.getStDevFromMean() > bestFit.getStDevFromMean())) {
-                    fitIsBetter = false;
-                }
-            }
-
-if (bestFit != null && fit != null) {
-log.fine("     * compare  \n         ==> bestFit=" + bestFit.toString() + "\n              fit=" + fit.toString());
-}
-
-if (!fitIsBetter && (bestFit != null)) {
-log.fine("     * keeping bestFit=" + bestFit.toString());
-}
-
-            if (fitIsBetter && (fit != null)) {
-
-                if (bestFit == null && fit != null) {
-                    log.fine("  *==> new cycle fit=" + fit.toString());
-                } else if (fit != null) {
-                    log.fine("  *==> fit=" + fit.toString());
-                }
-
-                bestFit = fit;
-
-                float transX = bestFit.getParameters().getTranslationX();
-                float transY = bestFit.getParameters().getTranslationY();
-
-                log.fine(String.format("   previous X translation range %d:%d (nIter=%d)",
-                bestTransXStartStop.getStart(), bestTransXStartStop.getStop(), nIter));
-                log.fine(String.format("   previous Y translation range %d:%d",
-                bestTransYStartStop.getStart(), bestTransYStartStop.getStop()));
-                log.fine(String.format("   previous cell size dx=%d dy=%d", dx, dy));
-
-                float diffX = cellFactor*dx;
-                float diffY = cellFactor*dy;
-
-                bestTransXStartStop.setStart((int)(transX - diffX));
-                bestTransXStartStop.setStop((int)(transX + diffX));
-                bestTransYStartStop.setStart((int)(transY - diffY));
-                bestTransYStartStop.setStop((int)(transY + diffY));
-                bestTransXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
-                dx = (bestTransXStartStop.getStop() - bestTransXStartStop.getStart())/nIntervals;
-                bestTransYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
-                dy = (bestTransYStartStop.getStop() - bestTransYStartStop.getStart())/nIntervals;
-
-                tolTransX = dx;// >> 1;
-                tolTransY = dy;// >> 1;
-
-                if (tolTransX == 0) {
-                    tolTransX = 1;
-                }
-                if (tolTransY == 0) {
-                    tolTransY = 1;
-                }
-
-                log.fine(String.format("   next X translation range %d:%d",
-                bestTransXStartStop.getStart(), bestTransXStartStop.getStop()));
-                log.fine(String.format("   next Y translation range %d:%d",
-                bestTransYStartStop.getStart(), bestTransYStartStop.getStop()));
-                log.fine(String.format("   next cell size dx=%d dy=%d  tolX=%f tolY=%f",
-                    dx, dy, tolTransX, tolTransY));
-
-            } else {
-
-                log.fine("   end scale, rot iteration");
-
-                /* TODO:
-                when the nelder-mead didn't produce a better result, we arrive
-                here and may
-                need to do a grid search over the final result using
-                a search range of the final transX and transY plus and
-                minus the last dx,dy (or the half of those if tests pass).
-                */
-
-                break;
-            }
-
-            nIter++;
+        TransformationPointFit fit =
+            calculateTranslationFromGridThenDownhillSimplex(
+            scaledRotatedSet1, set1, set2,
+            image1Width, image1Height, image2Width, image2Height,
+            rotationInRadians, scale,
+            transXStartStop, transDeltaX,
+            transYStartStop, transDeltaY,
+            tolTransX, tolTransY,
+            setsAreMatched, setsFractionOfImage);
+        
+        if (fit == null) {
+            return null;
         }
 
-        if (bestFit != null) {
-            bestFit.setMaximumNumberMatchable(maxNMatchable);
-        }
+log.fine("     * ==> bestFit=" + fit.toString());
+        
+        int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN()
+            : set2.getN();
 
-if (bestFit != null) {
-log.fine("     * returning bestFit=" + bestFit.toString());
-if (bestFit.getNumberOfMatchedPoints() == 22) {
-    if (Math.abs(bestFit.getMeanDistFromModel() - 5.86) < 0.1) {
-        if (Math.abs(bestFit.getStDevFromMean() - 2.09) < 0.1) {
-            if (Math.abs(bestFit.getParameters().getRotationInDegrees() - 281) < 0.1) {
-                int z = 1;
-            }
+        if (fit != null) {
+            fit.setMaximumNumberMatchable(maxNMatchable);
         }
-    }
-}
-}
-        return bestFit;
+        
+        return fit;
     }
 
     /**
@@ -3492,9 +3316,6 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
         if (fits == null) {
             return null;
         }
-
-        int dsLimit =
-            (transXStartStop.getStop() - transXStartStop.getStart()) / transXDelta;
 
         int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN()
             : set2.getN();
@@ -4604,7 +4425,7 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             return null;
         }
 
-        //TODO: revise this:
+        //TODO: revise this.  consider a sqrt(nMaxMatchable)
         double eps = Math.log(nMaxMatchable)/Math.log(10);
 
         float alpha = 1;   // > 0
