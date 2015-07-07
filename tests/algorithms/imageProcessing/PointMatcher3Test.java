@@ -197,7 +197,7 @@ public class PointMatcher3Test extends TestCase {
         long seed = System.currentTimeMillis();
         //seed = 1436162255215L;
         //seed = 1436200575218L;
-        seed = 1436226579115L;
+        //seed = 1436226579115L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -219,9 +219,9 @@ public class PointMatcher3Test extends TestCase {
         List<DensityTranslationResults> converged1 =
             new ArrayList<DensityTranslationResults>();
 
-        for (int nRuns = 0; nRuns < 10;/*50;*/ ++nRuns) {
+        for (int nRuns = 0; nRuns < 50; ++nRuns) {
             for (int rotType = 0; rotType < 4; ++rotType) {
-                for (int nTest = 0; nTest < 15; ++nTest) {
+                for (int nTest = 0; nTest < 20; ++nTest) {
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -496,6 +496,14 @@ public class PointMatcher3Test extends TestCase {
                     number of iterations of 50.
                     Increasing the transXDelta and transYDelta to values of
                     5 also converges.
+
+                    Increasing the transXDelta and transYDelta to values of
+                    7 results in residuals in translation of a little more than
+                    3 so is beginning to be large.
+                    
+                    Increasing the transXDelta and transYDelta to values of
+                    10 results in residuals in translation of about 5, so that 
+                    is probably not always going to lead to the correct solution.
 
                     */
                 }
