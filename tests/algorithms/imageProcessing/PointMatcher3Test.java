@@ -197,7 +197,7 @@ public class PointMatcher3Test extends TestCase {
         long seed = System.currentTimeMillis();
         //seed = 1436162255215L;
         //seed = 1436200575218L;
-        seed = 1436226579115L;
+        //seed = 1436226579115L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -219,9 +219,9 @@ public class PointMatcher3Test extends TestCase {
         List<DensityTranslationResults> converged1 =
             new ArrayList<DensityTranslationResults>();
 
-        for (int nRuns = 0; nRuns < 10;/*50;*/ ++nRuns) {
+        for (int nRuns = 0; nRuns < 50; ++nRuns) {
             for (int rotType = 0; rotType < 4; ++rotType) {
-                for (int nTest = 0; nTest < 15; ++nTest) {
+                for (int nTest = 0; nTest < 20; ++nTest) {
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -291,8 +291,8 @@ public class PointMatcher3Test extends TestCase {
                         }
                     }
 
-                    transXDelta = 5;
-                    transYDelta = 5;
+                    transXDelta = 4;
+                    transYDelta = 4;
 
                     int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
                     int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
@@ -367,7 +367,7 @@ public class PointMatcher3Test extends TestCase {
                     if (tolTransY < 1) {
                         tolTransY = 1;
                     }
-
+                    
                     boolean setsAreMatched = false;
                     float setsFractionOfImage = 1.0f;
 
@@ -391,6 +391,22 @@ public class PointMatcher3Test extends TestCase {
                         unmatchedRightXY,
                         params.getScale(), params.getRotationInRadians(), false);
 
+                    /*
+                    one can decrease the tolerance in translation error when
+                    matching, or increase the tolerance in numbers when comparing
+                    matched amounts.
+                    */
+                    int nExpected = nMaxMatchable;
+                    double densX = ((double)nPoints/(double)imageWidth);
+                    double densY = ((double)nPoints/(double)imageHeight);
+                    int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
+                    
+                    /*if ((densX > 0.15) && (densY > 0.15)) {
+                        nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
+                    }*/
+                    
+                    log.info("point density  n/width=" + densX + " n/height=" + densY);
+                    
                     log.info("check of evalFit, checkFit=" + checkFit.toString());
                     
                     assertTrue(
@@ -405,8 +421,9 @@ public class PointMatcher3Test extends TestCase {
                     assertTrue(
                         Math.abs(checkFit.getParameters().getTranslationY()
                         - params.getTranslationY()) < 0.1);
-                    assertTrue(checkFit.getNumberOfMatchedPoints() ==
-                        nMaxMatchable);
+                    assertTrue(
+                        Math.abs(checkFit.getNumberOfMatchedPoints() -
+                        nMaxMatchable) <= nEps);
                     assertTrue(checkFit.getMeanDistFromModel() < 1);
                     assertTrue(checkFit.getStDevFromMean() < 0.5);
 
@@ -439,24 +456,24 @@ public class PointMatcher3Test extends TestCase {
 
                         assert(fit != null);
                         TransformationParameters fitParams = fit.getParameters();
-                        int diffN = Math.abs(nPoints - fit.getNumberOfMatchedPoints());
+                        int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
                         float diffRotDeg = getAngleDifference(
                             fitParams.getRotationInDegrees(), rotInDegrees);
                         float diffScale = Math.abs(fitParams.getScale() - scale);
                         float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
                         float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
 
-                        log.info("FINAL FIT=" + fit.toString());
-                        log.info("diff result and expected =" +
-                            String.format(
-                            " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f",
-                            diffN, diffRotDeg, diffScale, diffTransX, diffTransY)
-                        );
-
                         double epsTrans = 3;
                         double epsRot = 5;
 
-                        if ((diffN < 0.5*nPoints) && (diffRotDeg <= epsRot) &&
+                        log.info("FINAL FIT=" + fit.toString());
+                        log.info("diff result and expected =" +
+                            String.format(
+                            " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f  nEps=%d  tEps=%f",
+                            diffN, diffRotDeg, diffScale, diffTransX, diffTransY, nEps, (float)epsTrans)
+                        );
+
+                        if ((diffN <= nEps) && (diffRotDeg <= epsRot) &&
                             (diffScale < 0.2) && (diffTransX <= epsTrans) &&
                             (diffTransY <= epsTrans)) {
                             converged = true;
@@ -496,6 +513,14 @@ public class PointMatcher3Test extends TestCase {
                     number of iterations of 50.
                     Increasing the transXDelta and transYDelta to values of
                     5 also converges.
+
+                    Increasing the transXDelta and transYDelta to values of
+                    7 results in residuals in translation of a little more than
+                    3 so is beginning to be large.
+                    
+                    Increasing the transXDelta and transYDelta to values of
+                    10 results in residuals in translation of about 5, so that 
+                    is probably not always going to lead to the correct solution.
 
                     */
                 }
