@@ -3269,11 +3269,12 @@ log.fine("     * ==> bestFit=" + fit.toString());
     protected TransformationPointFit
         calculateTranslationFromGridThenDownhillSimplex(
         PairFloatArrayUnmodifiable scaledRotatedSet1, PairIntArray set1, PairIntArray set2,
-        int image1Width, int image1Height, int image2Width, int image2Height,
-        float rotationInRadians, float scale,
-        RangeInt transXStartStop, int transXDelta,
-        RangeInt transYStartStop, int transYDelta,
-        float tolTransX, float tolTransY, boolean setsAreMatched,
+        final int image1Width, final int image1Height, 
+        final int image2Width, final int image2Height,
+        final float rotationInRadians, final float scale,
+        RangeInt transXStartStop, final int transXDelta,
+        RangeInt transYStartStop, final int transYDelta,
+        final float tolTransX, final float tolTransY, boolean setsAreMatched,
         float setsFractionOfImage) {
 
         if (scaledRotatedSet1 == null) {
@@ -3316,6 +3317,12 @@ log.fine("     * ==> bestFit=" + fit.toString());
         if (fits == null) {
             return null;
         }
+        
+        if ((transXDelta == 1) && (transYDelta == 1)) {
+            // every possible translation combination has been visited, so no
+            // need for the Nelder-Mead to search within completed search space
+            return fits[0];
+        }
 
         int maxNMatchable = (set1.getN() < set2.getN()) ? set1.getN()
             : set2.getN();
@@ -3334,35 +3341,26 @@ log.fine("     * ==> bestFit=" + fit.toString());
             return fits[0];
         }
 
-        TransformationPointFit fit;
+        // the bounds are to keep the solution within the current
+        // best range
 
-        if (false /*transXDelta < dsLimit*/) {
+        //the top fits solution define the region to search within further.
+        //{translationXMin, translationXMax, translationYMin, translationYMax}
+        float[] transXYMinMaxes = getTranslationMinAndMaxes(fits);
 
-            fit = fits[0];
+        float x0 = transXYMinMaxes[0] - tolTransX;
+        float y0 = transXYMinMaxes[2] - tolTransY;
+        float boundsXCenter = (transXYMinMaxes[0] + transXYMinMaxes[1])/2.f;
+        float boundsYCenter = (transXYMinMaxes[2] + transXYMinMaxes[3])/2.f;
+        float boundsXHalf = Math.abs(x0 - boundsXCenter);
+        float boundsYHalf = Math.abs(y0 - boundsYCenter);
 
-        } else {
-
-            // the bounds are to keep the solution within the current
-            // best range
-
-            //the top fits solution define the region to search within further.
-            //{translationXMin, translationXMax, translationYMin, translationYMax}
-            float[] transXYMinMaxes = getTranslationMinAndMaxes(fits);
-
-            float x0 = transXYMinMaxes[0] - tolTransX;
-            float y0 = transXYMinMaxes[2] - tolTransY;
-            float boundsXCenter = (transXYMinMaxes[0] + transXYMinMaxes[1])/2.f;
-            float boundsYCenter = (transXYMinMaxes[2] + transXYMinMaxes[3])/2.f;
-            float boundsXHalf = Math.abs(x0 - boundsXCenter);
-            float boundsYHalf = Math.abs(y0 - boundsYCenter);
-
-            fit = refineTranslationWithDownhillSimplex(
-                scaledRotatedSet1, set2, fits,
-                boundsXCenter, boundsYCenter, tolTransX, tolTransY,
-                boundsXHalf, boundsYHalf,
-                scale, rotationInRadians,
-                setsAreMatched, dsNMaxIter);
-        }
+        TransformationPointFit fit = refineTranslationWithDownhillSimplex(
+            scaledRotatedSet1, set2, fits,
+            boundsXCenter, boundsYCenter, tolTransX, tolTransY,
+            boundsXHalf, boundsYHalf,
+            scale, rotationInRadians,
+            setsAreMatched, dsNMaxIter);
 
         if (fit != null) {
             fit.setMaximumNumberMatchable(maxNMatchable);
