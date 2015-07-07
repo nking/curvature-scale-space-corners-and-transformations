@@ -220,8 +220,8 @@ public class PointMatcher3Test extends TestCase {
             new ArrayList<DensityTranslationResults>();
 
         for (int nRuns = 0; nRuns < 10;/*50;*/ ++nRuns) {
-            for (int rotType = 3; rotType < 4; ++rotType) {
-                for (int nTest = 9; nTest < 10; ++nTest) {
+            for (int rotType = 0; rotType < 4; ++rotType) {
+                for (int nTest = 0; nTest < 15; ++nTest) {
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -291,8 +291,8 @@ public class PointMatcher3Test extends TestCase {
                         }
                     }
 
-                    transXDelta = 2;
-                    transYDelta = 2;
+                    transXDelta = 5;
+                    transYDelta = 5;
 
                     int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
                     int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
@@ -356,6 +356,9 @@ public class PointMatcher3Test extends TestCase {
         continue;
     }*/
 
+                    // tolerance factor set to 0.5 of cell size makes perfect
+                    // matching easier.  a larger tolerance may lead to a
+                    // small number of false matches
                     float tolTransX = pointMatcher.getTolFactor() * transXDelta;
                     float tolTransY = pointMatcher.getTolFactor() * transYDelta;
                     if (tolTransX < 1) {
@@ -388,6 +391,8 @@ public class PointMatcher3Test extends TestCase {
                         unmatchedRightXY,
                         params.getScale(), params.getRotationInRadians(), false);
 
+                    log.info("check of evalFit, checkFit=" + checkFit.toString());
+                    
                     assertTrue(
                         Math.abs(checkFit.getParameters().getRotationInRadians()
                         - params.getRotationInRadians()) < 0.1);
@@ -486,20 +491,11 @@ public class PointMatcher3Test extends TestCase {
                     assertTrue(converged);
 
                     /* For having rotation and scale correct already,
-                    a transXDelta and transYDelta of values 1 are needed
-                    when the point density is >= 0.04 nPoints/dimension in
-                    pixels in order to assure convergence (diff from expected <= 3).
-
-                    That's 41 points or more in a 1024 x 1024 image that would lead
-                    to requirement of translation delta = 1, which means trying every
-                    pixel combination of translation in the starter points, and then
-                    the downhill simplex portion isn't needed, so that
-                    would be equiv to brute force imageDimension^2 for just translation,
-                    (and then factors for the rotation and scale iterations).
-
-Would like to see if I can change any parameters in the downhill simplex
-such that starter points created w/ delta translation = 2 or 3 at smallest,
-will still produce a converging result in the downhill simplex.
+                    a transXDelta and transYDelta of values 2 leads
+                    to convergence when using a downhill simplex with max
+                    number of iterations of 50.
+                    Increasing the transXDelta and transYDelta to values of
+                    5 also converges.
 
                     */
                 }

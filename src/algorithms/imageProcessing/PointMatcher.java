@@ -3391,7 +3391,7 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
         return nEpsFactor;
     }
     protected float cellFactor = 1.25f;
-    protected float tolFactor = 1.0f;
+    protected float tolFactor = 0.5f;
     protected void setCellFactor(float f) {
         cellFactor = f;
     }
