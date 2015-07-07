@@ -356,8 +356,8 @@ public class PointMatcher3Test extends TestCase {
         continue;
     }*/
 
-                    float tolTransX = 2*pointMatcher.getTolFactor() * transXDelta;
-                    float tolTransY = 2*pointMatcher.getTolFactor() * transYDelta;
+                    float tolTransX = pointMatcher.getTolFactor() * transXDelta;
+                    float tolTransY = pointMatcher.getTolFactor() * transYDelta;
                     if (tolTransX < 1) {
                         tolTransX = 1;
                     }
@@ -417,9 +417,9 @@ public class PointMatcher3Test extends TestCase {
                         (!converged && (nIter < nMaxIter) && (transXDelta > 1))) {
 
                         if (nIter > 0) {
-                            //break;
-                            dsMaxIter += 100;
-                            pointMatcher.setDsNMaxIter(dsMaxIter);
+                            break;
+                            //dsMaxIter += 100;
+                            //pointMatcher.setDsNMaxIter(dsMaxIter);
                         }
 
                         TransformationPointFit fit =

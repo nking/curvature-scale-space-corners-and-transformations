@@ -3777,32 +3777,11 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
         double bestS = bestFit.getStDevFromMean();
         double diffS = Math.abs(compS - bestS);
 
-        double r = bestAvg/compAvg;
+        double avgDiv = bestAvg/compAvg;
 
         int diffEps = (int)Math.round(nEpsFactor*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
         if (diffEps == 0) {
             diffEps = 1;
-        }
-
-        if ((compNMatches > 2) && (compAvg == 0) && (compS == 0) && (bestAvg > 1)) {
-            return true;
-        }
-        if ((bestNMatches > 2) && (bestAvg == 0) && (bestS == 0) && (compAvg > 1)) {
-            return false;
-        }
-        if ((compNMatches > 2) && (compS == 0) && (compAvg < 4) && (bestS > 0) &&
-            (bestAvg > compAvg)) {
-            return true;
-        }
-        if ((bestNMatches > 2) && (bestS == 0) && (bestAvg < 4) && (compS > 0) &&
-            (compAvg > bestAvg)) {
-            return false;
-        }
-        if ((bestNMatches > 2) && (bestAvg < 1) && (bestS < 1) && (compAvg > 1)) {
-            return false;
-        }
-        if ((compNMatches > 2) && (compAvg < 1) && (compS < 1) && (bestAvg > 1)) {
-            return true;
         }
 
         //0==same fit;  1==similar fits;  -1==different fits
@@ -3819,106 +3798,28 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             }
         }
 
-        if (
-            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10)
-            && (bestNMatches <= 10)
-            && (Math.abs(bestNMatches - compNMatches) < 2)) {
+        if (Math.abs(bestNMatches - compNMatches) <= diffEps) {
 
-            if (r > 1.4) {
+            if (Double.isNaN(compareFit.getMeanDistFromModel())) {
+                return false;
+            }
+            
+            if (compAvg < bestAvg) {
                 return true;
-            } else if (r < 0.7) {
+            } else if (compAvg > bestAvg) {
                 return false;
             }
 
-        } else if ((compNMatches > 5) && (bestNMatches > 5) &&
-            (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
-
-            //TODO: may need to revise this
-            if (r > 2) {
+            if (compS < bestS) {
                 return true;
-            } else if (r < 0.5) {
+            } else if (compS > bestS) {
                 return false;
             }
-
-        } else if (
-            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10)
-            && (bestNMatches <= 10)
-            && (Math.abs(bestNMatches - compNMatches) < 3)) {
-
-            if (r > 10) {
-                return true;
-            } else if (r < 0.1) {
-                return false;
-            }
-
-        } else if (
-            (Math.abs(bestNMatches - compNMatches) < 4)
-            && (bestNMatches >= 7) && (bestNMatches <= 15)
-            && (compNMatches >= 7) && (compNMatches <= 15)) {
-
-            if (r > 10) {
-                return true;
-            } else if (r < 0.1) {
-                return false;
-            }
-
-        }
-
-        if (compNMatches > bestNMatches) {
+            
+        } else if (compNMatches > bestNMatches) {
 
             return true;
-
-        } else if (compNMatches == bestNMatches) {
-
-            if (!Double.isNaN(compareFit.getMeanDistFromModel())) {
-
-                //TODO: may need to revise this:
-                if (Math.abs(compAvg - bestAvg) < 1.0) {
-                    if (compS < bestS) {
-                        return true;
-                    } else if (compS > bestS) {
-                        return false;
-                    }
-                }
-
-                if (compAvg < bestAvg) {
-                    return true;
-                } else if (compAvg > bestAvg) {
-                    return false;
-                }
-
-                if (compS < bestS) {
-                    return true;
-                } else if (compS > bestS) {
-                    return false;
-                }
-            }
         }
-
-        /*
-        TODO:  altering the above so that close values in number matched,
-        but large differences in mean dist from model
-        will use mean diff from model
-
-        for example:
-
-        bestFit:
-              nMatchedPoints=15 nMaxMatchable=15.0
-              meanDistFromModel=84.14178034464518
-              stDevFromMean=56.981437125683364
-              tolerance=288.4995667241114
-              rotationInRadians=0.05235988 rotationInDegrees=3.0000000834826057
-              scale=1.0 translationX=-159.04364 translationY=-63.772995
-        fitCompare:
-              nMatchedPoints=14 nMaxMatchable=0.0
-              meanDistFromModel=4.542982544217791
-              stDevFromMean=0.2876419359024278
-              tolerance=288.4995667241114
-              rotationInRadians=0.06981317 rotationInDegrees=3.999999969014533
-              scale=1.0 translationX=-209.35757 translationY=-11.052967
-
-        can see that the fitCompare should be preferred
-        */
 
         return false;
     }
@@ -3977,81 +3878,31 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
             }
         }
 
-        if (
-            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10)
-            && (bestNMatches <= 10)
-            && (Math.abs(bestNMatches - compNMatches) < 2)) {
-            if (r > 1.4) {
-                return 1;
-            } else if (r < 0.7) {
+        if (Math.abs(bestNMatches - compNMatches) <= diffEps) {
+
+            if (Double.isNaN(compareFit.getMeanDistFromModel())) {
                 return -1;
             }
-        } else if ((compNMatches > 5) && (bestNMatches > 5) &&
-            (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
-
-            //TODO: may need to revise this
-            if (r > 2) {
+            
+            if (compAvg < bestAvg) {
                 return 1;
-            } else if (r < 0.5) {
+            } else if (compAvg > bestAvg) {
                 return -1;
             }
 
-        } else if (
-            (compNMatches >= 3) && (bestNMatches >= 3) && (compNMatches <= 10)
-            && (bestNMatches <= 10) && (Math.abs(bestNMatches - compNMatches) < 3)) {
-
-            if (r > 10) {
+            if (compS < bestS) {
                 return 1;
-            } else if (r < 0.1) {
+            } else if (compS > bestS) {
                 return -1;
+            } else {
+                return 0;
             }
-
-        } else if (
-            (Math.abs(bestNMatches - compNMatches) < 4)
-            && (bestNMatches >= 7) && (bestNMatches <= 15)
-            && (compNMatches >= 7) && (compNMatches <= 15)) {
-
-            if (r > 10) {
-                return 1;
-            } else if (r < 0.1) {
-                return -1;
-            }
-
-        }
-
-        if (compNMatches > bestNMatches) {
+            
+        } else if (compNMatches > bestNMatches) {
 
             return 1;
-
-        } else if (compNMatches == bestNMatches) {
-
-            if (!Double.isNaN(compareFit.getMeanDistFromModel())) {
-
-                //TODO: may need to revise this:
-                if (Math.abs(compAvg - bestAvg) < 1.0) {
-                    if (compS < bestS) {
-                        return 1;
-                    } else if (compS > bestS) {
-                        return -1;
-                    }
-                }
-
-                if (compAvg < bestAvg) {
-                    return 1;
-                } else if (compAvg > bestAvg) {
-                    return -1;
-                }
-
-                if (compS < bestS) {
-                    return 1;
-                } else if (compS > bestS) {
-                    return -1;
-                } else {
-                    return 0;
-                }
-            }
         }
-
+        
         return -1;
     }
 
@@ -6181,51 +6032,6 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
                 reevalFits[1] = fit;
                 return;
             }
-        }
-
-        if ((compNMatches > 2) && (compAvg == 0) && (compS == 0) && (bestAvg > 1)) {
-            // fit is the better fit
-            fitIsBetter[0] = true;
-            reevalFits[0] = bestFit;
-            reevalFits[1] = fit;
-            return;
-        }
-        if ((bestNMatches > 2) && (bestAvg == 0) && (bestS == 0) && (compAvg > 1)) {
-            // bestFit is the better fit
-            fitIsBetter[0] = false;
-            reevalFits[0] = bestFit;
-            reevalFits[1] = fit;
-            return;
-        }
-        if ((compNMatches > 2) && (compS == 0) && (compAvg < 5) && (bestS > 0) &&
-            (bestAvg > compAvg)) {
-            // fit is the better fit
-            fitIsBetter[0] = true;
-            reevalFits[0] = bestFit;
-            reevalFits[1] = fit;
-            return;
-        }
-        if ((bestNMatches > 2) && (bestS == 0) && (bestAvg < 5) && (compS > 0) &&
-            (compAvg > bestAvg)) {
-            // bestFit is the better fit
-            fitIsBetter[0] = false;
-            reevalFits[0] = bestFit;
-            reevalFits[1] = fit;
-            return;
-        }
-        if ((bestNMatches > 2) && (bestAvg < 1) && (bestS < 1) && (compAvg > 1)) {
-            // bestFit is the better fit
-            fitIsBetter[0] = false;
-            reevalFits[0] = bestFit;
-            reevalFits[1] = fit;
-            return;
-        }
-        if ((compNMatches > 2) && (compAvg < 1) && (compS < 1) && (bestAvg > 1)) {
-            // fit is the better fit
-            fitIsBetter[0] = true;
-            reevalFits[0] = bestFit;
-            reevalFits[1] = fit;
-            return;
         }
 
         /*
