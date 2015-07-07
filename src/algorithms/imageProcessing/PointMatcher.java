@@ -3376,6 +3376,10 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
         return bestFit;
     }
 
+    /**
+     * the maximum number of iterations that the refinement of translation
+     * will use in the downhill simplex.  The default value is 50.
+     */
     private int dsNMaxIter = 50;
     protected void setDsNMaxIter(int n) {
         dsNMaxIter = n;
@@ -3404,15 +3408,40 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
     protected float getTolFactor() {
         return tolFactor;
     }
-    protected void setDownhillSimplexNMaxIter(int maxNMatchable) {
-        dsNMaxIter = 50;
-        if (maxNMatchable > 60) {
-            dsNMaxIter = 150;
-        } else if (maxNMatchable > 30) {
-            dsNMaxIter = 100;
-        }
-    }
 
+    /**
+     * find the best translations in x and y given the rotation and scale already 
+     * applied to set 1 to match set1 to set2 and return the fit for it.
+     * If rotation and scale are already precisely determined, and if transXDelta
+     * and transYDelta are values of 4 or smaller and if the member variable
+     * dnsMaxIter is 50, the resulting solution should be accurate to within
+     * a few pixels in x and y.
+     * 
+     * @param scaledRotatedSet1
+     * @param set1
+     * @param set2
+     * @param image1Width
+     * @param image1Height
+     * @param image2Width
+     * @param image2Height
+     * @param rotationInRadians
+     * @param scale
+     * @param transXStartStop
+     * @param transXDelta the search cell size for a translation in x.  The
+     * recommended value is 4.  The first searched cell is transXStart + transXDelta, etc.
+     * @param transYStartStop
+     * @param transYDelta the search cell size for a translation in x.  The
+     * recommended value is 4.
+     * @param tolTransX the tolerance in a difference in x when evaluating the
+     * fit (which is optimal matching between the transformed set 1 and untransformed set2).
+     * The recommended value is pointMatcher.getTolFactor() * transXDelta;
+     * @param tolTransY the tolerance in a difference in x when evaluating the
+     * fit (which is optimal matching between the transformed set 1 and untransformed set2).
+     * The recommended value is pointMatcher.getTolFactor() * transYDelta;
+     * @param setsAreMatched
+     * @param setsFractionOfImage
+     * @return 
+     */
     protected TransformationPointFit
         calculateTranslationFromGridThenDownhillSimplex(
         PairFloatArrayUnmodifiable scaledRotatedSet1, PairIntArray set1, PairIntArray set2,
@@ -4556,10 +4585,11 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
      * @param scale
      * @param rotationRadians
      * @param setsAreMatched
-     * @param nMaxIter
+     * @param nMaxIter the maximum number of iterations to use in the algorithm.
+     * The recommended value is 50.
      * @return
      */
-    protected TransformationPointFit refineTranslationWithDownhillSimplex(
+    private TransformationPointFit refineTranslationWithDownhillSimplex(
         PairFloatArrayUnmodifiable scaledRotatedSet1, PairIntArray set2,
         TransformationPointFit[] fits,
         float transX, float transY, float tolTransX, float tolTransY,
@@ -4614,12 +4644,12 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
                 break;
             }
 
-            if (debug) {
+            /*if (debug) {
                 if ((nIter == 0) || (nIter % 10 == 0)) {
                     plotTranslationSimplex(fits, txMin, txMax, tyMin, tyMax,
                         null);
                 }
-            }
+            }*/
 
             if (nIter > 0) {
 
@@ -4793,11 +4823,11 @@ if (bestFit.getNumberOfMatchedPoints() == 22) {
 
         log.fine("nIter=" + Integer.toString(nIter));
 
-        if (debug) {
+        /*if (debug) {
             plotTranslationSimplex(fits, txMin, txMax, tyMin, tyMax,
                 Color.YELLOW);
             writeTranslationSimplexPlot();
-        }
+        }*/
 
         // additional step that's helpful if not enough iterations are used,
         // is to test the summed transX, transY which represent the center

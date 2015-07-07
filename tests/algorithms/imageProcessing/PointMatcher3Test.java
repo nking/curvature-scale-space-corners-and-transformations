@@ -386,6 +386,7 @@ public class PointMatcher3Test extends TestCase {
                              imageWidth >> 1, imageHeight >> 1);
 
                     // quick test of the evaluation function for perfect solution
+                    // this method uses "optimal" matching
                     TransformationPointFit checkFit = pointMatcher.evaluateFit(
                         scaledRotatedLeft, transX, transY, tolTransX, tolTransY,
                         unmatchedRightXY,
