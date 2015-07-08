@@ -1,14 +1,19 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairIntArray;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 
 /**
- * O(k) + O(N*lg_2(k)) 
+ * a class to hold a fixed number of items of type T which are kept in a sorted
+ * stated after the list is filled, though a getArray before it is filled
+ * will still return sorted results.
+ * 
+ * runtime complexity is:
+ *     O(k) + O(N*lg_2(k)) 
+ * where k is the fixedCapacity and N is the number of times add is used.
+ * 
  * @author nichole
  */
 public class FixedSizeSortedVector<T extends Comparable> {
@@ -54,6 +59,14 @@ public class FixedSizeSortedVector<T extends Comparable> {
         }
     }
   
+    /**
+     * add value to the fixed size sorted list if the list is not full
+     * or if the last item in the list is valued as worse than given value
+     * (where (T).compareTo determines the value for the descending sort
+     * of this class instance).
+     * 
+     * @param value 
+     */
     public void add(T value) {
 
         if (value == null) {
@@ -177,8 +190,22 @@ public class FixedSizeSortedVector<T extends Comparable> {
         availSlot = -1;           
     }
 
+    /**
+     * get the internal array for the sorted list.  note this is not a copy in
+     * order to keep the use small, so do not edit it and continue to use
+     * the add method.
+     * 
+     * @return 
+     */
     public T[] getArray() {
 
+        if (!sorted && (a != null)) {
+            
+            Arrays.sort(a);
+            
+            // do not set the 'sorted' flag because the list is not full yet
+        }
+        
         return a;
     }
 }
