@@ -44,13 +44,6 @@ public class FixedSizeSortedVector<T extends Comparable> {
     private void initializeA(T value) {
 
         if (a == null) {
-
-            /*
-            If class A and B are specialization of type T, and an instance of
-            type A gets added first, the list will thereafter be
-            resricted to A and not allow B
-            
-            */
             
             Class<?> cls = value.getClass();
                         

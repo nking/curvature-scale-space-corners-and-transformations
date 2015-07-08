@@ -1,7 +1,8 @@
 package algorithms.imageProcessing;
 
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import junit.framework.TestCase;
-import org.junit.Test;
 
 /**
  *
@@ -49,6 +50,53 @@ public class FixedSizeSortedVectorTest extends TestCase {
         assertTrue(values[1].intValue() == 4);
         assertTrue(values[2].intValue() == 5);
         assertTrue(values[3].intValue() == 6);
+        
     }
     
+    public void testTypes() throws Exception {
+        
+        FixedSizeSortedVector<A> vector = new FixedSizeSortedVector<A>(2);
+        
+        
+        B b = new B(1);
+        A a = new A(1);
+        C c = new C(0);
+        
+        vector.add(a);
+        vector.add(c);
+        vector.add(c);
+        
+        A[] values = vector.getArray();
+        
+        assertNotNull(values);        
+    }
+    
+    private static class A implements Comparable {
+        int v = 0;
+        public A(int v) {
+            this.v = v;
+        }
+        @Override
+        public int compareTo(Object o) {
+            if (o == null) {
+                return -1;
+            }
+            if (!(o instanceof A)) {
+                return -1;
+            }
+            return Integer.compare(v, ((A)o).v);
+        }
+    }
+    
+    private static class B extends A {
+        public B(int v) {
+            super(v);
+        }
+    }
+    
+    private static class C extends A {
+        public C(int v) {
+            super(v);
+        }
+    }
 }
