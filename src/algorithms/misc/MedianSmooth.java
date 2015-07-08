@@ -12,7 +12,7 @@ public class MedianSmooth {
     
     /**
      * calculate a running median of the k previous points of curveY.
-     * runtime complexity is O(N*k) at most.
+     * runtime complexity is O(k) + O(N*lg_2(k)) at most.
      * @param curveY
      * @param kPoints
      * @return 
@@ -35,7 +35,7 @@ public class MedianSmooth {
         for (int i = 0; i < (kPoints - 1); i++) {
             sVec.append(curveY[i]);
         }
-        
+        //O(k) + + (N)*lg2(k)
         int median;
         
         for (int i = (kPoints - 1); i < curveY.length; i++) {

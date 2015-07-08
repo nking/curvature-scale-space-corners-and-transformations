@@ -980,14 +980,14 @@ public class MiscMath {
      * @param rotDelta interval between rotation angles in units of degrees
      * @return 
      */
-    public static int[] writeDegreeIntervals(int rotStart, int rotStop, 
-        int rotDelta) {
+    public static float[] writeDegreeIntervals(float rotStart, float rotStop, 
+        float rotDelta) {
         
-        int rotStopMinusStart = (rotStop < rotStart) ? 
+        float rotStopMinusStart = (rotStop < rotStart) ? 
             ((360 - rotStart) + rotStop) : (rotStop - rotStart);
         
-        int nRot = (rotStopMinusStart/rotDelta) + 1;
-        int[] rotation = new int[nRot];
+        int nRot = (int)((rotStopMinusStart/rotDelta) + 1);
+        float[] rotation = new float[nRot];
         for (int i = 0; i < nRot; ++i) {
             float r = rotStart + (i * rotDelta);
             if (r > 359) {

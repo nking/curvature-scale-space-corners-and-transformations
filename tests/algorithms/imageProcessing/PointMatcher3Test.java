@@ -190,7 +190,7 @@ public class PointMatcher3Test extends TestCase {
         }
     }
 
-    public void testCalculateTranslationFromGridThenDownhillSimplex()
+    public void estCalculateTranslationFromGridThenDownhillSimplex()
         throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -219,9 +219,9 @@ public class PointMatcher3Test extends TestCase {
         List<DensityTranslationResults> converged1 =
             new ArrayList<DensityTranslationResults>();
 
-        for (int nRuns = 0; nRuns < 50; ++nRuns) {
+        for (int nRuns = 0; nRuns < 10; ++nRuns) { // this increases the number of tests
             for (int rotType = 0; rotType < 4; ++rotType) {
-                for (int nTest = 0; nTest < 20; ++nTest) {
+                for (int nTest = 0; nTest < 20; ++nTest) { // this increases nPoints
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -346,15 +346,10 @@ public class PointMatcher3Test extends TestCase {
                         int y = sr.nextInt(imageHeight);
                         unmatchedRightXY.add(x, y);
                     }
-
-                    // TODO: consider scrambling the order of the right points
-
-                    // --- TODO: in the difference between the left and right regions,
-                    //     need to generate points in the right
-
-    /*if (nPoints != 49) {
-        continue;
-    }*/
+                    
+                    // change the order of points to make sure not biased
+                    // by order
+                    unmatchedRightXY.reverse();
 
                     // tolerance factor set to 0.5 of cell size makes perfect
                     // matching easier.  a larger tolerance may lead to a
@@ -523,6 +518,320 @@ public class PointMatcher3Test extends TestCase {
                     10 results in residuals in translation of about 5, so that 
                     is probably not always going to lead to the correct solution.
 
+                    */
+                }
+            }
+        }
+
+        //need to plot density vs transDelta for converged and those
+        //that took more than one iteration to converge.
+        if (false /*!converged0.isEmpty()*/) {
+            float[] x = new float[converged0.size()];
+            float[] y = new float[x.length];
+            for (int i = 0; i < x.length; ++i) {
+                x[i] = (float)converged0.get(i).density;
+                y[i] = (float)converged0.get(i).translationDelta;
+            }
+            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+            plotter.plot(x, y, "converged", "density", "trDelta");
+            plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
+
+            x = new float[converged1.size()];
+            y = new float[x.length];
+            for (int i = 0; i < x.length; ++i) {
+                x[i] = (float)converged1.get(i).density;
+                y[i] = (float)converged1.get(i).translationDelta;
+            }
+            plotter = new ScatterPointPlotterPNG();
+            plotter.plot(x, y, "converged after decr trDelta", "density", "trDelta");
+            plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
+        }
+    }
+
+    public void testCalculateTransformationWithGridSearch()
+        throws Exception {
+
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        seed = 1436317359380L;
+        sr.setSeed(seed);
+        log.info("SEED=" + seed);
+
+        //image size range 250 to 10000
+        //  these are altered below
+        int imageWidth = 650;
+        int imageHeight = 400;
+
+        // ---- random testing for stereo imaging ----
+
+        float scale = 1.0f;
+
+        int transXDelta = 1;
+        int transYDelta = 1;
+        int halfRange = 4;
+
+        List<DensityTranslationResults> converged0 =
+            new ArrayList<DensityTranslationResults>();
+        List<DensityTranslationResults> converged1 =
+            new ArrayList<DensityTranslationResults>();
+
+        for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
+            for (int rotType = 0; rotType < 4; ++rotType) {
+                for (int nTest = 0; nTest < 20; ++nTest) { // this increases nPoints
+
+                    PointMatcher pointMatcher = new PointMatcher();
+
+                    PairIntArray unmatchedLeftXY = new PairIntArray();
+
+                    float rotInDegrees = (int)(sr.nextFloat() * 20);
+
+                    if (rotType == 1) {
+                        rotInDegrees = sr.nextBoolean() ? (270 + rotInDegrees) :
+                            (270 - rotInDegrees);
+                        transXDelta = 2;
+                        transYDelta = 2;
+                        halfRange = 10;
+                        //image size range 250 to 10000
+                        imageWidth = Math.abs(250) + 250;
+                        imageHeight = Math.abs(250) + 250;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
+                    } else if (rotType == 2) {
+                        rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
+                            (180 - rotInDegrees);
+                        transXDelta = 3;
+                        transYDelta = 3;
+                        halfRange = 20;
+                        //image size range 250 to 10000
+                        imageWidth = Math.abs(1000) + 250;
+                        imageHeight = Math.abs(1000) + 250;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
+                    } else if (rotType == 3) {
+                        rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
+                            (90 - rotInDegrees);
+                        transXDelta = 4;
+                        transYDelta = 4;
+                        halfRange = 100;
+                        //image size range 250 to 10000
+                        imageWidth = Math.abs(2000) + 250;
+                        imageHeight = Math.abs(2000) + 250;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
+                    } else if (rotType == 3) {
+                        rotInDegrees = sr.nextBoolean() ? (45 + rotInDegrees) :
+                            (45 - rotInDegrees);
+                        transXDelta = 5;
+                        transYDelta = 5;
+                        halfRange = 115;
+                        //image size range 250 to 10000
+                        imageWidth = Math.abs(5000) + 250;
+                        imageHeight = Math.abs(5000) + 250;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
+                    }
+
+                    transXDelta = 4;
+                    transYDelta = 4;
+
+                    int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
+                    int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
+                    if (sr.nextBoolean()) {
+                        transX *= -1;
+                    }
+                    if (sr.nextBoolean()) {
+                        transY *= -1;
+                    }
+
+                    TransformationParameters params = new TransformationParameters();
+                    params.setRotationInDegrees(rotInDegrees);
+                    params.setScale(scale);
+                    params.setTranslationX(transX);
+                    params.setTranslationY(transY);
+
+                    int nPoints = (nTest + 1) * 7;
+
+                    log.info("\ntest for nPoints=" + nPoints + "\nparams=" + params.toString()
+                        + "\ntransXDelta=" + transXDelta + " transYDelta=" + transYDelta
+                        + " translation range=" + (2*halfRange));
+
+                    for (int i = 0; i < nPoints; ++i) {
+                        int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
+                        int y = (imageHeight/4) + sr.nextInt(imageHeight/4);
+                        unmatchedLeftXY.add(x, y);
+                    }
+
+                    // ===  transform the right points  ======
+
+                    Transformer transformer = new Transformer();
+
+                    PairIntArray unmatchedRightXY = transformer.applyTransformation(
+                        params, unmatchedLeftXY, imageWidth >> 1, imageHeight >> 1);
+
+                    // consider adding small deviations to the right
+
+                    // add small number of points in left that are not in right
+                    //   and vice versa
+                    int nAdd = (int)(sr.nextFloat()*nPoints/10);
+                    if (nAdd == 0) {
+                        nAdd = 1;
+                    }
+                    for (int i = 0; i < nAdd; ++i) {
+                        int x = sr.nextInt(imageWidth);
+                        int y = sr.nextInt(imageHeight);
+                        unmatchedLeftXY.add(x, y);
+                    }
+                    for (int i = 0; i < nAdd; ++i) {
+                        int x = sr.nextInt(imageWidth);
+                        int y = sr.nextInt(imageHeight);
+                        unmatchedRightXY.add(x, y);
+                    }
+                    
+                    // change the order of points to make sure not biased
+                    // by order
+                    unmatchedRightXY.reverse();
+
+                    // tolerance factor set to 0.5 of cell size makes perfect
+                    // matching easier.  a larger tolerance may lead to a
+                    // small number of false matches
+                    float tolTransX = pointMatcher.getTolFactor() * transXDelta;
+                    float tolTransY = pointMatcher.getTolFactor() * transYDelta;
+                    if (tolTransX < 1) {
+                        tolTransX = 1;
+                    }
+                    if (tolTransY < 1) {
+                        tolTransY = 1;
+                    }
+                    
+                    float setsFractionOfImage = 1.0f;
+
+                    int nMaxMatchable = nPoints;
+
+                    /*
+                    one can decrease the tolerance in translation error when
+                    matching, or increase the tolerance in numbers when comparing
+                    matched amounts.
+                    */
+                    int nExpected = nMaxMatchable;
+                    double densX = ((double)nPoints/(double)imageWidth);
+                    double densY = ((double)nPoints/(double)imageHeight);
+                    int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
+                    
+                    log.info("point density  n/width=" + densX + " n/height=" + densY);
+                    
+                    int nIter = 0;
+                    int nMaxIter = 10;
+
+                    int dsMaxIter = pointMatcher.getDsNMaxIter();
+                    double dens = (double)nPoints/(double)imageWidth;
+
+                    boolean converged = false;
+                    
+                    float rotStart = rotInDegrees;
+                    float rotStop = rotInDegrees;
+                    float rotDelta = 1;
+                    float scaleStart = scale;
+                    float scaleStop = scale;
+                    float scaleDelta = 1;
+
+                    while ((nIter == 0) ||
+                        (!converged && (nIter < nMaxIter) && (transXDelta > 1))) {
+
+                        if (nIter > 0) {
+                            break;
+                        }
+
+                        TransformationPointFit fit =
+                            pointMatcher.calculateTransformationWithGridSearch(
+                            unmatchedLeftXY, unmatchedRightXY,
+                            imageWidth, imageHeight, imageWidth, imageHeight,
+                            rotStart, rotStop, rotDelta,
+                            scaleStart, scaleStop, scaleDelta,
+                            setsFractionOfImage);
+                                
+                        assert(fit != null);
+                        TransformationParameters fitParams = fit.getParameters();
+                        int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
+                        float diffRotDeg = getAngleDifference(
+                            fitParams.getRotationInDegrees(), rotInDegrees);
+                        float diffScale = Math.abs(fitParams.getScale() - scale);
+                        float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
+                        float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
+
+                        double epsTrans = 3;
+                        double epsRot = 1; // this has to be larger for eucldian solutions or datasets that are projective
+
+                        log.info("FINAL FIT=" + fit.toString());
+                        log.info("diff result and expected =" +
+                            String.format(
+                            " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f  nEps=%d  tEps=%f",
+                            diffN, diffRotDeg, diffScale, diffTransX, diffTransY, nEps, (float)epsTrans)
+                        );
+
+                        if ((diffN <= nEps) && (diffRotDeg <= epsRot) &&
+                            (diffScale < 0.2) && (diffTransX <= epsTrans) &&
+                            (diffTransY <= epsTrans)) {
+                            converged = true;
+                        }
+
+                        nIter++;
+                    }
+
+                    if (nIter > 1) {
+                        log.info("needed change for translation delta for"
+                            + " dens=" + dens + " nPoints=" + nPoints
+                            + " w=" + imageWidth + " h=" + imageHeight
+                            + " transXDelta=" + transXDelta
+                            + " transYDelta=" + transYDelta
+                            + " dsMaxIter=" + dsMaxIter
+                        );
+                        converged1.add(
+                            new DensityTranslationResults(dens, nPoints,
+                                imageWidth, imageHeight, transXDelta));
+                    } else {
+                        log.info("density=" + dens + " nPoints=" + nPoints
+                            + " w=" + imageWidth + " h=" + imageHeight
+                            + " transXDelta=" + transXDelta
+                            + " transYDelta=" + transYDelta
+                            + " dsMaxIter=" + dsMaxIter
+                        );
+                        converged0.add(
+                            new DensityTranslationResults(dens, nPoints,
+                                imageWidth, imageHeight, transXDelta));
+                    }
+
+                    assertTrue(converged);
+
+                    /* For having rotation and scale correct already,
+                    a transXDelta and transYDelta of values 2 leads
+                    to convergence when using a downhill simplex with max
+                    number of iterations of 50.
+                    Increasing the transXDelta and transYDelta to values of
+                    5 also converges.
+
+                    Increasing the transXDelta and transYDelta to values of
+                    7 results in residuals in translation of a little more than
+                    3 so is beginning to be large.
+                    
+                    Increasing the transXDelta and transYDelta to values of
+                    10 results in residuals in translation of about 5, so that 
+                    is probably not always going to lead to the correct solution.
                     */
                 }
             }
@@ -1151,7 +1460,7 @@ images as possible)
             PointMatcher3Test test = new PointMatcher3Test();
 
             //test.testPerformVerticalPartitionedMatching();
-            test.testCalculateTranslationFromGridThenDownhillSimplex();
+            //test.testCalculateTranslationFromGridThenDownhillSimplex();
 
             /*
             tests for :

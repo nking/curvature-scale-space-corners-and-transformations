@@ -595,21 +595,21 @@ public final class PointMatcher {
         // use either a finer grid search or a downhill simplex to improve the
         // solution which was found coursely within about 10 degrees
         float rot = bestFit.getParameters().getRotationInDegrees();
-        int rotStart = (int)rot - 10;
+        float rotStart = (int)rot - 10;
         if (rotStart < 0) {
             rotStart = 360 + rotStart;
         }
-        int rotStop = (int)rot + 10;
+        float rotStop = (int)rot + 10;
         if (rotStop > 359) {
             rotStop = rotStop - 360;
         }
-        int rotDelta = 1;
-        int scaleStart = (int)(0.9 * bestFit.getScale());
+        float rotDelta = 1;
+        float scaleStart = (int)(0.9 * bestFit.getScale());
         if (scaleStart < 1) {
             scaleStart = 1;
         }
-        int scaleStop = (int)(1.1 * bestFit.getScale());
-        int scaleDelta = 1;
+        float scaleStop = (int)(1.1 * bestFit.getScale());
+        float scaleDelta = 1;
 
         //TODO: this may need to scale with point density and image dimensions
         int nTransIntervals = 3;
@@ -629,57 +629,28 @@ public final class PointMatcher {
         RangeInt transYStartStop = new RangeInt((int)(transY - (gridHeight/2.f)),
             (int)(transY + (gridHeight/2.f)));
 
-        nTransIntervals = 10;
+        //TODO: since this is refinement, might use smaller
+        int dx = 4;
+        int dy = 4;
 
-        int dx = (transXStartStop.getStop() - transXStartStop.getStart())
-            /nTransIntervals;
-        int dy = (transYStartStop.getStop() - transYStartStop.getStart())
-            /nTransIntervals;
+        transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
 
-        if (dx <= 1) {
-            // the interval is too small, widen dimension and repeat calcs here
-            gridWidth = 50;
-            transXStartStop = new RangeInt((int)(transX - (gridWidth/2.f)),
-                (int)(transX + (gridWidth/2.f)));
+        transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
 
-            transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
-
-            dx = (transXStartStop.getStop() - transXStartStop.getStart())
-                /nTransIntervals;
-        } else {
-            transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
-        }
-
-        if (dy <= 1) {
-            // the interval is too small, widen dimension and repeat calcs here
-            gridHeight = 50;
-            transYStartStop = new RangeInt((int)(transY - (gridWidth/2.f)),
-                (int)(transY + (gridWidth/2.f)));
-
-            transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
-
-            dy = (transYStartStop.getStop() - transYStartStop.getStart())
-                /nTransIntervals;
-        } else {
-            transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
-        }
-
-        float tolTransX = dx;//(image2Width/toleranceGridFactor);
-        float tolTransY = dy;//(image2Height/toleranceGridFactor);
+        float tolTransX = getTolFactor() * dx;
+        float tolTransY = getTolFactor() * dy;
 
         log.fine(String.format(
-            "starting finer grid search with rot=%d to %d and scale=%d to %d and translation=%d:%d, %d:%d and nTransIntervals=%d",
+            "starting finer grid search with rot=%d to %d and scale=%d to %d and translation=%d:%d, %d:%d",
             rotStart, rotStop, scaleStart, scaleStop,
             transXStartStop.getStart(), transXStartStop.getStop(),
-            transYStartStop.getStart(), transYStartStop.getStop(),
-            nTransIntervals));
+            transYStartStop.getStart(), transYStartStop.getStop()));
 
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             unmatchedLeftXY, unmatchedRightXY,
             image1Width, image1Height, image2Width, image2Height,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
             transXStartStop, transYStartStop,
-            nTransIntervals,
             tolTransX, tolTransY, setsFractionOfImage);
 
 if (bestFit != null && fit != null) {
@@ -842,121 +813,9 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
         int image1Width, int image1Height, int image2Width, int image2Height) {
 
-        float setsFractionOfImage = 1.0f;
+        //update when finish improving the vertical partition code
 
-        PairIntArray part1 = unmatchedLeftXY;
-        PairIntArray part2 = unmatchedRightXY;
-
-        TransformationPointFit fit = calcTransWithRoughGrid(
-            part1, part2,
-            image1Width, image1Height, image2Width, image2Height,
-            setsFractionOfImage);
-
-        if (fit == null) {
-            return null;
-        }
-
-        float nStat = (float)fit.getNumberOfMatchedPoints()/
-            (float)fit.getNMaxMatchable();
-
-        log.info("best fit so fars: " + fit.toString());
-
-        // use either a finer grid search or a downhill simplex to improve the
-        // solution which was found coursely within about 10 degrees
-        float rot = fit.getParameters().getRotationInDegrees();
-        int rotStart = (int)rot - 10;
-        if (rotStart < 0) {
-            rotStart = 360 + rotStart;
-        }
-        int rotStop = (int)rot + 10;
-        if (rotStop > 359) {
-            rotStop = rotStop - 360;
-        }
-        int rotDelta = 1;
-        int scaleStart = (int)(0.9 * fit.getScale());
-        if (scaleStart < 1) {
-            scaleStart = 1;
-        }
-        int scaleStop = (int)(1.1 * fit.getScale());
-        int scaleDelta = 1;
-
-        int nTransIntervals = 4;
-
-        float transX = fit.getParameters().getTranslationX();
-        float transY = fit.getParameters().getTranslationY();
-
-        //TODO: revision needed here
-        float toleranceX = fit.getTranslationXTolerance();
-        float toleranceY = fit.getTranslationYTolerance();
-        float dx = (image2Width/toleranceGridFactor);
-        float dy = (image2Height/toleranceGridFactor);
-        if (toleranceX < (dx/10.f)) {
-            dx = (dx/10.f);
-        }
-        if (toleranceY < (dy/10.f)) {
-            dy = (dy/10.f);
-        }
-        float tolTransX = 2 * toleranceX;
-        float tolTransY = 2 * toleranceY;
-
-        RangeInt transXStartStop = new RangeInt((int)(transX - dx),
-            (int)(transX + dx));
-        RangeInt transYStartStop = new RangeInt((int)(transY - dy),
-            (int)(transY + dy));
-        transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
-        transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
-
-        log.fine(String.format(
-            "starting finer grid search with rot=%d to %d and scale=%d to %d",
-            rotStart, rotStop, scaleStart, scaleStop));
-
-        TransformationPointFit fit2 = calculateTransformationWithGridSearch(
-            unmatchedLeftXY, unmatchedRightXY,
-            image1Width, image1Height, image2Width, image2Height,
-            rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            transXStartStop, transYStartStop,
-            nTransIntervals,
-            tolTransX, tolTransY, setsFractionOfImage);
-
-        TransformationPointFit[] reevalFits = new TransformationPointFit[2];
-        boolean[] fitIsBetter = new boolean[1];
-        if ((fit2 != null) &&
-            ((
-            ((fit.getTranslationXTolerance()/fit2.getTranslationXTolerance()) > 2)
-            &&
-            ((fit.getTranslationYTolerance()/fit2.getTranslationYTolerance()) > 2))
-            ||
-            (
-            ((fit.getTranslationXTolerance()/fit2.getTranslationXTolerance()) < 0.5)
-            &&
-            ((fit.getTranslationYTolerance()/fit2.getTranslationYTolerance()) < 0.5))
-            )) {
-
-            reevaluateFitsForCommonTolerance(fit, fit2,
-                unmatchedLeftXY, unmatchedRightXY, image1Width, image1Height,
-                reevalFits, fitIsBetter);
-
-            fit = reevalFits[0];
-            fit2 = reevalFits[1];
-
-        } else {
-
-            fitIsBetter[0] = fitIsBetter(fit, fit2);
-        }
-
-        if (fitIsBetter[0] && (fit != null)) {
-            fit = fit2;
-        }
-
-        if (fit.getNMaxMatchable() == 0) {
-
-            int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
-                unmatchedLeftXY.getN() : unmatchedRightXY.getN();
-
-            fit.setMaximumNumberMatchable(nMaxMatchable);
-        }
-
-        return fit;
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     /**
@@ -1685,12 +1544,12 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
             return null;
         }
 
-        int rotStart = 0;
-        int rotStop = 359;
-        int rotDelta = 10;
-        int scaleStart = 1;
-        int scaleStop = 5;
-        int scaleDelta = 1;
+        float rotStart = 0;
+        float rotStop = 359;
+        float rotDelta = 10;
+        float scaleStart = 1;
+        float scaleStop = 5;
+        float scaleDelta = 1;
 
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             scene, model, image1Width, image1Height, image2Width, image2Height,
@@ -2042,8 +1901,8 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
     public TransformationPointFit calculateTransformationWithGridSearch(
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
-        int rotStart, int rotStop, int rotDelta,
-        int scaleStart, int scaleStop, int scaleDelta,
+        float rotStart, float rotStop, float rotDelta,
+        float scaleStart, float scaleStop, float scaleDelta,
         float setsFractionOfImage) {
 
         if (rotStart < 0 || rotStart > 359) {
@@ -2078,7 +1937,7 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 
         // rewrite the rotation points into array because start is sometimes
         // higher number than stop in unit circle
-        int[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
+        float[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
             rotDelta);
 
         int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
@@ -2091,8 +1950,8 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 
         TransformationPointFit bestFitForScale = null;
 
-        for (int scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
-            for (int rot : rotation) {
+        for (float scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
+            for (float rot : rotation) {
 
                 float rotationInRadians = (float)(rot*Math.PI/180.f);
 
@@ -2321,8 +2180,8 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
     public TransformationPointFit calculateTransformationWithGridSearchForMatched(
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
-        int rotStart, int rotStop, int rotDelta,
-        int scaleStart, int scaleStop, int scaleDelta,
+        float rotStart, float rotStop, float rotDelta,
+        float scaleStart, float scaleStop, float scaleDelta,
         float setsFractionOfImage) {
 
         if (rotStart < 0 || rotStart > 359) {
@@ -2348,7 +2207,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
         // rewrite the rotation points into array because start is sometimes
         // higher number than stop in unit circle
-        int[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
+        float[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
             rotDelta);
 
         Transformer transformer = new Transformer();
@@ -2363,8 +2222,8 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
         TransformationPointFit bestFitForScale = null;
 
-        for (int scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
-            for (int rot : rotation) {
+        for (float scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
+            for (float rot : rotation) {
 
                 float rotationInRadians = (float)(rot*Math.PI/180.f);
 
@@ -2583,10 +2442,9 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
     public TransformationPointFit calculateTransformationWithGridSearch(
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
-        int rotStart, int rotStop, int rotDelta,
-        int scaleStart, int scaleStop, int scaleDelta,
+        float rotStart, float rotStop, float rotDelta,
+        float scaleStart, float scaleStop, float scaleDelta,
         RangeInt transXStartStop, RangeInt transYStartStop,
-        int nTransIntervals,
         float tolTransX, float tolTransY,
         float setsFractionOfImage) {
 
@@ -2613,10 +2471,8 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
         // rewrite the rotation points into array because start is sometimes
         // higher number than stop in unit circle
-        int[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
+        float[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
             rotDelta);
-
-        boolean setsAreMatched = false;
         
         int transDeltaX = 4;
         int transDeltaY = 4;
@@ -2633,8 +2489,8 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
 
         TransformationPointFit bestFitForScale = null;
 
-        for (int scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
-            for (int rot : rotation) {
+        for (float scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
+            for (float rot : rotation) {
 
                 float rotationInRadians = (float)(rot*Math.PI/180.f);
 
@@ -2938,6 +2794,9 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         int count = 0;
 
         TransformationPointFit[] fits = new TransformationPointFit[nTranslations];
+        
+        //TODO: make a datastructure like MedianSmooth.SortedVector to
+        // hold a fixed size, numberOfBestToReturn,  sorted list of fits here
 
         for (float transX = transXStartStop.getStart();
             transX <= transXStartStop.getStop(); transX += transXDelta) {
@@ -4344,7 +4203,7 @@ log.fine("     * ==> bestFit=" + fit.toString());
 
         int store = idxLo - 1;
 
-        for (int i = idxLo; i < idxHi; i++) {
+        for (int i = idxLo; i < idxHi; ++i) {
             if (fitIsBetter(x, fits[i])) {
                 store++;
                 TransformationPointFit swap = fits[store];
