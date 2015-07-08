@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 
 /**
@@ -37,21 +38,41 @@ public class FixedSizeSortedVector<T extends Comparable> {
         availSlot = -1;
 
         sorted = false;
+        
     }
         
     private void initializeA(T value) {
 
         if (a == null) {
 
+            /*
+            If class A and B are specialization of type T, and an instance of
+            type A gets added first, the list will thereafter be
+            resricted to A and not allow B
+            
+            */
+            
             Class<?> cls = value.getClass();
-
+                        
             Type[] types = cls.getGenericInterfaces();
-
+                                                
             if (types != null && types.length == 1) {
-                ParameterizedType pt = (ParameterizedType)types[0];
-                Type[] ts = pt.getActualTypeArguments();
-                if (ts != null && ts.length == 1) {
-                    cls = (Class<?>)ts[0];
+                
+                if (types[0] instanceof ParameterizedType) {
+                    
+                    ParameterizedType pt = (ParameterizedType)types[0];
+
+                    Type[] ts = pt.getActualTypeArguments();
+
+                    if (ts != null && ts.length == 1) {
+
+                        Class<?> cls2 = (Class<?>)ts[0];
+
+                        if (!cls2.equals(Comparable.class)) {
+
+                            cls = cls2;
+                        }
+                    }
                 }
             }
            
@@ -64,6 +85,14 @@ public class FixedSizeSortedVector<T extends Comparable> {
      * or if the last item in the list is valued as worse than given value
      * (where (T).compareTo determines the value for the descending sort
      * of this class instance).
+     * 
+     * Note, that the current implementation requires the user's first value added to
+     * be an instance of 'T' because the internal list creates an array from
+     * value's class type. 
+     * There will be a problem if for example, 
+     * class A implements Comparable, and class B extends A and class C extends A
+     * and the user adds an instance of class B first.  Class C will not be
+     * addable and an java.lang.ArrayStoreException will be thrown.
      * 
      * @param value 
      */
@@ -194,6 +223,9 @@ public class FixedSizeSortedVector<T extends Comparable> {
      * get the internal array for the sorted list.  note this is not a copy in
      * order to keep the use small, so do not edit it and continue to use
      * the add method.
+     * 
+     * runtime complexity is O(1) unless the internal list is not yet
+     * filled, then the sort makes the complexity O(n*lg2(n)).
      * 
      * @return 
      */
