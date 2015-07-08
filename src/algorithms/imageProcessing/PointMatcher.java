@@ -1926,15 +1926,6 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
             throw new IllegalArgumentException("scaleDelta must be > 0");
         }
 
-        float tolTransX = generalTolerance;//4.0f * image1CentroidX * 0.02f;
-        float tolTransY = generalTolerance;//4.0f * image1CentroidY * 0.02f;
-        if (tolTransX < minTolerance) {
-            tolTransX = minTolerance;
-        }
-        if (tolTransY < minTolerance) {
-            tolTransY = minTolerance;
-        }
-
         // rewrite the rotation points into array because start is sometimes
         // higher number than stop in unit circle
         float[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
@@ -2057,50 +2048,6 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
                         log.fine("      bestFit=" + bestFit.toString());
 
                         return bestFit;
-
-                    } else {
-
-                        if (bestFit.getNumberOfMatchedPoints() == 0) {
-                            continue;
-                        }
-
-                        /*
-                        TODO:
-                        this might be better to perform at the end of the
-                        method right before returning the best result
-                        */
-
-                        int nIntervals = 3;
-
-                        TransformationPointFit fit2 = finerGridSearch(
-                            nIntervals, bestFit, set1, set2,
-                            image1Width, image1Height, image2Width, image2Height,
-                            setsFractionOfImage
-                        );
-
-                        //0==same fit;  1==similar fits;  -1==different fits
-                        int areSimilar2 = fitsAreSimilarWithDiffParameters(bestFit, fit2);
-                        if (areSimilar2 == 1) {
-                            log.fine("fit was similar to bestFit");
-                            if (similarToBestFit.isEmpty()) {
-                                similarToBestFit.add(bestFit);
-                            }
-                            similarToBestFit.add(fit2);
-                        }
-
-                        boolean fitIsBetter2 = fitIsBetter(bestFit, fit2);
-
-                        if (fitIsBetter2) {
-
-                            log.fine("***==> fit=" + fit2.toString());
-
-                            if (areSimilar == -1) {
-                                log.fine("clear similarToBestFit");
-                                similarToBestFit.clear();
-                            }
-
-                            bestFit = fit2;
-                        }
                     }
                 }
             }

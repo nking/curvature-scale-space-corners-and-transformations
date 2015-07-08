@@ -3,7 +3,6 @@ package algorithms.imageProcessing;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 
 /**
@@ -121,8 +120,7 @@ public class FixedSizeSortedVector<T extends Comparable> {
 
             n--;
 
-            // insert value into array a using position found by binarySearch
-            // and compareTo
+            // insert value into array at position found by binarySearch
             insertIntoOpenSlot(value);
         }
     }
@@ -227,7 +225,7 @@ public class FixedSizeSortedVector<T extends Comparable> {
         if (!sorted && (a != null)) {
             
             // the sort will fail for nulls, so need to make a copy, sort it
-            // and copy it back.  defeats the whole purpose of laste construction of a!
+            // and copy it back.  defeats the whole purpose of late construction of a!
             T[] c = Arrays.copyOfRange(a, 0, n);
             
             Arrays.sort(c);

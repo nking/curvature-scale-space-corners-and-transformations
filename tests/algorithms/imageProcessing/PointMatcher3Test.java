@@ -576,14 +576,22 @@ public class PointMatcher3Test extends TestCase {
             new ArrayList<DensityTranslationResults>();
 
         for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
-            for (int rotType = 0; rotType < 1/*4*/; ++rotType) {
-                for (int nTest = 0; nTest < 1/*20*/; ++nTest) { // this increases nPoints
+            for (int rotType = 0; rotType < 4; ++rotType) {
+                for (int nTest = 0; nTest < 10/*20*/; ++nTest) { // this increases nPoints
 
                     PointMatcher pointMatcher = new PointMatcher();
 
                     PairIntArray unmatchedLeftXY = new PairIntArray();
 
                     float rotInDegrees = (int)(sr.nextFloat() * 20);
+
+                    float rotStart = rotInDegrees;
+                    float rotStop = rotInDegrees;
+                    float rotRangeHalf = 0;
+                    
+                    float scaleStart = scale;
+                    float scaleStop = scale;
+                    float scaleDelta = 1;
 
                     if (rotType == 1) {
                         rotInDegrees = sr.nextBoolean() ? (270 + rotInDegrees) :
@@ -600,6 +608,7 @@ public class PointMatcher3Test extends TestCase {
                         if ((imageHeight & 1) == 1) {
                             imageHeight++;
                         }
+                        rotRangeHalf = sr.nextInt(10);                        
                     } else if (rotType == 2) {
                         rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
                             (180 - rotInDegrees);
@@ -615,6 +624,7 @@ public class PointMatcher3Test extends TestCase {
                         if ((imageHeight & 1) == 1) {
                             imageHeight++;
                         }
+                        rotRangeHalf = sr.nextInt(180);
                     } else if (rotType == 3) {
                         rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
                             (90 - rotInDegrees);
@@ -630,6 +640,7 @@ public class PointMatcher3Test extends TestCase {
                         if ((imageHeight & 1) == 1) {
                             imageHeight++;
                         }
+                        rotRangeHalf = sr.nextInt(180);
                     } else if (rotType == 3) {
                         rotInDegrees = sr.nextBoolean() ? (45 + rotInDegrees) :
                             (45 - rotInDegrees);
@@ -645,11 +656,23 @@ public class PointMatcher3Test extends TestCase {
                         if ((imageHeight & 1) == 1) {
                             imageHeight++;
                         }
+                        rotRangeHalf = sr.nextInt(180);
                     }
 
                     transXDelta = 4;
                     transYDelta = 4;
+                    
+                    float rotDelta = 4;//2;
 
+                    rotStart = rotInDegrees - rotRangeHalf;
+                    if (rotStart < 0) {
+                        rotStart = 360 + rotStart;
+                    }
+                    rotStop = rotInDegrees + rotRangeHalf;
+                    if (rotStop > 359) {
+                        rotStop = rotStop - 360;
+                    }
+                        
                     int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
                     int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
                     if (sr.nextBoolean()) {
@@ -667,7 +690,9 @@ public class PointMatcher3Test extends TestCase {
 
                     int nPoints = (nTest + 1) * 7;
 
-                    log.info("\ntest for nPoints=" + nPoints + "\nparams=" + params.toString()
+                    log.info("\ntest for nPoints=" + nPoints + " nTest=" + nTest 
+                        + " rotType=" + rotType + " nRuns=" + nRuns
+                        + "\nparams=" + params.toString()
                         + "\ntransXDelta=" + transXDelta + " transYDelta=" + transYDelta
                         + " translation range=" + (2*halfRange));
 
@@ -743,17 +768,11 @@ public class PointMatcher3Test extends TestCase {
 
                     boolean converged = false;
                     
-                    float rotStart = rotInDegrees;
-                    float rotStop = rotInDegrees;
-                    float rotDelta = 1;
-                    float scaleStart = scale;
-                    float scaleStop = scale;
-                    float scaleDelta = 1;
-
                     while ((nIter == 0) ||
                         (!converged && (nIter < nMaxIter) && (transXDelta > 1))) {
 
                         if (nIter > 0) {
+                            // the while loop and this block are to adjust parameters
                             break;
                         }
 
@@ -1514,11 +1533,11 @@ images as possible)
         }
         int q1 = 0;
         if (rotDegrees1 >= 270) {
-            q0 = 3;
+            q1 = 3;
         } else if (rotDegrees1 >= 180) {
-            q0 = 2;
+            q1 = 2;
         } else if (rotDegrees1 >= 90) {
-            q0 = 1;
+            q1 = 1;
         }
 
         /*
@@ -1529,7 +1548,11 @@ images as possible)
         float angleDiff = -1;
         if (q0 == 0){
             if (q1 == 0) {
-                angleDiff = Math.abs(rotDegrees1 - rotDegrees0);
+                if (rotDegrees0 > rotDegrees1) {
+                    angleDiff = rotDegrees0 - rotDegrees1;
+                } else {
+                    angleDiff = rotDegrees1 - rotDegrees0;
+                }
             } else if (q1 == 1) {
                 angleDiff = (rotDegrees1 - rotDegrees0);
             } else if (q1 == 2) {
@@ -1550,7 +1573,11 @@ images as possible)
             if (q1 == 0) {
                 angleDiff = (rotDegrees1 - rotDegrees0);
             } else if (q1 == 1) {
-                angleDiff = Math.abs(rotDegrees0 - rotDegrees1);
+                if (rotDegrees0 > rotDegrees1) {
+                    angleDiff = rotDegrees0 - rotDegrees1;
+                } else {
+                    angleDiff = rotDegrees1 - rotDegrees0;
+                }
             } else if (q1 == 2) {
                 angleDiff = (rotDegrees1 - rotDegrees0);
             } else {
@@ -1575,7 +1602,11 @@ images as possible)
             } else if (q1 == 1) {
                 angleDiff = (rotDegrees0 - rotDegrees1);
             } else if (q1 == 2) {
-                angleDiff = Math.abs(rotDegrees0 - rotDegrees1);
+                if (rotDegrees0 > rotDegrees1) {
+                    angleDiff = rotDegrees0 - rotDegrees1;
+                } else {
+                    angleDiff = rotDegrees1 - rotDegrees0;
+                }
             } else {
                 angleDiff = (rotDegrees1 - rotDegrees0);
             }
@@ -1596,12 +1627,16 @@ images as possible)
             } else if (q1 == 2) {
                 angleDiff = (rotDegrees0 - rotDegrees1);
             } else {
-                angleDiff = Math.abs(rotDegrees0 - rotDegrees1);
+                if (rotDegrees0 > rotDegrees1) {
+                    angleDiff = rotDegrees0 - rotDegrees1;
+                } else {
+                    angleDiff = rotDegrees1 - rotDegrees0;
+                }
             }
         }
 
-        if (angleDiff >= 360) {
-            angleDiff = 360 - angleDiff;
+        if (angleDiff > 359) {
+            angleDiff = angleDiff - 360;
         }
 
         return angleDiff;
