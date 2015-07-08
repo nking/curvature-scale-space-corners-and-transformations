@@ -2792,12 +2792,10 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         int image1CentroidY = image1Height >> 1;
 
         int count = 0;
-
-        TransformationPointFit[] fits = new TransformationPointFit[nTranslations];
         
-        //TODO: make a datastructure like MedianSmooth.SortedVector to
-        // hold a fixed size, numberOfBestToReturn,  sorted list of fits here
-
+        FixedSizeSortedVector<TransformationPointFit> fits = 
+            new FixedSizeSortedVector(numberOfBestToReturn);
+        
         for (float transX = transXStartStop.getStart();
             transX <= transXStartStop.getStop(); transX += transXDelta) {
 
@@ -2839,18 +2837,13 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
                     }
                 }
 
-                fits[count] = fit;
+                fits.add(fit);
 
                 count++;
             }
         }
 
-        // sort the fits
-        sortByDescendingMatches(fits, 0, (fits.length - 1));
-
-        fits = Arrays.copyOf(fits, numberOfBestToReturn);
-
-        return fits;
+        return fits.getArray();
     }
 
     /**
@@ -3473,58 +3466,8 @@ log.fine("     * ==> bestFit=" + fit.toString());
             return true;
         }
 
-        int compNMatches = compareFit.getNumberOfMatchedPoints();
-        int bestNMatches = bestFit.getNumberOfMatchedPoints();
-
-        double compAvg = compareFit.getMeanDistFromModel();
-        double bestAvg = bestFit.getMeanDistFromModel();
-        double diffAvg = Math.abs(compAvg - bestAvg);
-
-        double compS = compareFit.getStDevFromMean();
-        double bestS = bestFit.getStDevFromMean();
-        double diffS = Math.abs(compS - bestS);
-
-        double avgDiv = bestAvg/compAvg;
-
-        int diffEps = (int)Math.round(nEpsFactor*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
-        if (diffEps == 0) {
-            diffEps = 1;
-        }
-
-        //0==same fit;  1==similar fits;  -1==different fits
-        int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, compareFit);
-        if ((areSimilar != -1) && (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
-
-            // if compareFit tolerance is alot larger than bestFit, this would
-            // not be a fair comparison, so check before returning true
-
-            if ((compareFit.getTranslationXTolerance() < bestFit.getTranslationXTolerance())
-            &&(compareFit.getTranslationYTolerance() < bestFit.getTranslationYTolerance())
-            ) {
-                return true;
-            }
-        }
-
-        if (Math.abs(bestNMatches - compNMatches) <= diffEps) {
-
-            if (Double.isNaN(compareFit.getMeanDistFromModel())) {
-                return false;
-            }
-            
-            if (compAvg < bestAvg) {
-                return true;
-            } else if (compAvg > bestAvg) {
-                return false;
-            }
-
-            if (compS < bestS) {
-                return true;
-            } else if (compS > bestS) {
-                return false;
-            }
-            
-        } else if (compNMatches > bestNMatches) {
-
+        int comp = bestFit.compareTo(compareFit);
+        if (comp == 1) {
             return true;
         }
 
@@ -3556,61 +3499,9 @@ log.fine("     * ==> bestFit=" + fit.toString());
             return 1;
         }
 
-        int compNMatches = compareFit.getNumberOfMatchedPoints();
-        int bestNMatches = bestFit.getNumberOfMatchedPoints();
-
-        double compAvg = compareFit.getMeanDistFromModel();
-        double bestAvg = bestFit.getMeanDistFromModel();
-
-        double compS = compareFit.getStDevFromMean();
-        double bestS = bestFit.getStDevFromMean();
-
-        double r = bestAvg/compAvg;
-
-        int diffEps = (int)Math.round(2.*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
-        if (diffEps == 0) {
-            diffEps = 1;
-        }
-
-        int areSimilar = fitsAreSimilarWithDiffParameters(bestFit, compareFit);
-        if ((areSimilar != -1) && (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
-
-            // if compareFit tolerance is alot larger than bestFit, this would
-            // not be a fair comparison, so check before returning true
-
-            if ((compareFit.getTranslationXTolerance() < bestFit.getTranslationXTolerance())
-            &&(compareFit.getTranslationYTolerance() < bestFit.getTranslationYTolerance())
-            ) {
-                return 1;
-            }
-        }
-
-        if (Math.abs(bestNMatches - compNMatches) <= diffEps) {
-
-            if (Double.isNaN(compareFit.getMeanDistFromModel())) {
-                return -1;
-            }
-            
-            if (compAvg < bestAvg) {
-                return 1;
-            } else if (compAvg > bestAvg) {
-                return -1;
-            }
-
-            if (compS < bestS) {
-                return 1;
-            } else if (compS > bestS) {
-                return -1;
-            } else {
-                return 0;
-            }
-            
-        } else if (compNMatches > bestNMatches) {
-
-            return 1;
-        }
+        int comp = bestFit.compareTo(compareFit);
         
-        return -1;
+        return comp;
     }
 
     public boolean fitIsBetterUseNumAndDiff(TransformationPointFit bestFit,
@@ -5206,81 +5097,9 @@ log.fine("     * ==> bestFit=" + fit.toString());
             return -1;
         }
 
-        /*if the fit and bestFit is very close,
-        need an infrastructure to return more than one
-        (and to reset it when another fit not similar to bestFit is found)
-
-        bestFit:
-            fit=nMatchedPoints=63 nMaxMatchable=63.0
-            meanDistFromModel=37.57523582095192
-            stDevFromMean=22.616214121394517
-            tolerance=144.2497833620557
-            rotationInRadians=0.34906584
-            rotationInDegrees=19.99999941818584
-            scale=1.0
-            translationX=86.61143 translationY=-18.330833
-
-        fit:
-            fit=nMatchedPoints=63 nMaxMatchable=63.0
-            meanDistFromModel=36.79744166041177            <-- mean dist and stdev are similar
-            stDevFromMean=23.167906020816925
-            tolerance=144.2497833620557
-            rotationInRadians=0.5235988
-            rotationInDegrees=30.000000834826057            <--- rot is very different
-            scale=1.0
-            translationX=91.6094 translationY=-72.9244      <--- transY is very different
-
-        the correct answer is closer to "bestFit" but is currently
-        then replaced with fit, so need to preserve both.
-
-        correct answer:
-            rotationInDegrees=18.000000500895634
-            scale=1.0
-            translationX=7.0 translationY=33.0
-            number of vertical partitions=3
-
-        ----
-        in contrast, these 2 sets of meanDistFromModel and stDevFromMean
-        are significantly different:
-            bestFit: meanDistFromModel=0.3658992320831333 stDevFromMean=0.15709856816653883
-            fit:     meanDistFromModel=2.267763360270432 stDevFromMean=1.0703222291650063
-        -----
-        so ratios are needed rather than differences
-        similar fits:    divMean = 1.02
-                         divStDev = 0.976
-        different fits:  divMean = 0.161
-                         divStDev = 0.147
-        */
-
-        //TODO: this may need to be adjusted and in the 2 fitness
-        // functions which use it... should be it's own method...
-        int nEps = (int)(1.5*Math.ceil(bestFit.getNumberOfMatchedPoints()/10.));
-        if (nEps == 0) {
-            nEps = 1;
-        }
-
-        int diffNMatched = Math.abs(bestFit.getNumberOfMatchedPoints() -
-            fit.getNumberOfMatchedPoints());
-
-        if (diffNMatched > nEps) {
-            return -1;
-        }
-
-        double divMean = Math.abs(bestFit.getMeanDistFromModel()/
-            fit.getMeanDistFromModel());
-
-        double divStDev = Math.abs(bestFit.getStDevFromMean()/
-            fit.getStDevFromMean());
-
-        if ((Math.abs(1 - divMean) < 0.05) && (Math.abs(1 - divStDev) < 0.3)) {
-            if (bestFit.getParameters().equals(fit.getParameters())) {
-                return 0;
-            } else {
-                return 1;
-            }
-        }
-
-        return -1;
+        int comp = bestFit.isSimilarWithDiffParameters(fit);
+        
+        return comp;
     }
 
     /**

@@ -1,7 +1,5 @@
 package algorithms.imageProcessing;
 
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import junit.framework.TestCase;
 
 /**
@@ -51,6 +49,18 @@ public class FixedSizeSortedVectorTest extends TestCase {
         assertTrue(values[2].intValue() == 5);
         assertTrue(values[3].intValue() == 6);
         
+        //----
+        sortedVector = new FixedSizeSortedVector(4);
+        
+        sortedVector.add(Integer.valueOf(6));
+        sortedVector.add(Integer.valueOf(4));
+        
+        values = sortedVector.getArray();
+        
+        assertNotNull(values);
+        
+        assertTrue(values[0].intValue() == 4);
+        assertTrue(values[1].intValue() == 6);
     }
     
     public void testTypes() throws Exception {

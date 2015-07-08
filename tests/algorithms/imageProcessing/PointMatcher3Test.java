@@ -576,8 +576,8 @@ public class PointMatcher3Test extends TestCase {
             new ArrayList<DensityTranslationResults>();
 
         for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
-            for (int rotType = 0; rotType < 4; ++rotType) {
-                for (int nTest = 0; nTest < 20; ++nTest) { // this increases nPoints
+            for (int rotType = 0; rotType < 1/*4*/; ++rotType) {
+                for (int nTest = 0; nTest < 1/*20*/; ++nTest) { // this increases nPoints
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -1461,7 +1461,8 @@ images as possible)
 
             //test.testPerformVerticalPartitionedMatching();
             //test.testCalculateTranslationFromGridThenDownhillSimplex();
-
+            test.testCalculateTransformationWithGridSearch();
+            
             /*
             tests for :
             -- for same set w/ projection

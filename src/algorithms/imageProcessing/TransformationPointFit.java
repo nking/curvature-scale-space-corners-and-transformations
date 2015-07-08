@@ -4,7 +4,7 @@ package algorithms.imageProcessing;
  *
  * @author nichole
  */
-public class TransformationPointFit {
+public class TransformationPointFit implements Comparable {
     
     private final TransformationParameters parameters;
     
@@ -44,7 +44,6 @@ public class TransformationPointFit {
     public TransformationParameters getParameters() {
         return parameters;
     }
-
     
     public int getNumberOfMatchedPoints() {
         return nMatchedPoints;
@@ -135,6 +134,81 @@ public class TransformationPointFit {
     public void setMaximumNumberMatchable(int maximumNumberMatchable) {
         this.nMaxMatchable = maximumNumberMatchable;
     }
+    
+    /**
+     * compare object other to this instance and return -1 if this instance
+     * is "better", 0 if they are equal, else 1 if other is "better".
+     * @param other
+     * @return 
+     */
+    @Override
+    public int compareTo(Object other) {
+    
+        if (other == null) {
+            return -1;
+        }
+        if (!(other instanceof TransformationPointFit)) {
+            return -1;
+        }
+        
+        TransformationPointFit compareFit = (TransformationPointFit)other;
+        
+        int compNMatches = compareFit.getNumberOfMatchedPoints();
+        int bestNMatches = nMatchedPoints;
+
+        double compAvg = compareFit.getMeanDistFromModel();
+        double bestAvg = meanDistFromModel;
+        double diffAvg = Math.abs(compAvg - bestAvg);
+
+        double compS = compareFit.getStDevFromMean();
+        double bestS = stDevFromMean;
+        double diffS = Math.abs(compS - bestS);
+
+        double avgDiv = bestAvg/compAvg;
+
+        int diffEps = (int)Math.round(2.*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
+        if (diffEps == 0) {
+            diffEps = 1;
+        }
+
+        //0==same fit;  1==similar fits;  -1==different fits
+        int areSimilar = isSimilarWithDiffParameters(compareFit);
+        if ((areSimilar != -1) && (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
+
+            // if compareFit tolerance is alot larger than bestFit, this would
+            // not be a fair comparison, so check before returning true
+
+            if ((compareFit.getTranslationXTolerance() < transTolX)
+            &&(compareFit.getTranslationYTolerance() < transTolY)) {
+                return 1;
+            }
+        }
+
+        if (Math.abs(bestNMatches - compNMatches) <= diffEps) {
+
+            if (Double.isNaN(compareFit.getMeanDistFromModel())) {
+                return -1;
+            }
+            
+            if (compAvg < bestAvg) {
+                return 1;
+            } else if (compAvg > bestAvg) {
+                return -1;
+            }
+
+            if (compS < bestS) {
+                return 1;
+            } else if (compS > bestS) {
+                return -1;
+            }
+            
+        } else if (compNMatches > bestNMatches) {
+
+            return 1;
+        }
+        
+        return -1;
+    }
 
     @Override
     public String toString() {
@@ -156,6 +230,84 @@ public class TransformationPointFit {
             .append(parameters.toString());
         
         return sb.toString();
+    }
+
+    public int isSimilarWithDiffParameters(TransformationPointFit compareFit) {
+        
+        /*if the fit and bestFit is very close,
+        need an infrastructure to return more than one
+        (and to reset it when another fit not similar to bestFit is found)
+
+        bestFit:
+            fit=nMatchedPoints=63 nMaxMatchable=63.0
+            meanDistFromModel=37.57523582095192
+            stDevFromMean=22.616214121394517
+            tolerance=144.2497833620557
+            rotationInRadians=0.34906584
+            rotationInDegrees=19.99999941818584
+            scale=1.0
+            translationX=86.61143 translationY=-18.330833
+
+        fit:
+            fit=nMatchedPoints=63 nMaxMatchable=63.0
+            meanDistFromModel=36.79744166041177            <-- mean dist and stdev are similar
+            stDevFromMean=23.167906020816925
+            tolerance=144.2497833620557
+            rotationInRadians=0.5235988
+            rotationInDegrees=30.000000834826057            <--- rot is very different
+            scale=1.0
+            translationX=91.6094 translationY=-72.9244      <--- transY is very different
+
+        the correct answer is closer to "bestFit" but is currently
+        then replaced with fit, so need to preserve both.
+
+        correct answer:
+            rotationInDegrees=18.000000500895634
+            scale=1.0
+            translationX=7.0 translationY=33.0
+            number of vertical partitions=3
+
+        ----
+        in contrast, these 2 sets of meanDistFromModel and stDevFromMean
+        are significantly different:
+            bestFit: meanDistFromModel=0.3658992320831333 stDevFromMean=0.15709856816653883
+            fit:     meanDistFromModel=2.267763360270432 stDevFromMean=1.0703222291650063
+        -----
+        so ratios are needed rather than differences
+        similar fits:    divMean = 1.02
+                         divStDev = 0.976
+        different fits:  divMean = 0.161
+                         divStDev = 0.147
+        */
+
+        //TODO: this may need to be adjusted and in the 2 fitness
+        // functions which use it... should be it's own method...
+        int nEps = (int)(1.5*Math.ceil(nMatchedPoints/10.));
+        if (nEps == 0) {
+            nEps = 1;
+        }
+
+        int diffNMatched = Math.abs(nMatchedPoints -
+            compareFit.getNumberOfMatchedPoints());
+
+        if (diffNMatched > nEps) {
+            return -1;
+        }
+
+        double divMean = Math.abs(meanDistFromModel/
+            compareFit.getMeanDistFromModel());
+
+        double divStDev = Math.abs(stDevFromMean/compareFit.getStDevFromMean());
+
+        if ((Math.abs(1 - divMean) < 0.05) && (Math.abs(1 - divStDev) < 0.3)) {
+            if (parameters.equals(compareFit.getParameters())) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+
+        return -1;
     }
 
 }

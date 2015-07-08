@@ -226,7 +226,13 @@ public class FixedSizeSortedVector<T extends Comparable> {
 
         if (!sorted && (a != null)) {
             
-            Arrays.sort(a);
+            // the sort will fail for nulls, so need to make a copy, sort it
+            // and copy it back.  defeats the whole purpose of laste construction of a!
+            T[] c = Arrays.copyOfRange(a, 0, n);
+            
+            Arrays.sort(c);
+            
+            System.arraycopy(c, 0, a, 0, n);
             
             // do not set the 'sorted' flag because the list is not full yet
         }
