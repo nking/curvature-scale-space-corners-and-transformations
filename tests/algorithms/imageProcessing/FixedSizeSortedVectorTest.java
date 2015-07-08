@@ -27,7 +27,28 @@ public class FixedSizeSortedVectorTest extends TestCase {
         assertTrue(values[1].intValue() == 5);
         assertTrue(values[2].intValue() == 6);
         assertTrue(values[3].intValue() == 7);
+        
+        sortedVector.add(Integer.valueOf(10));
 
+        values = sortedVector.getArray();
+        
+        assertNotNull(values);
+
+        assertTrue(values[0].intValue() == 4);
+        assertTrue(values[1].intValue() == 5);
+        assertTrue(values[2].intValue() == 6);
+        assertTrue(values[3].intValue() == 7);
+        
+        sortedVector.add(Integer.valueOf(3));
+        
+        values = sortedVector.getArray();
+        
+        assertNotNull(values);
+
+        assertTrue(values[0].intValue() == 3);
+        assertTrue(values[1].intValue() == 4);
+        assertTrue(values[2].intValue() == 5);
+        assertTrue(values[3].intValue() == 6);
     }
     
 }
