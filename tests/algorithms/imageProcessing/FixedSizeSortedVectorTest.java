@@ -11,7 +11,7 @@ public class FixedSizeSortedVectorTest extends TestCase {
     public void testAdd() throws Exception {
         
         FixedSizeSortedVector<Integer> sortedVector = 
-            new FixedSizeSortedVector(4);
+            new FixedSizeSortedVector<>(4, Integer.class);
         
         sortedVector.add(Integer.valueOf(7));
         sortedVector.add(Integer.valueOf(6));
@@ -50,7 +50,7 @@ public class FixedSizeSortedVectorTest extends TestCase {
         assertTrue(values[3].intValue() == 6);
         
         //----
-        sortedVector = new FixedSizeSortedVector(4);
+        sortedVector = new FixedSizeSortedVector<>(4, Integer.class);
         
         sortedVector.add(Integer.valueOf(6));
         sortedVector.add(Integer.valueOf(4));
@@ -65,7 +65,7 @@ public class FixedSizeSortedVectorTest extends TestCase {
     
     public void testTypes() throws Exception {
         
-        FixedSizeSortedVector<A> vector = new FixedSizeSortedVector<A>(2);
+        FixedSizeSortedVector<A> vector = new FixedSizeSortedVector<>(2, A.class);
         
         
         B b = new B(1);
@@ -81,20 +81,17 @@ public class FixedSizeSortedVectorTest extends TestCase {
         assertNotNull(values);        
     }
     
-    private static class A implements Comparable {
+    private static class A implements Comparable<A> {
         int v = 0;
         public A(int v) {
             this.v = v;
         }
         @Override
-        public int compareTo(Object o) {
+        public int compareTo(A o) {
             if (o == null) {
                 return -1;
             }
-            if (!(o instanceof A)) {
-                return -1;
-            }
-            return Integer.compare(v, ((A)o).v);
+            return Integer.compare(v, o.v);
         }
     }
     

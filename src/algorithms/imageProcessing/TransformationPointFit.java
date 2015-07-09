@@ -4,7 +4,7 @@ package algorithms.imageProcessing;
  *
  * @author nichole
  */
-public class TransformationPointFit implements Comparable {
+public class TransformationPointFit implements Comparable<TransformationPointFit> {
     
     private final TransformationParameters parameters;
     
@@ -142,16 +142,13 @@ public class TransformationPointFit implements Comparable {
      * @return 
      */
     @Override
-    public int compareTo(Object other) {
+    public int compareTo(TransformationPointFit other) {
     
         if (other == null) {
             return -1;
         }
-        if (!(other instanceof TransformationPointFit)) {
-            return -1;
-        }
         
-        TransformationPointFit compareFit = (TransformationPointFit)other;
+        TransformationPointFit compareFit = other;
         
         int compNMatches = compareFit.getNumberOfMatchedPoints();
         int bestNMatches = nMatchedPoints;

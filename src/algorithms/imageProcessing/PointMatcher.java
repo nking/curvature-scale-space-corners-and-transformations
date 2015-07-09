@@ -2040,7 +2040,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
                             image1Width, image1Height, image2Width, image2Height,
                             setsFractionOfImage);
 
-                        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+                        log.info("**== > deciding among " + similarToBestFit.size() + " similar fits:");
                         for (TransformationPointFit sFit : similarToBestFit) {
                             log.fine("  sFit=" + sFit.toString());
                         }
@@ -2088,7 +2088,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
             image1Width, image1Height, image2Width, image2Height,
             setsFractionOfImage);
 
-        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+        log.info("**= => deciding among " + similarToBestFit.size() + " similar fits:");
         for (TransformationPointFit sFit : similarToBestFit) {
             log.fine("  sFit=" + sFit.toString());
         }
@@ -2259,7 +2259,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
                             image1Width, image1Height, image2Width, image2Height,
                             setsFractionOfImage);
 
-                        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+                        log.info("** ==> deciding among " + similarToBestFit.size() + " similar fits:");
                         for (TransformationPointFit sFit : similarToBestFit) {
                             log.fine("  sFit=" + sFit.toString());
                         }
@@ -2350,7 +2350,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
             image1Width, image1Height, image2Width, image2Height,
             setsFractionOfImage);
 
-        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+        log.info("**==> deciding among " + similarToBestFit.size() + " similar fits:");
         for (TransformationPointFit sFit : similarToBestFit) {
             log.fine("  sFit=" + sFit.toString());
         }
@@ -2423,8 +2423,6 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
         
         int transDeltaX = 4;
         int transDeltaY = 4;
-
-        Transformer transformer = new Transformer();
 
         int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
             : set2.getN();
@@ -2542,7 +2540,7 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
                             image1Width, image1Height, image2Width, image2Height,
                             setsFractionOfImage);
 
-                        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+                        log.info("**====> deciding among " + similarToBestFit.size() + " similar fits:");
                         for (TransformationPointFit sFit : similarToBestFit) {
                             log.fine("  sFit=" + sFit.toString());
                         }
@@ -2635,7 +2633,7 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
             image1Width, image1Height, image2Width, image2Height,
             setsFractionOfImage);
 
-        log.fine("**==> deciding among " + similarToBestFit.size() + " similar fits:");
+        log.info("**==>  deciding among " + similarToBestFit.size() + " similar fits:");
         for (TransformationPointFit sFit : similarToBestFit) {
             log.fine("  sFit=" + sFit.toString());
         }
@@ -2741,7 +2739,8 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         int count = 0;
         
         FixedSizeSortedVector<TransformationPointFit> fits = 
-            new FixedSizeSortedVector(numberOfBestToReturn);
+            new FixedSizeSortedVector<>(numberOfBestToReturn,
+                TransformationPointFit.class);
         
         for (float transX = transXStartStop.getStart();
             transX <= transXStartStop.getStop(); transX += transXDelta) {

@@ -1,8 +1,6 @@
 package algorithms.imageProcessing;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Arrays;
 
 /**
@@ -16,7 +14,8 @@ import java.util.Arrays;
  * 
  * @author nichole
  */
-public class FixedSizeSortedVector<T extends Comparable> {
+@SuppressWarnings({"unchecked"})
+public class FixedSizeSortedVector<T extends Comparable<T>> {
     
     protected T[] a = null;
         
@@ -28,7 +27,7 @@ public class FixedSizeSortedVector<T extends Comparable> {
         
     protected boolean sorted;
     
-    public FixedSizeSortedVector(int fixedCapacity) {
+    public FixedSizeSortedVector(int fixedCapacity, Class<T> classTypeToHold) {
         
         size = fixedCapacity;
             
@@ -38,53 +37,15 @@ public class FixedSizeSortedVector<T extends Comparable> {
 
         sorted = false;
         
+        a = (T[]) Array.newInstance(classTypeToHold, size);
+        
     }
         
-    private void initializeA(T value) {
-
-        if (a == null) {
-            
-            Class<?> cls = value.getClass();
-                        
-            Type[] types = cls.getGenericInterfaces();
-                                                
-            if (types != null && types.length == 1) {
-                
-                if (types[0] instanceof ParameterizedType) {
-                    
-                    ParameterizedType pt = (ParameterizedType)types[0];
-
-                    Type[] ts = pt.getActualTypeArguments();
-
-                    if (ts != null && ts.length == 1) {
-
-                        Class<?> cls2 = (Class<?>)ts[0];
-
-                        if (!cls2.equals(Comparable.class)) {
-
-                            cls = cls2;
-                        }
-                    }
-                }
-            }
-           
-            a = (T[]) Array.newInstance(cls, size);
-        }
-    }
-  
     /**
      * add value to the fixed size sorted list if the list is not full
      * or if the last item in the list is valued as worse than given value
      * (where (T).compareTo determines the value for the descending sort
      * of this class instance).
-     * 
-     * Note, that the current implementation requires the user's first value added to
-     * be an instance of 'T' because the internal list creates an array from
-     * value's class type. 
-     * There will be a problem if for example, 
-     * class A implements Comparable, and class B extends A and class C extends A
-     * and the user adds an instance of class B first.  Class C will not be
-     * addable and an java.lang.ArrayStoreException will be thrown.
      * 
      * @param value 
      */
@@ -92,10 +53,6 @@ public class FixedSizeSortedVector<T extends Comparable> {
 
         if (value == null) {
             return;
-        }
-
-        if (a == null) {
-            initializeA(value);
         }
 
         if (!sorted) {
