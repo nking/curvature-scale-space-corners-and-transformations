@@ -129,12 +129,19 @@ extends AbstractCurvatureScaleSpaceInflectionMapper {
         int scaleDelta = 1;
         boolean setsAreMatched = false;
 
+        //TODO: tolerance may need to be increased here above delta/2
+        int deltaTransX = 4; 
+        int deltaTransY = 4; 
+        float tolTransX = deltaTransX; 
+        float tolTransY = deltaTransY;
+            
         TransformationPointFit fit = 
             pointMatcher.calculateTransformationWithGridSearch(
             xyPeaks1, xyPeaks2, 
             image1OriginalWidth, image1OriginalHeight,
             image2OriginalWidth, image2OriginalHeight,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
+            deltaTransX, deltaTransY, tolTransX, tolTransY,
             1.0f);
         
         log.info("FIT: " + fit.toString());

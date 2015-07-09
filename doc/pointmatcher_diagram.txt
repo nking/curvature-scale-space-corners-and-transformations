@@ -11,11 +11,16 @@ parameters that affect the result.
    -- performVerticalPartitionedMatching
       -- performVerticalPartitionedMatching
          -- calcTransWithRoughGrid(s1, s2, w1, h1, w2, h2, f)
+         |     
+  *      | int deltaTransX = 4;    
+  *      | int deltaTransY = 4;    
+  *      | float tolTransX = deltaTransX;
+  *      | float tolTransY = deltaTransY;
+         |     
          |  -- calculateTransformationWithGridSearch(s1, s2, w1, h1, w2, h2,
-         |  |  rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta, f)
+         |  |  rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta, 
+         |  |  deltaTransX, deltaTransY, tolTransX, tolTransY, f)
          |  |
-   *     |  |  float tolTransX = generalTolerance;
-   *     |  |  float tolTransY = generalTolerance;
          |  |  List<TransformationPointFit> similarToBestFit;
          |  |
          |  |  for scale, rot:
@@ -24,10 +29,6 @@ parameters that affect the result.
          |  |  |  int transXStop = image2Width - 1;
          |  |  |  int transYStart = -1*image2Width + 1;
          |  |  |  int transYStop = image2Width - 1;
-         |  |  |  int transDeltaX = 4;
-         |  |  |  int transDeltaY = 4;
-   *     |  |  |  float tolTransX = tolFactor * transDeltaX
-   *     |  |  |  float tolTransY = tolFactor * transDeltaY
          |  |  |  -- calculateTranslationForUnmatched0(s1, s2, w1, h1, w2, h2, r, s, 
          |  |  |  |      txStart, txStop, tyStart, tyStop, nIntervals, tolTransX, tolTransY, f)
          |  |  |  |       
@@ -46,6 +47,8 @@ parameters that affect the result.
          |  |  |  |  |  |           // = evaluateFitForUnMatchedTransformedGreedy(p,
          |  |  |  |  |  |                srs1, s2, tolTransX, tolTransY);
          |  |  |  |  |  |  return fits;
+         |  |  |  |  |              
+         |  |  |  |  |  refineTranslationWithDownhillSimplex            
          |  |  |  |  |              
          |  |  |  |  |return fit;
          |  |  |  |                     

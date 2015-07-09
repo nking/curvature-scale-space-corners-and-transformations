@@ -346,7 +346,7 @@ public class PointMatcher3Test extends TestCase {
                         int y = sr.nextInt(imageHeight);
                         unmatchedRightXY.add(x, y);
                     }
-                    
+
                     // change the order of points to make sure not biased
                     // by order
                     unmatchedRightXY.reverse();
@@ -362,7 +362,7 @@ public class PointMatcher3Test extends TestCase {
                     if (tolTransY < 1) {
                         tolTransY = 1;
                     }
-                    
+
                     boolean setsAreMatched = false;
                     float setsFractionOfImage = 1.0f;
 
@@ -376,7 +376,7 @@ public class PointMatcher3Test extends TestCase {
                         (int)(params.getTranslationY() + halfRange));
 
                     PairFloatArrayUnmodifiable scaledRotatedLeft =
-                        pointMatcher.scaleAndRotate(unmatchedLeftXY, 
+                        pointMatcher.scaleAndRotate(unmatchedLeftXY,
                             params.getRotationInRadians(), params.getScale(),
                              imageWidth >> 1, imageHeight >> 1);
 
@@ -396,15 +396,15 @@ public class PointMatcher3Test extends TestCase {
                     double densX = ((double)nPoints/(double)imageWidth);
                     double densY = ((double)nPoints/(double)imageHeight);
                     int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
-                    
+
                     /*if ((densX > 0.15) && (densY > 0.15)) {
                         nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
                     }*/
-                    
+
                     log.info("point density  n/width=" + densX + " n/height=" + densY);
-                    
+
                     log.info("check of evalFit, checkFit=" + checkFit.toString());
-                    
+
                     assertTrue(
                         Math.abs(checkFit.getParameters().getRotationInRadians()
                         - params.getRotationInRadians()) < 0.1);
@@ -513,9 +513,9 @@ public class PointMatcher3Test extends TestCase {
                     Increasing the transXDelta and transYDelta to values of
                     7 results in residuals in translation of a little more than
                     3 so is beginning to be large.
-                    
+
                     Increasing the transXDelta and transYDelta to values of
-                    10 results in residuals in translation of about 5, so that 
+                    10 results in residuals in translation of about 5, so that
                     is probably not always going to lead to the correct solution.
 
                     */
@@ -576,8 +576,8 @@ public class PointMatcher3Test extends TestCase {
             new ArrayList<DensityTranslationResults>();
 
         for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
-            for (int rotType = 2; rotType < 3/*4*/; ++rotType) {
-                for (int nTest = 0; nTest < 1/*20*/; ++nTest) { // this increases nPoints
+            for (int rotType = 0; rotType < 4; ++rotType) {
+                for (int nTest = 0; nTest < 10/*20*/; ++nTest) { // this increases nPoints
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -588,7 +588,7 @@ public class PointMatcher3Test extends TestCase {
                     float rotStart = rotInDegrees;
                     float rotStop = rotInDegrees;
                     float rotRangeHalf = 0;
-                    
+
                     float scaleStart = scale;
                     float scaleStop = scale;
                     float scaleDelta = 1;
@@ -608,7 +608,7 @@ public class PointMatcher3Test extends TestCase {
                         if ((imageHeight & 1) == 1) {
                             imageHeight++;
                         }
-                        rotRangeHalf = sr.nextInt(10);                        
+                        rotRangeHalf = sr.nextInt(10);
                     } else if (rotType == 2) {
                         rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
                             (180 - rotInDegrees);
@@ -659,11 +659,6 @@ public class PointMatcher3Test extends TestCase {
                         rotRangeHalf = sr.nextInt(180);
                     }
 
-                    transXDelta = 4;
-                    transYDelta = 4;
-                    
-                    float rotDelta = 4;
-
                     rotStart = rotInDegrees - rotRangeHalf;
                     if (rotStart < 0) {
                         rotStart = 360 + rotStart;
@@ -672,7 +667,7 @@ public class PointMatcher3Test extends TestCase {
                     if (rotStop > 359) {
                         rotStop = rotStop - 360;
                     }
-                        
+
                     int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
                     int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
                     if (sr.nextBoolean()) {
@@ -688,22 +683,29 @@ public class PointMatcher3Test extends TestCase {
                     params.setTranslationX(transX);
                     params.setTranslationY(transY);
 
+
+                    transXDelta = 4;
+                    transYDelta = 4;
+
+                    float rotDelta = 10;
+
                     int nPoints = (nTest + 1) * 7;
 
-                    /* for point density < 0.01 or so, rotDelta must be smaller than 2*/
                     double densX = ((double)nPoints/(double)imageWidth);
                     double densY = ((double)nPoints/(double)imageHeight);
-
+/*
                     if ((densX < 0.01) || (densY < 0.01)) {
-                        rotDelta = 3;
+                        rotDelta = 2;
                     }
+*/
 
-
-                    log.info("\ntest for nPoints=" + nPoints + " nTest=" + nTest 
+                    log.info("\ntest for nPoints=" + nPoints + " nTest=" + nTest
                         + " rotType=" + rotType + " nRuns=" + nRuns
                         + "\nparams=" + params.toString()
                         + "\ntransXDelta=" + transXDelta + " transYDelta=" + transYDelta
-                        + " translation range=" + (2*halfRange));
+                        + " translation range=" + (2*halfRange)
+                        + "\nrotStart=" + rotStart + " rotStop=" + rotStop + " rotDelta=" + rotDelta
+                    );
 
                     for (int i = 0; i < nPoints; ++i) {
                         int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
@@ -736,23 +738,11 @@ public class PointMatcher3Test extends TestCase {
                         int y = sr.nextInt(imageHeight);
                         unmatchedRightXY.add(x, y);
                     }
-                    
+
                     // change the order of points to make sure not biased
                     // by order
                     unmatchedRightXY.reverse();
 
-                    // tolerance factor set to 0.5 of cell size makes perfect
-                    // matching easier.  a larger tolerance may lead to a
-                    // small number of false matches
-                    float tolTransX = pointMatcher.getTolFactor() * transXDelta;
-                    float tolTransY = pointMatcher.getTolFactor() * transYDelta;
-                    if (tolTransX < 1) {
-                        tolTransX = 1;
-                    }
-                    if (tolTransY < 1) {
-                        tolTransY = 1;
-                    }
-                    
                     float setsFractionOfImage = 1.0f;
 
                     int nMaxMatchable = nPoints;
@@ -764,9 +754,9 @@ public class PointMatcher3Test extends TestCase {
                     */
                     int nExpected = nMaxMatchable;
                     int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
-                    
+
                     log.info("point density  n/width=" + densX + " n/height=" + densY);
-                    
+
                     int nIter = 0;
                     int nMaxIter = 10;
 
@@ -774,7 +764,7 @@ public class PointMatcher3Test extends TestCase {
                     double dens = (double)nPoints/(double)imageWidth;
 
                     boolean converged = false;
-                    
+
                     while ((nIter == 0) ||
                         (!converged && (nIter < nMaxIter) && (transXDelta > 1))) {
 
@@ -783,14 +773,33 @@ public class PointMatcher3Test extends TestCase {
                             break;
                         }
 
+                        /*
+                        when scale and rot are precisely known, a translation
+                        tolerance of half the size of the search cell is the
+                        best value.
+                        When rot is not known, the tolerance must be large to
+                        include the correct points at a close angle at the res
+                        of the search mesh.
+
+                        Goal is to determine the largest rotDelta which can be
+                        used to return the correct local region for the search
+                        (which can then be followed with a fast detailed
+                        refinement).
+                        */
+                        int deltaTransX = 4;
+                        int deltaTransY = 4;
+                        float tolTransX = deltaTransX + 1;//rotDelta=4
+                        float tolTransY = deltaTransY + 1;//rotDelta=4
+
                         TransformationPointFit fit =
                             pointMatcher.calculateTransformationWithGridSearch(
                             unmatchedLeftXY, unmatchedRightXY,
                             imageWidth, imageHeight, imageWidth, imageHeight,
                             rotStart, rotStop, rotDelta,
                             scaleStart, scaleStop, scaleDelta,
+                            deltaTransX, deltaTransY, tolTransX, tolTransY,
                             setsFractionOfImage);
-                                
+
                         assert(fit != null);
                         TransformationParameters fitParams = fit.getParameters();
                         int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
@@ -825,6 +834,7 @@ public class PointMatcher3Test extends TestCase {
                             + " w=" + imageWidth + " h=" + imageHeight
                             + " transXDelta=" + transXDelta
                             + " transYDelta=" + transYDelta
+                            + " rotDelta=" + rotDelta
                             + " dsMaxIter=" + dsMaxIter
                         );
                         converged1.add(
@@ -835,6 +845,7 @@ public class PointMatcher3Test extends TestCase {
                             + " w=" + imageWidth + " h=" + imageHeight
                             + " transXDelta=" + transXDelta
                             + " transYDelta=" + transYDelta
+                            + " rotDelta=" + rotDelta
                             + " dsMaxIter=" + dsMaxIter
                         );
                         converged0.add(
@@ -854,20 +865,20 @@ public class PointMatcher3Test extends TestCase {
                     Increasing the transXDelta and transYDelta to values of
                     7 results in residuals in translation of a little more than
                     3 so is beginning to be large.
-                    
+
                     Increasing the transXDelta and transYDelta to values of
-                    10 results in residuals in translation of about 5, so that 
+                    10 results in residuals in translation of about 5, so that
                     is probably not always going to lead to the correct solution.
-                    
+
                     ----
-                    rotDelta=4 converges for some, but not all.  
-                    error in rotation degrees is about 2 and the error in 
+                    rotDelta=4 converges for some, but not all.
+                    error in rotation degrees is about 2 and the error in
                     translation is 3 to 4 and as high as 8.
                     so, if rotDelta=4 is used, it must be followed by a detailed
                     finer run of the program with deltaRot=1 near the solution
                     with similar delta for translation.
                     when searching all rotation space, number of intervals
-                    when delta=4 is 90 in contrast to the same divided by 3 
+                    when delta=4 is 90 in contrast to the same divided by 3
                     being 120.  the difference is 30 * translation solution steps.
                     If rotDelta=3 is consistently finding the correct answer
                     it should be used.
@@ -958,7 +969,7 @@ public class PointMatcher3Test extends TestCase {
             PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(
                 minX, maxX, minY, maxY);
 
-            plotter.addPlot(set0.getX(), set0.getY(), set1.getX(), set1.getY(), 
+            plotter.addPlot(set0.getX(), set0.getY(), set1.getX(), set1.getY(),
                 label);
 
             plotter.writeFile(MiscDebug.getCurrentTimeFormatted());
@@ -1501,7 +1512,7 @@ images as possible)
             //test.testPerformVerticalPartitionedMatching();
             //test.testCalculateTranslationFromGridThenDownhillSimplex();
             test.testCalculateTransformationWithGridSearch();
-            
+
             /*
             tests for :
             -- for same set w/ projection

@@ -147,6 +147,26 @@ public class TransformationPointFit implements Comparable<TransformationPointFit
         if (other == null) {
             return -1;
         }
+        if ((other.getNumberOfMatchedPoints() == 0) && (nMatchedPoints > 0)) {
+            return -1;
+        }
+        if (Double.isNaN(other.getStDevFromMean()) && !Double.isNaN(stDevFromMean)) {
+            return -1;
+        }
+        if ((other.getStDevFromMean() == Double.MAX_VALUE) && 
+            (stDevFromMean != Double.MAX_VALUE)) {
+            return -1;
+        }
+        if ((other.getNumberOfMatchedPoints() > 0) && (nMatchedPoints == 0)) {
+            return 1;
+        }
+        if (!Double.isNaN(other.getStDevFromMean()) && Double.isNaN(stDevFromMean)) {
+            return 1;
+        }
+        if ((other.getStDevFromMean() != Double.MAX_VALUE) && 
+            (stDevFromMean == Double.MAX_VALUE)) {
+            return 1;
+        }
         
         TransformationPointFit compareFit = other;
         

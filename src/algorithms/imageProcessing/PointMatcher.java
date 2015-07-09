@@ -12,7 +12,6 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonPlotterPNG;
 import algorithms.util.RangeInt;
-import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -234,13 +233,11 @@ import thirdparty.HungarianAlgorithm;
 
  * @author nichole
  */
-public final class PointMatcher {
+public final class PointMatcher extends AbstractPointMatcher {
 
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
     protected static int minTolerance = 5;
-
-    private boolean costIsNumAndDiff = false;
 
     //TODO: this has to be a high number for sets with projection.
     // the solution is sensitive to this value.
@@ -249,10 +246,6 @@ public final class PointMatcher {
     public static float toleranceGridFactor = 4.f;
 
     protected boolean debug = true;
-
-    public void setCostToNumMatchedAndDiffFromModel() {
-        costIsNumAndDiff = true;
-    }
 
     /**
      * NOT READY FOR USE
@@ -630,27 +623,28 @@ public final class PointMatcher {
             (int)(transY + (gridHeight/2.f)));
 
         //TODO: since this is refinement, might use smaller
-        int dx = 4;
-        int dy = 4;
+        int deltaTransX = 4;
+        int deltaTransY = 4;
 
         transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
 
         transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
 
-        float tolTransX = getTolFactor() * dx;
-        float tolTransY = getTolFactor() * dy;
+        float tolTransX = getTolFactor() * deltaTransX;
+        float tolTransY = getTolFactor() * deltaTransY;
 
         log.fine(String.format(
             "starting finer grid search with rot=%d to %d and scale=%d to %d and translation=%d:%d, %d:%d",
             rotStart, rotStop, scaleStart, scaleStop,
             transXStartStop.getStart(), transXStartStop.getStop(),
             transYStartStop.getStart(), transYStartStop.getStop()));
-
+        
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             unmatchedLeftXY, unmatchedRightXY,
             image1Width, image1Height, image2Width, image2Height,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            transXStartStop, transYStartStop,
+            transXStartStop, deltaTransX,
+            transYStartStop, deltaTransY,
             tolTransX, tolTransY, setsFractionOfImage);
 
 if (bestFit != null && fit != null) {
@@ -1508,16 +1502,7 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
     }
 
     /**
-     * calculate for unmatched points.  Note, this method does a grid search
-     * over rotation and scale in intervals of 10 degrees and 1,
-     * respectively and for each translation solution within those,
-     * it has uses O(N^4) algorithm to find the best translation in x and y,
-     * so it is a good idea to use a smaller
-     * set of good matching points here or to use the method
-     * which can limit the search space to known limits.
-     * NOTE: the translation algorithm runtime complexity will be improved soon.
-     * calculateTranslationForUnmatched0 will be used instead soon.
-     *
+     * calculate euclidean transformation for unmatched points.  
      * @param scene
      * @param model
      * @param image1Width
@@ -1550,10 +1535,17 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
         float scaleStart = 1;
         float scaleStop = 5;
         float scaleDelta = 1;
-
+                
+        int transDeltaX = 4;
+        int transDeltaY = 4;
+        
+        float tolTransX = /*getTolFactor() **/ transDeltaX;
+        float tolTransY = /*getTolFactor() **/ transDeltaY;
+        
         TransformationPointFit fit = calculateTransformationWithGridSearch(
             scene, model, image1Width, image1Height, image2Width, image2Height,
             rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
+            transDeltaX, transDeltaY, tolTransX, tolTransY,
             setsFractionOfImage);
 
         if (fit != null) {
@@ -1903,6 +1895,7 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
         int image1Width, int image1Height, int image2Width, int image2Height,
         float rotStart, float rotStop, float rotDelta,
         float scaleStart, float scaleStop, float scaleDelta,
+        int deltaTransX, int deltaTransY, float tolTransX, float tolTransY,
         float setsFractionOfImage) {
 
         if (rotStart < 0 || rotStart > 359) {
@@ -1950,6 +1943,7 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
                     set1, set2,
                     image1Width, image1Height, image2Width, image2Height,
                     rotationInRadians, scale,
+                    deltaTransX, deltaTransY, tolTransX, tolTransY,
                     setsFractionOfImage);
 if (fit != null) {
 log.fine("      rot reeval fit and bestFit.  fit=" + fit.toString());
@@ -2391,7 +2385,8 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
         int image1Width, int image1Height, int image2Width, int image2Height,
         float rotStart, float rotStop, float rotDelta,
         float scaleStart, float scaleStop, float scaleDelta,
-        RangeInt transXStartStop, RangeInt transYStartStop,
+        RangeInt transXStartStop,  int deltaTransX,
+        RangeInt transYStartStop, int deltaTransY,
         float tolTransX, float tolTransY,
         float setsFractionOfImage) {
 
@@ -2421,9 +2416,6 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
         float[] rotation = MiscMath.writeDegreeIntervals(rotStart, rotStop,
             rotDelta);
         
-        int transDeltaX = 4;
-        int transDeltaY = 4;
-
         int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
             : set2.getN();
 
@@ -2443,7 +2435,7 @@ log.fine("**==> rot keeping bestFit=" + bestFit.toString());
                     set1, set2,
                     image1Width, image1Height, image2Width, image2Height,
                     rotationInRadians, scale,
-                    transXStartStop, transDeltaX, transYStartStop, transDeltaY,
+                    transXStartStop, deltaTransX, transYStartStop, deltaTransY,
                     tolTransX, tolTransY,
                     setsFractionOfImage);
 
@@ -2832,6 +2824,7 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         PairIntArray set1, PairIntArray set2,
         int image1Width, int image1Height, int image2Width, int image2Height,
         float rotationInRadians, float scale,
+        int deltaTransX, int deltaTransY, float tolTransX, float tolTransY,
         float setsFractionOfImage) {
        
         if (set1 == null) {
@@ -2857,22 +2850,16 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
             return null;
         }
 
-        int transDeltaX = 4;
-        int transDeltaY = 4;
-
         RangeInt transXStartStop = new RangeInt(-1*image2Width + 1,
             image2Width - 1);
         RangeInt transYStartStop = new RangeInt(-1*image2Height + 1,
             image2Height - 1);
 
-        float tolTransX = getTolFactor() * transDeltaX;
-        float tolTransY = getTolFactor() * transDeltaY;
-
         TransformationPointFit fit = calculateTranslationForUnmatched0(
             set1, set2,
             image1Width, image1Height, image2Width, image2Height,
             rotationInRadians, scale,
-            transXStartStop, transDeltaX, transYStartStop, transDeltaY,
+            transXStartStop, deltaTransX, transYStartStop, deltaTransY,
             tolTransX, tolTransY,
             setsFractionOfImage);
 
@@ -3258,42 +3245,6 @@ log.fine("     * ==> bestFit=" + fit.toString());
         return params;
     }
 
-    protected boolean fitIsSimilar(TransformationPointFit fit1,
-        TransformationPointFit fit2,
-        float scaleTolerance, float rotInDegreesTolerance,
-        float translationTolerance) {
-
-        if (fit1 == null || fit2 == null) {
-            return false;
-        }
-
-        TransformationParameters params1 = fit1.getParameters();
-
-        TransformationParameters params2 = fit2.getParameters();
-
-        float rotA = params1.getRotationInDegrees();
-        float rotB = params2.getRotationInDegrees();
-        if (rotA > rotB) {
-            float swap = rotA;
-            rotA = rotB;
-            rotB = swap;
-        }
-        if (((rotB - rotA) > rotInDegreesTolerance) &&
-            (((rotA + 360) - rotB) > rotInDegreesTolerance)) {
-            return false;
-        }
-
-        if ((Math.abs(params1.getScale() - params2.getScale()) <= scaleTolerance)
-            && (Math.abs(params1.getTranslationX() - params2.getTranslationX()) <= translationTolerance)
-            && (Math.abs(params1.getTranslationY() - params2.getTranslationY()) <= translationTolerance)
-            ) {
-
-            return true;
-        }
-
-        return false;
-    }
-
     /**
      * given the transformed x y that have already been scaled and rotated, add the
      * transX and transY, respectively and calculated the average residual
@@ -3396,623 +3347,6 @@ log.fine("     * ==> bestFit=" + fit.toString());
         fit.setMaximumNumberMatchable(nMaxMatchable);
 
         return fit;
-    }
-
-    public boolean fitIsBetter(TransformationPointFit bestFit,
-        TransformationPointFit compareFit) {
-
-        if (costIsNumAndDiff) {
-            return fitIsBetterUseNumAndDiff(bestFit, compareFit);
-        }
-
-        if (compareFit == null) {
-            return false;
-        }
-        if (bestFit == null) {
-            return true;
-        }
-
-        int comp = bestFit.compareTo(compareFit);
-        if (comp == 1) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * compare bestFit to compareFit and return
-     * -1 if bestFit is better
-     * 0 if they are equal
-     * 1 if compareFit is better
-     * @param bestFit
-     * @param compareFit
-     * @return
-     */
-    public int compare(TransformationPointFit bestFit,
-        TransformationPointFit compareFit) {
-
-        /*
-        if (costIsNumAndDiff) {
-            return fitIsBetterUseNumAndDiff(bestFit, compareFit);
-        }
-        */
-        if (compareFit == null && bestFit == null) {
-            return 0;
-        } else if (compareFit == null) {
-            return -1;
-        } else if (bestFit == null) {
-            return 1;
-        }
-
-        int comp = bestFit.compareTo(compareFit);
-        
-        return comp;
-    }
-
-    public boolean fitIsBetterUseNumAndDiff(TransformationPointFit bestFit,
-        TransformationPointFit compareFit) {
-
-        if (compareFit == null) {
-            return false;
-        }
-        if (bestFit == null) {
-            if (compareFit.getNumberOfMatchedPoints() > 0) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        float compN = compareFit.getNumberOfMatchedPoints();
-        float bestN = bestFit.getNumberOfMatchedPoints();
-
-        double compAvg = compareFit.getMeanDistFromModel();
-        double compS = compareFit.getStDevFromMean();
-        double compAvgS = compAvg + compS;
-
-        double bestAvg = bestFit.getMeanDistFromModel();
-        double bestS = bestFit.getStDevFromMean();
-        double bestAvgS = bestAvg + bestS;
-
-        float f = 1.5f;
-
-        if (!Double.isNaN(compAvg)) {
-            if ((compN/bestN) >= f) {
-                return true;
-            } else if ((compN >= bestN) && (compAvg < bestAvg) && (compS < bestS)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public boolean fitIsBetter(ProjectiveFit bestFit, ProjectiveFit compareFit) {
-
-        if (compareFit == null) {
-            return false;
-        }
-        if (bestFit == null) {
-            return true;
-        }
-
-        int nMatches = compareFit.getNumberOfPoints();
-
-        if (nMatches > bestFit.getNumberOfPoints()) {
-            return true;
-        } else if (nMatches == bestFit.getNumberOfPoints()) {
-            if (!Double.isNaN(compareFit.getMeanDistFromModel()) && (
-                compareFit.getMeanDistFromModel()
-                < bestFit.getMeanDistFromModel())) {
-                return true;
-            } else if (compareFit.getMeanDistFromModel()
-                == bestFit.getMeanDistFromModel()) {
-                if (compareFit.getStdDevOfMean() < bestFit.getStdDevOfMean()) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * a fitness function that tries to allow a smaller number of points roughly
-     * fit to be seen in contrast to a larger number of points that
-     * are not a better fit, but have better stats due to matching alot of
-     * scattered points.
-     * if numberOfMatched/maxMatchable is not infinite:
-     * if the mean/10 of the comparison fit is better than the best mean/10,
-     * a true is returned, else
-     * compares the standard
-     * deviation from the mean difference to the model fit and returns true
-     * if compareFit has a smaller value.
-     * @param bestFit
-     * @param compareFit
-     * @return
-     */
-    protected boolean fitIsBetter2(TransformationPointFit bestFit,
-        TransformationPointFit compareFit) {
-
-        if (compareFit == null) {
-            return false;
-        }
-        if (bestFit == null) {
-            return true;
-        }
-
-        float compareNStat = (float)compareFit.getNumberOfMatchedPoints()/
-            (float)compareFit.getNMaxMatchable();
-
-        if (Float.isInfinite(compareNStat)) {
-            return false;
-        }
-
-        float bestNStat = (float)bestFit.getNumberOfMatchedPoints()/
-            (float)bestFit.getNMaxMatchable();
-
-        if (Float.isInfinite(bestNStat)) {
-            return true;
-        }
-
-        if ((bestFit.getNumberOfMatchedPoints() == 0) &&
-            (compareFit.getNumberOfMatchedPoints() > 0)) {
-            return true;
-        } else if (compareFit.getNumberOfMatchedPoints() == 0) {
-            return false;
-        }
-
-        double bestMean = bestFit.getMeanDistFromModel();
-
-        double compareMean = compareFit.getMeanDistFromModel();
-
-        int comp = Double.compare(compareMean, bestMean);
-        if (comp < 0) {
-            return true;
-        } else if (comp > 0) {
-            return false;
-        }
-
-        double bestStdDevMean = bestFit.getStDevFromMean();
-
-        double compareStdDevMean = compareFit.getStDevFromMean();
-
-        // a smaller std dev from mean is a better fit
-        if (Double.compare(compareStdDevMean, bestStdDevMean) < 0) {
-
-            return true;
-
-        } else if (compareStdDevMean == bestStdDevMean) {
-
-            return (Double.compare(compareMean, bestMean) < 0);
-        }
-
-        return false;
-    }
-
-    // ======= code that needs testing and revision the most
-    /**
-     * refine the transformation params to make a better match of edges1 to
-     * edges2 where the points within edges in both sets are not necessarily
-     * 1 to 1 matches (that is, the input is not expected to be matched
-     * already).
-     *
-     * TODO: improve transformEdges to find translation for all edges
-     * via a search method rather than trying all pairs of points.
-     *
-     * @param edges1
-     * @param edges2
-     * @param params
-     * @param centroidX1
-     * @param centroidY1
-     * @param centroidX2
-     * @param centroidY2
-     * @return
-     */
-    public TransformationParameters refineTransformation(PairIntArray[] edges1,
-        PairIntArray[] edges2, final TransformationParameters params,
-        final int centroidX1, final int centroidY1,
-        final int centroidX2, final int centroidY2) {
-
-        if (edges1 == null || edges1.length == 0) {
-            throw new IllegalArgumentException("edges1 cannot be null or empty");
-        }
-        if (edges2 == null || edges2.length == 0) {
-            throw new IllegalArgumentException("edges2 cannot be null or empty");
-        }
-
-        //TODO: set this empirically from tests
-        double convergence = 0;
-
-        double r = params.getRotationInRadians();
-        double s = params.getScale();
-
-        double rMin = r - (10 * Math.PI/180);
-        double rMax = r + (10 * Math.PI/180);
-        double sMin = s - 1.5;
-        double sMax = s + 1.5;
-
-        // the positive offsets can be found w/ reflection?
-        // TODO: needs testing for starter points.  these are supplying the
-        // "grid search" portion of exploring more than local space
-        double[] drs = new double[] {
-            -5.0 * Math.PI/180.,
-            -2.5 * Math.PI/180.,
-            -1.0 * Math.PI/180.,
-            1.0 * Math.PI/180.,
-            2.5 * Math.PI/180.,
-            5.0 * Math.PI/180.
-        };
-        double[] dss = new double[] {
-            -1.0, -0.1, -0.05, 0.05 /*, 0.05, 0.1, 1.0*/
-        };
-        if (r == 0) {
-             drs = new double[]{0};
-        }
-        if (s == 1) {
-            dss = new double[]{0};
-            sMin = 1;
-        }
-        if (sMin < 1) {
-            sMin = 1;
-        }
-        if (rMin < 0) {
-            rMin = 0;
-        }
-
-        int n = (1 + dss.length) * (1 + drs.length);
-
-        TransformationPointFit[] fits = new TransformationPointFit[n];
-
-        int count = 0;
-        for (int i = 0; i <= dss.length; i++) {
-
-            double scale = (i == 0) ? s : s + dss[i - 1];
-
-            for (int j = 0; j <= drs.length; j++) {
-
-                double rotation = (j == 0) ? r : r + drs[j - 1];
-
-                fits[count] = calculateTranslationAndTransformEdges(
-                    rotation, scale, edges1, edges2,
-                    centroidX1, centroidY1);
-
-                if (fits[count] != null) {
-                    count++;
-                }
-            }
-        }
-
-        if (count < n) {
-            fits = Arrays.copyOf(fits, count);
-        }
-
-        float alpha = 1;   // > 0
-        float gamma = 2;   // > 1
-        float beta = 0.5f;
-        float tau = 0.5f;
-
-        boolean go = true;
-
-        int nMaxIter = 100;
-        int nIter = 0;
-
-        int bestFitIdx = 0;
-        int worstFitIdx = fits.length - 1;
-
-        int lastNMatches = Integer.MIN_VALUE;
-        double lastAvgDistModel = Double.MAX_VALUE;
-        int nIterSameMin = 0;
-
-        while (go && (nIter < nMaxIter)) {
-
-            if (fits.length == 0) {
-                break;
-            }
-
-            sortByDescendingMatches(fits, 0, (fits.length - 1));
-
-            for (int i = (fits.length - 1); i > -1; --i) {
-                if (fits[i] != null) {
-                    worstFitIdx = i;
-                    break;
-                }
-            }
-            if (fits[bestFitIdx] == null) {
-                break;
-            }
-
-/*if (fits.length > 0) {
-    log.info("best fit:  n=" + fits[bestFitIdx].getNumberOfMatchedPoints()
-    + " dm=" + fits[bestFitIdx].getMeanDistFromModel()
-    + " params:\n" + fits[bestFitIdx].getParameters().toString());
-}*/
-
-            if ((lastNMatches == fits[bestFitIdx].getNumberOfMatchedPoints()) &&
-                (Math.abs(lastAvgDistModel -
-                fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
-
-                nIterSameMin++;
-                /*if (nIterSameMin >= 5) {
-                    break;
-                }*/
-
-            } else {
-                nIterSameMin = 0;
-            }
-
-            lastNMatches = fits[bestFitIdx].getNumberOfMatchedPoints();
-            lastAvgDistModel = fits[bestFitIdx].getMeanDistFromModel();
-
-            // determine center for all points excepting the worse fit
-            double rSum = 0.0;
-            double sSum = 0.0;
-            int c = 0;
-            for (int i = 0; i < (fits.length - 1); i++) {
-                if (fits[i] != null) {
-                    rSum += fits[i].getRotationInRadians();
-                    sSum += fits[i].getScale();
-                    c++;
-                }
-            }
-            r = rSum / (double)c;
-            s = sSum / (double)c;
-
-            // "Reflection"
-            double rReflect = r + (alpha *
-                (r - fits[worstFitIdx].getRotationInRadians()));
-            double sReflect = s + (alpha *
-                (s - fits[worstFitIdx].getScale()));
-
-            TransformationPointFit fitReflected =
-                calculateTranslationAndTransformEdges(
-                rReflect, sReflect, edges1, edges2,
-                centroidX1, centroidY1);
-
-            //TODO: consider putting back in a check for bounds
-
-            int comp0 = compare(fits[bestFitIdx], fitReflected);
-            int compLast = compare(fits[worstFitIdx], fitReflected);
-
-            if ((comp0 < 1) && (compLast == 1)) {
-
-                // replace last with f_refl
-                fits[worstFitIdx] = fitReflected;
-
-            } else if (comp0 == 1) {
-
-                // reflected is better than best fit, so "expand"
-                // "Expansion"
-                double rExpansion = r + (gamma * (rReflect - r));
-                double sExpansion = s + (gamma * (sReflect - s));
-
-                TransformationPointFit fitExpansion =
-                    calculateTranslationAndTransformEdges(
-                    rExpansion, sExpansion, edges1, edges2,
-                    centroidX1, centroidY1);
-
-                int compR = compare(fitReflected, fitExpansion);
-
-                if (compR == 1) {
-
-                    // expansion fit is better than reflected fit
-                    fits[worstFitIdx] = fitExpansion;
-
-                } else {
-
-                    fits[worstFitIdx] = fitReflected;
-                }
-
-            } else if (compLast < 1) {
-
-                // reflected fit is worse than the worst (last) fit, so contract
-                // "Contraction"
-                double rContraction = r + (beta *
-                    (fits[worstFitIdx].getRotationInRadians() - r));
-                double sContraction = s + (beta *
-                    (fits[worstFitIdx].getScale() - s));
-
-                TransformationPointFit fitContraction =
-                    calculateTranslationAndTransformEdges(
-                    rContraction, sContraction, edges1, edges2,
-                    centroidX1, centroidY1);
-
-                int compC = compare(fits[worstFitIdx], fitContraction);
-
-                if (compC > -1) {
-
-                    fits[worstFitIdx] = fitContraction;
-
-                } else {
-
-                    // "Reduction"
-                    for (int i = 1; i < fits.length; ++i) {
-
-                        if (fits[i] == null) {
-                            /*TODO: consider setting this
-                            fits[i] = new TransformationPointFit(
-                                new TransformationParameters(),
-                                0, Double.MAX_VALUE, Double.MAX_VALUE,
-                                Double.MAX_VALUE
-                            );
-                            */
-                            continue;
-                        }
-
-                        float rReduction
-                            = (fits[bestFitIdx].getRotationInRadians()
-                            + (tau
-                            * (fits[i].getRotationInRadians()
-                            - fits[bestFitIdx].getRotationInRadians())));
-
-                        float sReduction
-                            = (fits[bestFitIdx].getScale()
-                            + (tau
-                            * (fits[i].getScale()
-                            - fits[bestFitIdx].getScale())));
-
-                        //NOTE: there's a possibility of a null fit.
-                        //  instead of re-writing the fits array, will
-                        //  assign a fake infinitely bad fit which will
-                        //  fall to the bottom of the list after the next
-                        //  sort.
-                        TransformationPointFit fit =
-                            calculateTranslationAndTransformEdges(
-                            rReduction, sReduction, edges1, edges2,
-                            centroidX1, centroidY1);
-
-                        fits[i] = fit;
-                    }
-                }
-            }
-
-            log.finest("best fit so far: nMatches="
-                + fits[bestFitIdx].getNumberOfMatchedPoints()
-                + " diff from model=" + fits[bestFitIdx].getMeanDistFromModel()
-            );
-
-            nIter++;
-
-            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == convergence)
-                && (fits[bestFitIdx].getMeanDistFromModel() == 0)) {
-                go = false;
-            /*} else if ((r > rMax) || (r < rMin)) {
-                go = false;*/
-            } else if ((s > sMax) || (s < sMin)) {
-                go = false;
-            }
-        }
-
-        // additional step that's helpful if not enough iterations are used,
-        // is to test the summed transX, transY which represent the center
-        // of the simplex against the best fit
-        TransformationPointFit fitAvg = calculateTranslationAndTransformEdges(
-            r, s, edges1, edges2, centroidX1, centroidY1);
-
-        int comp = compare(fits[bestFitIdx], fitAvg);
-        if (comp == 1) {
-            fits[bestFitIdx] = fitAvg;
-        }
-
-        // if rotation > 2PI, subtract 2PI
-        if ((fits[bestFitIdx] != null) &&
-            (fits[bestFitIdx].getParameters().getRotationInRadians()
-            > 2.*Math.PI)) {
-
-            float rot = fits[bestFitIdx].getParameters().getRotationInRadians();
-            while (rot >= 2*Math.PI) {
-                rot -= 2*Math.PI;
-            }
-            fits[bestFitIdx].getParameters().setRotationInRadians(rot);
-        }
-
-        return fits[bestFitIdx].getParameters();
-    }
-
-    /**
-     * TODO: improve transformEdges to find translation for all edges
-     * via a search method rather than trying all pairs of points.
-     *
-     * Given edges1 and edges2 which we already know are matched edges due to
-     * contour matching or other means, and given the rotation and scale,
-     * determine the translation between the edges and return the fit.
-     *
-     * @param rotInRad
-     * @param scl
-     * @param edges1
-     * @param edges2
-     * @param centroidX1
-     * @param centroidY1
-     * @return
-     */
-    private TransformationPointFit calculateTranslationAndTransformEdges(
-        double rotInRad, double scl,
-        PairIntArray[] edges1, PairIntArray[] edges2,
-        int centroidX1, int centroidY1) {
-
-        if (edges1 == null || edges1.length == 0) {
-            throw new IllegalArgumentException("edges1 cannot be null or empty");
-        }
-        if (edges2 == null || edges2.length == 0) {
-            throw new IllegalArgumentException("edges2 cannot be null or empty");
-        }
-        if ((edges1.length != edges2.length)) {
-            throw new IllegalArgumentException(
-            "edges1 and edges2 must be the same length");
-        }
-
-        /*
-        edges1 and edges2 are matched edges, but should be considered clouds
-        of points rather than point to point matches within the edges.
-
-        For each paired edge in edges1 and edges2, determine the implied
-        translation by their centroids.
-        These are combined in weighted average where the
-        weight is the length of the edge.
-
-        Then a small area surrounding the averaged translation is searched
-        to find the best fit.
-        */
-
-        float s = (float)scl;
-        float scaleTimesCosine = (float)(s * Math.cos(rotInRad));
-        float scaleTimesSine = (float)(s * Math.sin(rotInRad));
-
-        //TODO: revisit this:
-        float tolTransX = 2.f * centroidX1 * 0.02f;
-        float tolTransY = 2.f * centroidY1 * 0.02f;
-        if (tolTransX < minTolerance) {
-            tolTransX = minTolerance;
-        }
-        if (tolTransY < minTolerance) {
-            tolTransY = minTolerance;
-        }
-
-        int nTotal = 0;
-        float[] weights = new float[edges1.length];
-        for (int i = 0; i < edges1.length; i++) {
-            weights[i] = edges1[i].getN();
-            nTotal += edges1[i].getN();
-        }
-        for (int i = 0; i < edges1.length; i++) {
-            weights[i] /= (float)nTotal;
-        }
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        float translationX = 0;
-        float translationY = 0;
-        for (int i = 0; i < edges1.length; i++) {
-
-            PairIntArray edge1 = edges1[i];
-            PairIntArray edge2 = edges2[i];
-
-            double[] xycen1 = curveHelper.calculateXYCentroids(edge1);
-
-            double[] xycen2 = curveHelper.calculateXYCentroids(edge2);
-
-            double srX1 = centroidX1*s + (
-                ((xycen1[0] - centroidX1) * scaleTimesCosine) +
-                ((xycen1[1] - centroidY1) * scaleTimesSine));
-
-            double srY1 = centroidY1*s + (
-                (-(xycen1[0] - centroidX1) * scaleTimesSine) +
-                ((xycen1[1] - centroidY1) * scaleTimesCosine));
-
-            double tx = xycen2[0] - srX1;
-
-            double ty = xycen2[1] - srY1;
-
-            translationX += weights[i] * tx;
-
-            translationY += weights[i] * ty;
-        }
-
-        TransformationPointFit bestFit = refineTranslationWithDownhillSimplex(
-            edges1, edges2, translationX, translationY, tolTransX, tolTransY,
-            20.f, 20.f, s, (float)rotInRad, centroidX1, centroidY1);
-
-        return bestFit;
     }
 
     /**
@@ -4359,280 +3693,6 @@ log.fine("     * ==> bestFit=" + fit.toString());
         return fits[bestFitIdx];
     }
 
-    private TransformationPointFit refineTranslationWithDownhillSimplex(
-        final PairIntArray[] edges1, final PairIntArray[] edges2,
-        float transX, float transY, float tolTransX, float tolTransY,
-        float plusMinusTransX, float plusMinusTransY,
-        final float scale, final float rotationRadians,
-        int centroidX1, int centroidY1) {
-
-        int n1 = 0;
-        for (PairIntArray edge : edges1) {
-            n1 += edge.getN();
-        }
-        int n2 = 0;
-        for (PairIntArray edge : edges2) {
-            n2 += edge.getN();
-        }
-        int nMaxMatchable = (n1 < n2) ? n1 : n2;
-
-        if (nMaxMatchable == 0) {
-            return null;
-        }
-
-        //TODO: revise this:
-        double eps = Math.log(nMaxMatchable)/Math.log(10);
-
-        float txMin = transX - plusMinusTransX;
-        float txMax = transX + plusMinusTransX;
-        float tyMin = transY - plusMinusTransY;
-        float tyMax = transY + plusMinusTransY;
-
-        // the positive offsets can be found w/ reflection
-        float[] dtx = new float[]{
-            -plusMinusTransX, -0.5f*plusMinusTransX,
-            -0.25f*plusMinusTransX,
-            -0.125f*plusMinusTransX, -0.0625f*plusMinusTransX
-        };
-        float[] dty = new float[]{
-            -plusMinusTransY, -0.5f*plusMinusTransY,
-            -0.25f*plusMinusTransY,
-            -0.125f*plusMinusTransY, -0.0625f*plusMinusTransY
-        };
-        int n = (1 + dtx.length) * (1 + dty.length);
-
-        TransformationPointFit[] fits = new TransformationPointFit[n];
-
-        int count = 0;
-        for (int i = 0; i <= dtx.length; i++) {
-
-            float tx = (i == 0) ? transX : (transX + dtx[i - 1]);
-
-            for (int j = 0; j <= dty.length; j++) {
-
-                float ty = (i == 0) ? transY : (transY + dty[i - 1]);
-
-                fits[count] = evaluateFit(edges1, edges2,
-                    tx, ty, tolTransX, tolTransY,
-                    scale, rotationRadians, centroidX1, centroidY1);
-
-                if (fits[count] != null) {
-                    count++;
-                }
-            }
-        }
-
-        if (count < n) {
-            fits = Arrays.copyOf(fits, count);
-        }
-
-        float alpha = 1;   // > 0
-        float gamma = 2;   // > 1
-        float beta = 0.5f;
-        float tau = 0.5f;
-
-        boolean go = true;
-
-        int nMaxIter = 100;
-        int nIter = 0;
-
-        int bestFitIdx = 0;
-        int worstFitIdx = fits.length - 1;
-
-        int lastNMatches = Integer.MIN_VALUE;
-        double lastAvgDistModel = Double.MAX_VALUE;
-        int nIterSameMin = 0;
-
-        while (go && (nIter < nMaxIter)) {
-
-            if (fits.length == 0) {
-                break;
-            }
-
-            sortByDescendingMatches(fits, 0, (fits.length - 1));
-
-            for (int i = (fits.length - 1); i > -1; --i) {
-                if (fits[i] != null) {
-                    worstFitIdx = i;
-                    break;
-                }
-            }
-            if (fits[bestFitIdx] == null) {
-                break;
-            }
-
-            if ((lastNMatches == fits[bestFitIdx].getNumberOfMatchedPoints())
-                && (Math.abs(lastAvgDistModel
-                    - fits[bestFitIdx].getMeanDistFromModel()) < 0.01)) {
-
-                nIterSameMin++;
-                /*if (nIterSameMin >= 10) {
-                    break;
-                }*/
-
-            } else {
-                nIterSameMin = 0;
-            }
-
-            lastNMatches = fits[bestFitIdx].getNumberOfMatchedPoints();
-            lastAvgDistModel = fits[bestFitIdx].getMeanDistFromModel();
-
-            // determine center for all points excepting the worse fit
-            float txSum = 0.0f;
-            float tySum = 0.0f;
-            int c = 0;
-            for (int i = 0; i < (fits.length - 1); ++i) {
-                if (fits[i] != null) {
-                    txSum += fits[i].getTranslationX();
-                    tySum += fits[i].getTranslationY();
-                    ++c;
-                }
-            }
-            transX = txSum / (float)c;
-            transY = tySum / (float)c;
-
-            // "Reflection"
-            float txReflect = transX + (alpha
-                * (transX - fits[worstFitIdx].getTranslationX()));
-            float tyReflect = transY + (alpha
-                * (transY - fits[worstFitIdx].getTranslationY()));
-
-            TransformationPointFit fitReflected = evaluateFit(
-                edges1, edges2, txReflect, tyReflect,
-                tolTransX, tolTransY,
-                scale, rotationRadians, centroidX1, centroidY1);
-
-            //TODO: consider putting back in a check for bounds
-
-            int comp0 = compare(fits[bestFitIdx], fitReflected);
-            int compLast = compare(fits[worstFitIdx], fitReflected);
-
-            if ((comp0 < 1) && (compLast == 1)) {
-
-                // replace last with f_refl
-                fits[worstFitIdx] = fitReflected;
-
-            } else if (comp0 == 1) {
-
-                // reflected is better than best fit, so "expand"
-                // "Expansion"
-                float txExpansion = transX + (gamma * (txReflect - transX));
-                float tyExpansion = transY + (gamma * (tyReflect - transY));
-
-                TransformationPointFit fitExpansion =
-                    evaluateFit(edges1, edges2,
-                        txExpansion, tyExpansion, tolTransX, tolTransY,
-                        scale, rotationRadians, centroidX1, centroidY1);
-
-                int compR = compare(fitReflected, fitExpansion);
-
-                if (compR == 1) {
-
-                    // expansion fit is better than reflected fit
-                    fits[worstFitIdx] = fitExpansion;
-
-                } else {
-
-                    fits[worstFitIdx] = fitReflected;
-                }
-
-            } else if (compLast < 1) {
-
-                // reflected fit is worse than the worst (last) fit, so contract
-                // "Contraction"
-                float txContraction = transX + (beta
-                    * (fits[worstFitIdx].getTranslationX() - transX));
-                float tyContraction = transY + (beta
-                    * (fits[worstFitIdx].getTranslationY() - transY));
-
-                TransformationPointFit fitContraction
-                    = evaluateFit(edges1, edges2,
-                        txContraction, tyContraction,
-                        tolTransX, tolTransY,
-                        scale, rotationRadians, centroidX1, centroidY1);
-
-                int compC = compare(fits[worstFitIdx], fitContraction);
-
-                if (compC > -1) {
-
-                    fits[worstFitIdx] = fitContraction;
-
-                } else {
-
-                    // "Reduction"
-                    for (int i = 1; i < fits.length; i++) {
-
-                        if (fits[i] == null) {
-                            /* TODO: consider setting this
-                            fits[i] = new TransformationPointFit(
-                                new TransformationParameters(),
-                                0, Double.MAX_VALUE, Double.MAX_VALUE,
-                                Double.MAX_VALUE
-                            );
-                            */
-                            continue;
-                        }
-
-                        float txReduction
-                            = (fits[bestFitIdx].getTranslationX()
-                            + (tau
-                            * (fits[i].getTranslationX()
-                            - fits[bestFitIdx].getTranslationX())));
-
-                        float tyReduction
-                            = (fits[bestFitIdx].getTranslationY()
-                            + (tau
-                            * (fits[i].getTranslationY()
-                            - fits[bestFitIdx].getTranslationY())));
-
-                        //NOTE: there's a possibility of a null fit.
-                        //  instead of re-writing the fits array, will
-                        //  assign a fake infinitely bad fit which will
-                        //  fall to the bottom of the list after the next
-                        //  sort.
-                        TransformationPointFit fit
-                            = evaluateFit(edges1, edges2,
-                                txReduction, tyReduction,
-                                tolTransX, tolTransY,
-                                scale, rotationRadians, centroidX1, centroidY1);
-
-                        fits[i] = fit;
-                    }
-                }
-            }
-
-            log.finest("best fit so far: nMatches="
-                + fits[bestFitIdx].getNumberOfMatchedPoints()
-                + " diff from model=" + fits[bestFitIdx].getMeanDistFromModel()
-            );
-
-            nIter++;
-
-            if ((fits[bestFitIdx].getNumberOfMatchedPoints() == nMaxMatchable)
-                && (fits[bestFitIdx].getMeanDistFromModel() <  eps)) {
-                go = false;
-            } /*else if ((transX > txMax) || (transX < txMin)) {
-                go = false;
-            } else if ((transY > tyMax) || (transY < tyMin)) {
-                go = false;
-            }*/
-        }
-
-        // additional step that's helpful if not enough iterations are used,
-        // is to test the summed transX, transY which represent the center
-        // of the simplex against the best fit
-        TransformationPointFit fitAvg = evaluateFit(edges1, edges2,
-            transX, transY, tolTransX, tolTransY,
-            scale, rotationRadians, centroidX1, centroidY1);
-
-        int comp = compare(fits[bestFitIdx], fitAvg);
-        if (comp == 1) {
-            fits[bestFitIdx] = fitAvg;
-        }
-
-        return fits[bestFitIdx];
-    }
-
     protected TransformationPointFit evaluateFit(
         PairFloatArrayUnmodifiable scaledRotatedSet1, float transX,
         float transY, float tolTransX, float tolTransY,
@@ -4657,159 +3717,6 @@ log.fine("     * ==> bestFit=" + fit.toString());
         return evaluateFitForUnMatched(scaledRotatedSet1,
             transX, transY, tolTransX, tolTransY,
             set2, scale, rotationRadians);
-    }
-
-    private TransformationPointFit evaluateFit(
-        PairIntArray[] edges1, PairIntArray[] edges2,
-        float translationX, float translationY,
-        float tolTransX, float tolTransY, float scale,
-        float rotationRadians, int centroidX1, int centroidY1) {
-
-        if (edges1 == null || edges1.length == 0) {
-            throw new IllegalArgumentException("edges1 cannot be null or empty");
-        }
-        if (edges2 == null || edges2.length == 0) {
-            throw new IllegalArgumentException("edges2 cannot be null or empty");
-        }
-
-        int n1 = 0;
-        for (PairIntArray edge : edges1) {
-            n1 += edge.getN();
-        }
-        int n2 = 0;
-        for (PairIntArray edge : edges2) {
-            n2 += edge.getN();
-        }
-        int nMaxMatchable = (n1 < n2) ? n1 : n2;
-
-        if (nMaxMatchable == 0) {
-            return null;
-        }
-
-        List<Double> residuals = new ArrayList<Double>();
-
-        int nTotal = 0;
-
-        for (int i = 0; i < edges1.length; i++) {
-
-            PairIntArray edge1 = edges1[i];
-
-            PairIntArray edge2 = edges2[i];
-
-            nTotal += edge1.getN();
-
-            calculateTranslationResidualsForUnmatchedMultiplicity(
-                edge1, edge2, translationX, translationY, tolTransX, tolTransY,
-                scale, rotationRadians,
-                centroidX1, centroidY1, residuals);
-        }
-
-        double avg = 0;
-        for (Double diff : residuals) {
-            avg += diff.doubleValue();
-        }
-        avg /= (double)residuals.size();
-
-        double stdDev = 0;
-        for (Double diff : residuals) {
-            double d = diff.doubleValue() - avg;
-            stdDev += (d * d);
-        }
-        stdDev = Math.sqrt(stdDev/((double)residuals.size() - 1));
-
-        TransformationParameters params = new TransformationParameters();
-        params.setRotationInRadians(rotationRadians);
-        params.setScale(scale);
-        params.setTranslationX(translationX);
-        params.setTranslationY(translationY);
-
-        TransformationPointFit fit = new TransformationPointFit(params,
-            residuals.size(), avg, stdDev,
-            tolTransX, tolTransY);
-
-        return fit;
-    }
-
-    /**
-     * calculate the residuals between edge1 points and edge2 points with the
-     * assumption that there may not be one to one point matches, but instead
-     * will be general point matches.  For that reason, a greedy search for
-     * nearest neighbor with the possibility of multiple matches to a neighbor
-     * is used.
-     *
-     * @param edge1
-     * @param edge2
-     * @param transX
-     * @param transY
-     * @param tolTransX
-     * @param tolTransY
-     * @param scale
-     * @param rotationRadians
-     * @param outputResiduals
-     */
-    private void calculateTranslationResidualsForUnmatchedMultiplicity(
-        PairIntArray edge1, PairIntArray edge2,
-        float transX, float transY, float tolTransX, float tolTransY,
-        final float scale, final float rotationRadians,
-        int centroidX1, int centroidY1, List<Double> outputResiduals) {
-
-        if (edge1 == null || edge1.getN() == 0) {
-            throw new IllegalArgumentException(
-            "edge1 cannot be null or empty");
-        }
-        if (edge2 == null || edge2.getN() == 0) {
-            throw new IllegalArgumentException(
-            "edge2 cannot be null or empty");
-        }
-
-        int nMaxMatchable = (edge1.getN() < edge2.getN()) ?
-            edge1.getN() : edge2.getN();
-
-        if (nMaxMatchable == 0) {
-            return;
-        }
-
-        float scaleTimesCosine = (float)(scale * Math.cos(rotationRadians));
-        float scaleTimesSine = (float)(scale * Math.sin(rotationRadians));
-
-        for (int i = 0; i < edge1.getN(); i++) {
-
-            int x1 = edge1.getX(i);
-            int y1 = edge1.getY(i);
-
-            float transformedX = (centroidX1*scale + (
-                ((x1 - centroidX1) * scaleTimesCosine) +
-                ((y1 - centroidY1) * scaleTimesSine))) + transX;
-
-            float transformedY = (centroidY1*scale + (
-                (-(x1 - centroidX1) * scaleTimesSine) +
-                ((y1 - centroidY1) * scaleTimesCosine))) + transY;
-
-            double minDiff = Double.MAX_VALUE;
-
-            for (int j = 0; j < edge2.getN(); j++) {
-
-                int x2 = edge2.getX(j);
-                int y2 = edge2.getY(j);
-
-                float dx = x2 - transformedX;
-                float dy = y2 - transformedY;
-
-                if ((Math.abs(dx) > tolTransX) || (Math.abs(dy) > tolTransY)) {
-                    continue;
-                }
-
-                float diff = (float)Math.sqrt(dx*dx + dy*dy);
-
-                if (diff < minDiff) {
-                    minDiff = diff;
-                }
-            }
-
-            if (minDiff < Double.MAX_VALUE) {
-                outputResiduals.add(Double.valueOf(minDiff));
-            }
-        }
     }
 
     /**
@@ -4936,34 +3843,6 @@ log.fine("     * ==> bestFit=" + fit.toString());
         return params;
     }
 
-    private boolean areEqual(TransformationParameters[] lastParams,
-        TransformationParameters[] currentParams) {
-
-        if (lastParams.length != currentParams.length) {
-            throw new IllegalArgumentException(
-                "lastParams.length must be equal to currentParams.length");
-        }
-
-        for (int i = 0; i < lastParams.length; ++i) {
-
-            TransformationParameters p0 = lastParams[i];
-
-            TransformationParameters p1 = currentParams[i];
-
-            if ((p0 == null) && (p1 != null)) {
-                return false;
-            } else if ((p0 != null) && (p1 == null)) {
-                return false;
-            } else if (p0 == null && p1 == null) {
-                continue;
-            } else if (!p0.equals(p1)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private double[] getStandardDeviation(TransformationParameters[] params) {
 
         if (params == null || params.length == 0) {
@@ -5023,29 +3902,6 @@ log.fine("     * ==> bestFit=" + fit.toString());
         tYStdv = (Math.sqrt(tYStdv/(count - 1.0f)));
         
         return new double[]{rStdv, sStdv, tXStdv, tYStdv};
-    }
-
-    /**
-     * compare the fields mean distance from model and standard deviation
-     * from mean to find if they are similar within a tolerance, then
-     * find if the parameters are the same and return
-     * <pre>
-     * 0==same fit;  1==similar fits;  -1==different fits
-     * </pre>
-     * @param bestFit
-     * @param fit
-     * @return comparisonResult 0==same fit;  1==similar fits;  -1==different fits
-     */
-    protected int fitsAreSimilarWithDiffParameters(
-        TransformationPointFit bestFit, TransformationPointFit fit) {
-
-        if (bestFit == null || fit == null) {
-            return -1;
-        }
-
-        int comp = bestFit.isSimilarWithDiffParameters(fit);
-        
-        return comp;
     }
 
     /**
@@ -5232,46 +4088,6 @@ log.fine("     * ==> bestFit=" + fit.toString());
             setsFractionOfImage);
 
         return fit2;
-    }
-
-    /** compare the bestFit and fit tolerances and return
-     <pre>
-       -1 : both are not null and bestFit tolerances are smaller
-        0 : both are not null and tolerances are same.
-        1 : both are not null and fit tolerances are smaller
-        2 : both are not null and the x and y fits and smaller and larger in a mix
-        3 : either bestFit or fit is null
-     </pre>
-    */
-    private int compareTolerance(TransformationPointFit bestFit,
-        TransformationPointFit fit) {
-
-        if (bestFit == null || fit == null) {
-            return 3;
-        }
-
-        float diffTolX = bestFit.getTranslationXTolerance()
-            - fit.getTranslationXTolerance();
-
-        float diffTolY = bestFit.getTranslationYTolerance()
-            - fit.getTranslationYTolerance();
-
-        if ((Math.abs(diffTolX) < 1) && (Math.abs(diffTolY) < 1)) {
-
-            return 0;
-
-        } else if ((diffTolX > 0) && (diffTolY > 0)) {
-
-            return 1;
-
-        } else if ((diffTolX < 0) && (diffTolY < 0)) {
-
-            return -1;
-
-        } else {
-
-            return 2;
-        }
     }
 
     /**

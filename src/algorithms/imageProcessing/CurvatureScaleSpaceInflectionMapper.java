@@ -240,7 +240,7 @@ public final class CurvatureScaleSpaceInflectionMapper extends
             // note, these are closed curves
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
             PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
-            PointMatcher matcher = new PointMatcher();
+            EdgeMatcher matcher = new EdgeMatcher();
             if (reverseDatasetOrder) {
                 params = matcher.refineTransformation(set2, set1, params, 
                     centroidX2, centroidY2, centroidX1, centroidY1);
