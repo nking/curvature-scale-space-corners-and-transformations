@@ -431,29 +431,35 @@ public final class PointMatcher extends AbstractPointMatcher {
                     continue;
                 }
 
-                /*
-                empirically derived from testing.
-                TODO: these may change as tests are made more complex by adding
-                points that should not match, etc.
-                */
-                float rotRange = 4;
-                float rotDelta = 1;
-                float scaleRange = 0;
-                float scaleDelta = 0;
-                float transXRange = 20;
-                int transXDelta = 1;
-                float transYRange = 20;
-                int transYDelta = 1;
-                float tolTransX = 2; //TODO: this one not yet tested
-                float tolTransY = 2; //TODO: this one not yet tested
-                //TODO: determine w/ tests whether refinement here OR only
-                // for the best fit should be done
-                fit = refineTheTransformation(
-                    fit, part1, part2,
-                    image1Width, image1Height, image2Width, image2Height,
-                    rotRange, rotDelta, scaleRange, scaleDelta,
-                    transXRange, transXDelta, transYRange, transYDelta,
-                    tolTransX, tolTransY, setsFractionOfImage);
+                int nMaxMatchable = Math.min(part1.getN(), part2.getN());
+
+                boolean converged = hasConverged(fit, nMaxMatchable);
+
+                if (!converged) {
+                    /*
+                    empirically derived from testing.
+                    TODO: these may change as tests are made more complex by adding
+                    points that should not match, etc.
+                    */
+                    float rotRange = 4;
+                    float rotDelta = 1;
+                    float scaleRange = 0;
+                    float scaleDelta = 0;
+                    float transXRange = 40;
+                    int transXDelta = 1;
+                    float transYRange = 40;
+                    int transYDelta = 1;
+                    float tolTransX = 2; //TODO: this one not yet tested
+                    float tolTransY = 2; //TODO: this one not yet tested
+                    //TODO: determine w/ tests whether refinement here OR only
+                    // for the best fit should be done
+                    fit = refineTheTransformation(
+                        fit, part1, part2,
+                        image1Width, image1Height, image2Width, image2Height,
+                        rotRange, rotDelta, scaleRange, scaleDelta,
+                        transXRange, transXDelta, transYRange, transYDelta,
+                        tolTransX, tolTransY, setsFractionOfImage);
+                }
 
                 nStat[count] = (float)fit.getNumberOfMatchedPoints()/
                     (float)fit.getNMaxMatchable();
@@ -2551,13 +2557,9 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
                             continue;
                         }
 
-                        /*
-                        TODO:
-                        this might be better to perform at the end of the
-                        method right before returning the best result
-                        */
-
+/*
                         int nIntervals = 3;
+
 
                         TransformationPointFit fit2 = finerGridSearch(
                             nIntervals, bestFit, set1, set2,
@@ -2588,6 +2590,7 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
 
                             bestFit = fit2;
                         }
+*/
                     }
                 }
             }
@@ -2747,7 +2750,7 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
 
                 float tx0 = transX + (transXDelta/2);
                 float ty0 = transY + (transYDelta/2);
-
+                
                 TransformationParameters params = new TransformationParameters();
                 params.setRotationInRadians(rotationInRadians);
                 params.setScale(scale);
@@ -4656,6 +4659,16 @@ if (compTol == 1) {
         RangeInt transYStartStop = new RangeInt(
             (int)(fit.getTranslationY() - (transYRange/2.f)),
             (int)(fit.getTranslationY() + (transYRange/2.f)));
+
+        log.fine("refineTheTransformation: rotStart=" + rotStart
+            + " rotStop=" + rotStop + " rotDelta=" + rotDelta
+            + " transXStart=" + transXStartStop.getStart() +
+              " transXStop=" + transXStartStop.getStop()
+            + " transYStart=" + transYStartStop.getStart() +
+              " transYStop=" + transYStartStop.getStop()
+            + " transDeltaX=" + transXDelta + " transDeltaY=" + transYDelta
+            + " scaleStart=" + scaleStart + " scaleStop=" + scaleStop
+        );
 
         TransformationPointFit fit2 = calculateTransformationWithGridSearch(
             set1, set2,

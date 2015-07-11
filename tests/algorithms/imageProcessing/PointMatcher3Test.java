@@ -752,9 +752,9 @@ public class PointMatcher3Test extends TestCase {
                             float rotDelta2 = 1;
                             float scaleRange2 = 0;
                             float scaleDelta2 = 0;
-                            float transXRange2 = 20;
+                            float transXRange2 = 40;
                             int transXDelta2 = 1;
-                            float transYRange2 = 20;
+                            float transYRange2 = 40;
                             int transYDelta2 = 1;
                             float tolTransX2 = 2; //TODO: this one not yet tested
                             float tolTransY2 = 2; //TODO: this one not yet tested
