@@ -445,9 +445,9 @@ public final class PointMatcher extends AbstractPointMatcher {
                     float rotDelta = 1;
                     float scaleRange = 0;
                     float scaleDelta = 0;
-                    float transXRange = 40;
+                    float transXRange = 50;
                     int transXDelta = 1;
-                    float transYRange = 40;
+                    float transYRange = 50;
                     int transYDelta = 1;
                     float tolTransX = 2; //TODO: this one not yet tested
                     float tolTransY = 2; //TODO: this one not yet tested

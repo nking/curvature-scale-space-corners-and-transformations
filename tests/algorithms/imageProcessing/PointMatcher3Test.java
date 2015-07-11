@@ -509,6 +509,7 @@ public class PointMatcher3Test extends TestCase {
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         //seed = 1436554280614L;
+        seed = 1436649429714L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -523,7 +524,7 @@ public class PointMatcher3Test extends TestCase {
 
         for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
             for (int rotType = 0; rotType < 4; ++rotType) {
-                for (int nTest = 0; nTest < 10/*20*/; ++nTest) { // this increases nPoints
+                for (int nTest = 0; nTest < 20; ++nTest) { // this increases nPoints
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -745,6 +746,8 @@ public class PointMatcher3Test extends TestCase {
                         
                         converged = pointMatcher.hasConverged(fit, nMaxMatchable);
                         
+                        log.info("converged=" + converged);
+                        
                         if (!converged) {
                             
                             // refine the transformation:
@@ -752,9 +755,9 @@ public class PointMatcher3Test extends TestCase {
                             float rotDelta2 = 1;
                             float scaleRange2 = 0;
                             float scaleDelta2 = 0;
-                            float transXRange2 = 40;
+                            float transXRange2 = 50;
                             int transXDelta2 = 1;
-                            float transYRange2 = 40;
+                            float transYRange2 = 50;
                             int transYDelta2 = 1;
                             float tolTransX2 = 2; //TODO: this one not yet tested
                             float tolTransY2 = 2; //TODO: this one not yet tested
