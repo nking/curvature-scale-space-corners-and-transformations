@@ -252,6 +252,38 @@ public abstract class AbstractPointMatcher {
         }
     }
     
+    /**
+     * estimate whether fit has converged by the mean distance from model and 
+     * the standard deviation of a point from that mean and by the
+     * number of points matched.  note that a false return may still be a 
+     * converged solution for some cases.
+     * @param fit
+     * @param nMaxMatchable
+     * @return 
+     */
+    public boolean hasConverged(TransformationPointFit fit, int nMaxMatchable) {
+        
+        int bestNMatches = fit.getNumberOfMatchedPoints();
+
+        double bestAvg = fit.getMeanDistFromModel();
+
+        double bestS = fit.getStDevFromMean();
+
+        float fracMatched = (float)bestNMatches/(float)nMaxMatchable;
+
+        if ((bestAvg < 1) && (bestS < 1)) {
+            if (fracMatched > 0.9) {
+                return true;
+            }
+        } else if ((bestAvg < 0.5) && (bestS < 0.5)) {
+            if (nMaxMatchable > 10 && bestNMatches > 10) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
     private PolygonPlotterPNG plotter = null;
     //TODO: put this in an aspect
     private void plotTranslationSimplex(TransformationPointFit[] fits,

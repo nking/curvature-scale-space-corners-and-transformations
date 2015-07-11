@@ -12,10 +12,11 @@ parameters that affect the result.
       -- performVerticalPartitionedMatching
          -- calcTransWithRoughGrid(s1, s2, w1, h1, w2, h2, f)
          |     
-  *      | int deltaTransX = 4;    
-  *      | int deltaTransY = 4;    
-  *      | float tolTransX = deltaTransX;
-  *      | float tolTransY = deltaTransY;
+  *      | int rotDelat = 5; // w/ assignment to 2 for low point density 
+  *      | int deltaTransX = 15; // w/ assignment to 50 for high point density   
+  *      | int deltaTransY = 15; // w/ assignment to 50 for high point density
+  *      | float tolTransX = getTolFactor() * deltaTransX;
+  *      | float tolTransY = getTolFactor() * deltaTransY;
          |     
          |  -- calculateTransformationWithGridSearch(s1, s2, w1, h1, w2, h2,
          |  |  rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta, 
@@ -76,14 +77,6 @@ parameters that affect the result.
          |  |   finerGridSearchToDistinguishBest(similarToBestFit, s1, s2, w1, h1, w2, h2, f)
          |  |   return bestFit
 
-    *    int nTransIntervals = 3; 
-         float transX = bestFit.getParameters().getTranslationX();
-         float transY = bestFit.getParameters().getTranslationY();
-    *    float dim = 2.5 * max(bestFit.tolerance)
-         float gridWidth = nTransIntervals * dim;
-         float gridHeight = nTransIntervals * dim;
-    *    nTransIntervals = 9; 
-    *    float tolTransX = dx;
-    *    float tolTransY = dy;
+         -- refineTheTransformation
 
          reevaluateFitsForCommonTolerance
