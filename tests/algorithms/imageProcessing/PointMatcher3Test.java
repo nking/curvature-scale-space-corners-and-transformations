@@ -509,7 +509,7 @@ public class PointMatcher3Test extends TestCase {
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         //seed = 1436554280614L;
-        //seed = 1436649429714L;
+        //seed = 1436661933371L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -636,12 +636,9 @@ public class PointMatcher3Test extends TestCase {
                     }
                     if ((densX > 0.033) || (densY > 0.033)) {
                         // 100 is too high.  takes longer and is much less accurate.
-                        // presumably takes longer because smaller deltas lead
-                        // to convergence which is an early exit w/ good solution.
-                        // 75 leads to results accurate within 2 degrees and 
-                        //     less than 10 pix in translation but the smaller 
-                        //     number of convergences means the runtime is 
-                        //     actually longer than a value of 50.
+                        // presumably takes longer because in contrast, 
+                        // smaller deltas lead to convergence which is an early 
+                        // exit w/ good solution.
                         deltaTransX = 50;
                         deltaTransY = 50;
                     }
@@ -649,13 +646,11 @@ public class PointMatcher3Test extends TestCase {
                     float tolTransY = pointMatcher.getTolFactor() * deltaTransY;
 
                     /*
-                    with nearly perfect data, that is hardly any extra non-matchable points added,
-                    a small rotation delta combined with somewhat large translation delta
+                    with nearly perfect data, that is hardly any extra 
+                    non-matchable points added, a small rotation delta combined 
+                    with somewhat large translation delta
                     (with a point density limit) finds the correct answer
                     which can be refined.
-
-                    rotDelta=5 unless point density is < 0.01, then rotDelta=2.
-                    transDelta=15 And matching is greedy unless nPoints < 30
                     */
 
                     log.info("\ntest for nPoints=" + nPoints + " nTest=" + nTest
@@ -750,23 +745,10 @@ public class PointMatcher3Test extends TestCase {
                         
                         if (!converged) {
                             
-                            // refine the transformation:
-                            float rotRange2 = 6;
-                            float rotDelta2 = 1;
-                            float scaleRange2 = 0;
-                            float scaleDelta2 = 0;
-                            float transXRange2 = 50;
-                            int transXDelta2 = 1;
-                            float transYRange2 = 50;
-                            int transYDelta2 = 1;
-                            float tolTransX2 = 2; //TODO: this one not yet tested
-                            float tolTransY2 = 2; //TODO: this one not yet tested
                             fit = pointMatcher.refineTheTransformation(
                                 fit, unmatchedLeftXY, unmatchedRightXY,
                                 imageWidth, imageHeight, imageWidth, imageHeight,
-                                rotRange2, rotDelta2, scaleRange2, scaleDelta2,
-                                transXRange2, transXDelta2, transYRange2, transYDelta2,
-                                tolTransX2, tolTransY2, setsFractionOfImage);
+                                setsFractionOfImage);
 
                             assert(fit != null);
                         }
@@ -831,8 +813,7 @@ public class PointMatcher3Test extends TestCase {
                     3 so is beginning to be large.
 
                     Increasing the transXDelta and transYDelta to values of
-                    10 results in residuals in translation of about 5, so that
-                    is probably not always going to lead to the correct solution.
+                    10 results in residuals in translation of about 5.
 
                     ----
                     rotDelta=4 converges for some, but not all.
