@@ -509,7 +509,7 @@ public class PointMatcher3Test extends TestCase {
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         //seed = 1436554280614L;
-        seed = 1436649429714L;
+        //seed = 1436649429714L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -751,7 +751,7 @@ public class PointMatcher3Test extends TestCase {
                         if (!converged) {
                             
                             // refine the transformation:
-                            float rotRange2 = 4;
+                            float rotRange2 = 6;
                             float rotDelta2 = 1;
                             float scaleRange2 = 0;
                             float scaleDelta2 = 0;

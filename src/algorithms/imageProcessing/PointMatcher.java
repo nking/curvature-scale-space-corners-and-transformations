@@ -441,7 +441,7 @@ public final class PointMatcher extends AbstractPointMatcher {
                     TODO: these may change as tests are made more complex by adding
                     points that should not match, etc.
                     */
-                    float rotRange = 4;
+                    float rotRange = 6;
                     float rotDelta = 1;
                     float scaleRange = 0;
                     float scaleDelta = 0;
@@ -4660,7 +4660,7 @@ if (compTol == 1) {
             (int)(fit.getTranslationY() - (transYRange/2.f)),
             (int)(fit.getTranslationY() + (transYRange/2.f)));
 
-        log.fine("refineTheTransformation: rotStart=" + rotStart
+ log.info("refineTheTransformation: rotStart=" + rotStart
             + " rotStop=" + rotStop + " rotDelta=" + rotDelta
             + " transXStart=" + transXStartStop.getStart() +
               " transXStop=" + transXStartStop.getStop()
