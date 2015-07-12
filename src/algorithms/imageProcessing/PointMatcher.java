@@ -4943,20 +4943,27 @@ if (compTol == 1) {
 
             if (true) {
 
-                Transformer transformer = new Transformer();
-
-                TransformationPointFit[] starterPoints = new TransformationPointFit[99];
-                int count = 0;
                 float rotInDegrees = fit.getParameters().getRotationInDegrees();
-                float[] txS = new float[]{
-                    fit.getTranslationX() - (transXRange/2.f),
-                    fit.getTranslationX(), 
-                    fit.getTranslationX() + (transXRange/2.f)};
-                float[] tyS = new float[]{
-                    fit.getTranslationY() - (transYRange/2.f),
-                    fit.getTranslationY(), 
-                    fit.getTranslationY() + (transYRange/2.f)};
+                
+                Transformer transformer = new Transformer();
+                
+                int nX = (int)Math.ceil(transXRange/4.f);
+                int nY = (int)Math.ceil(transYRange/4.f);
 
+                float[] txS = new float[nX];    
+                txS[0] = fit.getTranslationX() - (transXRange/2.f);
+                for (int i = 1; i < nX; ++i) {
+                    txS[i] = txS[i - 1] + 4;
+                }
+                float[] tyS = new float[nY];    
+                tyS[0] = fit.getTranslationY() - (transYRange/2.f);
+                for (int i = 1; i < nY; ++i) {
+                    tyS[i] = tyS[i - 1] + 4;
+                }
+                
+                FixedSizeSortedVector<TransformationPointFit> starterPoints =
+                    new FixedSizeSortedVector<>(10, TransformationPointFit.class);
+                                
                 for (float rotT = (rotInDegrees - (rotRange/2.f)); 
                     rotT <= (rotInDegrees + (rotRange/2.f)); ++rotT) {
                     
@@ -4977,19 +4984,17 @@ if (compTol == 1) {
                             PairFloatArray allPoints1Tr = transformer.applyTransformation(
                                 params, image1Width >> 1, image1Height >> 1, set1);
 
-                            starterPoints[count] = evaluateFitForUnMatchedTransformedGreedy(params,
+                            TransformationPointFit fit2 = 
+                                evaluateFitForUnMatchedTransformedGreedy(params,
                                 allPoints1Tr, set2, tolTransX, tolTransY);
-
-                            count++;
+                            
+                            starterPoints.add(fit2);
                         }
                     }
                 }
 
-                // TODO: for now, keeping all starter points, but may want to reduce
-                // to top 10
-
                 TransformationPointFit fit2 = refineTranslationWithDownhillSimplex(
-                    set1, set2, image1Width, image1Height, starterPoints,
+                    set1, set2, image1Width, image1Height, starterPoints.getArray(),
                     fit.getTranslationX(), fit.getTranslationY(),
                     tolTransX, tolTransY, transXRange + 5, transYRange + 5,
                     fit.getScale(), fit.getRotationInRadians(), false, 50);
@@ -5011,8 +5016,8 @@ if (compTol == 1) {
                     return fit;                    
                 } else {
                     rotRange = 6;
-                    transXRange = 14;
-                    transYRange = 14;
+                    transXRange = 25;
+                    transYRange = 25;
                     tolTransX = cellFactor * transXRange;
                     tolTransY = cellFactor * transXRange;
                 }

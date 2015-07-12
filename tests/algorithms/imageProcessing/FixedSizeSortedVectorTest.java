@@ -122,7 +122,7 @@ public class FixedSizeSortedVectorTest extends TestCase {
         C c = new C(0);
         
         vector.add(a);
-        vector.add(c);
+        vector.add(b);
         vector.add(c);
         
         A[] values = vector.getArray();
