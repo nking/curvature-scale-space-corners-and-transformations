@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import java.util.Arrays;
 import junit.framework.TestCase;
 
 /**
@@ -61,6 +62,54 @@ public class FixedSizeSortedVectorTest extends TestCase {
         
         assertTrue(values[0].intValue() == 4);
         assertTrue(values[1].intValue() == 6);
+        
+        //test whether can have an array with nulls in it and still use
+        //Arrays.binarySearch for non-null indexes
+   
+        Integer[] a = new Integer[4];
+        a[0] = Integer.valueOf(6);
+        a[1] = Integer.valueOf(7);
+        int idx = Arrays.binarySearch(a, 0, 2, Integer.valueOf(6));
+        assertTrue(idx == 0);
+        
+        sortedVector = 
+            new FixedSizeSortedVector<>(4, Integer.class);
+        
+        sortedVector.add(Integer.valueOf(7));
+        sortedVector.add(Integer.valueOf(6));
+        
+        values = sortedVector.getArray();
+        
+        assertNotNull(values);
+        assertTrue(sortedVector.getNumberOfItems() == 2);
+        
+        assertTrue(values[0].intValue() == 6);
+        assertTrue(values[1].intValue() == 7);
+        
+        sortedVector.add(Integer.valueOf(4));
+        sortedVector.add(Integer.valueOf(5));
+        
+        values = sortedVector.getArray();
+        
+        assertNotNull(values);
+        assertTrue(sortedVector.getNumberOfItems() == 4);
+        
+        assertTrue(values[0].intValue() == 4);
+        assertTrue(values[1].intValue() == 5);
+        assertTrue(values[2].intValue() == 6);
+        assertTrue(values[3].intValue() == 7);
+        
+        sortedVector.add(Integer.valueOf(10));
+        
+        values = sortedVector.getArray();
+        
+        assertNotNull(values);
+        assertTrue(sortedVector.getNumberOfItems() == 4);
+        
+        assertTrue(values[0].intValue() == 4);
+        assertTrue(values[1].intValue() == 5);
+        assertTrue(values[2].intValue() == 6);
+        assertTrue(values[3].intValue() == 7);
     }
     
     public void testTypes() throws Exception {
