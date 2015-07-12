@@ -9,12 +9,14 @@ import java.util.Arrays;
  *<pre>
  * runtime complexity is:
  *     O(N * (lg_2(k) + smaller than k))
- * where k is the fixedCapacity and N is the number of times add is used.
+ * where k is the fixed capacity and N is the number of times add is used.
  * 
  * worse case runtime complexity is O(N * (k + lg_2(k)))
  * best case runtime complexity is O(N * (1 + lg_2(k)))
  *</pre>
  * @author nichole
+ * @param <T> class type to be held and sorted by this class.  It must implement
+ * Comparable.
  */
 @SuppressWarnings({"unchecked"})
 public class FixedSizeSortedVector<T extends Comparable<T>> {
