@@ -8,11 +8,9 @@ import algorithms.util.PairFloatArrayUnmodifiable;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.RangeInt;
-import algorithms.util.ScatterPointPlotterPNG;
 import java.awt.Color;
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
@@ -503,7 +501,7 @@ public class PointMatcher3Test extends TestCase {
         }
     }
 
-    public void testCalculateTransformationWithGridSearch()
+    public void estCalculateTransformationWithGridSearch()
         throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -828,6 +826,165 @@ public class PointMatcher3Test extends TestCase {
                     If rotDelta=3 is consistently finding the correct answer
                     it should be used.
                     */
+                }
+            }
+        }
+    }
+
+    public void testCalculateEuclideanTransformation()
+        throws Exception {
+
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        seed = 1436749125398L;
+        sr.setSeed(seed);
+        log.info("SEED=" + seed);
+
+        //image size range 250 to 10000
+        //  these are altered below
+        int imageWidth = 650;
+        int imageHeight = 400;
+
+        // ---- random testing for stereo imaging ----
+
+        float scale = 1.0f;
+
+        for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
+            for (int rotType = 0; rotType < 2; ++rotType) {
+                for (int nTest = 0; nTest < 10/*20*/; ++nTest) { // this increases nPoints
+
+                    PointMatcher pointMatcher = new PointMatcher();
+
+                    PairIntArray unmatchedLeftXY = new PairIntArray();
+
+                    float rotInDegrees = (int)(sr.nextFloat() * 20);
+
+                    if (rotType == 1) {
+                        
+                        rotInDegrees = 360 - rotInDegrees;
+                        imageWidth = Math.abs(500) + 250;
+                        imageHeight = Math.abs(500) + 250;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
+                    } else if (rotType == 2) {
+                        
+                        rotInDegrees = 360 - rotInDegrees;
+                        imageWidth = Math.abs(5000) + 250;
+                        imageHeight = Math.abs(5000) + 250;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
+                    }
+
+                    int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
+                    int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
+                    if (sr.nextBoolean()) {
+                        transX *= -1;
+                    }
+                    if (sr.nextBoolean()) {
+                        transY *= -1;
+                    }
+
+                    TransformationParameters params = new TransformationParameters();
+                    params.setRotationInDegrees(rotInDegrees);
+                    params.setScale(scale);
+                    params.setTranslationX(transX);
+                    params.setTranslationY(transY);
+
+                    int nPoints = (nTest + 1) * 7;
+
+                    log.info("\ntest for nPoints=" + nPoints + " nTest=" + nTest
+                        + " rotType=" + rotType + " nRuns=" + nRuns
+                        + "\nparams=" + params.toString()
+                    );
+
+                    for (int i = 0; i < nPoints; ++i) {
+                        int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
+                        int y = (imageHeight/4) + sr.nextInt(imageHeight/4);
+                        unmatchedLeftXY.add(x, y);
+                    }
+
+                    // ===  transform the right points  ======
+
+                    Transformer transformer = new Transformer();
+
+                    PairIntArray unmatchedRightXY = transformer.applyTransformation(
+                        params, unmatchedLeftXY, imageWidth >> 1, imageHeight >> 1);
+
+                    // consider adding small deviations to the right
+
+                    // add small number of points in left that are not in right
+                    //   and vice versa
+                    int nAdd = (int)(sr.nextFloat()*nPoints/10);
+                    if (nAdd == 0) {
+                        nAdd = 1;
+                    }
+                    for (int i = 0; i < nAdd; ++i) {
+                        int x = sr.nextInt(imageWidth);
+                        int y = sr.nextInt(imageHeight);
+                        unmatchedLeftXY.add(x, y);
+                    }
+                    for (int i = 0; i < nAdd; ++i) {
+                        int x = sr.nextInt(imageWidth);
+                        int y = sr.nextInt(imageHeight);
+                        unmatchedRightXY.add(x, y);
+                    }
+
+                    // change the order of points to make sure not biased
+                    // by order
+                    unmatchedRightXY.reverse();
+
+                    float setsFractionOfImage = 1.0f;
+
+                    int nMaxMatchable = nPoints;
+
+                    int nExpected = nMaxMatchable;
+                    int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
+
+                    TransformationPointFit fit =
+                        pointMatcher.calculateEuclideanTransformation(
+                        unmatchedLeftXY, unmatchedRightXY,
+                        imageWidth, imageHeight, imageWidth, imageHeight,
+                        setsFractionOfImage);
+
+                    assert(fit != null);
+                        
+                    log.info("FIT=" + fit.toString());
+                        
+                    boolean converged = pointMatcher.hasConverged(fit, nMaxMatchable);
+                                                
+                    TransformationParameters fitParams = fit.getParameters();
+                    int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
+                    float diffRotDeg = getAngleDifference(
+                        fitParams.getRotationInDegrees(), rotInDegrees);
+                    float diffScale = Math.abs(fitParams.getScale() - scale);
+                    float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
+                    float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
+
+                    double epsTrans = 3;
+                    double epsRot = 1; 
+
+                    log.info("FINAL FIT=" + fit.toString());
+                    log.info("diff result and expected =" +
+                        String.format(
+                        " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f  nEps=%d  tEps=%f",
+                        diffN, diffRotDeg, diffScale, diffTransX, diffTransY, nEps, (float)epsTrans)
+                    );
+
+                    if ((diffN <= nEps) && (diffRotDeg <= epsRot) &&
+                        (diffScale < 0.2) && (diffTransX <= epsTrans) &&
+                        (diffTransY <= epsTrans)) {
+                        converged = true;
+                    }
+
+                    assertTrue(converged);
                 }
             }
         }
@@ -1432,7 +1589,8 @@ images as possible)
 
             //test.testPerformVerticalPartitionedMatching();
             //test.testCalculateTranslationFromGridThenDownhillSimplex();
-            test.testCalculateTransformationWithGridSearch();
+            //test.testCalculateTransformationWithGridSearch();
+            test.testCalculateEuclideanTransformation();
 
             /*
             tests for :
