@@ -15,8 +15,100 @@ public abstract class AbstractPointMatcher {
     public void setCostToNumMatchedAndDiffFromModel() {
         costIsNumAndDiff = true;
     }
+    
+    /**
+     * sort the fits by descending number of matches. uses a slightly more 
+     * iterative pattern adapted from "Programming Pearls" by Jon Bentley.
+     * The average runtime is O(N*lgN) and the worse case runtime is O(N^2) 
+     * but it is 3 times faster than sortByDescendingMatches0(...).
+     * 
+     * @param fits
+     * @param idxLo
+     * @param idxHi, upper index, inclusive
+     */
+    void sortByDescendingMatches(TransformationPointFit[] a, int idxLo,
+        int idxHi) {
 
-    protected boolean fitIsSimilar(TransformationPointFit fit1, TransformationPointFit fit2, float scaleTolerance, float rotInDegreesTolerance, float translationTolerance) {
+        if (idxLo < idxHi) {
+
+            TransformationPointFit x = a[idxLo];
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+            
+            //replace the recursive partition method frame load with iteration:
+            while (true) {
+                do {
+                    store++;
+                } while ((store <= idxHi) && (fitIsBetter(x, a[store])));
+                
+                do {
+                    idxMid--;
+                } while (fitIsBetter(a[idxMid], x));
+                
+                if (store > idxMid) {
+                    break;
+                }
+                TransformationPointFit swap = a[store];
+                a[store] = a[idxMid];
+                a[idxMid] = swap;
+            }
+            TransformationPointFit swap = a[idxLo];
+            a[idxLo] = a[idxMid];
+            a[idxMid] = swap;
+
+            sortByDescendingMatches(a, idxLo, idxMid - 1);
+
+            sortByDescendingMatches(a, idxMid + 1, idxHi);
+        }
+    }
+
+
+     /**
+     * sort the fits by descending number of matches.
+     * @param fits
+     * @param idxLo
+     * @param idxHi, upper index, inclusive
+     */
+    void sortByDescendingMatches0(TransformationPointFit[] fits, int idxLo,
+        int idxHi) {
+
+        if (idxLo < idxHi) {
+
+            int idxMid = partition(fits, idxLo, idxHi);
+
+            sortByDescendingMatches0(fits, idxLo, idxMid - 1);
+
+            sortByDescendingMatches0(fits, idxMid + 1, idxHi);
+        }
+    }
+
+    private int partition(TransformationPointFit[] fits, int idxLo, int idxHi) {
+
+        TransformationPointFit x = fits[idxHi];
+
+        int store = idxLo - 1;
+
+        for (int i = idxLo; i < idxHi; ++i) {
+            if (fitIsBetter(x, fits[i])) {
+                store++;
+                TransformationPointFit swap = fits[store];
+                fits[store] = fits[i];
+                fits[i] = swap;
+            }
+        }
+
+        store++;
+        TransformationPointFit swap = fits[store];
+        fits[store] = fits[idxHi];
+        fits[idxHi] = swap;
+
+        return store;
+    }
+
+    protected boolean fitIsSimilar(TransformationPointFit fit1, 
+        TransformationPointFit fit2, float scaleTolerance, 
+        float rotInDegreesTolerance, float translationTolerance) {
+        
         if (fit1 == null || fit2 == null) {
             return false;
         }
