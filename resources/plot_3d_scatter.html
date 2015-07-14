@@ -1040,7 +1040,8 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
             if ((i % nPointsPerColor) == 0) {
                 /* add last point again to make closed curve */
                 if (i > 0) {
-                    pointGeo.vertices.push(new THREE.Vector3(xScale(data.unfiltered[i-1].x), yScale(data.unfiltered[i-1].y), zScale(data.unfiltered[i-1].z)));
+                    var idx = i - nPointsPerColor;
+                    pointGeo.vertices.push(new THREE.Vector3(xScale(data.unfiltered[idx].x), yScale(data.unfiltered[idx].y), zScale(data.unfiltered[idx].z)));
                     pointGeo.colors.push(new THREE.Color().setRGB(
                         hexToRgb(colour(colorCount)).r / 255, hexToRgb(colour(colorCount)).g / 255, hexToRgb(colour(colorCount)).b / 255
                     ));
@@ -1060,12 +1061,15 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
             ));
 
         }
-        pointGeo.vertices.push(new THREE.Vector3(xScale(data.unfiltered[i-1].x), yScale(data.unfiltered[i-1].y), zScale(data.unfiltered[i-1].z)));
-        pointGeo.colors.push(new THREE.Color().setRGB(
-            hexToRgb(colour(colorCount)).r / 255, hexToRgb(colour(colorCount)).g / 255, hexToRgb(colour(colorCount)).b / 255
-        ));
-        var polyline = new THREE.Line(pointGeo, mat);
-        scatterPlot.add(polyline);
+        if ((i % nPointsPerColor) == 0) {
+            var idx = i - nPointsPerColor;
+            pointGeo.vertices.push(new THREE.Vector3(xScale(data.unfiltered[idx].x), yScale(data.unfiltered[idx].y), zScale(data.unfiltered[idx].z)));
+            pointGeo.colors.push(new THREE.Color().setRGB(
+                hexToRgb(colour(colorCount)).r / 255, hexToRgb(colour(colorCount)).g / 255, hexToRgb(colour(colorCount)).b / 255
+            ));
+            var polyline = new THREE.Line(pointGeo, mat);
+            scatterPlot.add(polyline);
+        }
 
         renderer.render(scene, camera);
         var paused = false;
