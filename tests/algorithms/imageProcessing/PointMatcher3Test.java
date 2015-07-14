@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.logging.Logger;
+import javax.swing.JFrame;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
 import org.ejml.simple.*;
@@ -990,12 +991,13 @@ public class PointMatcher3Test extends TestCase {
         }
     }
 
-     public void testFortyFiveDegreeSearch() throws Exception {
+    public void testFortyFiveDegreeSearch() throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         //seed = 1436554280614L;
         //seed = 1436661933371L;
+        seed = 1436809248753L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -1009,8 +1011,8 @@ public class PointMatcher3Test extends TestCase {
         float scale = 1.0f;
 
         for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
-            for (int rotType = 0; rotType < 4; ++rotType) {
-                for (int nTest = 0; nTest < 20; ++nTest) { // this increases nPoints
+            for (int rotType = 0; rotType < 5; ++rotType) {
+                for (int nTest = 0; nTest < 10/*20*/; ++nTest) { // this increases nPoints
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -1019,11 +1021,11 @@ public class PointMatcher3Test extends TestCase {
                     float rotInDegrees = (int)(sr.nextFloat() * 20);
 
                     if (rotType == 1) {
-                        rotInDegrees = sr.nextBoolean() ? (270 + rotInDegrees) :
-                            (270 - rotInDegrees);
+                        rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
+                            (90 - rotInDegrees);
                         //image size range 250 to 10000
-                        imageWidth = Math.abs(250) + 250;
-                        imageHeight = Math.abs(250) + 250;
+                        imageWidth = Math.abs(5000) + 250;
+                        imageHeight = Math.abs(5000) + 250;
                         if ((imageWidth & 1) == 1) {
                             imageWidth++;
                         }
@@ -1034,6 +1036,18 @@ public class PointMatcher3Test extends TestCase {
                         rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
                             (180 - rotInDegrees);
                         //image size range 250 to 10000
+                        imageWidth = Math.abs(250) + 250;
+                        imageHeight = Math.abs(250) + 250;
+                        if ((imageWidth & 1) == 1) {
+                            imageWidth++;
+                        }
+                        if ((imageHeight & 1) == 1) {
+                            imageHeight++;
+                        }
+                    } else if (rotType == 3) {
+                        rotInDegrees = sr.nextBoolean() ? (270 + rotInDegrees) :
+                            (270 - rotInDegrees);
+                        //image size range 250 to 10000
                         imageWidth = Math.abs(1000) + 250;
                         imageHeight = Math.abs(1000) + 250;
                         if ((imageWidth & 1) == 1) {
@@ -1042,32 +1056,19 @@ public class PointMatcher3Test extends TestCase {
                         if ((imageHeight & 1) == 1) {
                             imageHeight++;
                         }
-                    } else if (rotType == 3) {
-                        rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
-                            (90 - rotInDegrees);
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(2000) + 250;
-                        imageHeight = Math.abs(2000) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
                     } else if (rotType == 4) {
-                        rotInDegrees = sr.nextBoolean() ? (45 + rotInDegrees) :
-                            (45 - rotInDegrees);
+                        rotInDegrees = (360 - rotInDegrees);
                         //image size range 250 to 10000
-                        imageWidth = Math.abs(5000) + 250;
-                        imageHeight = Math.abs(5000) + 250;
+                        imageWidth = Math.abs(500) + 250;
+                        imageHeight = Math.abs(500) + 250;
                         if ((imageWidth & 1) == 1) {
                             imageWidth++;
                         }
                         if ((imageHeight & 1) == 1) {
                             imageHeight++;
                         }
-                    }
-
+                    } 
+                    
                     int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
                     int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
                     if (sr.nextBoolean()) {

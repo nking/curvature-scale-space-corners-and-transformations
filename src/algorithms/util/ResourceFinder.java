@@ -28,6 +28,19 @@ public class ResourceFinder {
         return filePath;
     }
 
+    public static String findOutputTestDirectory() throws IOException {
+
+        String binDir = findDirectory("bin");
+        
+        String testDir = binDir + sep + "test-classes";
+        
+        File f = new File(testDir);
+        if (!f.exists()) {
+            throw new IOException("could not directory bin/test-classes");
+        }
+        return testDir;
+    }
+    
     public static String findResourcesDirectory() throws IOException {
 
         return findDirectory("resources");

@@ -2,6 +2,7 @@
 <head>
     <!-- plot is directly from http://bl.ocks.org/phil-pedruco/9913243 with imported sources for offline use and further edits for use here-->
     <!-- also see https://aerotwist.com/tutorials/creating-particles-with-three-js/ -->
+    <!-- NOTE: browser needs to implement WebGL -->
     <script>
         <!-- three.min.js -->
 // three.js - http://github.com/mrdoob/three.js
@@ -978,7 +979,7 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
         line.type = THREE.Lines;
         scatterPlot.add(line);
 
-        var titleX = createText2D('-X');
+        var titleX = createText2D('-R');
         titleX.position.x = xScale(vpts.xMin) - 12,
         titleX.position.y = 5;
         scatterPlot.add(titleX);
@@ -988,7 +989,7 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
         valueX.position.y = -5;
         scatterPlot.add(valueX);
 
-        var titleX = createText2D('X');
+        var titleX = createText2D('R');
         titleX.position.x = xScale(vpts.xMax) + 12;
         titleX.position.y = 5;
         scatterPlot.add(titleX);
@@ -998,7 +999,7 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
         valueX.position.y = -5;
         scatterPlot.add(valueX);
 
-        var titleY = createText2D('-Y');
+        var titleY = createText2D('-TX');
         titleY.position.y = yScale(vpts.yMin) - 5;
         scatterPlot.add(titleY);
 
@@ -1006,7 +1007,7 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
         valueY.position.y = yScale(vpts.yMin) - 15,
         scatterPlot.add(valueY);
 
-        var titleY = createText2D('Y');
+        var titleY = createText2D('TX');
         titleY.position.y = yScale(vpts.yMax) + 15;
         scatterPlot.add(titleY);
 
@@ -1014,11 +1015,11 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
         valueY.position.y = yScale(vpts.yMax) + 5,
         scatterPlot.add(valueY);
 
-        var titleZ = createText2D('-Z ' + format(zExent[0]));
+        var titleZ = createText2D('-TY ' + format(zExent[0]));
         titleZ.position.z = zScale(vpts.zMin) + 2;
         scatterPlot.add(titleZ);
 
-        var titleZ = createText2D('Z ' + format(zExent[1]));
+        var titleZ = createText2D('TY ' + format(zExent[1]));
         titleZ.position.z = zScale(vpts.zMax) + 2;
         scatterPlot.add(titleZ);
 
