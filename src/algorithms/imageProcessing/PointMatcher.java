@@ -5705,33 +5705,35 @@ if (compTol == 1) {
             densX1, densY1, densX2, densY2));
         
         float transDelta = 15;
+        float rotDelta = 10;
         
         if ((densX1 < 0.04) && (densY1 < 0.04) && (densX2 < 0.04) && (densY2 < 0.04)) {
             transDelta *= 2;
+        }
+        if (nMaxMatchable > 20) {
+            int nB2 = 0;
+            if (densX1 < 0.02) {
+                nB2++;
+            }
+            if (densY1 < 0.02) {
+                nB2++;
+            }
+            if (densX2 < 0.02) {
+                nB2++;
+            }
+            if (densY2 < 0.02) {
+                nB2++;
+            }
+            if (nB2 >= 2) {
+                transDelta *= 2;
+                //TODO: consider increasing rotDelta
+            }
         }
 
         Transformer transformer = new Transformer();
         
         int nX = (int) Math.ceil(transXRange / transDelta);
         int nY = (int) Math.ceil(transYRange / transDelta);
-        
-        /*
-        // instead, choose nX and nY
-        int nX = 50;
-        int nY = 50;
-        transDelta = Math.min(transXRange/(float)nX, transYRange/(float)nY);
-        if (transDelta == 0) {
-            transDelta = 1;
-        }
-        */
-        /*
-        if ((densX1 > 0.15)) {
-            // might need to return null.  too dense to use large deltas
-            transDelta = 4;
-            nX = (int) Math.ceil(transXRange / transDelta);
-            nY = (int) Math.ceil(transYRange / transDelta);
-        }
-        */
         
         float[] txS = new float[nX];
         txS[0] = transXStart;
@@ -5747,7 +5749,7 @@ if (compTol == 1) {
         float tolTransX = transDelta;
         float tolTransY = transDelta;
 
-        float[] rotation = MiscMath.writeDegreeIntervals(0, 359, 10);
+        float[] rotation = MiscMath.writeDegreeIntervals(0, 359, rotDelta);
 
         int nKeep = 10;//txS.length * tyS.length * rotation.length;
         //int nKeep2 = 10;
