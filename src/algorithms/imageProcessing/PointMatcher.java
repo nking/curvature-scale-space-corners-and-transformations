@@ -5706,8 +5706,9 @@ if (compTol == 1) {
         
         float transDelta = 15;
         
-        //if ((densX > 0.033) || (densY > 0.033)) {
-        //}
+        if ((densX1 > 0.01) || (densY1 > 0.01) || (densX2 > 0.01) || (densY2 > 0.01)) {
+            transDelta *= 2;
+        }
 
         Transformer transformer = new Transformer();
         
@@ -5781,7 +5782,7 @@ if (compTol == 1) {
         }
         
         long tm = System.currentTimeMillis() - t0;
-        double ts = tm * 1e-6;
+        double ts = tm * 1e-3;
         log.info("starterPoints finished for nMaxMatchable=" + nMaxMatchable +
             " seconds=" + ts);
         
@@ -5789,7 +5790,6 @@ if (compTol == 1) {
             log.info("best of starter points=" + starterPoints.getArray()[0].toString());
         }
         //return starterPoints.getArray()[0];
-
         
         //the center transX, transY are used only to calculate boundaries for
         //the solution:
