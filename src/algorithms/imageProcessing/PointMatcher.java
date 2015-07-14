@@ -5706,7 +5706,7 @@ if (compTol == 1) {
         
         float transDelta = 15;
         
-        if ((densX1 > 0.01) || (densY1 > 0.01) || (densX2 > 0.01) || (densY2 > 0.01)) {
+        if ((densX1 < 0.04) && (densY1 < 0.04) && (densX2 < 0.04) && (densY2 < 0.04)) {
             transDelta *= 2;
         }
 
