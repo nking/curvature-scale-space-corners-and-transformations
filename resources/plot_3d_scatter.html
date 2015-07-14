@@ -1050,16 +1050,29 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
                     pointGeo = new THREE.Geometry();
                 }
                 colorCount = colorCount + 1;
-                mat = new THREE.LineBasicMaterial({
-                    color: colour(colorCount), linewidth: 3
-                });
+                /* use red only to draw last polyline */
+                if (i >= (pointCount - nPointsPerColor)) {
+                    colorCount = 4;
+                    mat = new THREE.LineBasicMaterial({
+                        color: colour(colorCount), linewidth: 6
+                    });
+                } else {
+                    if (colorCount == 4) {
+                        colorCount = colorCount + 1;
+                    }
+                    if (colorCount > 9) {
+                        colorCount = 0;
+                    }
+                    mat = new THREE.LineBasicMaterial({
+                        color: colour(colorCount), linewidth: 3
+                    });
+                }
             }
 
             pointGeo.vertices.push(new THREE.Vector3(x, y, z));
             pointGeo.colors.push(new THREE.Color().setRGB(
                 hexToRgb(colour(colorCount)).r / 255, hexToRgb(colour(colorCount)).g / 255, hexToRgb(colour(colorCount)).b / 255
             ));
-
         }
         if ((i % nPointsPerColor) == 0) {
             var idx = i - nPointsPerColor;
