@@ -1022,14 +1022,14 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
         titleZ.position.z = zScale(vpts.zMax) + 2;
         scatterPlot.add(titleZ);
 
-        var mat = new THREE.ParticleBasicMaterial({
-            vertexColors: true,
-            size: 10
+        var colorCount = 0;
+
+        var mat = new THREE.LineBasicMaterial({
+            color: colour(colorCount), linewidth: 3
         });
 
         var pointCount = data.unfiltered.length;
         var pointGeo = new THREE.Geometry();
-        var colorCount = 0;
         var i = 0;
         for (i = 0; i < pointCount; i++) {
             var x = xScale(data.unfiltered[i].x);
@@ -1048,6 +1048,9 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
                     pointGeo = new THREE.Geometry();
                 }
                 colorCount = colorCount + 1;
+                mat = new THREE.LineBasicMaterial({
+                    color: colour(colorCount), linewidth: 3
+                });
             }
 
             pointGeo.vertices.push(new THREE.Vector3(x, y, z));
