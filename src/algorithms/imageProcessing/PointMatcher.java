@@ -4365,6 +4365,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
         log.fine("nIter=" + Integer.toString(nIter));
 
         if (debug) {
+            // the resulting file can be viewed with resources/plot_3d_simplex_n10.html
             writeSimplex(fits, true);
         }
 
@@ -5716,16 +5717,16 @@ if (compTol == 1) {
         }
         if (nMaxMatchable > 20) {
             int nB2 = 0;
-            if (densX1 < 0.02) {
+            if (densX1 < 0.021) {
                 nB2++;
             }
-            if (densY1 < 0.02) {
+            if (densY1 < 0.021) {
                 nB2++;
             }
-            if (densX2 < 0.02) {
+            if (densX2 < 0.021) {
                 nB2++;
             }
-            if (densY2 < 0.02) {
+            if (densY2 < 0.021) {
                 nB2++;
             }
             if (nB2 >= 2) {
@@ -5733,12 +5734,17 @@ if (compTol == 1) {
                 tolTransX = transDelta;
                 tolTransY = transDelta;
                 //TODO: consider increasing rotDelta
-
             } else if ((densX1 > 0.14) && (densY1 > 0.14) && (densX2 > 0.14) && (densY2 > 0.14)) {
-                tolTransX = 2 * transDelta;
+                tolTransX = 1.5f * transDelta;
                 tolTransY = tolTransX;
+                rotDelta = 5;
+                log.info("*** decr rotDelta?");
             }
         }
+        
+        /*
+        so far, looks like this gets the solution within +- 20 degrees
+        */
 
         Transformer transformer = new Transformer();
         
