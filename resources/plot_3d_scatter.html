@@ -1,6 +1,6 @@
 <html>
 <head>
-    <!-- plot is directly from http://bl.ocks.org/phil-pedruco/9913243 with imported sources for offline use -->
+    <!-- plot is directly from http://bl.ocks.org/phil-pedruco/9913243 with imported sources for offline use and further edits for use here-->
     <script>
         <!-- three.min.js -->
 // three.js - http://github.com/mrdoob/three.js
@@ -869,6 +869,9 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
     var w = 960;
     var h = 500;
 
+    /* changing this to make it easier to track Nelder-Mead simplex evolution.  10 points in a simplex usually*/
+    var nPointsPerColor = 10;
+
     renderer.setSize(w, h);
     document.getElementById("container").appendChild(renderer.domElement);
 
@@ -1025,14 +1028,19 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
 
         var pointCount = data.unfiltered.length;
         var pointGeo = new THREE.Geometry();
+        var colorCount = 0;
         for (var i = 0; i < pointCount; i++) {
             var x = xScale(data.unfiltered[i].x);
             var y = yScale(data.unfiltered[i].y);
             var z = zScale(data.unfiltered[i].z);
 
+            if ((i % nPointsPerColor) == 0) {
+                colorCount = colorCount + 1;
+            }
+
             pointGeo.vertices.push(new THREE.Vector3(x, y, z));
             pointGeo.colors.push(new THREE.Color().setRGB(
-                hexToRgb(colour(i)).r / 255, hexToRgb(colour(i)).g / 255, hexToRgb(colour(i)).b / 255
+                hexToRgb(colour(colorCount)).r / 255, hexToRgb(colour(colorCount)).g / 255, hexToRgb(colour(colorCount)).b / 255
             ));
 
         }
