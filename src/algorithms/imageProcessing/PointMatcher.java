@@ -5329,8 +5329,7 @@ if (compTol == 1) {
                 }
                 sb.append(Float.toString(rot)).append(",")
                     .append(Float.toString(tx)).append(",")
-                    .append(Float.toString(ty)).append(",")
-                    .append("1,1,1,1,1,1\n");
+                    .append(Float.toString(ty)).append("\n");
                 
                 String str = sb.toString();
                 
@@ -5706,9 +5705,14 @@ if (compTol == 1) {
         
         float transDelta = 15;
         float rotDelta = 10;
-        
+
+        float tolTransX = transDelta;
+        float tolTransY = transDelta;
+
         if ((densX1 < 0.04) && (densY1 < 0.04) && (densX2 < 0.04) && (densY2 < 0.04)) {
             transDelta *= 2;
+            tolTransX = transDelta;
+            tolTransY = transDelta;
         }
         if (nMaxMatchable > 20) {
             int nB2 = 0;
@@ -5726,7 +5730,13 @@ if (compTol == 1) {
             }
             if (nB2 >= 2) {
                 transDelta *= 2;
+                tolTransX = transDelta;
+                tolTransY = transDelta;
                 //TODO: consider increasing rotDelta
+
+            } else if ((densX1 > 0.14) && (densY1 > 0.14) && (densX2 > 0.14) && (densY2 > 0.14)) {
+                tolTransX = 2 * transDelta;
+                tolTransY = tolTransX;
             }
         }
 
@@ -5745,9 +5755,6 @@ if (compTol == 1) {
         for (int i = 1; i < nY; ++i) {
             tyS[i] = tyS[i - 1] + transDelta;
         }
-
-        float tolTransX = transDelta;
-        float tolTransY = transDelta;
 
         float[] rotation = MiscMath.writeDegreeIntervals(0, 359, rotDelta);
 

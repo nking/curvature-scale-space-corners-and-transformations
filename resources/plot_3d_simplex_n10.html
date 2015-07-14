@@ -811,9 +811,7 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
 
     function getPts(x) {
         //console.log(x)
-        var unfiltered = [],
-            lowPass = [],
-            highPass = [];
+        var unfiltered = [];
 
         x.forEach(function(d, i) {
 
@@ -824,21 +822,10 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
                 y: +line[1],
                 z: +line[2]
             };
-            lowPass[i] = {
-                x: +line[4],
-                y: +line[5],
-                z: +line[6]
-            };
-            highPass[i] = {
-                x: +line[7],
-                y: +line[8],
-                z: +line[9]
-            };
         })
+        // TODO: could order each nPointsPerColor by increasing x, y, z
         var xyzData = {
-            unfiltered: unfiltered,
-            lowPass: lowPass,
-            highPass: highPass
+            unfiltered: unfiltered
         }
         return xyzData;
     }
