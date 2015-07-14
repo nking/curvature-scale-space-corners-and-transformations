@@ -809,6 +809,49 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
         return s;
     }
 
+    function sortXYZRange(a, idxLo, idxHi) {
+        if (a == undefined || a.length == 0) {
+            return;
+        }
+        if (idxLo < idxHi) {
+            var idxMid = partitionXYZ(a, idxLo, idxHi);
+            sortXYZRange(a, idxLo, idxMid - 1);
+            sortXYZRange(a, idxMid + 1, idxHi);
+        }
+    }
+    function partitionXYZ(a, idxLo, idxHi) {
+        var x = a[idxHi].x;
+        var store = idxLo - 1;
+        for (var i = idxLo; i < idxHi; i++) {
+            var doSwap = false;
+            if (a[i].x < x) {
+                doSwap = true;
+            } else if (a[i].x == x) {
+                if (a[i].y < a[idxHi].y) {
+                    doSwap = true;
+                } else if (a[i].y == a[idxHi].y) {
+                    if (a[i].z <= a[idxHi].z) {
+                        doSwap = true;
+                    }
+                }
+            }
+            if (doSwap) {
+                store++;
+                var swap = a[store];
+                a[store] = a[i];
+                a[i] = swap;
+            }
+        }
+        store++;
+        var swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
+        return store;
+    }
+
+    /* changing this to make it easier to track Nelder-Mead simplex evolution.  10 points in a simplex usually*/
+    var nPointsPerColor = 10;
+
     function getPts(x) {
         //console.log(x)
         var unfiltered = [];
@@ -823,7 +866,16 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
                 z: +line[2]
             };
         })
-        // TODO: could order each nPointsPerColor by increasing x, y, z
+
+        // order each nPointsPerColor points by increasing x, y, z to make the polyline an ordered simplex
+        var startIdx = 0;
+        var stopIdx = nPointsPerColor - 1;
+        while (stopIdx < (unfiltered.length - 1)) {
+            sortXYZRange(unfiltered, startIdx, stopIdx);
+            startIdx = stopIdx + 1;
+            stopIdx = startIdx + nPointsPerColor - 1;
+        } 
+  
         var xyzData = {
             unfiltered: unfiltered
         }
@@ -857,9 +909,6 @@ return i.size=function(n){return arguments.length?(l=n,i):l},i.padding=function(
     });
     var w = 960;
     var h = 500;
-
-    /* changing this to make it easier to track Nelder-Mead simplex evolution.  10 points in a simplex usually*/
-    var nPointsPerColor = 10;
 
     renderer.setSize(w, h);
     document.getElementById("container").appendChild(renderer.domElement);

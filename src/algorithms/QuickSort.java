@@ -204,7 +204,46 @@ public class QuickSort {
             sort(a, b, c, idxMid + 1, idxHi);
         }
     }
-   
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive, with next sorting by b and c
+     * and all swap operations performed on all 3 arrays.  
+     * Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param c
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stThen2ndThen3rd(float[] a, float[] b, float[] c, 
+        int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length < 2) {
+            return;
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (c == null) {
+            throw new IllegalArgumentException("c cannot be null");
+        }
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("a and b must be same length");
+        }
+        if (a.length != c.length) {
+            throw new IllegalArgumentException("a and c must be same length");
+        }
+        if (idxLo < idxHi) {
+            int idxMid = partitionBy1stThen2ndThen3rd(a, b, c, idxLo, idxHi);
+            sortBy1stThen2ndThen3rd(a, b, c, idxLo, idxMid - 1);
+            sortBy1stThen2ndThen3rd(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+    
     public static void sort(float[] a, float[] b, float[] c, int idxLo, 
         int idxHi) {
         
@@ -248,4 +287,48 @@ public class QuickSort {
         return store;
     }
 
+    private static int partitionBy1stThen2ndThen3rd(float[] a, float[] b, 
+        float[] c, int idxLo, int idxHi) {
+        
+        float x = a[idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a[i] < x) {
+                doSwap = true;
+            } else if (a[i] == x) {
+                if (b[i] < b[idxHi]) {
+                    doSwap = true;
+                } else if (b[i] == b[idxHi]) {
+                    if (c[i] <= c[idxHi]) {
+                        doSwap = true;
+                    }
+                }
+            }
+            if (doSwap) {
+                store++;
+                float swap = a[store];
+                a[store] = a[i];
+                a[i] = swap;
+                float swap2 = b[store];
+                b[store] = b[i];
+                b[i] = swap2;
+                swap2 = c[store];
+                c[store] = c[i];
+                c[i] = swap2;
+            }
+        }
+        store++;
+        float swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
+        float swap2 = b[store];
+        b[store] = b[idxHi];
+        b[idxHi] = swap2;
+        swap2 = c[store];
+        c[store] = c[idxHi];
+        c[idxHi] = swap2;
+        return store;
+    }
 }
