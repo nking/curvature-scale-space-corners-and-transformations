@@ -5551,9 +5551,15 @@ if (compTol == 1) {
             log.info("refine simplex fit=" + fit2.toString());
         }
 
+        hasConverged = hasConverged(fit2, nMaxMatchable);
+        
+        if (hasConverged) {
+            return fit2;
+        }
+
         // small detailed grid search.
         // TODO: may need to broaden when this is used
-        if (nMaxMatchable < 10) {
+        if (true) {
             rotHalfRange = 2;
             rotDelta = 1;
             transHalfRange = 5;
