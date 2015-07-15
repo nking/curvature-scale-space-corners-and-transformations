@@ -5562,7 +5562,7 @@ if (compTol == 1) {
         if (true) {
             rotHalfRange = 2;
             rotDelta = 1;
-            transHalfRange = 5;
+            transHalfRange = 10;
             transDelta = 1;
             tolTransX = 2;
             tolTransY = 2; 
