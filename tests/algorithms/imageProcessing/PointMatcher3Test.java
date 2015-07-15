@@ -517,8 +517,6 @@ public class PointMatcher3Test extends TestCase {
         int imageWidth = 650;
         int imageHeight = 400;
 
-        // ---- random testing for stereo imaging ----
-
         float scale = 1.0f;
 
         for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
@@ -991,13 +989,11 @@ public class PointMatcher3Test extends TestCase {
         }
     }
 
-    public void testFortyFiveDegreeSearch() throws Exception {
+    public void testPreSearch() throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1436554280614L;
-        //seed = 1436661933371L;
-        seed = 1436809248753L;
+        //seed = 1436899954015L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -1012,7 +1008,7 @@ public class PointMatcher3Test extends TestCase {
 
         for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
             for (int rotType = 0; rotType < 5; ++rotType) {
-                for (int nTest = 0; nTest < 10/*20*/; ++nTest) { // this increases nPoints
+                for (int nTest = 0; nTest < 20; ++nTest) { // this increases nPoints
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -1145,14 +1141,14 @@ public class PointMatcher3Test extends TestCase {
                     log.info("point density  n/width=" + densX + " n/height=" + densY);
 
                     TransformationPointFit fit = 
-                        pointMatcher.fortyFiveDegreeSearch(unmatchedLeftXY,
+                        pointMatcher.preSearch(unmatchedLeftXY,
                         unmatchedRightXY, scale,
                         imageWidth, imageHeight, imageWidth, imageHeight,
                         setsFractionOfImage); 
 
                     assert(fit != null);
                         
-                    log.info("45 degree FIT=" + fit.toString());
+                    log.info("preSearch FIT=" + fit.toString());
                         
                     TransformationParameters fitParams = fit.getParameters();
                     int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
@@ -1773,8 +1769,9 @@ images as possible)
             //test.testPerformVerticalPartitionedMatching();
             //test.testCalculateTranslationFromGridThenDownhillSimplex();
             //test.testCalculateTransformationWithGridSearch();
+            
             //test.testCalculateEuclideanTransformation();
-            test.testFortyFiveDegreeSearch();
+            test.testPreSearch();
 
             /*
             tests for :

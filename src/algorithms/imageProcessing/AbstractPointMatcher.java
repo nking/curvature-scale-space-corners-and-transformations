@@ -354,6 +354,10 @@ public abstract class AbstractPointMatcher {
      * @return 
      */
     public boolean hasConverged(TransformationPointFit fit, int nMaxMatchable) {
+    
+        if (fit == null) {
+            return false;
+        }
         
         int bestNMatches = fit.getNumberOfMatchedPoints();
 
