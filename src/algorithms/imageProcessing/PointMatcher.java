@@ -5349,7 +5349,7 @@ if (compTol == 1) {
         }
         
         try {
-            if (simplexCSVFileWriter == null && !closeFile) {
+            if (simplexCSVFileWriter == null) {
                 String testDirPath = ResourceFinder.findOutputTestDirectory();
                 String fileName = "simplex_" + MiscDebug.getCurrentTimeFormatted() + ".csv";
                 String filePath = testDirPath 
@@ -5357,7 +5357,7 @@ if (compTol == 1) {
                 File file = new File(filePath);
                 simplexCSVFileW = new FileWriter(file);
                 simplexCSVFileWriter = new BufferedWriter(simplexCSVFileW);
-            }
+            } 
             
             for (TransformationPointFit fit : fits) {
                 
@@ -5549,6 +5549,77 @@ if (compTol == 1) {
 
         if (fit2 != null) {
             log.info("refine simplex fit=" + fit2.toString());
+        }
+
+        // small detailed grid search.
+        // TODO: may need to broaden when this is used
+        if (nMaxMatchable < 10) {
+            rotHalfRange = 2;
+            rotDelta = 1;
+            transHalfRange = 5;
+            transDelta = 1;
+            tolTransX = 2;
+            tolTransY = 2; 
+            rotInDegrees = fit2.getParameters().getRotationInDegrees();
+            transformer = new Transformer();
+            nX = (int) Math.ceil((transHalfRange * 2) / transDelta);
+            nY = nX;
+            txS = new float[nX];
+            txS[0] = fit.getTranslationX() - transHalfRange;
+            for (int i = 1; i < nX; ++i) {
+                txS[i] = txS[i - 1] + transDelta;
+            }
+            tyS = new float[nY];
+            tyS[0] = fit.getTranslationY() - transHalfRange;
+            for (int i = 1; i < nY; ++i) {
+                tyS[i] = tyS[i - 1] + transDelta;
+            }
+
+            startRotDegrees = rotInDegrees - rotHalfRange;
+            if (startRotDegrees < 0) {
+                startRotDegrees = startRotDegrees + 360;
+            } else if (startRotDegrees > 359) {
+                startRotDegrees = startRotDegrees - 360;
+            }
+            stopRotDegrees = rotInDegrees + rotHalfRange;
+            if (stopRotDegrees < 0) {
+                stopRotDegrees = stopRotDegrees + 360;
+            } else if (stopRotDegrees > 359) {
+                stopRotDegrees = stopRotDegrees - 360;
+            }
+            rotation = MiscMath.writeDegreeIntervals(startRotDegrees,
+                stopRotDegrees, rotDelta); 
+            starterPoints = new FixedSizeSortedVector<>(10, TransformationPointFit.class);
+
+            t0 = System.currentTimeMillis();
+
+            for (float rotDeg : rotation) {
+                for (float tx : txS) {
+                    for (float ty : tyS) {
+
+                        TransformationParameters params = new TransformationParameters();
+                        params.setRotationInDegrees(rotDeg);
+                        params.setScale(fit.getScale());
+                        params.setTranslationX(tx);
+                        params.setTranslationY(ty);
+
+                        PairFloatArray allPoints1Tr = transformer.applyTransformation(
+                            params, image1Width >> 1, image1Height >> 1, set1);
+
+                        TransformationPointFit fit3 =
+                            evaluateFitForUnMatchedTransformedGreedy(params,
+                            allPoints1Tr, set2, tolTransX, tolTransY);
+
+                        starterPoints.add(fit3);
+                    }
+                }
+            }
+            if (fitIsBetter(fit2, starterPoints.getArray()[0])) {
+                fit2 = starterPoints.getArray()[0];
+                if (fit2 != null) {
+                    log.info("detailed refinement fit=" + fit2.toString());
+                }
+            }
         }
         
         return fit2;
