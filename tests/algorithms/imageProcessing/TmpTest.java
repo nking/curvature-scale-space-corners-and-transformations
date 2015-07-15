@@ -18,11 +18,11 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class SkylineExtractorTest extends TestCase {
+public class TmpTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public SkylineExtractorTest() {
+    public TmpTest() {
     }
        
     public void testOrderByIncreasingXThenY() throws Exception {
@@ -232,7 +232,7 @@ public class SkylineExtractorTest extends TestCase {
     public static void main(String[] args) {
         
         try {
-            SkylineExtractorTest test = new SkylineExtractorTest();
+            TmpTest test = new TmpTest();
 
             test.testCreateBestSkyMask();
             //test.estOrderByProximity();
