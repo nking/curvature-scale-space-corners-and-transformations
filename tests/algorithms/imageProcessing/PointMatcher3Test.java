@@ -45,8 +45,6 @@ public class PointMatcher3Test extends TestCase {
 
         // ---- random testing for stereo imaging ----
 
-        int numberOfPartitions = sr.nextInt(3) + 1;
-
         //image size range 250 to 10000
         //  these are altered below
         int imageWidth = 650;
@@ -132,8 +130,7 @@ public class PointMatcher3Test extends TestCase {
                 int nPoints = (nTest + 1) * 7;
 
                 log.info("test for nPoints=" + nPoints 
-                    + "\nparams=" + params.toString()
-                    + "\nnumber of vertical partitions=" + numberOfPartitions);
+                    + "\nparams=" + params.toString());
 
                 for (int i = 0; i < nPoints; ++i) {
                     int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
@@ -213,10 +210,6 @@ public class PointMatcher3Test extends TestCase {
                     diffN, diffRotDeg, diffScale, diffTransX, diffTransY, nEps)
                 );
                 
-                numberOfPartitions++;
-                if (numberOfPartitions > 3) {
-                    numberOfPartitions = 1;
-                }
             }
         }
     }

@@ -3770,11 +3770,6 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
 
         log.fine("nIter=" + Integer.toString(nIter));
 
-        if (debug) {
-            // the resulting file can be viewed with resources/plot_3d_simplex_n10.html
-            writeSimplex(fits, true);
-        }
-
         // additional step that's helpful if not enough iterations are used,
         // is to test the summed transX, transY which represent the center
         // of the simplex against the best fit
@@ -3790,6 +3785,11 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
             if (comp == 1) {
                 fits[bestFitIdx] = fitAvg;
             }
+        }
+        
+        if (debug) {
+            // the resulting file can be viewed with resources/plot_3d_simplex_n10.html
+            writeSimplex(fits, true);
         }
 
         return fits[bestFitIdx];
@@ -4768,9 +4768,11 @@ if (compTol == 1) {
             if (closeFile) {
                 if (simplexCSVFileW != null) {
                     simplexCSVFileW.close();
+                    simplexCSVFileW = null;
                 }
                 if (simplexCSVFileWriter != null) {
                     simplexCSVFileWriter.close();
+                    simplexCSVFileWriter = null;
                 }
             }
 
@@ -5167,17 +5169,35 @@ if (compTol == 1) {
         log.info(String.format("densX1=%f densY1=%f densX2=%f densY2=%f", 
             densX1, densY1, densX2, densY2));
         
+        /*
+        The best solutions use a fine grid search of rotDelta=2 and transDelta=4
+        w/ translation tolerance = transDelta.
+        
+        Such a solution takes a long time so a coarser grid is attempted here.
+        
+        The changes below are an attempt to make a coarser grid as starter
+        points for a downhill simplex solution which is then further
+        refined with a very small detailed grid search.
+        
+        */
+        
         float transDelta = 15;
         float rotDelta = 10;
 
         float tolTransX = transDelta;
         float tolTransY = transDelta;
 
-        if ((nMaxMatchable > 10) &&
-            (densX1 < 0.04) && (densY1 < 0.04) && (densX2 < 0.04) && (densY2 < 0.04)) {
-            transDelta *= 2;
-            tolTransX = transDelta;
-            tolTransY = transDelta;
+        if ((densX1 < 0.04) && (densY1 < 0.04) && (densX2 < 0.04) && (densY2 < 0.04)) {
+            if (nMaxMatchable > 30) {
+                transDelta *= 1.5;
+                tolTransX = transDelta;
+                tolTransY = transDelta;
+            } else {
+                rotDelta = 4;
+                //transDelta = 4;
+                tolTransX = 2 * transDelta;
+                tolTransY = 2 * transDelta;
+            }
         }
         if (nMaxMatchable > 20) {
             int nB2 = 0;
@@ -5196,14 +5216,14 @@ if (compTol == 1) {
                 }
             }
             if (nB2 >= 2) {
-                transDelta *= 2;
+                transDelta *= 1.5f;
                 tolTransX = transDelta;
                 tolTransY = transDelta;
                 //TODO: consider increasing rotDelta
-            } else if ((densX1 > 0.14) && (densY1 > 0.14) && (densX2 > 0.14) && (densY2 > 0.14)) {
+            } else if ((densX1 > 0.1) && (densY1 > 0.1) && (densX2 > 0.1) && (densY2 > 0.1)) {
                 tolTransX = 1.5f * transDelta;
                 tolTransY = tolTransX;
-                rotDelta = 5;
+                rotDelta = 7.5f;
                 log.info("*** decr rotDelta?");
             }
         }
@@ -5258,6 +5278,10 @@ if (compTol == 1) {
             }
         }
         
+        if (starterPoints.getArray()[0] == null) {
+            return null;
+        }
+        
         long tm = System.currentTimeMillis() - t0;
         double ts = tm * 1e-3;
         log.info("starterPoints finished for nMaxMatchable=" + nMaxMatchable +
@@ -5271,6 +5295,63 @@ if (compTol == 1) {
             nMaxMatchable);
         if (converged) {
             return starterPoints.getArray()[0];
+        }
+        
+        //seems to be necessary to do one finer grid search around best point
+        long t1 = System.currentTimeMillis();
+        transXRange = 50;
+        transYRange = 50;
+        transDelta = 4;
+        transXStart = starterPoints.getArray()[0].getTranslationX() - transXRange;
+        transYStart = starterPoints.getArray()[0].getTranslationY() - transYRange;
+        nX = (int) Math.ceil(transXRange / transDelta);
+        nY = (int) Math.ceil(transYRange / transDelta);
+        txS = new float[nX];
+        txS[0] = transXStart;
+        for (int i = 1; i < nX; ++i) {
+            txS[i] = txS[i - 1] + transDelta;
+        }
+        tyS = new float[nY];
+        tyS[0] = transYStart;
+        for (int i = 1; i < nY; ++i) {
+            tyS[i] = tyS[i - 1] + transDelta;
+        }
+        float rotRange = 10;
+        rotDelta = 2;
+        float startRot = starterPoints.getArray()[0].getParameters().getRotationInDegrees();
+        float stopRot = startRot + rotRange;
+        startRot -= rotRange;
+        rotation = MiscMath.writeDegreeIntervals(startRot, stopRot, rotDelta);
+        TransformationPointFit fit3 = null;
+        for (float rotT : rotation) {
+            for (float tx : txS) {
+                for (float ty : tyS) {
+
+                    TransformationParameters params = new TransformationParameters();
+                    params.setRotationInDegrees(rotT);
+                    params.setScale(scale);
+                    params.setTranslationX(tx);
+                    params.setTranslationY(ty);
+
+                    PairFloatArray allPoints1Tr = transformer.applyTransformation(
+                        params, image1Width >> 1, image1Height >> 1, set1);
+
+                    TransformationPointFit fit2
+                        = evaluateFitForUnMatchedTransformedGreedy(params,
+                            allPoints1Tr, set2, tolTransX, tolTransY);
+
+                    if (fitIsBetter(fit3, fit2)) {
+                        fit3 = fit2;
+                    }
+                }
+            }
+        }
+        tm = System.currentTimeMillis() - t1;
+        ts = tm * 1e-3;
+        log.info("refine starterPoints2 finished seconds=" + ts);
+        if (fit3 != null) {
+            log.info("   fit3=" + fit3);
+            starterPoints.add(fit3);
         }
         
         //the center transX, transY are used only to calculate boundaries for

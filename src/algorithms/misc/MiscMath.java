@@ -987,13 +987,20 @@ public class MiscMath {
             ((360 - rotStart) + rotStop) : (rotStop - rotStart);
         
         int nRot = (int)((rotStopMinusStart/rotDelta) + 1);
-        float[] rotation = new float[nRot];
+        int np = 0;
+        if (((rotStopMinusStart + 1) % rotDelta) != 0) {
+            np++;
+        }
+        float[] rotation = new float[nRot + np];
         for (int i = 0; i < nRot; ++i) {
             float r = rotStart + (i * rotDelta);
             if (r > 359) {
                 r -= 360;
             }
             rotation[i] = (int)r;
+        }
+        if (np > 0) {
+            rotation[rotation.length - 1] = rotStop;
         }
         
         return rotation;
