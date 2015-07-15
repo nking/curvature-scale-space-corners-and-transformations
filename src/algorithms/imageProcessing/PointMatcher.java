@@ -1,7 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.PointPartitioner;
-import static algorithms.imageProcessing.PointMatcher.minTolerance;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -18,7 +16,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -250,474 +247,7 @@ public final class PointMatcher extends AbstractPointMatcher {
     public static float toleranceGridFactor = 4.f;
 
     protected boolean debug = true;
-
-    /**
-     * NOT READY FOR USE
-     *
-     * @param unmatchedLeftXY
-     * @param unmatchedRightXY
-     * @param image1Width
-     * @param image1Height
-     * @param image2Width
-     * @param image2Height
-     * @param outputMatchedLeftXY
-     * @param outputMatchedRightXY
-     * @param useLargestToleranceForOutput use the largest tolerance for
-     * applying the transformation to point sets during matching.  the largest
-     * tolerance is the class variable generalTolerance.
-     * If useLargestToleranceForOutput is false, the transformation's best
-     * fit is used during matching (which should provide a smaller but more
-     * certain matched output).  If this method is used as a precursor to
-     * projection (epipolar) solvers of sets that do have projection components,
-     * one might prefer to set this to true to allow more to be matched.
-     * @return
-     */
-    public TransformationPointFit performPartitionedMatching(
-        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        int image1Width, int image1Height, int image2Width, int image2Height,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
-        boolean useLargestToleranceForOutput) {
-
-        /*
-        -- perform whole sets matching
-        -- perform vertical partition matching
-        -- perform horizontal partition matching
-        -- if the vert or horiz results are better that whole sets, consider
-           partition into 4
-
-        TODO: methods are using a special fitting function specifically for skyline
-        matches, but the function may not be ideal for whole image corner
-        matching, so need to allow the choice of fitness function
-        to be passed as an argument.
-        */
-
-        // ====== whole sets match =======
-        PairIntArray allPointsLeftMatched = new PairIntArray();
-        PairIntArray allPointsRightMatched = new PairIntArray();
-        TransformationPointFit allPointsFit = performMatching(
-            unmatchedLeftXY, unmatchedRightXY,
-            image1Width, image1Height, image2Width, image2Height,
-            allPointsLeftMatched, allPointsRightMatched, 1.0f);
-
-        float allPointsNStat = (float)allPointsFit.getNumberOfMatchedPoints()/
-            (float)allPointsFit.getNMaxMatchable();
-
-        log.info("all points set nStat=" + allPointsNStat + " Euclidean fit=" +
-            allPointsFit.toString());
-
-        // ====== vertical partitioned matches =======
-        TransformationPointFit verticalPartitionedFit =
-            performVerticalPartitionedMatching(2,
-            unmatchedLeftXY, unmatchedRightXY,
-            image1Width, image1Height, image2Width, image2Height);
-
-        /*
-        // ====== horizontal partitioned matches =======
-        TransformationPointFit horizontalPartitionedFit =
-            performHorizontalPartitionedMatching(2,
-            unmatchedLeftXY, unmatchedRightXY,
-            image1CentroidX, image1CentroidY,
-            image2CentroidX, image2CentroidY);
-        */
-
-        TransformationPointFit bestFit = allPointsFit;
-
-        if (fitIsBetter(bestFit, verticalPartitionedFit)) {
-            //fitIsBetterNStat(bestFit, verticalPartitionedFit)) {
-
-            bestFit = verticalPartitionedFit;
-        }
-
-        if (bestFit == null) {
-            return null;
-        }
-
-        // TODO: compare to horizontal fits when implemented
-
-
-        Transformer transformer = new Transformer();
-
-        int image1CentroidX = image1Width >> 1;
-        int image1CentroidY = image1Height >> 1;
-
-        PairFloatArray transformedLeft = transformer.applyTransformation2(
-            bestFit.getParameters(), unmatchedLeftXY, image1CentroidX,
-            image1CentroidY);
-
-        float transTolX, transTolY, tolerance;
-
-        if (useLargestToleranceForOutput) {
-            tolerance = generalTolerance;
-            transTolX = generalTolerance * (float)Math.sqrt(1./2);
-            transTolY = transTolX;
-        } else {
-            transTolX = bestFit.getTranslationXTolerance();
-            transTolY = bestFit.getTranslationYTolerance();
-            tolerance = (float)Math.sqrt(transTolX*transTolX + transTolY*transTolY);
-        }
-
-        float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-            transformedLeft, unmatchedRightXY, transTolX, transTolX);
-
-        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance,
-            matchIndexesAndDiffs, outputMatchedLeftXY, outputMatchedRightXY);
-
-        return bestFit;
-    }
-
-    /**
-     * given unmatched point sets unmatchedLeftXY and unmatchedRightXY,
-     * partitions the data in numberOfPartitions vertically, finds the
-     * best match for each combination of vertical partitions as subsets
-     * of their parent sets, then finds the best partition solution
-     * among those, then refines the solution with a more detailed search
-     * using all points.
-     *
-     * @param numberOfPartitions the number of vertical partitions to make.
-     * the maximum value accepted is 3 and minimum is 1.
-     * @param unmatchedLeftXY
-     * @param unmatchedRightXY
-     * @param image1Width
-     * @param image1Height
-     * @param image2Width
-     * @param image2Height
-     * @return best fitting transformation between unmatched left and right
-     */
-    public TransformationPointFit performVerticalPartitionedMatching(
-        final int numberOfPartitions,
-        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        int image1Width, int image1Height, int image2Width, int image2Height) {
-
-        if (numberOfPartitions > 3) {
-            throw new IllegalArgumentException(
-            "numberOfPartitions max value is 3");
-        }
-        if (numberOfPartitions < 1) {
-            throw new IllegalArgumentException(
-            "numberOfPartitions min value is 1");
-        }
-
-        int nXDiv = numberOfPartitions;
-        int nYDiv = 1;
-        float setsFractionOfImage = 1.f/(float)numberOfPartitions;
-        int n = (int)Math.pow(nXDiv * nYDiv, 2);
-
-        TransformationPointFit[] vertPartitionedFits = new TransformationPointFit[n];
-        float[] nStat = new float[n];
-
-        PointPartitioner partitioner = new PointPartitioner();
-        PairIntArray[] vertPartitionedLeft = partitioner.partitionVerticalOnly(
-            unmatchedLeftXY, nXDiv);
-        PairIntArray[] vertPartitionedRight = partitioner.partitionVerticalOnly(
-            unmatchedRightXY, nXDiv);
-
-        int bestFitIdx = -1;
-
-        int count = 0;
-        for (int p1 = 0; p1 < vertPartitionedLeft.length; p1++) {
-            for (int p2 = 0; p2 < vertPartitionedRight.length; p2++) {
-
-                // determine fit only with partitioned points
-
-                PairIntArray part1 = vertPartitionedLeft[p1];
-                PairIntArray part2 = vertPartitionedRight[p2];
-
-                TransformationPointFit fit = calculateRoughTransformation(
-                    part1, part2,
-                    image1Width, image1Height, image2Width, image2Height,
-                    setsFractionOfImage);
-
-                if (fit == null) {
-                    log.fine(Integer.toString(count)
-                        + ", p1=" + p1 + " p2=" + p2 + ")  NO SOLN " +
-                        " n1=" + part1.getN() + " n2=" + part2.getN());
-                    count++;
-                    continue;
-                }
-
-                int nMaxMatchable = Math.min(part1.getN(), part2.getN());
-
-                boolean converged = hasConverged(fit, nMaxMatchable);
-
-                if (!converged) {
-
-                    fit = refineTheTransformation(
-                        fit, part1, part2,
-                        image1Width, image1Height, image2Width, image2Height,
-                        setsFractionOfImage);
-                }
-
-                nStat[count] = (float)fit.getNumberOfMatchedPoints()/
-                    (float)fit.getNMaxMatchable();
-
-                log.fine(Integer.toString(count)
-                    + ", p1=" + p1 + " p2=" + p2 + ") nStat=" + nStat[count] +
-                    " n1=" + part1.getN() + " n2=" + part2.getN() +
-                    " Euclidean fit=" + fit.toString());
-
-                vertPartitionedFits[count] = fit;
-
-                if (bestFitIdx == -1) {
-
-                    bestFitIdx = count;
-
-                } else {
-
-                    // if nStat != inf, best has smallest st dev from mean
-
-                    if (fitIsBetter(vertPartitionedFits[bestFitIdx],
-                        vertPartitionedFits[count])) {
-
-                        log.fine("****==> fit=" + vertPartitionedFits[count].toString());
-
-                        bestFitIdx = count;
-                    }
-                }
-
-                count++;
-            }
-        }
-
-        if (bestFitIdx == -1) {
-            return null;
-        }
-
-        /*
-        nDiv=2
-        0: [0][1]       1: [0][1]
-           [0]             [1]
-
-        2: [0][1]       3: [0][1]
-              [0]             [1]
-
-        nDiv=3
-        0: [0][1][2]    1: [0][1][2]    2: [0][1][2]
-           [0]             [1]             [2]
-
-        3: [0][1][2]    4: [0][1][2]    5: [0][1][2]
-              [0]             [1]             [2]
-
-        6: [0][1][2]    7: [0][1][2]    8: [0][1][2]
-                 [0]             [1]             [2]
-
-        Consistent solutions for nDiv=2
-            would have similar solutions for comparisons 0: and 3:
-            (which is index 0 and n+1)
-
-        Consistent solutions for nDiv=3
-            would have similar solutions for comparisons 0: and 4: and 8:
-            (which is index 0 and (n+1) and 2*(n+1))
-          OR
-            3: and 7:
-            (which is index n and (2*n)+1)
-        */
-
-        TransformationPointFit bestFit = vertPartitionedFits[bestFitIdx];
-
-        float scaleTolerance = 0.1f;
-        float rotInDegreesTolerance = 20;
-        float translationTolerance = 20;
-
-        int idx2 = -1;
-        int idx3 = -1;
-
-        if (numberOfPartitions == 2) {
-            if (bestFitIdx == 0) {
-                // is this similar to vertPartitionedFits[3] ?
-                idx2 = 3;
-            } else if (bestFitIdx == 3) {
-                // is this similar to vertPartitionedFits[0] ?
-                idx2 = 0;
-            }
-        } else if (numberOfPartitions == 3) {
-            if (bestFitIdx == 0) {
-                // is this similar to vertPartitionedFits[4] and vertPartitionedFits[8] ?
-                idx2 = 4;
-                idx3 = 8;
-            } else if (bestFitIdx == 4) {
-                // is this similar to vertPartitionedFits[0] and vertPartitionedFits[8] ?
-                idx2 = 0;
-                idx3 = 8;
-            } else if (bestFitIdx == 8) {
-                // is this similar to vertPartitionedFits[0] and vertPartitionedFits[4] ?
-                idx2 = 0;
-                idx3 = 4;
-            } else if (bestFitIdx == 3) {
-                // is this similar to vertPartitionedFits[7] ?
-                idx2 = 7;
-                idx3 = -1;
-            } else if (bestFitIdx == 7) {
-                // is this similar to vertPartitionedFits[3] ?
-                idx2 = 3;
-                idx3 = -1;
-            }
-
-            if (idx2 > -1) {
-
-                boolean fitIsSimilar = fitIsSimilar(bestFit,
-                    vertPartitionedFits[idx2], scaleTolerance,
-                    rotInDegreesTolerance, translationTolerance);
-
-                if (fitIsSimilar) {
-
-                    log.fine("similar solutions for idx="
-                        + Integer.toString(bestFitIdx) + " and "
-                        + Integer.toString(idx2) + ":" +
-                    " Euclidean fit" + Integer.toString(bestFitIdx)
-                        + "=" + bestFit.toString() +
-                    " Euclidean fit" + Integer.toString(idx2) + "="
-                        + vertPartitionedFits[idx2].toString());
-
-                    //TODO: combine these?
-                }
-
-                if (idx3 > -1) {
-
-                    fitIsSimilar = fitIsSimilar(bestFit,
-                        vertPartitionedFits[idx3], scaleTolerance,
-                        rotInDegreesTolerance, translationTolerance);
-
-                    if (fitIsSimilar) {
-
-                        log.fine("similar solutions for idx="
-                            + Integer.toString(bestFitIdx) + " and "
-                            + Integer.toString(idx3) + ":" +
-                        " Euclidean fit" + Integer.toString(bestFitIdx)
-                            + "=" + bestFit.toString() +
-                        " Euclidean fit" + Integer.toString(idx3) + "="
-                            + vertPartitionedFits[idx3].toString());
-
-                        //TODO: combine these?
-                    }
-                }
-            }
-        }
-
-        if (bestFit == null) {
-            return null;
-        }
-
-        log.info("best fit so far from partitions: " + bestFit.toString());
-
-        //TODO: if solutions are combined, this may need to be done above.
-
-        // use either a finer grid search or a downhill simplex to improve the
-        // solution which was found coursely within about 10 degrees
-        float rot = bestFit.getParameters().getRotationInDegrees();
-        float rotStart = (int)rot - 10;
-        if (rotStart < 0) {
-            rotStart = 360 + rotStart;
-        }
-        float rotStop = (int)rot + 10;
-        if (rotStop > 359) {
-            rotStop = rotStop - 360;
-        }
-        float rotDelta = 1;
-        float scaleStart = (int)(0.9 * bestFit.getScale());
-        if (scaleStart < 1) {
-            scaleStart = 1;
-        }
-        float scaleStop = (int)(1.1 * bestFit.getScale());
-        float scaleDelta = 1;
-
-        //TODO: this may need to scale with point density and image dimensions
-        int nTransIntervals = 3;
-
-        float transX = bestFit.getParameters().getTranslationX();
-        float transY = bestFit.getParameters().getTranslationY();
-
-        float dim = Math.max(bestFit.getTranslationXTolerance(),
-            bestFit.getTranslationYTolerance());
-        dim *= 2.5;
-
-        float gridWidth = nTransIntervals * dim;
-        float gridHeight = gridWidth;
-
-        RangeInt transXStartStop = new RangeInt((int)(transX - (gridWidth/2.f)),
-            (int)(transX + (gridWidth/2.f)));
-        RangeInt transYStartStop = new RangeInt((int)(transY - (gridHeight/2.f)),
-            (int)(transY + (gridHeight/2.f)));
-
-        //TODO: since this is refinement, might use smaller
-        int deltaTransX = 4;
-        int deltaTransY = 4;
-
-        transXStartStop.resetBoundsIfNeeded(-1*image2Width + 1, image2Width - 1);
-
-        transYStartStop.resetBoundsIfNeeded(-1*image2Height + 1, image2Height - 1);
-
-        float tolTransX = getTolFactor() * deltaTransX;
-        float tolTransY = getTolFactor() * deltaTransY;
-
-        log.fine(String.format(
-            "starting finer grid search with rot=%d to %d and scale=%d to %d and translation=%d:%d, %d:%d",
-            rotStart, rotStop, scaleStart, scaleStop,
-            transXStartStop.getStart(), transXStartStop.getStop(),
-            transYStartStop.getStart(), transYStartStop.getStop()));
-
-        TransformationPointFit fit = calculateTransformationWithGridSearch(
-            unmatchedLeftXY, unmatchedRightXY,
-            image1Width, image1Height, image2Width, image2Height,
-            rotStart, rotStop, rotDelta, scaleStart, scaleStop, scaleDelta,
-            transXStartStop, deltaTransX,
-            transYStartStop, deltaTransY,
-            tolTransX, tolTransY, setsFractionOfImage);
-
-if (bestFit != null && fit != null) {
-log.fine("    partition compare  \n      **==> bestFit=" + bestFit.toString() + "\n           fit=" + fit.toString());
-}
-
-        TransformationPointFit[] reevalFits = new TransformationPointFit[2];
-        boolean[] fitIsBetter = new boolean[1];
-        if ((bestFit != null) && (fit != null) &&
-            ((
-            ((bestFit.getTranslationXTolerance()/fit.getTranslationXTolerance()) > 2)
-            &&
-            ((bestFit.getTranslationYTolerance()/fit.getTranslationYTolerance()) > 2))
-            ||
-            (
-            ((bestFit.getTranslationXTolerance()/fit.getTranslationXTolerance()) < 0.5)
-            &&
-            ((bestFit.getTranslationYTolerance()/fit.getTranslationYTolerance()) < 0.5))
-            )) {
-
-            reevaluateFitsForCommonTolerance(bestFit, fit,
-                unmatchedLeftXY, unmatchedRightXY, image1Width, image1Height,
-                reevalFits, fitIsBetter);
-
-            bestFit = reevalFits[0];
-            fit = reevalFits[1];
-
-        } else {
-
-            fitIsBetter[0] = fitIsBetter(bestFit, fit);
-        }
-
-if (bestFit != null && fit != null) {
-log.fine("    tol corrected partition compare  \n      **==> bestFit=" + bestFit.toString() + "\n           fit=" + fit.toString());
-}
-
-if (fitIsBetter[0] && (fit != null)) {
-log.fine("    ***** partition bestFit=" + fit.toString());
-} else if (bestFit != null) {
-log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
-}
-
-        if (fitIsBetter[0] && (fit != null)) {
-            bestFit = fit;
-        }
-
-        if (bestFit.getNMaxMatchable() == 0) {
-
-            int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
-                unmatchedLeftXY.getN() : unmatchedRightXY.getN();
-
-            bestFit.setMaximumNumberMatchable(nMaxMatchable);
-        }
-
-        return bestFit;
-    }
-
+     
     /**
      * NOT READY FOR USE
      *
@@ -726,9 +256,9 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
      * @param image1Width
      * @param image1Height
      * @param outputMatchedLeftXY
+     * @param image2Height
      * @param image2Width
      * @param outputMatchedRightXY
-     * @param image2Height
      * @param useLargestToleranceForOutput use the largest tolerance for
      * applying the transformation to point sets during matching.  the largest
      * tolerance is the class variable generalTolerance.
@@ -738,195 +268,6 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
      * projection (epipolar) solvers of sets that do have projection components,
      * one might prefer to set this to true to allow more to be matched.
      * @return best fitting transformation between unmatched points sets
-     * left and right
-     */
-    public TransformationPointFit performMatching0(
-        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        int image1Width, int image1Height, int image2Width, int image2Height,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
-        boolean useLargestToleranceForOutput) {
-
-        if (unmatchedLeftXY == null || unmatchedLeftXY.getN() < 3) {
-            throw new IllegalArgumentException(
-            "unmatchedLeftXY cannot be null and must have at least 3 points.");
-        }
-        if (unmatchedRightXY == null || unmatchedRightXY.getN() < 3) {
-            throw new IllegalArgumentException(
-            "unmatchedRightXY cannot be null and must have at least 3 points.");
-        }
-
-        TransformationPointFit bestFit = performMatching0(
-            unmatchedLeftXY, unmatchedRightXY,
-            image1Width, image1Height, image2Width, image2Height);
-
-        if (bestFit == null) {
-            return null;
-        }
-
-        int image1CentroidX = image1Width >> 1;
-        int image1CentroidY = image1Height >> 1;
-
-        Transformer transformer = new Transformer();
-
-        PairFloatArray transformedLeft = transformer.applyTransformation2(
-            bestFit.getParameters(), unmatchedLeftXY, image1CentroidX,
-            image1CentroidY);
-
-        float transTolX, transTolY, tolerance;
-
-        if (useLargestToleranceForOutput) {
-            tolerance = generalTolerance;
-            transTolX = generalTolerance * (float)Math.sqrt(1./2);
-            transTolY = transTolX;
-        } else {
-            transTolX = bestFit.getTranslationXTolerance();
-            transTolY = bestFit.getTranslationYTolerance();
-            tolerance = (float)Math.sqrt(transTolX*transTolX + transTolY*transTolY);
-        }
-
-        float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-            transformedLeft, unmatchedRightXY, transTolX, transTolX);
-
-        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance,
-            matchIndexesAndDiffs, outputMatchedLeftXY, outputMatchedRightXY);
-
-        int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
-            unmatchedLeftXY.getN() : unmatchedRightXY.getN();
-
-        // rewrite best fit to have the matched number of points
-        TransformationPointFit fit2 = new TransformationPointFit(
-            bestFit.getParameters(), outputMatchedLeftXY.getN(),
-            bestFit.getMeanDistFromModel(), bestFit.getStDevFromMean(),
-            bestFit.getTranslationXTolerance(),
-            bestFit.getTranslationYTolerance());
-
-        fit2.setMaximumNumberMatchable(nMaxMatchable);
-
-        return fit2;
-    }
-
-    /**
-     * Given unmatched point sets unmatchedLeftXY and unmatchedRightXY,
-     * finds the best Euclidean transformation, then finds the best partition
-     * solution among those, then refines the solution with a more detailed
-     * search using all points.
-     *
-     * @param unmatchedLeftXY
-     * @param unmatchedRightXY
-     * @param image1Width
-     * @param image1Height
-     * @param image2Width
-     * @param image2Height
-     * @return best fitting transformation between unmatched left and right
-     */
-    public TransformationPointFit performMatching0(
-        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        int image1Width, int image1Height, int image2Width, int image2Height) {
-
-        //update when finish improving the vertical partition code
-
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    /**
-     * NOT READY FOR USE
-     *
-     * @param numberOfPartitions the number of vertical partitions to make.
-     * the maximum value accepted is 3.
-     * @param unmatchedLeftXY
-     * @param unmatchedRightXY
-     * @param image1Width
-     * @param image1Height
-     * @param outputMatchedLeftXY
-     * @param image2Width
-     * @param outputMatchedRightXY
-     * @param image2Height
-     * @param useLargestToleranceForOutput use the largest tolerance for
-     * applying the transformation to point sets during matching.  the largest
-     * tolerance is the class variable generalTolerance.
-     * If useLargestToleranceForOutput is false, the transformation's best
-     * fit is used during matching (which should provide a smaller but more
-     * certain matched output).  If this method is used as a precursor to
-     * projection (epipolar) solvers of sets that do have projection components,
-     * one might prefer to set this to true to allow more to be matched.
-     * @return best fitting transformation between unmatched points sets
-     * left and right
-     */
-    public TransformationPointFit performVerticalPartitionedMatching(
-        final int numberOfPartitions,
-        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        int image1Width, int image1Height, int image2Width, int image2Height,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
-        boolean useLargestToleranceForOutput) {
-
-        if (numberOfPartitions > 3) {
-            throw new IllegalArgumentException("numberOfPartitions max value is 3");
-        }
-        if (numberOfPartitions < 1) {
-            throw new IllegalArgumentException("numberOfPartitions min value is 1");
-        }
-
-        TransformationPointFit bestFit = performVerticalPartitionedMatching(
-            numberOfPartitions, unmatchedLeftXY, unmatchedRightXY,
-            image1Width, image1Height, image2Width, image2Height);
-
-        if (bestFit == null) {
-            return null;
-        }
-
-        int image1CentroidX = image1Width >> 1;
-        int image1CentroidY = image1Height >> 1;
-
-        Transformer transformer = new Transformer();
-
-        PairFloatArray transformedLeft = transformer.applyTransformation2(
-            bestFit.getParameters(), unmatchedLeftXY, image1CentroidX,
-            image1CentroidY);
-
-        float transTolX, transTolY, tolerance;
-
-        if (useLargestToleranceForOutput) {
-            tolerance = generalTolerance;
-            transTolX = generalTolerance * (float)Math.sqrt(1./2);
-            transTolY = transTolX;
-        } else {
-            transTolX = bestFit.getTranslationXTolerance();
-            transTolY = bestFit.getTranslationYTolerance();
-            tolerance = (float)Math.sqrt(transTolX*transTolX + transTolY*transTolY);
-        }
-
-        float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-            transformedLeft, unmatchedRightXY, transTolX, transTolX);
-
-        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance,
-            matchIndexesAndDiffs, outputMatchedLeftXY, outputMatchedRightXY);
-
-        int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
-            unmatchedLeftXY.getN() : unmatchedRightXY.getN();
-
-        // rewrite best fit to have the matched number of points
-        TransformationPointFit fit2 = new TransformationPointFit(
-            bestFit.getParameters(), outputMatchedLeftXY.getN(),
-            bestFit.getMeanDistFromModel(), bestFit.getStDevFromMean(),
-            bestFit.getTranslationXTolerance(),
-            bestFit.getTranslationYTolerance());
-
-        fit2.setMaximumNumberMatchable(nMaxMatchable);
-
-        return fit2;
-    }
-
-    /**
-     * NOT READY FOR USE
-     *
-     * @param unmatchedLeftXY
-     * @param unmatchedRightXY
-     * @param image1Width
-     * @param image1Height
-     * @param outputMatchedLeftXY
-     * @param image2Height
-     * @param image2Width
-     * @param outputMatchedRightXY
      * @param setsFractionOfImage the fraction of their images that set 1
      * and set2 were extracted from. If set1 and set2 were derived from the
      * images without using a partition method, this is 1.0, else if the
@@ -939,6 +280,7 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
         PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
         int image1Width, int image1Height, int image2Width, int image2Height,
         PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
+        boolean useLargestToleranceForOutput,
         float setsFractionOfImage) {
 
         Transformer transformer = new Transformer();
@@ -984,15 +326,24 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
             transformer.applyTransformation2(transFit.getParameters(),
             filtered1, image1CentroidX, image1CentroidY);
 
-        //TODO: consider using transFit.getTolerance() here
-        float transTolX = generalTolerance;
+        float translationXTolerance, translationYTolerance;
 
-        float tolerance = transTolX * (float)Math.sqrt(1./2);
+        if (useLargestToleranceForOutput) {
+            translationXTolerance = generalTolerance * (float)Math.sqrt(1./2);
+            translationYTolerance = translationXTolerance;
+        } else {
+            translationXTolerance = 2 * transFit.getTranslationXTolerance();
+            translationYTolerance = 2 * transFit.getTranslationYTolerance();
+        }
+        float tolerance = (float)Math.sqrt(
+            translationXTolerance*translationXTolerance
+            + translationYTolerance*translationYTolerance);
 
         //evaluate the fit and store a statistical var: nmatched/nmaxmatchable
 
         float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-            transformedFiltered1, filtered2, transTolX, transTolX);
+            transformedFiltered1, filtered2, 
+            translationXTolerance, translationYTolerance);
 
         PairFloatArray part1MatchedTransformed = new PairFloatArray();
         PairIntArray part2Matched = new PairIntArray();
@@ -1009,9 +360,8 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
         TransformationPointFit fit2 = evaluateFitForMatchedTransformed(
             transFit.getParameters(), part1MatchedTransformed, part2Matched);
 
-        fit2.setTranslationXTolerance(transTolX);
-        fit2.setTranslationYTolerance(transTolX);
-
+        fit2.setTranslationXTolerance(translationXTolerance);
+        fit2.setTranslationYTolerance(translationYTolerance);
         fit2.setMaximumNumberMatchable(nMaxMatchable);
 
         float nStat = (nMaxMatchable > 0) ?
@@ -1180,6 +530,11 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 
         TransformationPointFit fit = new TransformationPointFit(params, nMatched,
             avg, stDev, tolTransX, tolTransY);
+        
+        int nMaxMatchable = Math.min(unmatched1Transformed.getN(),
+            unmatched2.getN());
+        
+        fit.setMaximumNumberMatchable(nMaxMatchable);
 
         return fit;
     }
@@ -1222,7 +577,12 @@ log.fine("    ***** partition keeping bestFit=" + bestFit.toString());
 
         TransformationPointFit fit = new TransformationPointFit(params, nMatched,
             avg, stDev, tolTransX, tolTransY);
-
+        
+        int nMaxMatchable = Math.min(unmatched1Transformed.getN(),
+            unmatched2.getN());
+        
+        fit.setMaximumNumberMatchable(nMaxMatchable);
+        
         return fit;
     }
 
@@ -4935,6 +4295,33 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
 
         float scale = fit.getScale();
 
+        TransformationParameters params = new TransformationParameters();
+        params.setRotationInRadians(rotationInRadians);
+        params.setScale(scale);
+        params.setTranslationX(fit.getTranslationX());
+        params.setTranslationY(fit.getTranslationY());
+
+        TransformationPointFit fit2 = evaluateForUnmatched(params, 
+            set1, set2, translationXTolerance, translationYTolerance, 
+            image1Width, image1Height, useGreedyMatching);
+
+        return fit2;
+    }
+    
+    private TransformationPointFit evaluateForUnmatched(
+        final TransformationParameters params, 
+        PairIntArray set1, PairIntArray set2,
+        float translationXTolerance, float translationYTolerance, 
+        int image1Width, int image1Height, boolean useGreedyMatching) {
+
+        if (params == null) {
+            return null;
+        }
+
+        float rotationInRadians = params.getRotationInRadians();
+
+        float scale = params.getScale();
+
         int image1CentroidX = image1Width >> 1;
         int image1CentroidY = image1Height >> 1;
 
@@ -4942,14 +4329,8 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
 
         PairFloatArray transformed1 = transformer.applyTransformation2(
             rotationInRadians, scale,
-            fit.getTranslationX(), fit.getTranslationY(),
+            params.getTranslationX(), params.getTranslationY(),
             image1CentroidX, image1CentroidY, set1);
-
-        TransformationParameters params = new TransformationParameters();
-        params.setRotationInRadians(rotationInRadians);
-        params.setScale(scale);
-        params.setTranslationX(fit.getTranslationX());
-        params.setTranslationY(fit.getTranslationY());
 
         TransformationPointFit fit2;
 
@@ -5414,8 +4795,7 @@ if (compTol == 1) {
 
     /**
      * refine the Euclidean transformation.  The range in rotation and translation
-     * around the fit is hard coded from testing results of
-     * calculateRoughTransformation.
+     * around the fit is hard coded from testing results of preSearch.
      *
      * @param fit
      * @param set1
@@ -5454,7 +4834,7 @@ if (compTol == 1) {
 
         float rotHalfRange = 10;
         float rotDelta = 2;
-        float transHalfRange = 20;
+        float transHalfRange = 60;
         int transDelta = 4;
         float tolTransX = 2; //TODO: this one not yet tested
         float tolTransY = 2; //TODO: this one not yet tested
@@ -5732,7 +5112,7 @@ if (compTol == 1) {
 
     /**
      * method to narrow down all parameter space to a fit that is within
-     * +- 10 degrees in rotation and +- 30 pixels in translation in X and Y
+     * +- 10 degrees in rotation and +- 60 pixels in translation in X and Y
      * of the true Euclidean transformation.
      * Note, these numbers are being learned in testing right now so may
      * change.
@@ -5793,24 +5173,27 @@ if (compTol == 1) {
         float tolTransX = transDelta;
         float tolTransY = transDelta;
 
-        if ((densX1 < 0.04) && (densY1 < 0.04) && (densX2 < 0.04) && (densY2 < 0.04)) {
+        if ((nMaxMatchable > 10) &&
+            (densX1 < 0.04) && (densY1 < 0.04) && (densX2 < 0.04) && (densY2 < 0.04)) {
             transDelta *= 2;
             tolTransX = transDelta;
             tolTransY = transDelta;
         }
         if (nMaxMatchable > 20) {
             int nB2 = 0;
-            if (densX1 < 0.021) {
-                nB2++;
-            }
-            if (densY1 < 0.021) {
-                nB2++;
-            }
-            if (densX2 < 0.021) {
-                nB2++;
-            }
-            if (densY2 < 0.021) {
-                nB2++;
+            if (nMaxMatchable > 30) {
+                if (densX1 < 0.021) {
+                    nB2++;
+                }
+                if (densY1 < 0.021) {
+                    nB2++;
+                }
+                if (densX2 < 0.021) {
+                    nB2++;
+                }
+                if (densY2 < 0.021) {
+                    nB2++;
+                }
             }
             if (nB2 >= 2) {
                 transDelta *= 2;
