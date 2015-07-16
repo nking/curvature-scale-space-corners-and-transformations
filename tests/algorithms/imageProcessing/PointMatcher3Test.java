@@ -56,7 +56,7 @@ public class PointMatcher3Test extends TestCase {
         
         for (int nn = 0; nn < 1; ++nn) { // repeat number of tests
         for (int rotType = 0; rotType < 5; ++rotType) {
-            for (int nTest = 10; nTest < 12 /*20*/; ++nTest) { // this increases nPoints
+            for (int nTest = 0; nTest < 7 /*20*/; ++nTest) { // this increases nPoints
 
                 PointMatcher pointMatcher = new PointMatcher();
 
@@ -185,7 +185,7 @@ public class PointMatcher3Test extends TestCase {
                 TransformationPointFit[] fits =
                     pointMatcher.preSearch0(
                     unmatchedLeftXY, unmatchedRightXY, scale,
-                    useGreedyMatching, setsFractionOfImage);
+                    useGreedyMatching);
                 
                 assert(fits != null);
                 
@@ -247,7 +247,7 @@ public class PointMatcher3Test extends TestCase {
                 // ------ assert preSearch1 ---------
                 TransformationPointFit[] fits2 = pointMatcher.preSearch1(
                     fits, unmatchedLeftXY, unmatchedRightXY,
-                    useGreedyMatching, setsFractionOfImage);
+                    useGreedyMatching);
                 
                 assert(fits2 != null);
                 
@@ -526,12 +526,10 @@ public class PointMatcher3Test extends TestCase {
                         TransformationPointFit fit =
                             pointMatcher.calculateTranslationFromGridThenDownhillSimplex(
                                 scaledRotatedLeft,  unmatchedLeftXY, unmatchedRightXY,
-                                imageWidth, imageHeight, imageWidth, imageHeight,
                                 params.getRotationInRadians(), params.getScale(),
                                 transXStartStop, deltaTransX,
                                 transYStartStop, deltaTransY,
-                                tolTransX, tolTransY, setsAreMatched,
-                                setsFractionOfImage);
+                                tolTransX, tolTransY, setsAreMatched);
 
          //assert(fit != null);
                         TransformationParameters fitParams = fit.getParameters();
@@ -720,8 +718,7 @@ public class PointMatcher3Test extends TestCase {
 
                     TransformationPointFit fit =
                         pointMatcher.calculateEuclideanTransformation(
-                        unmatchedLeftXY, unmatchedRightXY,
-                        setsFractionOfImage);
+                        unmatchedLeftXY, unmatchedRightXY);
 
                     assert(fit != null);
 
@@ -1023,7 +1020,7 @@ public class PointMatcher3Test extends TestCase {
         TransformationPointFit trFit =
             pointMatcher.performMatching(points1, points2,
                 outputMatchedScene, outputMatchedModel,
-                useLargestToleranceForOutput, setsFractionOfImage);
+                useLargestToleranceForOutput);
 
         log.info("rough euclidean from skyline alone=" + trFit.toString());
 
