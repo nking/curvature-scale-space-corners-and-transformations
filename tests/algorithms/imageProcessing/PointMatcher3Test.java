@@ -38,7 +38,7 @@ public class PointMatcher3Test extends TestCase {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1437014214666L;
+        seed = 1437080777162L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -54,11 +54,15 @@ public class PointMatcher3Test extends TestCase {
         float maxOfMinDiffRots = Float.MIN_VALUE;
         float maxOfBestDiffRots = Float.MIN_VALUE;
         
+        int largeSearch0Limit = 20;
+        
         for (int nn = 0; nn < 1; ++nn) { // repeat number of tests
         for (int rotType = 0; rotType < 5; ++rotType) {
-            for (int nTest = 16; nTest < 20 /*20*/; ++nTest) { // this increases nPoints
+            for (int nTest = 9; nTest < 20 /*20*/; ++nTest) { // this increases nPoints
 
                 PointMatcher pointMatcher = new PointMatcher();
+                
+                pointMatcher.setLargeSearch0Limit(largeSearch0Limit);
 
                 PairIntArray unmatchedLeftXY = new PairIntArray();
 
@@ -132,9 +136,10 @@ public class PointMatcher3Test extends TestCase {
 
                 int nPoints = (nTest + 1) * 7;
 
-                log.info("test for nPoints=" + nPoints 
+                log.info("test for nPoints=" + nPoints + " nn=" + nn 
+                    + " rotType=" + rotType + " nTest=" + nTest
                     + "\nparams=" + params.toString());
-
+                
                 for (int i = 0; i < nPoints; ++i) {
                     int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
                     int y = (imageHeight/4) + sr.nextInt(imageHeight/4);
@@ -172,8 +177,6 @@ public class PointMatcher3Test extends TestCase {
                 // --- TODO: in the difference between the left and right regions,
                 //     need to generate points in the right
 
-                float setsFractionOfImage = 1.0f;
-
                 int nMaxMatchable = nPoints;
 
                 int nExpected = nMaxMatchable;
@@ -184,7 +187,7 @@ public class PointMatcher3Test extends TestCase {
                 // ------- assert that preSearch0 gets the answer within <> degrees of rotation -------
                 TransformationPointFit[] fits;
                 
-                if (nMaxMatchable > 40) {
+                if (nMaxMatchable > largeSearch0Limit) {
                     fits = pointMatcher.preSearch0Alt(
                     unmatchedLeftXY, unmatchedRightXY, scale,
                     useGreedyMatching);

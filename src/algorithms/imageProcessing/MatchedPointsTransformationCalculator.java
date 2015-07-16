@@ -383,20 +383,9 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * from a set of transformation parameters params that transform
      * points in reference frame 1 into reference frame 2, create
      * a transformation that can transform points in reference frame 2
-     * into reference frame 1.  The center of the rotation of frame 1 has
-     * to have been point (0, 0).  This method calculates where that 
-     * transformed point would be in frame 2 and that becomes the center of
-     * the reverse rotation.
+     * into reference frame 1.
      * @param params transformation parameters to apply to points in reference
      * frame 1 to put them in reference frame 2
-     * @param centroidX2 the x centroid of reference frame 2
-     * @param centroidY2 the y centroid of reference frame 2
-     * @param x1 x coordinate of point (x1, y1) in reference frame 1
-     * @param y1 y coordinate of point (x1, y1) in reference frame 1
-     * @param x2 x coordinate of point (x2, y2) in reference frame 2, where 
-     *    (x2, y2) is the (x1, y1) transformed to reference frame 2
-     * @param y2 y coordinate of point (x2, y2) in reference frame 2, where
-     *    (x2, y2) is the (x1, y1) transformed to reference frame 2
      * @return transformation parameters that can transform points in reference
      * frame 2 into reference frame 1
      */

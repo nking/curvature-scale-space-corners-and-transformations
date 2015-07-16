@@ -250,8 +250,14 @@ public final class PointMatcher extends AbstractPointMatcher {
 
     public static float toleranceGridFactor = 4.f;
 
+    protected int largeSearch0Limit = 20;
+    
     protected boolean debug = false;
 
+    public void setLargeSearch0Limit(int limit) {
+        largeSearch0Limit = limit;
+    }
+    
     /**
      * NOT READY FOR USE
      *
@@ -3820,7 +3826,7 @@ if (compTol == 1) {
         TransformationPointFit[] fits = null;
         
         // if number of points is very high, need to use alternate method
-        if (nMaxMatchable > 40) {
+        if (nMaxMatchable > largeSearch0Limit) {
             fits = preSearch0Alt(set1, set2, scale, useGreedyMatch);
         } else {
             fits = preSearch0(set1, set2, scale, useGreedyMatch);
@@ -4100,10 +4106,13 @@ if (compTol == 1) {
             
             TransformationPointFit fit;
             if (useGreedyMatch) {
+                
                 fit = evaluateFitForUnMatchedTransformedGreedy(
                     fits[0].getParameters(), transformedSet1, set2, 
                     tolTransX, tolTransY);
+                
             } else {
+                
                 fit = evaluateFitForUnMatchedTransformedOptimal(
                     fits[0].getParameters(), transformedSet1, set2, 
                     tolTransX, tolTransY);
