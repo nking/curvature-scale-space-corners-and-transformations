@@ -226,7 +226,7 @@ public class Transformer {
             double y = edge.getY(i);
 
             double xr = centroidX * scale 
-                + (((x - centroidX) *scale * cos) 
+                + (((x - centroidX) * scale * cos) 
                 + ((y - centroidY) * scale * sin));
 
             double yr = centroidY * scale 
@@ -331,6 +331,132 @@ public class Transformer {
         double yt = yr + params.getTranslationY();
 
         return new double[]{xt, yt};
+    }
+    
+    public double[] applyTransformation(TransformationParameters params,
+        double xPt, double yPt) {
+        
+        double scale = params.getScale();
+        double scaleTimesCosine = scale * Math.cos(params.getRotationInRadians());
+        double scaleTimesSine = scale * Math.sin(params.getRotationInRadians());
+                
+        double originX = params.getOriginX();
+        double originY = params.getOriginY();
+        
+        double xr = originX * scale + (((xPt - originX) * scaleTimesCosine) 
+            + ((yPt - originY) * scaleTimesSine));
+
+        double yr = originY * scale 
+            + ((-(xPt - originX) * scaleTimesSine) 
+            + ((yPt - originY) * scaleTimesCosine));
+
+        double xt = xr + params.getTranslationX();
+        double yt = yr + params.getTranslationY();
+
+        return new double[]{xt, yt};
+    }
+    
+    public void applyTransformation(TransformationParameters params,
+        PairIntArray set1, float[] outputTrX, float[] outputTrY) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        if (set1 == null) {
+            throw new IllegalArgumentException("set1 cannot be null");
+        }
+        if (outputTrX == null) {
+            throw new IllegalArgumentException("outputTrX cannot be null");
+        }
+        if (outputTrY == null) {
+            throw new IllegalArgumentException("outputTrY cannot be null");
+        }
+        if (set1.getN() != outputTrX.length) {
+            throw new IllegalArgumentException(
+                "outputTrX must the same length as set1");
+        }
+        if (set1.getN() != outputTrY.length) {
+            throw new IllegalArgumentException(
+                "outputTrY must the same length as set1");
+        }
+        
+        float scale = params.getScale();
+        float scaleTimesCosine = (float)
+            (scale * Math.cos(params.getRotationInRadians()));
+        float scaleTimesSine = (float)
+            (scale * Math.sin(params.getRotationInRadians()));
+                
+        float originX = params.getOriginX();
+        float originY = params.getOriginY();
+        
+        float transX = params.getTranslationX();
+        float transY = params.getTranslationY();
+        
+        for (int i = 0; i < set1.getN(); ++i) {
+        
+            int xPt = set1.getX(i);
+            int yPt = set1.getY(i);
+            
+            float xr = originX * scale 
+                + (((xPt - originX) * scaleTimesCosine) 
+                + ((yPt - originY) * scaleTimesSine));
+
+            float yr = originY * scale 
+               + ((-(xPt - originX) * scaleTimesSine) 
+               + ((yPt - originY) * scaleTimesCosine));
+
+            float xt = xr + transX;
+            float yt = yr + transY;
+
+            outputTrX[i] = xt;
+            outputTrY[i] = yt;
+        }
+    }
+    
+    public PairIntArray applyTransformation(TransformationParameters params,
+        PairIntArray set1) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        if (set1 == null) {
+            throw new IllegalArgumentException("set1 cannot be null");
+        }
+        
+        PairIntArray output = new PairIntArray();
+        
+        float scale = params.getScale();
+        float scaleTimesCosine = (float)
+            (scale * Math.cos(params.getRotationInRadians()));
+        float scaleTimesSine = (float)
+            (scale * Math.sin(params.getRotationInRadians()));
+                
+        float originX = params.getOriginX();
+        float originY = params.getOriginY();
+        
+        float transX = params.getTranslationX();
+        float transY = params.getTranslationY();
+        
+        for (int i = 0; i < set1.getN(); ++i) {
+        
+            int xPt = set1.getX(i);
+            int yPt = set1.getY(i);
+            
+            float xr = originX * scale 
+                + (((xPt - originX) * scaleTimesCosine) 
+                + ((yPt - originY) * scaleTimesSine));
+
+            float yr = originY * scale 
+               + ((-(xPt - originX) * scaleTimesSine) 
+               + ((yPt - originY) * scaleTimesCosine));
+
+            float xt = xr + transX;
+            float yt = yr + transY;
+            
+            output.add((int)Math.round(xt), (int)Math.round(yt));
+        }
+        
+        return output;
     }
     
     public GreyscaleImage applyTransformation(final GreyscaleImage input, 

@@ -379,4 +379,130 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         return paramsRev;
     }
     
+    /**
+     * from a set of transformation parameters params that transform
+     * points in reference frame 1 into reference frame 2, create
+     * a transformation that can transform points in reference frame 2
+     * into reference frame 1.
+     * @param params transformation parameters to apply to points in reference
+     * frame 1 to put them in reference frame 2
+     * 
+     * @return transformation parameters that can transform points in reference
+     * frame 2 into reference frame 1
+     */
+    public TransformationParameters swapReferenceFrames(TransformationParameters 
+        params) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        
+        if (params.getOriginX() == 0 && params.getOriginY() == 0) {
+            return swapReferenceFramesWRTOrigin(params);
+        }
+        
+        /*
+        use (centroidX of edge1, centroidY of edge1) for (x0, y0) 
+        to solve for (x1, y1) here and then reverse and invert the 
+        rotation and scale to solve for the "reverse" translations.
+
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) 
+            + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + ((-(x0-xc)*scale*math.sin(theta)) 
+            + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        */
+        
+        float refX2 = (params.getOriginX() * params.getScale()) +
+            params.getTranslationX();
+        
+        float refY2 = (params.getOriginY() * params.getScale()) +
+            params.getTranslationY();
+        
+        double revRot = -1 * params.getRotationInRadians();
+        if (revRot < 0) {
+            revRot += 2. * Math.PI;
+        }
+        double revScale = 1. / params.getScale();
+
+        TransformationParameters paramsRev = new TransformationParameters();
+        paramsRev.setScale((float)revScale);
+        paramsRev.setRotationInRadians((float)revRot);
+        paramsRev.setTranslationX(-params.getTranslationX());
+        paramsRev.setTranslationY(-params.getTranslationY());
+        paramsRev.setOriginX(-refX2);
+        paramsRev.setOriginY(-refY2);
+        
+        return paramsRev;
+    }
+    
+    /**
+     * from a set of transformation parameters params that transform
+     * points in reference frame 1 into reference frame 2, create
+     * a transformation that can transform points in reference frame 2
+     * into reference frame 1.  The center of the rotation of frame 1 has
+     * to have been point (0, 0).  This method calculates where that 
+     * transformed point would be in frame 2 and that becomes the center of
+     * the reverse rotation.
+     * @param params transformation parameters to apply to points in reference
+     * frame 1 to put them in reference frame 2
+     * @param centroidX2 the x centroid of reference frame 2
+     * @param centroidY2 the y centroid of reference frame 2
+     * @param x1 x coordinate of point (x1, y1) in reference frame 1
+     * @param y1 y coordinate of point (x1, y1) in reference frame 1
+     * @param x2 x coordinate of point (x2, y2) in reference frame 2, where 
+     *    (x2, y2) is the (x1, y1) transformed to reference frame 2
+     * @param y2 y coordinate of point (x2, y2) in reference frame 2, where
+     *    (x2, y2) is the (x1, y1) transformed to reference frame 2
+     * @return transformation parameters that can transform points in reference
+     * frame 2 into reference frame 1
+     */
+    TransformationParameters swapReferenceFramesWRTOrigin(TransformationParameters 
+        params) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        
+        /*
+        use (centroidX of edge1, centroidY of edge1) for (x0, y0) 
+        to solve for (x1, y1) here and then reverse and invert the 
+        rotation and scale to solve for the "reverse" translations.
+
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) 
+            + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + ((-(x0-xc)*scale*math.sin(theta)) 
+            + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+        
+        ---------
+        simplified for origin:
+        xr_0 = 0, yr_0 = 0 and same for set2
+        */
+     
+        double revRot = -1 * params.getRotationInRadians();
+        if (revRot < 0) {
+            revRot += 2. * Math.PI;
+        }
+        double revScale = 1. / params.getScale();
+
+        double rmc = Math.cos(revRot);
+        double rms = Math.sin(revRot);
+
+        TransformationParameters paramsRev = new TransformationParameters();
+        paramsRev.setScale((float)revScale);
+        paramsRev.setRotationInRadians((float)revRot);
+        paramsRev.setTranslationX(-1*params.getTranslationX());
+        paramsRev.setTranslationY(-1*params.getTranslationY());
+        
+        return paramsRev;
+    }
 }

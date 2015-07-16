@@ -2,9 +2,8 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
-import java.util.List;
+import java.security.SecureRandom;
 import junit.framework.TestCase;
-import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
@@ -14,6 +13,51 @@ import static org.junit.Assert.*;
 public class TransformerTest extends TestCase {
     
     public TransformerTest() {
+    }
+    
+    public void testSwapReferenceFramesWRTOrigin() throws Exception {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed(seed);
+        
+        MatchedPointsTransformationCalculator tc = 
+            new MatchedPointsTransformationCalculator();
+        
+        Transformer transformer = new Transformer();
+        
+        int n = 100;
+        for (int i = 0; i < n; ++i) {
+            int x = sr.nextInt(1000);
+            int y = sr.nextInt(1000);
+            float scale = sr.nextFloat();
+            if (sr.nextBoolean()) {
+                scale = 1.f/scale;
+            }
+            int rotDeg = sr.nextInt(360);
+            float transX = sr.nextInt(1000);
+            float transY = sr.nextInt(1000);
+            
+            TransformationParameters params = new TransformationParameters();
+            params.setRotationInDegrees(rotDeg);
+            params.setScale(scale);
+            params.setTranslationX(transX);
+            params.setTranslationY(transY);
+            
+            TransformationParameters revParams = tc.swapReferenceFrames(params);
+            
+            double[] xyTransformed = transformer.applyTransformation(params, 
+                x, y);
+            
+            double[] xyTransformedRevTransformed = 
+                transformer.applyTransformation(
+                revParams, (float)xyTransformed[0], (float)xyTransformed[1]);
+            
+            assertTrue(Math.abs(xyTransformedRevTransformed[0] - x) < 1);
+            
+            assertTrue(Math.abs(xyTransformedRevTransformed[1] - y) < 1);
+        }
+
     }
 
     public void testApplyTransformation2_0() {

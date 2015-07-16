@@ -12,6 +12,10 @@ public class TransformationParameters {
     private float translationY = 0;
     
     private float scale = 1;
+    
+    private float originX = 0;
+    
+    private float originY = 0;
 
     /**
      * @return the rotation in units of degrees
@@ -82,7 +86,23 @@ public class TransformationParameters {
     public void setScale(float scale) {
         this.scale = scale;
     }
+    
+    public void setOriginX(float theXOrigin) {
+        originX = theXOrigin;
+    }
+    
+    public void setOriginY(float theYOrigin) {
+        originY = theYOrigin;
+    }
    
+    public float getOriginX() {
+        return originX;
+    }
+    
+    public float getOriginY() {
+        return originY;
+    }
+    
     @Override
     public boolean equals(Object obj) {
         
@@ -95,7 +115,9 @@ public class TransformationParameters {
         return ((other.rotationInRadians == rotationInRadians) &&
             (other.translationX == translationX) && 
             (other.translationY == translationY) &&
-            (other.scale == scale));
+            (other.scale == scale) &&
+            (other.originX == originX) && (other.originY == originY)
+            );
     }
 
     @Override
@@ -107,7 +129,10 @@ public class TransformationParameters {
             .append(" rotationInDegrees=").append(rotationInRadians*180./Math.PI)
             .append(" scale=").append(scale)
             .append("\ntranslationX=").append(translationX)
-            .append(" translationY=").append(translationY);
+            .append(" translationY=").append(translationY)
+            .append(" originX=").append(originX)
+            .append(" originY=").append(originY)
+            ;
         
         return sb.toString();
     }

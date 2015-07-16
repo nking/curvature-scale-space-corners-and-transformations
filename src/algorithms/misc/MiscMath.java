@@ -88,6 +88,17 @@ public class MiscMath {
         }
         return max;
     }
+    
+    public static float findMax(float[] a, int nIndexes) {
+        float max = Float.MIN_VALUE;
+        for (int i = 0; i < nIndexes; i++) {
+            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
+                && (a[i] < Float.MAX_VALUE)) {
+                max = a[i];
+            }
+        }
+        return max;
+    }
 
     /**
      * find max but ignore values such as FLOAT.MAX_VALUE, infinity, and NAN
@@ -97,6 +108,17 @@ public class MiscMath {
     public static int findMax(int[] a) {
         int max = Integer.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
+            if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
+                && (a[i] < Float.MAX_VALUE)) {
+                max = a[i];
+            }
+        }
+        return max;
+    }
+    
+    public static int findMax(int[] a, int nIndexes) {
+        int max = Integer.MIN_VALUE;
+        for (int i = 0; i < nIndexes; i++) {
             if ((a[i] > max) && !Float.isInfinite(a[i]) && !Float.isNaN(a[i]) 
                 && (a[i] < Float.MAX_VALUE)) {
                 max = a[i];
@@ -114,10 +136,30 @@ public class MiscMath {
         }
         return min;
     }
+    
+    public static float findMin(float[] a, int nIndexes) {
+        float min = Float.MAX_VALUE;
+        for (int i = 0; i < nIndexes; i++) {
+            if ((a[i] < min) && !Float.isInfinite(a[i])) {
+                min = a[i];
+            }
+        }
+        return min;
+    }
 
     public static int findMin(int[] a) {
         int min = Integer.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
+            if (a[i] < min) {
+                min = a[i];
+            }
+        }
+        return min;
+    }
+    
+    public static int findMin(int[] a, int nIndexes) {
+        int min = Integer.MAX_VALUE;
+        for (int i = 0; i < nIndexes; i++) {
             if (a[i] < min) {
                 min = a[i];
             }

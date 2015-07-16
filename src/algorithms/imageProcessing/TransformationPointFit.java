@@ -188,19 +188,6 @@ public class TransformationPointFit implements Comparable<TransformationPointFit
             diffEps = 1;
         }
 
-        //0==same fit;  1==similar fits;  -1==different fits
-        int areSimilar = isSimilarWithDiffParameters(compareFit);
-        if ((areSimilar != -1) && (Math.abs(bestNMatches - compNMatches) <= diffEps)) {
-
-            // if compareFit tolerance is alot larger than bestFit, this would
-            // not be a fair comparison, so check before returning true
-
-            if ((compareFit.getTranslationXTolerance() < transTolX)
-            &&(compareFit.getTranslationYTolerance() < transTolY)) {
-                return 1;
-            }
-        }
-
         if (Math.abs(bestNMatches - compNMatches) <= diffEps) {
 
             if (Double.isNaN(compareFit.getMeanDistFromModel())) {
