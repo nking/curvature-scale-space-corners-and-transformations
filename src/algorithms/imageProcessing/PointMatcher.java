@@ -251,13 +251,13 @@ public final class PointMatcher extends AbstractPointMatcher {
     public static float toleranceGridFactor = 4.f;
 
     protected int largeSearch0Limit = 20;
-    
+
     protected boolean debug = false;
 
     public void setLargeSearch0Limit(int limit) {
         largeSearch0Limit = limit;
     }
-    
+
     /**
      * NOT READY FOR USE
      *
@@ -290,7 +290,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         if (transFit == null) {
             return null;
         }
-        
+
         int nMaxMatchable = (unmatchedLeftXY.getN() < unmatchedRightXY.getN()) ?
             unmatchedLeftXY.getN() : unmatchedRightXY.getN();
 
@@ -334,7 +334,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         PairIntArray part1Matched = new PairIntArray();
         part2Matched = new PairIntArray();
 
-        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance, 
+        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance,
             matchIndexesAndDiffs, part1Matched, part2Matched);
 
         TransformationPointFit fit2 = evaluateFitForMatchedTransformed(
@@ -776,7 +776,7 @@ public final class PointMatcher extends AbstractPointMatcher {
     }
 
     /**
-     * calculate for Euclidean transformation from set1 to set2 for 
+     * calculate for Euclidean transformation from set1 to set2 for
      * the points being unmatched.
      *
      * @param set1
@@ -801,15 +801,15 @@ public final class PointMatcher extends AbstractPointMatcher {
         if (converged) {
             return fit;
         }
-        
+
         float rotHalfRange = 45;
         float rotDelta = 2;
-        float transHalfRange = 100;
+        float transHalfRange = 500;
         float transDelta = 4;
         boolean useGreedyMatching = true;
 
         if (fit.getScale() >= 1.0) {
-            
+
             TransformationPointFit fit2 = refineTheTransformation(
                 fit.getParameters(), set1, set2, rotHalfRange, rotDelta,
                 transHalfRange, transDelta, transHalfRange, transDelta,
@@ -820,13 +820,13 @@ public final class PointMatcher extends AbstractPointMatcher {
             }
 
         } else {
-                        
+
             // scale is < 1 so reverse order of sets
             TransformationPointFit revFit = refineTheTransformation(
                 fit.getParameters(), set1, set2, rotHalfRange, rotDelta,
                 transHalfRange, transDelta, transHalfRange, transDelta,
                 useGreedyMatching);
-                
+
             TransformationParameters params = revFit.getParameters();
 
             // reverse the parameters.
@@ -883,7 +883,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         }
 
         boolean useGreedySearch = true;
-        
+
         int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
             : set2.getN();
 
@@ -956,7 +956,7 @@ public final class PointMatcher extends AbstractPointMatcher {
                 // reverse the parameters to write transformation w.r.t. set1
                 // needs a reference point in both datasets for direct calculation
                 TransformationParameters params = bestRevFit.getParameters();
-                
+
                 MatchedPointsTransformationCalculator tc = new
                     MatchedPointsTransformationCalculator();
 
@@ -969,7 +969,7 @@ public final class PointMatcher extends AbstractPointMatcher {
                     bestRevFit.getStDevFromMean(),
                     bestRevFit.getTranslationXTolerance(),
                     bestRevFit.getTranslationYTolerance());
-                
+
                 bestFit.setMaximumNumberMatchable(nMaxMatchable);
             }
         }
@@ -1290,7 +1290,7 @@ tempAll[i][j] = (float)Math.sqrt(diffX*diffX + diffY*diffY);
 
         return output;
     }
-        
+
     protected TransformationPointFit[] evaluateTranslationsOverGrid(
         PairIntArray set1, PairIntArray set2,
         final float rotationInRadians, final float scale,
@@ -2456,7 +2456,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
             rotInRadians = (float)(rotSum/(float)c)*((float)(2.*Math.PI));
 
             // "Reflection"
-            
+
             float txReflect = 0;
             float tyReflect = 0;
             float rotReflect = 0;
@@ -2470,7 +2470,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
                 paramsReflect.setOriginX(0);
                 paramsReflect.setOriginY(0);
             }
-            
+
             switch(lastAlt) {
                 case 0: {
                     // change translation X
@@ -2499,7 +2499,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
                     break;
                 }
             }
-            
+
             TransformationPointFit fitReflected = (fits[worstFitIdx] != null) ?
                 evaluateForUnmatched(paramsReflect, set1, set2,
                 tolTransX, tolTransY, useGreedyMatching) : null;
@@ -2556,7 +2556,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
                 TransformationPointFit fitExpansion = (fitReflected != null) ?
                     evaluateForUnmatched(paramsExpansion, set1, set2,
                     tolTransX, tolTransY, useGreedyMatching) : null;
-                
+
                 int compR = compare(fitReflected, fitExpansion);
 
                 if (compR == 1) {
@@ -2583,7 +2583,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
                     paramsContraction.setOriginX(0);
                     paramsContraction.setOriginY(0);
                 }
-            
+
                 switch (lastAlt) {
                     case 0: {
                         // change translation X
@@ -2616,7 +2616,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
                 TransformationPointFit fitContraction = (fits[worstFitIdx] != null) ?
                     evaluateForUnmatched(paramsContraction, set1, set2,
                     tolTransX, tolTransY, useGreedyMatching) : null;
-                
+
                 int compC = compare(fits[worstFitIdx], fitContraction);
 
                 if (compC > -1) {
@@ -2638,7 +2638,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
                             */
                             continue;
                         }
-                        
+
                         TransformationParameters paramsI = new TransformationParameters();
                         paramsI.setScale(scale);
                         paramsI.setRotationInRadians(fits[i].getRotationInRadians());
@@ -2722,7 +2722,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
             p.setTranslationY(transY);
             p.setOriginX(0);
             p.setOriginY(0);
-            
+
             TransformationPointFit fitAvg = evaluateForUnmatched(p, set1, set2,
                 tolTransX, tolTransY, useGreedyMatching);
 
@@ -2780,7 +2780,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
             throw new IllegalArgumentException(
             "set1 cannot be null");
         }
-        
+
         TransformationParameters params = new TransformationParameters();
         params.setScale(scale);
         params.setRotationInRadians(rotationInRadians);
@@ -2789,10 +2789,10 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
         params.setOriginX(0);
         params.setOriginY(0);
 
-        return transformAndEvaluateFit(set1, set2, params, tolTransX, tolTransY, 
+        return transformAndEvaluateFit(set1, set2, params, tolTransX, tolTransY,
             useGreedyMatching, setsAreMatched);
     }
-    
+
     protected TransformationPointFit transformAndEvaluateFit(
         PairIntArray set1, PairIntArray set2,
         TransformationParameters params, float tolTransX, float tolTransY,
@@ -2806,19 +2806,19 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
             throw new IllegalArgumentException(
             "set1 cannot be null");
         }
-        
+
         Transformer transformer = new Transformer();
-            
+
         PairFloatArray transformedSet1 = transformer.applyTransformation2(
             params, set1, 0, 0);
-            
+
         if (setsAreMatched) {
-            
+
             return evaluateFitForMatchedTransformed(params, transformedSet1,
                 set2);
-            
+
         } else {
-            
+
             return evaluateFitForUnMatchedTransformedGreedy(
                 params, transformedSet1, set2, tolTransX, tolTransY);
         }
@@ -3008,7 +3008,7 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
 
         return new double[]{rStdv, sStdv, tXStdv, tYStdv};
     }
-    
+
     /**
      * Re-evaluate the fit of the enclosed parameters, but use the new tolerance
      * for translation in x and y.
@@ -3093,11 +3093,11 @@ log.fine("begin refineTranslationWithDownhillSimplex w/ maxIter=" + dsNMaxIter);
         if (params == null) {
             return null;
         }
-        
+
         boolean setsAreMatched = false;
 
-        return transformAndEvaluateFit(set1, set2, params, 
-            translationXTolerance, translationYTolerance, 
+        return transformAndEvaluateFit(set1, set2, params,
+            translationXTolerance, translationYTolerance,
             useGreedyMatching, setsAreMatched);
     }
 
@@ -3583,21 +3583,21 @@ if (compTol == 1) {
         to get rotation accurate, then a finer search on translation near
         that found rotation.
         */
-        
+
         /*
         editing this while testing:
-        
-        rotDelta=1 and transDelta of 100 has a smallest delta rot within the 
+
+        rotDelta=1 and transDelta of 100 has a smallest delta rot within the
             10 best fits which is accurate within += 20 degrees?
-        
-        rotDelta=2 and transDelta of 100 has a smallest delta rot 
+
+        rotDelta=2 and transDelta of 100 has a smallest delta rot
             within the 10 best fits which is accurate within += 25 degrees... 14, 5
-            and within the best fit alone, is accurate within 
-        
+            and within the best fit alone, is accurate within
+
         */
         float transDelta = 100;
         float rotDelta = 2;
-       
+
         float tolTransX = 0.5f*transDelta + (float)(Math.sin(rotDelta*Math.PI/180.)*transDelta);
         float tolTransY = tolTransX;
 
@@ -3617,13 +3617,13 @@ if (compTol == 1) {
 
         FixedSizeSortedVector<TransformationPointFit> starterPoints
             = new FixedSizeSortedVector<>(nKeep, TransformationPointFit.class);
-        
+
         float[] xsr = new float[set1.getN()];
         float[] ysr = new float[set1.getN()];
-        
+
         for (float rotDeg : rotation) {
-            
-            TransformationParameters rotScaleParams = 
+
+            TransformationParameters rotScaleParams =
                 new TransformationParameters();
             rotScaleParams.setScale(scale);
             rotScaleParams.setRotationInDegrees(rotDeg);
@@ -3631,9 +3631,9 @@ if (compTol == 1) {
             rotScaleParams.setTranslationY(0);
             rotScaleParams.setOriginX(0);
             rotScaleParams.setOriginY(0);
-            
+
             transformer.applyTransformation(rotScaleParams, set1, xsr, ysr);
-            
+
             final float minX1 = MiscMath.findMin(xsr);
             final float maxX1 = MiscMath.findMax(xsr);
             final float minY1 = MiscMath.findMin(ysr);
@@ -3646,7 +3646,7 @@ if (compTol == 1) {
 
             float transXRange = transXStop - transXStart;
             float transYRange = transYStop - transYStart;
-            
+
             int nX = (int) Math.ceil(transXRange / transDelta);
             int nY = (int) Math.ceil(transYRange / transDelta);
 
@@ -3660,16 +3660,16 @@ if (compTol == 1) {
             for (int i = 1; i < nY; ++i) {
                 tyS[i] = tyS[i - 1] + transDelta;
             }
-        
+
             for (float tx : txS) {
                 for (float ty : tyS) {
 
                     PairFloatArray allPoints1Tr = new PairFloatArray(set1.getN());
-                    
+
                     for (int i = 0; i < xsr.length; ++i) {
                         allPoints1Tr.add(xsr[i] + tx, ysr[i] + ty);
                     }
-                    
+
                     TransformationParameters params = new TransformationParameters();
                     params.setScale(scale);
                     params.setRotationInDegrees(rotDeg);
@@ -3677,7 +3677,7 @@ if (compTol == 1) {
                     params.setTranslationY(ty);
                     params.setOriginX(0);
                     params.setOriginY(0);
-                    
+
                     TransformationPointFit fit2;
                     if (useGreedyMatching) {
                         fit2 = evaluateFitForUnMatchedTransformedGreedy(params,
@@ -3707,12 +3707,12 @@ if (compTol == 1) {
 
         return starterPoints.getArray();
     }
-    
+
     /**
      * method to narrow down all parameter space using the given starterPoints.
      * The starterPoints are expected to have been the result of preSearch0.
      * NOTE: this assumes that all fits are using same scale.
-     * 
+     *
      * @param fits
      * @param set1
      * @param set2
@@ -3737,7 +3737,7 @@ if (compTol == 1) {
             // grid around each rotation?
             //return preSearch1Alt(fits, set1, set2, useGreedyMatching);
         }
-        
+
         float centerTransX = 0;
         float centerTransY = 0;
         float minTransX = Float.MAX_VALUE;
@@ -3755,10 +3755,10 @@ if (compTol == 1) {
             float ty = fit.getTranslationY();
             float tolX = fit.getTranslationXTolerance();
             float tolY = fit.getTranslationYTolerance();
-            
+
             centerTransX += tx;
             centerTransY += ty;
-            
+
             if (tx < minTransX) {
                 minTransX = tx;
             }
@@ -3777,22 +3777,22 @@ if (compTol == 1) {
             if (tolY > maxTolTransY) {
                 maxTolTransY = tolY;
             }
-            
+
             count++;
         }
         centerTransX /= (float)count;
         centerTransY /= (float)count;
         float transXHalfRange = Math.abs(maxTransX - minTransX)/2.f;
         float transYHalfRange = Math.abs(maxTransY - minTransY)/2.f;
-        
+
         float scale = fits[0].getScale();
-        
+
         TransformationPointFit[] fits2 = refineTranslationWithDownhillSimplex(
             fits, set1, set2,
             centerTransX, centerTransY, maxTolTransX, maxTolTransY,
             transXHalfRange + 5, transYHalfRange + 5,
             scale, useGreedyMatching, false, 50);
-        
+
         return fits2;
     }
 
@@ -3818,34 +3818,32 @@ if (compTol == 1) {
         if ((set1.getN() < 3) || (set2.getN() < 3)) {
             return null;
         }
-        
+
         int nMaxMatchable = Math.min(set1.getN(), set2.getN());
 
-        boolean useGreedyMatch = true;
-        
         TransformationPointFit[] fits = null;
-        
+
         // if number of points is very high, need to use alternate method
         if (nMaxMatchable > largeSearch0Limit) {
-            fits = preSearch0Alt(set1, set2, scale, useGreedyMatch);
+            fits = preSearch0Alt(set1, set2, scale, useGreedyMatching);
         } else {
-            fits = preSearch0(set1, set2, scale, useGreedyMatch);
+            fits = preSearch0(set1, set2, scale, useGreedyMatching);
         }
-                
+
         if (fits == null) {
             return null;
         }
-        
+
         TransformationPointFit[] fits2 = preSearch1(
             fits, set1, set2, useGreedyMatching);
 
         if (fits2 == null) {
             return null;
         }
-        
+
         return fits2[0];
     }
-    
+
     /**
      * grid search around rotation and translation given by params.
      *
@@ -3856,7 +3854,7 @@ if (compTol == 1) {
      * around params.rotationInDegrees.  the value is added and subtracted
      * from params.rotationInDegrees to create the start and end of the
      * range.
-     * @param rotDeltaInDegrees the interval size of rotation in degrees 
+     * @param rotDeltaInDegrees the interval size of rotation in degrees
      * for the search.
      * @param transXHalfRange half of the range in translation in X to search
      * around params.translationX.  the value is added and subtracted
@@ -3893,10 +3891,10 @@ if (compTol == 1) {
         Transformer transformer = new Transformer();
 
         float[] rotation = MiscMath.writeDegreeIntervals(
-            params.getRotationInDegrees() - rotHalfRangeInDegrees, 
-            params.getRotationInDegrees() + rotHalfRangeInDegrees, 
+            params.getRotationInDegrees() - rotHalfRangeInDegrees,
+            params.getRotationInDegrees() + rotHalfRangeInDegrees,
             rotDeltaInDegrees);
-        
+
         float transXStart = params.getTranslationX() - transXHalfRange;
         float transXStop = params.getTranslationX() + transXHalfRange;
         float transYStart = params.getTranslationY() - transYHalfRange;
@@ -3925,15 +3923,15 @@ if (compTol == 1) {
 
         FixedSizeSortedVector<TransformationPointFit> starterPoints
             = new FixedSizeSortedVector<>(nKeep, TransformationPointFit.class);
-        
+
         float[] xsr = new float[set1.getN()];
         float[] ysr = new float[set1.getN()];
-        
+
         float scale = params.getScale();
-        
+
         for (float rotDeg : rotation) {
-            
-            TransformationParameters rotScaleParams = 
+
+            TransformationParameters rotScaleParams =
                 new TransformationParameters();
             rotScaleParams.setScale(scale);
             rotScaleParams.setRotationInDegrees(rotDeg);
@@ -3941,18 +3939,18 @@ if (compTol == 1) {
             rotScaleParams.setTranslationY(0);
             rotScaleParams.setOriginX(0);
             rotScaleParams.setOriginY(0);
-            
+
             transformer.applyTransformation(rotScaleParams, set1, xsr, ysr);
-        
+
             for (float tx : txS) {
                 for (float ty : tyS) {
 
                     PairFloatArray allPoints1Tr = new PairFloatArray(set1.getN());
-                    
+
                     for (int i = 0; i < xsr.length; ++i) {
                         allPoints1Tr.add(xsr[i] + tx, ysr[i] + ty);
                     }
-                    
+
                     TransformationParameters params2 = new TransformationParameters();
                     params.setScale(scale);
                     params.setRotationInDegrees(rotDeg);
@@ -3960,7 +3958,7 @@ if (compTol == 1) {
                     params.setTranslationY(ty);
                     params.setOriginX(0);
                     params.setOriginY(0);
-                    
+
                     TransformationPointFit fit2;
                     if (useGreedyMatching) {
                         fit2 = evaluateFitForUnMatchedTransformedGreedy(params2,
@@ -3991,7 +3989,7 @@ if (compTol == 1) {
         return starterPoints.getArray();
     }
 
-    /** 
+    /**
      * @param set1
      * @param set2
      * @param params
@@ -3999,7 +3997,7 @@ if (compTol == 1) {
      * around params.rotationInDegrees.  the value is added and subtracted
      * from params.rotationInDegrees to create the start and end of the
      * range.
-     * @param rotDeltaInDegrees the interval size of rotation in degrees 
+     * @param rotDeltaInDegrees the interval size of rotation in degrees
      * for the search.
      * @param transXHalfRange half of the range in translation in X to search
      * around params.translationX.  the value is added and subtracted
@@ -4012,14 +4010,14 @@ if (compTol == 1) {
      * @param useGreedyMatching if true, uses an N^2 algorithm to find the
      * best match made for each point in order of points in set1, else uses
      * an ~N^3 optimal bipartite matching algorithm.
-     * @return 
+     * @return
      */
     public TransformationPointFit refineTheTransformation(
-        TransformationParameters params, PairIntArray set1, PairIntArray set2, 
-        float rotHalfRangeInDegrees, float rotDeltaInDegrees, float transXHalfRange, 
-        float transXDelta, float transYHalfRange, float transYDelta, 
+        TransformationParameters params, PairIntArray set1, PairIntArray set2,
+        float rotHalfRangeInDegrees, float rotDeltaInDegrees, float transXHalfRange,
+        float transXDelta, float transYHalfRange, float transYDelta,
         boolean useGreedyMatching) {
-        
+
         if (params == null) {
             throw new IllegalArgumentException("params cannot be null");
         }
@@ -4029,36 +4027,36 @@ if (compTol == 1) {
         if (set2 == null) {
             throw new IllegalArgumentException("set2 cannot be null");
         }
-        
+
         TransformationPointFit[] fits = boundedGridSearch(
             set1, set2, params,
             rotHalfRangeInDegrees, rotDeltaInDegrees,
             transXHalfRange, transXDelta,
             transYHalfRange, transYDelta, useGreedyMatching);
-      
+
         if (fits == null) {
             return null;
         }
-        
+
         int nMaxMatchable = Math.min(set1.getN(), set2.getN());
-        
+
         if (hasConverged(fits[0], nMaxMatchable)) {
             return fits[0];
         }
-        
-        TransformationPointFit[] fits2 = preSearch1(fits, set1, set2, 
+
+        TransformationPointFit[] fits2 = preSearch1(fits, set1, set2,
             useGreedyMatching);
-        
+
         if (fits2 == null) {
             return null;
         }
-        
+
         if (hasConverged(fits2[0], nMaxMatchable)) {
             return fits2[0];
         }
-        
+
         // TODO: may need a small fine grid search here
-        
+
         return fits2[0];
     }
 
@@ -4071,60 +4069,60 @@ if (compTol == 1) {
      * @param set2
      * @param scale
      * @param useGreedyMatch
-     * @return 
+     * @return
      */
-    protected TransformationPointFit[] preSearch0Alt(PairIntArray set1, 
+    protected TransformationPointFit[] preSearch0Alt(PairIntArray set1,
         PairIntArray set2, float scale, boolean useGreedyMatch) {
-       
+
         Transformer transformer = new Transformer();
-        
+
         PointPartitioner partitioner = new PointPartitioner();
-        
+
         List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 30);
-        
+
         TransformationPointFit bestFit = null;
-        
+
         TransformationPointFit[] bestFits = null;
-        
+
         // TODO: this is from preSearch0's transDelta.  needs to be accessible
         // to instance for tuning
         float tolTransX = 100;
         float tolTransY = 100;
-        
+
         for (PairIntArray set1Subset : set1Subsets) {
-            
-            TransformationPointFit[] fits = preSearch0(set1Subset, set2, scale, 
+
+            TransformationPointFit[] fits = preSearch0(set1Subset, set2, scale,
                 useGreedyMatch);
-            
+
             if (fits == null) {
                 continue;
             }
-            
+
             // apply fit to all points to evaluate
             PairFloatArray transformedSet1 = transformer.applyTransformation2(
                 fits[0].getParameters(), set1, 0, 0);
-            
+
             TransformationPointFit fit;
             if (useGreedyMatch) {
-                
+
                 fit = evaluateFitForUnMatchedTransformedGreedy(
-                    fits[0].getParameters(), transformedSet1, set2, 
+                    fits[0].getParameters(), transformedSet1, set2,
                     tolTransX, tolTransY);
-                
+
             } else {
-                
+
                 fit = evaluateFitForUnMatchedTransformedOptimal(
-                    fits[0].getParameters(), transformedSet1, set2, 
+                    fits[0].getParameters(), transformedSet1, set2,
                     tolTransX, tolTransY);
             }
-            
+
             if (fitIsBetter(bestFit, fit)) {
                 bestFit = fit;
                 bestFits = fits;
             }
         }
-        
+
         return bestFits;
     }
-    
+
 }

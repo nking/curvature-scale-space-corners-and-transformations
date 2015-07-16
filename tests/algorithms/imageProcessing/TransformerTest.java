@@ -147,6 +147,77 @@ public class TransformerTest extends TestCase {
 
     }
 
+    public void testSwapReferenceFrames() throws Exception {
+        
+        Transformer transformer = new Transformer();
+        
+        MatchedPointsTransformationCalculator tc = 
+            new MatchedPointsTransformationCalculator();
+        
+        TransformationParameters params0 = new TransformationParameters();
+        params0.setRotationInDegrees(0);
+        params0.setScale(1);
+        params0.setTranslationX(0);
+        params0.setTranslationY(0);
+        params0.setOriginX(50);
+        params0.setOriginY(60);
+        
+        int x0 = 10;
+        int y0 = 20;
+        double[] trXY = transformer.applyTransformation(params0, x0, y0);
+        assertTrue(Math.abs(trXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(trXY[1] - y0) < 0.01);
+        
+        TransformationParameters revParams0 = tc.swapReferenceFrames(params0);
+        double[] revTrXY = transformer.applyTransformation(revParams0, 
+            trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - y0) < 0.01);
+            
+        float xa = 0;
+        float ya = 0;
+        float xb = 50;
+        float yb = 0;
+        params0.setRotationInDegrees(90);
+        params0.setOriginX(50);
+        params0.setOriginY(60);
+        trXY = transformer.applyTransformation(params0, xa, ya);
+        assertTrue(Math.abs(trXY[0] - -10) < 0.01);
+        assertTrue(Math.abs(trXY[1] - 110) < 0.01);
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - xa) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - ya) < 0.01);
+        
+        trXY = transformer.applyTransformation(params0, xb, yb);
+        assertTrue(Math.abs(trXY[0] - -10) < 0.01);
+        assertTrue(Math.abs(trXY[1] - 60) < 0.01);
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - xb) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - yb) < 0.01);
+        
+        params0.setRotationInDegrees(180);
+        params0.setOriginX(50);
+        params0.setOriginY(60);
+        trXY = transformer.applyTransformation(params0, xa, ya);
+        assertTrue(Math.abs(trXY[0] - 100) < 0.01);
+        assertTrue(Math.abs(trXY[1] - 120) < 0.01);
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - xa) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - ya) < 0.01);
+        
+        trXY = transformer.applyTransformation(params0, xb, yb);
+        assertTrue(Math.abs(trXY[0] - 50) < 0.01);
+        assertTrue(Math.abs(trXY[1] - 120) < 0.01);
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - xb) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - yb) < 0.01);
+        
+    }
+    
     public void testApplyTransformation2_0() {
         
         float rotInDegrees, scale, transX, transY;
