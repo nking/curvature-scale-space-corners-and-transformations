@@ -38,7 +38,7 @@ public class PointMatcher3Test extends TestCase {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1437014214666L;
+        //seed = 1437014214666L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -51,8 +51,12 @@ public class PointMatcher3Test extends TestCase {
 
         boolean spacer = true;
         
+        float maxOfMinDiffRots = Float.MIN_VALUE;
+        float maxOfBestDiffRots = Float.MIN_VALUE;
+        
+        for (int nn = 0; nn < 1; ++nn) { // repeat number of tests
         for (int rotType = 0; rotType < 5; ++rotType) {
-            for (int nTest = 0; nTest < 5 /*20*/; ++nTest) { // this increases nPoints
+            for (int nTest = 10; nTest < 12 /*20*/; ++nTest) { // this increases nPoints
 
                 PointMatcher pointMatcher = new PointMatcher();
 
@@ -175,12 +179,13 @@ public class PointMatcher3Test extends TestCase {
                 int nExpected = nMaxMatchable;
                 int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
                    
+                boolean useGreedyMatching = true;
+                
                 // ------- assert that preSearch0 gets the answer within <> degrees of rotation -------
                 TransformationPointFit[] fits =
                     pointMatcher.preSearch0(
                     unmatchedLeftXY, unmatchedRightXY, scale,
-                    imageWidth, imageHeight, imageWidth, imageHeight,
-                    setsFractionOfImage);
+                    useGreedyMatching, setsFractionOfImage);
                 
                 assert(fits != null);
                 
@@ -188,8 +193,10 @@ public class PointMatcher3Test extends TestCase {
                 
                 float minRotationDiff = Float.MAX_VALUE;
 
-                for (TransformationPointFit fit : fits) {
+                for (int i = 0; i < fits.length; ++i) {
 
+                    TransformationPointFit fit = fits[i];
+                    
                     if (fit == null) {
                         continue;
                     }
@@ -208,8 +215,17 @@ public class PointMatcher3Test extends TestCase {
                         diffRotDeg, diffScale, diffTransX, 
                         diffTransY, nEps, diffN, (float)fit.getMeanDistFromModel()));
                     
+                    if (diffRotDeg < 0) {
+                        diffRotDeg *= -1;
+                    }
                     if (diffRotDeg < minRotationDiff) {
                         minRotationDiff = diffRotDeg;
+                    }
+                    
+                    if (i == 0) {
+                        if (diffRotDeg > maxOfBestDiffRots) {
+                            maxOfBestDiffRots = diffRotDeg;
+                        }
                     }
                 }
                 spacer = !spacer;
@@ -217,15 +233,21 @@ public class PointMatcher3Test extends TestCase {
                     + " points min difference from expected rotation=" + minRotationDiff);
                 //assertTrue(minRotationDiff <= 10);
                 
+                if (minRotationDiff > maxOfMinDiffRots) {
+                    maxOfMinDiffRots = minRotationDiff;
+                }
+                       
+                /*try simplex, else grid search within 90 of best fit
+                    
                 if (true) {
                     continue;
                 }
+                */
                 
                 // ------ assert preSearch1 ---------
                 TransformationPointFit[] fits2 = pointMatcher.preSearch1(
                     fits, unmatchedLeftXY, unmatchedRightXY,
-                    imageWidth, imageHeight, imageWidth, imageHeight,
-                    setsFractionOfImage);
+                    useGreedyMatching, setsFractionOfImage);
                 
                 assert(fits2 != null);
                 
@@ -233,35 +255,37 @@ public class PointMatcher3Test extends TestCase {
                 
                 minRotationDiff = Float.MAX_VALUE;
 
-                for (TransformationPointFit fit : fits2) {
+                TransformationPointFit fit = fits2[0];
 
-                    if (fit == null) {
-                        continue;
-                    }
-                    TransformationParameters fitParams = fit.getParameters();
-                    int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
-                    float diffRotDeg = getAngleDifference(
-                        fitParams.getRotationInDegrees(), rotInDegrees);
-                    float diffScale = Math.abs(fitParams.getScale() - scale);
-                    float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
-                    float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
+                if (fit == null) {
+                    continue;
+                }
+                TransformationParameters fitParams = fit.getParameters();
+                int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
+                float diffRotDeg = getAngleDifference(
+                    fitParams.getRotationInDegrees(), rotInDegrees);
+                float diffScale = Math.abs(fitParams.getScale() - scale);
+                float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
+                float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
 
-                    String space = spacer ? "*    " : "*";
-                    log.info(space + "diff =" +
-                        String.format(
-                        " dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f  nEps=%d dNPoints=%d meanDiffModel=%f",
-                        diffRotDeg, diffScale, diffTransX, 
-                        diffTransY, nEps, diffN, (float)fit.getMeanDistFromModel()));
-                    
-                    if (diffRotDeg < minRotationDiff) {
-                        minRotationDiff = diffRotDeg;
-                    }
+                String space = spacer ? "    *" : "*";
+                log.info(space + "diff =" +
+                    String.format(
+                    " dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f  nEps=%d dNPoints=%d meanDiffModel=%f",
+                    diffRotDeg, diffScale, diffTransX, 
+                    diffTransY, nEps, diffN, (float)fit.getMeanDistFromModel()));
+
+                if (diffRotDeg < 0) {
+                    diffRotDeg *= -1;
                 }
                 spacer = !spacer;
-                log.info("ps1: min difference from expected rotation=" + minRotationDiff);
                 //assertTrue(minRotationDiff <= 10);
             }
         }
+        }
+        
+        log.info("Largest difference in rotation from expected=" + maxOfMinDiffRots
+            + "  max of best fits diff from expected rotation=" + maxOfBestDiffRots);
     }
 
     public void estCalculateTranslationFromGridThenDownhillSimplex()
@@ -577,334 +601,6 @@ public class PointMatcher3Test extends TestCase {
         }
     }
 
-    public void estCalculateTransformationWithGridSearch()
-        throws Exception {
-
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        //seed = 1436554280614L;
-        //seed = 1436661933371L;
-        sr.setSeed(seed);
-        log.info("SEED=" + seed);
-
-        //image size range 250 to 10000
-        //  these are altered below
-        int imageWidth = 650;
-        int imageHeight = 400;
-
-        float scale = 1.0f;
-
-        for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
-            for (int rotType = 0; rotType < 4; ++rotType) {
-                for (int nTest = 0; nTest < 20; ++nTest) { // this increases nPoints
-
-                    PointMatcher pointMatcher = new PointMatcher();
-
-                    PairIntArray unmatchedLeftXY = new PairIntArray();
-
-                    float rotInDegrees = (int)(sr.nextFloat() * 20);
-
-                    float rotStart = rotInDegrees;
-                    float rotStop = rotInDegrees;
-                    float rotRangeHalf = 0;
-
-                    float scaleStart = scale;
-                    float scaleStop = scale;
-                    float scaleDelta = 1;
-
-                    int halfRange = 8;
-
-                    if (rotType == 1) {
-                        rotInDegrees = sr.nextBoolean() ? (270 + rotInDegrees) :
-                            (270 - rotInDegrees);
-                        halfRange = 10;
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(250) + 250;
-                        imageHeight = Math.abs(250) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
-                        rotRangeHalf = sr.nextInt(10);
-                    } else if (rotType == 2) {
-                        rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
-                            (180 - rotInDegrees);
-                        halfRange = 20;
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(1000) + 250;
-                        imageHeight = Math.abs(1000) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
-                        rotRangeHalf = sr.nextInt(45);
-                    } else if (rotType == 3) {
-                        rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
-                            (90 - rotInDegrees);
-                        halfRange = 100;
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(2000) + 250;
-                        imageHeight = Math.abs(2000) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
-                        rotRangeHalf = sr.nextInt(180);
-                    } else if (rotType == 4) {
-                        rotInDegrees = sr.nextBoolean() ? (45 + rotInDegrees) :
-                            (45 - rotInDegrees);
-                        halfRange = 115;
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(5000) + 250;
-                        imageHeight = Math.abs(5000) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
-                        rotRangeHalf = sr.nextInt(180);
-                    }
-
-                    rotStart = rotInDegrees - rotRangeHalf;
-                    if (rotStart < 0) {
-                        rotStart = 360 + rotStart;
-                    }
-                    rotStop = rotInDegrees + rotRangeHalf;
-                    if (rotStop > 359) {
-                        rotStop = rotStop - 360;
-                    }
-
-                    int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
-                    int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
-                    if (sr.nextBoolean()) {
-                        transX *= -1;
-                    }
-                    if (sr.nextBoolean()) {
-                        transY *= -1;
-                    }
-
-                    TransformationParameters params = new TransformationParameters();
-                    params.setRotationInDegrees(rotInDegrees);
-                    params.setScale(scale);
-                    params.setTranslationX(transX);
-                    params.setTranslationY(transY);
-
-                    int nPoints = (nTest + 1) * 7;
-
-                    int deltaTransX = 15;
-                    int deltaTransY = 15;
-                    float rotDelta = 5;
-                    double densX = ((double)nPoints/(double)imageWidth);
-                    double densY = ((double)nPoints/(double)imageHeight);
-                    if ((densX < 0.01) || (densY < 0.01)) {
-                        rotDelta = 2;
-                    }
-                    if ((densX > 0.033) || (densY > 0.033)) {
-                        // 100 is too high.  takes longer and is much less accurate.
-                        // presumably takes longer because in contrast,
-                        // smaller deltas lead to convergence which is an early
-                        // exit w/ good solution.
-                        deltaTransX = 50;
-                        deltaTransY = 50;
-                    }
-                    float tolTransX = pointMatcher.getTolFactor() * deltaTransX;
-                    float tolTransY = pointMatcher.getTolFactor() * deltaTransY;
-
-                    /*
-                    with nearly perfect data, that is hardly any extra
-                    non-matchable points added, a small rotation delta combined
-                    with somewhat large translation delta
-                    (with a point density limit) finds the correct answer
-                    which can be refined.
-                    */
-
-                    log.info("\ntest for nPoints=" + nPoints + " nTest=" + nTest
-                        + " rotType=" + rotType + " nRuns=" + nRuns
-                        + "\nparams=" + params.toString()
-                        + "\ndeltaTransX=" + deltaTransX + " deltaTransY=" + deltaTransY
-                        + " translation range=" + (2*halfRange)
-                        + "\nrotStart=" + rotStart + " rotStop=" + rotStop + " rotDelta=" + rotDelta
-                    );
-
-                    for (int i = 0; i < nPoints; ++i) {
-                        int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
-                        int y = (imageHeight/4) + sr.nextInt(imageHeight/4);
-                        unmatchedLeftXY.add(x, y);
-                    }
-
-                    // ===  transform the right points  ======
-
-                    Transformer transformer = new Transformer();
-
-                    PairIntArray unmatchedRightXY = transformer.applyTransformation(
-                        params, unmatchedLeftXY, imageWidth >> 1, imageHeight >> 1);
-
-                    // consider adding small deviations to the right
-
-                    // add small number of points in left that are not in right
-                    //   and vice versa
-                    int nAdd = (int)(sr.nextFloat()*nPoints/10);
-                    if (nAdd == 0) {
-                        nAdd = 1;
-                    }
-                    for (int i = 0; i < nAdd; ++i) {
-                        int x = sr.nextInt(imageWidth);
-                        int y = sr.nextInt(imageHeight);
-                        unmatchedLeftXY.add(x, y);
-                    }
-                    for (int i = 0; i < nAdd; ++i) {
-                        int x = sr.nextInt(imageWidth);
-                        int y = sr.nextInt(imageHeight);
-                        unmatchedRightXY.add(x, y);
-                    }
-
-                    // change the order of points to make sure not biased
-                    // by order
-                    unmatchedRightXY.reverse();
-
-                    float setsFractionOfImage = 1.0f;
-
-                    int nMaxMatchable = nPoints;
-
-                    /*
-                    one can decrease the tolerance in translation error when
-                    matching, or increase the tolerance in numbers when comparing
-                    matched amounts.
-                    */
-                    int nExpected = nMaxMatchable;
-                    int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
-
-                    log.info("point density  n/width=" + densX + " n/height=" + densY);
-
-                    int nIter = 0;
-                    int nMaxIter = 10;
-
-                    int dsMaxIter = pointMatcher.getDsNMaxIter();
-                    double dens = (double)nPoints/(double)imageWidth;
-
-                    boolean converged = false;
-
-                    while ((nIter == 0) || (!converged && (nIter < nMaxIter))) {
-
-                        if (nIter > 0) {
-                            // the while loop and this block are to adjust parameters
-                            break;
-                        }
-
-                        TransformationPointFit fit =
-                            pointMatcher.calculateTransformationWithGridSearch(
-                            unmatchedLeftXY, unmatchedRightXY,
-                            imageWidth, imageHeight, imageWidth, imageHeight,
-                            rotStart, rotStop, rotDelta,
-                            scaleStart, scaleStop, scaleDelta,
-                            deltaTransX, deltaTransY, tolTransX, tolTransY,
-                            setsFractionOfImage);
-
-                        assert(fit != null);
-
-                        log.info("ROUGH FIT=" + fit.toString());
-
-                        converged = pointMatcher.hasConverged(fit, nMaxMatchable);
-
-                        log.info("converged=" + converged);
-
-                        if (!converged) {
-
-                            fit = pointMatcher.refineTheTransformation(
-                                fit, unmatchedLeftXY, unmatchedRightXY,
-                                imageWidth, imageHeight, imageWidth, imageHeight,
-                                setsFractionOfImage);
-
-                            assert(fit != null);
-                        }
-
-                        TransformationParameters fitParams = fit.getParameters();
-                        int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
-                        float diffRotDeg = getAngleDifference(
-                            fitParams.getRotationInDegrees(), rotInDegrees);
-                        float diffScale = Math.abs(fitParams.getScale() - scale);
-                        float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
-                        float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
-
-                        double epsTrans = 3;
-                        double epsRot = 1; // this has to be larger for eucldian solutions or datasets that are projective
-
-                        log.info("FINAL FIT=" + fit.toString());
-                        log.info("diff result and expected =" +
-                            String.format(
-                            " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f  nEps=%d  tEps=%f",
-                            diffN, diffRotDeg, diffScale, diffTransX, diffTransY, nEps, (float)epsTrans)
-                        );
-
-                        if ((diffN <= nEps) && (diffRotDeg <= epsRot) &&
-                            (diffScale < 0.2) && (diffTransX <= epsTrans) &&
-                            (diffTransY <= epsTrans)) {
-                            converged = true;
-                        }
-
-                        nIter++;
-                    }
-
-                    if (nIter > 1) {
-                        log.info("needed change for translation delta for"
-                            + " dens=" + dens + " nPoints=" + nPoints
-                            + " w=" + imageWidth + " h=" + imageHeight
-                            + " deltaTransX=" + deltaTransX
-                            + " deltaTransY=" + deltaTransY
-                            + " rotDelta=" + rotDelta
-                            + " dsMaxIter=" + dsMaxIter
-                        );
-                    } else {
-                        log.info("density=" + dens + " nPoints=" + nPoints
-                            + " w=" + imageWidth + " h=" + imageHeight
-                            + " deltaTransX=" + deltaTransX
-                            + " deltaTransY=" + deltaTransY
-                            + " rotDelta=" + rotDelta
-                            + " dsMaxIter=" + dsMaxIter
-                        );
-                    }
-
-                    //assertTrue(converged);
-
-                    /* For having rotation and scale correct already,
-                    a transXDelta and transYDelta of values 2 leads
-                    to convergence when using a downhill simplex with max
-                    number of iterations of 50.
-                    Increasing the transXDelta and transYDelta to values of
-                    5 also converges.
-
-                    Increasing the transXDelta and transYDelta to values of
-                    7 results in residuals in translation of a little more than
-                    3 so is beginning to be large.
-
-                    Increasing the transXDelta and transYDelta to values of
-                    10 results in residuals in translation of about 5.
-
-                    ----
-                    rotDelta=4 converges for some, but not all.
-                    error in rotation degrees is about 2 and the error in
-                    translation is 3 to 4 and as high as 8.
-                    so, if rotDelta=4 is used, it must be followed by a detailed
-                    finer run of the program with deltaRot=1 near the solution
-                    with similar delta for translation.
-                    when searching all rotation space, number of intervals
-                    when delta=4 is 90 in contrast to the same divided by 3
-                    being 120.  the difference is 30 * translation solution steps.
-                    If rotDelta=3 is consistently finding the correct answer
-                    it should be used.
-                    */
-                }
-            }
-        }
-    }
-
     public void estCalculateEuclideanTransformation()
         throws Exception {
 
@@ -1025,7 +721,6 @@ public class PointMatcher3Test extends TestCase {
                     TransformationPointFit fit =
                         pointMatcher.calculateEuclideanTransformation(
                         unmatchedLeftXY, unmatchedRightXY,
-                        imageWidth, imageHeight, imageWidth, imageHeight,
                         setsFractionOfImage);
 
                     assert(fit != null);
@@ -1060,195 +755,6 @@ public class PointMatcher3Test extends TestCase {
 
                     assertTrue(converged);
                 }
-            }
-        }
-    }
-
-    public void estPreSearch() throws Exception {
-
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        //seed = 1436899954015L;
-        sr.setSeed(seed);
-        log.info("SEED=" + seed);
-
-        //image size range 250 to 10000
-        //  these are altered below
-        int imageWidth = 650;
-        int imageHeight = 400;
-
-        // ---- random testing for stereo imaging ----
-
-        float scale = 1.0f;
-        
-        boolean spacer = true;
-
-        for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
-            for (int rotType = 0; rotType < 5; ++rotType) {
-                for (int nTest = 0; nTest < 5 /*20*/; ++nTest) { // this increases nPoints
-
-                    PointMatcher pointMatcher = new PointMatcher();
-
-                    PairIntArray unmatchedLeftXY = new PairIntArray();
-
-                    float rotInDegrees = (int)(sr.nextFloat() * 20);
-
-                    if (rotType == 1) {
-                        rotInDegrees = sr.nextBoolean() ? (90 + rotInDegrees) :
-                            (90 - rotInDegrees);
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(5000) + 250;
-                        imageHeight = Math.abs(5000) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
-                    } else if (rotType == 2) {
-                        rotInDegrees = sr.nextBoolean() ? (180 + rotInDegrees) :
-                            (180 - rotInDegrees);
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(250) + 250;
-                        imageHeight = Math.abs(250) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
-                    } else if (rotType == 3) {
-                        rotInDegrees = sr.nextBoolean() ? (270 + rotInDegrees) :
-                            (270 - rotInDegrees);
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(1000) + 250;
-                        imageHeight = Math.abs(1000) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
-                    } else if (rotType == 4) {
-                        rotInDegrees = (360 - rotInDegrees);
-                        //image size range 250 to 10000
-                        imageWidth = Math.abs(500) + 250;
-                        imageHeight = Math.abs(500) + 250;
-                        if ((imageWidth & 1) == 1) {
-                            imageWidth++;
-                        }
-                        if ((imageHeight & 1) == 1) {
-                            imageHeight++;
-                        }
-                    }
-
-                    int transX = (int)(0.25f * sr.nextFloat() * (1 + sr.nextInt(imageWidth)));
-                    int transY = (int)(0.05f * sr.nextFloat() * imageHeight);
-                    if (sr.nextBoolean()) {
-                        transX *= -1;
-                    }
-                    if (sr.nextBoolean()) {
-                        transY *= -1;
-                    }
-
-                    TransformationParameters params = new TransformationParameters();
-                    params.setRotationInDegrees(rotInDegrees);
-                    params.setScale(scale);
-                    params.setTranslationX(transX);
-                    params.setTranslationY(transY);
-
-                    int nPoints = (nTest + 1) * 7;
-
-                    double densX = ((double)nPoints/(double)imageWidth);
-                    double densY = ((double)nPoints/(double)imageHeight);
-
-                    log.info("\ntest for nPoints=" + nPoints + " nTest=" + nTest
-                        + " rotType=" + rotType + " nRuns=" + nRuns
-                        + "\nparams=" + params.toString()
-                    );
-
-                    for (int i = 0; i < nPoints; ++i) {
-                        int x = (imageWidth/4) + sr.nextInt(imageWidth/4);
-                        int y = (imageHeight/4) + sr.nextInt(imageHeight/4);
-                        unmatchedLeftXY.add(x, y);
-                    }
-
-                    // ===  transform the right points  ======
-
-                    Transformer transformer = new Transformer();
-
-                    PairIntArray unmatchedRightXY = transformer.applyTransformation(
-                        params, unmatchedLeftXY, imageWidth >> 1, imageHeight >> 1);
-
-                    // consider adding small deviations to the right
-
-                    // add small number of points in left that are not in right
-                    //   and vice versa
-                    int nAdd = (int)(sr.nextFloat()*nPoints/10);
-                    if (nAdd == 0) {
-                        nAdd = 1;
-                    }
-                    for (int i = 0; i < nAdd; ++i) {
-                        int x = sr.nextInt(imageWidth);
-                        int y = sr.nextInt(imageHeight);
-                        unmatchedLeftXY.add(x, y);
-                    }
-                    for (int i = 0; i < nAdd; ++i) {
-                        int x = sr.nextInt(imageWidth);
-                        int y = sr.nextInt(imageHeight);
-                        unmatchedRightXY.add(x, y);
-                    }
-
-                    // change the order of points to make sure not biased
-                    // by order
-                    unmatchedRightXY.reverse();
-
-                    float setsFractionOfImage = 1.0f;
-
-                    int nMaxMatchable = nPoints;
-
-                    /*
-                    one can decrease the tolerance in translation error when
-                    matching, or increase the tolerance in numbers when comparing
-                    matched amounts.
-                    */
-                    int nExpected = nMaxMatchable;
-                    int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
-
-                    log.info("point density  n/width=" + densX + " n/height=" + densY);
-
-                    TransformationPointFit[] fits =
-                        pointMatcher.preSearch0(unmatchedLeftXY,
-                        unmatchedRightXY, scale,
-                        imageWidth, imageHeight, imageWidth, imageHeight,
-                        setsFractionOfImage);
-
-                    assert(fits != null);
-                    
-                    log.info("preSearch FITs:");
-
-                    for (TransformationPointFit fit : fits) {
-
-                        if (fit == null) {
-                            continue;
-                        }
-                        TransformationParameters fitParams = fit.getParameters();
-                        int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
-                        float diffRotDeg = getAngleDifference(
-                            fitParams.getRotationInDegrees(), rotInDegrees);
-                        float diffScale = Math.abs(fitParams.getScale() - scale);
-                        float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
-                        float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
-
-                        String space = spacer ? "    " : "";
-                        log.info(space + "diff =" +
-                            String.format(
-                            " dNPoints=%d, dRotDeg=%f, dScale=%f, dTransX=%f, dTransY=%f  nEps=%d  meanDiffModel=%f",
-                            diffN, diffRotDeg, diffScale, diffTransX, 
-                            diffTransY, nEps, (float)fit.getMeanDistFromModel()));
-                    }
-                }
-                spacer = !spacer;
             }
         }
     }
@@ -1516,7 +1022,6 @@ public class PointMatcher3Test extends TestCase {
 
         TransformationPointFit trFit =
             pointMatcher.performMatching(points1, points2,
-                image1Width, image1Height, image2Width, image2Height,
                 outputMatchedScene, outputMatchedModel,
                 useLargestToleranceForOutput, setsFractionOfImage);
 
@@ -1585,132 +1090,6 @@ images as possible)
         */
 
         System.out.println("test done");
-    }
-
-    private void adjustPointsOfInterest() throws Exception {
-
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-        // revisit infl points.  is there a threshold removing points?
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-        int image1Width = img1.getWidth();
-        int image1Height = img1.getHeight();
-
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-        int image2Width = img2.getWidth();
-        int image2Height = img2.getHeight();
-
-        List<PairIntArray> edges1 = null;
-        List<PairIntArray> edges2 = null;
-        PairIntArray points1 = null;
-        PairIntArray points2 = null;
-
-        boolean makeInflectionPoints = false;
-
-        if (makeInflectionPoints) {
-
-            CurvatureScaleSpaceInflectionMapperForOpenCurves inflMapper = new
-                CurvatureScaleSpaceInflectionMapperForOpenCurves(img1, img2);
-
-            PairIntArray[] xyPeaks = inflMapper.createUnmatchedXYFromContourPeaks();
-            points1 = xyPeaks[0];
-            points2 = xyPeaks[1];
-
-            // there may be a couple redundant points per set that should be removed
-            /*
-            DataForTests.writePointsToTestResources(points1,
-                "brown_lowe_2003_image1_infl_pts.tsv");
-            DataForTests.writePointsToTestResources(points2,
-                "brown_lowe_2003_image2_infl_pts.tsv");
-            */
-
-
-            edges1 = inflMapper.getEdges1InOriginalReferenceFrame();
-
-            edges2 = inflMapper.getEdges2InOriginalReferenceFrame();
-
-        } else {
-
-            CurvatureScaleSpaceCornerDetector detector = new
-                CurvatureScaleSpaceCornerDetector(img1);
-
-            detector.useOutdoorMode();
-
-            detector.findCorners();
-
-            edges1 = detector.getEdgesInOriginalReferenceFrame();
-
-            points1 = detector.getCornersInOriginalReferenceFrame();
-
-            detector = new
-                CurvatureScaleSpaceCornerDetector(img2);
-
-            detector.useOutdoorMode();
-
-            detector.findCorners();
-
-            edges2 = detector.getEdgesInOriginalReferenceFrame();
-
-            points2 = detector.getCornersInOriginalReferenceFrame();
-        }
-
-        int nPointsEdges1 = 0;
-        for (PairIntArray edge1 : edges1) {
-            nPointsEdges1 += edge1.getN();
-        }
-        int nPointsEdges2 = 0;
-        for (PairIntArray edge2 : edges2) {
-            nPointsEdges2 += edge2.getN();
-        }
-        log.info("total number of points in edges=" + nPointsEdges1 + " , "
-            + nPointsEdges2);
-
-        Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-
-        for (PairIntArray edge : edges1) {
-            ImageIOHelper.addCurveToImage(edge, image1, 2,
-                Color.YELLOW.getRed(), Color.YELLOW.getGreen(),
-                Color.YELLOW.getBlue());
-        }
-
-        ImageIOHelper.addCurveToImage(points1, image1, 1, 255, 0, 0);
-
-        String dirPath = ResourceFinder.findDirectory("bin");
-        String outFilePath = dirPath + "/tmp1_edges_infl.png";
-
-        ImageIOHelper.writeOutputImage(outFilePath, image1);
-
-        Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-
-        for (PairIntArray edge : edges2) {
-            ImageIOHelper.addCurveToImage(edge, image2, 2,
-                Color.YELLOW.getRed(), Color.YELLOW.getGreen(),
-                Color.YELLOW.getBlue());
-        }
-
-        ImageIOHelper.addCurveToImage(points2, image2, 1, 255, 0, 0);
-
-        outFilePath = dirPath + "/tmp2_edges_infl.png";
-
-        ImageIOHelper.writeOutputImage(outFilePath, image2);
-
-        log.info("POINTS1: ");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < points1.getN(); i++) {
-            String str = String.format("%d %d\n", points1.getX(i), points1.getY(i));
-            sb.append(str);
-        }
-        log.info(sb.toString());
-        log.info("POINTS2: ");
-        sb = new StringBuilder();
-        for (int i = 0; i < points2.getN(); i++) {
-            String str = String.format("%d %d\n", points2.getX(i), points2.getY(i));
-            sb.append(str);
-        }
-        log.info(sb.toString());
-
     }
 
     //@Test

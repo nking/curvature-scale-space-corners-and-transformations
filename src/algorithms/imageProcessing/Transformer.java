@@ -453,7 +453,7 @@ public class Transformer {
             float xt = xr + transX;
             float yt = yr + transY;
             
-            output.add((int)Math.round(xt), (int)Math.round(yt));
+            output.add(Math.round(xt), Math.round(yt));
         }
         
         return output;
