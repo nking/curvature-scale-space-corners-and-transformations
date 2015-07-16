@@ -383,67 +383,6 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * from a set of transformation parameters params that transform
      * points in reference frame 1 into reference frame 2, create
      * a transformation that can transform points in reference frame 2
-     * into reference frame 1.
-     * @param params transformation parameters to apply to points in reference
-     * frame 1 to put them in reference frame 2
-     * 
-     * @return transformation parameters that can transform points in reference
-     * frame 2 into reference frame 1
-     */
-    public TransformationParameters swapReferenceFrames(TransformationParameters 
-        params) {
-        
-        if (params == null) {
-            throw new IllegalArgumentException("params cannot be null");
-        }
-        
-        if (params.getOriginX() == 0 && params.getOriginY() == 0) {
-            return swapReferenceFramesWRTOrigin(params);
-        }
-        
-        /*
-        use (centroidX of edge1, centroidY of edge1) for (x0, y0) 
-        to solve for (x1, y1) here and then reverse and invert the 
-        rotation and scale to solve for the "reverse" translations.
-
-        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) 
-            + ((y0-yc)*scale*math.sin(theta)))
-
-        xt_0 = xr_0 + transX = x1
-
-        yr_0 = yc*scale + ((-(x0-xc)*scale*math.sin(theta)) 
-            + ((y0-yc)*scale*math.cos(theta)))
-
-        yt_0 = yr_0 + transY = y1
-        */
-        
-        float refX2 = (params.getOriginX() * params.getScale()) +
-            params.getTranslationX();
-        
-        float refY2 = (params.getOriginY() * params.getScale()) +
-            params.getTranslationY();
-        
-        double revRot = -1 * params.getRotationInRadians();
-        if (revRot < 0) {
-            revRot += 2. * Math.PI;
-        }
-        double revScale = 1. / params.getScale();
-
-        TransformationParameters paramsRev = new TransformationParameters();
-        paramsRev.setScale((float)revScale);
-        paramsRev.setRotationInRadians((float)revRot);
-        paramsRev.setTranslationX(-params.getTranslationX());
-        paramsRev.setTranslationY(-params.getTranslationY());
-        paramsRev.setOriginX(-refX2);
-        paramsRev.setOriginY(-refY2);
-        
-        return paramsRev;
-    }
-    
-    /**
-     * from a set of transformation parameters params that transform
-     * points in reference frame 1 into reference frame 2, create
-     * a transformation that can transform points in reference frame 2
      * into reference frame 1.  The center of the rotation of frame 1 has
      * to have been point (0, 0).  This method calculates where that 
      * transformed point would be in frame 2 and that becomes the center of
@@ -461,7 +400,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * @return transformation parameters that can transform points in reference
      * frame 2 into reference frame 1
      */
-    TransformationParameters swapReferenceFramesWRTOrigin(TransformationParameters 
+    TransformationParameters swapReferenceFrames(TransformationParameters 
         params) {
         
         if (params == null) {
@@ -469,23 +408,14 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         }
         
         /*
-        use (centroidX of edge1, centroidY of edge1) for (x0, y0) 
-        to solve for (x1, y1) here and then reverse and invert the 
-        rotation and scale to solve for the "reverse" translations.
 
-        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) 
-            + ((y0-yc)*scale*math.sin(theta)))
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
 
         xt_0 = xr_0 + transX = x1
 
-        yr_0 = yc*scale + ((-(x0-xc)*scale*math.sin(theta)) 
-            + ((y0-yc)*scale*math.cos(theta)))
+        yr_0 = yc*scale + ((-(x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
 
-        yt_0 = yr_0 + transY = y1
-        
-        ---------
-        simplified for origin:
-        xr_0 = 0, yr_0 = 0 and same for set2
+        yt_0 = yr_0 + transY = y1        
         */
      
         double revRot = -1 * params.getRotationInRadians();
@@ -494,14 +424,31 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         }
         double revScale = 1. / params.getScale();
 
-        double rmc = Math.cos(revRot);
-        double rms = Math.sin(revRot);
-
+        double transformedXC =
+            (params.getOriginX()*params.getScale()) + params.getTranslationX();
+        
+        double transformedYC =
+            (params.getOriginY()*params.getScale()) + params.getTranslationY();
+        
         TransformationParameters paramsRev = new TransformationParameters();
         paramsRev.setScale((float)revScale);
         paramsRev.setRotationInRadians((float)revRot);
-        paramsRev.setTranslationX(-1*params.getTranslationX());
-        paramsRev.setTranslationY(-1*params.getTranslationY());
+        paramsRev.setTranslationX(0);
+        paramsRev.setTranslationY(0);
+        paramsRev.setOriginX((float)transformedXC);
+        paramsRev.setOriginY((float)transformedYC);
+        
+        // transform the new origin, then the new translation is what is needed for it to equal the params origin
+        Transformer transformer = new Transformer();
+        
+        double[] revTransformedXYOrigin = transformer.applyTransformation(paramsRev, 
+            transformedXC, transformedYC);
+        
+        double revTransX = params.getOriginX() - revTransformedXYOrigin[0];
+        double revTransY = params.getOriginY() - revTransformedXYOrigin[1];
+        
+        paramsRev.setTranslationX((float)revTransX);
+        paramsRev.setTranslationY((float)revTransY);
         
         return paramsRev;
     }

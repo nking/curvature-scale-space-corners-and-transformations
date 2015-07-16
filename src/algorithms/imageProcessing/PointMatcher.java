@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PointPartitioner;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -15,12 +16,15 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 
@@ -791,27 +795,32 @@ public final class PointMatcher extends AbstractPointMatcher {
         if (converged) {
             return fit;
         }
+        
+        float rotHalfRange = 45;
+        float rotDelta = 2;
+        float transHalfRange = 100;
+        float transDelta = 4;
+        boolean useGreedyMatching = true;
 
         if (fit.getScale() >= 1.0) {
-
-            //TODO: add refine transformation
             
-            TransformationPointFit fit2 = null;
+            TransformationPointFit fit2 = refineTheTransformation(
+                fit.getParameters(), set1, set2, rotHalfRange, rotDelta,
+                transHalfRange, transDelta, transHalfRange, transDelta,
+                useGreedyMatching);
 
             if (fitIsBetter(fit, fit2)) {
                 fit = fit2;
             }
 
         } else {
-            
-            //TODO: add refine transformation
-            
+                        
             // scale is < 1 so reverse order of sets
-            TransformationPointFit revFit = null;
-            /*refineTheTransformation(
-                fit, set2, set1,
-                setsFractionOfImage);
-            */
+            TransformationPointFit revFit = refineTheTransformation(
+                fit.getParameters(), set1, set2, rotHalfRange, rotDelta,
+                transHalfRange, transDelta, transHalfRange, transDelta,
+                useGreedyMatching);
+                
             TransformationParameters params = revFit.getParameters();
 
             // reverse the parameters.
@@ -3803,12 +3812,20 @@ if (compTol == 1) {
         if ((set1.getN() < 3) || (set2.getN() < 3)) {
             return null;
         }
+        
+        int nMaxMatchable = Math.min(set1.getN(), set2.getN());
 
         boolean useGreedyMatch = true;
         
-        TransformationPointFit[] fits = preSearch0(set1, set2, scale,
-            useGreedyMatch);
+        TransformationPointFit[] fits = null;
         
+        // if number of points is very high, need to use alternate method
+        if (nMaxMatchable > 40) {
+            fits = preSearch0Alt(set1, set2, scale, useGreedyMatch);
+        } else {
+            fits = preSearch0(set1, set2, scale, useGreedyMatch);
+        }
+                
         if (fits == null) {
             return null;
         }
@@ -3967,4 +3984,138 @@ if (compTol == 1) {
 
         return starterPoints.getArray();
     }
+
+    /** 
+     * @param set1
+     * @param set2
+     * @param params
+     * @param rotHalfRangeInDegrees half of the range in rotation to search
+     * around params.rotationInDegrees.  the value is added and subtracted
+     * from params.rotationInDegrees to create the start and end of the
+     * range.
+     * @param rotDeltaInDegrees the interval size of rotation in degrees 
+     * for the search.
+     * @param transXHalfRange half of the range in translation in X to search
+     * around params.translationX.  the value is added and subtracted
+     * from params.translationX to create the start and end of the range.
+     * @param transYHalfRange half of the range in translation in Y to search
+     * around params.translationY.  the value is added and subtracted
+     * from params.translationY to create the start and end of the range.
+     * @param transYDelta the interval size in translation of X for the search
+     * @param transXDelta the interval size in translation of Y for the search
+     * @param useGreedyMatching if true, uses an N^2 algorithm to find the
+     * best match made for each point in order of points in set1, else uses
+     * an ~N^3 optimal bipartite matching algorithm.
+     * @return 
+     */
+    public TransformationPointFit refineTheTransformation(
+        TransformationParameters params, PairIntArray set1, PairIntArray set2, 
+        float rotHalfRangeInDegrees, float rotDeltaInDegrees, float transXHalfRange, 
+        float transXDelta, float transYHalfRange, float transYDelta, 
+        boolean useGreedyMatching) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        if (set1 == null) {
+            throw new IllegalArgumentException("set1 cannot be null");
+        }
+        if (set2 == null) {
+            throw new IllegalArgumentException("set2 cannot be null");
+        }
+        
+        TransformationPointFit[] fits = boundedGridSearch(
+            set1, set2, params,
+            rotHalfRangeInDegrees, rotDeltaInDegrees,
+            transXHalfRange, transXDelta,
+            transYHalfRange, transYDelta, useGreedyMatching);
+      
+        if (fits == null) {
+            return null;
+        }
+        
+        int nMaxMatchable = Math.min(set1.getN(), set2.getN());
+        
+        if (hasConverged(fits[0], nMaxMatchable)) {
+            return fits[0];
+        }
+        
+        TransformationPointFit[] fits2 = preSearch1(fits, set1, set2, 
+            useGreedyMatching);
+        
+        if (fits2 == null) {
+            return null;
+        }
+        
+        if (hasConverged(fits2[0], nMaxMatchable)) {
+            return fits2[0];
+        }
+        
+        // TODO: may need a small fine grid search here
+        
+        return fits2[0];
+    }
+
+    /**
+     * for use when the number of data points is too high for reasonably
+     * fast solution using preSearch0.
+     * The method randomly reduces set1 to a smaller number of point sets
+     * and finds the best solution among those.
+     * @param set1
+     * @param set2
+     * @param scale
+     * @param useGreedyMatch
+     * @return 
+     */
+    protected TransformationPointFit[] preSearch0Alt(PairIntArray set1, 
+        PairIntArray set2, float scale, boolean useGreedyMatch) {
+       
+        Transformer transformer = new Transformer();
+        
+        PointPartitioner partitioner = new PointPartitioner();
+        
+        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 30);
+        
+        TransformationPointFit bestFit = null;
+        
+        TransformationPointFit[] bestFits = null;
+        
+        // TODO: this is from preSearch0's transDelta.  needs to be accessible
+        // to instance for tuning
+        float tolTransX = 100;
+        float tolTransY = 100;
+        
+        for (PairIntArray set1Subset : set1Subsets) {
+            
+            TransformationPointFit[] fits = preSearch0(set1Subset, set2, scale, 
+                useGreedyMatch);
+            
+            if (fits == null) {
+                continue;
+            }
+            
+            // apply fit to all points to evaluate
+            PairFloatArray transformedSet1 = transformer.applyTransformation2(
+                fits[0].getParameters(), set1, 0, 0);
+            
+            TransformationPointFit fit;
+            if (useGreedyMatch) {
+                fit = evaluateFitForUnMatchedTransformedGreedy(
+                    fits[0].getParameters(), transformedSet1, set2, 
+                    tolTransX, tolTransY);
+            } else {
+                fit = evaluateFitForUnMatchedTransformedOptimal(
+                    fits[0].getParameters(), transformedSet1, set2, 
+                    tolTransX, tolTransY);
+            }
+            
+            if (fitIsBetter(bestFit, fit)) {
+                bestFit = fit;
+                bestFits = fits;
+            }
+        }
+        
+        return bestFits;
+    }
+    
 }

@@ -56,7 +56,7 @@ public class PointMatcher3Test extends TestCase {
         
         for (int nn = 0; nn < 1; ++nn) { // repeat number of tests
         for (int rotType = 0; rotType < 5; ++rotType) {
-            for (int nTest = 0; nTest < 7 /*20*/; ++nTest) { // this increases nPoints
+            for (int nTest = 16; nTest < 20 /*20*/; ++nTest) { // this increases nPoints
 
                 PointMatcher pointMatcher = new PointMatcher();
 
@@ -182,10 +182,17 @@ public class PointMatcher3Test extends TestCase {
                 boolean useGreedyMatching = true;
                 
                 // ------- assert that preSearch0 gets the answer within <> degrees of rotation -------
-                TransformationPointFit[] fits =
-                    pointMatcher.preSearch0(
+                TransformationPointFit[] fits;
+                
+                if (nMaxMatchable > 40) {
+                    fits = pointMatcher.preSearch0Alt(
                     unmatchedLeftXY, unmatchedRightXY, scale,
                     useGreedyMatching);
+                } else {
+                    fits = pointMatcher.preSearch0(
+                    unmatchedLeftXY, unmatchedRightXY, scale,
+                    useGreedyMatching);
+                }
                 
                 assert(fits != null);
                 

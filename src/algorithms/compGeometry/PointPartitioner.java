@@ -2,6 +2,10 @@ package algorithms.compGeometry;
 
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -9,6 +13,59 @@ import algorithms.util.PairIntArray;
  */
 public class PointPartitioner {
  
+    /**
+     * make subsets of size subsetSize out of points by randomly distributing
+     * the points into the subsets.  Note that the last subset will be smaller
+     * than subsetSize if (points.getN() % subsetSize) != 0.
+     * 
+     * @param points
+     * @param subsetSize
+     * @return 
+     */
+    public List<PairIntArray> randomSubsets(PairIntArray points, int subsetSize) {
+        
+        if (points == null) {
+            throw new IllegalArgumentException("points cannot be null");
+        }
+        
+        if (points.getN() == 0) {
+            return new ArrayList<PairIntArray>();
+        }
+        
+        try {
+            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+            long seed = System.currentTimeMillis();
+            sr.setSeed(seed);
+            
+            int n = (int)Math.ceil((float)points.getN()/(float)subsetSize);
+            
+            List<PairIntArray> output = new ArrayList<PairIntArray>();
+            for (int i = 0; i < n; ++i) {
+                output.add(new PairIntArray());
+            }
+            
+            for (int i = 0; i < points.getN(); ++i) {
+                
+                int index = sr.nextInt(n);
+                
+                while (output.get(index).getN() == subsetSize) {
+                    index++;
+                    if (index == n) {
+                        index = 0;
+                    }
+                }
+                
+                output.get(index).add(points.getX(i), points.getY(i));
+            }
+            
+            return output;
+        
+        } catch (NoSuchAlgorithmException ex) {
+            
+            throw new RuntimeException(ex);
+        }
+    }
+    
     public PairIntArray[] partition(PairIntArray points, int nDimensions) {
         
         PairIntArray[] partitions = new PairIntArray[nDimensions*nDimensions];

@@ -333,6 +333,15 @@ public class Transformer {
         return new double[]{xt, yt};
     }
     
+    /**
+     * apply the parameters of transformation to point (xPt, yPt).  Note that
+     * the rotation is applied in clockwise is positive manner.
+     * 
+     * @param params
+     * @param xPt
+     * @param yPt
+     * @return 
+     */
     public double[] applyTransformation(TransformationParameters params,
         double xPt, double yPt) {
         

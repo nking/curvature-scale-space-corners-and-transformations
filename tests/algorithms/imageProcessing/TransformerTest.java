@@ -17,14 +17,95 @@ public class TransformerTest extends TestCase {
     
     public void testSwapReferenceFramesWRTOrigin() throws Exception {
         
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        sr.setSeed(seed);
+        Transformer transformer = new Transformer();
         
         MatchedPointsTransformationCalculator tc = 
             new MatchedPointsTransformationCalculator();
         
-        Transformer transformer = new Transformer();
+        TransformationParameters params0 = new TransformationParameters();
+        params0.setRotationInDegrees(0);
+        params0.setScale(1);
+        params0.setTranslationX(0);
+        params0.setTranslationY(0);
+        params0.setOriginX(0);
+        params0.setOriginY(0);
+        
+        int x0 = 10;
+        int y0 = 20;
+        double[] trXY = transformer.applyTransformation(params0, x0, y0);
+        assertTrue(Math.abs(trXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(trXY[1] - y0) < 0.01);
+        
+        TransformationParameters revParams0 = tc.swapReferenceFrames(params0);
+        double[] revTrXY = transformer.applyTransformation(revParams0, 
+            trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - y0) < 0.01);
+            
+        
+        params0.setRotationInDegrees(90);
+        trXY = transformer.applyTransformation(params0, x0, y0);
+        assertTrue(Math.abs(trXY[0] - y0) < 0.01);
+        assertTrue(Math.abs(trXY[1] - -x0) < 0.01);
+        
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - y0) < 0.01);
+        
+        
+        params0.setRotationInDegrees(180);
+        trXY = transformer.applyTransformation(params0, x0, y0);
+        assertTrue(Math.abs(trXY[0] - -x0) < 0.01);
+        assertTrue(Math.abs(trXY[1] - -y0) < 0.01);
+        
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - y0) < 0.01);
+        
+        
+        params0.setRotationInDegrees(270);
+        trXY = transformer.applyTransformation(params0, x0, y0);
+        assertTrue(Math.abs(trXY[0] - -y0) < 0.01);
+        assertTrue(Math.abs(trXY[1] - x0) < 0.01);
+
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - y0) < 0.01);
+        
+        
+        params0.setRotationInDegrees(0);
+        params0.setTranslationX(10);
+        params0.setTranslationY(10);
+        trXY = transformer.applyTransformation(params0, x0, y0);
+        assertTrue(Math.abs(trXY[0] - (x0 + params0.getTranslationX())) < 0.01);
+        assertTrue(Math.abs(trXY[1] - (y0 + params0.getTranslationY())) < 0.01);
+        
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - y0) < 0.01);
+        
+        
+        params0.setRotationInDegrees(90);
+        params0.setTranslationX(10);
+        params0.setTranslationY(10);
+        trXY = transformer.applyTransformation(params0, x0, y0);
+        assertTrue(Math.abs(trXY[0] - (y0 + params0.getTranslationX())) < 0.01);
+        assertTrue(Math.abs(trXY[1] - (-x0 + params0.getTranslationY())) < 0.01);
+        
+        revParams0 = tc.swapReferenceFrames(params0);
+        revTrXY = transformer.applyTransformation(revParams0, trXY[0], trXY[1]);
+        assertTrue(Math.abs(revTrXY[0] - x0) < 0.01);
+        assertTrue(Math.abs(revTrXY[1] - y0) < 0.01);
+        
+        //------------------
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed(seed);
         
         int n = 100;
         for (int i = 0; i < n; ++i) {
@@ -53,9 +134,15 @@ public class TransformerTest extends TestCase {
                 transformer.applyTransformation(
                 revParams, (float)xyTransformed[0], (float)xyTransformed[1]);
             
-            assertTrue(Math.abs(xyTransformedRevTransformed[0] - x) < 1);
+            double diffX = Math.abs(xyTransformedRevTransformed[0] - x);
+            double diffY = Math.abs(xyTransformedRevTransformed[1] - y);
             
-            assertTrue(Math.abs(xyTransformedRevTransformed[1] - y) < 1);
+            if ((diffX >= 1) || (diffY >= 1)) {
+                System.out.println("diffX=" + diffX +  " diffY=" + diffY);
+            }
+            assertTrue(diffX < 1);
+            
+            assertTrue(diffY < 1);
         }
 
     }
