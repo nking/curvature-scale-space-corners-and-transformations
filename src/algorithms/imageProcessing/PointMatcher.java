@@ -2286,10 +2286,10 @@ log.fine("**==> rot0 keeping bestFit=" + bestFit.toString());
         int minY1 = MiscMath.findMin(set1.getX(), set1.getN());
         int maxY1 = MiscMath.findMax(set1.getX(), set1.getN());
 
-        int minX2 = MiscMath.findMin(set2.getX(), set1.getN());
-        int maxX2 = MiscMath.findMax(set2.getX(), set1.getN());
-        int minY2 = MiscMath.findMin(set2.getX(), set1.getN());
-        int maxY2 = MiscMath.findMax(set2.getX(), set1.getN());
+        int minX2 = MiscMath.findMin(set2.getX(), set2.getN());
+        int maxX2 = MiscMath.findMax(set2.getX(), set2.getN());
+        int minY2 = MiscMath.findMin(set2.getX(), set2.getN());
+        int maxY2 = MiscMath.findMax(set2.getX(), set2.getN());
 
         RangeInt transXStartStop = new RangeInt(minX1 - maxX2, maxX1 - minX2);
 
