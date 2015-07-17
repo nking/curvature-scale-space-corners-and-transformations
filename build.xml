@@ -186,7 +186,7 @@
         <echo message="COMPILE debug=${compile.debug}"/>
         
     	<taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
-    	    classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
+    	    classpath="${lib.dir}/aspectjtools-1.8.0.jar" />
         
         <!-- compile aspect .aj files -->
         <fileset id="ajFileSet" dir="${aspects.dir}">
@@ -208,21 +208,21 @@
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>
             <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
             </classpath>
         </iajc>
 
         <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" 
            haltonerror="true" haltonfailure="true">
-        	<jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+        	<jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.8.0.jar"/>
             
             <assertions enablesystemassertions="true">
                 <enable/>
             </assertions>
             
             <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
-                <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
+                <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
                 <pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
                 <pathelement location="${tests.out.dir}"/>
@@ -262,7 +262,7 @@
         <echo message="COMPILE debug=${compile.debug}"/>
         
         <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
-            classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
+            classpath="${lib.dir}/aspectjtools-1.8.0.jar" />
 
         <!-- compile aspect .aj files -->
         <fileset id="ajFileSet" dir="${aspects.dir}">
@@ -277,6 +277,12 @@
     	-->
         <iajc source="1.6" destDir="${src.out.dir}"  
             verbose="false" showWeaveInfo="false" debug="false">
+            
+            <!--
+            -XX:-UseSplitVerifier
+            -noverify
+            -->
+            
             <argfiles>
                 <pathelement location="${aspects.dir}/aj-files_processing_debug.txt"/>
             </argfiles>
@@ -288,7 +294,7 @@
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
         	</inpath>
             <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
             </classpath>
         </iajc>
 
@@ -296,13 +302,14 @@
             <jvmarg value="-enableassertions"/>
             <jvmarg value="-Xms512m"/>
             <jvmarg value="-Xmx1024m"/>
-            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.8.0.jar"/>
             <jvmarg value="-XX:-UseSplitVerifier" />
+            <jvmarg value="-noverify" />
             <sysproperty key="java.util.logging.config.file" 
                 value="${classes.dir}/classes/logging.properties"/>
             <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
-                <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
+                <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
             	<pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
                 <pathelement location="${tests.out.dir}"/>
@@ -324,7 +331,7 @@
         <echo message="COMPILE debug=${compile.debug}"/>
         
         <taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
-            classpath="${lib.dir}/aspectjtools-1.6.10.jar" />
+            classpath="${lib.dir}/aspectjtools-1.8.0.jar" />
 
         <!-- compile aspect .aj files -->
         <fileset id="ajFileSet" dir="${aspects.dir}">
@@ -349,7 +356,7 @@
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>
             <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
             </classpath>
         </iajc>
            
@@ -358,12 +365,12 @@
             <jvmarg value="-Xms512m"/>
             <jvmarg value="-Xmx1024m"/>
             <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
-            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.6.10.jar"/>
+            <jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.8.0.jar"/>
             <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
-                <pathelement location="${lib.dir}/aspectjrt-1.6.10.jar"/>
-                <pathelement location="${lib.dir}/aspectjweaver-1.6.10.jar"/>
+                <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
+                <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
             	<pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
                 <pathelement location="${tests.out.dir}"/>

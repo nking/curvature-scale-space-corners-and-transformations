@@ -19,21 +19,17 @@ public class Transformer {
      * 
      * @param params
      * @param edges
-     * @param centroidX the horizontal center of the reference frame for edges.  
-     * this should be the center of the image if edges points are in the
-     * original image reference frame.
-     * @param centroidY the vertical center of the reference frame for edges.  
-     * this should be the center of the image if edges points are in the
-     * original image reference frame.
      * @return 
      */
      public PairIntArray[] applyTransformation(TransformationParameters params,
-        PairIntArray[] edges, double centroidX, double centroidY) {
+        PairIntArray[] edges) {
         
         double rotInRadians = params.getRotationInRadians();
         double scale = params.getScale();        
         double translationX = params.getTranslationX();
         double translationY = params.getTranslationY();
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
         
         return applyTransformation(rotInRadians, scale, translationX,
             translationY, centroidX, centroidY, edges);
@@ -43,50 +39,42 @@ public class Transformer {
      * transform the given edges using the given parameters.
      * 
      * @param params
-     * @param edge
-     * @param centroidX the horizontal center of the reference frame for edges.  
-     * this should be the center of the image if edges points are in the
-     * original image reference frame.
-     * @param centroidY the vertical center of the reference frame for edges.  
-     * this should be the center of the image if edges points are in the
-     * original image reference frame.
+     * @param points
      * @return
      */
      public PairIntArray applyTransformation(TransformationParameters params,
-        PairIntArray edge, double centroidX, double centroidY) {
+        PairIntArray points) {
         
         double rotInRadians = params.getRotationInRadians();
         double scale = params.getScale();        
         double translationX = params.getTranslationX();
         double translationY = params.getTranslationY();
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
         
         return applyTransformation(rotInRadians, scale, translationX,
-            translationY, centroidX, centroidY, edge);
+            translationY, centroidX, centroidY, points);
      }
      
      /**
      * transform the given edges using the given parameters.
      * 
      * @param params
-     * @param edge
-     * @param centroidX the horizontal center of the reference frame for edges.  
-     * this should be the center of the image if edges points are in the
-     * original image reference frame.
-     * @param centroidY the vertical center of the reference frame for edges.  
-     * this should be the center of the image if edges points are in the
-     * original image reference frame.
+     * @param points
      * @return
      */
      public PairFloatArray applyTransformation2(TransformationParameters params,
-        PairIntArray edge, double centroidX, double centroidY) {
+        PairIntArray points) {
         
         double rotInRadians = params.getRotationInRadians();
         double scale = params.getScale();        
         double translationX = params.getTranslationX();
         double translationY = params.getTranslationY();
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
         
         return applyTransformation2(rotInRadians, scale, translationX,
-            translationY, centroidX, centroidY, edge);
+            translationY, centroidX, centroidY, points);
      }
     
      /**
@@ -128,17 +116,11 @@ public class Transformer {
       * transform the given edges using the given parameters. 
       * 
       * @param params
-      * @param centroidX the horizontal center of the reference frame for edges.  
-      * this should be the center of the image if edges points are in the
-      * original image reference frame.
-      * @param centroidY the vertical center of the reference frame for edges.  
-      * this should be the center of the image if edges points are in the
-      * original image reference frame.
       * @param edges
       * @return 
       */
     public List<PairIntArray> applyTransformation(TransformationParameters
-        params, List<PairIntArray> edges, double centroidX, double centroidY) {
+        params, List<PairIntArray> edges) {
         
         List<PairIntArray> transformedEdges = new ArrayList<PairIntArray>();
 
@@ -146,6 +128,8 @@ public class Transformer {
         double rotInRadians = params.getRotationInRadians();
         double translationX = params.getTranslationX();
         double translationY = params.getTranslationY();
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
         
         for (PairIntArray edge : edges) {
 
@@ -300,40 +284,6 @@ public class Transformer {
     }
     
     /**
-      * transform the point using the given parameters. 
-      * 
-      * @param params euclidean transformation parameters
-      * @param centroidX the horizontal center of the reference frame for edges.  
-      * this should be the center of the image if edges points are in the
-      * original image reference frame.
-      * @param centroidY the vertical center of the reference frame for edges.  
-      * this should be the center of the image if edges points are in the
-      * original image reference frame.
-      * @param xPt
-      * @param yPt
-      * @return 
-      */
-    public double[] applyTransformation(TransformationParameters params,
-        double centroidX, double centroidY, double xPt, double yPt) {
-        
-        double scale = params.getScale();
-        double scaleTimesCosine = scale * Math.cos(params.getRotationInRadians());
-        double scaleTimesSine = scale * Math.sin(params.getRotationInRadians());
-                
-        double xr = centroidX * scale + (((xPt - centroidX) * scaleTimesCosine) 
-            + ((yPt - centroidY) * scaleTimesSine));
-
-        double yr = centroidY * scale 
-            + ((-(xPt - centroidX) * scaleTimesSine) 
-            + ((yPt - centroidY) * scaleTimesCosine));
-
-        double xt = xr + params.getTranslationX();
-        double yt = yr + params.getTranslationY();
-
-        return new double[]{xt, yt};
-    }
-    
-    /**
      * apply the parameters of transformation to point (xPt, yPt).  Note that
      * the rotation is applied in clockwise is positive manner.
      * 
@@ -420,52 +370,6 @@ public class Transformer {
             outputTrX[i] = xt;
             outputTrY[i] = yt;
         }
-    }
-    
-    public PairIntArray applyTransformation(TransformationParameters params,
-        PairIntArray set1) {
-        
-        if (params == null) {
-            throw new IllegalArgumentException("params cannot be null");
-        }
-        if (set1 == null) {
-            throw new IllegalArgumentException("set1 cannot be null");
-        }
-        
-        PairIntArray output = new PairIntArray();
-        
-        float scale = params.getScale();
-        float scaleTimesCosine = (float)
-            (scale * Math.cos(params.getRotationInRadians()));
-        float scaleTimesSine = (float)
-            (scale * Math.sin(params.getRotationInRadians()));
-                
-        float originX = params.getOriginX();
-        float originY = params.getOriginY();
-        
-        float transX = params.getTranslationX();
-        float transY = params.getTranslationY();
-        
-        for (int i = 0; i < set1.getN(); ++i) {
-        
-            int xPt = set1.getX(i);
-            int yPt = set1.getY(i);
-            
-            float xr = originX * scale 
-                + (((xPt - originX) * scaleTimesCosine) 
-                + ((yPt - originY) * scaleTimesSine));
-
-            float yr = originY * scale 
-               + ((-(xPt - originX) * scaleTimesSine) 
-               + ((yPt - originY) * scaleTimesCosine));
-
-            float xt = xr + transX;
-            float yt = yr + transY;
-            
-            output.add(Math.round(xt), Math.round(yt));
-        }
-        
-        return output;
     }
     
     public GreyscaleImage applyTransformation(final GreyscaleImage input, 
@@ -568,38 +472,4 @@ public class Transformer {
         return output;
     }
     
-    public PairFloatArray applyTransformation(TransformationParameters params,
-        int centroidX1, int centroidY1, PairIntArray input) {
-        
-        PairFloatArray output = new PairFloatArray();
-        
-        float rotation = params.getRotationInRadians();
-        float scale = params.getScale();
-        float scaleTimesCosine = (float)(scale * Math.cos(rotation));
-        float scaleTimesSine = (float)(scale * Math.sin(rotation));
-        float transX = params.getTranslationX();
-        float transY = params.getTranslationY();
-                        
-        for (int i = 0; i < input.getN(); i++) {
-            
-            int x = input.getX(i);
-            int y = input.getY(i);
-            
-            double transformedX = (centroidX1*scale + ( 
-                ((x - centroidX1) * scaleTimesCosine) +
-                ((y - centroidY1) * scaleTimesSine))) + transX;
-            
-            double transformedY = (centroidY1*scale + ( 
-                (-(x - centroidX1) * scaleTimesSine) +
-                ((y - centroidY1) * scaleTimesCosine))) + transY;
-          
-            int xt = (int)Math.round(transformedX);
-            
-            int yt = (int)Math.round(transformedY);
-            
-            output.add(xt, yt);
-        }
-        
-        return output;
-    }
 }

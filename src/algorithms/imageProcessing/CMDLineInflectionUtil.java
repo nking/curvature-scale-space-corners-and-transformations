@@ -315,8 +315,8 @@ public class CMDLineInflectionUtil {
             img1 = ImageIOHelper.readImageExt(filePath1);
             img2 = ImageIOHelper.readImageExt(filePath2);
             
-            double centroidX1 = img1.getWidth() >> 1;
-            double centroidY1 = img1.getHeight() >> 1;
+            //double centroidX1 = img1.getWidth() >> 1;
+            //double centroidY1 = img1.getHeight() >> 1;
 
             CurvatureScaleSpaceInflectionMapper mapper = new 
                 CurvatureScaleSpaceInflectionMapper(img1, img2);
@@ -344,7 +344,7 @@ public class CMDLineInflectionUtil {
                 xy1Tr = new PairIntArray();
             } else {
                 xy1Tr = transformer.applyTransformation(
-                    transformationParams, xy1, centroidX1, centroidY1);
+                    transformationParams, xy1);
             }
             
             PairIntArray xy2 = mapper.getMatchedXY2();
@@ -354,9 +354,7 @@ public class CMDLineInflectionUtil {
           
             PairIntArray[] edges1Tr = transformer.applyTransformation(
                 transformationParams, 
-                edges1.toArray(new PairIntArray[edges1.size()]),
-                centroidX1, centroidY1
-            );
+                edges1.toArray(new PairIntArray[edges1.size()]));
             
             List<PairIntArray> edges2 = 
                 mapper.getEdges2InOriginalReferenceFrame();

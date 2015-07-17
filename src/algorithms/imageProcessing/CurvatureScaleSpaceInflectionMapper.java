@@ -236,30 +236,27 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         if (params == null) {
             return null;
         }
-        if (doRefineTransformations) {
+        
+        //TODO: temporarily disabling the refinement while fixing PointMatcher
+        if (false && doRefineTransformations) {
             // note, these are closed curves
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
             PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
             EdgeMatcher matcher = new EdgeMatcher();
             if (reverseDatasetOrder) {
-                params = matcher.refineTransformation(set2, set1, params, 
-                    centroidX2, centroidY2, centroidX1, centroidY1);
+                
+                params = matcher.refineTransformation(set2, set1, params);
             } else {
-                params = matcher.refineTransformation(set1, set2, params, 
-                    centroidX1, centroidY1, centroidX2, centroidY2);
+                params = matcher.refineTransformation(set1, set2, params);
             }
             if (params != null) {
                 log.info("FINAL:\n" + params.toString());
             }
         }
         if (reverseDatasetOrder) {
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            double[] x2y2 = curveHelper.calculateXYCentroids(
-                getMatchedEdges2InOriginalReferenceFrameArray()[0]);
-            double[] x1y1 = tc.applyTransformation(params, centroidX2, 
-                centroidY2, x2y2[0], x2y2[1]);
-            params = tc.swapReferenceFrames(params, centroidX1, centroidY1, 
-                x2y2[0], x2y2[1], x1y1[0], x1y1[1]);
+            
+            params = tc.swapReferenceFrames(params);
+            
         }
         return params;
     }

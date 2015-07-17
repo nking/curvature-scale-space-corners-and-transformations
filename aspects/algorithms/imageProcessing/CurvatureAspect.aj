@@ -301,10 +301,11 @@ public aspect CurvatureAspect {
         }
  
         try {
+            float[] nullA = null;
             PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0, 
                 clr.getWidth(), 0, clr.getHeight());
             plotter.addPlot(rainbowHull.xHull, rainbowHull.yHull, 
-                null, null, "rainbow hull " + outImgNum);
+                nullA, nullA, "rainbow hull " + outImgNum);
             
             String fileName = plotter.writeFile(Integer.valueOf(9182));
                         
@@ -837,53 +838,6 @@ private static int n3 = 0;
         }
 
         CurvatureScaleSpaceInflectionMapper instance = (CurvatureScaleSpaceInflectionMapper)obj;
-
-        // these are in the reference frame of the original image
-        PairIntArray xyc1 = instance.getMatchedXY1().copy();
-        PairIntArray xyc2 = instance.getMatchedXY2().copy();
-
-        log2.info("n matched contour points in image1 = " + xyc1.getN());
-        log2.info("n matched contour points in image2 = " + xyc2.getN());
-
-        try {
-
-            Image img1 = instance.getOriginalImage1().copyImage();
-            
-            ImageIOHelper.addCurveToImage(xyc1, img1, 2, 255, 0, 0);
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/matched_contour_peaks1.png", img1);
-
-            Image img2 = instance.getOriginalImage2().copyImage();
-            
-            ImageIOHelper.addCurveToImage(xyc2, img2, 2, 255, 0, 0);
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/matched_contour_peaks2.png", img2);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            log2.severe("ERROR: " + e.getMessage());
-        }
-
-    }
-
-    after() returning() 
-        : execution(void algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapperForOpenCurves*.createMatchedPointArraysFromContourPeaks() ) 
-        && args()
-        && target(algorithms.imageProcessing.CurvatureScaleSpaceInflectionMapperForOpenCurves) {
-    
-        Object obj = thisJoinPoint.getThis();
-
-        if (!(obj instanceof CurvatureScaleSpaceInflectionMapperForOpenCurves)) {
-            return;
-        }
-
-        CurvatureScaleSpaceInflectionMapperForOpenCurves instance = 
-            (CurvatureScaleSpaceInflectionMapperForOpenCurves)obj;
-
-        if (instance.getMatchedXY1() == null) {
-             return;
-        }
 
         // these are in the reference frame of the original image
         PairIntArray xyc1 = instance.getMatchedXY1().copy();

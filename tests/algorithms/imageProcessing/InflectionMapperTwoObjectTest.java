@@ -94,7 +94,7 @@ public class InflectionMapperTwoObjectTest {
                 Transformer transformer = new Transformer();
                 PairIntArray[] transformedEdges = 
                     transformer.applyTransformation(transformationParams, 
-                        edges1, centroidX1, centroidY1);
+                        edges1);
 
                 img2 = ImageIOHelper.readImageExt(filePath2);
 
