@@ -132,7 +132,7 @@ public final class EdgeMatcher extends AbstractPointMatcher {
         int sum = 0;
         
         for (int i = 0; i < edges1.length; ++i) {
-            PairIntArray set1 = edges1[1];
+            PairIntArray set1 = edges1[i];
             PairIntArray set2 = edges2[i];
             int nMaxMatchable = Math.min(set1.getN(), set2.getN());
             

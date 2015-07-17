@@ -238,8 +238,8 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         }
         
         //TODO: temporarily disabling the refinement while fixing PointMatcher
-        if (false && doRefineTransformations) {
-            
+        if (doRefineTransformations) {
+            //TODO: this needs to add scale changes to the refinement method
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
             PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
             EdgeMatcher matcher = new EdgeMatcher();

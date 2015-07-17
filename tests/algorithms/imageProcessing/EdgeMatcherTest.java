@@ -25,6 +25,7 @@ public class EdgeMatcherTest extends TestCase {
         edges1[0] = new PairIntArray();
         edges1[0].add(1, 2);
         edges1[0].add(1, 3);
+        edges1[0].add(1, 4);
         
         edges1[1] = new PairIntArray();
         edges1[1].add(10, 2);
@@ -43,7 +44,7 @@ public class EdgeMatcherTest extends TestCase {
         EdgeMatcher matcher = new EdgeMatcher();
         int nmxsum = matcher.countMaxMatchable(edges1, edges2);
         
-        assertTrue(nmxsum == 4);
+        assertTrue(nmxsum == 5);
     }
 
     public void testEvaluate() throws Exception {
