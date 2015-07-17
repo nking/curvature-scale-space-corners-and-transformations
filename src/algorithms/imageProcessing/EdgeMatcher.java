@@ -91,10 +91,14 @@ public final class EdgeMatcher extends AbstractPointMatcher {
 
         int n = edges1.length;
         
-        float rotHalfRangeInDegrees = 10; 
+        /*
+        REPLACE WITH A SIMPLEX OF SMALL RANGE
+        */
+        
+        float rotHalfRangeInDegrees = 5; 
         float rotDeltaInDegrees = 1;
-        float transXHalfRange = 50; 
-        float transXDelta = 4;
+        float transXHalfRange = 10; 
+        float transXDelta = 1;
         float transYHalfRange = transXHalfRange; 
         float transYDelta = transXDelta;
         
@@ -124,6 +128,9 @@ public final class EdgeMatcher extends AbstractPointMatcher {
                 bestFit = fit;
             }
         }
+        
+        //TODO: consider applying the fits to all points and keeping the
+        // best
         
         return (bestFit != null) ? bestFit.getParameters() : null;
     }

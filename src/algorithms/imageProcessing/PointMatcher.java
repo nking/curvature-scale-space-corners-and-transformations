@@ -3824,8 +3824,8 @@ if (compTol == 1) {
             rotScaleParams.setRotationInDegrees(rotDeg);
             rotScaleParams.setTranslationX(0);
             rotScaleParams.setTranslationY(0);
-            rotScaleParams.setOriginX(0);
-            rotScaleParams.setOriginY(0);
+            rotScaleParams.setOriginX(params.getOriginX());
+            rotScaleParams.setOriginY(params.getOriginY());
 
             transformer.applyTransformation(rotScaleParams, set1, xsr, ysr);
 
@@ -3839,12 +3839,12 @@ if (compTol == 1) {
                     }
 
                     TransformationParameters params2 = new TransformationParameters();
-                    params.setScale(scale);
-                    params.setRotationInDegrees(rotDeg);
-                    params.setTranslationX(tx);
-                    params.setTranslationY(ty);
-                    params.setOriginX(0);
-                    params.setOriginY(0);
+                    params2.setScale(scale);
+                    params2.setRotationInDegrees(rotDeg);
+                    params2.setTranslationX(tx);
+                    params2.setTranslationY(ty);
+                    params2.setOriginX(params.getOriginX());
+                    params2.setOriginY(params.getOriginY());
 
                     TransformationPointFit fit2;
                     if (useGreedyMatching) {
@@ -3929,6 +3929,11 @@ if (compTol == 1) {
         int nMaxMatchable = Math.min(set1.getN(), set2.getN());
 
         if (hasConverged(fits[0], nMaxMatchable)) {
+            return fits[0];
+        }
+        
+        // finest grid so no need for downhill simplex search
+        if ((rotDeltaInDegrees == 1) && (transXDelta == 1) && (transYDelta == 1)) {
             return fits[0];
         }
         

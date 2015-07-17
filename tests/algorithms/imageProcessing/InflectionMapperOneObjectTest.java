@@ -55,11 +55,11 @@ public class InflectionMapperOneObjectTest extends TestCase {
         //boolean swapDueToScale = false;
             for (String rotDegrees : rotDegreesList) {
 
-                
-                if (!rotDegrees.equals("20")) {
+                /*
+                if (!rotDegrees.equals("60")) {
                     continue;
                 }
-                
+                */
 
                 String fileName1 = "closed_curve.png";
                 String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
