@@ -968,7 +968,6 @@ images as possible)
             PointMatcher3Test test = new PointMatcher3Test();
 
             test.testPreSearches();
-            //test.testCalculateTranslationFromGridThenDownhillSimplex();
             //test.testCalculateTransformationWithGridSearch();
 
             //test.testCalculateEuclideanTransformation();

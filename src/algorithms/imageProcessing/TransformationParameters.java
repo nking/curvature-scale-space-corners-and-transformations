@@ -103,6 +103,19 @@ public class TransformationParameters {
         return originY;
     }
     
+    public TransformationParameters copy() {
+        
+        TransformationParameters cp = new TransformationParameters();
+        cp.setRotationInRadians(rotationInRadians);
+        cp.setTranslationX(translationX);
+        cp.setTranslationY(translationY);
+        cp.setScale(scale);
+        cp.setOriginX(originX);
+        cp.setOriginY(originY);
+        
+        return cp;
+    }
+    
     @Override
     public boolean equals(Object obj) {
         

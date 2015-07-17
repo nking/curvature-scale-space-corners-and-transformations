@@ -23,12 +23,11 @@ public final class EdgeMatcher extends AbstractPointMatcher {
     /**
      * refine the transformation params to make a better match of edges1 to
      * edges2 where the points within edges in both sets are not necessarily
-     * 1 to 1 matches (that is, the input is not expected to be matched
-     * already).
+     * 1 to 1 matches (that is, they are lines with uneven point intervals
+     * and densities).
      *
-     * TODO: improve transformEdges to find translation for all edges
-     * via a search method rather than trying all pairs of points.
-     *
+     * TODO: need to add change of scale to this.
+     * 
      * @param edges1
      * @param edges2
      * @param params
@@ -52,15 +51,17 @@ public final class EdgeMatcher extends AbstractPointMatcher {
         
         log.info("refining coordinates with " + n  + " curves");
         
-        float rotHalfRangeInDegrees = 5; 
-        float rotDeltaInDegrees = 2;
+        float rotHalfRangeInDegrees = 6;
+        float rotDeltaInDegrees = 2.f;
+        float scaleHalfRange = 0.4f; 
+        float scaleDelta = 0.2f;
         float transXHalfRange = 10; 
-        float transXDelta = 2.5f;
+        float transXDelta = 1.f;
         float transYHalfRange = transXHalfRange; 
         float transYDelta = transXDelta;
         
-        float tolTransX = 8;
-        float tolTransY = 8;
+        float tolTransX = 4;
+        float tolTransY = 4;
         
         boolean useGreedyMatching = true;
         
@@ -89,6 +90,7 @@ public final class EdgeMatcher extends AbstractPointMatcher {
                         
             TransformationPointFit fit = pointMatcher.refineTheTransformation(
                 params, set1, set2, 
+                scaleHalfRange, scaleDelta,
                 rotHalfRangeInDegrees, rotDeltaInDegrees, 
                 transXHalfRange, transXDelta, 
                 transYHalfRange, transYDelta,
@@ -116,12 +118,15 @@ public final class EdgeMatcher extends AbstractPointMatcher {
         paramsWeighted.setRotationInRadians(rotationWeighted);
         paramsWeighted.setTranslationX(transXWeighted);
         paramsWeighted.setTranslationY(transYWeighted);
+        paramsWeighted.setOriginX(params.getOriginX());
+        paramsWeighted.setOriginY(params.getOriginY());
         
         TransformationPointFit weightedFit = evaluate(paramsWeighted, 
             edges1, edges2,tolTransX, tolTransY, useGreedyMatching);
         
         if (pointMatcher.fitIsBetter(bestFit, weightedFit)) {
             bestFit = weightedFit;
+log.info("REFINEMENT ACCEPTED");
         }
         
         return bestFit;
