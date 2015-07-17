@@ -1,6 +1,6 @@
 package algorithms.imageProcessing;
 
-import static algorithms.imageProcessing.EdgeMatcher.minTolerance;
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,49 +17,8 @@ public final class EdgeMatcher extends AbstractPointMatcher {
 
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
-    protected static int minTolerance = 5;
-
-    //TODO: this has to be a high number for sets with projection.
-    // the solution is sensitive to this value.
-    private final float generalTolerance = 8;
-
-    public static float toleranceGridFactor = 4.f;
-
     protected boolean debug = true;
 
-    /**
-     * the maximum number of iterations that the refinement of translation
-     * will use in the downhill simplex.  The default value is 50.
-     */
-    private int dsNMaxIter = 50;
-    protected void setDsNMaxIter(int n) {
-        dsNMaxIter = n;
-    }
-    protected int getDsNMaxIter() {
-        return dsNMaxIter;
-    }
-    float nEpsFactor = 2.0f;
-    protected void setNEpsFactor(float f) {
-        nEpsFactor = f;
-    }
-    protected float getNEpsFactor() {
-        return nEpsFactor;
-    }
-    protected float cellFactor = 1.25f;
-    protected float tolFactor = 0.5f;
-    protected void setCellFactor(float f) {
-        cellFactor = f;
-    }
-    protected void setTolFactor(float f) {
-        tolFactor = f;
-    }
-    protected float getCellFactor() {
-        return cellFactor;
-    }
-    protected float getTolFactor() {
-        return tolFactor;
-    }
-  
     // ======= code that needs testing and revision the most
     /**
      * refine the transformation params to make a better match of edges1 to
@@ -75,7 +34,7 @@ public final class EdgeMatcher extends AbstractPointMatcher {
      * @param params
      * @return
      */
-    public TransformationParameters refineTransformation(PairIntArray[] edges1,
+    public TransformationPointFit refineTransformation(PairIntArray[] edges1,
         PairIntArray[] edges2, final TransformationParameters params) {
 
         if (edges1 == null || edges1.length == 0) {
@@ -91,30 +50,43 @@ public final class EdgeMatcher extends AbstractPointMatcher {
 
         int n = edges1.length;
         
-        /*
-        REPLACE WITH A SIMPLEX OF SMALL RANGE
-        */
+        log.info("refining coordinates with " + n  + " curves");
         
         float rotHalfRangeInDegrees = 5; 
-        float rotDeltaInDegrees = 1;
+        float rotDeltaInDegrees = 2;
         float transXHalfRange = 10; 
-        float transXDelta = 1;
+        float transXDelta = 2.5f;
         float transYHalfRange = transXHalfRange; 
         float transYDelta = transXDelta;
         
-        PointMatcher pointMatcher = new PointMatcher();
-        
-        TransformationPointFit[] fits = new TransformationPointFit[n];
-        
-        TransformationPointFit bestFit = null;
+        float tolTransX = 8;
+        float tolTransY = 8;
         
         boolean useGreedyMatching = true;
+        
+        if (!useGreedyMatching) {
+            tolTransX = 2;
+            tolTransY = 2;
+        }
+        
+        // start with original fit to make results are an improvement
+        TransformationPointFit bestFit = evaluate(params, edges1, edges2,
+            tolTransX, tolTransY, useGreedyMatching);
+        
+        PointMatcher pointMatcher = new PointMatcher();        
+                
+        int nMaxMatchableSum = countMaxMatchable(edges1, edges2);
+        
+        float scaleWeighted = 0;
+        float rotationWeighted = 0;
+        float transXWeighted = 0;
+        float transYWeighted = 0;
         
         for (int i = 0; i < n; ++i) {
             
             PairIntArray set1 = edges1[i];
             PairIntArray set2 = edges2[i];
-            
+                        
             TransformationPointFit fit = pointMatcher.refineTheTransformation(
                 params, set1, set2, 
                 rotHalfRangeInDegrees, rotDeltaInDegrees, 
@@ -122,17 +94,119 @@ public final class EdgeMatcher extends AbstractPointMatcher {
                 transYHalfRange, transYDelta,
                 useGreedyMatching);
             
-            fits[i] = fit;
-            
-            if (fitIsBetter(bestFit, fit)) {
-                bestFit = fit;
+            if (fit == null) {
+                continue;
             }
+            
+            int nMaxMatchable = Math.min(set1.getN(), set2.getN());
+            
+            float weight = (float)nMaxMatchable/(float)nMaxMatchableSum;
+            
+            scaleWeighted += (fit.getScale() * weight);
+            rotationWeighted += 
+                ((fit.getParameters().getRotationInDegrees()/360.f)  * weight);
+            transXWeighted += (fit.getTranslationX() * weight);
+            transYWeighted += (fit.getTranslationY() * weight);
         }
         
-        //TODO: consider applying the fits to all points and keeping the
-        // best
+        rotationWeighted *= Math.PI*2;
         
-        return (bestFit != null) ? bestFit.getParameters() : null;
+        TransformationParameters paramsWeighted = new TransformationParameters();
+        paramsWeighted.setScale(scaleWeighted);
+        paramsWeighted.setRotationInRadians(rotationWeighted);
+        paramsWeighted.setTranslationX(transXWeighted);
+        paramsWeighted.setTranslationY(transYWeighted);
+        
+        TransformationPointFit weightedFit = evaluate(paramsWeighted, 
+            edges1, edges2,tolTransX, tolTransY, useGreedyMatching);
+        
+        if (pointMatcher.fitIsBetter(bestFit, weightedFit)) {
+            bestFit = weightedFit;
+        }
+        
+        return bestFit;
+    }
+
+    protected int countMaxMatchable(PairIntArray[] edges1, PairIntArray[] edges2) {
+        
+        int sum = 0;
+        
+        for (int i = 0; i < edges1.length; ++i) {
+            PairIntArray set1 = edges1[1];
+            PairIntArray set2 = edges2[i];
+            int nMaxMatchable = Math.min(set1.getN(), set2.getN());
+            
+            sum += nMaxMatchable;
+        }
+        
+        return sum;
+    }
+
+    public TransformationPointFit evaluate(TransformationParameters 
+        params, PairIntArray[] edges1, PairIntArray[] edges2,
+        float tolTransX, float tolTransY,
+        boolean useGreedyMatching) {
+        
+        if (edges1 == null || edges1.length == 0) {
+            throw new IllegalArgumentException("edges1 cannot be null or empty");
+        }
+        if (edges2 == null || edges2.length == 0) {
+            throw new IllegalArgumentException("edges2 cannot be null or empty");
+        }
+        if (edges1.length != edges2.length) {
+            throw new IllegalArgumentException(
+                "edges1 and edges2 must be the same length");
+        }
+        
+        PointMatcher pointMatcher = new PointMatcher();
+        
+        Transformer transformer = new Transformer();
+        
+        int nMaxMatchableSum = countMaxMatchable(edges1, edges2);
+        
+        /*
+        either need a high tolerance with greedy matching or
+        a low tolerance and optimal matching.
+        The first is N^2 and the 3nd is approx N^4, respectively.
+        */
+        
+        int nMatched = 0;
+        float difFromModelWeighted = 0;
+        double stDevFromModelWeightedSqSum = 0;
+                
+        for (int i = 0; i < edges1.length; ++i) {
+            PairIntArray set1 = edges1[i];
+            PairIntArray set2 = edges2[i];
+            
+            PairFloatArray tr = transformer.applyTransformation2(
+               params, set1);
+            
+            int nMaxMatchable = Math.min(set1.getN(), set2.getN());
+            float weight = (float)nMaxMatchable/(float)nMaxMatchableSum;
+         
+            TransformationPointFit fit;
+            if (useGreedyMatching) {
+                fit = pointMatcher.evaluateFitForUnMatchedTransformedGreedy(
+                params, tr, set2, tolTransX, tolTransY);
+            } else {
+                fit = pointMatcher.evaluateFitForUnMatchedTransformedOptimal(
+                params, tr, set2, tolTransX, tolTransY);
+            }
+            
+            nMatched += fit.getNumberOfMatchedPoints();
+            difFromModelWeighted += (fit.getMeanDistFromModel() * weight);
+            stDevFromModelWeightedSqSum += 
+                (fit.getStDevFromMean() * fit.getStDevFromMean() * weight);
+        }
+        
+        float stDevFromModelWeighted = (float)Math.sqrt(stDevFromModelWeightedSqSum);
+        
+        TransformationPointFit fit = new TransformationPointFit(params, nMatched,
+            difFromModelWeighted, stDevFromModelWeighted, tolTransX, tolTransY);
+
+        fit.setMaximumNumberMatchable(nMaxMatchableSum);
+        
+        return fit;
     }
 
 }

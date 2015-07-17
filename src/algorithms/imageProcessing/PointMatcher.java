@@ -3937,9 +3937,7 @@ if (compTol == 1) {
             return fits[0];
         }
         
-        return fits[0];
-
-        /*TransformationPointFit[] fits2 = preSearch1(fits, set1, set2,
+        TransformationPointFit[] fits2 = preSearch1(fits, set1, set2,
             useGreedyMatching);
 
         if (fits2 == null) {
@@ -3953,7 +3951,7 @@ if (compTol == 1) {
         // TODO: may need a small fine grid search here
 
         return fits2[0];
-        */
+        
     }
 
     /**

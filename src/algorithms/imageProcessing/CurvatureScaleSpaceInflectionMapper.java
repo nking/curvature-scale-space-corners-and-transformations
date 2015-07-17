@@ -239,24 +239,25 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         
         //TODO: temporarily disabling the refinement while fixing PointMatcher
         if (false && doRefineTransformations) {
-            // note, these are closed curves
+            
             PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
             PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
             EdgeMatcher matcher = new EdgeMatcher();
+            TransformationPointFit fit2 = null;
             if (reverseDatasetOrder) {
-                
-                params = matcher.refineTransformation(set2, set1, params);
+                fit2 = matcher.refineTransformation(set2, set1, params);
             } else {
-                params = matcher.refineTransformation(set1, set2, params);
+                fit2 = matcher.refineTransformation(set1, set2, params);
             }
-            if (params != null) {
-                log.info("FINAL:\n" + params.toString());
+            
+            if (fit2 != null) {
+                log.info("FINAL:\n" + fit2.toString());
+                params = fit2.getParameters();
             }
         }
+        
         if (reverseDatasetOrder) {
-            
-            params = tc.swapReferenceFrames(params);
-            
+            params = tc.swapReferenceFrames(params);            
         }
         return params;
     }
