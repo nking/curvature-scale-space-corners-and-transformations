@@ -26,7 +26,16 @@ public final class EdgeMatcher extends AbstractPointMatcher {
      * 1 to 1 matches (that is, they are lines with uneven point intervals
      * and densities).
      *
-     * TODO: need to add change of scale to this.
+     <pre>
+     These are the parameters used for the search and they may need to be 
+     altered with more test cases:
+         float rotationHalfRangeInDegrees = 6;
+         float rotationDeltaInDegrees = 2.f;
+         float scaleHalfRange = 0.15f; 
+         float scaleDelta = 0.025f;
+         float translationXHalfRange = 10; 
+         float translationXDelta = 4.f;
+     </pre>
      * 
      * @param edges1
      * @param edges2
@@ -53,10 +62,10 @@ public final class EdgeMatcher extends AbstractPointMatcher {
         
         float rotHalfRangeInDegrees = 6;
         float rotDeltaInDegrees = 2.f;
-        float scaleHalfRange = 0.4f; 
-        float scaleDelta = 0.2f;
+        float scaleHalfRange = 0.15f; 
+        float scaleDelta = 0.025f;
         float transXHalfRange = 10; 
-        float transXDelta = 1.f;
+        float transXDelta = 4.f;
         float transYHalfRange = transXHalfRange; 
         float transYDelta = transXDelta;
         

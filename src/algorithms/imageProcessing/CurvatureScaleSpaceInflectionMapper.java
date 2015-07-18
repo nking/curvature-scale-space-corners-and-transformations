@@ -238,7 +238,7 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         }
         
         //TODO: temporarily disabling the refinement while fixing PointMatcher
-        if (false && doRefineTransformations) {
+        if (doRefineTransformations) {
             
             log.info("BEFORE REFINEMENT:\n" + params.toString());
             
