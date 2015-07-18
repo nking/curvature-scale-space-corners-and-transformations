@@ -39,7 +39,7 @@ public class PointMatcher3Test extends TestCase {
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         //seed = 1437080777162L;
-        seed = 1437191912914L;
+        //seed = 1437191912914L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 

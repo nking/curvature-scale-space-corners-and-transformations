@@ -773,9 +773,10 @@ public final class PointMatcher extends AbstractPointMatcher {
      * methods, the user should try to reduce the number of points to the
      * best determined and distributed throughout the area of intersection
      * while reducing the overall number of points.
+     * 
      * This method is in progress, but ignoring scale, produces a
-     * solution that is accurate within 10 degrees of rotation and
-     * 20 pixels in translation of X and the same for translation of Y.
+     * solution that is accurate within 20 degrees of rotation and
+     * 50 pixels in translation of X and the same for translation of Y.
      * The method should be followed by refineTheTransformation.
      * NOTE that the transformation within the fit may return a scale that
      * is smaller than 1.
@@ -2936,7 +2937,8 @@ if (compTol == 1) {
 
         PointPartitioner partitioner = new PointPartitioner();
 
-        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 30);
+        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 
+            largeSearch0Limit);
 
         TransformationPointFit bestFit = null;
 
@@ -2982,7 +2984,8 @@ if (compTol == 1) {
 
     /**
      * method to narrow down all parameter space using the given starterPoints
-     * to within +- 20 degrees of rotation and +- 100 in translation.
+     * to within +- 20 degrees of rotation and +- 100 in translation
+     * when given fits from preSearch0.
      * The starterPoints are expected to have been the result of preSearch0.
      * <pre>
      * Runtime complexity:
@@ -3096,7 +3099,8 @@ if (compTol == 1) {
 
         PointPartitioner partitioner = new PointPartitioner();
 
-        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 30);
+        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 
+            largeSearch0Limit);
         
         TransformationPointFit bestFit = null;
         
@@ -3144,7 +3148,8 @@ if (compTol == 1) {
     
     /**
      * method to narrow down all parameter space using the given starterPoints
-     * to within +- 3 degrees and +- 50 in translation.
+     * to within +- 3 degrees and +- 50 in translation when given fits
+     * from preSearch0.
      * The starterPoints are expected to have been the result of preSearch0.
      * <pre>
      * Runtime complexity:
@@ -3256,7 +3261,7 @@ if (compTol == 1) {
 
     /**
      * method to narrow down all parameter space to a fit that is within
-     * +- 10 degrees in rotation and +- 100 pixels in translation in X and Y
+     * +- 20 degrees in rotation and +- 50 pixels in translation in X and Y
      * of the true Euclidean transformation.
      * Note, these numbers are being learned in testing right now so may
      * change.
@@ -3621,7 +3626,8 @@ if (compTol == 1) {
 
         PointPartitioner partitioner = new PointPartitioner();
 
-        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 30);
+        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 
+            largeSearch0Limit);
 
         TransformationPointFit bestFit = null;
 
