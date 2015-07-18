@@ -38,7 +38,8 @@ public class PointMatcher3Test extends TestCase {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1437080777162L;
+        //seed = 1437080777162L;
+        seed = 1437191912914L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -53,12 +54,14 @@ public class PointMatcher3Test extends TestCase {
         
         float maxOfMinDiffRots = Float.MIN_VALUE;
         float maxOfBestDiffRots = Float.MIN_VALUE;
+
+        float maxOfPS1DiffRots = Float.MIN_VALUE;
         
         int largeSearch0Limit = 20;
         
         for (int nn = 0; nn < 1; ++nn) { // repeat number of tests
         for (int rotType = 0; rotType < 5; ++rotType) {
-            for (int nTest = 0; nTest < 7 /*20*/; ++nTest) { // this increases nPoints
+            for (int nTest = 0; nTest < 20 /*20*/; ++nTest) { // this increases nPoints
 
                 PointMatcher pointMatcher = new PointMatcher();
                 
@@ -185,17 +188,9 @@ public class PointMatcher3Test extends TestCase {
                 boolean useGreedyMatching = true;
                 
                 // ------- assert that preSearch0 gets the answer within <> degrees of rotation -------
-                TransformationPointFit[] fits;
-                
-                if (nMaxMatchable > largeSearch0Limit) {
-                    fits = pointMatcher.preSearch0Alt(
+                TransformationPointFit[] fits = pointMatcher.preSearch0(
                     unmatchedLeftXY, unmatchedRightXY, scale,
                     useGreedyMatching);
-                } else {
-                    fits = pointMatcher.preSearch0(
-                    unmatchedLeftXY, unmatchedRightXY, scale,
-                    useGreedyMatching);
-                }
                 
                 assert(fits != null);
                 
@@ -246,26 +241,19 @@ public class PointMatcher3Test extends TestCase {
                 if (minRotationDiff > maxOfMinDiffRots) {
                     maxOfMinDiffRots = minRotationDiff;
                 }
-                       
-                /*try simplex, else grid search within 90 of best fit
-                    
-                if (true) {
-                    continue;
-                }
-                */
                 
                 // ------ assert preSearch1 ---------
-                TransformationPointFit[] fits2 = pointMatcher.preSearch1(
-                    fits, unmatchedLeftXY, unmatchedRightXY,
-                    useGreedyMatching);
+                TransformationPointFit fit2 = pointMatcher.preSearch1Alt1(
+                //TransformationPointFit fit2 = pointMatcher.preSearch1Alt2(
+                    fits, unmatchedLeftXY, unmatchedRightXY, useGreedyMatching);
                 
-                assert(fits2 != null);
+                assert(fit2 != null);
                 
                 log.info("preSearch1 FITs:");
                 
                 minRotationDiff = Float.MAX_VALUE;
 
-                TransformationPointFit fit = fits2[0];
+                TransformationPointFit fit = fit2;
 
                 if (fit == null) {
                     log.severe("ERROR: no solution");
@@ -289,8 +277,12 @@ public class PointMatcher3Test extends TestCase {
                 if (diffRotDeg < 0) {
                     diffRotDeg *= -1;
                 }
+
+                if (diffRotDeg > maxOfPS1DiffRots) {
+                    maxOfPS1DiffRots = diffRotDeg;
+                }
                 
-                assertTrue(diffRotDeg <= 45);
+                assertTrue(diffRotDeg <= 90);
                 
                 
                 boolean converged = pointMatcher.hasConverged(fit, nMaxMatchable);
@@ -298,23 +290,23 @@ public class PointMatcher3Test extends TestCase {
                 if (converged) {
                     continue;
                 }
-                
+  if (true) {continue;}              
 
-                float rotHalfRange = 45;
+                float rotHalfRange = 90;
                 float rotDelta = 1;
                 float transHalfRange = 500;
                 float transDelta = 4;
 
-                TransformationPointFit fit2 = pointMatcher.refineTheTransformation(
+                TransformationPointFit fit3 = pointMatcher.refineTheTransformation(
                     fit.getParameters(), unmatchedLeftXY, unmatchedRightXY, 
                     rotHalfRange, rotDelta,
                     transHalfRange, transDelta, transHalfRange, transDelta,
                     useGreedyMatching);
 
                 if (fit2 != null) {
-                    log.info("refined FIT: " + fit2.toString());
-                    fitParams = fit2.getParameters();
-                    diffN = Math.abs(nExpected - fit2.getNumberOfMatchedPoints());
+                    log.info("refined FIT: " + fit3.toString());
+                    fitParams = fit3.getParameters();
+                    diffN = Math.abs(nExpected - fit3.getNumberOfMatchedPoints());
                     diffRotDeg = getAngleDifference(
                         fitParams.getRotationInDegrees(), rotInDegrees);
                     diffScale = Math.abs(fitParams.getScale() - scale);
@@ -336,7 +328,12 @@ public class PointMatcher3Test extends TestCase {
         }
         
         log.info("Largest difference in rotation from expected=" + maxOfMinDiffRots
-            + "  max of best fits diff from expected rotation=" + maxOfBestDiffRots);
+            + "  max of best fits diff from expected rotation=" + maxOfBestDiffRots
+            + "  max of preSearch1 best fitt diff from exp rot=" + maxOfPS1DiffRots);
+        
+        //assertTrue(maxOfMinDiffRots <= 45);
+        //assertTrue(maxOfBestDiffRots <= 45);
+        assertTrue(maxOfPS1DiffRots <= 90);
     }
 
     public void estCalculateEuclideanTransformation()

@@ -16,16 +16,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 
@@ -253,7 +249,7 @@ public final class PointMatcher extends AbstractPointMatcher {
 
     protected int largeSearch0Limit = 20;
 
-    protected boolean debug = false;
+    protected boolean debug = true;
 
     public void setLargeSearch0Limit(int limit) {
         largeSearch0Limit = limit;
@@ -2658,6 +2654,50 @@ if (compTol == 1) {
         }
 
         int nMaxMatchable = Math.min(set1.getN(), set2.getN());
+        
+        TransformationPointFit[] fits = null;
+
+        // if number of points is very high, need to use alternate method
+        if (nMaxMatchable > largeSearch0Limit) {
+            fits = preSearch0Large(set1, set2, scale, useGreedyMatching);
+        } else {
+            fits = preSearch0Small(set1, set2, scale, useGreedyMatching);
+        }
+        
+        return fits;
+    }
+    
+    /**
+     * method to narrow down all parameter space to 10 fits in which at least
+     * one contains a fit within +- 10 degrees of rotation and +- 20 pixels
+     * of translation in x and y.  Note, still testing so these numbers
+     * may change.
+     * The 10 fits should be followed by a downhill simplex to further
+     * constrain the transformation, or a detailed grid search of each of
+     * the 10 fits with something like a delta rotation of 2 and delta
+     * translation of 4 and ranges based on the error stated in the first
+     * sentence.
+     *
+     * @param set1
+     * @param set2
+     * @param scale
+     * @param useGreedyMatching if true, uses an N^2 algorithm to find the
+     * best match made for each point in order of points in set1, else uses
+     * an ~N^3 optimal bipartite matching algorithm.
+     * @return
+     */
+    protected TransformationPointFit[] preSearch0Small(
+        PairIntArray set1, PairIntArray set2, float scale,
+        boolean useGreedyMatching) {
+
+        if ((set1 == null) || (set2 == null)) {
+            return null;
+        }
+        if ((set1.getN() < 3) || (set2.getN() < 3)) {
+            return null;
+        }
+
+        int nMaxMatchable = Math.min(set1.getN(), set2.getN());
 
         /*
         The best solutions use a fine grid search of rotDelta=2 and transDelta=4
@@ -2795,9 +2835,203 @@ if (compTol == 1) {
     }
 
     /**
-     * method to narrow down all parameter space using the given starterPoints.
+     * method to narrow down all parameter space using the given starterPoints
+     * to within +- 3 degrees and +- 50 in translation.
      * The starterPoints are expected to have been the result of preSearch0.
-     * NOTE: this assumes that all fits are using same scale.
+     * <pre>
+     * Runtime complexity:
+     * </pre>
+     * 
+     * @param fits
+     * @param set1
+     * @param set2
+     * @param useGreedyMatching
+     * @return
+     */
+    protected TransformationPointFit preSearch1Alt2Small(TransformationPointFit[] fits,
+        PairIntArray set1, PairIntArray set2, boolean useGreedyMatching) {
+
+        if (fits == null) {
+            throw new IllegalArgumentException("fits cannot be null");
+        }
+        if ((set1 == null) || (set2 == null)) {
+            return null;
+        }
+        if ((set1.getN() < 3) || (set2.getN() < 3)) {
+            return null;
+        }
+
+        float scaleHalfRange = 0;
+        float scaleDelta = 1;
+        float rotHalfRangeInDegrees = 10;
+        float rotDeltaInDegrees = 2;
+        float transXHalfRange = 200;
+        float transXDelta = 15;
+        float transYHalfRange = transXHalfRange; 
+        float transYDelta = transXDelta;
+
+        Set<Integer> searchedRot = new HashSet<Integer>();
+
+        TransformationPointFit bestFit = null;
+        
+        for (TransformationPointFit fit : fits) {
+
+             Integer rotD = Integer.valueOf((int)fit.getParameters().getRotationInDegrees());
+
+             if (searchedRot.contains(rotD)) {
+                 continue;
+             }
+  
+             // grid search around trans and rot
+
+             TransformationPointFit[] fits2 = boundedGridSearch(set1, set2, 
+                 fit.getParameters(),
+                 scaleHalfRange, scaleDelta,
+                 rotHalfRangeInDegrees, rotDeltaInDegrees,
+                 transXHalfRange, transXDelta,
+                 transYHalfRange, transYDelta,
+                 useGreedyMatching);
+
+             searchedRot.add(rotD);
+
+             if (fits2 != null) {
+                 if (fitIsBetter(bestFit, fits2[0])) {
+                     bestFit = fits2[0];
+                 }
+             }
+
+        }
+
+        return bestFit;
+    }
+
+    /**
+     * method to narrow down all parameter space using the given starterPoints
+     * to within +- 3 degrees and +- 50 in translation.
+     * The starterPoints are expected to have been the result of preSearch0.
+     * <pre>
+     * Runtime complexity:
+     * </pre>
+     * 
+     * @param fits
+     * @param set1
+     * @param set2
+     * @param useGreedyMatching
+     * @return
+     */
+    protected TransformationPointFit preSearch1Alt2Large(TransformationPointFit[] fits,
+        PairIntArray set1, PairIntArray set2, boolean useGreedyMatching) {
+
+        if (fits == null) {
+            throw new IllegalArgumentException("fits cannot be null");
+        }
+        if ((set1 == null) || (set2 == null)) {
+            return null;
+        }
+        if ((set1.getN() < 3) || (set2.getN() < 3)) {
+            return null;
+        }
+        
+        Transformer transformer = new Transformer();
+
+        PointPartitioner partitioner = new PointPartitioner();
+
+        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 30);
+
+        TransformationPointFit bestFit = null;
+
+        // TODO: this is from preSearch00's transDelta.  needs to be accessible
+        // to instance for tuning
+        float tolTransX = 15;
+        float tolTransY = 15;
+
+        for (PairIntArray set1Subset : set1Subsets) {
+
+            TransformationPointFit fit2 = preSearch1Alt2Small(fits, set1Subset,
+                set2, useGreedyMatching);
+            
+            if (fit2 == null) {
+                continue;
+            }
+
+            // apply fit to all points to evaluate
+            PairFloatArray transformedSet1 = transformer.applyTransformation2(
+                fit2.getParameters(), set1);
+
+            TransformationPointFit fit;
+            if (useGreedyMatching) {
+
+                fit = evaluateFitForUnMatchedTransformedGreedy(
+                    fit2.getParameters(), transformedSet1, set2,
+                    tolTransX, tolTransY);
+
+            } else {
+
+                fit = evaluateFitForUnMatchedTransformedOptimal(
+                    fit2.getParameters(), transformedSet1, set2,
+                    tolTransX, tolTransY);
+            }
+
+            if (fitIsBetter(bestFit, fit)) {
+                bestFit = fit;
+            }
+        }
+
+        return bestFit;
+    }
+
+    /**
+     * method to narrow down all parameter space using the given starterPoints
+     * to within +- 20 degrees of rotation and +- 100 in translation.
+     * The starterPoints are expected to have been the result of preSearch0.
+     * <pre>
+     * Runtime complexity:
+     * </pre>
+     * 
+     * @param fits
+     * @param set1
+     * @param set2
+     * @param useGreedyMatching
+     * @return
+     */
+    protected TransformationPointFit preSearch1Alt1(TransformationPointFit[] fits,
+        PairIntArray set1, PairIntArray set2, boolean useGreedyMatching) {
+
+        if (fits == null) {
+            throw new IllegalArgumentException("fits cannot be null");
+        }
+        if ((set1 == null) || (set2 == null)) {
+            return null;
+        }
+        if ((set1.getN() < 3) || (set2.getN() < 3)) {
+            return null;
+        }
+        
+        int nMaxMatchable = Math.min(set1.getN(), set2.getN());
+        
+        TransformationPointFit fit = null;
+        
+        // if number of points is very high, need to use alternate method
+        if (nMaxMatchable > largeSearch0Limit) {
+            fit = preSearch1Alt1Large(fits, set1, set2, useGreedyMatching);
+        } else {
+            fit = preSearch1Alt1Small(fits, set1, set2, useGreedyMatching);
+        }
+
+        return fit;
+    }
+    
+    /**
+     * method to narrow down all parameter space using the given starterPoints
+     * to within +- 20 degrees of rotation and +- 100 in translation.
+     * The starterPoints are expected to have been the result of preSearch0.
+     * <pre>
+     * Runtime complexity:
+     * </pre>
+     * 
+     * Note that by comparison, preSearch00 has the same goal, but reduces
+     * the rotation to +- 2 degrees and +- 50 in translation but currently
+     * takes longer than this method.
      *
      * @param fits
      * @param set1
@@ -2805,9 +3039,12 @@ if (compTol == 1) {
      * @param useGreedyMatching
      * @return
      */
-    protected TransformationPointFit[] preSearch1(TransformationPointFit[] fits,
+    protected TransformationPointFit preSearch1Alt1Small(TransformationPointFit[] fits,
         PairIntArray set1, PairIntArray set2, boolean useGreedyMatching) {
 
+        if (fits == null) {
+            throw new IllegalArgumentException("fits cannot be null");
+        }
         if ((set1 == null) || (set2 == null)) {
             return null;
         }
@@ -2821,7 +3058,129 @@ if (compTol == 1) {
             refineTransformationWithDownhillSimplexWrapper(fits, set1, set2,
             searchScaleToo, useGreedyMatching);
 
-        return fits2;
+        return (fits2 != null) ? fits2[0] : null;
+    }
+    
+    /**
+     * method to narrow down all parameter space using the given starterPoints
+     * to within +- 20 degrees of rotation and +- 100 in translation.
+     * The starterPoints are expected to have been the result of preSearch0.
+     * <pre>
+     * Runtime complexity:
+     * </pre>
+     * 
+     * Note that by comparison, preSearch00 has the same goal, but reduces
+     * the rotation to +- 2 degrees and +- 50 in translation but currently
+     * takes longer than this method.
+     *
+     * @param fits
+     * @param set1
+     * @param set2
+     * @param useGreedyMatching
+     * @return
+     */
+    protected TransformationPointFit preSearch1Alt1Large(TransformationPointFit[] fits,
+        PairIntArray set1, PairIntArray set2, boolean useGreedyMatching) {
+
+        if (fits == null) {
+            throw new IllegalArgumentException("fits cannot be null");
+        }
+        if ((set1 == null) || (set2 == null)) {
+            return null;
+        }
+        if ((set1.getN() < 3) || (set2.getN() < 3)) {
+            return null;
+        }
+        
+        Transformer transformer = new Transformer();
+
+        PointPartitioner partitioner = new PointPartitioner();
+
+        List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 30);
+        
+        TransformationPointFit bestFit = null;
+        
+        boolean searchScaleToo = false;
+        
+        //TODO: these are adopted from preSearch0
+        float tolTransX = 0.5f*100;
+        float tolTransY = tolTransX;
+        
+        for (PairIntArray set1Subset : set1Subsets) {
+
+            TransformationPointFit[] fits2 = 
+                refineTransformationWithDownhillSimplexWrapper(fits, 
+                set1Subset, set2, searchScaleToo, useGreedyMatching);
+            
+            if (fits2 == null) {
+                continue;
+            }
+
+            // apply fit to all points to evaluate
+            PairFloatArray transformedSet1 = transformer.applyTransformation2(
+                fits2[0].getParameters(), set1);
+
+            TransformationPointFit fit;
+            if (useGreedyMatching) {
+
+                fit = evaluateFitForUnMatchedTransformedGreedy(
+                    fits2[0].getParameters(), transformedSet1, set2,
+                    tolTransX, tolTransY);
+
+            } else {
+
+                fit = evaluateFitForUnMatchedTransformedOptimal(
+                    fits2[0].getParameters(), transformedSet1, set2,
+                    tolTransX, tolTransY);
+            }
+
+            if (fitIsBetter(bestFit, fit)) {
+                bestFit = fit;
+            }
+        }
+
+        return bestFit;
+    }
+    
+    /**
+     * method to narrow down all parameter space using the given starterPoints
+     * to within +- 3 degrees and +- 50 in translation.
+     * The starterPoints are expected to have been the result of preSearch0.
+     * <pre>
+     * Runtime complexity:
+     * </pre>
+     * 
+     * @param fits
+     * @param set1
+     * @param set2
+     * @param useGreedyMatching
+     * @return
+     */
+    protected TransformationPointFit preSearch1Alt2(TransformationPointFit[] fits,
+        PairIntArray set1, PairIntArray set2, boolean useGreedyMatching) {
+
+        if (fits == null) {
+            throw new IllegalArgumentException("fits cannot be null");
+        }
+        if ((set1 == null) || (set2 == null)) {
+            return null;
+        }
+        if ((set1.getN() < 3) || (set2.getN() < 3)) {
+            return null;
+        }
+        
+        int nMaxMatchable = Math.min(set1.getN(), set2.getN());
+        
+        TransformationPointFit fit = null;
+        
+        // if number of points is very high, need to use alternate method
+        if (nMaxMatchable > largeSearch0Limit) {
+            fit = preSearch1Alt2Large(fits, set1, set2, useGreedyMatching);
+        } else {
+            fit = preSearch1Alt2Small(fits, set1, set2, useGreedyMatching);
+        }
+
+        return fit;
     }
     
     protected TransformationPointFit[] 
@@ -2829,6 +3188,9 @@ if (compTol == 1) {
         PairIntArray set1, PairIntArray set2, boolean searchScaleToo,
         boolean useGreedyMatching) {
 
+        if (fits == null) {
+            throw new IllegalArgumentException("fits cannot be null");
+        }
         if ((set1 == null) || (set2 == null)) {
             return null;
         }
@@ -2894,7 +3256,7 @@ if (compTol == 1) {
 
     /**
      * method to narrow down all parameter space to a fit that is within
-     * +- 90 degrees in rotation and +- 200 pixels in translation in X and Y
+     * +- 10 degrees in rotation and +- 100 pixels in translation in X and Y
      * of the true Euclidean transformation.
      * Note, these numbers are being learned in testing right now so may
      * change.
@@ -2915,29 +3277,19 @@ if (compTol == 1) {
             return null;
         }
 
-        int nMaxMatchable = Math.min(set1.getN(), set2.getN());
-
-        TransformationPointFit[] fits = null;
-
-        // if number of points is very high, need to use alternate method
-        if (nMaxMatchable > largeSearch0Limit) {
-            fits = preSearch0Alt(set1, set2, scale, useGreedyMatching);
-        } else {
-            fits = preSearch0(set1, set2, scale, useGreedyMatching);
-        }
-
+        TransformationPointFit[] fits = preSearch0(set1, set2, scale, useGreedyMatching);
+        
         if (fits == null) {
             return null;
         }
 
-        TransformationPointFit[] fits2 = preSearch1(
-            fits, set1, set2, useGreedyMatching);
+        TransformationPointFit fit2 = preSearch1Alt1(fits, set1, set2, useGreedyMatching);
 
-        if (fits2 == null) {
+        if (fit2 == null) {
             return null;
         }
 
-        return fits2[0];
+        return fit2;
     }
         
     protected TransformationPointFit[] boundedGridSearch(
@@ -3140,20 +3492,20 @@ if (compTol == 1) {
             return fits[0];
         }
         
-        TransformationPointFit[] fits2 = preSearch1(fits, set1, set2,
+        TransformationPointFit fit2 = preSearch1Alt1(fits, set1, set2,
             useGreedyMatching);
 
-        if (fits2 == null) {
+        if (fit2 == null) {
             return null;
         }
 
-        if (hasConverged(fits2[0], nMaxMatchable)) {
-            return fits2[0];
+        if (hasConverged(fit2, nMaxMatchable)) {
+            return fit2;
         }
 
         // TODO: may need a small fine grid search here
 
-        return fits2[0];
+        return fit2;
         
     }
     
@@ -3255,9 +3607,16 @@ if (compTol == 1) {
      * @param useGreedyMatch
      * @return
      */
-    protected TransformationPointFit[] preSearch0Alt(PairIntArray set1,
+    protected TransformationPointFit[] preSearch0Large(PairIntArray set1,
         PairIntArray set2, float scale, boolean useGreedyMatch) {
 
+        if ((set1 == null) || (set2 == null)) {
+            return null;
+        }
+        if ((set1.getN() < 3) || (set2.getN() < 3)) {
+            return null;
+        }
+        
         Transformer transformer = new Transformer();
 
         PointPartitioner partitioner = new PointPartitioner();
