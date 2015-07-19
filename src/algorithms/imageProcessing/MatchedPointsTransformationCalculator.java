@@ -119,7 +119,7 @@ public class MatchedPointsTransformationCalculator {
             
             double diffX2 = (x1im2 - x0im2);
             double diffY2 = (y1im2 - y0im2);
-                        
+                   
             double t = angleUtil.subtract(diffX1, diffY1, diffX2, diffY2);
             
             thetas[i] = t;
@@ -288,7 +288,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         /*
         solve for rotation.
         
-        Take the same 2 pairs int both imagesand get the difference in their 
+        Take the same 2 pairs int both images and get the difference in their 
         angles:
             tan(theta) = y / x
 
@@ -308,20 +308,19 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         
         AngleUtil angleUtil = new AngleUtil();
         
-        double diffX1 = (set2X1 - set1X1);
-        double diffY1 = (set2Y1 - set1Y1);
-            
-        double diffX2 = (set2X2 - set1X2);
-        double diffY2 = (set2Y2 - set1Y2);
-                        
-        double theta = angleUtil.subtract(diffX1, diffY1, diffX2, diffY2);
-         
-        double lenim1 = Math.sqrt(Math.pow(diffX1, 2) 
-            + Math.pow(diffY1, 2));
-        double lenim2 = Math.sqrt(Math.pow(diffX2, 2) 
-                + Math.pow(diffY2, 2));
+        double dx1 = set1X1 - set1X2;
+        double dy1 = set1Y1 - set1Y2;
         
-        double scale = lenim2/lenim1;
+        double dx2 = set2X1 - set2X2;
+        double dy2 = set2Y1 - set2Y2;
+        
+        double theta = angleUtil.subtract(dx1, dy1, dx2, dy2);
+        
+        double sep1 = Math.sqrt((dx1*dx1) + (dy1*dy1));
+        
+        double sep2 = Math.sqrt((dx2*dx2) + (dy2*dy2));
+        
+        double scale = sep2/sep1;
         
         /*
         estimate translation:

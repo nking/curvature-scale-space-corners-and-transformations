@@ -749,7 +749,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         
         int nRot = (int)((360/rotDeltaPreSearch0) + 1);
         
-        long nPerFitGreedy = n1 * n1;
+        long nPerFitGreedy = n1 * n2;
         
         int nX = (int) Math.ceil(2*xRange / transDeltaPreSearch0);
         
@@ -773,7 +773,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         
         int nRot = (int)((360/rotDeltaPreSearch0) + 1);
         
-        long nPerFitGreedy = n1 * n1;
+        long nPerFitGreedy = n1 * n2;
         
         int nSplit = 1;
         
@@ -805,7 +805,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         }
         int nY = nX;
         
-        long nPerFitGreedy = n1 * n1;
+        long nPerFitGreedy = n1 * n2;
         
         int nSplit = 1;
         
@@ -833,7 +833,7 @@ public final class PointMatcher extends AbstractPointMatcher {
     public TransformationPointFit calculateEuclideanTransformation(
         PairIntArray set1, PairIntArray set2) {
 
-        long nPairPerm = numberOfPairPermutations(set1.getN(), set2.getN());
+        long nPairPerm = estimateNStepsPairCalculation(set1.getN(), set2.getN());
         
         long nPreSearch = estimateNStepsPreSearch(set1, set2);
         
@@ -3865,12 +3865,115 @@ if (compTol == 1) {
                     ((-(x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
 
                where (xc, yc) is the center of the first image
+               * 
+    For a subset chooser, uses Gosper's hack from
+    *  http://read.seas.harvard.edu/cs207/2012/
     */
     protected TransformationPointFit calculateEuclideanTransformationForSmallSets(
         PairIntArray set1, PairIntArray set2) {
         
+        boolean useLargestToleranceForOutput = true;
+        boolean useGreedyMatching = true;
+            
+        TransformationPointFit fit = calculateEuclideanTransformationForSmallSets(
+            set1, set2, useLargestToleranceForOutput, useGreedyMatching);
         
-        throw new UnsupportedOperationException("not yet implemented");
+        return fit;
+    }
+    
+    public TransformationPointFit calculateEuclideanTransformationForSmallSets(
+        PairIntArray set1, PairIntArray set2, 
+        boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
+        
+        int n1 = set1.getN();
+        int n2 = set2.getN();
+        
+        long highbit1 = 1L << n1;
+        long highbit2 = 1L << n2;
+        
+        int k = 2;
+       
+        long x1 = (1L << k) - 1;
+        long x2 = x1;
+        
+        int[] selected1 = new int[k];
+        int[] selected2 = new int[k];
+        
+        TransformationPointFit bestFit = null;
+
+        while ((x1 & (1L << n1)) == 0) {
+            
+            /*String str = Long.toBinaryString(x);
+            while (str.length() < n) {
+                str = "0" + str;
+            }
+            System.out.format("%d\t%10s\n", x, str);
+            */
+            
+            int nValues = select(selected1, x1, n1);
+            
+            assert(nValues == k);
+            
+            while ((x2 & (1L << n2)) == 0) {
+                
+                nValues = select(selected2, x2, n2);
+                
+                assert(nValues == k);
+                
+                TransformationPointFit fit = calculateFit(set1, set2, 
+                    selected1[0], selected1[1], selected2[0], selected2[1],
+                    useLargestToleranceForOutput, useGreedyMatching);
+                
+                if (fitIsBetter(bestFit, fit)) {
+                    bestFit = fit;
+                }
+                
+                x2 = nextSubset64(x2, highbit2);
+            }
+            
+            x1 = nextSubset64(x1, highbit1);
+        }
+        
+        return bestFit;
+    }
+    
+    /**
+     * highbit is 1 << entire_set_size (not subset size, k).
+     * Uses Gosper's hack from
+     *  http://read.seas.harvard.edu/cs207/2012/
+     * 
+     * @param x
+     * @param highbit
+     * @return 
+     */
+    private long nextSubset64(long x, long highbit) {
+        long y = x & -x;  // = the least significant one bit of x
+        long c = x + y;
+        x = (((x ^ c) >> 2) / y) | c;
+        if ((x & highbit) > 0) {
+            x = ((x & (highbit - 1)) << 2) | 3;
+        }
+        return x;
+    }
+    
+    protected int select(int[] selected, long x, int nIndexes) {
+        
+        // interpret the bit string:  1 is 'selected' and 0 is not
+        
+        int nBits = 0;
+        int nOneBits = 0;
+        long xp = x;
+        while (xp > 0) {
+            if ((xp & 1) == 1) {
+                int idx2 = nIndexes - 1 - nBits;
+                selected[nOneBits] = idx2;
+                nOneBits++;
+            }
+            xp = xp >> 1;
+            nBits++;
+        }
+        
+        return nOneBits;
     }
 
     protected long numberOfPairPermutations(int n1, int n2) {
@@ -3882,5 +3985,45 @@ if (compTol == 1) {
         n2p = n2p/2;
         
         return n1p * n2p;
+    }
+
+    private long estimateNStepsPairCalculation(int n1, int n2) {
+        
+        long np = numberOfPairPermutations(n1, n2);
+        
+        long nPerFitGreedy = n1 * n2;
+        
+        return np * nPerFitGreedy;
+    }
+
+    protected TransformationPointFit calculateFit(PairIntArray set1, 
+        PairIntArray set2, int set1Idx1, int set1Idx2, int set2Idx1, 
+        int set2Idx2, boolean useLargestToleranceForOutput,
+        boolean useGreedyMatching) {
+        
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+        
+        TransformationParameters params = tc.calulateEuclideanGivenScale(
+            set1.getX(set1Idx1), set1.getY(set1Idx1),
+            set1.getX(set1Idx2), set1.getY(set1Idx2),
+            set2.getX(set2Idx1), set2.getY(set2Idx1),
+            set2.getX(set2Idx2), set2.getY(set2Idx2),
+            0, 0);
+        
+        float toleranceTransX;
+        float toleranceTransY;
+        if (useLargestToleranceForOutput) {
+            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);
+            toleranceTransY = toleranceTransX;
+        } else {
+            toleranceTransX = 4;
+            toleranceTransY = 4;
+        }
+        
+        TransformationPointFit fit = evaluateForUnmatched(params, set1, set2, 
+            toleranceTransX, toleranceTransY, useGreedyMatching);
+        
+        return fit;
     }
 }

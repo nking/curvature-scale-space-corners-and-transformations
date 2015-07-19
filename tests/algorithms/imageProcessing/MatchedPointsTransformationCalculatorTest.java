@@ -34,7 +34,7 @@ public class MatchedPointsTransformationCalculatorTest extends TestCase {
             centroidX1, centroidY1);
         
         float diffRotDeg = getAngleDifference(
-           result.getRotationInDegrees(), 9);
+           result.getRotationInDegrees(), 0);
         float diffScale = Math.abs(result.getScale() - 1);
         float diffTransX = Math.abs(result.getTranslationX() - 10);
         float diffTransY = Math.abs(result.getTranslationY() - 0);
@@ -43,6 +43,35 @@ public class MatchedPointsTransformationCalculatorTest extends TestCase {
         assertTrue(diffScale == 0);
         assertTrue(diffTransX == 0);
         assertTrue(diffTransY == 0);
+    }
+
+    public void testCalulateEuclideanGivenScale2() {
+        
+        int set1X1 = 0; int set1Y1 = 0;
+        int set1X2 = 1; int set1Y2 = 3;
+        
+        int set2X1 = 0; int set2Y1 = 2;
+        int set2X2 = 3; int set2Y2 = 1;
+        
+        double centroidX1 = 1.0;
+        double centroidY1 = 1.0;
+        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+        
+        TransformationParameters result = tc.calulateEuclideanGivenScale(
+            set1X1, set1Y1, set1X2, set1Y2,
+            set2X1, set2Y1, set2X2, set2Y2,
+            centroidX1, centroidY1);
+        
+        float diffRotDeg = getAngleDifference(
+           result.getRotationInDegrees(), 90);
+        float diffScale = Math.abs(result.getScale() - 1);
+        float diffTransX = Math.abs(result.getTranslationX() - 0);
+        float diffTransY = Math.abs(result.getTranslationY() - 0);
+
+        assertTrue(diffRotDeg < 0.001);
+        assertTrue(diffScale < 0.001);
+        assertTrue(diffTransX < 0.001);
+        assertTrue(diffTransY < 0.001);
     }
 
     private float getAngleDifference(float rotDegrees0, float rotDegrees1) {
