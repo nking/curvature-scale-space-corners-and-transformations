@@ -1,5 +1,7 @@
 package algorithms;
 
+import algorithms.misc.MiscMath;
+
 /**
 Uses Gosper's hack from
   http://read.seas.harvard.edu/cs207/2012/
@@ -17,6 +19,10 @@ public class SubsetChooser {
     private final long check;
     
     private long x;
+    
+    private int count = 0;
+    
+    private final long np;
         
     /**
      * constructor with the number of indexes to choose from, n, and the size of
@@ -34,7 +40,12 @@ public class SubsetChooser {
         
         x = (1L << k) - 1;
         
+        count = 1;
+        
         check = 1L << n;
+        
+        np = MiscMath.computeNDivNMinusK(n, k)/MiscMath.factorial(k);
+        
     }
     
     /**
@@ -53,7 +64,8 @@ public class SubsetChooser {
         
         long nextX = nextSubset64(x);
         
-        if ((nextX & check) != 0)  {
+        if (count > (np + 1)) {
+        //if ((nextX & check) != 0)  {
             return -1;
         }
         
@@ -74,24 +86,30 @@ public class SubsetChooser {
     private long nextSubset64(long x0) {
         long y = x0 & -x0;  // = the least significant one bit of x
         long c = x0 + y;
+        
         x0 = (((x0 ^ c) >> 2) / y) | c;
         if ((x0 & highBit) > 0) {
             x0 = ((x0 & (highBit - 1)) << 2) | 3;
         }
+
+        count++;
+        
         return x0;
     }
     
+    
     protected int select(int[] selected) {
         
-        // interpret the bit string:  1 is 'selected' and 0 is not
-        
-        /*String str = Long.toBinaryString(x);
+        // interpret the bit string x:  1 is 'selected' and 0 is not
+ 
+        /*
+        String str = Long.toBinaryString(x);
         while (str.length() < n) {
             str = "0" + str;
         }
         System.out.format("%d\t%10s\n", x, str);
         */
-            
+        
         int nBits = 0;
         int nOneBits = 0;
         long xp = x;
