@@ -226,12 +226,10 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         boolean reverseDatasetOrder = matchedScale < 1.0;
         if (reverseDatasetOrder) {
             params = tc.calulateEuclideanGivenScale(1. / matchedScale, 
-                matchedXY2, matchedXY2Weights, matchedXY1, matchedXY1Weights, 
-                centroidX2, centroidY2);
+                matchedXY2, matchedXY1, centroidX2, centroidY2);
         } else {
             params = tc.calulateEuclideanGivenScale(matchedScale, matchedXY1, 
-                matchedXY1Weights, matchedXY2, matchedXY2Weights, centroidX1, 
-                centroidY1);
+                matchedXY2, centroidX1, centroidY1);
         }
         if (params == null) {
             return null;

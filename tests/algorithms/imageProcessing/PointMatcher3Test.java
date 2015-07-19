@@ -38,8 +38,7 @@ public class PointMatcher3Test extends TestCase {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1437080777162L;
-        //seed = 1437191912914L;
+        seed = 1437251501305L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -65,7 +64,7 @@ public class PointMatcher3Test extends TestCase {
 
                 PointMatcher pointMatcher = new PointMatcher();
                 
-                pointMatcher.setLargeSearch0Limit(largeSearch0Limit);
+                pointMatcher.setLargeSearchLimit(largeSearch0Limit);
 
                 PairIntArray unmatchedLeftXY = new PairIntArray();
 

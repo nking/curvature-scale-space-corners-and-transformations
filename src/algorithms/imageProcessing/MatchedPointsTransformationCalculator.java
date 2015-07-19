@@ -41,17 +41,13 @@ public class MatchedPointsTransformationCalculator {
      * </pre>
      * @param scale
      * @param matchedXY1
-     * @param weights1
      * @param matchedXY2
-     * @param weights2
      * @param centroidX1
      * @param centroidY1
      * @return 
      */
     public TransformationParameters calulateEuclideanGivenScale(
-        double scale, 
-        PairIntArray matchedXY1, float[] weights1,
-        PairIntArray matchedXY2, float[] weights2,
+        double scale, PairIntArray matchedXY1, PairIntArray matchedXY2, 
         double centroidX1, double centroidY1) {
         
         if (matchedXY1 == null) {
@@ -63,16 +59,6 @@ public class MatchedPointsTransformationCalculator {
         if (matchedXY1.getN() != matchedXY2.getN()) {
             throw new IllegalArgumentException(
                 "matchedXY1 and matchedXY2 must have same number of points");
-        }
-        if (weights1 == null) {
-            throw new IllegalArgumentException("weights1 cannot be null");
-        }
-        if (weights2 == null) {
-            throw new IllegalArgumentException("weights2 cannot be null");
-        }
-        if (weights1.length != weights2.length) {
-            throw new IllegalArgumentException(
-                "weights1 and weights2 must have same number of points");
         }
         if (matchedXY1.getN() < 2) {
             return null;
@@ -184,8 +170,7 @@ log.info("scl=" + scales[i] + " stDevScale=" + stDevScale
             sCount++;
            
 log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
-+ " abs(theta-avg)=" + dtt 
-+ " w1=" + weights1[i] + " w2=" + weights2[i]);
++ " abs(theta-avg)=" + dtt);
             
             rotSum += thetas[i];
             rCount++;
@@ -193,27 +178,19 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         
         if (!rm.isEmpty()) {
             
-            // remove from datasets and re-try
-            int nrm = rm.size();
             PairIntArray xy1 = new PairIntArray();
             PairIntArray xy2 = new PairIntArray();
-            float[] w1 = new float[weights1.length - nrm];
-            float[] w2 = new float[weights2.length - nrm];
             
-            int ii = 0;
             for (int i = 0; i < matchedXY1.getN(); i++) {
                 if (rm.contains(Integer.valueOf(i))) {
                     continue;
                 }
                 xy1.add(matchedXY1.getX(i), matchedXY1.getY(i));
                 xy2.add(matchedXY2.getX(i), matchedXY2.getY(i));
-                w1[ii] = weights1[i];
-                w2[ii] = weights2[i];
-                ii++;
             }
             
-            return calulateEuclideanGivenScale(scale, xy1, w1,
-                xy2, w2, centroidX1, centroidY1);
+            return calulateEuclideanGivenScale(scale, xy1,
+                xy2, centroidX1, centroidY1);
         }
         
         double theRotation = rotSum/rCount;
@@ -251,13 +228,16 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             int yim1 = matchedXY1.getY(i);
             int xim2 = matchedXY2.getX(i);
             int yim2 = matchedXY2.getY(i);
-            double transX = xim2 - centroidX1*theScale 
-                - (((xim1 - centroidX1) * theScale*mc) 
-                + ((yim1 - centroidY1) *theScale*ms));
-            
-            double transY = yim2 - centroidY1*theScale 
-                - ((-(xim1 - centroidX1) *theScale*ms) 
-                + ((yim1 - centroidY1) *theScale*mc));
+          
+            double trX1 = centroidX1*scale + (((xim1 - centroidX1) * scale*mc) 
+                + ((yim1 - centroidY1) *scale*ms));
+      
+            double trY1 = centroidY1*scale + ((-(xim1 - centroidX1) * scale*ms) 
+                + ((yim1 - centroidY1) * scale*mc));
+        
+            double transX = xim2 - trX1;
+
+            double transY = yim2 - trY1;
             
             transXSum += transX;
             transYSum += transY;
@@ -270,6 +250,112 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         params.setScale((float)theScale);
         params.setTranslationX((float)theTranslationX);
         params.setTranslationY((float)theTranslationY);
+        params.setOriginX((float)centroidX1);
+        params.setOriginY((float)centroidY1);
+        
+        if (debug) {
+            log.info("params: " + params.toString());
+        }
+        
+        return params;
+    }
+    
+     /**
+     * coordinate transformations from pair 1 to pair 2 are calculated 
+     * given "scale".
+     * 
+     * positive Y is up 
+       positive X is right
+       positive theta starts from Y=0, X>=0 and proceeds CW
+                270
+                 |     
+                 |
+          180--------- 0   +X
+                 |   
+                 |   
+                 90
+                 -Y
+     * </pre>
+     * @param centroidX1
+     * @param centroidY1
+     * @return 
+     */
+    public TransformationParameters calulateEuclideanGivenScale(
+        int set1X1, int set1Y1, int set1X2, int set1Y2,
+        int set2X1, int set2Y1, int set2X2, int set2Y2,
+        double centroidX1, double centroidY1) {
+                
+        /*
+        solve for rotation.
+        
+        Take the same 2 pairs int both imagesand get the difference in their 
+        angles:
+            tan(theta) = y / x
+
+        For example:
+            theta of pair in image1:
+                theta = math.atan( (y1-y0)/(x1-x0) )
+                      = 0.7853981633974483 radians
+                      = 45 degrees
+
+            theta of pair in image2:
+                theta = math.atan( (yt1-yt0)/(xt1-xt0) )
+                      = 0.3490522203358645
+                      = 20.0
+
+            rotation = theta_image1 - theta_image2 = 25 degrees
+        */
+        
+        AngleUtil angleUtil = new AngleUtil();
+        
+        double diffX1 = (set2X1 - set1X1);
+        double diffY1 = (set2Y1 - set1Y1);
+            
+        double diffX2 = (set2X2 - set1X2);
+        double diffY2 = (set2Y2 - set1Y2);
+                        
+        double theta = angleUtil.subtract(diffX1, diffY1, diffX2, diffY2);
+         
+        double lenim1 = Math.sqrt(Math.pow(diffX1, 2) 
+            + Math.pow(diffY1, 2));
+        double lenim2 = Math.sqrt(Math.pow(diffX2, 2) 
+                + Math.pow(diffY2, 2));
+        
+        double scale = lenim2/lenim1;
+        
+        /*
+        estimate translation:
+        
+        transX = xt0 - xc*scale - (((x0-xc)*scale*math.cos(theta)) 
+            + ((y0-yc)*scale*math.sin(theta)))
+        
+        transY = yt0 - yc*scale - ((-(x0-xc)*scale*math.sin(theta)) 
+            + ((y0-yc)*scale*math.cos(theta)))
+        */
+        double mc = Math.cos(theta);
+        double ms = Math.sin(theta);
+        
+        double tr1X1 = centroidX1*scale + (((set1X1 - centroidX1) * scale*mc) 
+            + ((set1Y1 - centroidY1) *scale*ms));
+      
+        double tr1Y1 = centroidY1*scale + ((-(set1X1 - centroidX1) *scale*ms) 
+            + ((set1Y1 - centroidY1) *scale*mc));
+        
+        double tr1X2 = centroidX1*scale + (((set1X2 - centroidX1) * scale*mc) 
+            + ((set1Y2 - centroidY1) *scale*ms));
+      
+        double tr1Y2 = centroidY1*scale + ((-(set1X2 - centroidX1) *scale*ms) 
+            + ((set1Y2 - centroidY1) *scale*mc));
+        
+        double transX = 0.5 * ((set2X1 - tr1X1) + (set2X2 - tr1X2));
+
+        double transY = 0.5 * ((set2Y1 - tr1Y1) + (set2Y2 - tr1Y2));
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setRotationInRadians((float)theta);
+        params.setScale((float)scale);
+        params.setTranslationX((float)transX);
+        params.setTranslationY((float)transY);
         params.setOriginX((float)centroidX1);
         params.setOriginY((float)centroidY1);
         

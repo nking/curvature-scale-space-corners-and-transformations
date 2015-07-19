@@ -64,7 +64,9 @@ public class AngleUtil {
             // angle is (-)
             theta1 = Math.PI - theta1;
         } else if (q1 == 4) {
-            theta1 = 2.*Math.PI - theta1;
+            if (theta1 != 0) {
+                theta1 = 2.*Math.PI - theta1;
+            }
         }
         if (diffX1 == 0) {
             if (diffY1 < 0) {
@@ -83,7 +85,9 @@ public class AngleUtil {
             // angle is (-)
             theta2 = Math.PI - theta2;
         } else if (q2 == 4) {
-            theta2 = 2.*Math.PI - theta2;
+            if (theta2 != 0) {
+                theta2 = 2.*Math.PI - theta2;
+            }
         }
         if (diffX2 == 0) {
             if (diffY2 < 0) {
@@ -105,7 +109,9 @@ public class AngleUtil {
         /*
         TODO: correction to a CCW system temporarily
         */
-        t = 2.*Math.PI - t;
+        if (t != 0) {
+            t = 2.*Math.PI - t;
+        }
         
         return t;  
     }

@@ -239,6 +239,10 @@ public final class PointMatcher extends AbstractPointMatcher {
 
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
+    protected boolean debug = true;
+    
+    protected boolean usePreSearchAlt1 = true;
+    
     protected static int minTolerance = 5;
 
     //TODO: this has to be a high number for sets with projection.
@@ -247,12 +251,18 @@ public final class PointMatcher extends AbstractPointMatcher {
 
     public static float toleranceGridFactor = 4.f;
 
-    protected int largeSearch0Limit = 20;
+    protected int largeSearchLimit = 20;
 
-    protected boolean debug = true;
+    protected float transDeltaPreSearch0 = 50;
+    protected float rotDeltaPreSearch0 = 2;
+    
+    protected float rotHalfRangeInDegreesPreSearch1Alt2 = 10;
+    protected float rotDeltaInDegreesPreSearch1Alt2 = 2;
+    protected float transXHalfRangePreSearch1Alt2 = 200;
+    protected float transXDeltaPreSearch1Alt2 = 15;
 
-    public void setLargeSearch0Limit(int limit) {
-        largeSearch0Limit = limit;
+    public void setLargeSearchLimit(int limit) {
+        largeSearchLimit = limit;
     }
 
     /**
@@ -687,6 +697,130 @@ public final class PointMatcher extends AbstractPointMatcher {
             }
         }
     }
+    
+    protected long estimateNStepsPreSearch(PairIntArray set1, 
+        PairIntArray set2) {
+        
+        int[] xyRange = estimateTranslationXYRange(set1, set2);
+        
+        long nTotal = estimateNStepsPreSearch0(set1.getN(), set2.getN(), 
+            xyRange[0], xyRange[1]);
+        
+        if (usePreSearchAlt1) {
+            
+            nTotal += estimateNStepsPreSearch1Alt1(set1.getN(), set2.getN());
+            
+        } else {
+            
+            nTotal += estimateNStepsPreSearch1Alt2(set1.getN(), set2.getN());
+        }
+        
+        return nTotal;
+    }
+    
+    protected int[] estimateTranslationXYRange(PairIntArray set1, 
+        PairIntArray set2) {
+    
+        int minX2 = MiscMath.findMin(set2.getX(), set2.getN());
+        int maxX2 = MiscMath.findMax(set2.getX(), set2.getN());
+        int minY2 = MiscMath.findMin(set2.getY(), set2.getN());
+        int maxY2 = MiscMath.findMax(set2.getY(), set2.getN());
+
+        int minX1 = MiscMath.findMin(set1.getX(), set1.getN());
+        int maxX1 = MiscMath.findMax(set1.getX(), set1.getN());
+        int minY1 = MiscMath.findMin(set1.getX(), set1.getN());
+        int maxY1 = MiscMath.findMax(set1.getX(), set1.getN());
+
+        int transXStart = minX1 - maxX2;
+        int transXStop = maxX1 - minX2;
+        int transYStart = minY1 - maxY2;
+        int transYStop = maxY1 - minY2;
+
+        int transXRange = transXStop - transXStart;
+        int transYRange = transYStop - transYStart;
+        
+        return new int[]{transXRange, transYRange};
+    }
+    
+    protected long estimateNStepsPreSearch0(int n1, int n2, int xRange,
+        int yRange) {
+        
+        int nMaxMatchable = Math.min(n1, n2);
+        
+        int nRot = (int)((360/rotDeltaPreSearch0) + 1);
+        
+        long nPerFitGreedy = n1 * n1;
+        
+        int nX = (int) Math.ceil(2*xRange / transDeltaPreSearch0);
+        
+        int nY = (int) Math.ceil(2*yRange / transDeltaPreSearch0);
+
+        int nSplit = 1;
+        
+        if (nMaxMatchable > largeSearchLimit) {
+            
+            nSplit = (int)Math.ceil((float)n1/(float)largeSearchLimit);
+            
+            nPerFitGreedy = largeSearchLimit * largeSearchLimit;
+        }
+        
+        return nSplit * nRot * nX * nY * nPerFitGreedy;
+    }
+    
+    protected long estimateNStepsPreSearch1Alt1(int n1, int n2) {
+        
+        int nMaxMatchable = Math.min(n1, n2);
+        
+        int nRot = (int)((360/rotDeltaPreSearch0) + 1);
+        
+        long nPerFitGreedy = n1 * n1;
+        
+        int nSplit = 1;
+        
+        if (nMaxMatchable > largeSearchLimit) {
+            
+            nSplit = (int)Math.ceil((float)n1/(float)largeSearchLimit);
+            
+            nPerFitGreedy = largeSearchLimit * largeSearchLimit;
+        }
+        
+        return nSplit * nPerFitGreedy * 50;
+    }
+    
+    protected long estimateNStepsPreSearch1Alt2(int n1, int n2) {
+        
+        //preSearch0 gets answer to within +- 10 degrees of rotation and +- 20 ?
+        
+        int nFits = 10;
+        
+        int nMaxMatchable = Math.min(n1, n2);
+        
+        int nRot = (int)((2*rotHalfRangeInDegreesPreSearch1Alt2/
+            rotDeltaInDegreesPreSearch1Alt2) + 1);
+        
+        int nX = (int) Math.ceil(2*transXHalfRangePreSearch1Alt2 
+            / transXDeltaPreSearch1Alt2);
+        if (nX == 0) {
+            nX = 1;
+        }
+        int nY = nX;
+        
+        long nPerFitGreedy = n1 * n1;
+        
+        int nSplit = 1;
+        
+        if (nMaxMatchable > largeSearchLimit) {
+            
+            nSplit = (int)Math.ceil((float)n1/(float)largeSearchLimit);
+            
+            nPerFitGreedy = largeSearchLimit * largeSearchLimit;
+             
+        }
+        
+        long nTot = nSplit * nFits * nRot * nX * nY * nPerFitGreedy;
+            
+        return nTot;
+    }
 
     /**
      * calculate for Euclidean transformation from set1 to set2 for
@@ -699,13 +833,23 @@ public final class PointMatcher extends AbstractPointMatcher {
     public TransformationPointFit calculateEuclideanTransformation(
         PairIntArray set1, PairIntArray set2) {
 
+        long nPairPerm = numberOfPairPermutations(set1.getN(), set2.getN());
+        
+        long nPreSearch = estimateNStepsPreSearch(set1, set2);
+        
+        log.info("nPairPerm=" + nPairPerm + " nPreSearch=" + nPreSearch);
+        /*
+        if (nPairPerm < nPreSearch) {
+            return calculateEuclideanTransformationForSmallSets(set1, set2);
+        }*/
+    
         TransformationPointFit fit = calculateRoughTransformation(
             set1, set2);
 
         if (fit == null) {
             return null;
         }
-
+        
         int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
             : set2.getN();
 
@@ -2659,7 +2803,7 @@ if (compTol == 1) {
         TransformationPointFit[] fits = null;
 
         // if number of points is very high, need to use alternate method
-        if (nMaxMatchable > largeSearch0Limit) {
+        if (nMaxMatchable > largeSearchLimit) {
             fits = preSearch0Large(set1, set2, scale, useGreedyMatching);
         } else {
             fits = preSearch0Small(set1, set2, scale, useGreedyMatching);
@@ -2722,15 +2866,14 @@ if (compTol == 1) {
             and within the best fit alone, is accurate within
 
         */
-        float transDelta = 100;
-        float rotDelta = 2;
-
-        float tolTransX = 0.5f*transDelta + (float)(Math.sin(rotDelta*Math.PI/180.)*transDelta);
+        
+        float tolTransX = 0.5f*transDeltaPreSearch0 + 
+            (float)(Math.sin(rotDeltaPreSearch0*Math.PI/180.)*transDeltaPreSearch0);
         float tolTransY = tolTransX;
 
         Transformer transformer = new Transformer();
 
-        float[] rotation = MiscMath.writeDegreeIntervals(0, 359, rotDelta);
+        float[] rotation = MiscMath.writeDegreeIntervals(0, 359, rotDeltaPreSearch0);
 
         int nKeep = 10;
 
@@ -2774,18 +2917,18 @@ if (compTol == 1) {
             float transXRange = transXStop - transXStart;
             float transYRange = transYStop - transYStart;
 
-            int nX = (int) Math.ceil(transXRange / transDelta);
-            int nY = (int) Math.ceil(transYRange / transDelta);
+            int nX = (int) Math.ceil(transXRange / transDeltaPreSearch0);
+            int nY = (int) Math.ceil(transYRange / transDeltaPreSearch0);
 
             float[] txS = new float[nX];
             txS[0] = transXStart;
             for (int i = 1; i < nX; ++i) {
-                txS[i] = txS[i - 1] + transDelta;
+                txS[i] = txS[i - 1] + transDeltaPreSearch0;
             }
             float[] tyS = new float[nY];
             tyS[0] = transYStart;
             for (int i = 1; i < nY; ++i) {
-                tyS[i] = tyS[i - 1] + transDelta;
+                tyS[i] = tyS[i - 1] + transDeltaPreSearch0;
             }
 
             for (float tx : txS) {
@@ -2864,12 +3007,8 @@ if (compTol == 1) {
 
         float scaleHalfRange = 0;
         float scaleDelta = 1;
-        float rotHalfRangeInDegrees = 10;
-        float rotDeltaInDegrees = 2;
-        float transXHalfRange = 200;
-        float transXDelta = 15;
-        float transYHalfRange = transXHalfRange; 
-        float transYDelta = transXDelta;
+        float transYHalfRange = transXHalfRangePreSearch1Alt2; 
+        float transYDelta = transXDeltaPreSearch1Alt2;
 
         Set<Integer> searchedRot = new HashSet<Integer>();
 
@@ -2888,8 +3027,8 @@ if (compTol == 1) {
              TransformationPointFit[] fits2 = boundedGridSearch(set1, set2, 
                  fit.getParameters(),
                  scaleHalfRange, scaleDelta,
-                 rotHalfRangeInDegrees, rotDeltaInDegrees,
-                 transXHalfRange, transXDelta,
+                 rotHalfRangeInDegreesPreSearch1Alt2, rotDeltaInDegreesPreSearch1Alt2,
+                 transXHalfRangePreSearch1Alt2, transXDeltaPreSearch1Alt2,
                  transYHalfRange, transYDelta,
                  useGreedyMatching);
 
@@ -2938,7 +3077,7 @@ if (compTol == 1) {
         PointPartitioner partitioner = new PointPartitioner();
 
         List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 
-            largeSearch0Limit);
+            largeSearchLimit);
 
         TransformationPointFit bestFit = null;
 
@@ -3015,7 +3154,7 @@ if (compTol == 1) {
         TransformationPointFit fit = null;
         
         // if number of points is very high, need to use alternate method
-        if (nMaxMatchable > largeSearch0Limit) {
+        if (nMaxMatchable > largeSearchLimit) {
             fit = preSearch1Alt1Large(fits, set1, set2, useGreedyMatching);
         } else {
             fit = preSearch1Alt1Small(fits, set1, set2, useGreedyMatching);
@@ -3100,7 +3239,7 @@ if (compTol == 1) {
         PointPartitioner partitioner = new PointPartitioner();
 
         List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 
-            largeSearch0Limit);
+            largeSearchLimit);
         
         TransformationPointFit bestFit = null;
         
@@ -3179,7 +3318,7 @@ if (compTol == 1) {
         TransformationPointFit fit = null;
         
         // if number of points is very high, need to use alternate method
-        if (nMaxMatchable > largeSearch0Limit) {
+        if (nMaxMatchable > largeSearchLimit) {
             fit = preSearch1Alt2Large(fits, set1, set2, useGreedyMatching);
         } else {
             fit = preSearch1Alt2Small(fits, set1, set2, useGreedyMatching);
@@ -3282,13 +3421,20 @@ if (compTol == 1) {
             return null;
         }
 
-        TransformationPointFit[] fits = preSearch0(set1, set2, scale, useGreedyMatching);
+        TransformationPointFit[] fits = preSearch0(set1, set2, scale, 
+            useGreedyMatching);
         
         if (fits == null) {
             return null;
         }
 
-        TransformationPointFit fit2 = preSearch1Alt1(fits, set1, set2, useGreedyMatching);
+        TransformationPointFit fit2 =  null;
+        
+        if (usePreSearchAlt1) {
+            fit2 = preSearch1Alt1(fits, set1, set2, useGreedyMatching);
+        } else {
+            fit2 = preSearch1Alt2(fits, set1, set2, useGreedyMatching);
+        }
 
         if (fit2 == null) {
             return null;
@@ -3497,7 +3643,8 @@ if (compTol == 1) {
             return fits[0];
         }
         
-        TransformationPointFit fit2 = preSearch1Alt1(fits, set1, set2,
+        //TransformationPointFit fit2 = preSearch1Alt1(fits, set1, set2,
+        TransformationPointFit fit2 = preSearch1Alt2(fits, set1, set2,
             useGreedyMatching);
 
         if (fit2 == null) {
@@ -3627,7 +3774,7 @@ if (compTol == 1) {
         PointPartitioner partitioner = new PointPartitioner();
 
         List<PairIntArray> set1Subsets = partitioner.randomSubsets(set1, 
-            largeSearch0Limit);
+            largeSearchLimit);
 
         TransformationPointFit bestFit = null;
 
@@ -3674,4 +3821,66 @@ if (compTol == 1) {
         return bestFits;
     }
 
+    /**
+     Calculate the best transformation solution by matching pairs of points
+     * in set1 with pairs of points in set2.
+     * 
+     * Note that set1 and set2 should have fewer than __ members each 
+     * in order to use this method and get results reasonably fast.
+     * 
+     * The number of ways to make pairs in set 1 times the number of ways to make
+       pairs in set 2 =
+             n_1!            n_2!
+         ------------  X  ------------
+         2*(n_1 - 2)!     2*(n_2 - 2)!
+         
+    After points are matched:
+       Estimating scale:
+           Take 2 pairs of points in both datasets and compute the distance
+           between them and then take the ratio:
+
+           scale = (distance between pair in set 1)
+                   / (distance between pair in set 2)
+
+           Note: scale is roughly determined from contour matching too in the
+              inflection matcher.
+
+       Estimating rotation:
+           Take the same 2 pairs and determine the difference in their angles:
+               tan(theta) = delta y / delta x
+
+           rotation = atan((delta y between pair in set 1)
+                          /(delta x between pair in set 1))
+                      -
+                      atan((delta y between pair in set 2)
+                          /(delta x between pair in set 2))
+
+       Estimate translation:
+           Performed on one point in set 1 with its candidate match in set 2:
+           From the full transformation equation, we can rewrite:
+               transX = xt0 - xc*scale -
+                   (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+               transY = yt0 - yc*scale -
+                    ((-(x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+               where (xc, yc) is the center of the first image
+    */
+    protected TransformationPointFit calculateEuclideanTransformationForSmallSets(
+        PairIntArray set1, PairIntArray set2) {
+        
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    protected long numberOfPairPermutations(int n1, int n2) {
+        
+        long n1p = MiscMath.computeNDivNMinusK(n1, n1 - 2);
+        n1p = n1p/2;
+        
+        long n2p = MiscMath.computeNDivNMinusK(n2, n2 - 2);
+        n2p = n2p/2;
+        
+        return n1p * n2p;
+    }
 }
