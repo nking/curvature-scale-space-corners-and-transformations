@@ -3874,7 +3874,7 @@ if (compTol == 1) {
         PairIntArray set1, PairIntArray set2) {
 
         boolean useLargestToleranceForOutput = true;
-        boolean useGreedyMatching = false;
+        boolean useGreedyMatching = true;
 
         TransformationPointFit fit = calculateEuclideanTransformationForSmallSets(
             set1, set2, useLargestToleranceForOutput, useGreedyMatching);
