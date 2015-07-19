@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.SubsetChooser;
 import algorithms.compGeometry.PointPartitioner;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscDebug;
@@ -3888,37 +3889,20 @@ if (compTol == 1) {
         int n1 = set1.getN();
         int n2 = set2.getN();
         
-        long highbit1 = 1L << n1;
-        long highbit2 = 1L << n2;
-        
         int k = 2;
-       
-        long x1 = (1L << k) - 1;
-        long x2 = x1;
         
+        SubsetChooser s1 = new SubsetChooser(n1, k);
+        
+        SubsetChooser s2 = new SubsetChooser(n2, k);
+       
         int[] selected1 = new int[k];
         int[] selected2 = new int[k];
         
         TransformationPointFit bestFit = null;
 
-        while ((x1 & (1L << n1)) == 0) {
+        while (s1.getNextSubset(selected1) != -1) {
             
-            /*String str = Long.toBinaryString(x);
-            while (str.length() < n) {
-                str = "0" + str;
-            }
-            System.out.format("%d\t%10s\n", x, str);
-            */
-            
-            int nValues = select(selected1, x1, n1);
-            
-            assert(nValues == k);
-            
-            while ((x2 & (1L << n2)) == 0) {
-                
-                nValues = select(selected2, x2, n2);
-                
-                assert(nValues == k);
+            while (s2.getNextSubset(selected2) != -1) {
                 
                 TransformationPointFit fit = calculateFit(set1, set2, 
                     selected1[0], selected1[1], selected2[0], selected2[1],
@@ -3926,57 +3910,16 @@ if (compTol == 1) {
                 
                 if (fitIsBetter(bestFit, fit)) {
                     bestFit = fit;
-                }
-                
-                x2 = nextSubset64(x2, highbit2);
-            }
-            
-            x1 = nextSubset64(x1, highbit1);
+                }                
+            }            
         }
         
         return bestFit;
     }
     
-    /**
-     * highbit is 1 << entire_set_size (not subset size, k).
-     * Uses Gosper's hack from
-     *  http://read.seas.harvard.edu/cs207/2012/
-     * 
-     * @param x
-     * @param highbit
-     * @return 
-     */
-    private long nextSubset64(long x, long highbit) {
-        long y = x & -x;  // = the least significant one bit of x
-        long c = x + y;
-        x = (((x ^ c) >> 2) / y) | c;
-        if ((x & highbit) > 0) {
-            x = ((x & (highbit - 1)) << 2) | 3;
-        }
-        return x;
-    }
-    
-    protected int select(int[] selected, long x, int nIndexes) {
-        
-        // interpret the bit string:  1 is 'selected' and 0 is not
-        
-        int nBits = 0;
-        int nOneBits = 0;
-        long xp = x;
-        while (xp > 0) {
-            if ((xp & 1) == 1) {
-                int idx2 = nIndexes - 1 - nBits;
-                selected[nOneBits] = idx2;
-                nOneBits++;
-            }
-            xp = xp >> 1;
-            nBits++;
-        }
-        
-        return nOneBits;
-    }
-
     protected long numberOfPairPermutations(int n1, int n2) {
+        
+        //TODO: do a log based check for overflow and return Infinity if true
         
         long n1p = MiscMath.computeNDivNMinusK(n1, n1 - 2);
         n1p = n1p/2;
