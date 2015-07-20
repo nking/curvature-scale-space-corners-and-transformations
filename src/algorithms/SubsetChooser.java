@@ -106,7 +106,7 @@ public class SubsetChooser {
         
     }
     
-    public int getNextSubsetBigInteger(int[] outputIndexes) {
+    protected int getNextSubsetBigInteger(int[] outputIndexes) {
 
         if (outputIndexes == null || outputIndexes.length != k) {
             throw new IllegalArgumentException(
