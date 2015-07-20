@@ -34,7 +34,8 @@ public class SubsetChooser {
      * constructor with the number of indexes to choose from, n, and the size of
      * the subset, k.
      * @param n the number of indexes that the selector will choose from
-     * @param k the subset size of selected indexes
+     * @param k the subset size of selected indexes.  the maximum value currently
+     * accepted is 12.
      */
     public SubsetChooser(int n, int k) {
         
@@ -42,7 +43,16 @@ public class SubsetChooser {
             throw new IllegalArgumentException(
                 "currently, class can only handle k < 13, but changes to accomodate larger could be made");
         }
-
+        if (n < 1) {
+            throw new IllegalArgumentException("n must be larger than 0");
+        }
+        if (k < 1) {
+            throw new IllegalArgumentException("k must be larger than 0");
+        }
+        if (k > n) {
+            throw new IllegalArgumentException("k must be less than or equal to n");
+        }
+        
         this.n = n;
 
         this.k = k;
