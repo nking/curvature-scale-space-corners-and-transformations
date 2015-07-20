@@ -2,10 +2,8 @@ package algorithms.util;
 
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
+import algorithms.SubsetChooser;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageDisplayer;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.misc.MiscMath;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -523,43 +521,30 @@ public class PolynomialFitter {
                 
         // key = coefficients for a subset's fit, value = bitstring representing
         //   indexes to extract from contigList
-        Map<CoefficientWrapper, Long> subsetCoeffMap = new 
-            HashMap<CoefficientWrapper, Long>();
-        
-        List<Integer> setBits = new ArrayList<Integer>();
-        
+        Map<CoefficientWrapper, IntArrayWrapper> subsetCoeffMap = new 
+            HashMap<CoefficientWrapper, IntArrayWrapper>();
+                
         int maxDimension = (imageWidth > imageHeight) ? imageWidth : imageHeight;
         double c2Limit = (maxDimension < 10000) ? 1E-3 :  Math.pow(10.,
             -1*Math.ceil(Math.log(maxDimension)/Math.log(10)));
         
         //TODO: simplify the iteration thru subsets
-        
-        int nIter = 0;
-        
+                        
         for (int k = n; k > 0; k--) {
             
-            Long bitstring = MiscMath.getNextSubsetBitstring(n, k, null);
+            int[] selectedIndexes = new int[k];
             
-            long nExpected = MiscMath.computeNDivNMinusK(n, k)
-                /MiscMath.factorial(k);
-                        
-            int count = 0;
+            SubsetChooser subsetChooser = new SubsetChooser(n, k);
             
-            while ((bitstring != null) && ((nIter == 0) || (count < nExpected))) {
-
-                setBits.clear();
-                
-                log.fine("n=" + n + " k=" + k + " " +
-                    Long.toBinaryString(bitstring.longValue())
-                    + " nIter=" + nIter);
-                
-                MiscMath.readSetBits(bitstring, setBits);
+            int nV = subsetChooser.getNextSubset(selectedIndexes);
+            
+            while (nV != -1) {
                 
                 Set<PairInt> subset = new HashSet<PairInt>();
 
-                for (Integer bitIndex : setBits) {
+                for (int bitIndex : selectedIndexes) {
 
-                    int groupId = bitIndex.intValue();
+                    int groupId = bitIndex;
 
                     Set<PairInt> g = contigList.get(groupId);
 
@@ -569,26 +554,14 @@ public class PolynomialFitter {
                 float[] coeff = solveAfterRandomSampling(subset, sr);
                 
                 if (coeff != null) {
-                    subsetCoeffMap.put(new CoefficientWrapper(coeff), bitstring);
+                    subsetCoeffMap.put(new CoefficientWrapper(coeff), 
+                        new IntArrayWrapper(selectedIndexes));
                 }
                
                 double resid = calcResiduals(coeff, subset);
                 
                 double cost = (double)subset.size()/resid;
-if (false) {              
-if (coeff != null) {                
-String label = Long.toBinaryString(bitstring.longValue()) 
-+ " " + Double.toString(cost)
-+ " " + Double.toString(resid) 
-+ " " + Arrays.toString(coeff);                
-Image img = new Image(imageWidth, imageHeight);
-try {
-ImageIOHelper.addToImage(subset, 0, 0, img);
-ImageDisplayer.displayImage(label, img);
-} catch(IOException e) {
-    ////-2393.324, 23.7, -0.052
-}
-}}
+
                 if (cost > bestCost) {
                     // avoid straight lines  2nd coeff > 1E-3 for image ~ 1000 pix on side
                     if (Math.abs(coeff[2]) > c2Limit) {
@@ -597,11 +570,7 @@ ImageDisplayer.displayImage(label, img);
                     }
                 }
                 
-                bitstring = MiscMath.getNextSubsetBitstring(n, k, bitstring);
-                
-                count++;
-                
-                nIter++;
+                nV = subsetChooser.getNextSubset(selectedIndexes);
             }
         }
         
@@ -609,7 +578,7 @@ ImageDisplayer.displayImage(label, img);
             
             // find all fits similar to best fit and add subsets to outputPoints
             
-            Iterator<Entry<CoefficientWrapper, Long>> iter = 
+            Iterator<Entry<CoefficientWrapper, IntArrayWrapper>> iter = 
                 subsetCoeffMap.entrySet().iterator();
             
             log.info("bestCost=" + bestCost 
@@ -619,7 +588,7 @@ ImageDisplayer.displayImage(label, img);
             
             while (iter.hasNext()) {
                 
-                Entry<CoefficientWrapper, Long> entry = iter.next();
+                Entry<CoefficientWrapper, IntArrayWrapper> entry = iter.next();
                            
                 float[] c = entry.getKey().getCoefficients();
                 
@@ -634,16 +603,10 @@ ImageDisplayer.displayImage(label, img);
                 if ((Math.abs(divC1 - 1) < 0.05) && (Math.abs(divC2 - 1) < 0.05)
                     && (Math.abs(divC0 - 1) < 0.05)) {
                     
-                    setBits.clear();
-                    
-                    Long bitstring = entry.getValue();
-                    
-                    log.info("adding subsets: "
-                        + Long.toBinaryString(bitstring.longValue()));
-                    
-                    MiscMath.readSetBits(bitstring, setBits);
-                    for (Integer bitIndex : setBits) {
-                        int groupId = bitIndex.intValue();
+                    int[] selectedIndexes = entry.getValue().a;
+                                        
+                    for (int bitIndex : selectedIndexes) {
+                        int groupId = bitIndex;
                         Set<PairInt> g = contigList.get(groupId);
                         outputPoints.addAll(g);
                     }
@@ -672,4 +635,10 @@ ImageDisplayer.displayImage(label, img);
         return bestSubsetCoeff;
     }   
     
+    private static class IntArrayWrapper {
+        int[] a;
+        public IntArrayWrapper(int[] values) {
+            a = Arrays.copyOf(values, values.length);
+        }
+    }
 }

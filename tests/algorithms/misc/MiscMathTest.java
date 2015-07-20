@@ -256,41 +256,6 @@ public class MiscMathTest extends TestCase {
         assertTrue(result.compareTo(expected) == 0);
     }
 
-    public void testSubsets() throws Exception {
-
-        /* for (4, 2)
-           0 1 2 3 are the numbers
-           0 1
-           0 2
-           0 3
-           1 2
-           1 3
-           2 3
-        3	        11        ==> '0' '1'
-        5	       101        ==> '0' '2'
-        6	       110        ==> '1' '2'
-        9	      1001        ==> '0' '3'
-        10	      1010        ==> '1' '3'
-        12	      1100        ==> '2' '3'
-        17	     10001        ==> '0' '4' <=== discard last
-        */
-
-
-        //
-        Long result = MiscMath.getNextSubsetBitstring(4, 2, null);
-
-        while (result != null) {
-
-            System.out.format("%s\t%10s\n", result.toString(),
-                Long.toBinaryString(result.longValue()));
-
-            result = MiscMath.getNextSubsetBitstring(4, 2, result);
-        }
-
-        //No test. looking for pattern to calculate bitstring for
-        // ith iteration without iterating...
-    }
-
     public void testReadSetBits() throws Exception {
 
         List<Integer> setBits = new ArrayList<Integer>();

@@ -524,63 +524,6 @@ public class MiscMath {
     }
     
     /**
-     * return the next subset after x, represented as a bitstring.
-     * if x is null, the first subset is returned, else the subset
-     * proceeding it.
-     * The set bits are the selected bits in the returned string, that is
-     * the set bits should represent the k subset bits in from nBits total
-     * to select from.
-     * 
-     * One can quickly see the results using Long.toBinaryString(x).
-     * 
-     * @param nBits
-     * @param kOnes
-     * @param x
-     * @return 
-     */
-    public static Long getNextSubsetBitstring(long nBits, long kOnes, Long x) {
-        
-        if (x == null) {
-            
-            long t = (1L << kOnes) - 1;
-            
-            return Long.valueOf(t);
-        }
-        
-        long t = x.longValue();
-        
-        boolean proceed = ((t & (1L << nBits)) == 0);
-        
-        if (!proceed) {
-            return null;
-        }
-        
-        // 3 different ways to the same result:
-
-        /*
-        long lo = x & ~(x - 1);     // lowest one bit
-
-        long lz = (x + lo) & ~x;    // lowest zero bit above lo
-
-        x |= lz;                    // add lz to the set
-
-        x &= ~(lz - 1);             // reset bits below lz
-
-        x |= (lz / lo / 2) - 1;     // put back right number of bits at end
-        */
-
-        long a = t & -t;
-        long b = t + a;
-        t = (((t^b) >>> 2)/a) | b;
-
-        /*
-        t = b + (((b ^ t) / a) >> 2);
-        */            
-        
-        return Long.valueOf(t);
-    }
-    
-    /**
      * read the set bits from bitstring and return them as indexes in 
      * outputIndexes.
      * @param bitstring

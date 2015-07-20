@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
@@ -33,7 +34,7 @@ public class PointMatcher3Test extends TestCase {
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
 
-    public void estPreSearches() throws Exception {
+    public void testPreSearches() throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -187,10 +188,14 @@ public class PointMatcher3Test extends TestCase {
                 int nEps = (int)Math.round(Math.sqrt(nMaxMatchable)/2.);
                    
                 boolean useGreedyMatching = true;
-                
+
+                float startRotationInDegrees = 340;
+                float stopRotationInDegrees = 20;
+
                 // ------- assert that preSearch0 gets the answer within <> degrees of rotation -------
                 TransformationPointFit[] fits = pointMatcher.preSearch0(
                     unmatchedLeftXY, unmatchedRightXY, scale,
+                    startRotationInDegrees, stopRotationInDegrees,
                     useGreedyMatching);
                 
                 assert(fits != null);
@@ -208,7 +213,7 @@ public class PointMatcher3Test extends TestCase {
                     }
                     TransformationParameters fitParams = fit.getParameters();
                     int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
-                    float diffRotDeg = getAngleDifference(
+                    float diffRotDeg = AngleUtil.getAngleDifference(
                         fitParams.getRotationInDegrees(), rotInDegrees);
                     float diffScale = Math.abs(fitParams.getScale() - scale);
                     float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
@@ -257,7 +262,7 @@ public class PointMatcher3Test extends TestCase {
 
                     assert(fit2 != null);
 
-                    log.info("preSearch1 FITs:");
+                    log.info("preSearch1 FITs: " + fit2.toString());
 
                     minRotationDiff = Float.MAX_VALUE;
 
@@ -269,7 +274,7 @@ public class PointMatcher3Test extends TestCase {
                     }
                     TransformationParameters fitParams = fit.getParameters();
                     int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
-                    float diffRotDeg = getAngleDifference(
+                    float diffRotDeg = AngleUtil.getAngleDifference(
                         fitParams.getRotationInDegrees(), rotInDegrees);
                     float diffScale = Math.abs(fitParams.getScale() - scale);
                     float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
@@ -314,7 +319,7 @@ public class PointMatcher3Test extends TestCase {
                         log.info("refined FIT: " + fit3.toString());
                         fitParams = fit3.getParameters();
                         diffN = Math.abs(nExpected - fit3.getNumberOfMatchedPoints());
-                        diffRotDeg = getAngleDifference(
+                        diffRotDeg = AngleUtil.getAngleDifference(
                             fitParams.getRotationInDegrees(), rotInDegrees);
                         diffScale = Math.abs(fitParams.getScale() - scale);
                         diffTransX = Math.abs(fitParams.getTranslationX() - transX);
@@ -343,7 +348,7 @@ public class PointMatcher3Test extends TestCase {
         assertTrue(maxOfPS1DiffRots <= 90);
     }
     
-    public void testCalculateEuclideanTransformationUsingPairs() throws Exception {
+    public void testCalculateEuclideanTransformation() throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -500,7 +505,7 @@ public class PointMatcher3Test extends TestCase {
 
                 TransformationParameters fitParams = fit.getParameters();
                 int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
-                float diffRotDeg = getAngleDifference(
+                float diffRotDeg = AngleUtil.getAngleDifference(
                     fitParams.getRotationInDegrees(), rotInDegrees);
                 float diffScale = Math.abs(fitParams.getScale() - scale);
                 float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
@@ -518,7 +523,7 @@ public class PointMatcher3Test extends TestCase {
         
     }
 
-    public void estCalculateEuclideanTransformation()
+    public void testCalculateEuclideanTransformation2()
         throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -538,7 +543,7 @@ public class PointMatcher3Test extends TestCase {
 
         for (int nRuns = 0; nRuns < 1; ++nRuns) { // this increases the number of tests
             for (int rotType = 0; rotType < 2; ++rotType) {
-                for (int nTest = 0; nTest < 10/*20*/; ++nTest) { // this increases nPoints
+                for (int nTest = 0; nTest < 5/*20*/; ++nTest) { // this increases nPoints
 
                     PointMatcher pointMatcher = new PointMatcher();
 
@@ -647,7 +652,7 @@ public class PointMatcher3Test extends TestCase {
 
                     TransformationParameters fitParams = fit.getParameters();
                     int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
-                    float diffRotDeg = getAngleDifference(
+                    float diffRotDeg = AngleUtil.getAngleDifference(
                         fitParams.getRotationInDegrees(), rotInDegrees);
                     float diffScale = Math.abs(fitParams.getScale() - scale);
                     float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
@@ -1146,19 +1151,9 @@ images as possible)
         try {
             PointMatcher3Test test = new PointMatcher3Test();
 
-            test.testCalculateEuclideanTransformationUsingPairs();
-            //test.testPreSearches();
-            //test.testCalculateTransformationWithGridSearch();
-
-            //test.testCalculateEuclideanTransformation();
-            //test.testPreSearch();
-
-            /*
-            tests for :
-            -- for same set w/ projection
-            -- for same set w/ projection and noise
-            tests for scales which are close to 1 and less than 2
-            */
+            test.testCalculateEuclideanTransformation();
+            test.testCalculateEuclideanTransformation2();
+            test.testPreSearches();
 
         } catch(Exception e) {
             e.printStackTrace();
@@ -1186,131 +1181,6 @@ images as possible)
         } else {
             return Color.ORANGE;
         }
-    }
-
-    private float getAngleDifference(float rotDegrees0, float rotDegrees1) {
-         /*
-         I  |  0
-        ---------
-         II | III
-        */
-        int q0 = 0;
-        if (rotDegrees0 >= 270) {
-            q0 = 3;
-        } else if (rotDegrees0 >= 180) {
-            q0 = 2;
-        } else if (rotDegrees0 >= 90) {
-            q0 = 1;
-        }
-        int q1 = 0;
-        if (rotDegrees1 >= 270) {
-            q1 = 3;
-        } else if (rotDegrees1 >= 180) {
-            q1 = 2;
-        } else if (rotDegrees1 >= 90) {
-            q1 = 1;
-        }
-
-        /*
-         I  |  0
-        ---------
-         II | III
-        */
-        float angleDiff = -1;
-        if (q0 == 0){
-            if (q1 == 0) {
-                if (rotDegrees0 > rotDegrees1) {
-                    angleDiff = rotDegrees0 - rotDegrees1;
-                } else {
-                    angleDiff = rotDegrees1 - rotDegrees0;
-                }
-            } else if (q1 == 1) {
-                angleDiff = (rotDegrees1 - rotDegrees0);
-            } else if (q1 == 2) {
-                float diff = rotDegrees1 - rotDegrees0;
-                if (diff > 180) {
-                    diff = 360 - diff;
-                }
-                angleDiff = diff;
-            } else {
-                angleDiff = Math.abs(360 - rotDegrees1 + rotDegrees0);
-            }
-        } else if (q0 == 1) {
-            /*
-             I  |  0
-             ---------
-             II | III
-             */
-            if (q1 == 0) {
-                angleDiff = (rotDegrees1 - rotDegrees0);
-            } else if (q1 == 1) {
-                if (rotDegrees0 > rotDegrees1) {
-                    angleDiff = rotDegrees0 - rotDegrees1;
-                } else {
-                    angleDiff = rotDegrees1 - rotDegrees0;
-                }
-            } else if (q1 == 2) {
-                angleDiff = (rotDegrees1 - rotDegrees0);
-            } else {
-                float diff = rotDegrees1 - rotDegrees0;
-                if (diff > 180) {
-                    diff = 360 - diff;
-                }
-                angleDiff = diff;
-            }
-        } else if (q0 == 2) {
-            /*
-             I  |  0
-             ---------
-             II | III
-             */
-            if (q1 == 0) {
-                float diff = rotDegrees1 - rotDegrees0;
-                if (diff > 180) {
-                    diff = 360 - diff;
-                }
-                angleDiff = diff;
-            } else if (q1 == 1) {
-                angleDiff = (rotDegrees0 - rotDegrees1);
-            } else if (q1 == 2) {
-                if (rotDegrees0 > rotDegrees1) {
-                    angleDiff = rotDegrees0 - rotDegrees1;
-                } else {
-                    angleDiff = rotDegrees1 - rotDegrees0;
-                }
-            } else {
-                angleDiff = (rotDegrees1 - rotDegrees0);
-            }
-        } else if (q0 == 3) {
-            /*
-             I  |  0
-             ---------
-             II | III
-             */
-            if (q1 == 0) {
-                angleDiff = (360 - rotDegrees0 + rotDegrees1);
-            } else if (q1 == 1) {
-                float diff = (rotDegrees0 - rotDegrees1);
-                if (diff > 180) {
-                    diff = 360 - diff;
-                }
-                angleDiff = diff;
-            } else if (q1 == 2) {
-                angleDiff = (rotDegrees0 - rotDegrees1);
-            } else {
-                if (rotDegrees0 > rotDegrees1) {
-                    angleDiff = rotDegrees0 - rotDegrees1;
-                } else {
-                    angleDiff = rotDegrees1 - rotDegrees0;
-                }
-            }
-        }
-
-        if (angleDiff > 359) {
-            angleDiff = angleDiff - 360;
-        }
-
-        return angleDiff;
     }
 
 }
