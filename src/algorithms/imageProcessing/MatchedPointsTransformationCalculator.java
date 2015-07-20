@@ -283,7 +283,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
     public TransformationParameters calulateEuclideanGivenScale(
         int set1X1, int set1Y1, int set1X2, int set1Y2,
         int set2X1, int set2Y1, int set2X2, int set2Y2,
-        double centroidX1, double centroidY1) {
+        final double centroidX1, final double centroidY1) {
                 
         /*
         solve for rotation.

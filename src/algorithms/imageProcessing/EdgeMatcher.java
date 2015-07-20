@@ -215,7 +215,8 @@ log.info("REFINEMENT ACCEPTED");
         
         float stDevFromModelWeighted = (float)Math.sqrt(stDevFromModelWeightedSqSum);
         
-        TransformationPointFit fit = new TransformationPointFit(params, nMatched,
+        TransformationPointFit fit = new TransformationPointFit(
+            params.copy(), nMatched,
             difFromModelWeighted, stDevFromModelWeighted, tolTransX, tolTransY);
 
         fit.setMaximumNumberMatchable(nMaxMatchableSum);

@@ -351,7 +351,7 @@ public final class PointMatcher extends AbstractPointMatcher {
             throw new IllegalArgumentException(
                 "the 2 point sets must have the same length");
         }
-
+        
         double[] diff = new double[matched1Transformed.getN()];
 
         double avg = 0;
@@ -385,7 +385,7 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         stdDev = Math.sqrt(stdDev/((double)matched2.getN() - 1));
 
-        TransformationPointFit fit = new TransformationPointFit(params,
+        TransformationPointFit fit = new TransformationPointFit(params.copy(),
             matched2.getN(), avg, stdDev, Float.MAX_VALUE, Float.MAX_VALUE);
 
         return fit;
@@ -403,8 +403,14 @@ public final class PointMatcher extends AbstractPointMatcher {
             throw new IllegalArgumentException(
             "unmatched2 cannot be null");
         }
+        
+        PairFloatArray trFiltered1 = new PairFloatArray();
+        PairIntArray filtered2 = new PairIntArray();
 
-        int n = unmatched1Transformed.getN();
+        reduceToIntersection(unmatched1Transformed, unmatched2, trFiltered1, 
+            filtered2, tolTransX, tolTransY);
+        
+        int n = trFiltered1.getN();
 
         Set<Integer> chosen = new HashSet<Integer>();
 
@@ -414,20 +420,20 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         for (int i = 0; i < n; i++) {
 
-            float transformedX = unmatched1Transformed.getX(i);
-            float transformedY = unmatched1Transformed.getY(i);
+            float transformedX = trFiltered1.getX(i);
+            float transformedY = trFiltered1.getY(i);
 
             double minDiff = Double.MAX_VALUE;
             int min2Idx = -1;
 
-            for (int j = 0; j < unmatched2.getN(); j++) {
+            for (int j = 0; j < filtered2.getN(); j++) {
 
                 if (chosen.contains(Integer.valueOf(j))) {
                     continue;
                 }
 
-                float dx = transformedX - unmatched2.getX(j);
-                float dy = transformedY - unmatched2.getY(j);
+                float dx = transformedX - filtered2.getX(j);
+                float dy = transformedY - filtered2.getY(j);
 
                 if ((Math.abs(dx) > tolTransX) || (Math.abs(dy) > tolTransY)) {
                     continue;
@@ -461,11 +467,10 @@ public final class PointMatcher extends AbstractPointMatcher {
         stDev = (nMatched == 0) ? Double.MAX_VALUE :
             Math.sqrt(stDev/((double)nMatched - 1.));
 
-        TransformationPointFit fit = new TransformationPointFit(params, nMatched,
-            avg, stDev, tolTransX, tolTransY);
+        TransformationPointFit fit = new TransformationPointFit(params.copy(), 
+            nMatched, avg, stDev, tolTransX, tolTransY);
 
-        int nMaxMatchable = Math.min(unmatched1Transformed.getN(),
-            unmatched2.getN());
+        int nMaxMatchable = Math.min(trFiltered1.getN(), filtered2.getN());
 
         fit.setMaximumNumberMatchable(nMaxMatchable);
 
@@ -484,11 +489,17 @@ public final class PointMatcher extends AbstractPointMatcher {
             throw new IllegalArgumentException(
             "unmatched2 cannot be null");
         }
+        
+        PairFloatArray trFiltered1 = new PairFloatArray();
+        PairIntArray filtered2 = new PairIntArray();
 
-        int n = unmatched1Transformed.getN();
+        reduceToIntersection(trFiltered1, filtered2, trFiltered1, 
+            filtered2, tolTransX, tolTransY);
+        
+        int n = trFiltered1.getN();
 
         float[][] matchedIndexesAndDiffs = calculateMatchUsingOptimal(
-            unmatched1Transformed, unmatched2, tolTransX, tolTransY);
+            trFiltered1, filtered2, tolTransX, tolTransY);
 
         int nMatched = matchedIndexesAndDiffs.length;
         double avg = 0;
@@ -508,11 +519,11 @@ public final class PointMatcher extends AbstractPointMatcher {
         stDev = (nMatched == 0) ? Double.MAX_VALUE :
             (Math.sqrt(stDev/((double)nMatched - 1.)));
 
-        TransformationPointFit fit = new TransformationPointFit(params, nMatched,
-            avg, stDev, tolTransX, tolTransY);
+        TransformationPointFit fit = new TransformationPointFit(params.copy(), 
+            nMatched,  avg, stDev, tolTransX, tolTransY);
 
-        int nMaxMatchable = Math.min(unmatched1Transformed.getN(),
-            unmatched2.getN());
+        int nMaxMatchable = Math.min(trFiltered1.getN(),
+            filtered2.getN());
 
         fit.setMaximumNumberMatchable(nMaxMatchable);
 
@@ -532,6 +543,8 @@ public final class PointMatcher extends AbstractPointMatcher {
             throw new IllegalArgumentException(
             "unmatched2 cannot be null");
         }
+        
+        //TODO: consider filtering for the intersection
 
         float[][] matchedIndexesAndDiffs = calculateMatchUsingOptimal(
             scaledRotatedSet1, transX, transY, tolTransX, tolTransY,
@@ -899,15 +912,15 @@ public final class PointMatcher extends AbstractPointMatcher {
             return fit;
         }
 
-        float rotHalfRange = 2;
-        float rotDelta = 0.5f;
-        float transHalfRange = 10;
-        float transDelta = 1;
+        float rotHalfRange = 20;
+        float rotDelta = 1.f;
+        float transHalfRange = 100;
+        float transDelta = 2;
 
         if (fit.getScale() >= 1.0) {
 
             TransformationPointFit fit2 = refineTheTransformation(
-                fit.getParameters(), set1, set2, rotHalfRange, rotDelta,
+                fit.getParameters().copy(), set1, set2, rotHalfRange, rotDelta,
                 transHalfRange, transDelta, transHalfRange, transDelta,
                 useGreedyMatching);
 
@@ -919,11 +932,10 @@ public final class PointMatcher extends AbstractPointMatcher {
 
             // scale is < 1 so reverse order of sets
             TransformationPointFit revFit = refineTheTransformation(
-                fit.getParameters(), set2, set1, rotHalfRange, rotDelta,
+                fit.getParameters().copy(), set2, set1, 
+                rotHalfRange, rotDelta,
                 transHalfRange, transDelta, transHalfRange, transDelta,
                 useGreedyMatching);
-
-            TransformationParameters params = revFit.getParameters();
 
             // reverse the parameters.
 
@@ -931,7 +943,7 @@ public final class PointMatcher extends AbstractPointMatcher {
                 MatchedPointsTransformationCalculator();
 
             TransformationParameters revParams = tc.swapReferenceFrames(
-                params);
+                revFit.getParameters().copy());
 
             TransformationPointFit fit2 = new TransformationPointFit(revParams,
                 revFit.getNumberOfMatchedPoints(),
@@ -1526,6 +1538,8 @@ tempAll[i][j] = (float)Math.sqrt(diffX*diffX + diffY*diffY);
             throw new IllegalArgumentException(
             "scaledRotatedSet1 cannot be null");
         }
+        
+        //TODO: consider filtering for the intersection
 
         int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
             scaledRotatedSet1.getN() : set2.getN();
@@ -1591,6 +1605,8 @@ tempAll[i][j] = (float)Math.sqrt(diffX*diffX + diffY*diffY);
         params.setScale(scale);
         params.setTranslationX(transX);
         params.setTranslationY(transY);
+        params.setOriginX(0);
+        params.setOriginY(0);
 
         TransformationPointFit fit = new TransformationPointFit(params, nMatched,
             avg, stDev, tolTransX, tolTransY);
@@ -3369,7 +3385,8 @@ if (compTol == 1) {
     }
 
     protected TransformationPointFit[] boundedGridSearch(
-        PairIntArray set1, PairIntArray set2, TransformationParameters params,
+        PairIntArray set1, PairIntArray set2, 
+        final TransformationParameters params,
         float scaleHalfRange, float scaleDelta,
         float rotHalfRangeInDegrees, float rotDeltaInDegrees,
         float transXHalfRange, float transXDelta,
@@ -3527,7 +3544,7 @@ if (compTol == 1) {
      * @return
      */
     public TransformationPointFit refineTheTransformation(
-        TransformationParameters params, PairIntArray set1, PairIntArray set2,
+        final TransformationParameters params, PairIntArray set1, PairIntArray set2,
         float rotHalfRangeInDegrees, float rotDeltaInDegrees,
         float transXHalfRange, float transXDelta,
         float transYHalfRange, float transYDelta,
@@ -3944,18 +3961,18 @@ if (compTol == 1) {
                     
                 if (
                     (Math.abs(scale - params.getScale()) < 0.05) &&
-                    ((rotD >= rotationLowLimitInDegrees)
+                    (((rotD >= rotationLowLimitInDegrees)
                       && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationLowLimitInDegrees)) < rotRange))
                     ||
                     ((rotD <= rotationHighLimitInDegrees)
                       && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
-                    ) {
+                    )) {
 
                     TransformationPointFit fit = evaluateForUnmatched(params,
                         set1, set2, toleranceTransX, toleranceTransY,
                         useGreedyMatching);
 
-                    if (fitIsBetter(bestFit, fit)) {
+                    if (fitIsBetterNormalized(bestFit, fit)) {
                         bestFit = fit;
 
                         if (hasConverged(bestFit, maxNMatchable)) {
@@ -3974,17 +3991,17 @@ if (compTol == 1) {
                     
                     if (
                         (Math.abs(scale - params.getScale()) < 0.05) &&
-                        ((rotD >= rotationLowLimitInDegrees)
+                        (((rotD >= rotationLowLimitInDegrees)
                           && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationLowLimitInDegrees)) < rotRange))
                         ||
                         ((rotD <= rotationHighLimitInDegrees)
                           && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
-                        ) {
+                        )) {
 
                         fit = evaluateForUnmatched(params, set1, set2,
                             toleranceTransX, toleranceTransY, useGreedyMatching);
 
-                        if (fitIsBetter(bestFit, fit)) {
+                        if (fitIsBetterNormalized(bestFit, fit)) {
                             bestFit = fit;
 
                             if (hasConverged(bestFit, maxNMatchable)) {
@@ -4025,7 +4042,7 @@ if (compTol == 1) {
         int n1 = set1.getN();
         int n2 = set2.getN();
 
-        if (false && n2 > largeSearchLimit) {
+        if (n2 > largeSearchLimit) {
             return calculateEuclideanTransformationUsingPairsPartitioned(
                 set1, set2,
                 scale, rotationLowLimitInDegrees,
@@ -4126,7 +4143,8 @@ if (compTol == 1) {
         return bestFit;
     }
 
-    protected TransformationPointFit calculateEuclideanTransformationUsingPairsPartitioned(
+    protected TransformationPointFit 
+    calculateEuclideanTransformationUsingPairsPartitioned(
         PairIntArray set1, PairIntArray set2,
         final float scale,
         final float rotationLowLimitInDegrees, 
@@ -4143,8 +4161,6 @@ if (compTol == 1) {
 
         int k = 2;
 
-        SubsetChooser s1 = new SubsetChooser(n1, k);
-
         int[] selected1 = new int[k];
         int[] selected2 = new int[k];
 
@@ -4159,6 +4175,8 @@ if (compTol == 1) {
             toleranceTransX = 4;
             toleranceTransY = 4;
         }
+        double centroidX1 = 0;
+        double centroidY1 = 0;
 
         int maxNMatchable = Math.min(n1, n2);
 
@@ -4167,6 +4185,8 @@ if (compTol == 1) {
         
         TransformationPointFit bestFit = null;
 
+        SubsetChooser s1 = new SubsetChooser(n1, k);
+        
         while (s1.getNextSubset(selected1) != -1) {
 
             for (PairIntArray set2Subset : set2Subsets) {
@@ -4182,24 +4202,24 @@ if (compTol == 1) {
                         set1.getX(selected1[1]), set1.getY(selected1[1]),
                         set2Subset.getX(selected2[0]), set2Subset.getY(selected2[0]),
                         set2Subset.getX(selected2[1]), set2Subset.getY(selected2[1]),
-                        0, 0);
+                        centroidX1, centroidY1);
                     
                     float rotD = params.getRotationInDegrees();
                     
                     if (
                         (Math.abs(scale - params.getScale()) < 0.05) &&
-                        ((rotD >= rotationLowLimitInDegrees)
+                        (((rotD >= rotationLowLimitInDegrees)
                           && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationLowLimitInDegrees)) < rotRange))
                         ||
                         ((rotD <= rotationHighLimitInDegrees)
                           && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
-                        ) {
+                        )) {
                     
                         TransformationPointFit fit = evaluateForUnmatched(params,
-                        set1, set2, toleranceTransX, toleranceTransY,
-                        useGreedyMatching);
+                            set1, set2, toleranceTransX, toleranceTransY,
+                            useGreedyMatching);
 
-                        if (fitIsBetter(bestFit, fit)) {
+                        if (fitIsBetterNormalized(bestFit, fit)) {
                             bestFit = fit;
 
                             if (hasConverged(bestFit, maxNMatchable)) {
@@ -4212,23 +4232,23 @@ if (compTol == 1) {
                             set1.getX(selected1[1]), set1.getY(selected1[1]),
                             set2Subset.getX(selected2[1]), set2Subset.getY(selected2[1]),
                             set2Subset.getX(selected2[0]), set2Subset.getY(selected2[0]),
-                            0, 0);
+                            centroidX1, centroidY1);
                         
                         rotD = params.getRotationInDegrees();
 
                         if (
                             (Math.abs(scale - params.getScale()) < 0.05) &&
-                            ((rotD >= rotationLowLimitInDegrees)
+                            (((rotD >= rotationLowLimitInDegrees)
                               && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationLowLimitInDegrees)) < rotRange))
                             ||
                             ((rotD <= rotationHighLimitInDegrees)
                               && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
-                            ) {
+                            )) {
                             
                             fit = evaluateForUnmatched(params, set1, set2,
                                 toleranceTransX, toleranceTransY, useGreedyMatching);
 
-                            if (fitIsBetter(bestFit, fit)) {
+                            if (fitIsBetterNormalized(bestFit, fit)) {
                                 bestFit = fit;
 
                                 if (hasConverged(bestFit, maxNMatchable)) {
@@ -4272,4 +4292,57 @@ if (compTol == 1) {
 
         return np * 2 * nPerFitGreedy;
     }
+
+    protected void reduceToIntersection(
+        PairFloatArray set1, PairIntArray set2, 
+        PairFloatArray outputSet1, PairIntArray outputSet2, 
+        float tolTransX, float tolTransY) {
+        
+        /*
+        determine minima and maxima of outputSet2
+        
+        filter set1 to place in outputSet1 only the intersection with set2
+           +- tolerances
+        
+        determine minima and maxima of outputSet1
+        
+        filter set2 to place in outputSet1 only the intersection with outputSet1
+           +- tolerances
+        */
+        
+        int minX2 = MiscMath.findMin(set2.getX(), set2.getN());
+        int maxX2 = MiscMath.findMax(set2.getX(), set2.getN());
+        int minY2 = MiscMath.findMin(set2.getY(), set2.getN());
+        int maxY2 = MiscMath.findMax(set2.getY(), set2.getN());
+        
+        for (int i = 0; i < set1.getN(); ++i) {
+            float x = set1.getX(i);
+            float y = set1.getY(i);
+            if ((x < (minX2 - tolTransX)) || (x > (maxX2 + tolTransX))) {
+                continue;
+            }
+            if ((y < (minY2 - tolTransY)) || (y > (maxY2 + tolTransY))) {
+                continue;
+            }
+            outputSet1.add(x, y);
+        }
+        
+        float minX1 = MiscMath.findMin(outputSet1.getX(), outputSet1.getN());
+        float maxX1 = MiscMath.findMax(outputSet1.getX(), outputSet1.getN());
+        float minY1 = MiscMath.findMin(outputSet1.getY(), outputSet1.getN());
+        float maxY1 = MiscMath.findMax(outputSet1.getY(), outputSet1.getN());
+        
+        for (int i = 0; i < set2.getN(); ++i) {
+            float x = set2.getX(i);
+            float y = set2.getY(i);
+            if ((x < (minX1 - tolTransX)) || (x > (maxX1 + tolTransX))) {
+                continue;
+            }
+            if ((y < (minY1 - tolTransY)) || (y > (maxY1 + tolTransY))) {
+                continue;
+            }
+            outputSet2.add(Math.round(x), Math.round(y));
+        }
+    }
+    
 }

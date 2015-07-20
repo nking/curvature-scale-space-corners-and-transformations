@@ -200,7 +200,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     protected abstract void reinitializeSpecialization();
     
-    protected void reinitialize(float cannyLowThreshold) {
+    protected void reinitialize(float cannyLowThreshold, float additionalBlurSigma) {
         
         if (state.ordinal() < 
             CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {
@@ -209,7 +209,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 "initialize() should have been invoked before reinitialize(...)");
             
         } else {
-            
+                       
             GreyscaleImage input = gradientXY.copyImage();
             GreyscaleImage gTheta = theta;
             HistogramHolder hist = imgHistogram;
@@ -218,18 +218,46 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             
             edges.clear();
             
-            // (1) apply an edge filter
-            
-            CannyEdgeFilter filter = new CannyEdgeFilter();
-            CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
+            if (additionalBlurSigma > 0) {
+                
+                // (1) apply an edge filter
+                
+                CannyEdgeFilter filter = new CannyEdgeFilter();
+
+                CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
         
-            filter.setSetters(settings);
+                filter.setSetters(settings);
+                
+                filter.setAdditionalImageBlur(additionalBlurSigma);
+                
+                filter.overrideLowThreshold(cannyLowThreshold);
+                
+                img = originalImg.copyToGreyscale();
+                
+                filter.applyFilter(img);
+        
+                gradientXY = filter.getGradientXY();
+        
+                theta = filter.getTheta();
+        
+                imgHistogram = filter.getImgHistogram();
+                
+            } else {
             
-            filter.overrideLowThreshold(cannyLowThreshold);
-           
-            filter.reApply2LayerFilter(input, gTheta, hist);
-            
-            img = input;
+                // (1) re-apply an edge filter
+
+                CannyEdgeFilter filter = new CannyEdgeFilter();
+                CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
+
+                filter.setSetters(settings);
+
+                filter.overrideLowThreshold(cannyLowThreshold);
+
+                filter.reApply2LayerFilter(input, gTheta, hist);
+
+                img = input;
+                
+            }
             
             // (2) extract edges
             extractEdges();
@@ -260,7 +288,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         theta = filter.getTheta();
         
         imgHistogram = filter.getImgHistogram();
-                        
+                                
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
     

@@ -188,6 +188,8 @@ public class CurvatureScaleSpaceCornerDetector extends
         List<PairIntArray> prevEdges = copy(this.edges);
         PairIntArray prevCorners = corners.copy();
 
+        int nIter = 0;
+            
         while ((nCorners > 0) && (nCorners > approxNumberOfCornersDesired)) {
 
             log.info("nCorners=" + nCorners);
@@ -196,25 +198,34 @@ public class CurvatureScaleSpaceCornerDetector extends
             prevCorners = this.corners.copy();
 
             //TODO: needs adjustments:
-            if (nCorners > 500) {
-                lowerThresholdStepSize  = 3.0f;
-            } else {
-                lowerThresholdStepSize = 1.0f;
-            }
+            /*if (nCorners > 500) {
+                lowerThresholdStepSize  = 1.5f;
+            } else {*/
+                lowerThresholdStepSize = 0.5f;//1.0f;
+            //}
 
             lowThreshold += lowerThresholdStepSize;
 
-            reinitialize(lowThreshold);
+            float additionalBlurSigma = (nIter == 0) ? 1 : 0;
+            
+            reinitialize(lowThreshold, additionalBlurSigma);
 
             findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);
 
             nCorners = corners.getN();
+            
+            nIter++;
         }
 
         includeJunctionsInCorners();
 
-        this.edges = prevEdges;
-        this.corners = prevCorners;
+        if (Math.abs(corners.getN() - approxNumberOfCornersDesired) >
+            Math.abs(prevCorners.getN() - approxNumberOfCornersDesired)) {
+            
+            this.edges = prevEdges;
+            this.corners = prevCorners;
+        }
+        
     }
 
     /**

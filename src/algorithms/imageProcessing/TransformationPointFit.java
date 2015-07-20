@@ -20,7 +20,8 @@ public class TransformationPointFit implements Comparable<TransformationPointFit
     
     private float transTolY = Float.MAX_VALUE;
     
-    public TransformationPointFit(TransformationParameters theParameters, 
+    public TransformationPointFit(
+        TransformationParameters theParameters, 
         int numberOfMatchedPoints, double theMeanDistFromModel, 
         double theStDevFromMean, float theTranslationXTolerance,
         float theTranslationYTolerance) {

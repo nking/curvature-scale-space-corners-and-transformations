@@ -146,6 +146,45 @@ public abstract class AbstractPointMatcher {
         }
         return false;
     }
+    
+    public boolean fitIsBetterNormalized(TransformationPointFit bestFit, 
+        TransformationPointFit compareFit) {
+        
+        if (compareFit == null) {
+            return false;
+        }
+        if (bestFit == null) {
+            return true;
+        }
+        
+        int bestNNormalized = Math.round(
+            (float)bestFit.getNumberOfMatchedPoints()/
+            (float)bestFit.getNMaxMatchable());
+        
+        int compareNNormalized = Math.round(
+            (float)compareFit.getNumberOfMatchedPoints()/
+            (float)compareFit.getNMaxMatchable());
+                
+        TransformationPointFit bNFit = new TransformationPointFit(
+            bestFit.getParameters().copy(), bestNNormalized,
+            bestFit.getMeanDistFromModel(), bestFit.getStDevFromMean(),
+            bestFit.getTranslationXTolerance(), bestFit.getTranslationYTolerance()
+        );
+        
+        TransformationPointFit cNFit = new TransformationPointFit(
+            compareFit.getParameters().copy(), compareNNormalized,
+            compareFit.getMeanDistFromModel(), compareFit.getStDevFromMean(),
+            compareFit.getTranslationXTolerance(), compareFit.getTranslationYTolerance()
+        );
+        
+        boolean ans = false;
+        int comp = bNFit.compareTo(cNFit);
+        if (comp == 1) {
+            ans = true;
+        }
+        
+        return ans;
+    }
 
     /**
      * compare bestFit to compareFit and return

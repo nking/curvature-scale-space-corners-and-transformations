@@ -92,8 +92,8 @@ public class PointMatcher2Test extends TestCase {
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
 
-        int nPreferredCorners = 100;
-        int nCrit = 150;
+        int nPreferredCorners = 200;
+        int nCrit = 100;
 
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);
@@ -138,28 +138,29 @@ public class PointMatcher2Test extends TestCase {
 
         log.info("euclidean tr from skyline alone=" + skyLineFit.toString());
         
-        writeTransformed(skyLineFit.getParameters(), image1, image2,
+        writeTransformed(skyLineFit.getParameters(), image2.copyImage(),
             skylineCorners1, skylineCorners2, "transformedSkyline.png");
         
-        float rotHalfRange = 20;
-        float rotDelta = 2f;
-        float transHalfRange = 100;
-        float transDelta = 4;
-        
-        boolean useGreedyMatching = true;
+        writeImage(image1.copyImage(), corners1, "corners1.png");
+        writeImage(image2.copyImage(), corners2, "corners2.png");
         
         log.info("nCorners1=" + corners1.getN() + " nCorners2=" + corners2.getN());
 
         TransformationPointFit allFit =
-            pointMatcher.calculateEuclideanTransformation(
-                corners1, corners2,
-                scale, rotationLowLimitInDegrees,
-                rotationHighLimitInDegrees); 
+            pointMatcher.calculateEuclideanTransformation(corners1, corners2,
+                scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees); 
         
         if (allFit != null) {
             log.info("all fit from all corners=" + allFit.toString());
         }
         
+        float rotHalfRange = 20;
+        float rotDelta = 2f;
+        float transHalfRange = 200;
+        float transDelta = 4;
+        
+        boolean useGreedyMatching = true;
+                
         TransformationPointFit trFit2 = pointMatcher.refineTheTransformation(
             skyLineFit.getParameters(), corners1, corners2,
             rotHalfRange, rotDelta,
@@ -169,6 +170,10 @@ public class PointMatcher2Test extends TestCase {
         if (trFit2 != null) {
             log.info("fit from skyline and all corners=" + trFit2.toString());
         }
+        
+        writeTransformed(trFit2.getParameters(), image2.copyImage(),
+            corners1, corners2, "transformedCorners.png");
+        
 /*
 the skyline is hopefully useful in getting the transformation solution
 into the local search region
@@ -368,7 +373,7 @@ images as possible)
     }
     
     private void writeTransformed(TransformationParameters parameters, 
-        Image image1, Image image2, PairIntArray points1, 
+        Image image2, PairIntArray points1, 
         PairIntArray points2, String outputImageName) {
         
         Transformer transformer = new Transformer();
@@ -401,6 +406,25 @@ images as possible)
                 0, 0, 255);
 
             ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image2);
+
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    private void writeImage(Image image1, PairIntArray points1, 
+        String outputImageName) {
+                
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            
+            int nExtraForDot = 1;
+            
+            ImageIOHelper.addCurveToImage(points1, image1, nExtraForDot, 
+                255, 0, 0);
+
+            ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image1);
 
         } catch (Exception e) {
              e.printStackTrace();

@@ -57,6 +57,11 @@ public class CannyEdgeFilter {
         
     private boolean useLineDrawingMode = false;
     
+    /**
+     * used to blur the image right before applying the 2-layer filter.
+     */
+    private float additionalImageBlurSigma = 0.0f;
+    
     private GreyscaleImage gXY = null;
     
     private GreyscaleImage gX = null;
@@ -91,6 +96,17 @@ public class CannyEdgeFilter {
     
     public void overrideLowThreshold(float thresh) {
         lowThreshold = thresh;
+    }
+    
+    /**
+     * used to apply an additional round of gaussian blurring to the image input
+     * before the 2-layer filter is applied.  Expected use is by an invoker
+     * that has learned that it needs a lower resolution image to make fewer
+     * corners, for example.
+     * @param sigma 
+     */
+    public void setAdditionalImageBlur(float sigma) {
+        additionalImageBlurSigma = sigma;
     }
     
     /**
@@ -190,6 +206,10 @@ public class CannyEdgeFilter {
 
         if (useOutdoorMode) {
             imageProcessor.blur(input, 2.0f); //3.0
+        }
+        
+        if (additionalImageBlurSigma > 0.f) {
+            imageProcessor.blur(input, additionalImageBlurSigma);
         }
 
         applyHistogramEqualization(input);
