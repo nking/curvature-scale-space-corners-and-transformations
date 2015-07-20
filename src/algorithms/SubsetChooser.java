@@ -36,7 +36,8 @@ public class SubsetChooser {
     public SubsetChooser(int n, int k) {
         
         if (k > 63) {
-            throw new IllegalArgumentException("currently, class can only handle k < 64");
+            throw new IllegalArgumentException(
+                "currently, class can only handle k < 64");
         }
 
         this.n = n;

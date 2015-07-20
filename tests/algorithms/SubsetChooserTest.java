@@ -58,9 +58,7 @@ public class SubsetChooserTest extends TestCase {
                 expected.add(p);
             }
         }
-        
-        System.out.println("expected.size=" + expected.size() + " np=" + np);
-        
+                
         assertTrue(expected.size() == np);
         
         int[] selectedIndexes = new int[2];

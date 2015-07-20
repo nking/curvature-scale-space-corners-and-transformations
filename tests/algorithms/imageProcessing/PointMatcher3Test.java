@@ -343,11 +343,11 @@ public class PointMatcher3Test extends TestCase {
         assertTrue(maxOfPS1DiffRots <= 90);
     }
     
-    public void testCalculateEuclideanTransformationForSmallSets() throws Exception {
+    public void testCalculateEuclideanTransformationUsingPairs() throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1437335464716L;
+        //seed = 1437335464716L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
 
@@ -360,11 +360,9 @@ public class PointMatcher3Test extends TestCase {
 
         boolean spacer = true;
         
-        // should test up to 20
-        
         for (int nn = 0; nn < 1; ++nn) { // repeat number of tests
         for (int rotType = 0; rotType < 5; ++rotType) {
-            for (int nTest = 8; nTest < 9; ++nTest) { // this increases nPoints
+            for (int nTest = 0; nTest < 7 /*20*/; ++nTest) { // this increases nPoints
 
                 PointMatcher pointMatcher = new PointMatcher();
                 
@@ -489,7 +487,7 @@ public class PointMatcher3Test extends TestCase {
                 long t0 = System.currentTimeMillis();
                 
                 TransformationPointFit fit = 
-                    pointMatcher.calculateEuclideanTransformationForSmallSets(
+                    pointMatcher.calculateEuclideanTransformationUsingPairs(
                     unmatchedLeftXY, unmatchedRightXY);
                 
                 long t1 = System.currentTimeMillis();
@@ -1148,7 +1146,7 @@ images as possible)
         try {
             PointMatcher3Test test = new PointMatcher3Test();
 
-            test.testCalculateEuclideanTransformationForSmallSets();;
+            test.testCalculateEuclideanTransformationUsingPairs();
             //test.testPreSearches();
             //test.testCalculateTransformationWithGridSearch();
 

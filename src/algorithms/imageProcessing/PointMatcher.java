@@ -31,208 +31,8 @@ import thirdparty.HungarianAlgorithm;
  *
  * the transformation parameters of translation, rotation and scale are
  * found given the two sets of points.
- *
- <pre>
-   Details of determining the transformation from points.
-
-   After points are matched:
-       Estimating scale:
-           Take 2 pairs of points in both datasets and compute the distance
-           between them and then take the ratio:
-
-           scale = (distance between pair in set 1)
-                   / (distance between pair in set 2)
-
-           Note: scale is roughly determined from contour matching too in the
-              inflection matcher.
-
-       Estimating rotation:
-           Take the same 2 pairs and determine the difference in their angles:
-               tan(theta) = delta y / delta x
-
-           rotation = atan((delta y between pair in set 1)
-                          /(delta x between pair in set 1))
-                      -
-                      atan((delta y between pair in set 2)
-                          /(delta x between pair in set 2))
-
-       Estimate translation:
-           Performed on one point in set 1 with its candidate match in set 2:
-           From the full transformation equation, we can rewrite:
-               transX = xt0 - xc*scale -
-                   (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
-
-               transY = yt0 - yc*scale -
-                    ((-(x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
-
-               where (xc, yc) is the center of the first image
-
- Matching the points:
-
-   For the contour matching, we were able to choose subsets of the entire
-   sets of contours for better matching characteristics (subsets that had larger
-   sigma values for their peaks could be used).
-
-   For the points given here, there isn't a clear indicator for a subset that
-   could be used preferably so that all nodes might not need to be visited.
-
-   The need to use pairs of points in set1 matched against pairs in set 2
-   means that if one tries every combination of pairs, the runtime complexity
-   is exponential.
-
-       number of ways to make pairs in set 1 times the number of ways to make
-       pairs in set 2 =
-             n_1!            n_2!
-         ------------  X  ------------
-         2*(n_1 - 2)!     2*(n_2 - 2)!
-
-   This is not feasible as soon as the sets get larger than a dozen points.
-
-   Alternately, one could try a search algorithm to visit the space of all
-   possible combinations of parameters instead of all combinations of subsets
-   of pairs.
-
-        max translation x possible = width of image 2
-        max translation y possible = height of image 2
-        max scale is set to some reasonable number like 10?
-        max rotation is 1 degree changes = 360 (or quadrants?)
-
-        then total number of permutations
-            = maxTransX * maxTransY * maxScale * 360
-            = 1000 * 500 * 10 * 360 = 1.8 billion for pure grid search over
-              parameter space
-
-        then trying the parameters on all points puts another factor into there
-        of nPoints set 1 * nPoints set 2.
-
-  Note, because the cosine and sine terms in the transformation equation due to
-  rotation work against one another and don't proceed in a total combined
-  single direction with theta, we can't use a gradient descent solver.
-
-       (note, this hasn't been edited for positive Y up yet)
-       positive Y is down
-       positive X is right
-       positive theta starts from Y=0, X>=0 and proceeds CW
-                270
-           QIII  |  QIV
-                 |
-          180--------- 0   +X
-                 |
-           QII   |   QI
-                 90
-                 +Y
-
-  theta        cos(theta)  sin(theta)
-  0     0        1.0         0    -----
-  30    0.5236   0.87        0.5       |
-  45    0.785    0.707       0.707     | QI
-  60    1.047    0.5         0.866     |
-  90    1.57     0.0         1.0  -----
-  120   2.09    -0.5         0.866     | QII
-  150   2.618   -0.866       0.5       |
-  180   3.1416  -1.0         0.0  -----
-  210   3.6652  -0.866      -0.5       | QIII
-  240                                  |
-  270   4.7124   0.0        -1.0  -----
-  300   5.236    0.5        -0.866     | QIV
-  330                                  |
-                                  -----
-  So then, it looks like a grid search over rotation and scale intervals
-  followed by fitting for translation to get into the local neighborhood
-  of the transformation solution, followed by the use of the
-  Nelder-Mead Downhill Simplex to refine the transformation is a better
-  solution.
-
-  runtime complexity of:
-
-      grid search: nRotationIntervals * nScaleIntervals * nSet1 * nSet2
-
-      downhill search: not polynomial nor deterministic.  varies by dataset.
-
-     In the searches, if rotation and scale are fixed, and transX and transY
-     are to be found, one can use either:
-
-         (1) compare the offsets implied by each combination of points in set 1
-             and set 2.
-             for brown_lowe_2003 image1 and image2, the number of corners is
-             n1 = 78
-             n2 = 88
-             n1 * n2 = 5616
-
-             How does one determine the best solution among those translations?
-             One needs an assumed tolerance for the translation, and then to
-             count the number of matches to a point in the 2nd set.
-             The best solution has the highest number of matches with the same
-             rules for an assumed tolerance and the smallest avg difference
-             with predicted positions for matches in set 2.
-
-             For the tolerance, the reasons that translation might be different
-             as a function of position in the image might be:
-               -- due to rounding to a pixel.  these are very small errors.
-               -- due to projection effects for different epipolar geometry
-                  (camera nadir perpendicular to different feature, for example).
-                  these are potentially very large and are not
-                  solved in the transformation with this point matcher though a
-                  tolerance is made for a small amount of it.
-                  (NOTE however, that once the points are matched, the true
-                  epipolar geometry can be calculated with the StereoProjection
-                  classes).
-               -- due to errors in the location of the corner.  this can be due
-                  to the edge detector.  these are small errors.
-               -- due to image warping such as distortions from the shape of the
-                  lens.  one would need a point matcher tailored for the
-                  specific geometric projection.
-               -- due to a camera not completely perpendicularly aligned with
-                  the optical axis. presumably, this is an extreme case and
-                  you'd want better data...
-
-             For the Brown & Lowe 2003 points,
-                 transX=293.1 (stdDev=10.3)
-                 transY=14.3 (stdDev=5.9)
-             the large standard deviation appears to be due to projection
-             effects.  the skyline is rotated about 13 degrees w.r.t. skyline
-             in second image while the features at the bottom remain horizontal
-             in both.
-
-             The spread in standard deviation appears to be correlated w/
-             the image dimensions, as would be expected with projection being
-             the largest reason for a spread in translation.
-             That is, the X axis is twice the size of the Y and so are their
-             respective standard deviations.
-
-             Could make a generous allowance for projection effects by assuming
-             a maximum present such as that in the Brown & Lowe images, that is
-             image size times an error due to a differential spread
-             over those pixels for a maximum difference in rotation such as
-             20 degrees or something.  For Brown & Lowe images, the tolerance
-             would be number of pixels for dimension times 0.02.
-
-             If there is no reasonable solution using only scale, rotation, and
-             translation, then a more computationally expensive point matcher
-             that solves for epipolar geometry too or a differential rotation
-             and associated variance in other parameters
-             is needed (and hasn't been implemented
-             here yet).  **OR, even better, an approach using contours and an
-             understanding of occlusion (the later possibly requires shape
-             identification) can be made with the contour matcher in this
-             project.**
-             The contour matcher approach is currently not **commonly**
-             possible with this project, because most edges are not closed
-             curves.
-
-    OR
-
-         (2) try every possible combination of translation for X and Y which
-             would be width of image 2 in pixels times the height of image 2
-             in pixels.
-             for brown_lowe_2003 image1 and image2,
-             image2 width = 517, height = 374
-             w * h = 193358
-             so this method is 34 times more
-
-             The best solution among those translations is found in the same
-             way as (1) above.
- </pre>
+ 
+ * The resulting transformation returns rotation in a clockwise direction.
 
  * @author nichole
  */
@@ -840,13 +640,8 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         log.info("nPairPerm=" + nPairPerm + " nPreSearch=" + nPreSearch);
 
-        if (nPairPerm < nPreSearch) {
-            return calculateEuclideanTransformationForSmallSets(set1, set2);
-        }
-
-        TransformationPointFit fit = calculateRoughTransformation(
-            set1, set2);
-
+        TransformationPointFit fit = calculateEuclideanTransformationUsingPairs(set1, set2);
+        
         if (fit == null) {
             return null;
         }
@@ -860,10 +655,10 @@ public final class PointMatcher extends AbstractPointMatcher {
             return fit;
         }
 
-        float rotHalfRange = 45;
-        float rotDelta = 2;
-        float transHalfRange = 500;
-        float transDelta = 4;
+        float rotHalfRange = 2;
+        float rotDelta = 0.5f;
+        float transHalfRange = 10;
+        float transDelta = 1;
         boolean useGreedyMatching = true;
 
         if (fit.getScale() >= 1.0) {
@@ -912,130 +707,7 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         return fit;
     }
-
-    /**
-     * Calculate Euclidean transformation for unmatched points.  As with all
-     * methods, the user should try to reduce the number of points to the
-     * best determined and distributed throughout the area of intersection
-     * while reducing the overall number of points.
-     *
-     * This method is in progress, but ignoring scale, produces a
-     * solution that is accurate within 20 degrees of rotation and
-     * 50 pixels in translation of X and the same for translation of Y.
-     * The method should be followed by refineTheTransformation.
-     * NOTE that the transformation within the fit may return a scale that
-     * is smaller than 1.
-     *
-     * @param set1
-     * @param set2
-     *
-     * @return
-     */
-    public TransformationPointFit calculateRoughTransformation(
-        PairIntArray set1, PairIntArray set2) {
-
-        if ((set1 == null) || (set2 == null)) {
-            return null;
-        }
-        if ((set1.getN() < 3) || (set2.getN() < 3)) {
-            return null;
-        }
-
-        boolean useGreedySearch = true;
-
-        int nMaxMatchable = (set1.getN() < set2.getN()) ? set1.getN()
-            : set2.getN();
-
-        TransformationPointFit bestFit = null;
-
-        TransformationPointFit bestFitForScale = null;
-
-        float scaleStart = 1;
-        float scaleStop = 5;
-        float scaleDelta = 1;
-
-        for (float scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
-
-            TransformationPointFit fit = preSearch(set1, set2, scale,
-                useGreedySearch);
-
-            if (fitIsBetter(bestFit, fit)) {
-                bestFit = fit;
-            }
-
-            if (fitIsBetter(bestFitForScale, bestFit) && (bestFit != null)) {
-
-                bestFitForScale = bestFit;
-
-            } else {
-
-                log.fine("previous scale solution was better, so end scale iter");
-
-                // revert to previous scale
-                bestFit = bestFitForScale;
-
-                // scale was probably smaller so return best solution
-                break;
-            }
-        }
-
-        // check whether the scale for set1 is larger than that of set2
-        float fracMatched = (bestFit == null) ? 0 :
-            (float)bestFit.getNumberOfMatchedPoints()/(float)nMaxMatchable;
-
-        if (fracMatched < 0.3) {
-            TransformationPointFit bestRevFit = null;
-            TransformationPointFit bestRevFitForScale = null;
-            // reverse the order to solve for possible scale < 1.
-            for (float scale = scaleStart; scale <= scaleStop; scale += scaleDelta) {
-
-                TransformationPointFit revFit = preSearch(set2, set1, scale,
-                    useGreedySearch);
-
-                if (fitIsBetter(bestRevFit, revFit)) {
-                    bestRevFit = revFit;
-                }
-
-                if (fitIsBetter(bestRevFitForScale, bestRevFit) && (bestRevFit != null)) {
-
-                    bestRevFitForScale = bestRevFit;
-
-                } else {
-
-                    log.fine("previous scale for reverse solution was better, so end scale iter");
-
-                    // revert to previous scale
-                    bestRevFit = bestRevFitForScale;
-
-                    // scale was probably smaller so return best solution
-                    break;
-                }
-            }
-            if (fitIsBetter(bestFit, bestRevFit)) {
-                // reverse the parameters to write transformation w.r.t. set1
-                // needs a reference point in both datasets for direct calculation
-                TransformationParameters params = bestRevFit.getParameters();
-
-                MatchedPointsTransformationCalculator tc = new
-                    MatchedPointsTransformationCalculator();
-
-                TransformationParameters revParams = tc.swapReferenceFrames(
-                    params);
-
-                bestFit = new TransformationPointFit(revParams,
-                    bestRevFit.getNumberOfMatchedPoints(),
-                    bestRevFit.getMeanDistFromModel(),
-                    bestRevFit.getStDevFromMean(),
-                    bestRevFit.getTranslationXTolerance(),
-                    bestRevFit.getTranslationYTolerance());
-
-                bestFit.setMaximumNumberMatchable(nMaxMatchable);
-            }
-        }
-
-        return bestFit;
-    }
-
+    
     /**
      * given unordered unmatched points for a transformed set1 and
      * the model set2 from image1 and image2
@@ -3869,25 +3541,25 @@ if (compTol == 1) {
                *
     For a subset chooser, uses Gosper's hack from
     *  http://read.seas.harvard.edu/cs207/2012/
-    * 
+    *
     * Note that if the solution converges, it will return before trying all
     * subset combinations.
     */
-    public TransformationPointFit calculateEuclideanTransformationForSmallSets(
+    protected TransformationPointFit calculateEuclideanTransformationUsingPairs(
         PairIntArray set1, PairIntArray set2) {
 
         boolean useLargestToleranceForOutput = true;
         boolean useGreedyMatching = true;
-        
-        TransformationPointFit fit = calculateEuclideanTransformationForSmallSets(
+
+        TransformationPointFit fit = calculateEuclideanTransformationUsingPairs(
             set1, set2, useLargestToleranceForOutput, useGreedyMatching);
 
         //TODO: may need refinement here
-        
+
         return fit;
     }
 
-    public TransformationPointFit calculateEuclideanTransformationForSmallSets(
+    protected TransformationPointFit calculateEuclideanTransformationForSmallSets(
         PairIntArray set1, PairIntArray set2,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
 
@@ -3902,33 +3574,166 @@ if (compTol == 1) {
         int[] selected2 = new int[k];
 
         int maxNMatchable = Math.min(n1, n2);
-        
+
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+        float toleranceTransX;
+        float toleranceTransY;
+        if (useLargestToleranceForOutput) {
+            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);
+            toleranceTransY = toleranceTransX;
+        } else {
+            toleranceTransX = 4;
+            toleranceTransY = 4;
+        }
+
         TransformationPointFit bestFit = null;
 
         while (s1.getNextSubset(selected1) != -1) {
 
             SubsetChooser s2 = new SubsetChooser(n2, k);
-            
+
             while (s2.getNextSubset(selected2) != -1) {
-    
-                TransformationPointFit fit = calculateFit(set1, set2,
-                    selected1[0], selected1[1], selected2[0], selected2[1],
-                    useLargestToleranceForOutput, useGreedyMatching);
+
+                TransformationParameters params = tc.calulateEuclideanGivenScale(
+                    set1.getX(selected1[0]), set1.getY(selected1[0]),
+                    set1.getX(selected1[1]), set1.getY(selected1[1]),
+                    set2.getX(selected2[0]), set2.getY(selected2[0]),
+                    set2.getX(selected2[1]), set2.getY(selected2[1]),
+                    0, 0);
+
+                TransformationPointFit fit = evaluateForUnmatched(params,
+                    set1, set2, toleranceTransX, toleranceTransY,
+                    useGreedyMatching);
 
                 if (fitIsBetter(bestFit, fit)) {
                     bestFit = fit;
+
+                    if (hasConverged(bestFit, maxNMatchable)) {
+                        return bestFit;
+                    }
                 }
-                
-                fit = calculateFit(set1, set2,
-                    selected1[0], selected1[1], selected2[1], selected2[0],
-                    useLargestToleranceForOutput, useGreedyMatching);
-                
+
+                params = tc.calulateEuclideanGivenScale(
+                    set1.getX(selected1[0]), set1.getY(selected1[0]),
+                    set1.getX(selected1[1]), set1.getY(selected1[1]),
+                    set2.getX(selected2[1]), set2.getY(selected2[1]),
+                    set2.getX(selected2[0]), set2.getY(selected2[0]),
+                    0, 0);
+
+                fit = evaluateForUnmatched(params, set1, set2,
+                    toleranceTransX, toleranceTransY, useGreedyMatching);
+
                 if (fitIsBetter(bestFit, fit)) {
                     bestFit = fit;
+
+                    if (hasConverged(bestFit, maxNMatchable)) {
+                        return bestFit;
+                    }
                 }
-                
-                if (hasConverged(bestFit, maxNMatchable)) {
-                    return bestFit;
+            }
+        }
+
+        return bestFit;
+    }
+
+    public TransformationPointFit calculateEuclideanTransformationUsingPairs(
+        PairIntArray set1, PairIntArray set2,
+        boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
+
+        int n1 = set1.getN();
+        int n2 = set2.getN();
+
+        if (n2 > largeSearchLimit) {
+            return calculateEuclideanTransformationUsingPairsPartitioned(set1, set2,
+                useLargestToleranceForOutput, useGreedyMatching);
+        }
+
+        return calculateEuclideanTransformationForSmallSets(set1, set2,
+            useLargestToleranceForOutput, useGreedyMatching);
+    }
+
+    protected TransformationPointFit calculateEuclideanTransformationUsingPairsPartitioned(
+        PairIntArray set1, PairIntArray set2,
+        boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
+
+        int n1 = set1.getN();
+        int n2 = set2.getN();
+
+        PointPartitioner partitioner = new PointPartitioner();
+
+        List<PairIntArray> set2Subsets = partitioner.randomSubsets(set2,
+            largeSearchLimit);
+
+        int k = 2;
+
+        SubsetChooser s1 = new SubsetChooser(n1, k);
+
+        int[] selected1 = new int[k];
+        int[] selected2 = new int[k];
+
+        MatchedPointsTransformationCalculator tc = new
+            MatchedPointsTransformationCalculator();
+        float toleranceTransX;
+        float toleranceTransY;
+        if (useLargestToleranceForOutput) {
+            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);
+            toleranceTransY = toleranceTransX;
+        } else {
+            toleranceTransX = 4;
+            toleranceTransY = 4;
+        }
+
+        int maxNMatchable = Math.min(n1, n2);
+
+        TransformationPointFit bestFit = null;
+
+        while (s1.getNextSubset(selected1) != -1) {
+
+            for (PairIntArray set2Subset : set2Subsets) {
+
+                int n2S = set2Subset.getN();
+
+                SubsetChooser s2 = new SubsetChooser(n2S, k);
+
+                while (s2.getNextSubset(selected2) != -1) {
+
+                    TransformationParameters params = tc.calulateEuclideanGivenScale(
+                        set1.getX(selected1[0]), set1.getY(selected1[0]),
+                        set1.getX(selected1[1]), set1.getY(selected1[1]),
+                        set2Subset.getX(selected2[0]), set2Subset.getY(selected2[0]),
+                        set2Subset.getX(selected2[1]), set2Subset.getY(selected2[1]),
+                        0, 0);
+
+                    TransformationPointFit fit = evaluateForUnmatched(params,
+                        set1, set2, toleranceTransX, toleranceTransY,
+                        useGreedyMatching);
+
+                    if (fitIsBetter(bestFit, fit)) {
+                        bestFit = fit;
+
+                        if (hasConverged(bestFit, maxNMatchable)) {
+                            return bestFit;
+                        }
+                    }
+
+                    params = tc.calulateEuclideanGivenScale(
+                        set1.getX(selected1[0]), set1.getY(selected1[0]),
+                        set1.getX(selected1[1]), set1.getY(selected1[1]),
+                        set2Subset.getX(selected2[1]), set2Subset.getY(selected2[1]),
+                        set2Subset.getX(selected2[0]), set2Subset.getY(selected2[0]),
+                        0, 0);
+
+                    fit = evaluateForUnmatched(params, set1, set2,
+                        toleranceTransX, toleranceTransY, useGreedyMatching);
+
+                    if (fitIsBetter(bestFit, fit)) {
+                        bestFit = fit;
+
+                        if (hasConverged(bestFit, maxNMatchable)) {
+                            return bestFit;
+                        }
+                    }
                 }
             }
         }
@@ -3955,7 +3760,7 @@ if (compTol == 1) {
     protected long estimateNStepsPairCalculation(int n1, int n2) {
 
         long np = numberOfPairPermutations(n1, n2);
-        
+
         if (np == Long.MAX_VALUE) {
             return np;
         }
@@ -3963,36 +3768,5 @@ if (compTol == 1) {
         long nPerFitGreedy = n1 * n2;
 
         return np * 2 * nPerFitGreedy;
-    }
-
-    protected TransformationPointFit calculateFit(PairIntArray set1,
-        PairIntArray set2, int set1Idx1, int set1Idx2, int set2Idx1,
-        int set2Idx2, boolean useLargestToleranceForOutput,
-        boolean useGreedyMatching) {
-
-        MatchedPointsTransformationCalculator tc = new
-            MatchedPointsTransformationCalculator();
-
-        TransformationParameters params = tc.calulateEuclideanGivenScale(
-            set1.getX(set1Idx1), set1.getY(set1Idx1),
-            set1.getX(set1Idx2), set1.getY(set1Idx2),
-            set2.getX(set2Idx1), set2.getY(set2Idx1),
-            set2.getX(set2Idx2), set2.getY(set2Idx2),
-            0, 0);
-
-        float toleranceTransX;
-        float toleranceTransY;
-        if (useLargestToleranceForOutput) {
-            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);
-            toleranceTransY = toleranceTransX;
-        } else {
-            toleranceTransX = 4;
-            toleranceTransY = 4;
-        }
-
-        TransformationPointFit fit = evaluateForUnmatched(params, set1, set2,
-            toleranceTransX, toleranceTransY, useGreedyMatching);
-
-        return fit;
     }
 }
