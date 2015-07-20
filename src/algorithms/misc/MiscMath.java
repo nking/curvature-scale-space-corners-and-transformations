@@ -1080,4 +1080,30 @@ public class MiscMath {
         return indexes;
     }
     
+    /**
+     * write value to a byte array in big endian, that is LSB in highest order bit
+     * (MSB is in lowest memory address).
+     * these are signed values stored as twos complement and can be input
+     * to BigInteger's constructor.
+     * @param value
+     * @return 
+     */
+    public static byte[] writeToBigEndianBytes(long value) {
+    
+        long nBits = numberOfBits(value);
+        
+        int nBytes = (int) Math.ceil((float)nBits/(float)4);
+        
+        byte[] bytes = new byte[nBytes];
+
+        for (int i = 0; i < nBytes; i++) {
+            int shift = i * 8;
+            long a = (value >> shift);
+            byte b = (byte)a;
+            bytes[nBytes - i - 1] = b;
+        }
+
+        return bytes;
+    }
+    
 }

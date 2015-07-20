@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 import java.util.logging.Logger;
 
 import algorithms.util.PolygonAndPointPlotter;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -631,6 +632,22 @@ public class MiscMathTest extends TestCase {
             float r = result[i];
             float e = expectedRot[i];
             assertTrue(Math.abs(r - e) < eps);
+        }
+    }
+    
+    public void testWriteToBigEndianBytes() {
+                
+        for (long i = 0; i < 62; ++i) {
+            
+            long v = 1 << i;
+            
+            byte[] bytes = MiscMath.writeToBigEndianBytes(v);
+            
+            BigInteger b = new BigInteger(bytes);
+            
+            long r = b.longValueExact();
+            
+            assertTrue(r == v);
         }
     }
 }

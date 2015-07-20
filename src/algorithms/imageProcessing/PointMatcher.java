@@ -3869,16 +3869,21 @@ if (compTol == 1) {
                *
     For a subset chooser, uses Gosper's hack from
     *  http://read.seas.harvard.edu/cs207/2012/
+    * 
+    * Note that if the solution converges, it will return before trying all
+    * subset combinations.
     */
-    protected TransformationPointFit calculateEuclideanTransformationForSmallSets(
+    public TransformationPointFit calculateEuclideanTransformationForSmallSets(
         PairIntArray set1, PairIntArray set2) {
 
         boolean useLargestToleranceForOutput = true;
         boolean useGreedyMatching = true;
-
+        
         TransformationPointFit fit = calculateEuclideanTransformationForSmallSets(
             set1, set2, useLargestToleranceForOutput, useGreedyMatching);
 
+        //TODO: may need refinement here
+        
         return fit;
     }
 
@@ -3896,6 +3901,8 @@ if (compTol == 1) {
         int[] selected1 = new int[k];
         int[] selected2 = new int[k];
 
+        int maxNMatchable = Math.min(n1, n2);
+        
         TransformationPointFit bestFit = null;
 
         while (s1.getNextSubset(selected1) != -1) {
@@ -3918,6 +3925,10 @@ if (compTol == 1) {
                 
                 if (fitIsBetter(bestFit, fit)) {
                     bestFit = fit;
+                }
+                
+                if (hasConverged(bestFit, maxNMatchable)) {
+                    return bestFit;
                 }
             }
         }
