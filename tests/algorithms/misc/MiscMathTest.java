@@ -246,6 +246,15 @@ public class MiscMathTest extends TestCase {
         result = MiscMath.factorial(0);
         assertTrue(result == 0);
     }
+    
+    public void testFactorialBigInteger() throws Exception {
+
+        BigInteger expected = new BigInteger("87178291200");
+        
+        BigInteger result = MiscMath.factorialBigInteger(14);
+
+        assertTrue(result.compareTo(expected) == 0);
+    }
 
     public void testSubsets() throws Exception {
 

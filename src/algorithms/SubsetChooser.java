@@ -4,7 +4,10 @@ import algorithms.misc.MiscMath;
 import java.math.BigInteger;
 
 /**
-Uses Gosper's hack from
+Class to iterate over every combination of subsets within n objects in an 
+ordered manner.
+
+The class uses Gosper's hack from
   http://read.seas.harvard.edu/cs207/2012/
 
  * @author nichole
@@ -29,15 +32,15 @@ public class SubsetChooser {
 
     /**
      * constructor with the number of indexes to choose from, n, and the size of
-     * the subset, k
-     * @param n
-     * @param k
+     * the subset, k.
+     * @param n the number of indexes that the selector will choose from
+     * @param k the subset size of selected indexes
      */
     public SubsetChooser(int n, int k) {
         
-        if (k > 63) {
+        if (k > 13) {
             throw new IllegalArgumentException(
-                "currently, class can only handle k < 64");
+                "currently, class can only handle k < 13, but changes to accomodate larger could be made");
         }
 
         this.n = n;

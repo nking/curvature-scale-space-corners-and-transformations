@@ -2,6 +2,7 @@ package algorithms.misc;
 
 import algorithms.CountingSort;
 import algorithms.util.PairInt;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -478,7 +479,7 @@ public class MiscMath {
     }
     
     /**
-     * compute n!/(n-k)!... needed for large numbers
+     * compute n!
      *
      * @param n
      * @return
@@ -488,11 +489,37 @@ public class MiscMath {
         if (n < 3) {
             return n;
         }
+        
+        if (n > 12) {
+            throw new IllegalArgumentException("use factorialBigInteger instead");
+        }
 
         long result = 1;
         for (int i = 2; i <= n; i++) {
             result *= i;
         }
+        return result;
+    }
+    
+    /**
+     * compute n!
+     *
+     * @param n
+     * @return
+     */
+    public static BigInteger factorialBigInteger(int n) {
+
+        BigInteger result = BigInteger.ONE;
+
+        for (int i = 2; i <= n; i++) {
+            
+            byte[] bytes = MiscMath.writeToBigEndianBytes(i);
+            
+            BigInteger v = new BigInteger(bytes);
+            
+            result = result.multiply(v);
+        }
+        
         return result;
     }
     
