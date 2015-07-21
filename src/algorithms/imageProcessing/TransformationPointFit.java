@@ -215,6 +215,82 @@ public class TransformationPointFit implements Comparable<TransformationPointFit
         return -1;
     }
 
+    /**
+     * compare object other to this instance and return -1 if this instance
+     * is "better", 0 if they are equal, else 1 if other is "better".
+     * Uses the same logic as compareTo, except replaces nMatched with
+     * nMatched/nMaxMatchable.
+     * @param other
+     * @return 
+     */
+    public int compareToUsingNormalizedMatches(TransformationPointFit other) {
+    
+        if (other == null) {
+            return -1;
+        }
+        if ((other.getNumberOfMatchedPoints() == 0) && (nMatchedPoints > 0)) {
+            return -1;
+        }
+        if (Double.isNaN(other.getStDevFromMean()) && !Double.isNaN(stDevFromMean)) {
+            return -1;
+        }
+        if ((other.getStDevFromMean() == Double.MAX_VALUE) && 
+            (stDevFromMean != Double.MAX_VALUE)) {
+            return -1;
+        }
+        if ((other.getNumberOfMatchedPoints() > 0) && (nMatchedPoints == 0)) {
+            return 1;
+        }
+        if (!Double.isNaN(other.getStDevFromMean()) && Double.isNaN(stDevFromMean)) {
+            return 1;
+        }
+        if ((other.getStDevFromMean() != Double.MAX_VALUE) && 
+            (stDevFromMean == Double.MAX_VALUE)) {
+            return 1;
+        }
+        
+        TransformationPointFit compareFit = other;
+        
+        float compNMatches = (float)compareFit.getNumberOfMatchedPoints()/
+            (float)compareFit.getNMaxMatchable();
+        float bestNMatches = (float)nMatchedPoints/(float)nMaxMatchable;
+
+        double compAvg = compareFit.getMeanDistFromModel();
+        double bestAvg = meanDistFromModel;
+
+        double compS = compareFit.getStDevFromMean();
+        double bestS = stDevFromMean;
+
+        double diffEps = Math.sqrt(Math.min(compareFit.getNMaxMatchable(),
+            nMaxMatchable));
+        diffEps = 1./(10.*diffEps);
+
+        if (Math.abs(bestNMatches - compNMatches) <= diffEps) {
+
+            if (Double.isNaN(compareFit.getMeanDistFromModel())) {
+                return -1;
+            }
+            
+            if (compAvg < bestAvg) {
+                return 1;
+            } else if (compAvg > bestAvg) {
+                return -1;
+            }
+
+            if (compS < bestS) {
+                return 1;
+            } else if (compS > bestS) {
+                return -1;
+            }
+            
+        } else if (compNMatches > bestNMatches) {
+
+            return 1;
+        }
+        
+        return -1;
+    }
+
     @Override
     public String toString() {
         

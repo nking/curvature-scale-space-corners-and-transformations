@@ -375,7 +375,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 }
             
                 if ((ii == 0) && smallestEdgeIdxIsV && (vClosestCanBeReordered == 1) && (n0 == 3)) {
-                    log.warning(String.format(
+                    log.fine(String.format(
                     "creating a join point for an edge with size 3: xy=(%d,%d) loc=%d:%d",
                     vClosestLoc.getX(), vClosestLoc.getY(), vClosestLoc.getX(), 
                     vClosestLoc.getY()));
@@ -1579,7 +1579,7 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                     assert(edge1 != null);
 
                     if ((n0 == 3) && (loc0.getY() == 1)) {
-                        log.warning(String.format(
+                        log.fine(String.format(
                             "removing point (%d,%d) but it is in the middle of an edge of size 3",
                             edge0.getX(1), edge0.getY(1)));
                     }

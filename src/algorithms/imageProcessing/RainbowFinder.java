@@ -290,7 +290,7 @@ public class RainbowFinder {
         // the camera
 
         int[] minMaxXY = MiscMath.findMinMaxXY(rainbowPoints);
-        log.info("rainbow range in x: " + minMaxXY[0] + " to " + minMaxXY[1]);
+        log.fine("rainbow range in x: " + minMaxXY[0] + " to " + minMaxXY[1]);
         
         PolynomialFitter polyFitter = new PolynomialFitter();
         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
@@ -376,7 +376,7 @@ public class RainbowFinder {
                 float cieX = colorImg.getCIEX(idx);
                 float cieY = colorImg.getCIEY(idx);
 
-log.info(String.format(
+log.fine(String.format(
                     "(%d,%d) r=%d, g=%d, b=%d  rDivB=%f  cieX=%f  cieY=%f  hue=%f",
                     x, y, r, g, b, rDivB, cieX, cieY, colorImg.getHue(idx)));
 

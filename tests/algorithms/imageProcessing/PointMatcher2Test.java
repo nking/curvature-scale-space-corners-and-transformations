@@ -71,7 +71,7 @@ public class PointMatcher2Test extends TestCase {
 
         int z = 1;
     }*/
-   
+
     public void testPerformMatchingForMostlyVerticalTranslation() throws Exception {
 
         String fileName1 = "brown_lowe_2003_image1.jpg";
@@ -112,7 +112,7 @@ public class PointMatcher2Test extends TestCase {
         PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
         PairIntArray skylineCorners2 = detector2.getSkylineCornersInOriginalReferenceFrame();
         List<PairIntArray> skylineEdges2 = detector2.getSkylineEdgesInOriginalReferenceFrame();
-        
+
         Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
         String dirPath = ResourceFinder.findDirectory("bin");
         Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
@@ -122,73 +122,51 @@ public class PointMatcher2Test extends TestCase {
 
         PointMatcher pointMatcher = new PointMatcher();
 
-        log.info("nSkylineCorners1=" + skylineCorners1.getN() + " nSkylineCorners2=" 
+        log.info("nSkylineCorners1=" + skylineCorners1.getN() + " nSkylineCorners2="
             + skylineCorners2.getN());
 
         float scale = 1;
         float rotationLowLimitInDegrees = 335;
         float rotationHighLimitInDegrees = 25;
-        
+
+        long t0 = System.currentTimeMillis();
+
         TransformationPointFit skyLineFit =
             pointMatcher.calculateEuclideanTransformation(
                 skylineCorners1, skylineCorners2,
+                corners1, corners2,
                 scale, rotationLowLimitInDegrees,
-                rotationHighLimitInDegrees); 
+                rotationHighLimitInDegrees);
 
-        log.info("euclidean tr from skyline alone=" + skyLineFit.toString());
+        long t1 = System.currentTimeMillis();
+        double t0Sec = (t1 - t0) * 1e-3;
+
+        log.info("(" + t0Sec +  " seconds)"
+            + " euclidean tr=" + skyLineFit.toString());
+
+        PairIntArray comb1 = skylineCorners1.copy();
+        comb1.addAll(corners1);
+        PairIntArray comb2 = skylineCorners2.copy();
+        comb2.addAll(corners2);
         
         writeTransformed(skyLineFit.getParameters(), image2.copyImage(),
-            skylineCorners1, skylineCorners2, "transformedSkyline.png");
-        
-        writeImage(image1.copyImage(), corners1, "corners1.png");
-        writeImage(image2.copyImage(), corners2, "corners2.png");
-        
-        log.info("nCorners1=" + corners1.getN() + " nCorners2=" + corners2.getN());
+            comb1, comb2, "transformedSkyline.png");
 
-        /*TransformationPointFit allFit =
-            pointMatcher.calculateEuclideanTransformation(corners1, corners2,
-                scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees); 
+        writeImage(image1.copyImage(), comb1, "corners1.png");
+        writeImage(image2.copyImage(), comb2, "corners2.png");
         
-        if (allFit != null) {
-            log.info("all fit from all corners=" + allFit.toString());
-        }*/
+        float tolTransX = 20;
+        float tolTransY = 20;
+        boolean useGreedyMatching = false;
         
-        float rotHalfRange = 20;
-        float rotDelta = 2f;
-        float transHalfRange = 200;
-        float transDelta = 4;
-        
-        boolean useGreedyMatching = true;
-        
-        PairIntArray skyAndAllCorners1 = skylineCorners1.copy();
-        skyAndAllCorners1.addAll(corners1);
-        PairIntArray skyAndAllCorners2 = skylineCorners2.copy();
-        skyAndAllCorners2.addAll(corners2);
-                
-        TransformationPointFit trFit2 = pointMatcher.refineTheTransformation(
-            skyLineFit.getParameters(), skyAndAllCorners1, skyAndAllCorners2,
-            rotHalfRange, rotDelta,
-            transHalfRange, transDelta, transHalfRange, transDelta,
-            useGreedyMatching);
-
-        if (trFit2 != null) {
-            log.info("fit from skyline and all corners=" + trFit2.toString());
-        }
-                
-        writeTransformed(trFit2.getParameters(), image2.copyImage(),
-            corners1, corners2, "transformedCorners.png");
-        
-        useGreedyMatching = false;
-        float tolTransX = 10; 
-        float tolTransY = 10;
-            
-        pointMatcher.match(trFit2.getParameters(), skyAndAllCorners1, skyAndAllCorners2,
+        pointMatcher.match(skyLineFit.getParameters(), 
+            comb1, comb2,
             outputMatchedScene, outputMatchedModel, 
             tolTransX, tolTransY, useGreedyMatching);
         
-         writeTransformed(trFit2.getParameters(), image2.copyImage(),
-            outputMatchedScene, outputMatchedModel, "transformedCorners_.png");
-       
+         writeTransformed(skyLineFit.getParameters(), image2.copyImage(),
+            outputMatchedScene, outputMatchedModel, "transformedCorners_.png"); 
+
 /*
 the skyline is hopefully useful in getting the transformation solution
 into the local search region
@@ -386,19 +364,19 @@ images as possible)
         ImageIOHelper.writeOutputImage(
             dirPath + "/tmp_m_2_" + outfileNumber + ".png", img2);
     }
-    
-    private void writeTransformed(TransformationParameters parameters, 
-        Image image2, PairIntArray points1, 
+
+    private void writeTransformed(TransformationParameters parameters,
+        Image image2, PairIntArray points1,
         PairIntArray points2, String outputImageName) {
-        
+
         Transformer transformer = new Transformer();
-        
+
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
-            
-            PairIntArray trPoints1 = transformer.applyTransformation(parameters, 
+
+            PairIntArray trPoints1 = transformer.applyTransformation(parameters,
                 points1);
-            
+
             PairIntArray transformedPoints1 = new PairIntArray();
             for (int i = 0; i < trPoints1.getN(); ++i) {
                 int x = trPoints1.getX(i);
@@ -411,13 +389,13 @@ images as possible)
                 }
                 transformedPoints1.add(x, y);
             }
-            
+
             int nExtraForDot = 1;
-            
-            ImageIOHelper.addCurveToImage(transformedPoints1, image2, nExtraForDot, 
+
+            ImageIOHelper.addCurveToImage(transformedPoints1, image2, nExtraForDot,
                 255, 0, 0);
 
-            ImageIOHelper.addCurveToImage(points2, image2, nExtraForDot, 
+            ImageIOHelper.addCurveToImage(points2, image2, nExtraForDot,
                 0, 0, 255);
 
             ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image2);
@@ -428,15 +406,15 @@ images as possible)
         }
     }
 
-    private void writeImage(Image image1, PairIntArray points1, 
+    private void writeImage(Image image1, PairIntArray points1,
         String outputImageName) {
-                
+
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
-            
+
             int nExtraForDot = 1;
-            
-            ImageIOHelper.addCurveToImage(points1, image1, nExtraForDot, 
+
+            ImageIOHelper.addCurveToImage(points1, image1, nExtraForDot,
                 255, 0, 0);
 
             ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image1);

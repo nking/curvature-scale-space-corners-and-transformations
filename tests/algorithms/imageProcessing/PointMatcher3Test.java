@@ -491,17 +491,21 @@ public class PointMatcher3Test extends TestCase {
                                 
                 long t0 = System.currentTimeMillis();
                 
-                TransformationPointFit fit = 
+                boolean earlyConvergeReturn = true;
+                
+                List<TransformationPointFit> fits = 
                     pointMatcher.calculateEuclideanTransformationUsingPairs(
-                    unmatchedLeftXY, unmatchedRightXY);
+                    unmatchedLeftXY, unmatchedRightXY, earlyConvergeReturn);
                 
                 long t1 = System.currentTimeMillis();
                 
                 double timeSec = (t1 - t0) * 1e-3;
                 
-                assert(fit != null);
+                assert(fits != null && !fits.isEmpty());
                 
                 log.info("fit for best pairwise calculation seconds=" + timeSec);
+                
+TransformationPointFit fit = fits.get(0);
 
                 TransformationParameters fitParams = fit.getParameters();
                 int diffN = Math.abs(nExpected - fit.getNumberOfMatchedPoints());
