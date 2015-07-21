@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 
 /**
  * Edge extractor operates on an image that has already been reduced to 
@@ -138,11 +139,11 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 img);
         }
         
-        log.info("edges.size()=" + output.size() + " before join-points");
+        log.fine("edges.size()=" + output.size() + " before join-points");
         
         output = joinOnJoinPoints(joinPoints, output);
  
-        log.info("edges.size()=" + output.size() + " after join-points");
+        log.fine("edges.size()=" + output.size() + " after join-points");
         
         int nMaxIter = 1;
         int nIter = 0;
@@ -1444,33 +1445,36 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
                 // has more than one joint point for this endpoint, though some
                 // might have already been removed and are in tmpFirstRemoveMap
                 // if so
-        
-                // construct a warning
-                StringBuilder sb = new StringBuilder("edge ");
-                sb.append(entry.getKey().toString())
-                    .append(" has ").append(Integer.toString(joinPointSet.size()))
-                    .append(" first endpoints, so deciding between them:");
-                for (PointPairInt joinPoint : entry.getValue()) {
-                    PairInt loc0 = joinPoint.getKey();
-                    PairInt loc1 = joinPoint.getValue();            
-                    PairIntArray edge0 = edges.get(loc0.getX());
-                    PairIntArray edge1 = edges.get(loc1.getX());            
-                    int x0 = edge0.getX(loc0.getY());
-                    int y0 = edge0.getY(loc0.getY());
-                    int x1 = edge1.getX(loc1.getY());
-                    int y1 = edge1.getY(loc1.getY());                
-                    sb.append("\n")
-                        .append(" ").append(Integer.toString(loc0.getX())).append(":")
-                        .append(Integer.toString(loc0.getY()))
-                        .append(" (").append(Integer.toString(x0)).append(",")
-                        .append(Integer.toString(y0)).append(")<-->")
-                        .append(" ").append(Integer.toString(loc1.getX())).append(":")
-                        .append(Integer.toString(loc1.getY()))
-                        .append(" (").append(Integer.toString(x1)).append(",")
-                        .append(Integer.toString(y1)).append(")");
+     
+                if (log.isLoggable(Level.FINE)) {
+                    // construct a warning
+                    StringBuilder sb = new StringBuilder("edge ");
+                    sb.append(entry.getKey().toString())
+                        .append(" has ").append(Integer.toString(joinPointSet.size()))
+                        .append(" first endpoints, so deciding between them:");
+                
+                    for (PointPairInt joinPoint : entry.getValue()) {
+                        PairInt loc0 = joinPoint.getKey();
+                        PairInt loc1 = joinPoint.getValue();            
+                        PairIntArray edge0 = edges.get(loc0.getX());
+                        PairIntArray edge1 = edges.get(loc1.getX());            
+                        int x0 = edge0.getX(loc0.getY());
+                        int y0 = edge0.getY(loc0.getY());
+                        int x1 = edge1.getX(loc1.getY());
+                        int y1 = edge1.getY(loc1.getY());                
+                        sb.append("\n")
+                            .append(" ").append(Integer.toString(loc0.getX())).append(":")
+                            .append(Integer.toString(loc0.getY()))
+                            .append(" (").append(Integer.toString(x0)).append(",")
+                            .append(Integer.toString(y0)).append(")<-->")
+                            .append(" ").append(Integer.toString(loc1.getX())).append(":")
+                            .append(Integer.toString(loc1.getY()))
+                            .append(" (").append(Integer.toString(x1)).append(",")
+                            .append(Integer.toString(y1)).append(")");
+                    }
+                    log.warning(sb.toString());
                 }
-                log.warning(sb.toString());
-            
+                
                 // choose closest join point pair, and break ties with those that
                 // have higher number of members that are already endpoints.
 

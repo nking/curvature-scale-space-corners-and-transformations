@@ -117,7 +117,6 @@ public class PointMatcher2Test extends TestCase {
         String dirPath = ResourceFinder.findDirectory("bin");
         Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
 
-        // ===== use partitioned matching =====
         PairIntArray outputMatchedScene = new PairIntArray();
         PairIntArray outputMatchedModel = new PairIntArray();
 
@@ -146,13 +145,13 @@ public class PointMatcher2Test extends TestCase {
         
         log.info("nCorners1=" + corners1.getN() + " nCorners2=" + corners2.getN());
 
-        TransformationPointFit allFit =
+        /*TransformationPointFit allFit =
             pointMatcher.calculateEuclideanTransformation(corners1, corners2,
                 scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees); 
         
         if (allFit != null) {
             log.info("all fit from all corners=" + allFit.toString());
-        }
+        }*/
         
         float rotHalfRange = 20;
         float rotDelta = 2f;
@@ -160,9 +159,14 @@ public class PointMatcher2Test extends TestCase {
         float transDelta = 4;
         
         boolean useGreedyMatching = true;
+        
+        PairIntArray skyAndAllCorners1 = skylineCorners1.copy();
+        skyAndAllCorners1.addAll(corners1);
+        PairIntArray skyAndAllCorners2 = skylineCorners2.copy();
+        skyAndAllCorners2.addAll(corners2);
                 
         TransformationPointFit trFit2 = pointMatcher.refineTheTransformation(
-            skyLineFit.getParameters(), corners1, corners2,
+            skyLineFit.getParameters(), skyAndAllCorners1, skyAndAllCorners2,
             rotHalfRange, rotDelta,
             transHalfRange, transDelta, transHalfRange, transDelta,
             useGreedyMatching);
@@ -170,10 +174,21 @@ public class PointMatcher2Test extends TestCase {
         if (trFit2 != null) {
             log.info("fit from skyline and all corners=" + trFit2.toString());
         }
-        
+                
         writeTransformed(trFit2.getParameters(), image2.copyImage(),
             corners1, corners2, "transformedCorners.png");
         
+        useGreedyMatching = false;
+        float tolTransX = 10; 
+        float tolTransY = 10;
+            
+        pointMatcher.match(trFit2.getParameters(), skyAndAllCorners1, skyAndAllCorners2,
+            outputMatchedScene, outputMatchedModel, 
+            tolTransX, tolTransY, useGreedyMatching);
+        
+         writeTransformed(trFit2.getParameters(), image2.copyImage(),
+            outputMatchedScene, outputMatchedModel, "transformedCorners_.png");
+       
 /*
 the skyline is hopefully useful in getting the transformation solution
 into the local search region

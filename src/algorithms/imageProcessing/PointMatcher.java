@@ -3510,7 +3510,7 @@ if (compTol == 1) {
             " seconds=" + ts);
 
         if (starterPoints.getNumberOfItems() > 0) {
-            log.info("best=" + starterPoints.getArray()[0].toString());
+            log.fine("best=" + starterPoints.getArray()[0].toString());
         }
 
         return starterPoints.getArray();
@@ -4345,4 +4345,55 @@ if (compTol == 1) {
         }
     }
     
+    public void match(TransformationParameters params, PairIntArray set1,
+        PairIntArray set2, PairIntArray outputMatchedSet1, 
+        PairIntArray outputMatchedSet2, float tolTransX, float tolTransY,
+        boolean useGreedyMatching) {
+        
+        Transformer transformer = new Transformer();
+        
+        PairFloatArray transformedSet1 = transformer.applyTransformation2(
+            params, set1);
+        
+        if (useGreedyMatching) {
+            
+            Set<Integer> chosen = new HashSet<Integer>();
+            for (int i = 0; i < transformedSet1.getN(); ++i) {
+                float transformedX = transformedSet1.getX(i);
+                float transformedY = transformedSet1.getY(i);
+                double minDiff = Double.MAX_VALUE;
+                int min2Idx = -1;
+                for (int j = 0; j < set2.getN(); ++j) {
+                    if (chosen.contains(Integer.valueOf(j))) {
+                        continue;
+                    }
+                    float dx = transformedX - set2.getX(j);
+                    float dy = transformedY - set2.getY(j);
+                    if ((Math.abs(dx) > tolTransX) || (Math.abs(dy) > tolTransY)) {
+                        continue;
+                    }
+                    float diff = (float)Math.sqrt(dx*dx + dy*dy);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        min2Idx = j;
+                    }
+                }
+                if (minDiff < Double.MAX_VALUE) {
+                    chosen.add(Integer.valueOf(min2Idx));
+                    outputMatchedSet1.add(set1.getX(i), set1.getY(i));
+                    outputMatchedSet2.add(set2.getX(min2Idx), set2.getY(min2Idx));
+                }
+            }
+            
+        } else {
+            
+            float[][] matchedIndexesAndDiffs = calculateMatchUsingOptimal(
+                transformedSet1, set2, tolTransX, tolTransY);
+            
+            double tolerance = Math.sqrt(tolTransX*tolTransX + tolTransY*tolTransY);
+            
+            matchPoints(set1, set2, (float)tolerance,
+                matchedIndexesAndDiffs, outputMatchedSet1, outputMatchedSet2);
+        }    
+    }
 }
