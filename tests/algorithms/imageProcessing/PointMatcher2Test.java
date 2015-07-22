@@ -73,16 +73,16 @@ public class PointMatcher2Test extends TestCase {
     }*/
 
     public void testPerformMatchingForMostlyVerticalTranslation() throws Exception {
-        /*
+        
         // transX ~ -280 and transY ~ -20
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String fileName2 = "brown_lowe_2003_image2.jpg";
-        */
         
+        /*
         // transX ~ -34 and transY ~ 0
         String fileName1 = "venturi_mountain_j6_0001.png";
         String fileName2 = "venturi_mountain_j6_0010.png";
-        
+        */
 
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
@@ -96,7 +96,20 @@ public class PointMatcher2Test extends TestCase {
 
         int nPreferredCorners = 200;
         int nCrit = 100;
-
+        
+        /*
+        // quick look at simplified image w/ color segmentation to explore contour matching visually
+        ImageProcessor imageProcessor = new ImageProcessor();
+        ImageExt clrImg1 = ImageIOHelper.readImageExt(filePath1);
+        GreyscaleImage csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg1, 3);
+        ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+            + "/color_seg1.png", csImg1);
+        ImageExt clrImg2 = ImageIOHelper.readImageExt(filePath2);
+        GreyscaleImage csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg2, 3);
+        ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+            + "/color_seg2.png", csImg2);
+        */
+        
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);
         detector.useOutdoorModeAndExtractSkyline();
