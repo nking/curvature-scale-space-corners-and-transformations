@@ -3976,9 +3976,13 @@ if (compTol == 1) {
             toleranceTransY = 4;
         }
         
-        List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
+        TransformationPointFit bestFitNormalized = null;
+
+        List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
 
         TransformationPointFit bestFit = null;
+
+        List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
 
         while (s1.getNextSubset(selected1) != -1) {
 
@@ -3997,27 +4001,44 @@ if (compTol == 1) {
                     set1, set2, toleranceTransX, toleranceTransY,
                     useGreedyMatching);
 
-                if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2) &&
-                    fitIsBetter(bestFit, fit)) {
-                    
-                    if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) && 
-                        (fit.getMeanDistFromModel() < 1)) {
-                        if (similarToBestFit.isEmpty()) {
-                            similarToBestFit.add(bestFit);
-                        } 
-                        similarToBestFit.add(fit);    
-                    } else {
-                        similarToBestFit.clear();
-                    }
-                    
-                    bestFit = fit;
-
-                    if (earlyConvergeReturn && 
-                        hasConverged(bestFit, maxNMatchable)) {
-                        if (similarToBestFit.isEmpty()) {
-                            similarToBestFit.add(bestFit);
+                if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
+                    if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                        if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
+                            && (fit.getMeanDistFromModel() < 1)) {
+                            if (similarToBestFitNormalized.isEmpty()) {
+                                similarToBestFitNormalized.add(bestFitNormalized);
+                            }
+                            similarToBestFitNormalized.add(fit);
+                        } else {
+                            similarToBestFitNormalized.clear();
                         }
-                        return similarToBestFit;
+                        bestFitNormalized = fit;
+                        if (earlyConvergeReturn
+                            && hasConverged(bestFitNormalized, maxNMatchable)) {
+                            if (similarToBestFitNormalized.isEmpty()) {
+                                similarToBestFitNormalized.add(bestFitNormalized);
+                            }
+                            return similarToBestFitNormalized;
+                        }
+                    }
+                    if (fitIsBetter(bestFit, fit)) {
+                        if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
+                            && (fit.getMeanDistFromModel() < 1)) {
+                            if (similarToBestFit.isEmpty()) {
+                                similarToBestFit.add(bestFit);
+                            }
+                            similarToBestFit.add(fit);
+                        } else {
+                            similarToBestFit.clear();
+                        }
+                        bestFit = fit;
+                        if (earlyConvergeReturn
+                            && hasConverged(bestFit, maxNMatchable)) {
+                            if (similarToBestFit.isEmpty()) {
+                                similarToBestFit.add(bestFit);
+                            }
+                            return similarToBestFit;
+                        }
                     }
                 }
 
@@ -4031,27 +4052,44 @@ if (compTol == 1) {
                 fit = evaluateForUnmatched(params, set1, set2,
                     toleranceTransX, toleranceTransY, useGreedyMatching);
 
-                if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2) &&
-                    fitIsBetter(bestFit, fit)) {
-                    
-                    if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) && 
-                        (fit.getMeanDistFromModel() < 1)) {
-                        if (similarToBestFit.isEmpty()) {
-                            similarToBestFit.add(bestFit);
-                        } 
-                        similarToBestFit.add(fit);    
-                    } else {
-                        similarToBestFit.clear();
-                    }
-                    
-                    bestFit = fit;
-
-                    if (earlyConvergeReturn && 
-                        hasConverged(bestFit, maxNMatchable)) {
-                        if (similarToBestFit.isEmpty()) {
-                            similarToBestFit.add(bestFit);
+                if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
+                    if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                        if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
+                            && (fit.getMeanDistFromModel() < 1)) {
+                            if (similarToBestFitNormalized.isEmpty()) {
+                                similarToBestFitNormalized.add(bestFitNormalized);
+                            }
+                            similarToBestFitNormalized.add(fit);
+                        } else {
+                            similarToBestFitNormalized.clear();
                         }
-                        return similarToBestFit;
+                        bestFitNormalized = fit;
+                        if (earlyConvergeReturn
+                            && hasConverged(bestFitNormalized, maxNMatchable)) {
+                            if (similarToBestFitNormalized.isEmpty()) {
+                                similarToBestFitNormalized.add(bestFitNormalized);
+                            }
+                            return similarToBestFitNormalized;
+                        }
+                    }
+                    if (fitIsBetter(bestFit, fit)) {
+                        if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
+                            && (fit.getMeanDistFromModel() < 1)) {
+                            if (similarToBestFit.isEmpty()) {
+                                similarToBestFit.add(bestFit);
+                            }
+                            similarToBestFit.add(fit);
+                        } else {
+                            similarToBestFit.clear();
+                        }
+                        bestFit = fit;
+                        if (earlyConvergeReturn
+                            && hasConverged(bestFit, maxNMatchable)) {
+                            if (similarToBestFit.isEmpty()) {
+                                similarToBestFit.add(bestFit);
+                            }
+                            return similarToBestFit;
+                        }
                     }
                 }
             }
@@ -4062,11 +4100,20 @@ if (compTol == 1) {
             for (TransformationPointFit fit : similarToBestFit) {
                 log.info("similarFit=" + fit.toString());
             }
-        } else if (similarToBestFit.isEmpty() && (bestFit != null)) {
-            similarToBestFit.add(bestFit);
         }
+        log.info("similarToBestFitNormalized.size=" + similarToBestFitNormalized.size());
+        if (similarToBestFitNormalized.size() > 1) {
+            for (TransformationPointFit fit : similarToBestFitNormalized) {
+                log.info("similarFit=" + fit.toString());
+            }
+        } else if (similarToBestFitNormalized.isEmpty() && (bestFitNormalized != null)) {
+            log.info("bestFitNormalized=" + bestFitNormalized.toString());
+            similarToBestFitNormalized.add(bestFitNormalized);
+        }
+        log.info("bestFit(not normalized)=" + bestFit.toString());
+        similarToBestFitNormalized.add(0, bestFit);
 
-        return similarToBestFit;
+        return similarToBestFitNormalized;
     }
     
     protected List<TransformationPointFit> 
@@ -4341,12 +4388,15 @@ if (compTol == 1) {
             toleranceTransY = 4;
         }
 
-        List<TransformationPointFit> similarToBestFit = new 
-            ArrayList<TransformationPointFit>();
-
         int maxNMatchable = Math.min(n1, n2);
+        
+        TransformationPointFit bestFitNormalized = null;
+
+        List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
 
         TransformationPointFit bestFit = null;
+
+        List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
 
         while (s1.getNextSubset(selected1) != -1) {
 
@@ -4369,20 +4419,31 @@ if (compTol == 1) {
                         set1, set2, toleranceTransX, toleranceTransY,
                         useGreedyMatching);
 
-                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2) 
-                        && fitIsBetterNormalized(bestFit, fit)) {
-
-                        if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) && 
-                            (fit.getMeanDistFromModel() < 1)) {
-                            if (similarToBestFit.isEmpty()) {
-                                similarToBestFit.add(bestFit);
-                            } 
-                            similarToBestFit.add(fit);    
-                        } else {
-                            similarToBestFit.clear();
+                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
+                        if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                            if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
+                                && (fit.getMeanDistFromModel() < 1)) {
+                                if (similarToBestFitNormalized.isEmpty()) {
+                                    similarToBestFitNormalized.add(bestFitNormalized);
+                                }
+                                similarToBestFitNormalized.add(fit);
+                            } else {
+                                similarToBestFitNormalized.clear();
+                            }
+                            bestFitNormalized = fit;
                         }
-                        
-                        bestFit = fit;
+                        if (fitIsBetter(bestFit, fit)) {
+                            if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
+                                && (fit.getMeanDistFromModel() < 1)) {
+                                if (similarToBestFit.isEmpty()) {
+                                    similarToBestFit.add(bestFit);
+                                }
+                                similarToBestFit.add(fit);
+                            } else {
+                                similarToBestFit.clear();
+                            }
+                            bestFit = fit;
+                        }
                     }
 
                     params = tc.calulateEuclideanGivenScale(
@@ -4395,30 +4456,55 @@ if (compTol == 1) {
                     fit = evaluateForUnmatched(params, set1, set2,
                         toleranceTransX, toleranceTransY, useGreedyMatching);
 
-                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2) 
-                        && fitIsBetterNormalized(bestFit, fit)) {
-                        
-                        if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) && 
-                            (fit.getMeanDistFromModel() < 1)) {
-                            if (similarToBestFit.isEmpty()) {
-                                similarToBestFit.add(bestFit);
-                            } 
-                            similarToBestFit.add(fit);    
-                        } else {
-                            similarToBestFit.clear();
+                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
+                        if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                            if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
+                                && (fit.getMeanDistFromModel() < 1)) {
+                                if (similarToBestFitNormalized.isEmpty()) {
+                                    similarToBestFitNormalized.add(bestFitNormalized);
+                                }
+                                similarToBestFitNormalized.add(fit);
+                            } else {
+                                similarToBestFitNormalized.clear();
+                            }
+                            bestFitNormalized = fit;
                         }
-                        bestFit = fit;
+                        if (fitIsBetter(bestFit, fit)) {
+                            if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
+                                && (fit.getMeanDistFromModel() < 1)) {
+                                if (similarToBestFit.isEmpty()) {
+                                    similarToBestFit.add(bestFit);
+                                }
+                                similarToBestFit.add(fit);
+                            } else {
+                                similarToBestFit.clear();
+                            }
+                            bestFit = fit;
+                        }
                     }
                 }
             }
         }
 
         log.info("similarToBestFit.size=" + similarToBestFit.size());
-
-        if (similarToBestFit.isEmpty()) {
-            similarToBestFit.add(bestFit);
+        if (similarToBestFit.size() > 1) {
+            for (TransformationPointFit fit : similarToBestFit) {
+                log.info("similarFit=" + fit.toString());
+            }
         }
-        return similarToBestFit;
+        log.info("similarToBestFitNormalized.size=" + similarToBestFitNormalized.size());
+        if (similarToBestFitNormalized.size() > 1) {
+            for (TransformationPointFit fit : similarToBestFitNormalized) {
+                log.info("similarFit=" + fit.toString());
+            }
+        } else if (similarToBestFitNormalized.isEmpty() && (bestFitNormalized != null)) {
+            log.info("bestFitNormalized=" + bestFitNormalized.toString());
+            similarToBestFitNormalized.add(bestFitNormalized);
+        }
+        log.info("bestFit(not normalized)=" + bestFit.toString());
+        similarToBestFitNormalized.add(0, bestFit);
+
+        return similarToBestFitNormalized;
     }
 
     protected List<TransformationPointFit> 
@@ -4461,9 +4547,13 @@ if (compTol == 1) {
         float rotRange = AngleUtil.getAngleDifference(rotationLowLimitInDegrees, 
             rotationHighLimitInDegrees);
         
-        TransformationPointFit bestFit = null;
-
         SubsetChooser s1 = new SubsetChooser(n1, k);
+
+        TransformationPointFit bestFitNormalized = null;
+
+        List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
+
+        TransformationPointFit bestFit = null;
 
         List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
         
@@ -4499,20 +4589,31 @@ if (compTol == 1) {
                             set1, set2, toleranceTransX, toleranceTransY,
                             useGreedyMatching);
 
-                        if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)
-                            && fitIsBetter(bestFit, fit)) {
-
-                            if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
-                                && (fit.getMeanDistFromModel() < 1)) {
-                                if (similarToBestFit.isEmpty()) {
-                                    similarToBestFit.add(bestFit);
+                        if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
+                            if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                                if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
+                                    && (fit.getMeanDistFromModel() < 1)) {
+                                    if (similarToBestFitNormalized.isEmpty()) {
+                                        similarToBestFitNormalized.add(bestFitNormalized);
+                                    }
+                                    similarToBestFitNormalized.add(fit);
+                                } else {
+                                    similarToBestFitNormalized.clear();
                                 }
-                                similarToBestFit.add(fit);
-                            } else {
-                                similarToBestFit.clear();
+                                bestFitNormalized = fit;
                             }
-
-                            bestFit = fit;
+                            if (fitIsBetter(bestFit, fit)) {
+                                if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
+                                    && (fit.getMeanDistFromModel() < 1)) {
+                                    if (similarToBestFit.isEmpty()) {
+                                        similarToBestFit.add(bestFit);
+                                    }
+                                    similarToBestFit.add(fit);
+                                } else {
+                                    similarToBestFit.clear();
+                                }
+                                bestFit = fit;
+                            }
                         }
 
                         params = tc.calulateEuclideanGivenScale(
@@ -4536,20 +4637,31 @@ if (compTol == 1) {
                             fit = evaluateForUnmatched(params, set1, set2,
                                 toleranceTransX, toleranceTransY, useGreedyMatching);
 
-                            if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)
-                                && fitIsBetter(bestFit, fit)) {
-
-                                if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
-                                    && (fit.getMeanDistFromModel() < 1)) {
-                                    if (similarToBestFit.isEmpty()) {
-                                        similarToBestFit.add(bestFit);
+                            if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
+                                if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                                    if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
+                                        && (fit.getMeanDistFromModel() < 1)) {
+                                        if (similarToBestFitNormalized.isEmpty()) {
+                                            similarToBestFitNormalized.add(bestFitNormalized);
+                                        }
+                                        similarToBestFitNormalized.add(fit);
+                                    } else {
+                                        similarToBestFitNormalized.clear();
                                     }
-                                    similarToBestFit.add(fit);
-                                } else {
-                                    similarToBestFit.clear();
+                                    bestFitNormalized = fit;
                                 }
-
-                                bestFit = fit;
+                                if (fitIsBetter(bestFit, fit)) {
+                                    if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
+                                        && (fit.getMeanDistFromModel() < 1)) {
+                                        if (similarToBestFit.isEmpty()) {
+                                            similarToBestFit.add(bestFit);
+                                        }
+                                        similarToBestFit.add(fit);
+                                    } else {
+                                        similarToBestFit.clear();
+                                    }
+                                    bestFit = fit;
+                                }
                             }
                         }
                     }  
@@ -4558,11 +4670,24 @@ if (compTol == 1) {
         }
 
         log.info("similarToBestFit.size=" + similarToBestFit.size());
-
-        if (similarToBestFit.isEmpty()) {
-            similarToBestFit.add(bestFit);
+        if (similarToBestFit.size() > 1) {
+            for (TransformationPointFit fit : similarToBestFit) {
+                log.info("similarFit=" + fit.toString());
+            }
         }
-        return similarToBestFit;
+        log.info("similarToBestFitNormalized.size=" + similarToBestFitNormalized.size());
+        if (similarToBestFitNormalized.size() > 1) {
+            for (TransformationPointFit fit : similarToBestFitNormalized) {
+                log.info("similarFit=" + fit.toString());
+            }
+        } else if (similarToBestFitNormalized.isEmpty() && (bestFitNormalized != null)) {
+            log.info("bestFitNormalized=" + bestFitNormalized.toString());
+            similarToBestFitNormalized.add(bestFitNormalized);
+        }
+        log.info("bestFit(not normalized)=" + bestFit.toString());
+        similarToBestFitNormalized.add(0, bestFit);
+
+        return similarToBestFitNormalized;
     }
     
     protected long numberOfPairPermutations(int n1, int n2) {
