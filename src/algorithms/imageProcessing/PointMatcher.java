@@ -823,7 +823,7 @@ public final class PointMatcher extends AbstractPointMatcher {
     
     /**
      * calculate for Euclidean transformation from set1 to set2 for
-     * the points being unmatched.
+     * unmatched points.
      *
      * @param scale
      * @param rotationLowLimitInDegrees
@@ -844,7 +844,8 @@ public final class PointMatcher extends AbstractPointMatcher {
         
         List<TransformationPointFit> fits = new ArrayList<TransformationPointFit>();
         List<Float> tols = new ArrayList<Float>();
-        float defaultTol = generalTolerance;
+        
+        //TODO: for an image with large projection effects, this may need to be a larger number.
         float[] tolerances = new float[]{10, 15};
         for (float tol : tolerances) {
             
@@ -4110,7 +4111,7 @@ if (compTol == 1) {
         TransformationPointFit bestFit = null;
 
         List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
-long count=0;
+
         while (s1.getNextSubset(selected1) != -1) {
 
             SubsetChooser s2 = new SubsetChooser(n2, k);
@@ -4243,7 +4244,6 @@ long count=0;
                         }
                     }
                 }
-                count++;
             }
         }
         
@@ -4275,9 +4275,9 @@ long count=0;
         int n1 = set1.getN();
         int n2 = set2.getN();
 
-        if (false && n2 > largeSearchLimit) {
+        if ((n2 > largeSearchLimit) && earlyConvergeReturn) {
             return calculateEuclideanTransformationUsingPairsPartitioned(
-                set1, set2, earlyConvergeReturn,
+                set1, set2,
                 useLargestToleranceForOutput, useGreedyMatching);
         }
 
@@ -4296,11 +4296,11 @@ long count=0;
         int n1 = set1.getN();
         int n2 = set2.getN();
 
-        if (n2 > largeSearchLimit) {
+        if (n2 > largeSearchLimit && earlyConvergeReturn) {
             return calculateEuclideanTransformationUsingPairsPartitioned(
                 set1, set2,
                 scale, rotationLowLimitInDegrees,
-                rotationHighLimitInDegrees, earlyConvergeReturn,
+                rotationHighLimitInDegrees,
                 useLargestToleranceForOutput, useGreedyMatching);
         }
 
@@ -4311,7 +4311,7 @@ long count=0;
 
     protected List<TransformationPointFit> 
     calculateEuclideanTransformationUsingPairsPartitioned(
-        PairIntArray set1, PairIntArray set2, boolean earlyConvergeReturn,
+        PairIntArray set1, PairIntArray set2,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
 
         int n1 = set1.getN();
@@ -4383,14 +4383,6 @@ long count=0;
                         }
                         
                         bestFit = fit;
-
-                        if (earlyConvergeReturn
-                            && hasConverged(bestFit, maxNMatchable)) {
-                            if (similarToBestFit.isEmpty()) {
-                                similarToBestFit.add(bestFit);
-                            }
-                            return similarToBestFit;
-                        }
                     }
 
                     params = tc.calulateEuclideanGivenScale(
@@ -4416,14 +4408,6 @@ long count=0;
                             similarToBestFit.clear();
                         }
                         bestFit = fit;
-
-                        if (earlyConvergeReturn
-                            && hasConverged(bestFit, maxNMatchable)) {
-                            if (similarToBestFit.isEmpty()) {
-                                similarToBestFit.add(bestFit);
-                            }
-                            return similarToBestFit;
-                        }
                     }
                 }
             }
@@ -4442,7 +4426,7 @@ long count=0;
         PairIntArray set1, PairIntArray set2,
         final float scale,
         final float rotationLowLimitInDegrees, 
-        final float rotationHighLimitInDegrees, boolean earlyConvergeReturn,
+        final float rotationHighLimitInDegrees,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
 
         int n1 = set1.getN();
@@ -4529,14 +4513,6 @@ long count=0;
                             }
 
                             bestFit = fit;
-
-                            if (earlyConvergeReturn
-                                && hasConverged(bestFit, maxNMatchable)) {
-                                if (similarToBestFit.isEmpty()) {
-                                    similarToBestFit.add(bestFit);
-                                }
-                                return similarToBestFit;
-                            }
                         }
 
                         params = tc.calulateEuclideanGivenScale(
@@ -4574,14 +4550,6 @@ long count=0;
                                 }
 
                                 bestFit = fit;
-
-                                if (earlyConvergeReturn
-                                    && hasConverged(bestFit, maxNMatchable)) {
-                                    if (similarToBestFit.isEmpty()) {
-                                        similarToBestFit.add(bestFit);
-                                    }
-                                    return similarToBestFit;
-                                }
                             }
                         }
                     }  
