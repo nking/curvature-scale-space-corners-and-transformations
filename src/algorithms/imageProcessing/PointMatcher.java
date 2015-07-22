@@ -50,9 +50,8 @@ public final class PointMatcher extends AbstractPointMatcher {
 
     protected static int minTolerance = 5;
 
-    //TODO: this has to be a high number for sets with projection.
-    // the solution is sensitive to this value.
-    private final float generalTolerance = 10;//5;
+    //NOTE: solution is sensitive to this number
+    private float generalTolerance = 10;
 
     public static float toleranceGridFactor = 4.f;
 
@@ -843,18 +842,33 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         long t0 = System.currentTimeMillis();
         
-        List<TransformationPointFit> fits = 
-            //calculateEuclideanTransformationUsingPairs(
-            calculateEuclideanTransformationForSmallSets(
-            skylineCorners1, skylineCorners2, 
-            scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees,
-            earlyConvergeReturn, useLargestToleranceForOutput, useGreedyMatching);
+        List<TransformationPointFit> fits = new ArrayList<TransformationPointFit>();
+        List<Float> tols = new ArrayList<Float>();
+        float defaultTol = generalTolerance;
+        float[] tolerances = new float[]{10, 15};
+        for (float tol : tolerances) {
+            
+            generalTolerance = tol;
+            
+            List<TransformationPointFit> fits2 = 
+                calculateEuclideanTransformationForSmallSets(
+                skylineCorners1, skylineCorners2, 
+                scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees,
+                earlyConvergeReturn, useLargestToleranceForOutput, useGreedyMatching);
+            
+            if (fits2 != null) {
+                fits.addAll(fits2);
+                for (int i = 0; i < fits2.size(); ++i) {
+                    tols.add(Float.valueOf(tol));
+                }
+            }
+        }
         
         long t1 = System.currentTimeMillis();
         
         log.info("(" + ((t1 - t0)*1e-3) + " seconds for eucl w/ pairs of skyline.");
-        
-        if (fits == null || fits.isEmpty()) {
+
+        if (fits.isEmpty()) {
             
             PairIntArray comb1 = skylineCorners1.copy();
             comb1.addAll(corners1);
@@ -865,16 +879,21 @@ public final class PointMatcher extends AbstractPointMatcher {
                 rotationLowLimitInDegrees, rotationHighLimitInDegrees);
         }
                 
-        // apply the best solutions to corners1, corners2:
+        // find the best fit to corners1, corners2
         TransformationPointFit bestFit = null;
-        for (TransformationPointFit fit : fits) {
+        for (int i = 0; i < fits.size(); ++i) {
+            
+            TransformationPointFit fit  = fits.get(i);
             
             TransformationPointFit fitA = evaluateForUnmatched(
                 fit.getParameters(), corners1, corners2,
                 generalTolerance, generalTolerance, useGreedyMatching);
             
+            log.info("test fit w/ corners=" + fitA.toString());
+            
             if (fitIsBetter(bestFit, fitA)) {
                 bestFit = fitA;
+                generalTolerance = tols.get(i).floatValue();
             }
         }
         
@@ -4084,10 +4103,14 @@ if (compTol == 1) {
         float rotRange = AngleUtil.getAngleDifference(rotationLowLimitInDegrees, 
             rotationHighLimitInDegrees);
 
-        TransformationPointFit bestFit = null;
+        TransformationPointFit bestFitNormalized = null;
+ 
+        List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
         
-        List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
+        TransformationPointFit bestFit = null;
 
+        List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
+long count=0;
         while (s1.getNextSubset(selected1) != -1) {
 
             SubsetChooser s2 = new SubsetChooser(n2, k);
@@ -4111,32 +4134,49 @@ if (compTol == 1) {
                     ((rotD <= rotationHighLimitInDegrees)
                       && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
                     )) {
-
+        
                     TransformationPointFit fit = evaluateForUnmatched(params,
                         set1, set2, toleranceTransX, toleranceTransY,
                         useGreedyMatching);
-
-                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2) 
-                        && fitIsBetterNormalized(bestFit, fit)) {
-                        
-                        if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) && 
-                            (fit.getMeanDistFromModel() < 1)) {
-                            if (similarToBestFit.isEmpty()) {
-                                similarToBestFit.add(bestFit);
-                            } 
-                            similarToBestFit.add(fit);    
-                        } else {
-                            similarToBestFit.clear();
-                        }
-                        
-                        bestFit = fit;
-
-                        if (earlyConvergeReturn && 
-                            hasConverged(bestFit, maxNMatchable)) {
-                            if (similarToBestFit.isEmpty()) {
-                                similarToBestFit.add(bestFit);
+    
+                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {                        
+                        if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                            if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1) && 
+                                (fit.getMeanDistFromModel() < 1)) {
+                                if (similarToBestFitNormalized.isEmpty()) {
+                                    similarToBestFitNormalized.add(bestFitNormalized);
+                                } 
+                                similarToBestFitNormalized.add(fit);    
+                            } else {
+                                similarToBestFitNormalized.clear();
                             }
-                            return similarToBestFit;
+                            bestFitNormalized = fit;
+                            if (earlyConvergeReturn && 
+                                hasConverged(bestFitNormalized, maxNMatchable)) {
+                                if (similarToBestFitNormalized.isEmpty()) {
+                                    similarToBestFitNormalized.add(bestFitNormalized);
+                                }
+                                return similarToBestFitNormalized;
+                            }
+                        }
+                        if (fitIsBetter(bestFit, fit)) {
+                            if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) && 
+                                (fit.getMeanDistFromModel() < 1)) {
+                                if (similarToBestFit.isEmpty()) {
+                                    similarToBestFit.add(bestFit);
+                                } 
+                                similarToBestFit.add(fit);    
+                            } else {
+                                similarToBestFit.clear();
+                            }
+                            bestFit = fit;
+                            if (earlyConvergeReturn && 
+                                hasConverged(bestFit, maxNMatchable)) {
+                                if (similarToBestFit.isEmpty()) {
+                                    similarToBestFit.add(bestFit);
+                                }
+                                return similarToBestFit;
+                            }
                         }
                     }
                     
@@ -4157,35 +4197,53 @@ if (compTol == 1) {
                         ((rotD <= rotationHighLimitInDegrees)
                           && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
                         )) {
-
+                        
                         fit = evaluateForUnmatched(params, set1, set2,
                             toleranceTransX, toleranceTransY, useGreedyMatching);
-
-                        if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2) 
-                            && fitIsBetterNormalized(bestFit, fit)) {
-                            
-                            if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) && 
-                                (fit.getMeanDistFromModel() < 1)) {
-                                if (similarToBestFit.isEmpty()) {
-                                    similarToBestFit.add(bestFit);
+                        
+                        if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
+                            if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                                if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
+                                    && (fit.getMeanDistFromModel() < 1)) {
+                                    if (similarToBestFitNormalized.isEmpty()) {
+                                        similarToBestFitNormalized.add(bestFitNormalized);
+                                    }
+                                    similarToBestFitNormalized.add(fit);
+                                } else {
+                                    similarToBestFitNormalized.clear();
                                 }
-                                similarToBestFit.add(fit);
-                            } else {
-                                similarToBestFit.clear();
+                                bestFitNormalized = fit;
+                                if (earlyConvergeReturn
+                                    && hasConverged(bestFitNormalized, maxNMatchable)) {
+                                    if (similarToBestFitNormalized.isEmpty()) {
+                                        similarToBestFitNormalized.add(bestFitNormalized);
+                                    }
+                                    return similarToBestFitNormalized;
+                                }
                             }
-                            
-                            bestFit = fit;
-
-                            if (earlyConvergeReturn && 
-                                hasConverged(bestFit, maxNMatchable)) {
-                                if (similarToBestFit.isEmpty()) {
-                                    similarToBestFit.add(bestFit);
+                            if (fitIsBetter(bestFit, fit)) {
+                                if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
+                                    && (fit.getMeanDistFromModel() < 1)) {
+                                    if (similarToBestFit.isEmpty()) {
+                                        similarToBestFit.add(bestFit);
+                                    }
+                                    similarToBestFit.add(fit);
+                                } else {
+                                    similarToBestFit.clear();
                                 }
-                                return similarToBestFit;
+                                bestFit = fit;
+                                if (earlyConvergeReturn
+                                    && hasConverged(bestFit, maxNMatchable)) {
+                                    if (similarToBestFit.isEmpty()) {
+                                        similarToBestFit.add(bestFit);
+                                    }
+                                    return similarToBestFit;
+                                }
                             }
                         }
                     }
                 }
+                count++;
             }
         }
         
@@ -4194,11 +4252,20 @@ if (compTol == 1) {
             for (TransformationPointFit fit : similarToBestFit) {
                 log.info("similarFit=" + fit.toString());
             }
-        } else if (similarToBestFit.isEmpty() && (bestFit != null)) {
-            similarToBestFit.add(bestFit);
         }
+        log.info("similarToBestFitNormalized.size=" + similarToBestFitNormalized.size());
+        if (similarToBestFitNormalized.size() > 1) {
+            for (TransformationPointFit fit : similarToBestFitNormalized) {
+                log.info("similarFit=" + fit.toString());
+            }
+        } else if (similarToBestFitNormalized.isEmpty() && (bestFitNormalized != null)) {
+            log.info("bestFitNormalized=" + bestFitNormalized.toString());
+            similarToBestFitNormalized.add(bestFitNormalized);
+        }
+        log.info("bestFit(not normalized)=" + bestFit.toString());
+        similarToBestFitNormalized.add(0, bestFit);
 
-        return similarToBestFit;
+        return similarToBestFitNormalized;
     }
 
     List<TransformationPointFit> calculateEuclideanTransformationUsingPairs(

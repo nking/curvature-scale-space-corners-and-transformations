@@ -73,14 +73,16 @@ public class PointMatcher2Test extends TestCase {
     }*/
 
     public void testPerformMatchingForMostlyVerticalTranslation() throws Exception {
-
+        /*
+        // transX ~ -280 and transY ~ -20
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String fileName2 = "brown_lowe_2003_image2.jpg";
-
-        /*
+        */
+        
+        // transX ~ -34 and transY ~ 0
         String fileName1 = "venturi_mountain_j6_0001.png";
         String fileName2 = "venturi_mountain_j6_0010.png";
-        */
+        
 
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
