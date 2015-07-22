@@ -72,167 +72,177 @@ public class PointMatcher2Test extends TestCase {
         
         String fileName1, fileName2;
         
-        for (int nTest = 0; nTest < 2; ++nTest) {
-        
-            if (nTest == 0) {
-                // transX ~ -280 and transY ~ -20
-                fileName1 = "brown_lowe_2003_image1.jpg";
-                fileName2 = "brown_lowe_2003_image2.jpg";
-            } else {
-                // transX ~ -34 and transY ~ 0
-                fileName1 = "venturi_mountain_j6_0001.png";
-                fileName2 = "venturi_mountain_j6_0010.png";
-            }
+        for (int nMethod = 1; nMethod < 2; ++nMethod) {
+            for (int nData = 0; nData < 2; ++nData) {
 
-            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-            ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-            int image1Width = img1.getWidth();
-            int image1Height = img1.getHeight();
+                if (nData == 0) {
+                    // transX ~ -280 and transY ~ -20
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                } else {
+                    // transX ~ -34 and transY ~ 0
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                }
 
-            String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-            ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-            int image2Width = img2.getWidth();
-            int image2Height = img2.getHeight();
+                String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+                ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+                int image1Width = img1.getWidth();
+                int image1Height = img1.getHeight();
 
-            int nPreferredCorners = 200;
-            int nCrit = 100;
-        
-            /*
-            // quick look at simplified image w/ color segmentation to explore contour matching visually
-            ImageProcessor imageProcessor = new ImageProcessor();
-            ImageExt clrImg1 = ImageIOHelper.readImageExt(filePath1);
-            GreyscaleImage csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg1, 3);
-            ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
-                + "/color_seg1.png", csImg1);
-            ImageExt clrImg2 = ImageIOHelper.readImageExt(filePath2);
-            GreyscaleImage csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg2, 3);
-            ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
-                + "/color_seg2.png", csImg2);
-            */
-        
-            CurvatureScaleSpaceCornerDetector detector = new
-                CurvatureScaleSpaceCornerDetector(img1);
-            detector.useOutdoorModeAndExtractSkyline();
-            detector.findCornersIteratively(nPreferredCorners, nCrit);
-            //detector.findCorners();
-            PairIntArray corners1 = detector.getCornersInOriginalReferenceFrame();
-            PairIntArray skylineCorners1 = detector.getSkylineCornersInOriginalReferenceFrame();
-            List<PairIntArray> skylineEdges1 = detector.getSkylineEdgesInOriginalReferenceFrame();
+                String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+                ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+                int image2Width = img2.getWidth();
+                int image2Height = img2.getHeight();
 
-            CurvatureScaleSpaceCornerDetector detector2 = new
-                CurvatureScaleSpaceCornerDetector(img2);
-            detector2.useOutdoorModeAndExtractSkyline();
-            //detector2.findCorners();
-            detector2.findCornersIteratively(nPreferredCorners, nCrit);
-            PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
-            PairIntArray skylineCorners2 = detector2.getSkylineCornersInOriginalReferenceFrame();
-            List<PairIntArray> skylineEdges2 = detector2.getSkylineEdgesInOriginalReferenceFrame();
+                int nPreferredCorners = 200;
+                int nCrit = 100;
 
-            Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-            String dirPath = ResourceFinder.findDirectory("bin");
-            Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+                /*
+                // quick look at simplified image w/ color segmentation to explore contour matching visually
+                ImageProcessor imageProcessor = new ImageProcessor();
+                ImageExt clrImg1 = ImageIOHelper.readImageExt(filePath1);
+                GreyscaleImage csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg1, 3);
+                ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+                    + "/color_seg1.png", csImg1);
+                ImageExt clrImg2 = ImageIOHelper.readImageExt(filePath2);
+                GreyscaleImage csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg2, 3);
+                ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+                    + "/color_seg2.png", csImg2);
+                */
 
-            PairIntArray outputMatchedScene = new PairIntArray();
-            PairIntArray outputMatchedModel = new PairIntArray();
+                CurvatureScaleSpaceCornerDetector detector = new
+                    CurvatureScaleSpaceCornerDetector(img1);
+                detector.useOutdoorModeAndExtractSkyline();
+                detector.findCornersIteratively(nPreferredCorners, nCrit);
+                //detector.findCorners();
+                PairIntArray corners1 = detector.getCornersInOriginalReferenceFrame();
+                PairIntArray skylineCorners1 = detector.getSkylineCornersInOriginalReferenceFrame();
+                List<PairIntArray> skylineEdges1 = detector.getSkylineEdgesInOriginalReferenceFrame();
 
-            PointMatcher pointMatcher = new PointMatcher();
+                CurvatureScaleSpaceCornerDetector detector2 = new
+                    CurvatureScaleSpaceCornerDetector(img2);
+                detector2.useOutdoorModeAndExtractSkyline();
+                //detector2.findCorners();
+                detector2.findCornersIteratively(nPreferredCorners, nCrit);
+                PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
+                PairIntArray skylineCorners2 = detector2.getSkylineCornersInOriginalReferenceFrame();
+                List<PairIntArray> skylineEdges2 = detector2.getSkylineEdgesInOriginalReferenceFrame();
 
-            log.info("nSkylineCorners1=" + skylineCorners1.getN() + " nSkylineCorners2="
-                + skylineCorners2.getN());
+                Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+                String dirPath = ResourceFinder.findDirectory("bin");
+                Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
 
-            float scale = 1;
-            float rotationLowLimitInDegrees = 335;
-            float rotationHighLimitInDegrees = 25;
+                PairIntArray outputMatchedScene = new PairIntArray();
+                PairIntArray outputMatchedModel = new PairIntArray();
 
-            long t0 = System.currentTimeMillis();
+                PointMatcher pointMatcher = new PointMatcher();
 
-            boolean useLargestToleranceForOutput= true;
-            boolean useGreedyMatching = true;
-            
-            TransformationPointFit skyLineFit =
-                pointMatcher.performMatchingForMostlyVerticalTranslation(
-                    skylineCorners1, skylineCorners2,
-                    corners1, corners2,
-                    outputMatchedScene, outputMatchedModel,
-                    useLargestToleranceForOutput, useGreedyMatching);
+                log.info("nSkylineCorners1=" + skylineCorners1.getN() + " nSkylineCorners2="
+                    + skylineCorners2.getN());
 
-            long t1 = System.currentTimeMillis();
-            double t0Sec = (t1 - t0) * 1e-3;
+                float scale = 1;
 
-            log.info("(" + t0Sec +  " seconds)"
-                + " euclidean tr=" + skyLineFit.toString());
-            
-            float rotInDegrees, transX, transY;
-            if (nTest == 0) {
-                rotInDegrees = 0;
-                transX = -280;
-                transY = -20;
-            } else {
-                rotInDegrees = 0;
-                transX = -34;
-                transY = 0;
-            }
-            
-            TransformationParameters fitParams = skyLineFit.getParameters();
-            float diffRotDeg = AngleUtil.getAngleDifference(
-            fitParams.getRotationInDegrees(), rotInDegrees);
-            float diffScale = Math.abs(fitParams.getScale() - scale);
-            float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
-            float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
+                PairIntArray comb1 = skylineCorners1.copy();
+                comb1.addAll(corners1);
+                PairIntArray comb2 = skylineCorners2.copy();
+                comb2.addAll(corners2);
 
-            assertTrue(diffRotDeg <= 20);
-            assertTrue(diffTransX <= 30);
-            assertTrue(diffTransY <= 40);
+                boolean useLargestToleranceForOutput= true;
+                boolean useGreedyMatching = true;
 
-            PairIntArray comb1 = skylineCorners1.copy();
-            comb1.addAll(corners1);
-            PairIntArray comb2 = skylineCorners2.copy();
-            comb2.addAll(corners2);
+                TransformationPointFit fit = null;
+                
+                long t0 = System.currentTimeMillis();
+                
+                if (nMethod == 0) {
+                    fit = pointMatcher.performMatchingForMostlyVerticalTranslation(
+                        skylineCorners1, skylineCorners2,
+                        corners1, corners2,
+                        outputMatchedScene, outputMatchedModel,
+                        useLargestToleranceForOutput, useGreedyMatching);
+                } else {
+                    fit = pointMatcher.performMatching(comb1, comb2, 
+                        outputMatchedScene, outputMatchedModel, 
+                        useLargestToleranceForOutput);
+                }
 
-            writeTransformed(skyLineFit.getParameters(), image2.copyImage(),
-                comb1, comb2, "transformedSkyline_" + nTest + ".png");
+                long t1 = System.currentTimeMillis();
+                double t0Sec = (t1 - t0) * 1e-3;
 
-            writeImage(image1.copyImage(), comb1, "corners1_" + nTest + ".png");
-            writeImage(image2.copyImage(), comb2, "corners2_" + nTest + ".png");
+                log.info("(" + t0Sec +  " seconds)"
+                    + " euclidean tr=" + fit.toString());
 
-            writeTransformed(skyLineFit.getParameters(), image2.copyImage(),
-                outputMatchedScene, outputMatchedModel, 
-                "transformedCorners_" + nTest + ".png");
+                float rotInDegrees, transX, transY;
+                if (nData == 0) {
+                    rotInDegrees = 0;
+                    transX = -280;
+                    transY = -20;
+                } else {
+                    rotInDegrees = 0;
+                    transX = -34;
+                    transY = 0;
+                }
 
-            assertTrue(outputMatchedScene.getN() >= 7);
+                TransformationParameters fitParams = fit.getParameters();
+                float diffRotDeg = AngleUtil.getAngleDifference(
+                fitParams.getRotationInDegrees(), rotInDegrees);
+                float diffScale = Math.abs(fitParams.getScale() - scale);
+                float diffTransX = Math.abs(fitParams.getTranslationX() - transX);
+                float diffTransY = Math.abs(fitParams.getTranslationY() - transY);
 
-            PairFloatArray finalOutputMatchedScene = new PairFloatArray();
-            PairFloatArray finalOutputMatchedModel = new PairFloatArray();
+                assertTrue(diffScale < 0.1);
+                assertTrue(diffRotDeg <= 20);
+                assertTrue(diffTransX <= 50);
+                assertTrue(diffTransY <= 50);
 
-            RANSACSolver ransacSolver = new RANSACSolver();
+                writeTransformed(fit.getParameters(), image2.copyImage(),
+                    comb1, comb2, "transformedSkyline_" + nData + ".png");
 
-            StereoProjectionTransformerFit sFit = ransacSolver
-                .calculateEpipolarProjection(
+                writeImage(image1.copyImage(), comb1, 
+                    "corners1_" + nData + "_" + nMethod + ".png");
+                writeImage(image2.copyImage(), comb2, 
+                    "corners2_" + nData + "_" + nMethod + ".png");
+
+                writeTransformed(fit.getParameters(), image2.copyImage(),
+                    outputMatchedScene, outputMatchedModel, 
+                    "transformedCorners_" + nData + "_" + nMethod + ".png");
+
+                assertTrue(outputMatchedScene.getN() >= 7);
+
+                PairFloatArray finalOutputMatchedScene = new PairFloatArray();
+                PairFloatArray finalOutputMatchedModel = new PairFloatArray();
+
+                RANSACSolver ransacSolver = new RANSACSolver();
+
+                StereoProjectionTransformerFit sFit = ransacSolver
+                    .calculateEpipolarProjection(
+                        StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
+                        StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
+                        finalOutputMatchedScene, finalOutputMatchedModel);
+
+                overplotEpipolarLines(sFit.getFundamentalMatrix(),
+                    outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(),
+                    ImageIOHelper.readImage(filePath1),
+                    ImageIOHelper.readImage(filePath2),
+                    image1Width,
+                    img1.getHeight(), img2.getWidth(), img2.getHeight());
+
+                /*
+                StereoProjectionTransformer st = new StereoProjectionTransformer();
+                SimpleMatrix fm =
+                    st.calculateEpipolarProjectionForPerfectlyMatched(
                     StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
-                    StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
-                    finalOutputMatchedScene, finalOutputMatchedModel);
+                    StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel));
 
-            overplotEpipolarLines(sFit.getFundamentalMatrix(),
-                outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(),
-                ImageIOHelper.readImage(filePath1),
-                ImageIOHelper.readImage(filePath2),
-                image1Width,
-                img1.getHeight(), img2.getWidth(), img2.getHeight());
-
-            /*
-            StereoProjectionTransformer st = new StereoProjectionTransformer();
-            SimpleMatrix fm =
-                st.calculateEpipolarProjectionForPerfectlyMatched(
-                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
-                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel));
-
-            overplotEpipolarLines(fm,
-                outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(),
-                ImageIOHelper.readImage(filePath1),
-                ImageIOHelper.readImage(filePath2),
-                image1Width,
-                img1.getHeight(), img2.getWidth(), img2.getHeight());
-            */
+                overplotEpipolarLines(fm,
+                    outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(),
+                    ImageIOHelper.readImage(filePath1),
+                    ImageIOHelper.readImage(filePath2),
+                    image1Width,
+                    img1.getHeight(), img2.getWidth(), img2.getHeight());
+                */
+            }
         }
 
         System.out.println("test done");

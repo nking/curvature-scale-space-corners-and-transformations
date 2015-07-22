@@ -5,7 +5,9 @@ import algorithms.util.PairIntArray;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -107,67 +109,46 @@ public class PointPartitioner {
         return partitions;
     }
     
-    public PairIntArray[] partitionVerticalOnly(PairIntArray points, int n) {
+    public PairIntArray[] reduceByBinSampling(PairIntArray points, 
+        int nBinsPerDimension, int nPerBin) {
         
-        PairIntArray[] partitions = new PairIntArray[n];
-        for (int i = 0; i < partitions.length; i++) {
-            partitions[i] = new PairIntArray();
-        }
+        PairIntArray[] binnedPoints = partition(points, nBinsPerDimension);
         
-        int minX = MiscMath.findMin(points.getX());
-        int maxX = MiscMath.findMax(points.getX());
-        
-        float binX = (float)(maxX - minX)/(float)n;
-    
-        for (int i = 0; i < points.getN(); i++) {
+        PairIntArray reduced = new PairIntArray();
+        PairIntArray remaining = new PairIntArray();
+     
+        try {
+            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+            long seed = System.currentTimeMillis();
+            sr.setSeed(seed);
             
-            int x = points.getX(i);
-            int y = points.getY(i);
-            
-            int col = (int)((x - minX)/binX);
-                        
-            if (col > (n - 1)) {
-                col = n - 1;
+            for (PairIntArray binOfPoints : binnedPoints) {
+                if (binOfPoints.getN() <= nPerBin) {
+                    reduced.addAll(binOfPoints);
+                    continue;  
+                } 
+                Set<Integer> chosen = new HashSet<Integer>();
+                while (chosen.size() < nPerBin) {
+                    int idx = sr.nextInt(binOfPoints.getN());
+                    while (chosen.contains(Integer.valueOf(idx))) {
+                        idx = sr.nextInt(binOfPoints.getN());
+                    }
+                    reduced.add(binOfPoints.getX(idx), binOfPoints.getY(idx));
+                    chosen.add(Integer.valueOf(idx));
+                }
+                for (int idx = 0; idx < binOfPoints.getN(); ++idx) {
+                    if (chosen.contains(Integer.valueOf(idx))) {
+                        continue;
+                    }
+                    remaining.add(binOfPoints.getX(idx), binOfPoints.getY(idx));
+                }
             }
+                   
+        } catch (NoSuchAlgorithmException ex) {
             
-            int idx = col;
-            
-            partitions[idx].add(x, y);
-            
+            throw new RuntimeException(ex);
         }
         
-        return partitions;
-    }
-    
-    public PairIntArray[] partitionHorizontalOnly(PairIntArray points, int n) {
-        
-        PairIntArray[] partitions = new PairIntArray[n];
-        for (int i = 0; i < partitions.length; i++) {
-            partitions[i] = new PairIntArray();
-        }
-        
-        int minY = MiscMath.findMin(points.getY());
-        int maxY = MiscMath.findMax(points.getY());
-        
-        float bin = (float)(maxY - minY)/(float)n;
-    
-        for (int i = 0; i < points.getN(); i++) {
-            
-            int x = points.getX(i);
-            int y = points.getY(i);
-            
-            int row = (int)((x - minY)/bin);
-                        
-            if (row > (n - 1)) {
-                row = n - 1;
-            }
-            
-            int idx = row;
-            
-            partitions[idx].add(x, y);
-            
-        }
-        
-        return partitions;
+        return new PairIntArray[]{reduced, remaining};
     }
 }

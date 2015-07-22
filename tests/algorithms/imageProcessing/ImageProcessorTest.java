@@ -1,13 +1,11 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.Arrays;
 import java.util.Set;
 import junit.framework.TestCase;
-import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
