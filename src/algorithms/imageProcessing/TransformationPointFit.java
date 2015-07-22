@@ -184,7 +184,7 @@ public class TransformationPointFit implements Comparable<TransformationPointFit
 
         double avgDiv = bestAvg/compAvg;
 
-        int diffEps = (int)Math.round(2.*Math.ceil(Math.max(bestNMatches, compNMatches)/10.));
+        int diffEps = (int)Math.ceil(Math.max(bestNMatches, compNMatches)/10.);
         if (diffEps == 0) {
             diffEps = 1;
         }

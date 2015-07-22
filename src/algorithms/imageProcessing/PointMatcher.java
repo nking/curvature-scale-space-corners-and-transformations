@@ -33,7 +33,7 @@ import thirdparty.HungarianAlgorithm;
  *
  * the transformation parameters of translation, rotation and scale are
  * found given the two sets of points.
- 
+
  * The resulting transformation returns rotation in a clockwise direction.
 
  * @author nichole
@@ -68,18 +68,18 @@ public final class PointMatcher extends AbstractPointMatcher {
     public void setLargeSearchLimit(int limit) {
         largeSearchLimit = limit;
     }
-    
+
     /**
      * given the unmatched point sets, and the expectation that the 2 sets
-     * have rotation wrt one another less than 30 degrees, 
+     * have rotation wrt one another less than 30 degrees,
      * calculate the best fitting transformation
      * and then apply the transformation to the first set to return matched
      * points within a tolerance.
-     * 
-     * @param unmatchedLeftXY
-     * @param unmatchedRightXY
-     * @param outputMatchedLeftXY
-     * @param outputMatchedRightXY
+     *
+     * @param set1
+     * @param set2
+     * @param outputMatchedSet1
+     * @param outputMatchedSet2
      * @param useLargestToleranceForOutput use the largest tolerance for
      * applying the transformation to point sets during matching.  the largest
      * tolerance is the class variable generalTolerance.
@@ -93,127 +93,114 @@ public final class PointMatcher extends AbstractPointMatcher {
      * @return
      */
     public TransformationPointFit performMatchingForMostlyVerticalTranslation(
-        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY,
-        boolean useLargestToleranceForOutput) {
-        
-        long nPairPerm = estimateNStepsPairCalculation(unmatchedLeftXY.getN(), 
-            unmatchedRightXY.getN());
+        PairIntArray skylineCorners1, PairIntArray skylineCorners2,
+        PairIntArray corners1, PairIntArray corners2,
+        PairIntArray outputMatchedSet1, PairIntArray outputMatchedSet2,
+        boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
 
-        long nPreSearch = estimateNStepsPreSearch(unmatchedLeftXY, 
-            unmatchedRightXY, 40);
+        float scale = 1;
+        float rotationLowLimitInDegrees = 335;
+        float rotationHighLimitInDegrees = 25;
 
-        log.info("nPairPerm=" + nPairPerm + " nPreSearch=" + nPreSearch);
+        TransformationPointFit fit = calculateEuclideanTransformation(
+            skylineCorners1, skylineCorners2,
+            corners1, corners2,
+            scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees);
         
-        if (nPairPerm < nPreSearch) {
-            
-            return performMatching(unmatchedLeftXY, unmatchedRightXY,
-                outputMatchedLeftXY, outputMatchedRightXY, 
-                useLargestToleranceForOutput);
-            
-        }
-        
-        float startRotationInDegrees = 340;
-        float stopRotationInDegrees = 20;
-        
-        float scale = 1.0f;
-        
-        boolean useGreedyMatching = true;
-
-        TransformationPointFit[] fits = preSearch0(
-            unmatchedLeftXY, unmatchedRightXY, scale,
-            startRotationInDegrees, stopRotationInDegrees,
-            useGreedyMatching);
-
-        if (fits == null) {
+        if (fit == null) {
             return null;
         }
-        
-        int nMaxMatchable = Math.min(unmatchedLeftXY.getN(), unmatchedRightXY.getN());
-        
-        if (fits[0] != null && hasConverged(fits[0], nMaxMatchable)) {
-            return fits[0];
-        }
 
-        TransformationPointFit fit2 =  null;
+        float translationXTolerance, translationYTolerance;
 
-        if (usePreSearchAlt1) {
-            fit2 = preSearch1Alt1(fits, outputMatchedLeftXY, 
-                outputMatchedRightXY, useGreedyMatching);
+        if (useLargestToleranceForOutput) {
+            translationXTolerance = generalTolerance * (float)Math.sqrt(1./2);
+            translationYTolerance = translationXTolerance;
         } else {
-            fit2 = preSearch1Alt2(fits, outputMatchedLeftXY, 
-                outputMatchedRightXY, useGreedyMatching);
+            translationXTolerance = 2 * fit.getTranslationXTolerance();
+            translationYTolerance = 2 * fit.getTranslationYTolerance();
         }
+
+        PairIntArray comb1 = skylineCorners1.copy();
+            comb1.addAll(corners1);
+            PairIntArray comb2 = skylineCorners2.copy();
+            comb2.addAll(corners2);
+            
+        //TODO: might need tolerance to be as high as 20
+            
+        match(fit.getParameters(), comb1, comb2, 
+            outputMatchedSet1, outputMatchedSet2,
+            translationXTolerance, translationYTolerance, useGreedyMatching);
+
+        return fit;
+    }
+    
+    /**
+     * given the unmatched point sets, and the expectation that the 2 sets
+     * have rotation wrt one another less than 30 degrees,
+     * calculate the best fitting transformation
+     * and then apply the transformation to the first set to return matched
+     * points within a tolerance.
+     *
+     * @param set1
+     * @param set2
+     * @param outputMatchedSet1
+     * @param outputMatchedSet2
+     * @param useLargestToleranceForOutput use the largest tolerance for
+     * applying the transformation to point sets during matching.  the largest
+     * tolerance is the class variable generalTolerance.
+     * If useLargestToleranceForOutput is false, the transformation's best
+     * fit is used during matching (which should provide a smaller but more
+     * certain matched output).  If this method is used as a precursor to
+     * projection (epipolar) solvers of sets that do have projection components,
+     * one might prefer to set this to true to allow more to be matched.
+     * @return best fitting transformation between unmatched points sets
+     *
+     * @return
+     */
+    public TransformationPointFit performMatchingForMostlyVerticalTranslation(
+        PairIntArray set1, PairIntArray set2,
+        PairIntArray outputMatchedSet1, PairIntArray outputMatchedSet2,
+        boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
         
-        if (fit2 == null) {
-            return fit2;
+        long nPairPerm = estimateNStepsPairCalculation(set1.getN(),
+            set2.getN());
+
+        log.info("nPairPerm=" + nPairPerm);
+
+        float scale = 1;
+        float rotationLowLimitInDegrees = 335;
+        float rotationHighLimitInDegrees = 25;
+
+        TransformationPointFit fit = calculateEuclideanTransformation(
+            set1, set2, scale, rotationLowLimitInDegrees,
+            rotationHighLimitInDegrees);
+
+        if (fit == null) {
+            return null;
         }
-        
-        if (hasConverged(fit2, nMaxMatchable)) {
-            return fit2;
-        }
-        
-        TransformationPointFit bestFit = fit2;
-        
-        float rotHalfRange = 2;
-        float rotDelta = 0.5f;
-        float transHalfRange = 10;
-        float transDelta = 1;
 
-        if (bestFit.getScale() >= 1.0) {
+        float translationXTolerance, translationYTolerance;
 
-            TransformationPointFit fit3 = refineTheTransformation(
-                bestFit.getParameters(), outputMatchedLeftXY, outputMatchedRightXY, 
-                rotHalfRange, rotDelta,
-                transHalfRange, transDelta, transHalfRange, transDelta,
-                useGreedyMatching);
-
-            if (fitIsBetter(bestFit, fit3)) {
-                bestFit = fit3;
-            }
-
+        if (useLargestToleranceForOutput) {
+            translationXTolerance = generalTolerance * (float)Math.sqrt(1./2);
+            translationYTolerance = translationXTolerance;
         } else {
-
-            // scale is < 1 so reverse order of sets
-            TransformationPointFit revFit = refineTheTransformation(
-                bestFit.getParameters(), outputMatchedRightXY, outputMatchedLeftXY, 
-                rotHalfRange, rotDelta,
-                transHalfRange, transDelta, transHalfRange, transDelta,
-                useGreedyMatching);
-
-            TransformationParameters params = revFit.getParameters();
-
-            // reverse the parameters.
-
-            MatchedPointsTransformationCalculator tc = new
-                MatchedPointsTransformationCalculator();
-
-            TransformationParameters revParams = tc.swapReferenceFrames(
-                params);
-
-            TransformationPointFit fit3 = new TransformationPointFit(revParams,
-                revFit.getNumberOfMatchedPoints(),
-                revFit.getMeanDistFromModel(),
-                revFit.getStDevFromMean(),
-                revFit.getTranslationXTolerance(),
-                revFit.getTranslationYTolerance());
-
-            if (fitIsBetter(bestFit, fit3)) {
-                bestFit = fit3;
-                if (bestFit != null) {
-                   bestFit.setMaximumNumberMatchable(nMaxMatchable);
-                }
-            }
+            translationXTolerance = 2 * fit.getTranslationXTolerance();
+            translationYTolerance = 2 * fit.getTranslationYTolerance();
         }
 
-        return bestFit;
+        match(fit.getParameters(), set1, set2, outputMatchedSet1, outputMatchedSet2,
+            translationXTolerance, translationYTolerance, useGreedyMatching);
+
+        return fit;
     }
 
     /**
      * given the unmatched point sets, calculates the best fitting transformation
      * and then applies the transformation to the first set to return matched
      * points within a tolerance.
-     * 
+     *
      * @param unmatchedLeftXY
      * @param unmatchedRightXY
      * @param outputMatchedLeftXY
@@ -255,10 +242,6 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         // -- transform filtered1 for matching and evaluation
 
-        PairFloatArray transformedLeft =
-            transformer.applyTransformation2(transFit.getParameters(),
-            unmatchedLeftXY);
-
         float translationXTolerance, translationYTolerance;
 
         if (useLargestToleranceForOutput) {
@@ -268,47 +251,14 @@ public final class PointMatcher extends AbstractPointMatcher {
             translationXTolerance = 2 * transFit.getTranslationXTolerance();
             translationYTolerance = 2 * transFit.getTranslationYTolerance();
         }
-        float tolerance = (float)Math.sqrt(
-            translationXTolerance*translationXTolerance
-            + translationYTolerance*translationYTolerance);
 
-        //evaluate the fit and store a statistical var: nmatched/nmaxmatchable
+        boolean useGreedyMatching = true;
+        
+        match(transFit.getParameters(), unmatchedLeftXY, unmatchedRightXY, 
+            outputMatchedLeftXY, outputMatchedRightXY,
+            translationXTolerance, translationYTolerance, useGreedyMatching);
 
-        float[][] matchIndexesAndDiffs = calculateMatchUsingOptimal(
-            transformedLeft, unmatchedRightXY,
-            translationXTolerance, translationYTolerance);
-
-        PairFloatArray part1MatchedTransformed = new PairFloatArray();
-        PairIntArray part2Matched = new PairIntArray();
-
-        matchPoints(transformedLeft, unmatchedRightXY, tolerance,
-            matchIndexesAndDiffs, part1MatchedTransformed, part2Matched);
-
-        PairIntArray part1Matched = new PairIntArray();
-        part2Matched = new PairIntArray();
-
-        matchPoints(unmatchedLeftXY, unmatchedRightXY, tolerance,
-            matchIndexesAndDiffs, part1Matched, part2Matched);
-
-        TransformationPointFit fit2 = evaluateFitForMatchedTransformed(
-            transFit.getParameters(), part1MatchedTransformed, part2Matched);
-
-        fit2.setTranslationXTolerance(translationXTolerance);
-        fit2.setTranslationYTolerance(translationYTolerance);
-        fit2.setMaximumNumberMatchable(nMaxMatchable);
-
-        float nStat = (nMaxMatchable > 0) ?
-            (float)part1Matched.getN()/(float)nMaxMatchable : 0;
-
-        log.fine("nStat=" + nStat + " nMaxMatchable=" + nMaxMatchable +
-            " Euclidean fit=" + fit2.toString()
-            + " original fit=" + transFit.toString());
-
-        outputMatchedLeftXY.swapContents(part1Matched);
-
-        outputMatchedRightXY.swapContents(part2Matched);
-
-        return fit2;
+        return transFit;
     }
 
     /**
@@ -351,7 +301,7 @@ public final class PointMatcher extends AbstractPointMatcher {
             throw new IllegalArgumentException(
                 "the 2 point sets must have the same length");
         }
-        
+
         double[] diff = new double[matched1Transformed.getN()];
 
         double avg = 0;
@@ -403,13 +353,13 @@ public final class PointMatcher extends AbstractPointMatcher {
             throw new IllegalArgumentException(
             "unmatched2 cannot be null");
         }
-        
+
         PairFloatArray trFiltered1 = new PairFloatArray();
         PairIntArray filtered2 = new PairIntArray();
 
-        reduceToIntersection(unmatched1Transformed, unmatched2, trFiltered1, 
+        reduceToIntersection(unmatched1Transformed, unmatched2, trFiltered1,
             filtered2, tolTransX, tolTransY);
-        
+
         int n = trFiltered1.getN();
 
         Set<Integer> chosen = new HashSet<Integer>();
@@ -467,7 +417,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         stDev = (nMatched == 0) ? Double.MAX_VALUE :
             Math.sqrt(stDev/((double)nMatched - 1.));
 
-        TransformationPointFit fit = new TransformationPointFit(params.copy(), 
+        TransformationPointFit fit = new TransformationPointFit(params.copy(),
             nMatched, avg, stDev, tolTransX, tolTransY);
 
         int nMaxMatchable = Math.min(trFiltered1.getN(), filtered2.getN());
@@ -489,13 +439,13 @@ public final class PointMatcher extends AbstractPointMatcher {
             throw new IllegalArgumentException(
             "unmatched2 cannot be null");
         }
-        
+
         PairFloatArray trFiltered1 = new PairFloatArray();
         PairIntArray filtered2 = new PairIntArray();
 
-        reduceToIntersection(trFiltered1, filtered2, trFiltered1, 
+        reduceToIntersection(trFiltered1, filtered2, trFiltered1,
             filtered2, tolTransX, tolTransY);
-        
+
         int n = trFiltered1.getN();
 
         float[][] matchedIndexesAndDiffs = calculateMatchUsingOptimal(
@@ -519,7 +469,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         stDev = (nMatched == 0) ? Double.MAX_VALUE :
             (Math.sqrt(stDev/((double)nMatched - 1.)));
 
-        TransformationPointFit fit = new TransformationPointFit(params.copy(), 
+        TransformationPointFit fit = new TransformationPointFit(params.copy(),
             nMatched,  avg, stDev, tolTransX, tolTransY);
 
         int nMaxMatchable = Math.min(trFiltered1.getN(),
@@ -543,7 +493,7 @@ public final class PointMatcher extends AbstractPointMatcher {
             throw new IllegalArgumentException(
             "unmatched2 cannot be null");
         }
-        
+
         //TODO: consider filtering for the intersection
 
         float[][] matchedIndexesAndDiffs = calculateMatchUsingOptimal(
@@ -703,12 +653,12 @@ public final class PointMatcher extends AbstractPointMatcher {
 
     protected long estimateNStepsPreSearch0(int n1, int n2, int xRange,
         int yRange) {
-        
+
         float rotRange = 360.f;
-        
+
         return estimateNStepsPreSearch0(n1, n2, xRange, yRange, rotRange);
     }
-    
+
     protected long estimateNStepsPreSearch0(int n1, int n2, int xRange,
         int yRange, float rotRange) {
 
@@ -802,25 +752,46 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         long nPairPerm = estimateNStepsPairCalculation(set1.getN(), set2.getN());
 
-        long nPreSearch = estimateNStepsPreSearch(set1, set2, 360);
-
-        log.info("nPairPerm=" + nPairPerm + " nPreSearch=" + nPreSearch);
+        log.info("nPairPerm=" + nPairPerm);
 
         boolean earlyConvergeReturn = true;
-        
+
         List<TransformationPointFit> fits = calculateEuclideanTransformationUsingPairs(
             set1, set2, earlyConvergeReturn);
-        
+
         if (fits == null || fits.isEmpty()) {
             return null;
         }
-        
-        //TODO: decide between fits
-        TransformationPointFit fit = fits.get(0);
 
-        return fit;
+        TransformationPointFit bestFit = null;
+
+        for (int i = 0; i < fits.size(); ++i) {
+
+            TransformationPointFit fit  = fits.get(i);
+
+            log.info("compare fit=" + fit.toString());
+
+            if (fitIsBetter(bestFit, fit)) {
+                bestFit = fit;
+            }
+        }
+
+        log.info("best fitting to all corners from best fits="
+            + bestFit.toString());
+        
+        boolean useGreedyMatching = true;
+
+        TransformationPointFit fit2 = refineAfterCalculationWithPairs(
+            bestFit.getParameters().copy(), set1, set2,
+            useGreedyMatching);
+
+        if (fitIsBetter(bestFit, fit2)) {
+            bestFit = fit2;
+        }
+
+        return bestFit;
     }
-    
+
     /**
      * calculate for Euclidean transformation from set1 to set2 for
      * unmatched points.
@@ -835,28 +806,28 @@ public final class PointMatcher extends AbstractPointMatcher {
         PairIntArray corners1, PairIntArray corners2,
         float scale,
         float rotationLowLimitInDegrees, float rotationHighLimitInDegrees) {
-        
+
         boolean earlyConvergeReturn = false;
         boolean useLargestToleranceForOutput = true;
         boolean useGreedyMatching = true;
 
         long t0 = System.currentTimeMillis();
-        
+
         List<TransformationPointFit> fits = new ArrayList<TransformationPointFit>();
         List<Float> tols = new ArrayList<Float>();
-        
+
         //TODO: for an image with large projection effects, this may need to be a larger number.
         float[] tolerances = new float[]{10, 15};
         for (float tol : tolerances) {
-            
+
             generalTolerance = tol;
-            
-            List<TransformationPointFit> fits2 = 
+
+            List<TransformationPointFit> fits2 =
                 calculateEuclideanTransformationForSmallSets(
-                skylineCorners1, skylineCorners2, 
+                skylineCorners1, skylineCorners2,
                 scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees,
                 earlyConvergeReturn, useLargestToleranceForOutput, useGreedyMatching);
-            
+
             if (fits2 != null) {
                 fits.addAll(fits2);
                 for (int i = 0; i < fits2.size(); ++i) {
@@ -864,130 +835,63 @@ public final class PointMatcher extends AbstractPointMatcher {
                 }
             }
         }
-        
+
         long t1 = System.currentTimeMillis();
-        
+
         log.info("(" + ((t1 - t0)*1e-3) + " seconds for eucl w/ pairs of skyline.");
 
         if (fits.isEmpty()) {
-            
+
             PairIntArray comb1 = skylineCorners1.copy();
             comb1.addAll(corners1);
             PairIntArray comb2 = skylineCorners2.copy();
             comb2.addAll(corners2);
-        
+
             return calculateEuclideanTransformation(comb1, comb2, scale,
                 rotationLowLimitInDegrees, rotationHighLimitInDegrees);
         }
-                
+
         // find the best fit to corners1, corners2
         TransformationPointFit bestFit = null;
         for (int i = 0; i < fits.size(); ++i) {
-            
+
             TransformationPointFit fit  = fits.get(i);
-            
+
             TransformationPointFit fitA = evaluateForUnmatched(
                 fit.getParameters(), corners1, corners2,
                 generalTolerance, generalTolerance, useGreedyMatching);
-            
+
             log.info("test fit w/ corners=" + fitA.toString());
-            
+
             if (fitIsBetter(bestFit, fitA)) {
                 bestFit = fitA;
                 generalTolerance = tols.get(i).floatValue();
             }
         }
-        
-        log.info("best fitting to all corners from best fits=" 
+
+        log.info("best fitting to all corners from best fits="
             + bestFit.toString());
- 
-        int nMaxMatchable = (corners1.getN() < corners2.getN()) ? corners1.getN()
-            : corners2.getN();
 
         // fit the entire datasets using skyline fit
-        
-        float rotHalfRange = 25;
-        float rotDelta = 5.f;
-        float transHalfRange = 75;
-        float transDelta = 15;
-        
+
         PairIntArray comb1 = skylineCorners1.copy();
         comb1.addAll(corners1);
         PairIntArray comb2 = skylineCorners2.copy();
         comb2.addAll(corners2);
 
-        t0 = System.currentTimeMillis();
-        
-        if (true) {
-            if (bestFit.getScale() >= 1.0) {
-                TransformationPointFit fit2 = refineTheTransformation(
-                    bestFit.getParameters().copy(), corners1, corners2, 
-                    rotHalfRange, rotDelta,
-                    transHalfRange, transDelta, transHalfRange, transDelta,
-                    useGreedyMatching);
-                if (fitIsBetter(bestFit, fit2)) {
-                    bestFit = fit2;
-                }
-            } else {
-                // scale is < 1 so reverse order of sets
-                TransformationPointFit revFit = refineTheTransformation(
-                    bestFit.getParameters().copy(), corners2, corners1, 
-                    rotHalfRange, rotDelta,
-                    transHalfRange, transDelta, transHalfRange, transDelta,
-                    useGreedyMatching);
-                // reverse the parameters.
-                MatchedPointsTransformationCalculator tc = new
-                    MatchedPointsTransformationCalculator();
-                TransformationParameters revParams = tc.swapReferenceFrames(
-                    revFit.getParameters().copy());
-                TransformationPointFit fit2 = new TransformationPointFit(revParams,
-                    revFit.getNumberOfMatchedPoints(),
-                    revFit.getMeanDistFromModel(),
-                    revFit.getStDevFromMean(),
-                    revFit.getTranslationXTolerance(),
-                    revFit.getTranslationYTolerance());
-                if (fitIsBetter(bestFit, fit2)) {
-                    bestFit = fit2;
-                    if (bestFit != null) {
-                       bestFit.setMaximumNumberMatchable(nMaxMatchable);
-                    }
-                }
-            }
-        
-            t1 = System.currentTimeMillis();
-        
-            log.info("(" + ((t1 - t0)*1e-3) + " seconds for refine skyline w/ sky + corners.  fit=" 
-                + bestFit.toString());
-        
-        } else {
-            /*
-            earlyConvergeReturn = true;
-            
-            TransformationPointFit fit2 = calculateEuclideanTransformationUsingPairs(
-                corners1, corners2, 
-                scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees,
-                earlyConvergeReturn, useLargestToleranceForOutput, useGreedyMatching);
-            
-            t1 = System.currentTimeMillis();
-        
-            log.info("(" + ((t1 - t0)*1e-3) + " seconds for pairs w/ corners.  fit=" 
-                + fit2.toString());
-        
-            if (fitIsBetter(fit, fit2)) {
-                fit = fit2;
-                if (fit != null) {
-                   fit.setMaximumNumberMatchable(nMaxMatchable);
-                }
-            }*/
+        TransformationPointFit fit2 = refineAfterCalculationWithPairs(
+            bestFit.getParameters().copy(), comb1, comb2, useGreedyMatching);
+
+        if (fitIsBetter(bestFit, fit2)) {
+            bestFit = fit2;
         }
 
         return bestFit;
     }
-    
+
     /**
-     * NOT READY FOR USE
      * calculate for Euclidean transformation from set1 to set2 for
-     * the points being unmatched.
+     * unmatched points.
      *
      * @param set1
      * @param set2
@@ -1000,35 +904,49 @@ public final class PointMatcher extends AbstractPointMatcher {
         PairIntArray set1, PairIntArray set2,
         float scale,
         float rotationLowLimitInDegrees, float rotationHighLimitInDegrees) {
-        
+
+        boolean earlyConvergeReturn = true;
         boolean useLargestToleranceForOutput = true;
         boolean useGreedyMatching = true;
-        
-        boolean earlyConvergeReturn = true;
-        
-        long t0 = System.currentTimeMillis();
-        
-        List<TransformationPointFit> fits = 
-            //calculateEuclideanTransformationUsingPairs(
-            calculateEuclideanTransformationForSmallSets(
-            set1, set2, 
+
+        //TODO: consider using multiple tolerances if sets are small enough
+
+        List<TransformationPointFit> fits =
+            calculateEuclideanTransformationUsingPairs(set1, set2,
             scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees,
             earlyConvergeReturn, useLargestToleranceForOutput, useGreedyMatching);
-        
-        long t1 = System.currentTimeMillis();
-        
-        log.info("(" + ((t1 - t0)*1e-3) + " seconds for eucl w/ pairs of skyline.");
-        
-        if (fits == null || fits.isEmpty()) {
+
+        if (fits.isEmpty()) {
             return null;
         }
-        
-        //TODO: decide between fits
-        TransformationPointFit fit = fits.get(0);
-        
-        return fit;
+
+        TransformationPointFit bestFit = null;
+
+        for (int i = 0; i < fits.size(); ++i) {
+
+            TransformationPointFit fit  = fits.get(i);
+
+            log.info("compare fit=" + fit.toString());
+
+            if (fitIsBetter(bestFit, fit)) {
+                bestFit = fit;
+            }
+        }
+
+        log.info("best fitting to all corners from best fits="
+            + bestFit.toString());
+
+        TransformationPointFit fit2 = refineAfterCalculationWithPairs(
+            bestFit.getParameters().copy(), set1, set2,
+            useGreedyMatching);
+
+        if (fitIsBetter(bestFit, fit2)) {
+            bestFit = fit2;
+        }
+
+        return bestFit;
     }
-    
+
     /**
      * given unordered unmatched points for a transformed set1 and
      * the model set2 from image1 and image2
@@ -1063,8 +981,6 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         int nWithinTol = 0;
 
-float[][] tempAll = new float[nPoints1][nPoints2];
-
         for (int i = 0; i < transformed1.getN(); i++) {
 
             diffsAsCost[i] = new float[nPoints2];
@@ -1080,9 +996,6 @@ float[][] tempAll = new float[nPoints1][nPoints2];
 
                 float diffX = x - x2;
                 float diffY = y - y2;
-
-//TODO: temp debugging
-tempAll[i][j] = (float)Math.sqrt(diffX*diffX + diffY*diffY);
 
                 if ((Math.abs(diffX) > toleranceX) ||
                     (Math.abs(diffY) > toleranceY)) {
@@ -1604,7 +1517,7 @@ tempAll[i][j] = (float)Math.sqrt(diffX*diffX + diffY*diffY);
             throw new IllegalArgumentException(
             "scaledRotatedSet1 cannot be null");
         }
-        
+
         //TODO: consider filtering for the intersection
 
         int nMaxMatchable = (scaledRotatedSet1.getN() < set2.getN()) ?
@@ -2872,7 +2785,7 @@ if (compTol == 1) {
         float tolTransX = 0.5f*transDeltaPreSearch0 +
             (float)(Math.sin(rotDeltaPreSearch0*Math.PI/180.)*transDeltaPreSearch0);
         float tolTransY = tolTransX;
-        
+
         if (tolTransX < minTolerance) {
             tolTransX = minTolerance;
         }
@@ -2882,7 +2795,7 @@ if (compTol == 1) {
 
         Transformer transformer = new Transformer();
 
-        float[] rotation = MiscMath.writeDegreeIntervals(rotationStartInDegrees, 
+        float[] rotation = MiscMath.writeDegreeIntervals(rotationStartInDegrees,
             rotationStopInDegrees, rotDeltaPreSearch0);
 
         int nKeep = 10;
@@ -3430,7 +3343,7 @@ if (compTol == 1) {
         if ((set1.getN() < 3) || (set2.getN() < 3)) {
             return null;
         }
-        
+
         float startRotationInDegrees = 0;
         float stopRotationInDegrees = 359;
 
@@ -3458,7 +3371,7 @@ if (compTol == 1) {
     }
 
     protected TransformationPointFit[] boundedGridSearch(
-        PairIntArray set1, PairIntArray set2, 
+        PairIntArray set1, PairIntArray set2,
         final TransformationParameters params,
         float scaleHalfRange, float scaleDelta,
         float rotHalfRangeInDegrees, float rotDeltaInDegrees,
@@ -3484,7 +3397,7 @@ if (compTol == 1) {
         if (tolTransY < minTolerance) {
             tolTransY = generalTolerance;//minTolerance;
         }
-        
+
         Transformer transformer = new Transformer();
 
         float[] rotation = MiscMath.writeDegreeIntervals(
@@ -3535,19 +3448,19 @@ if (compTol == 1) {
         if (useGreedyMatching) {
             PairFloatArray allPoints1Tr = transformer.applyTransformation2(
                 params, set1);
-            TransformationPointFit fit = 
+            TransformationPointFit fit =
                 evaluateFitForUnMatchedTransformedGreedy(params,
                 allPoints1Tr, set2, tolTransX, tolTransY);
             starterPoints.add(fit);
         } else {
             PairFloatArray allPoints1Tr = transformer.applyTransformation2(
                 params, set1);
-            TransformationPointFit fit = 
+            TransformationPointFit fit =
                 evaluateFitForUnMatchedTransformedOptimal(params,
                 allPoints1Tr, set2, tolTransX, tolTransY);
             starterPoints.add(fit);
         }
-        
+
         float[] xsr = new float[set1.getN()];
         float[] ysr = new float[set1.getN()];
 
@@ -3574,13 +3487,9 @@ if (compTol == 1) {
                             allPoints1Tr.add(xsr[i] + tx, ysr[i] + ty);
                         }
 
-                        TransformationParameters params2 = new TransformationParameters();
-                        params2.setScale(scale);
-                        params2.setRotationInDegrees(rotDeg);
+                        TransformationParameters params2 = rotScaleParams.copy();
                         params2.setTranslationX(tx);
                         params2.setTranslationY(ty);
-                        params2.setOriginX(params.getOriginX());
-                        params2.setOriginY(params.getOriginY());
 
                         TransformationPointFit fit2;
                         if (useGreedyMatching) {
@@ -3615,7 +3524,7 @@ if (compTol == 1) {
 
     /**
      * searches around the given params for a better fit using
-     * a grid search and then a downhill simplex with the best 10 grid results 
+     * a grid search and then a downhill simplex with the best 10 grid results
      * as starter points.
      *
      * @param set1
@@ -3681,9 +3590,9 @@ if (compTol == 1) {
         if ((rotDeltaInDegrees == 1) && (transXDelta == 1) && (transYDelta == 1)) {
             return fits[0];
         }
-    
+
         boolean searchScaleToo = false;
-        
+
         TransformationPointFit[] fits2 =
             refineTransformationWithDownhillSimplexWrapper(fits, set1, set2,
             searchScaleToo, useGreedyMatching);
@@ -3691,13 +3600,13 @@ if (compTol == 1) {
         if ((fits2 == null) || (fits2.length == 0)) {
             return null;
         }
-        
+
         TransformationPointFit fit2 = fits2[0];
 
         if (hasConverged(fit2, nMaxMatchable)) {
             return fit2;
         }
-        
+
         // one last refinement
         scaleHalfRange = 0;
         scaleDelta = 1;
@@ -3707,7 +3616,7 @@ if (compTol == 1) {
         transYHalfRange = transXHalfRange;
         transXDelta = 1;
         transYDelta = transXDelta;
-        
+
         TransformationPointFit[] fits3 = boundedGridSearch(
             set1, set2, fit2.getParameters(),
             scaleHalfRange, scaleDelta,
@@ -3718,7 +3627,7 @@ if (compTol == 1) {
         if ((fits3 == null) || (fits3.length == 0)) {
             return null;
         }
-        
+
         return fits3[0];
     }
 
@@ -3821,7 +3730,7 @@ if (compTol == 1) {
      * @return
      */
     protected TransformationPointFit[] preSearch0Large(PairIntArray set1,
-        PairIntArray set2, float scale, 
+        PairIntArray set2, float scale,
         float startRotationInDegrees, float stopRotationInDegrees,
         boolean useGreedyMatch) {
 
@@ -3932,7 +3841,7 @@ if (compTol == 1) {
     * Note that if the solution converges, it will return before trying all
     * subset combinations.
     */
-    protected List<TransformationPointFit> 
+    protected List<TransformationPointFit>
     calculateEuclideanTransformationUsingPairs(
         PairIntArray set1, PairIntArray set2, boolean earlyConvergeReturn) {
 
@@ -3940,13 +3849,13 @@ if (compTol == 1) {
         boolean useGreedyMatching = true;
 
         List<TransformationPointFit>  fits = calculateEuclideanTransformationUsingPairs(
-            set1, set2, earlyConvergeReturn, 
+            set1, set2, earlyConvergeReturn,
             useLargestToleranceForOutput, useGreedyMatching);
 
         return fits;
     }
 
-    protected List<TransformationPointFit> 
+    protected List<TransformationPointFit>
     calculateEuclideanTransformationForSmallSets(
         PairIntArray set1, PairIntArray set2,
         boolean earlyConvergeReturn,
@@ -3975,7 +3884,7 @@ if (compTol == 1) {
             toleranceTransX = 4;
             toleranceTransY = 4;
         }
-        
+
         TransformationPointFit bestFitNormalized = null;
 
         List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
@@ -4115,12 +4024,12 @@ if (compTol == 1) {
 
         return similarToBestFitNormalized;
     }
-    
-    protected List<TransformationPointFit> 
+
+    protected List<TransformationPointFit>
     calculateEuclideanTransformationForSmallSets(
         PairIntArray set1, PairIntArray set2,
-        final float scale, final float rotationLowLimitInDegrees, 
-        final float rotationHighLimitInDegrees, 
+        final float scale, final float rotationLowLimitInDegrees,
+        final float rotationHighLimitInDegrees,
         boolean earlyConvergeReturn,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
 
@@ -4147,14 +4056,14 @@ if (compTol == 1) {
             toleranceTransX = 4;
             toleranceTransY = 4;
         }
-        
-        float rotRange = AngleUtil.getAngleDifference(rotationLowLimitInDegrees, 
+
+        float rotRange = AngleUtil.getAngleDifference(rotationLowLimitInDegrees,
             rotationHighLimitInDegrees);
 
         TransformationPointFit bestFitNormalized = null;
- 
+
         List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
-        
+
         TransformationPointFit bestFit = null;
 
         List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
@@ -4171,9 +4080,9 @@ if (compTol == 1) {
                     set2.getX(selected2[0]), set2.getY(selected2[0]),
                     set2.getX(selected2[1]), set2.getY(selected2[1]),
                     0, 0);
-                
+
                 float rotD = params.getRotationInDegrees();
-                    
+
                 if (
                     (Math.abs(scale - params.getScale()) < 0.05) &&
                     (((rotD >= rotationLowLimitInDegrees)
@@ -4182,24 +4091,24 @@ if (compTol == 1) {
                     ((rotD <= rotationHighLimitInDegrees)
                       && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
                     )) {
-        
+
                     TransformationPointFit fit = evaluateForUnmatched(params,
                         set1, set2, toleranceTransX, toleranceTransY,
                         useGreedyMatching);
-    
-                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {                        
+
+                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
                         if (fitIsBetterNormalized(bestFitNormalized, fit)) {
-                            if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1) && 
+                            if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1) &&
                                 (fit.getMeanDistFromModel() < 1)) {
                                 if (similarToBestFitNormalized.isEmpty()) {
                                     similarToBestFitNormalized.add(bestFitNormalized);
-                                } 
-                                similarToBestFitNormalized.add(fit);    
+                                }
+                                similarToBestFitNormalized.add(fit);
                             } else {
                                 similarToBestFitNormalized.clear();
                             }
                             bestFitNormalized = fit;
-                            if (earlyConvergeReturn && 
+                            if (earlyConvergeReturn &&
                                 hasConverged(bestFitNormalized, maxNMatchable)) {
                                 if (similarToBestFitNormalized.isEmpty()) {
                                     similarToBestFitNormalized.add(bestFitNormalized);
@@ -4208,17 +4117,17 @@ if (compTol == 1) {
                             }
                         }
                         if (fitIsBetter(bestFit, fit)) {
-                            if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) && 
+                            if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) &&
                                 (fit.getMeanDistFromModel() < 1)) {
                                 if (similarToBestFit.isEmpty()) {
                                     similarToBestFit.add(bestFit);
-                                } 
-                                similarToBestFit.add(fit);    
+                                }
+                                similarToBestFit.add(fit);
                             } else {
                                 similarToBestFit.clear();
                             }
                             bestFit = fit;
-                            if (earlyConvergeReturn && 
+                            if (earlyConvergeReturn &&
                                 hasConverged(bestFit, maxNMatchable)) {
                                 if (similarToBestFit.isEmpty()) {
                                     similarToBestFit.add(bestFit);
@@ -4227,7 +4136,7 @@ if (compTol == 1) {
                             }
                         }
                     }
-                    
+
                     params = tc.calulateEuclideanGivenScale(
                         set1.getX(selected1[0]), set1.getY(selected1[0]),
                         set1.getX(selected1[1]), set1.getY(selected1[1]),
@@ -4236,7 +4145,7 @@ if (compTol == 1) {
                         0, 0);
 
                     rotD = params.getRotationInDegrees();
-                    
+
                     if (
                         (Math.abs(scale - params.getScale()) < 0.05) &&
                         (((rotD >= rotationLowLimitInDegrees)
@@ -4245,10 +4154,10 @@ if (compTol == 1) {
                         ((rotD <= rotationHighLimitInDegrees)
                           && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
                         )) {
-                        
+
                         fit = evaluateForUnmatched(params, set1, set2,
                             toleranceTransX, toleranceTransY, useGreedyMatching);
-                        
+
                         if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
                             if (fitIsBetterNormalized(bestFitNormalized, fit)) {
                                 if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
@@ -4293,7 +4202,7 @@ if (compTol == 1) {
                 }
             }
         }
-        
+
         log.info("similarToBestFit.size=" + similarToBestFit.size());
         if (similarToBestFit.size() > 1) {
             for (TransformationPointFit fit : similarToBestFit) {
@@ -4331,7 +4240,7 @@ if (compTol == 1) {
         return calculateEuclideanTransformationForSmallSets(set1, set2,
             earlyConvergeReturn, useLargestToleranceForOutput, useGreedyMatching);
     }
-    
+
     List<TransformationPointFit> calculateEuclideanTransformationUsingPairs(
         PairIntArray set1, PairIntArray set2,
         float scale,
@@ -4356,7 +4265,7 @@ if (compTol == 1) {
             earlyConvergeReturn, useLargestToleranceForOutput, useGreedyMatching);
     }
 
-    protected List<TransformationPointFit> 
+    protected List<TransformationPointFit>
     calculateEuclideanTransformationUsingPairsPartitioned(
         PairIntArray set1, PairIntArray set2,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
@@ -4389,7 +4298,7 @@ if (compTol == 1) {
         }
 
         int maxNMatchable = Math.min(n1, n2);
-        
+
         TransformationPointFit bestFitNormalized = null;
 
         List<TransformationPointFit> similarToBestFitNormalized = new ArrayList<TransformationPointFit>();
@@ -4507,11 +4416,11 @@ if (compTol == 1) {
         return similarToBestFitNormalized;
     }
 
-    protected List<TransformationPointFit> 
+    protected List<TransformationPointFit>
     calculateEuclideanTransformationUsingPairsPartitioned(
         PairIntArray set1, PairIntArray set2,
         final float scale,
-        final float rotationLowLimitInDegrees, 
+        final float rotationLowLimitInDegrees,
         final float rotationHighLimitInDegrees,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
 
@@ -4544,9 +4453,9 @@ if (compTol == 1) {
 
         int maxNMatchable = Math.min(n1, n2);
 
-        float rotRange = AngleUtil.getAngleDifference(rotationLowLimitInDegrees, 
+        float rotRange = AngleUtil.getAngleDifference(rotationLowLimitInDegrees,
             rotationHighLimitInDegrees);
-        
+
         SubsetChooser s1 = new SubsetChooser(n1, k);
 
         TransformationPointFit bestFitNormalized = null;
@@ -4556,7 +4465,7 @@ if (compTol == 1) {
         TransformationPointFit bestFit = null;
 
         List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
-        
+
         while (s1.getNextSubset(selected1) != -1) {
 
             for (PairIntArray set2Subset : set2Subsets) {
@@ -4573,9 +4482,9 @@ if (compTol == 1) {
                         set2Subset.getX(selected2[0]), set2Subset.getY(selected2[0]),
                         set2Subset.getX(selected2[1]), set2Subset.getY(selected2[1]),
                         centroidX1, centroidY1);
-                    
+
                     float rotD = params.getRotationInDegrees();
-                    
+
                     if (
                         (Math.abs(scale - params.getScale()) < 0.05) &&
                         (((rotD >= rotationLowLimitInDegrees)
@@ -4584,7 +4493,7 @@ if (compTol == 1) {
                         ((rotD <= rotationHighLimitInDegrees)
                           && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
                         )) {
-                    
+
                         TransformationPointFit fit = evaluateForUnmatched(params,
                             set1, set2, toleranceTransX, toleranceTransY,
                             useGreedyMatching);
@@ -4622,7 +4531,7 @@ if (compTol == 1) {
                             set2Subset.getX(selected2[1]), set2Subset.getY(selected2[1]),
                             set2Subset.getX(selected2[0]), set2Subset.getY(selected2[0]),
                             centroidX1, centroidY1);
-                        
+
                         rotD = params.getRotationInDegrees();
 
                         if (
@@ -4633,7 +4542,7 @@ if (compTol == 1) {
                             ((rotD <= rotationHighLimitInDegrees)
                               && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
                             )) {
-                            
+
                             fit = evaluateForUnmatched(params, set1, set2,
                                 toleranceTransX, toleranceTransY, useGreedyMatching);
 
@@ -4664,7 +4573,7 @@ if (compTol == 1) {
                                 }
                             }
                         }
-                    }  
+                    }
                 }
             }
         }
@@ -4689,7 +4598,7 @@ if (compTol == 1) {
 
         return similarToBestFitNormalized;
     }
-    
+
     protected long numberOfPairPermutations(int n1, int n2) {
 
         long n1p = (MiscMath.computeNDivNMinusK(n1, 2)) >> 1;
@@ -4720,27 +4629,27 @@ if (compTol == 1) {
     }
 
     protected void reduceToIntersection(
-        PairFloatArray set1, PairIntArray set2, 
-        PairFloatArray outputSet1, PairIntArray outputSet2, 
+        PairFloatArray set1, PairIntArray set2,
+        PairFloatArray outputSet1, PairIntArray outputSet2,
         float tolTransX, float tolTransY) {
-        
+
         /*
         determine minima and maxima of outputSet2
-        
+
         filter set1 to place in outputSet1 only the intersection with set2
            +- tolerances
-        
+
         determine minima and maxima of outputSet1
-        
+
         filter set2 to place in outputSet1 only the intersection with outputSet1
            +- tolerances
         */
-        
+
         int minX2 = MiscMath.findMin(set2.getX(), set2.getN());
         int maxX2 = MiscMath.findMax(set2.getX(), set2.getN());
         int minY2 = MiscMath.findMin(set2.getY(), set2.getN());
         int maxY2 = MiscMath.findMax(set2.getY(), set2.getN());
-        
+
         for (int i = 0; i < set1.getN(); ++i) {
             float x = set1.getX(i);
             float y = set1.getY(i);
@@ -4752,12 +4661,12 @@ if (compTol == 1) {
             }
             outputSet1.add(x, y);
         }
-        
+
         float minX1 = MiscMath.findMin(outputSet1.getX(), outputSet1.getN());
         float maxX1 = MiscMath.findMax(outputSet1.getX(), outputSet1.getN());
         float minY1 = MiscMath.findMin(outputSet1.getY(), outputSet1.getN());
         float maxY1 = MiscMath.findMax(outputSet1.getY(), outputSet1.getN());
-        
+
         for (int i = 0; i < set2.getN(); ++i) {
             float x = set2.getX(i);
             float y = set2.getY(i);
@@ -4770,19 +4679,19 @@ if (compTol == 1) {
             outputSet2.add(Math.round(x), Math.round(y));
         }
     }
-    
+
     public void match(TransformationParameters params, PairIntArray set1,
-        PairIntArray set2, PairIntArray outputMatchedSet1, 
+        PairIntArray set2, PairIntArray outputMatchedSet1,
         PairIntArray outputMatchedSet2, float tolTransX, float tolTransY,
         boolean useGreedyMatching) {
-        
+
         Transformer transformer = new Transformer();
-        
+
         PairFloatArray transformedSet1 = transformer.applyTransformation2(
             params, set1);
-        
+
         if (useGreedyMatching) {
-            
+
             Set<Integer> chosen = new HashSet<Integer>();
             for (int i = 0; i < transformedSet1.getN(); ++i) {
                 float transformedX = transformedSet1.getX(i);
@@ -4810,16 +4719,69 @@ if (compTol == 1) {
                     outputMatchedSet2.add(set2.getX(min2Idx), set2.getY(min2Idx));
                 }
             }
-            
+
         } else {
-            
+
             float[][] matchedIndexesAndDiffs = calculateMatchUsingOptimal(
                 transformedSet1, set2, tolTransX, tolTransY);
-            
+
             double tolerance = Math.sqrt(tolTransX*tolTransX + tolTransY*tolTransY);
-            
+
             matchPoints(set1, set2, (float)tolerance,
                 matchedIndexesAndDiffs, outputMatchedSet1, outputMatchedSet2);
-        }    
+        }
+    }
+
+    private TransformationPointFit refineAfterCalculationWithPairs(
+        TransformationParameters params, PairIntArray set1, PairIntArray set2,
+        boolean useGreedyMatching) {
+
+        float rotHalfRange = 25;
+        float rotDelta = 5.f;
+        float transHalfRange = 75;
+        float transDelta = 15;
+
+        int nMaxMatchable = Math.min(set1.getN(), set2.getN());
+
+        long t0 = System.currentTimeMillis();
+
+        TransformationPointFit fit2 = null;
+
+        if (params.getScale() >= 1.0) {
+            fit2 = refineTheTransformation(
+                params, set1, set2,
+                rotHalfRange, rotDelta,
+                transHalfRange, transDelta, transHalfRange, transDelta,
+                useGreedyMatching);
+        } else {
+            // scale is < 1 so reverse order of sets and fit
+            MatchedPointsTransformationCalculator tc = new
+                MatchedPointsTransformationCalculator();
+            TransformationParameters revParams = tc.swapReferenceFrames(
+                params.copy());
+            
+            TransformationPointFit revFit = refineTheTransformation(
+                revParams, set2, set1,
+                rotHalfRange, rotDelta,
+                transHalfRange, transDelta, transHalfRange, transDelta,
+                useGreedyMatching);
+            // reverse the parameters.
+            
+            TransformationParameters revRevParams = tc.swapReferenceFrames(
+                revFit.getParameters().copy());
+            fit2 = new TransformationPointFit(revRevParams,
+                revFit.getNumberOfMatchedPoints(),
+                revFit.getMeanDistFromModel(),
+                revFit.getStDevFromMean(),
+                revFit.getTranslationXTolerance(),
+                revFit.getTranslationYTolerance());
+            if (fit2 != null) {
+               fit2.setMaximumNumberMatchable(nMaxMatchable);
+            }
+        }
+        long t1 = System.currentTimeMillis();
+        log.info("refine seconds=" + ((t1 - t0)*1e-3));
+
+        return fit2;
     }
 }
