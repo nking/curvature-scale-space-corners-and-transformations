@@ -1,12 +1,14 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.misc.Histogram;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.awt.Color;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import static junit.framework.Assert.assertTrue;
 import junit.framework.TestCase;
@@ -280,16 +282,31 @@ public class PointMatcher2Test extends TestCase {
                 ImageExt clrImg1 = ImageIOHelper.readImageExt(filePath1);
                 GreyscaleImage csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg1, 3);
                 imageProcessor.applyImageSegmentation(csImg1, 2);
-                imageProcessor.fillInGaps(csImg1, 50);
+                Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(csImg1);
+                int lowValue1 = Integer.MAX_VALUE;
+                for (Integer v : freqMap.keySet()) {
+                    if (v.intValue() < lowValue1) {
+                        lowValue1 = v.intValue();
+                    }
+                }
+                imageProcessor.fillInPixels(csImg1, lowValue1, 50);
                 ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
                     + "/color_seg1.png", csImg1);
+                
                 ImageExt clrImg2 = ImageIOHelper.readImageExt(filePath2);
                 GreyscaleImage csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg2, 3);
                 imageProcessor.applyImageSegmentation(csImg2, 2);
-                imageProcessor.finInGaps(csImg2, 50);
+                freqMap = Histogram.createAFrequencyMap(csImg2);
+                int lowValue2 = Integer.MAX_VALUE;
+                for (Integer v : freqMap.keySet()) {
+                    if (v.intValue() < lowValue2) {
+                        lowValue2 = v.intValue();
+                    }
+                }
+                //imageProcessor.fillInPixels(csImg2, lowValue2, 50);
                 ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
                     + "/color_seg2.png", csImg2);
-if (true){return;}
+
                 CurvatureScaleSpaceCornerDetector detector = new
                     CurvatureScaleSpaceCornerDetector(csImg1);
                 detector.doNotPerformHistogramEqualization();

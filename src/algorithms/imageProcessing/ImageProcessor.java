@@ -2611,7 +2611,72 @@ public class ImageProcessor {
      * is less than contiguousZerosLimit, fill in the pixels with the
      * value of the neighboring pixels.
      */
-    public void fillInGaps(GreyscaleImage img, int contiguousZerosLimit) {
-        
+    public void fillInPixels(GreyscaleImage img, final int valueToFill,
+        final int contiguousZerosLimit) {
+
+        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);
+        finder.setMinimumNumberInCluster(1);
+        finder.findGroups(valueToFill);
+
+        int nGroups = finder.getNumberOfGroups();
+
+        for (int i = 0; i < nGroups; ++i) {
+            
+            int n = finder.getNumberofGroupMembers(i);
+            
+            if (n <= contiguousZerosLimit) {
+                
+                PairIntArray group = finder.getXY(i);
+                
+                // find the adjacent non-zero pixels to these
+                Set<PairInt> neighbors = new HashSet<PairInt>();
+                for (int j = 0; j < group.getN(); ++j)  {
+                    getNeighborsAboveValue(img, group.getX(j), group.getY(j), 
+                        valueToFill, neighbors);
+                }
+
+                // get thier average intensities
+                double avgV = 0;
+                for (PairInt p : neighbors) {
+                    int v = img.getValue(p.getX(), p.getY());
+                    avgV += v;
+                }
+                avgV /= (double)neighbors.size();
+                int vRepl = Math.round((float)avgV);
+                for (int j = 0; j < group.getN(); ++j)  {
+                    int x = group.getX(j);
+                    int y = group.getY(j);
+                    img.setValue(x, y, vRepl);
+                }
+            }
+        }
+
     }
+
+    public void getNeighborsAboveValue(GreyscaleImage input, int x, int y, 
+        final int value, Set<PairInt> outputNeighbors) {
+
+        int width = input.getWidth();
+        int height = input.getHeight();
+
+        for (int c = (x - 1); c <= (x + 1); c++) {
+            if ((c < 0) || (c > (width - 1))) {
+                continue;
+            }
+            for (int r = (y - 1); r <= (y + 1); r++) {
+                if ((r < 0) || (r > (height - 1))) {
+                    continue;
+                }
+                if ((c == x) && (r == y)) {
+                    continue;
+                }
+                int v = input.getValue(c, r);
+                if (v > value) {
+                    PairInt p = new PairInt(c, r);
+                    outputNeighbors.add(p);
+                }
+            }
+        }
+    }
+
 }

@@ -69,7 +69,7 @@ public class DFSContiguousValueFinder {
      * 
      * @param pixelValue 
      */
-    public void findGroups(int pixelValue) {
+    public void findGroups(final int pixelValue) {
             
         findClusters(pixelValue);
         
@@ -91,7 +91,7 @@ public class DFSContiguousValueFinder {
         prune();        
     }
 
-    protected void findClusters(int pixelValue) {
+    protected void findClusters(final int pixelValue) {
         
         // traverse the data by ordered x values 
         //    so can break when exceed critical distance
@@ -110,7 +110,7 @@ public class DFSContiguousValueFinder {
      * 
      * @param pixelValue 
      */
-    protected void findClustersIterative(int pixelValue) {
+    protected void findClustersIterative(final int pixelValue) {
         
         int width = img.getWidth();
         int height = img.getHeight();
@@ -140,10 +140,6 @@ public class DFSContiguousValueFinder {
                 continue;
             }
             
-            /*
-            note to speed this up a little, have copied out the index to
-            row and col relationship from GreyscaleImage.
-            */            
             int uY = uIndex/width;
             int uX = uIndex - (uY * width);
 
@@ -161,8 +157,8 @@ public class DFSContiguousValueFinder {
                     int vIndex = (vY * width) + vX;
             
                     Integer vKey = Integer.valueOf(vIndex);
-                    
-                    if (visited.contains(vKey) || (uIndex == vIndex)) {
+                 
+                    if (visited.contains(vKey)) {
                         continue;
                     }
                     
@@ -484,7 +480,7 @@ public class DFSContiguousValueFinder {
                     
                     Integer vKey = Integer.valueOf(vIndex);
                     
-                    if (visited.contains(vKey) || (uIndex == vIndex)) {
+                    if (visited.contains(vKey)) {
                         continue;
                     }
                     
