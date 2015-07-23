@@ -258,7 +258,6 @@ public class PointMatcher2Test extends TestCase {
             for (int nData = 0; nData < 1; ++nData) {
 
                 //if (nData == 0) {
-                    // transX ~ -280 and transY ~ -20
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
                 //}
@@ -276,101 +275,49 @@ public class PointMatcher2Test extends TestCase {
                 int nPreferredCorners = 200;
                 int nCrit = 100;
 
+                PointMatcher pointMatcher = new PointMatcher();
                 
                 // quick look at simplified image w/ color segmentation to explore contour matching visually
-                ImageProcessor imageProcessor = new ImageProcessor();
-                ImageExt clrImg1 = ImageIOHelper.readImageExt(filePath1);
-                GreyscaleImage csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg1, 3);
-                imageProcessor.applyImageSegmentation(csImg1, 2);
-                Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(csImg1);
-                int lowValue1 = Integer.MAX_VALUE;
-                for (Integer v : freqMap.keySet()) {
-                    if (v.intValue() < lowValue1) {
-                        lowValue1 = v.intValue();
-                    }
-                }
-                imageProcessor.fillInPixels(csImg1, lowValue1, 50);
-                ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
-                    + "/color_seg1.png", csImg1);
                 
+                PairIntArray outputMatchedScene = new PairIntArray();
+                PairIntArray outputMatchedModel = new PairIntArray();
+
+                ImageExt clrImg1 = ImageIOHelper.readImageExt(filePath1);
                 ImageExt clrImg2 = ImageIOHelper.readImageExt(filePath2);
-                GreyscaleImage csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg2, 3);
-                imageProcessor.applyImageSegmentation(csImg2, 2);
-                freqMap = Histogram.createAFrequencyMap(csImg2);
-                int lowValue2 = Integer.MAX_VALUE;
-                for (Integer v : freqMap.keySet()) {
-                    if (v.intValue() < lowValue2) {
-                        lowValue2 = v.intValue();
-                    }
-                }
-                //imageProcessor.fillInPixels(csImg2, lowValue2, 50);
-                ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
-                    + "/color_seg2.png", csImg2);
-
-                CurvatureScaleSpaceCornerDetector detector = new
-                    CurvatureScaleSpaceCornerDetector(csImg1);
-                detector.doNotPerformHistogramEqualization();
-                detector.findCornersIteratively(nPreferredCorners, nCrit);
-                //detector.findCorners();
-                PairIntArray corners1 = detector.getCornersInOriginalReferenceFrame();
-
-                CurvatureScaleSpaceCornerDetector detector2 = new
-                    CurvatureScaleSpaceCornerDetector(csImg2);
-                detector2.doNotPerformHistogramEqualization();
-                detector2.findCornersIteratively(nPreferredCorners, nCrit);
-                PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
-
+                
+                TransformationPointFit fit = 
+                    pointMatcher.stereoscopicPointMatcher(clrImg1, clrImg2,
+                    outputMatchedScene, outputMatchedModel);
+                
+                /*
                 Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
                 String dirPath = ResourceFinder.findDirectory("bin");
                 Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
 
-                PairIntArray outputMatchedScene = new PairIntArray();
-                PairIntArray outputMatchedModel = new PairIntArray();
-
-                PointMatcher pointMatcher = new PointMatcher();
-
                 log.info("corners1=" + corners1.getN() + " corners2="
                     + corners2.getN());
                 
-                writeImage(image1.copyImage(), corners1, 
+                writeImage(ImageIOHelper.convertImage(csImg1), corners1, 
                     "corners1_" + nData + "_" + nMethod + ".png");
-                writeImage(image2.copyImage(), corners2, 
+                writeImage(ImageIOHelper.convertImage(csImg2), corners2, 
                     "corners2_" + nData + "_" + nMethod + ".png");
-
-                float scale = 1;
-
-                boolean useLargestToleranceForOutput= true;
-                boolean useGreedyMatching = true;
-
-                TransformationPointFit fit = null;
                 
-                long t0 = System.currentTimeMillis();
-                
-                if (nMethod == 0) {
-                    fit = pointMatcher.performMatchingForMostlyVerticalTranslation(
-                        corners1, corners2,
-                        outputMatchedScene, outputMatchedModel,
-                        useLargestToleranceForOutput, useGreedyMatching);
-                } else {
-                    fit = pointMatcher.performMatching(corners1, corners2, 
-                        outputMatchedScene, outputMatchedModel, 
-                        useLargestToleranceForOutput);
-                }
+                writeTransformed(fit.getParameters(), image2.copyImage(),
+                    corners1, corners2, "transformedSkyline_" + nData + ".png");
 
-                long t1 = System.currentTimeMillis();
-                double t0Sec = (t1 - t0) * 1e-3;
-
-                log.info("(" + t0Sec +  " seconds)"
-                    + " euclidean tr=" + fit.toString());
-
-                //190,218  268,217
+                writeTransformed(fit.getParameters(), image2.copyImage(),
+                    outputMatchedScene, outputMatchedModel, 
+                    "transformedCorners_" + nData + "_" + nMethod + ".png");
+                */
                 float rotInDegrees, transX, transY;
                 //if (nData == 0) {
                     rotInDegrees = 0;
-                    transX = +78;
+                    transX = -30;// half size expected
                     transY = 1;
                 //}
-
+                    
+                float scale = 1;
+                    /*
                 TransformationParameters fitParams = fit.getParameters();
                 float diffRotDeg = AngleUtil.getAngleDifference(
                 fitParams.getRotationInDegrees(), rotInDegrees);
@@ -382,13 +329,6 @@ public class PointMatcher2Test extends TestCase {
                 assertTrue(diffRotDeg <= 20);
                 assertTrue(diffTransX <= 50);
                 assertTrue(diffTransY <= 50);
-
-                writeTransformed(fit.getParameters(), image2.copyImage(),
-                    corners1, corners2, "transformedSkyline_" + nData + ".png");
-
-                writeTransformed(fit.getParameters(), image2.copyImage(),
-                    outputMatchedScene, outputMatchedModel, 
-                    "transformedCorners_" + nData + "_" + nMethod + ".png");
 
                 assertTrue(outputMatchedScene.getN() >= 7);
 
@@ -409,7 +349,8 @@ public class PointMatcher2Test extends TestCase {
                     ImageIOHelper.readImage(filePath2),
                     image1Width,
                     img1.getHeight(), img2.getWidth(), img2.getHeight());
-
+*/
+                
                 /*
                 StereoProjectionTransformer st = new StereoProjectionTransformer();
                 SimpleMatrix fm =

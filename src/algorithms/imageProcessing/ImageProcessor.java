@@ -2631,7 +2631,7 @@ public class ImageProcessor {
                 // find the adjacent non-zero pixels to these
                 Set<PairInt> neighbors = new HashSet<PairInt>();
                 for (int j = 0; j < group.getN(); ++j)  {
-                    getNeighborsAboveValue(img, group.getX(j), group.getY(j), 
+                    getNeighborsNotThisValue(img, group.getX(j), group.getY(j), 
                         valueToFill, neighbors);
                 }
 
@@ -2653,7 +2653,7 @@ public class ImageProcessor {
 
     }
 
-    public void getNeighborsAboveValue(GreyscaleImage input, int x, int y, 
+    public void getNeighborsNotThisValue(GreyscaleImage input, int x, int y, 
         final int value, Set<PairInt> outputNeighbors) {
 
         int width = input.getWidth();
@@ -2671,7 +2671,7 @@ public class ImageProcessor {
                     continue;
                 }
                 int v = input.getValue(c, r);
-                if (v > value) {
+                if (v != value) {
                     PairInt p = new PairInt(c, r);
                     outputNeighbors.add(p);
                 }

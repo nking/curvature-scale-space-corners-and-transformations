@@ -4,6 +4,7 @@ import algorithms.SubsetChooser;
 import algorithms.compGeometry.PointPartitioner;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.Histogram;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloat;
@@ -18,6 +19,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -125,9 +127,9 @@ public final class PointMatcher extends AbstractPointMatcher {
         }
 
         PairIntArray comb1 = skylineCorners1.copy();
-            comb1.addAll(corners1);
-            PairIntArray comb2 = skylineCorners2.copy();
-            comb2.addAll(corners2);
+        comb1.addAll(corners1);
+        PairIntArray comb2 = skylineCorners2.copy();
+        comb2.addAll(corners2);
             
         //TODO: might need tolerance to be as high as 20
             
@@ -494,6 +496,121 @@ public final class PointMatcher extends AbstractPointMatcher {
         }
 
         return bestFit;
+    }
+    
+    /**
+     * an experimental method that creates corners to make matching points sets.
+     * At a later time there will be a more formal stereoscopic matcher in the project
+     * to register images and make disparity maps with.
+     * 
+     * @param leftImg
+     * @param rightImg
+     * @return 
+     */
+    public TransformationPointFit stereoscopicPointMatcher(ImageExt leftImg,
+        ImageExt rightImg, PairIntArray outputMatchedLeft, 
+        PairIntArray outputMatchedRight) throws IOException, NoSuchAlgorithmException {
+        
+        /*
+        uses color segmentation, then binary segmentation, then a gap filling
+        algorithm, then a binning algorithm to make the image size < 200 x 200,
+        then  creates corners, then calculates the euclidean transformation 
+        from the best pair's solution.
+         */
+        
+        int binFactor1 = (int) Math.round(Math.max((float)leftImg.getWidth()/200.f,
+            (float)leftImg.getHeight()/200.));
+        int binFactor2 = (int) Math.round(Math.max((float)rightImg.getWidth()/200.f,
+            (float)rightImg.getHeight()/200.));
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage csImg1 = 
+            imageProcessor.createGreyscaleFromColorSegmentation(leftImg, 3);
+        imageProcessor.applyImageSegmentation(csImg1, 2);
+        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(csImg1);
+        int lowValue1 = Integer.MAX_VALUE;
+        int highValue1 = Integer.MIN_VALUE;
+        for (Integer v : freqMap.keySet()) {
+            if (v.intValue() < lowValue1) {
+                lowValue1 = v.intValue();
+            }
+            if (v.intValue() > highValue1) {
+                highValue1 = v.intValue();
+            }
+        }
+        imageProcessor.fillInPixels(csImg1, lowValue1, 50);
+        imageProcessor.fillInPixels(csImg1, highValue1, 50);
+        csImg1 = imageProcessor.binImage(csImg1, binFactor1);
+        ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+            + "/color_segmentation1.png", csImg1);
+        
+        GreyscaleImage csImg2 = 
+            imageProcessor.createGreyscaleFromColorSegmentation(rightImg, 3);
+        imageProcessor.applyImageSegmentation(csImg2, 2);
+        freqMap = Histogram.createAFrequencyMap(csImg2);
+        int lowValue2 = Integer.MAX_VALUE;
+        int highValue2 = Integer.MIN_VALUE;
+        for (Integer v : freqMap.keySet()) {
+            if (v.intValue() < lowValue2) {
+                lowValue2 = v.intValue();
+            }
+            if (v.intValue() > highValue2) {
+                highValue2 = v.intValue();
+            }
+        }
+        imageProcessor.fillInPixels(csImg2, lowValue2, 50);
+        imageProcessor.fillInPixels(csImg2, highValue2, 50);
+        csImg2 = imageProcessor.binImage(csImg2, binFactor2);
+        ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+            + "/color_segmentation2.png", csImg2);
+        
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(csImg1);
+        detector.doNotPerformHistogramEqualization();
+        //detector.findCornersIteratively(nPreferredCorners, nCrit);
+        detector.findCorners();
+        PairIntArray corners1 = detector.getCornersInOriginalReferenceFrame();
+
+        CurvatureScaleSpaceCornerDetector detector2 = new
+            CurvatureScaleSpaceCornerDetector(csImg2);
+        detector2.doNotPerformHistogramEqualization();
+        //detector2.findCornersIteratively(nPreferredCorners, nCrit);
+        detector2.findCorners();
+        PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
+                
+        long t0 = System.currentTimeMillis();
+                
+        float scale = 1;
+        float rotationLowLimitInDegrees = 335;
+        float rotationHighLimitInDegrees = 25;
+
+        TransformationPointFit fit = calculateEuclideanTransformation(
+            corners1, corners2,
+            scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees);
+
+        long t1 = System.currentTimeMillis();
+        
+        log.info("(" + ((t1 - t0)*1e-3) + " seconds) fit=" + fit.toString());
+        
+        // make a matching list with small tolerance
+        PairIntArray outputMatchedSet1 = new PairIntArray();
+        PairIntArray outputMatchedSet2 = new PairIntArray();
+        float tolTransX = 3;
+        float tolTransY = tolTransX;
+        boolean useGreedyMatching = true;
+        
+        match(fit.getParameters(), corners1, corners2,
+            outputMatchedSet1, outputMatchedSet2, tolTransX, tolTransY,
+            useGreedyMatching);
+        
+        // then transform the solution by a scale of 4.
+        
+        // transform the matched list by a scale of 4.
+        
+        // then create point lists with a larger image and match those with this tranformation
+
+        return fit;
+        
     }
 
     /**
