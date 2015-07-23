@@ -24,6 +24,10 @@ public class Transformer {
      public PairIntArray[] applyTransformation(TransformationParameters params,
         PairIntArray[] edges) {
         
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+         
         double rotInRadians = params.getRotationInRadians();
         double scale = params.getScale();        
         double translationX = params.getTranslationX();
@@ -45,6 +49,10 @@ public class Transformer {
      public PairIntArray applyTransformation(TransformationParameters params,
         PairIntArray points) {
         
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+         
         double rotInRadians = params.getRotationInRadians();
         double scale = params.getScale();        
         double translationX = params.getTranslationX();
@@ -65,6 +73,10 @@ public class Transformer {
      */
      public PairFloatArray applyTransformation2(TransformationParameters params,
         PairIntArray points) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
         
         double rotInRadians = params.getRotationInRadians();
         double scale = params.getScale();        
@@ -97,6 +109,10 @@ public class Transformer {
         double scale, double translationX, double translationY,
         double centroidX, double centroidY, PairIntArray[] edges) {
         
+        if (edges == null) {
+            throw new IllegalArgumentException("edges cannot be null");
+        }
+        
         PairIntArray[] transformedEdges = new PairIntArray[edges.length];
 
         for (int ii = 0; ii < edges.length; ii++) {
@@ -121,6 +137,13 @@ public class Transformer {
       */
     public List<PairIntArray> applyTransformation(TransformationParameters
         params, List<PairIntArray> edges) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        if (edges == null) {
+            throw new IllegalArgumentException("edges cannot be null");
+        }
         
         List<PairIntArray> transformedEdges = new ArrayList<PairIntArray>();
 
@@ -162,6 +185,10 @@ public class Transformer {
         double scale, double translationX, double translationY,
         double centroidX, double centroidY, List<PairIntArray> edges) {
         
+        if (edges == null) {
+            throw new IllegalArgumentException("edges cannot be null");
+        }
+        
         List<PairIntArray> transformedEdges = new ArrayList<PairIntArray>();
 
         for (PairIntArray edge : edges) {
@@ -194,6 +221,10 @@ public class Transformer {
     public PairIntArray applyTransformation(double rotInRadians,
         double scale, double translationX, double translationY,
         double centroidX, double centroidY, PairIntArray edge) {
+        
+        if (edge == null) {
+            throw new IllegalArgumentException("edge cannot be null");
+        }
         
         double cos = Math.cos(rotInRadians);
         double sin = Math.sin(rotInRadians);
@@ -249,6 +280,10 @@ public class Transformer {
         double scale, double translationX, double translationY,
         double centroidX, double centroidY, PairIntArray points) {
        
+        if (points == null) {
+            throw new IllegalArgumentException("points cannot be null");
+        }
+        
         double cos = Math.cos(rotInRadians);
         double sin = Math.sin(rotInRadians);
                 
@@ -294,6 +329,10 @@ public class Transformer {
      */
     public double[] applyTransformation(TransformationParameters params,
         double xPt, double yPt) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
         
         double scale = params.getScale();
         double scaleTimesCosine = scale * Math.cos(params.getRotationInRadians());
@@ -375,6 +414,10 @@ public class Transformer {
     public GreyscaleImage applyTransformation(final GreyscaleImage input, 
         TransformationParameters params, int outputWidth, int outputHeight) {
         
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        
         double rotInRadians = params.getRotationInRadians();
         double cos = Math.cos(rotInRadians);
         double sin = Math.sin(rotInRadians);
@@ -426,6 +469,10 @@ public class Transformer {
     public Image applyTransformation(Image input, 
         TransformationParameters params, int outputWidth, int outputHeight) {
         
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        
         double rotInRadians = params.getRotationInDegrees() * Math.PI/180.f;
         double cos = Math.cos(rotInRadians);
         double sin = Math.sin(rotInRadians);
@@ -472,4 +519,44 @@ public class Transformer {
         return output;
     }
     
+    public TransformationParameters applyScaleTransformation(
+        TransformationParameters params, float scale) {
+        
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        
+        /*
+        double xr = centroidX * scale 
+                    + (((x - centroidX) * scale * cos)
+                    + ((y - centroidY) * scale * sin));
+
+                double yr = centroidY * scale
+                    + ((-(x - centroidX) * scale * sin)
+                    + ((y - centroidY) * scale * cos));
+        */
+        
+        TransformationParameters tr2 = params.copy();
+        
+        float ox = params.getOriginX();
+        float oy = params.getOriginY();
+        float tx = params.getTranslationX();
+        float ty = params.getTranslationY();
+        double cosine = Math.cos(0);
+        double sine = Math.sin(0);
+        
+        tr2.setScale(scale*params.getScale());
+        tr2.setOriginX(ox * scale);
+        tr2.setOriginY(oy * scale);
+        
+        double tx2 = (ox * scale) + (((tx - ox) * scale * cosine) 
+            + ((ty - oy) * scale * sine));
+        double ty2 = (oy * scale) + ((-(tx - ox) * scale * sine)
+            + ((ty - oy) * scale * cosine));
+        
+        tr2.setTranslationX((float)tx2);
+        tr2.setTranslationY((float)ty2);
+        
+        return tr2;
+    }
 }

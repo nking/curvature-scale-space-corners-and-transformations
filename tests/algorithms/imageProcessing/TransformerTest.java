@@ -222,19 +222,18 @@ public class TransformerTest extends TestCase {
         
         float rotInDegrees, scale, transX, transY;
         TransformationParameters params;
-        int image1Width, image1Height;
         
         rotInDegrees = 0;
         scale = 1;
         transX = 0;
         transY = 0;
-        image1Width = 100;
-        image1Height = 100;
         params = new TransformationParameters();
         params.setRotationInDegrees(rotInDegrees);
         params.setScale(scale);
         params.setTranslationX(transX);
         params.setTranslationX(transY);
+        params.setOriginX(0);
+        params.setOriginY(0);
         
         PairIntArray set1 = new PairIntArray();
         for (int i = 0; i < 10; ++i) {
@@ -244,9 +243,7 @@ public class TransformerTest extends TestCase {
         Transformer transformer = new Transformer();
         
         PairFloatArray transformed1 = 
-            transformer.applyTransformation2(rotInDegrees*Math.PI/180.,
-                scale, transX, transY,
-                image1Width >> 1, image1Height >> 1, set1);
+            transformer.applyTransformation2(params, set1);
         
         PairIntArray set2 = new PairIntArray();
         for (int i = 0; i < transformed1.getN(); ++i) {
@@ -257,8 +254,7 @@ public class TransformerTest extends TestCase {
         
         TransformationPointFit checkFit = 
             pm.evaluateFitForUnMatchedTransformedOptimal(
-            params, transformed1,
-            set2, 2, 2);
+            params, transformed1, set2, 2, 2);
         
         int nMaxMatchable = Math.max(transformed1.getN(), set2.getN());
         
@@ -274,8 +270,7 @@ public class TransformerTest extends TestCase {
         assertTrue(
             Math.abs(checkFit.getParameters().getTranslationY()
                 - params.getTranslationY()) < 0.1);
-        assertTrue(checkFit.getNumberOfMatchedPoints()
-            == nMaxMatchable);
+        assertTrue(checkFit.getNumberOfMatchedPoints() == nMaxMatchable);
         assertTrue(checkFit.getMeanDistFromModel() < 0.1);
         assertTrue(checkFit.getStDevFromMean() < 0.1);
         
@@ -285,8 +280,7 @@ public class TransformerTest extends TestCase {
         
         checkFit = 
             pm.evaluateFitForUnMatchedTransformedOptimal(
-            params, transformed1,
-            set2, 2, 2);
+            params, transformed1, set2, 2, 2);
                 
         assertTrue(
             Math.abs(checkFit.getParameters().getRotationInRadians()
@@ -319,19 +313,22 @@ public class TransformerTest extends TestCase {
         transY = 0;
         image1Width = 100;
         image1Height = 100;
+        
+        int centroidX = image1Width >> 1;
+        int centroidY = image1Height >> 1;
+        
         params = new TransformationParameters();
         params.setRotationInDegrees(rotInDegrees);
         params.setScale(scale);
         params.setTranslationX(transX);
         params.setTranslationX(transY);
+        params.setOriginX(centroidX);
+        params.setOriginY(centroidY);
         
         PairIntArray set1 = new PairIntArray();
         for (int i = 0; i < 10; ++i) {
             set1.add(i, i);
         }
-        
-        int centroidX = image1Width >> 1;
-        int centroidY = image1Height >> 1;
         
         PairIntArray set2 = new PairIntArray();
         for (int i = 0; i < 10; ++i) {
@@ -353,7 +350,7 @@ public class TransformerTest extends TestCase {
         PairFloatArray transformed1 = 
             transformer.applyTransformation2(rotInRadians,
                 scale, transX, transY,
-                image1Width >> 1, image1Height >> 1, set1);
+                centroidX, centroidY, set1);
         
         PointMatcher pm = new PointMatcher();
         
@@ -408,4 +405,35 @@ public class TransformerTest extends TestCase {
         assertTrue(checkFit.getStDevFromMean() < 0.5);
     }
 
+    public void testScale() throws Exception {
+        
+        Transformer transformer = new Transformer();
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(0);
+        params.setOriginY(0);
+        params.setTranslationX(2);
+        params.setTranslationY(-3);
+        params.setScale(1);
+        params.setRotationInDegrees(45);
+        
+        /*
+        transform the parameters to scale by 4.
+        transform the parameters to scale by 1/4
+        assert the final params are same as original
+        */
+        
+        TransformationParameters paramsS4 = 
+            transformer.applyScaleTransformation(params, 4);
+        
+        TransformationParameters paramsSDiv4 = 
+            transformer.applyScaleTransformation(paramsS4, 0.25f);
+        
+        assertTrue(Math.abs(paramsSDiv4.getOriginX() - params.getOriginX()) < 0.01);
+        assertTrue(Math.abs(paramsSDiv4.getScale() - params.getScale()) < 0.01);
+        assertTrue(Math.abs(paramsSDiv4.getTranslationX()- params.getTranslationX()) < 0.01);
+        assertTrue(Math.abs(paramsSDiv4.getTranslationY() - params.getTranslationY()) < 0.01);
+        assertTrue(Math.abs(paramsSDiv4.getOriginY() - params.getOriginY()) < 0.01);
+        assertTrue(Math.abs(paramsSDiv4.getRotationInDegrees() - params.getRotationInDegrees()) < 0.01);
+    }
 }

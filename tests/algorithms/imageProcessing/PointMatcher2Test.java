@@ -289,6 +289,8 @@ public class PointMatcher2Test extends TestCase {
                     pointMatcher.stereoscopicPointMatcher(clrImg1, clrImg2,
                     outputMatchedScene, outputMatchedModel);
                 
+                log.info("final=" + fit.toString());
+                
                 /*
                 Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
                 String dirPath = ResourceFinder.findDirectory("bin");
@@ -312,7 +314,7 @@ public class PointMatcher2Test extends TestCase {
                 float rotInDegrees, transX, transY;
                 //if (nData == 0) {
                     rotInDegrees = 0;
-                    transX = -30;// half size expected
+                    transX = -60;
                     transY = 1;
                 //}
                     

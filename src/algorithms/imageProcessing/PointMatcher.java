@@ -283,10 +283,8 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         log.info("nPairPerm=" + nPairPerm + " n1=" + n1 + " n2=" + n2);
         
-        //108_466_267_500_000
-        //    754_737_039_360
         if (nPairPerm > 100e9) {
-            log.info("assuming scale=1 to solve." + 
+            log.warning("assuming scale=1 to solve." + 
             "currently not able to solve for scale too in large sets in reasonable time so " + 
             " you can reduce your set sizes or use vert trans methods for better solutions.");
             float scale = 1;
@@ -511,6 +509,9 @@ public final class PointMatcher extends AbstractPointMatcher {
         ImageExt rightImg, PairIntArray outputMatchedLeft, 
         PairIntArray outputMatchedRight) throws IOException, NoSuchAlgorithmException {
         
+        ImageExt leftImgOrig = (ImageExt)leftImg.copyImage();
+        ImageExt rightImgOrig = (ImageExt)rightImg.copyImage();
+        
         /*
         uses color segmentation, then binary segmentation, then a gap filling
         algorithm, then a binning algorithm to make the image size < 200 x 200,
@@ -518,10 +519,10 @@ public final class PointMatcher extends AbstractPointMatcher {
         from the best pair's solution.
          */
         
-        int binFactor1 = (int) Math.round(Math.max((float)leftImg.getWidth()/200.f,
+        int binFactor1 = (int) Math.ceil(Math.max((float)leftImg.getWidth()/200.f,
             (float)leftImg.getHeight()/200.));
-        int binFactor2 = (int) Math.round(Math.max((float)rightImg.getWidth()/200.f,
-            (float)rightImg.getHeight()/200.));
+        //int binFactor2 = (int) Math.round(Math.max((float)rightImg.getWidth()/200.f,
+        //    (float)rightImg.getHeight()/200.));
         
         ImageProcessor imageProcessor = new ImageProcessor();
         GreyscaleImage csImg1 = 
@@ -560,7 +561,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         }
         imageProcessor.fillInPixels(csImg2, lowValue2, 50);
         imageProcessor.fillInPixels(csImg2, highValue2, 50);
-        csImg2 = imageProcessor.binImage(csImg2, binFactor2);
+        csImg2 = imageProcessor.binImage(csImg2, binFactor1);
         ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
             + "/color_segmentation2.png", csImg2);
         
@@ -584,6 +585,8 @@ public final class PointMatcher extends AbstractPointMatcher {
         float rotationLowLimitInDegrees = 335;
         float rotationHighLimitInDegrees = 25;
 
+        log.info("n1=" + corners1.getN() + " n2=" + corners2.getN());
+        
         TransformationPointFit fit = calculateEuclideanTransformation(
             corners1, corners2,
             scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees);
@@ -603,15 +606,93 @@ public final class PointMatcher extends AbstractPointMatcher {
             outputMatchedSet1, outputMatchedSet2, tolTransX, tolTransY,
             useGreedyMatching);
         
-        // then transform the solution by a scale of 4.
+        Transformer transformer = new Transformer();
         
-        // transform the matched list by a scale of 4.
+        writeTransformed(fit.getParameters(), ImageIOHelper.convertImage(csImg2),
+            corners1, corners2, "transformed_binned.png");
+         writeImage(ImageIOHelper.convertImage(csImg1), corners1, 
+            "corners1_" + 0 + "_" + 0 + ".png");
+        writeImage(ImageIOHelper.convertImage(csImg2), corners2, 
+            "corners2_" + 0 + "_" + 0 + ".png");
         
-        // then create point lists with a larger image and match those with this tranformation
+        // then transform the solution by a scale of binFactor1.
+        TransformationParameters paramsOrigScale = 
+            transformer.applyScaleTransformation(fit.getParameters(), binFactor1);
+        paramsOrigScale.setScale(1);
+        
+        // ==== this is only the initial solution. 
+        // need to use it to construct
+        // the rest with either stereo matching techniques such as 
+        // sum of absolute differences of pixel blocks from left and right
+        // OR, a round of corners at full resolution of image.
+        
+        // temporarily returning the fit with modified parameters
+        TransformationPointFit fit2 = new TransformationPointFit(
+            paramsOrigScale, fit.getNumberOfMatchedPoints(),
+            fit.getMeanDistFromModel(), fit.getStDevFromMean(),
+            fit.getTranslationXTolerance(), fit.getTranslationYTolerance());
+        
+/*
+        writeImage(leftImgOrig, corners1OrigScale, 
+                    "corners1_" + 1 + "_" + 1 + ".png");
+        writeImage(rightImgOrig, corners2OrigScale, 
+            "corners2_" + 1 + "_" + 1 + ".png");
+        
+        writeTransformed(paramsOrigScale, rightImgOrig.copyImage(),
+            corners1OrigScale, corners2OrigScale, "transformed_" + 0 + ".png");
 
-        return fit;
-        
+        //writeTransformed(fit.getParameters(), rightImg.copyImage(),
+        //    outputMatchedScene, outputMatchedModel, 
+        //    "transformedCorners_" + 0 + "_" + 0 + ".png");
+ */       
+        return fit2;
     }
+    
+private void writeImage(Image image1, PairIntArray points1,
+    String outputImageName) {
+    try {
+        String dirPath = ResourceFinder.findDirectory("bin");
+        int nExtraForDot = 1;
+        ImageIOHelper.addCurveToImage(points1, image1, nExtraForDot,
+            255, 0, 0);
+        ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image1);
+    } catch (Exception e) {
+         e.printStackTrace();
+        log.severe("ERROR: " + e.getMessage());
+    }
+}
+private void writeTransformed(TransformationParameters parameters,
+    Image image2, PairIntArray points1,
+    PairIntArray points2, String outputImageName) {
+    Transformer transformer = new Transformer();
+    try {
+        String dirPath = ResourceFinder.findDirectory("bin");
+        PairIntArray trPoints1 = transformer.applyTransformation(parameters,
+            points1);
+        PairIntArray transformedPoints1 = new PairIntArray();
+        for (int i = 0; i < trPoints1.getN(); ++i) {
+            int x = trPoints1.getX(i);
+            int y = trPoints1.getY(i);
+            if (x < 0 || x > (image2.getWidth() - 1)) {
+                continue;
+            }
+            if (y < 0 || y > (image2.getHeight() - 1)) {
+                continue;
+            }
+            transformedPoints1.add(x, y);
+        }
+
+        int nExtraForDot = 1;
+        ImageIOHelper.addCurveToImage(transformedPoints1, image2, nExtraForDot,
+            255, 0, 0);
+        ImageIOHelper.addCurveToImage(points2, image2, nExtraForDot,
+            0, 0, 255);
+        ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image2);
+    } catch (Exception e) {
+         e.printStackTrace();
+        log.severe("ERROR: " + e.getMessage());
+    }
+}
 
     /**
      * given the scale, rotation and set 1's reference frame centroids,
@@ -795,8 +876,8 @@ public final class PointMatcher extends AbstractPointMatcher {
         PairFloatArray trFiltered1 = new PairFloatArray();
         PairIntArray filtered2 = new PairIntArray();
 
-        reduceToIntersection(trFiltered1, filtered2, trFiltered1,
-            filtered2, tolTransX, tolTransY);
+        reduceToIntersection(unmatched1Transformed, unmatched2, 
+            trFiltered1, filtered2, tolTransX, tolTransY);
 
         int n = trFiltered1.getN();
 
@@ -4000,7 +4081,7 @@ if (compTol == 1) {
         int n1 = set1.getN();
         int n2 = set2.getN();
 
-        if (n2 > largeSearchLimit && earlyConvergeReturn) {
+        if ((n2 > largeSearchLimit) && earlyConvergeReturn) {
             return calculateEuclideanTransformationUsingPairsPartitioned(
                 set1, set2,
                 scale, rotationLowLimitInDegrees,
