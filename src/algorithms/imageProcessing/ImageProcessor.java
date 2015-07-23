@@ -2605,4 +2605,13 @@ public class ImageProcessor {
         }
 
     }
+    
+    /**
+     * find contiguous zeros in image and if the number of pixels in a groups
+     * is less than contiguousZerosLimit, fill in the pixels with the
+     * value of the neighboring pixels.
+     */
+    public void fillInGaps(GreyscaleImage img, int contiguousZerosLimit) {
+        
+    }
 }

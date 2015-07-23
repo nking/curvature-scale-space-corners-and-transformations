@@ -90,11 +90,26 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         img = input.copyToGreyscale();
         
-        ImageProcessor ImageProcessor = new ImageProcessor();
+        ImageProcessor imageProcessor = new ImageProcessor();
         
         originalImg = (ImageExt)input.copyImage();
             
-        int[] offsetXY = ImageProcessor.shrinkImageToFirstNonZeros(img);
+        int[] offsetXY = imageProcessor.shrinkImageToFirstNonZeros(img);
+        
+        trimmedXOffset = offsetXY[0];
+        
+        trimmedYOffset = offsetXY[1];
+    }
+    
+    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input) {
+        
+        img = input.copyImage();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        originalImg = ImageIOHelper.convertImage(input);
+            
+        int[] offsetXY = imageProcessor.shrinkImageToFirstNonZeros(img);
         
         trimmedXOffset = offsetXY[0];
         
@@ -241,6 +256,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 theta = filter.getTheta();
         
                 imgHistogram = filter.getImgHistogram();
+                
+                img = gradientXY;
                 
             } else {
             

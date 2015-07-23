@@ -50,6 +50,10 @@ public class NearestPoints {
         
         Set<PairInt> result = new HashSet<PairInt>();
         
+        if (x.length == 0) {
+            return result;
+        }
+        
         // O(lg2(N))
         int idx = Arrays.binarySearch(x, xCenter);
                     

@@ -71,6 +71,11 @@ public class CurvatureScaleSpaceCornerDetector extends
 
         super(input);
     }
+    
+    public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input) {
+
+        super(input);
+    }
 
     public CurvatureScaleSpaceCornerDetector(final ImageExt input,
         List<PairIntArray> theEdges) {
@@ -198,15 +203,17 @@ public class CurvatureScaleSpaceCornerDetector extends
             prevCorners = this.corners.copy();
 
             //TODO: needs adjustments:
-            /*if (nCorners > 500) {
-                lowerThresholdStepSize  = 1.5f;
-            } else {*/
-                lowerThresholdStepSize = 0.5f;//1.0f;
-            //}
-
+            float additionalBlurSigma = 0;
+            if (nIter == 0) {
+                additionalBlurSigma = 1;
+                if (nCorners > 1000) {
+                    lowerThresholdStepSize  = 1.5f;
+                } else {
+                    lowerThresholdStepSize = 0.5f;
+                }
+            }
+            
             lowThreshold += lowerThresholdStepSize;
-
-            float additionalBlurSigma = (nIter == 0) ? 1 : 0;
             
             reinitialize(lowThreshold, additionalBlurSigma);
 
@@ -1079,7 +1086,7 @@ if (doUseOutdoorMode) {
 
         float sepDist = 4;
 
-        NearestPoints nearestPoints = new NearestPoints(x, y);
+        final NearestPoints nearestPoints = new NearestPoints(x, y);
 
         for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
 

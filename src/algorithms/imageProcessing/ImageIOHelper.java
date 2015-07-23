@@ -111,6 +111,29 @@ public class ImageIOHelper {
         }
     }
     
+    public static ImageExt convertImage(GreyscaleImage fromImage) {
+     
+        if (fromImage == null) {
+            return null;
+        }
+        
+        int h = fromImage.getHeight();
+        int w = fromImage.getWidth();
+
+        ImageExt toImage = new ImageExt(w, h);
+                
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                
+                int v = fromImage.getValue(i, j);
+
+                toImage.setRGB(i, j, v, v, v);
+            }
+        }
+        
+        return toImage;
+    }
+    
     /**
      * 
      * @param filePath

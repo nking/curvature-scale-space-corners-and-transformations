@@ -152,6 +152,10 @@ public class EdgeExtractorWithJunctions extends AbstractEdgeExtractor {
         while ((nIter == 0) || ((nIter < nMaxIter) && (nSplices > 0))) {
         
             findJunctions(output);
+        
+        if (output.size() > 10000) {
+            return output;
+        }
             
             if (debug) {
                 algorithms.misc.MiscDebug.printJunctions(this.junctionMap, 
