@@ -262,6 +262,9 @@ public class PointMatcher2Test extends TestCase {
                     fileName2 = "books_illum3_v6_695x555.png";
                 //}
 
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    
                 String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
                 ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
                 int image1Width = img1.getWidth();

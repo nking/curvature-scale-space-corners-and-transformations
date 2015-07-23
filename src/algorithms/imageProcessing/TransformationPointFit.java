@@ -391,4 +391,33 @@ public class TransformationPointFit implements Comparable<TransformationPointFit
         return -1;
     }
 
+    public int isSimilarNormalizedWithDiffParameters(TransformationPointFit compareFit) {
+        
+        float compNMatches = (float)compareFit.getNumberOfMatchedPoints()/
+            (float)compareFit.getNMaxMatchable();
+        float bestNMatches = (float)nMatchedPoints/(float)nMaxMatchable;
+        
+        double diffEps = Math.sqrt(Math.min(compareFit.getNMaxMatchable(),
+            nMaxMatchable));
+        diffEps = 1./(10.*diffEps);
+
+        if (Math.abs(bestNMatches - compNMatches) > diffEps) {
+            return -1;
+        }
+
+        double divMean = Math.abs(meanDistFromModel/
+            compareFit.getMeanDistFromModel());
+
+        double divStDev = Math.abs(stDevFromMean/compareFit.getStDevFromMean());
+
+        if ((Math.abs(1 - divMean) < 0.05) && (Math.abs(1 - divStDev) < 0.3)) {
+            if (parameters.equals(compareFit.getParameters())) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+
+        return -1;
+    }
 }

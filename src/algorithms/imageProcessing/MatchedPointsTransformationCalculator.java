@@ -281,8 +281,10 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * @return 
      */
     public TransformationParameters calulateEuclideanGivenScale(
-        int set1X1, int set1Y1, int set1X2, int set1Y2,
-        int set2X1, int set2Y1, int set2X2, int set2Y2,
+        final int set1X1, final int set1Y1, 
+        final int set1X2, final int set1Y2,
+        final int set2X1, final int set2Y1, 
+        final int set2X2, final int set2Y2,
         final double centroidX1, final double centroidY1) {
                 
         /*
@@ -346,9 +348,14 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         double tr1Y2 = centroidY1*scale + ((-(set1X2 - centroidX1) *scale*ms) 
             + ((set1Y2 - centroidY1) *scale*mc));
         
-        double transX = 0.5 * ((set2X1 - tr1X1) + (set2X2 - tr1X2));
+        double transX1 = (set2X1 - tr1X1);
+        double transX2 = (set2X2 - tr1X2);
+        double transY1 = (set2Y1 - tr1Y1);
+        double transY2 = (set2Y2 - tr1Y2);
+        
+        double transX = 0.5 * (transX1 + transX2);
 
-        double transY = 0.5 * ((set2Y1 - tr1Y1) + (set2Y2 - tr1Y2));
+        double transY = 0.5 * (transY1 + transY2);
         
         TransformationParameters params = new TransformationParameters();
         params.setRotationInRadians((float)theta);

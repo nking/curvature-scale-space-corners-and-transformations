@@ -1,12 +1,15 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.SubsetChooser;
 import algorithms.compGeometry.PointPartitioner;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.Errors;
 import algorithms.util.PairFloat;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairFloatArrayUnmodifiable;
@@ -111,7 +114,7 @@ public final class PointMatcher extends AbstractPointMatcher {
             skylineCorners1, skylineCorners2,
             corners1, corners2,
             scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees);
-        
+
         if (fit == null) {
             return null;
         }
@@ -130,16 +133,16 @@ public final class PointMatcher extends AbstractPointMatcher {
         comb1.addAll(corners1);
         PairIntArray comb2 = skylineCorners2.copy();
         comb2.addAll(corners2);
-            
+
         //TODO: might need tolerance to be as high as 20
-            
-        match(fit.getParameters(), comb1, comb2, 
+
+        match(fit.getParameters(), comb1, comb2,
             outputMatchedSet1, outputMatchedSet2,
             translationXTolerance, translationYTolerance, useGreedyMatching);
 
         return fit;
     }
-    
+
     /**
      * given the unmatched point sets, and the expectation that the 2 sets
      * have rotation wrt one another less than 30 degrees,
@@ -168,7 +171,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         PairIntArray set1, PairIntArray set2,
         PairIntArray outputMatchedSet1, PairIntArray outputMatchedSet2,
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
-        
+
         long nPairPerm = estimateNStepsPairCalculation(set1.getN(),
             set2.getN());
 
@@ -257,8 +260,8 @@ public final class PointMatcher extends AbstractPointMatcher {
         }
 
         boolean useGreedyMatching = true;
-        
-        match(transFit.getParameters(), unmatchedLeftXY, unmatchedRightXY, 
+
+        match(transFit.getParameters(), unmatchedLeftXY, unmatchedRightXY,
             outputMatchedLeftXY, outputMatchedRightXY,
             translationXTolerance, translationYTolerance, useGreedyMatching);
 
@@ -275,17 +278,17 @@ public final class PointMatcher extends AbstractPointMatcher {
      */
     public TransformationPointFit calculateEuclideanTransformation(
         PairIntArray set1, PairIntArray set2) {
-        
+
         int n1 = set1.getN();
         int n2 = set2.getN();
 
         long nPairPerm = estimateNStepsPairCalculation(n1, n2);
 
         log.info("nPairPerm=" + nPairPerm + " n1=" + n1 + " n2=" + n2);
-        
+
         if (nPairPerm > 100e9) {
-            log.warning("assuming scale=1 to solve." + 
-            "currently not able to solve for scale too in large sets in reasonable time so " + 
+            log.warning("assuming scale=1 to solve." +
+            "currently not able to solve for scale too in large sets in reasonable time so " +
             " you can reduce your set sizes or use vert trans methods for better solutions.");
             float scale = 1;
             boolean useGreedyMatching = true;
@@ -295,19 +298,19 @@ public final class PointMatcher extends AbstractPointMatcher {
         boolean earlyConvergeReturn = true;
 
         long t0 = System.currentTimeMillis();
-        
+
         List<TransformationPointFit> fits = calculateEuclideanTransformationUsingPairs(
             set1, set2, earlyConvergeReturn);
 
         long t1 = System.currentTimeMillis();
-        
-        log.info("calculateEuclideanTransformationUsingPairs seconds=" + 
+
+        log.info("calculateEuclideanTransformationUsingPairs seconds=" +
             ((t1 - t0)*1e-3));
-        
+
         if (fits == null || fits.isEmpty()) {
             return null;
         }
-        
+
         boolean useGreedyMatching = true;
 
         // find the best fit to corners1, corners2
@@ -329,7 +332,7 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         log.info("best fitting to all corners from best fits="
             + bestFit.toString());
-        
+
         TransformationPointFit fit2 = refineAfterCalculationWithPairs(
             bestFit.getParameters().copy(), set1, set2,
             useGreedyMatching);
@@ -495,37 +498,37 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         return bestFit;
     }
-    
+
     /**
      * an experimental method that creates corners to make matching points sets.
      * At a later time there will be a more formal stereoscopic matcher in the project
      * to register images and make disparity maps with.
-     * 
+     *
      * @param leftImg
      * @param rightImg
-     * @return 
+     * @return
      */
     public TransformationPointFit stereoscopicPointMatcher(ImageExt leftImg,
-        ImageExt rightImg, PairIntArray outputMatchedLeft, 
+        ImageExt rightImg, PairIntArray outputMatchedLeft,
         PairIntArray outputMatchedRight) throws IOException, NoSuchAlgorithmException {
-        
+
         ImageExt leftImgOrig = (ImageExt)leftImg.copyImage();
         ImageExt rightImgOrig = (ImageExt)rightImg.copyImage();
-        
+
         /*
         uses color segmentation, then binary segmentation, then a gap filling
         algorithm, then a binning algorithm to make the image size < 200 x 200,
-        then  creates corners, then calculates the euclidean transformation 
+        then  creates corners, then calculates the euclidean transformation
         from the best pair's solution.
          */
-        
+
         int binFactor1 = (int) Math.ceil(Math.max((float)leftImg.getWidth()/200.f,
             (float)leftImg.getHeight()/200.));
         //int binFactor2 = (int) Math.round(Math.max((float)rightImg.getWidth()/200.f,
         //    (float)rightImg.getHeight()/200.));
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        GreyscaleImage csImg1 = 
+        GreyscaleImage csImg1 =
             imageProcessor.createGreyscaleFromColorSegmentation(leftImg, 3);
         imageProcessor.applyImageSegmentation(csImg1, 2);
         Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(csImg1);
@@ -544,8 +547,8 @@ public final class PointMatcher extends AbstractPointMatcher {
         csImg1 = imageProcessor.binImage(csImg1, binFactor1);
         ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
             + "/color_segmentation1.png", csImg1);
-        
-        GreyscaleImage csImg2 = 
+
+        GreyscaleImage csImg2 =
             imageProcessor.createGreyscaleFromColorSegmentation(rightImg, 3);
         imageProcessor.applyImageSegmentation(csImg2, 2);
         freqMap = Histogram.createAFrequencyMap(csImg2);
@@ -564,7 +567,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         csImg2 = imageProcessor.binImage(csImg2, binFactor1);
         ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
             + "/color_segmentation2.png", csImg2);
-        
+
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(csImg1);
         detector.doNotPerformHistogramEqualization();
@@ -578,76 +581,73 @@ public final class PointMatcher extends AbstractPointMatcher {
         //detector2.findCornersIteratively(nPreferredCorners, nCrit);
         detector2.findCorners();
         PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
-                
+
         long t0 = System.currentTimeMillis();
-                
-        float scale = 1;
-        float rotationLowLimitInDegrees = 335;
-        float rotationHighLimitInDegrees = 25;
+
+        boolean useLargestToleranceForOutput = false;//true;
+        boolean useGreedyMatching = true;
 
         log.info("n1=" + corners1.getN() + " n2=" + corners2.getN());
-        
-        TransformationPointFit fit = calculateEuclideanTransformation(
-            corners1, corners2,
-            scale, rotationLowLimitInDegrees, rotationHighLimitInDegrees);
+
+        TransformationPointFit fit = calculateEuclideanLeftRightTransformation(
+            corners1, corners2, useLargestToleranceForOutput, useGreedyMatching);
 
         long t1 = System.currentTimeMillis();
-        
+
         log.info("(" + ((t1 - t0)*1e-3) + " seconds) fit=" + fit.toString());
-        
+
         // make a matching list with small tolerance
         PairIntArray outputMatchedSet1 = new PairIntArray();
         PairIntArray outputMatchedSet2 = new PairIntArray();
         float tolTransX = 3;
         float tolTransY = tolTransX;
-        boolean useGreedyMatching = true;
-        
+
         match(fit.getParameters(), corners1, corners2,
             outputMatchedSet1, outputMatchedSet2, tolTransX, tolTransY,
             useGreedyMatching);
-        
+
         Transformer transformer = new Transformer();
-        
+
         writeTransformed(fit.getParameters(), ImageIOHelper.convertImage(csImg2),
             corners1, corners2, "transformed_binned.png");
-         writeImage(ImageIOHelper.convertImage(csImg1), corners1, 
+         writeImage(ImageIOHelper.convertImage(csImg1), corners1,
             "corners1_" + 0 + "_" + 0 + ".png");
-        writeImage(ImageIOHelper.convertImage(csImg2), corners2, 
+        writeImage(ImageIOHelper.convertImage(csImg2), corners2,
             "corners2_" + 0 + "_" + 0 + ".png");
-        
+
         // then transform the solution by a scale of binFactor1.
-        TransformationParameters paramsOrigScale = 
+        TransformationParameters paramsOrigScale =
             transformer.applyScaleTransformation(fit.getParameters(), binFactor1);
         paramsOrigScale.setScale(1);
-        
-        // ==== this is only the initial solution. 
+
+        // ==== this is only the initial solution.
         // need to use it to construct
-        // the rest with either stereo matching techniques such as 
+        // the rest with either stereo matching techniques such as
         // sum of absolute differences of pixel blocks from left and right
         // OR, a round of corners at full resolution of image.
-        
+
         // temporarily returning the fit with modified parameters
         TransformationPointFit fit2 = new TransformationPointFit(
             paramsOrigScale, fit.getNumberOfMatchedPoints(),
             fit.getMeanDistFromModel(), fit.getStDevFromMean(),
             fit.getTranslationXTolerance(), fit.getTranslationYTolerance());
-        
+
 /*
-        writeImage(leftImgOrig, corners1OrigScale, 
+        writeImage(leftImgOrig, corners1OrigScale,
                     "corners1_" + 1 + "_" + 1 + ".png");
-        writeImage(rightImgOrig, corners2OrigScale, 
+        writeImage(rightImgOrig, corners2OrigScale,
             "corners2_" + 1 + "_" + 1 + ".png");
-        
+
         writeTransformed(paramsOrigScale, rightImgOrig.copyImage(),
             corners1OrigScale, corners2OrigScale, "transformed_" + 0 + ".png");
 
         //writeTransformed(fit.getParameters(), rightImg.copyImage(),
-        //    outputMatchedScene, outputMatchedModel, 
+        //    outputMatchedScene, outputMatchedModel,
         //    "transformedCorners_" + 0 + "_" + 0 + ".png");
- */       
+ */
         return fit2;
     }
-    
+
 private void writeImage(Image image1, PairIntArray points1,
     String outputImageName) {
     try {
@@ -876,7 +876,7 @@ private void writeTransformed(TransformationParameters parameters,
         PairFloatArray trFiltered1 = new PairFloatArray();
         PairIntArray filtered2 = new PairIntArray();
 
-        reduceToIntersection(unmatched1Transformed, unmatched2, 
+        reduceToIntersection(unmatched1Transformed, unmatched2,
             trFiltered1, filtered2, tolTransX, tolTransY);
 
         int n = trFiltered1.getN();
@@ -3234,18 +3234,18 @@ if (compTol == 1) {
         boolean searchScaleToo = false;
 
         TransformationPointFit[] fits2 =
-            refineTransformationWithDownhillSimplexWrapper(starterPoints, 
+            refineTransformationWithDownhillSimplexWrapper(starterPoints,
             set1, set2, searchScaleToo, useGreedyMatching);
 
         if (fits2 == null || fits2[0] == null) {
             return null;
         }
-        
+
         TransformationPointFit bestFit = fits2[0];
         /*
         TransformationPointFit fit2 = refineAfterCalculationWithPairs(
             bestFit.getParameters().copy(), set1, set2, useGreedyMatching);
-        
+
         if (fitIsBetter(bestFit, fit2)) {
             bestFit = fit2;
         }
@@ -3633,15 +3633,15 @@ if (compTol == 1) {
             set1Subsets = partitioner.reduceByBinSampling(set1, 5, 4);
             //set1Subsets = partitioner.reduceByBinSampling(set1, 10, 2);
             //set1Subsets = partitioner.reduceByBinSampling(set1, 5, 2);
-            
+
             set1Subsets = new PairIntArray[]{set1Subsets[0]};
         }
-        
+
         boolean useGreedyMatching = true;
 
         for (PairIntArray set1Subset : set1Subsets) {
-            
-            TransformationPointFit[] fits = preSearch0Small(set1Subset, set2, 
+
+            TransformationPointFit[] fits = preSearch0Small(set1Subset, set2,
                 scale, startRotationInDegrees,
                 stopRotationInDegrees, useGreedyMatching);
 
@@ -3867,8 +3867,6 @@ if (compTol == 1) {
 
         int k = 2;
 
-        SubsetChooser s1 = new SubsetChooser(n1, k);
-
         int[] selected1 = new int[k];
         int[] selected2 = new int[k];
 
@@ -3897,135 +3895,95 @@ if (compTol == 1) {
 
         List<TransformationPointFit> similarToBestFit = new ArrayList<TransformationPointFit>();
 
+        SubsetChooser s1 = new SubsetChooser(n1, k);
+
         while (s1.getNextSubset(selected1) != -1) {
+
+            int idx10 = selected1[0];
+            int idx11 = selected1[1];
 
             SubsetChooser s2 = new SubsetChooser(n2, k);
 
+            //TODO: could save the calculations for point 1 here
+
             while (s2.getNextSubset(selected2) != -1) {
 
-                TransformationParameters params = tc.calulateEuclideanGivenScale(
-                    set1.getX(selected1[0]), set1.getY(selected1[0]),
-                    set1.getX(selected1[1]), set1.getY(selected1[1]),
-                    set2.getX(selected2[0]), set2.getY(selected2[0]),
-                    set2.getX(selected2[1]), set2.getY(selected2[1]),
-                    0, 0);
+                int idx20 = selected2[0];
+                int idx21 = selected2[1];
 
-                float rotD = params.getRotationInDegrees();
+                for (int order = 0; order < 2; ++order) {
 
-                if (
-                    (Math.abs(scale - params.getScale()) < 0.05) &&
+                    if (order == 1) {
+                        int swap = idx20;
+                        idx20 = idx21;
+                        idx21 = swap;
+                    }
+
+                    TransformationParameters params = tc.calulateEuclideanGivenScale(
+                        set1.getX(idx10), set1.getY(idx10),
+                        set1.getX(idx11), set1.getY(idx11),
+                        set2.getX(idx20), set2.getY(idx20),
+                        set2.getX(idx21), set2.getY(idx21),
+                        0, 0);
+                    float rotD = params.getRotationInDegrees();
+
+                    if (Math.abs(scale - params.getScale()) > 0.05) {
+                        continue;
+                    }
+                    if (!
                     (((rotD >= rotationLowLimitInDegrees)
                       && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationLowLimitInDegrees)) < rotRange))
                     ||
                     ((rotD <= rotationHighLimitInDegrees)
                       && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
                     )) {
+                        continue;
+                    }
 
                     TransformationPointFit fit = evaluateForUnmatched(params,
                         set1, set2, toleranceTransX, toleranceTransY,
                         useGreedyMatching);
 
-                    if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
-                        if (fitIsBetterNormalized(bestFitNormalized, fit)) {
-                            if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1) &&
-                                (fit.getMeanDistFromModel() < 1)) {
-                                if (similarToBestFitNormalized.isEmpty()) {
-                                    similarToBestFitNormalized.add(bestFitNormalized);
-                                }
-                                similarToBestFitNormalized.add(fit);
-                            } else {
-                                similarToBestFitNormalized.clear();
+                    if ((fit == null) || (fit.getNumberOfMatchedPoints() < 2)) {
+                        continue;
+                    }
+                    
+                    if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                        if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
+                            && (fit.getMeanDistFromModel() < 1)) {
+                            if (similarToBestFitNormalized.isEmpty()) {
+                                similarToBestFitNormalized.add(bestFitNormalized);
                             }
-                            bestFitNormalized = fit;
-                            if (earlyConvergeReturn &&
-                                hasConverged(bestFitNormalized, maxNMatchable)) {
-                                if (similarToBestFitNormalized.isEmpty()) {
-                                    similarToBestFitNormalized.add(bestFitNormalized);
-                                }
-                                return similarToBestFitNormalized;
-                            }
+                            similarToBestFitNormalized.add(fit);
+                        } else {
+                            similarToBestFitNormalized.clear();
                         }
-                        if (fitIsBetter(bestFit, fit)) {
-                            if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1) &&
-                                (fit.getMeanDistFromModel() < 1)) {
-                                if (similarToBestFit.isEmpty()) {
-                                    similarToBestFit.add(bestFit);
-                                }
-                                similarToBestFit.add(fit);
-                            } else {
-                                similarToBestFit.clear();
+                        bestFitNormalized = fit;
+                        if (earlyConvergeReturn
+                            && hasConverged(bestFitNormalized, maxNMatchable)) {
+                            if (similarToBestFitNormalized.isEmpty()) {
+                                similarToBestFitNormalized.add(bestFitNormalized);
                             }
-                            bestFit = fit;
-                            if (earlyConvergeReturn &&
-                                hasConverged(bestFit, maxNMatchable)) {
-                                if (similarToBestFit.isEmpty()) {
-                                    similarToBestFit.add(bestFit);
-                                }
-                                return similarToBestFit;
-                            }
+                            return similarToBestFitNormalized;
                         }
                     }
-
-                    params = tc.calulateEuclideanGivenScale(
-                        set1.getX(selected1[0]), set1.getY(selected1[0]),
-                        set1.getX(selected1[1]), set1.getY(selected1[1]),
-                        set2.getX(selected2[1]), set2.getY(selected2[1]),
-                        set2.getX(selected2[0]), set2.getY(selected2[0]),
-                        0, 0);
-
-                    rotD = params.getRotationInDegrees();
-
-                    if (
-                        (Math.abs(scale - params.getScale()) < 0.05) &&
-                        (((rotD >= rotationLowLimitInDegrees)
-                          && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationLowLimitInDegrees)) < rotRange))
-                        ||
-                        ((rotD <= rotationHighLimitInDegrees)
-                          && (Math.abs(AngleUtil.getAngleDifference(rotD, rotationHighLimitInDegrees)) < rotRange))
-                        )) {
-
-                        fit = evaluateForUnmatched(params, set1, set2,
-                            toleranceTransX, toleranceTransY, useGreedyMatching);
-
-                        if ((fit != null) && (fit.getNumberOfMatchedPoints() > 2)) {
-                            if (fitIsBetterNormalized(bestFitNormalized, fit)) {
-                                if ((bestFitNormalized != null) && (bestFitNormalized.getMeanDistFromModel() < 1)
-                                    && (fit.getMeanDistFromModel() < 1)) {
-                                    if (similarToBestFitNormalized.isEmpty()) {
-                                        similarToBestFitNormalized.add(bestFitNormalized);
-                                    }
-                                    similarToBestFitNormalized.add(fit);
-                                } else {
-                                    similarToBestFitNormalized.clear();
-                                }
-                                bestFitNormalized = fit;
-                                if (earlyConvergeReturn
-                                    && hasConverged(bestFitNormalized, maxNMatchable)) {
-                                    if (similarToBestFitNormalized.isEmpty()) {
-                                        similarToBestFitNormalized.add(bestFitNormalized);
-                                    }
-                                    return similarToBestFitNormalized;
-                                }
+                    if (fitIsBetter(bestFit, fit)) {
+                        if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
+                            && (fit.getMeanDistFromModel() < 1)) {
+                            if (similarToBestFit.isEmpty()) {
+                                similarToBestFit.add(bestFit);
                             }
-                            if (fitIsBetter(bestFit, fit)) {
-                                if ((bestFit != null) && (bestFit.getMeanDistFromModel() < 1)
-                                    && (fit.getMeanDistFromModel() < 1)) {
-                                    if (similarToBestFit.isEmpty()) {
-                                        similarToBestFit.add(bestFit);
-                                    }
-                                    similarToBestFit.add(fit);
-                                } else {
-                                    similarToBestFit.clear();
-                                }
-                                bestFit = fit;
-                                if (earlyConvergeReturn
-                                    && hasConverged(bestFit, maxNMatchable)) {
-                                    if (similarToBestFit.isEmpty()) {
-                                        similarToBestFit.add(bestFit);
-                                    }
-                                    return similarToBestFit;
-                                }
+                            similarToBestFit.add(fit);
+                        } else {
+                            similarToBestFit.clear();
+                        }
+                        bestFit = fit;
+                        if (earlyConvergeReturn
+                            && hasConverged(bestFit, maxNMatchable)) {
+                            if (similarToBestFit.isEmpty()) {
+                                similarToBestFit.add(bestFit);
                             }
+                            return similarToBestFit;
                         }
                     }
                 }
@@ -4051,6 +4009,121 @@ if (compTol == 1) {
         similarToBestFitNormalized.add(0, bestFit);
 
         return similarToBestFitNormalized;
+    }
+    
+    /**
+     * this one expects a left to right ordering of images and scale near 1 
+     * and rotation near zero and a y translation near zero.
+     * 
+     * runtime is O(N^2) + O(N)
+     * 
+     * @param set1
+     * @param set2
+     * 
+     * @param useLargestToleranceForOutput
+     * @param useGreedyMatching
+     * @return 
+     */
+    protected TransformationPointFit calculateEuclideanLeftRightTransformation(
+        PairIntArray set1, PairIntArray set2,
+        boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
+        
+        //TODO: consider that the translation in X should always be negative?
+        
+        int n1 = set1.getN();
+        int n2 = set2.getN();
+        
+        float toleranceTransX;
+        float toleranceTransY;
+        if (useLargestToleranceForOutput) {
+            toleranceTransX = generalTolerance * (float)Math.sqrt(1./2);
+            toleranceTransY = toleranceTransX;
+        } else {
+            toleranceTransX = 4;
+            toleranceTransY = 4;
+        }
+
+        List<Integer> diffXs = new ArrayList<Integer>();
+        List<Integer> diffYs = new ArrayList<Integer>();
+        
+        for (int i = 0; i < n1; ++i) {
+            int x1 = set1.getX(i);
+            int y1 = set1.getY(i);
+            for (int j = 0; j < n2; ++j) {
+                int y2 = set2.getY(j);
+                int diffY = y2 - y1;
+                
+                if (Math.abs(diffY) > toleranceTransY) {
+                    continue;
+                }
+                
+                int x2 = set2.getX(j);
+                int diffX = x2 - x1;
+                
+                diffXs.add(Integer.valueOf(diffX));
+                diffYs.add(Integer.valueOf(diffY));
+            }
+        }
+        
+        float[] values = new float[diffXs.size()];
+        for (int i = 0; i < diffXs.size(); ++i) {
+            values[i] = diffXs.get(i).floatValue();
+        }
+        
+        HistogramHolder hist = Histogram.createSimpleHistogram(toleranceTransX, 
+            values, Errors.populateYErrorsBySqrt(values));
+        
+        if (hist.getXHist() == null || hist.getXHist().length == 0) {
+            return null;
+        }
+        
+        // sort and evaluate top 3 answers
+        
+        MultiArrayMergeSort.sortBy1stArgThen2nd(hist.getYHistFloat(), hist.getXHist());
+        
+        TransformationPointFit bestFit = null;
+        TransformationPointFit bestFitNormalized = null;
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setScale(1);
+        params.setRotationInDegrees(0);
+        params.setOriginX(0);
+        params.setOriginY(0);
+        
+        for (int i = 0; i < 3; i++) {
+            
+            int hIdx = hist.getYHistFloat().length - i - 1;
+                        
+            float tX = hist.getXHist()[hIdx];
+            
+            double tY = 0;
+            int count = 0;
+            for (int ii = 0; ii < diffXs.size(); ++ii) {
+                int diffX = diffXs.get(ii);
+                if (Math.abs(diffX - tX) <= (toleranceTransX/2.)) {
+                    tY += diffYs.get(ii);
+                    count++;
+                }
+            }
+            tY /= (double)count;
+            
+            params = params.copy();
+            params.setTranslationX(tX);
+            params.setTranslationY((float)tY);
+            
+            TransformationPointFit fit = evaluateForUnmatched(params,
+                set1, set2, toleranceTransX, toleranceTransY,
+                useGreedyMatching);
+            
+            if (fitIsBetter(bestFit, fit)) {
+                bestFit = fit;
+            }
+            if (fitIsBetterNormalized(bestFitNormalized, fit)) {
+                bestFitNormalized = fit;
+            }
+        }
+        
+        return bestFit;
     }
 
     List<TransformationPointFit> calculateEuclideanTransformationUsingPairs(
@@ -4100,12 +4173,12 @@ if (compTol == 1) {
         boolean useLargestToleranceForOutput, boolean useGreedyMatching) {
 
         int n2 = set2.getN();
-        
+
         PointPartitioner partitioner = new PointPartitioner();
 
         List<PairIntArray> set2Subsets = partitioner.randomSubsets(set2,
             largeSearchLimit);
-        
+
         // the first subset is the one to use.  the 2nd is the remaining points if any.
         PairIntArray[] set1Subsets = null;
         if (set1.getN() < 100) {
@@ -4113,7 +4186,7 @@ if (compTol == 1) {
         } else {
             //set1Subsets = partitioner.reduceByBinSampling(set1, 10, 2);
             set1Subsets = partitioner.reduceByBinSampling(set1, 5, 2);
-            
+
             long nPairPerm = estimateNStepsPairCalculation(set1Subsets[0].getN(),
                 set2.getN());
             /*
@@ -4122,7 +4195,7 @@ if (compTol == 1) {
             */
             log.info("nPairPerm=" + nPairPerm);
         }
-        
+
         int n1 = set1Subsets[0].getN();
 
         int k = 2;
@@ -4606,14 +4679,14 @@ if (compTol == 1) {
                 MatchedPointsTransformationCalculator();
             TransformationParameters revParams = tc.swapReferenceFrames(
                 params.copy());
-            
+
             TransformationPointFit revFit = refineTheTransformation(
                 revParams, set2, set1,
                 rotHalfRange, rotDelta,
                 transHalfRange, transDelta, transHalfRange, transDelta,
                 useGreedyMatching);
             // reverse the parameters.
-            
+
             TransformationParameters revRevParams = tc.swapReferenceFrames(
                 revFit.getParameters().copy());
             fit2 = new TransformationPointFit(revRevParams,
