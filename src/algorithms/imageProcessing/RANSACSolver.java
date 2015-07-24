@@ -4,6 +4,7 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
+import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -128,12 +129,44 @@ public class RANSACSolver {
         
            an improvement on the algorithm is to adaptively determine the 
            number of iterations necessary to find a large enough consensus.        
+
+        ---------
+        Note, the random selection would ideally draw one combination of n!/(k!*(n-k)!)) 
+        possible subsets.  That requires an enumeration of each combination findable
+        by an O(1) operation.  Gosper's hack returns the unique subsets in an ordered
+        manner, but a way to access that (i.e. "random access") would need to be made to have
+        truly uniform random selection.
+        
+        Below, am using k draws of random numbers to create a combination of unique indexes 
+        from n indexes.  The probability of selecting one unique combination within all
+        possible combinations is 1./(n!/(k!(n-k)!)).  Although that's for a single draw
+        rather than composed of k draws, it's close enough to see that the probability 
+        of drawing the same combination is low, so have chosen to allow the possible repeat
+        evaluation of a set of numbers for now.
+
+        Note, that a non-uniform random selection algorithm could be made by using
+        BigInteger and drawing random numbers between the low value of k bits set to 1 and
+        the high value of n bits with the highest k bits set to 1.
+        Upon each random selection within that range, one could find the next lowest number
+        with k bits set to 1 (find lowest set bit, change it to 0 and set the 2 below it to 
+        1 etc to total k set bits).
+        If that bitstring has already been selected randomly, can use Gosper's hack
+        to return the next k=7 bitstring.
+
+        The current implementation of drawing k=7 unique indexes randomly and then sorting
+        their order is 7 random operations * 7 * log_2(7) steps so 7 * 7 * 20 steps for a single
+        iteration of selecting a subset.
+          The BigInteger random suggestion above in contrast would be the 
+          BigInteger random operation plus 3 set bit operations plus possibly 
+          half a dozen bit operations from Gosper's hack if need to
+          select again, so the BigInteger implementation might be useful.
+
         */
         
         int nSet = 7;
         
         int nPoints = matchedLeftXY.numCols();
-                       
+                 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(System.currentTimeMillis());
         
