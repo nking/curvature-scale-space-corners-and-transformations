@@ -107,8 +107,8 @@ public class PairFloatArray {
     
     /**
      * remove indexes from idxLo to idxHi, inclusive
-     * @param idxLo
-     * @param idxHi 
+     * @param idxLo first index to be removed, inclusive
+     * @param idxHi last index to be removed, inclusive
      */
     public void removeRange(int idxLo, int idxHi) {
         
