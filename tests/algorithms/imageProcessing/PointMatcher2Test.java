@@ -70,7 +70,7 @@ public class PointMatcher2Test extends TestCase {
         int z = 1;
     }*/
 
-    public void estPerformMatchingForMostlyVerticalTranslation() throws Exception {
+    public void testPerformMatchingForMostlyVerticalTranslation() throws Exception {
         
         String fileName1, fileName2;
         
@@ -99,19 +99,6 @@ public class PointMatcher2Test extends TestCase {
 
                 int nPreferredCorners = 200;
                 int nCrit = 100;
-
-                /*
-                // quick look at simplified image w/ color segmentation to explore contour matching visually
-                ImageProcessor imageProcessor = new ImageProcessor();
-                ImageExt clrImg1 = ImageIOHelper.readImageExt(filePath1);
-                GreyscaleImage csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg1, 3);
-                ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
-                    + "/color_seg1.png", csImg1);
-                ImageExt clrImg2 = ImageIOHelper.readImageExt(filePath2);
-                GreyscaleImage csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(clrImg2, 3);
-                ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
-                    + "/color_seg2.png", csImg2);
-                */
 
                 CurvatureScaleSpaceCornerDetector detector = new
                     CurvatureScaleSpaceCornerDetector(img1);
@@ -255,21 +242,21 @@ public class PointMatcher2Test extends TestCase {
         String fileName1, fileName2;
         
         for (int nMethod = 0; nMethod < 1; ++nMethod) {
-            for (int nData = 0; nData < 1; ++nData) {
+            for (int nData = 2; nData < 3; ++nData) {
 
-                //if (nData == 0) {
+                if (nData == 0) {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
-                //}
-
+                } else if (nData == 1) {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
-                    
-                    // TODO: for this image to be usable in this, the skyline extractor
-                    // should maybe be used to make a mask first
-                    //fileName1 = "brown_lowe_2003_image1.jpg";
-                    //fileName2 = "brown_lowe_2003_image2.jpg";
-                    
+                } else {
+                    // this one needs the skyline extractor and use of those
+                    // for correspondence.
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                }
+                
                 String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
                 ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
                 int image1Width = img1.getWidth();
@@ -290,11 +277,8 @@ public class PointMatcher2Test extends TestCase {
                 PairIntArray outputMatchedScene = new PairIntArray();
                 PairIntArray outputMatchedModel = new PairIntArray();
 
-                ImageExt clrImg1 = ImageIOHelper.readImageExt(filePath1);
-                ImageExt clrImg2 = ImageIOHelper.readImageExt(filePath2);
-                
                 TransformationPointFit fit = 
-                    pointMatcher.stereoscopicPointMatcher(clrImg1, clrImg2,
+                    pointMatcher.stereoscopicPointMatcher(img1, img2,
                     outputMatchedScene, outputMatchedModel);
                 
                 log.info("final=" + fit.toString());
@@ -320,14 +304,18 @@ public class PointMatcher2Test extends TestCase {
                     "transformedCorners_" + nData + "_" + nMethod + ".png");
                 */
                 float rotInDegrees, transX, transY;
-                //if (nData == 0) {
+                if (nData == 0) {
                     rotInDegrees = 0;
                     transX = -60;
                     transY = 1;
-                //}
+                } else {
+                    rotInDegrees = 0;
+                    transX = -40;
+                    transY = 1;
+                }
                     
                 float scale = 1;
-                    /*
+                /*
                 TransformationParameters fitParams = fit.getParameters();
                 float diffRotDeg = AngleUtil.getAngleDifference(
                 fitParams.getRotationInDegrees(), rotInDegrees);
@@ -510,7 +498,7 @@ public class PointMatcher2Test extends TestCase {
         try {
             PointMatcher2Test test = new PointMatcher2Test();
 
-            //test.testPerformMatchingForMostlyVerticalTranslation();
+            test.testPerformMatchingForMostlyVerticalTranslation();
             test.testPerformMatchingForMostlyVerticalTranslation2();
 
         } catch(Exception e) {

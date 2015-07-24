@@ -589,6 +589,8 @@ public final class PointMatcher extends AbstractPointMatcher {
         long t1 = System.currentTimeMillis();
         log.info("segmentation " + ((t1 - t0)*1e-3) + " seconds");        
         
+        
+        
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(csImg1);
         detector.doNotPerformHistogramEqualization();
@@ -602,6 +604,11 @@ public final class PointMatcher extends AbstractPointMatcher {
         //detector2.findCornersIteratively(nPreferredCorners, nCrit);
         detector2.findCorners();
         PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
+        
+        writeImage(ImageIOHelper.convertImage(csImg1), corners1,
+            "corners1_" + 0 + "_" + 0 + ".png");
+        writeImage(ImageIOHelper.convertImage(csImg2), corners2,
+            "corners2_" + 0 + "_" + 0 + ".png");
 
         t0 = System.currentTimeMillis();
 
@@ -631,11 +638,7 @@ public final class PointMatcher extends AbstractPointMatcher {
 
         writeTransformed(fit.getParameters(), ImageIOHelper.convertImage(csImg2),
             corners1, corners2, "transformed_binned.png");
-         writeImage(ImageIOHelper.convertImage(csImg1), corners1,
-            "corners1_" + 0 + "_" + 0 + ".png");
-        writeImage(ImageIOHelper.convertImage(csImg2), corners2,
-            "corners2_" + 0 + "_" + 0 + ".png");
-
+         
         // then transform the solution by a scale of binFactor1.
         TransformationParameters paramsOrigScale =
             transformer.applyScaleTransformation(fit.getParameters(), binFactor1);
