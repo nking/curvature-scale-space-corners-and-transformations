@@ -265,6 +265,11 @@ public class PointMatcher2Test extends TestCase {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
                     
+                    // TODO: for this image to be usable in this, the skyline extractor
+                    // should maybe be used to make a mask first
+                    //fileName1 = "brown_lowe_2003_image1.jpg";
+                    //fileName2 = "brown_lowe_2003_image2.jpg";
+                    
                 String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
                 ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
                 int image1Width = img1.getWidth();

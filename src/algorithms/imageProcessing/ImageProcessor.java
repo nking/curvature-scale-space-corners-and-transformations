@@ -1418,8 +1418,7 @@ public class ImageProcessor {
         return out;
     }
 
-    public GreyscaleImage binImage(GreyscaleImage img,
-        int binFactor) {
+    public GreyscaleImage binImage(GreyscaleImage img, int binFactor) {
 
         if (img == null) {
             throw new IllegalArgumentException("img cannot be null");

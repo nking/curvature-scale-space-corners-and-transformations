@@ -528,46 +528,67 @@ public final class PointMatcher extends AbstractPointMatcher {
         //    (float)rightImg.getHeight()/200.));
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        GreyscaleImage csImg1 =
-            imageProcessor.createGreyscaleFromColorSegmentation(leftImg, 3);
-        imageProcessor.applyImageSegmentation(csImg1, 2);
-        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(csImg1);
-        int lowValue1 = Integer.MAX_VALUE;
-        int highValue1 = Integer.MIN_VALUE;
-        for (Integer v : freqMap.keySet()) {
-            if (v.intValue() < lowValue1) {
-                lowValue1 = v.intValue();
+        GreyscaleImage csImg1, csImg2;
+        
+        long t0 = System.currentTimeMillis();
+        
+        if (false) {
+            csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(leftImg, 3);
+            imageProcessor.applyImageSegmentation(csImg1, 2);
+            Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(csImg1);
+            int lowValue1 = Integer.MAX_VALUE;
+            int highValue1 = Integer.MIN_VALUE;
+            for (Integer v : freqMap.keySet()) {
+                if (v.intValue() < lowValue1) {
+                    lowValue1 = v.intValue();
+                }
+                if (v.intValue() > highValue1) {
+                    highValue1 = v.intValue();
+                }
             }
-            if (v.intValue() > highValue1) {
-                highValue1 = v.intValue();
-            }
-        }
-        imageProcessor.fillInPixels(csImg1, lowValue1, 50);
-        imageProcessor.fillInPixels(csImg1, highValue1, 50);
-        csImg1 = imageProcessor.binImage(csImg1, binFactor1);
-        ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
-            + "/color_segmentation1.png", csImg1);
+            imageProcessor.fillInPixels(csImg1, lowValue1, 50);
+            imageProcessor.fillInPixels(csImg1, highValue1, 50);
+            csImg1 = imageProcessor.binImage(csImg1, binFactor1);
+            ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+                + "/color_segmentation1.png", csImg1);
 
-        GreyscaleImage csImg2 =
-            imageProcessor.createGreyscaleFromColorSegmentation(rightImg, 3);
-        imageProcessor.applyImageSegmentation(csImg2, 2);
-        freqMap = Histogram.createAFrequencyMap(csImg2);
-        int lowValue2 = Integer.MAX_VALUE;
-        int highValue2 = Integer.MIN_VALUE;
-        for (Integer v : freqMap.keySet()) {
-            if (v.intValue() < lowValue2) {
-                lowValue2 = v.intValue();
+            csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(rightImg, 3);
+            imageProcessor.applyImageSegmentation(csImg2, 2);
+            freqMap = Histogram.createAFrequencyMap(csImg2);
+            int lowValue2 = Integer.MAX_VALUE;
+            int highValue2 = Integer.MIN_VALUE;
+            for (Integer v : freqMap.keySet()) {
+                if (v.intValue() < lowValue2) {
+                    lowValue2 = v.intValue();
+                }
+                if (v.intValue() > highValue2) {
+                    highValue2 = v.intValue();
+                }
             }
-            if (v.intValue() > highValue2) {
-                highValue2 = v.intValue();
-            }
-        }
-        imageProcessor.fillInPixels(csImg2, lowValue2, 50);
-        imageProcessor.fillInPixels(csImg2, highValue2, 50);
-        csImg2 = imageProcessor.binImage(csImg2, binFactor1);
-        ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
-            + "/color_segmentation2.png", csImg2);
+            imageProcessor.fillInPixels(csImg2, lowValue2, 50);
+            imageProcessor.fillInPixels(csImg2, highValue2, 50);
+            csImg2 = imageProcessor.binImage(csImg2, binFactor1);
+            ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+                + "/color_segmentation2.png", csImg2);
+        } else {
+            ImageExt leftImgBinned = imageProcessor.binImage(leftImg, binFactor1);
+                        
+            csImg1 = imageProcessor.createGreyscaleFromColorSegmentation(leftImgBinned, 3);
+            imageProcessor.applyImageSegmentation(csImg1, 2);
+            
+            ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+                + "/color_segmentation1.png", csImg1);
 
+            ImageExt rightImgBinned = imageProcessor.binImage(rightImg, binFactor1);
+            csImg2 = imageProcessor.createGreyscaleFromColorSegmentation(rightImgBinned, 3);
+            imageProcessor.applyImageSegmentation(csImg2, 2);
+            
+            ImageIOHelper.writeOutputImage(ResourceFinder.findDirectory("bin")
+                + "/color_segmentation2.png", csImg2);
+        }
+        long t1 = System.currentTimeMillis();
+        log.info("segmentation " + ((t1 - t0)*1e-3) + " seconds");        
+        
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(csImg1);
         detector.doNotPerformHistogramEqualization();
@@ -582,7 +603,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         detector2.findCorners();
         PairIntArray corners2 = detector2.getCornersInOriginalReferenceFrame();
 
-        long t0 = System.currentTimeMillis();
+        t0 = System.currentTimeMillis();
 
         boolean useLargestToleranceForOutput = false;//true;
         boolean useGreedyMatching = true;
@@ -592,7 +613,7 @@ public final class PointMatcher extends AbstractPointMatcher {
         TransformationPointFit fit = calculateEuclideanLeftRightTransformation(
             corners1, corners2, useLargestToleranceForOutput, useGreedyMatching);
 
-        long t1 = System.currentTimeMillis();
+        t1 = System.currentTimeMillis();
 
         log.info("(" + ((t1 - t0)*1e-3) + " seconds) fit=" + fit.toString());
 
