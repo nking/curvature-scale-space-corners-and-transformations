@@ -157,7 +157,7 @@ public class RANSACSolver {
         their order is 7 random operations * 7 * log_2(7) steps so 7 * 7 * 20 steps for a single
         iteration of selecting a subset.
           The BigInteger random suggestion above in contrast would be the 
-          BigInteger random operation plus 3 set bit operations plus possibly 
+          BigInteger random operation plus up to 6 set bit operations plus possibly 
           half a dozen bit operations from Gosper's hack if need to
           select again, so the BigInteger implementation might be useful.
 
