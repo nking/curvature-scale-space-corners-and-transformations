@@ -165,33 +165,6 @@ public class StereoProjectionTransformer {
      */
     private SimpleMatrix epipolarLinesInLeft = null;
     
-    /**
-     * not ready for use yet...
-     * 
-     * @param unmatchedLeftXY
-     * @param unmatchedRightXY
-     * @param image1CentroidX
-     * @param image1CentroidY
-     * @param image2CentroidX
-     * @param image2CentroidY
-     * @param outputMatchedLeftXY
-     * @param outputMatchedRightXY
-     * @return
-     * @throws NoSuchAlgorithmException 
-     */
-    public StereoProjectionTransformerFit 
-        calculateEpipolarProjectionForUnmatched(
-        PairIntArray unmatchedLeftXY, PairIntArray unmatchedRightXY,
-        int image1CentroidX, int image1CentroidY,
-        int image2CentroidX, int image2CentroidY,
-        PairIntArray outputMatchedLeftXY, PairIntArray outputMatchedRightXY
-        ) throws NoSuchAlgorithmException {
-        
-        // place results of PointMatcher3Test in here 
-            
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-    
     private boolean fitIsBetter(StereoProjectionTransformerFit bestFit, 
         StereoProjectionTransformerFit compareFit) {
         
@@ -1340,6 +1313,7 @@ public class StereoProjectionTransformer {
     }
 
     /**
+     * NOT YET READY FOR USE.
      * using the homography matrix bestFitProj, project the points in one set 
      * to epipolar lines in the other set and find the closest match that
      * works best in both frames.  The cost function for the match is the
@@ -1510,36 +1484,6 @@ public class StereoProjectionTransformer {
         }
   
         return line;
-    }
-    
-    private double[] getEpipolarLineYEndpoints(SimpleMatrix epipolarLines, 
-        int xBegin, int xEnd, int pointNumber) {
-        
-        double a = epipolarLines.get(0, pointNumber);
-        double b = epipolarLines.get(1, pointNumber);
-        double c = epipolarLines.get(2, pointNumber);
-        
-        //y = - (a/b) * x - (c/b)
-        double yBegin = (c + (a * (double)xBegin)) / (-b);
-        
-        double yEnd = (c + (a * (double)xEnd)) / (-b);
-  
-        return new double[]{yBegin, yEnd};
-    }
-    
-    private double[] getEpipolarLineYEndpoints(SimpleMatrix epipolarLines, 
-        float xBegin, float xEnd, int pointNumber) {
-        
-        double a = epipolarLines.get(0, pointNumber);
-        double b = epipolarLines.get(1, pointNumber);
-        double c = epipolarLines.get(2, pointNumber);
-        
-        //y = - (a/b) * x - (c/b)
-        double yBegin = (c + (a * xBegin)) / (-b);
-        
-        double yEnd = (c + (a * xEnd)) / (-b);
-  
-        return new double[]{yBegin, yEnd};
     }
     
     SimpleMatrix calculateEpipolarRightLines(SimpleMatrix points) {
@@ -2028,48 +1972,6 @@ public class StereoProjectionTransformer {
         }
         
         return out;
-    }
-    
-    private int[] getMinMaxX(PairFloatArray points) {
-        
-        int nPoints = points.getN();
-         
-        // estimate endpoints of the epipolar line as the min and max x of right
-        int xBegin = Integer.MAX_VALUE;
-        int xEnd = Integer.MIN_VALUE;
-        for (int i = 0; i < nPoints; i++) {
-            double xP = points.getX(i);
-            int x = (int)Math.round(xP);
-            if (x < xBegin) {
-                xBegin = x;
-            }
-            if (x > xEnd) {
-                xEnd = x;
-            }
-        }
-        
-        return new int[]{xBegin, xEnd};
-    }
-    
-    private int[] getMinMaxX(SimpleMatrix points) {
-        
-        int nPoints = points.numCols();
-         
-        // estimate endpoints of the epipolar line as the min and max x of right
-        int xBegin = Integer.MAX_VALUE;
-        int xEnd = Integer.MIN_VALUE;
-        for (int i = 0; i < nPoints; i++) {
-            double xP = points.get(0, i);
-            int x = (int)Math.round(xP);
-            if (x < xBegin) {
-                xBegin = x;
-            }
-            if (x > xEnd) {
-                xEnd = x;
-            }
-        }
-        
-        return new int[]{xBegin, xEnd};
     }
     
     /**

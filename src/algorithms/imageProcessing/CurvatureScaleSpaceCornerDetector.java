@@ -157,6 +157,8 @@ public class CurvatureScaleSpaceCornerDetector extends
      */
     public void findCornersIteratively(int approxNumberOfCornersDesired,
         int filterOnlyAboveThisNumberOfCorners) {
+
+        //TODO: this method needs to be refactored
         
         if (!performWholeImageCorners) {
             throw new IllegalStateException(
@@ -164,13 +166,13 @@ public class CurvatureScaleSpaceCornerDetector extends
         }
 
         float lowerThresholdStepSize = 1.0f;
-
+        
         int nCorners = corners.getN();
 
         float lowThreshold = (useOutdoorMode) ?
             CannyEdgeFilter.defaultOutdoorLowThreshold :
             CannyEdgeFilter.defaultLowThreshold;
-
+        
         if ((nCorners > 0) && (nCorners < filterOnlyAboveThisNumberOfCorners)) {
             return;
         } else if ((nCorners > 0) && (nCorners < approxNumberOfCornersDesired)) {
@@ -205,12 +207,12 @@ public class CurvatureScaleSpaceCornerDetector extends
             //TODO: needs adjustments:
             float additionalBlurSigma = 0;
             if (nIter == 0) {
-                additionalBlurSigma = 1;
-                if (nCorners > 1000) {
+                //additionalBlurSigma = 1;
+                /*if (nCorners > 1000) {
                     lowerThresholdStepSize  = 1.5f;
-                } else {
+                } else {*/
                     lowerThresholdStepSize = 0.5f;
-                }
+                //}
             }
             
             lowThreshold += lowerThresholdStepSize;
@@ -219,12 +221,12 @@ public class CurvatureScaleSpaceCornerDetector extends
 
             findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);
 
+            includeJunctionsInCorners();
+            
             nCorners = corners.getN();
             
             nIter++;
         }
-
-        includeJunctionsInCorners();
 
         if (Math.abs(corners.getN() - approxNumberOfCornersDesired) >
             Math.abs(prevCorners.getN() - approxNumberOfCornersDesired)) {

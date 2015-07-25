@@ -481,7 +481,7 @@ TransformationPointFit fit = fits.get(0);
         int z = 1;
     }*/
 
-    public void estSkyline() throws Exception {
+    public void testSkyline() throws Exception {
 
         String[] fileNames = new String[] {
             "brown_lowe_2003_image1.jpg",
@@ -564,8 +564,12 @@ TransformationPointFit fit = fits.get(0);
         }
     }
 
-    private void examineIterativeCorners() throws Exception {
+    public void estIterativeCorners() throws Exception {
 
+        /*
+        tests skyline extractor, iterative corners, euclidean point matcher,
+        then stereopojection calculation
+        */
 
         String fileName1 = "brown_lowe_2003_image1.jpg";
         String fileName2 = "brown_lowe_2003_image2.jpg";
@@ -589,36 +593,51 @@ TransformationPointFit fit = fits.get(0);
         List<PairIntArray> edgesSkyline1 = null;
         //List<PairIntArray> edges2 = null;
         List<PairIntArray> edgesSkyline2 = null;
-        PairIntArray points1 = null;
-        PairIntArray points2 = null;
 
-        int nPreferredCorners = 100;
-        int nCrit = 500;
+        int nPreferredCorners = 250;
+        int nCrit = 200;
 
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);
         //detector.useOutdoorMode();
-        //detector.useOutdoorModeAndExtractSkyline();
-        detector.calculateSkylineCornersOnly();
-        //detector.findCornersIteratively(nPreferredCorners, nCrit);
-        detector.findCorners();
+        detector.useOutdoorModeAndExtractSkyline();
+        //detector.calculateSkylineCornersOnly();
+        detector.findCornersIteratively(nPreferredCorners, nCrit);
+        //detector.findCorners();
         //edges1 = detector.getEdgesInOriginalReferenceFrame();
-        points1 = detector.getSkylineCornersInOriginalReferenceFrame();
+        PairIntArray skylineCorners1 = detector.getSkylineCornersInOriginalReferenceFrame();
+        PairIntArray corners1 = detector.getCornersInOriginalReferenceFrame();
         edgesSkyline1 = detector.getSkylineEdgesInOriginalReferenceFrame();
 
         detector = new CurvatureScaleSpaceCornerDetector(img2);
         //detector.useOutdoorMode();
-        //detector.useOutdoorModeAndExtractSkyline();
-        detector.calculateSkylineCornersOnly();
-        //detector.findCornersIteratively(nPreferredCorners, nCrit);
-        detector.findCorners();
+        detector.useOutdoorModeAndExtractSkyline();
+        //detector.calculateSkylineCornersOnly();
+        detector.findCornersIteratively(nPreferredCorners, nCrit);
+        //detector.findCorners();
         //edges2 = detector.getEdgesInOriginalReferenceFrame();
-        points2 = detector.getSkylineCornersInOriginalReferenceFrame();
+        PairIntArray skylineCorners2 = detector.getSkylineCornersInOriginalReferenceFrame();
+        PairIntArray corners2 = detector.getCornersInOriginalReferenceFrame();
         edgesSkyline2 = detector.getSkylineEdgesInOriginalReferenceFrame();
 
         Image image1 = ImageIOHelper.readImageAsGrayScale(filePath1);
         String dirPath = ResourceFinder.findDirectory("bin");
         Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+
+        PairIntArray comb1 = skylineCorners1.copy();
+        comb1.addAll(corners1);
+        PairIntArray comb2 = skylineCorners2.copy();
+        comb2.addAll(corners2);
+        
+        writeImage(image1.copyImage(), skylineCorners1,
+            "skylinecorners1_" + ".png");
+        writeImage(image2.copyImage(), skylineCorners2,
+            "skylinecorners2_" + ".png");
+        
+        writeImage(image1.copyImage(), comb1,
+            "corners1_" + ".png");
+        writeImage(image2.copyImage(), comb2,
+            "corners2_" + ".png");
 
         // ===== use partitioned matching =====
         PairIntArray outputMatchedScene = new PairIntArray();
@@ -629,39 +648,20 @@ TransformationPointFit fit = fits.get(0);
         //pointMatcher.setCostToDiffFromModel();
 
         boolean useLargestToleranceForOutput = true;
-        float setsFractionOfImage = 1.0f;
+        boolean useGreedyMatching = true;
 
         TransformationPointFit trFit =
-            pointMatcher.performMatching(points1, points2,
-                outputMatchedScene, outputMatchedModel,
-                useLargestToleranceForOutput);
+            pointMatcher.performMatchingForMostlyVerticalTranslation(
+                comb1, comb2, 
+                outputMatchedScene, outputMatchedModel, 
+                useLargestToleranceForOutput, useGreedyMatching);
 
         log.info("rough euclidean from skyline alone=" + trFit.toString());
-
-/*
-the skyline is hopefully useful in getting the transformation solution
-into the local search region
-
-now should try rough euclidean match using the transformation from
-skyline as a start of solution with whole image corners and prefer the
-later if better.
-
-then make a larger output matched scene and model set of matched points to
-determine the epipolar projection
-
-(for brown & lee, the skyline-only region of overlap is small so
-difficult to make a precise epipolar projection solution.  it's
-better to have points of correspondence spread over as much of the
-images as possible)
-*/
-
-        /*
-        pointMatcher.performMatching(points1, points2,
-        image1Width >> 1, image1Height >> 1,
-            image2Width >> 1, image2Height >> 1,
-            outputMatchedScene, outputMatchedModel, 1.0f);
-        */
-
+        
+        writeTransformed(trFit.getParameters(), image2.copyImage(),
+            outputMatchedScene, outputMatchedModel, 
+            "transformedCorners_.png");
+                
         if (outputMatchedScene.getN() < 7) {
             // no epipolar solution. need at least 7 points
             return;
@@ -703,75 +703,6 @@ images as possible)
         System.out.println("test done");
     }
 
-    //@Test
-    public void est155() throws Exception {
-
-        PairIntArray scene = new PairIntArray();
-        PairIntArray model = new PairIntArray();
-        DataForTests.readBrownAndLoweMatches(scene, model);
-
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        int xSceneCentroid = img1.getWidth() >> 1;
-        int ySceneCentroid = img1.getHeight() >> 1;
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        int xModelCentroid = img2.getWidth() >> 1;
-        int yModelCentroid = img2.getHeight() >> 1;
-
-        StereoProjectionTransformer st = new StereoProjectionTransformer();
-
-        SimpleMatrix left =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(scene);
-        SimpleMatrix right =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(model);
-
-        SimpleMatrix fm =
-            st.calculateEpipolarProjectionForPerfectlyMatched(left, right);
-
-        overplotEpipolarLines(fm, scene.toPairFloatArray(),
-            model.toPairFloatArray(), img1, img2, img1.getWidth(),
-            img1.getHeight(), img2.getWidth(), img2.getHeight());
-
-    }
-
-    //@Test
-    public void est156() throws Exception {
-
-        PairIntArray scene = new PairIntArray();
-        PairIntArray model = new PairIntArray();
-        DataForTests.readBrownAndLoweCorners(scene, model);
-
-        String fileName1 = "brown_lowe_2003_image1.jpg";
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        int xSceneCentroid = img1.getWidth() >> 1;
-        int ySceneCentroid = img1.getHeight() >> 1;
-        String fileName2 = "brown_lowe_2003_image2.jpg";
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        int xModelCentroid = img2.getWidth() >> 1;
-        int yModelCentroid = img2.getHeight() >> 1;
-
-        StereoProjectionTransformer st = new StereoProjectionTransformer();
-
-        PairIntArray outputMatchedScene = new PairIntArray();
-        PairIntArray outputMatchedModel = new PairIntArray();
-
-        StereoProjectionTransformerFit fit =
-            st.calculateEpipolarProjectionForUnmatched(scene, model,
-            xSceneCentroid, ySceneCentroid,
-            xModelCentroid, yModelCentroid,
-            outputMatchedScene, outputMatchedModel);
-
-        overplotEpipolarLines(fit.getFundamentalMatrix(),
-            scene.toPairFloatArray(), model.toPairFloatArray(),
-            img1, img2, img1.getWidth(),
-            img1.getHeight(), img2.getWidth(), img2.getHeight());
-    }
-
     private void overplotEpipolarLines(SimpleMatrix fm, PairFloatArray set1,
         PairFloatArray set2, Image img1, Image img2, int image1Width,
         int image1Height, int image2Width, int image2Height) throws IOException {
@@ -780,6 +711,138 @@ images as possible)
 
         overplotEpipolarLines(fm, set1, set2, img1, img2, image1Width,
             image1Height, image2Width, image2Height, flNum);
+    }
+    
+    public void estShapeMatching() throws Exception {
+
+        /*
+        tests skyline extractor, iterative corners, euclidean point matcher,
+        then stereopojection calculation
+        */
+
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String fileName2 = "brown_lowe_2003_image2.jpg";
+
+        /*
+        String fileName1 = "venturi_mountain_j6_0001.png";
+        String fileName2 = "venturi_mountain_j6_0010.png";
+        */
+
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+
+        // mask out the sky
+            
+        ImageHelperForTests helper = new ImageHelperForTests(img1, true);
+        SkylineExtractor skylineExtractor = new SkylineExtractor();                    
+        PairIntArray outputSkyCentroid = new PairIntArray();
+        // sky are the zeros in this:
+        GreyscaleImage resultMask = skylineExtractor.createBestSkyMask(
+            helper.getTheta(), helper.getGradientXY(), img1,
+            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.multiply(img1, resultMask);
+
+        helper = new ImageHelperForTests(img2, true);
+        skylineExtractor = new SkylineExtractor();                    
+        outputSkyCentroid = new PairIntArray();
+        // sky are the zeros in this:
+        resultMask = skylineExtractor.createBestSkyMask(
+            helper.getTheta(), helper.getGradientXY(), img2,
+            helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
+        imageProcessor.multiply(img2, resultMask);
+        
+        PairIntArray outputMatchedScene = new PairIntArray();
+        PairIntArray outputMatchedModel = new PairIntArray();
+
+        ShapeMatcher shapeMatcher = new ShapeMatcher();
+        
+        TransformationPointFit fit = shapeMatcher.findMatchingShapes(
+            img1, img2, outputMatchedScene, outputMatchedModel);
+
+        Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+
+        /*
+        PairIntArray comb1 = skylineCorners1.copy();
+        comb1.addAll(corners1);
+        PairIntArray comb2 = skylineCorners2.copy();
+        comb2.addAll(corners2);
+        
+        writeImage(image1.copyImage(), skylineCorners1,
+            "skylinecorners1_" + ".png");
+        writeImage(image2.copyImage(), skylineCorners2,
+            "skylinecorners2_" + ".png");
+        
+        GreyscaleImage img1Grey = img1.copyToGreyscale();
+        GreyscaleImage img2Grey = img2.copyToGreyscale();
+        
+        imageProcessor.applyImageSegmentation(img1Grey, 3);
+        imageProcessor.applyImageSegmentation(img2Grey, 3);
+        
+        writeImage(ImageIOHelper.convertImage(img1Grey), corners1,
+            "segmentation1_" + ".png");
+        writeImage(ImageIOHelper.convertImage(img2Grey), corners2,
+            "segmentation2_" + ".png");
+        
+        writeImage(image1.copyImage(), comb1,
+            "corners1_" + ".png");
+        writeImage(image2.copyImage(), comb2,
+            "corners2_" + ".png");
+        */
+        
+        log.info("rough euclidean from shapes=" + fit.toString());
+        
+        writeTransformed(fit.getParameters(), image2.copyImage(),
+            outputMatchedScene, outputMatchedModel, 
+            "transformedPoints_.png");
+                
+        if (outputMatchedScene.getN() < 7) {
+            // no epipolar solution. need at least 7 points
+            return;
+        }
+
+        PairFloatArray finalOutputMatchedScene = new PairFloatArray();
+        PairFloatArray finalOutputMatchedModel = new PairFloatArray();
+
+        RANSACSolver ransacSolver = new RANSACSolver();
+
+        StereoProjectionTransformerFit sFit = ransacSolver
+            .calculateEpipolarProjection(
+                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
+                StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel),
+                finalOutputMatchedScene, finalOutputMatchedModel);
+
+        overplotEpipolarLines(sFit.getFundamentalMatrix(),
+            outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(),
+            ImageIOHelper.readImage(filePath1),
+            ImageIOHelper.readImage(filePath2),
+            image1Width,
+            img1.getHeight(), img2.getWidth(), img2.getHeight());
+
+        /*
+        StereoProjectionTransformer st = new StereoProjectionTransformer();
+        SimpleMatrix fm =
+            st.calculateEpipolarProjectionForPerfectlyMatched(
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedScene),
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(outputMatchedModel));
+
+        overplotEpipolarLines(fm,
+            outputMatchedScene.toPairFloatArray(), outputMatchedModel.toPairFloatArray(),
+            ImageIOHelper.readImage(filePath1),
+            ImageIOHelper.readImage(filePath2),
+            image1Width,
+            img1.getHeight(), img2.getWidth(), img2.getHeight());
+        */
+
+        System.out.println("test done");
     }
 
     private void overplotEpipolarLines(SimpleMatrix fm, PairFloatArray set1,
@@ -841,8 +904,10 @@ images as possible)
         try {
             PointMatcher3Test test = new PointMatcher3Test();
 
-            test.testCalculateEuclideanTransformation();
-            test.testCalculateEuclideanTransformation2();
+            //test.testCalculateEuclideanTransformation();
+            //test.testCalculateEuclideanTransformation2();
+            //test.testIterativeCorners();
+            //test.testShapeMatching();
 
         } catch(Exception e) {
             e.printStackTrace();
@@ -872,4 +937,63 @@ images as possible)
         }
     }
 
+    private void writeImage(Image image1, PairIntArray points1,
+        String outputImageName) {
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            int nExtraForDot = 1;
+
+            ImageIOHelper.addCurveToImage(points1, image1, nExtraForDot,
+                255, 0, 0);
+
+            ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image1);
+
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+    }
+
+    private void writeTransformed(TransformationParameters parameters,
+        Image image2, PairIntArray points1,
+        PairIntArray points2, String outputImageName) {
+
+        Transformer transformer = new Transformer();
+
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+
+            PairIntArray trPoints1 = transformer.applyTransformation(parameters,
+                points1);
+
+            PairIntArray transformedPoints1 = new PairIntArray();
+            for (int i = 0; i < trPoints1.getN(); ++i) {
+                int x = trPoints1.getX(i);
+                int y = trPoints1.getY(i);
+                if (x < 0 || x > (image2.getWidth() - 1)) {
+                    continue;
+                }
+                if (y < 0 || y > (image2.getHeight() - 1)) {
+                    continue;
+                }
+                transformedPoints1.add(x, y);
+            }
+
+            int nExtraForDot = 1;
+
+            ImageIOHelper.addCurveToImage(transformedPoints1, image2, nExtraForDot,
+                255, 0, 0);
+
+            ImageIOHelper.addCurveToImage(points2, image2, nExtraForDot,
+                0, 0, 255);
+
+            ImageIOHelper.writeOutputImage(dirPath + "/" + outputImageName, image2);
+
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+    }
 }

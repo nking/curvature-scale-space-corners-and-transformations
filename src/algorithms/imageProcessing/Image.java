@@ -66,10 +66,10 @@ public class Image {
         
         int idx = getInternalIndex(col, row);
        
-        /*if ((idx < 0) || (idx > (r.length - 1))) {
+        if ((idx < 0) || (idx > (r.length - 1))) {
             throw new IllegalArgumentException(
                 "col and/or are out of bounds");
-        }*/
+        }
         
         r[idx] = rPix;
         g[idx] = gPix;
@@ -99,6 +99,11 @@ public class Image {
         
         int idx = getInternalIndex(col, row);
        
+        if ((idx < 0) || (idx > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
         return r[idx];
     }
     
@@ -106,6 +111,11 @@ public class Image {
         
         int idx = getInternalIndex(col, row);
        
+        if ((idx < 0) || (idx > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
         return b[idx];
     }
     
@@ -113,27 +123,52 @@ public class Image {
         
         int idx = getInternalIndex(col, row);
        
+        if ((idx < 0) || (idx > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
         return g[idx];
     }
     
     public int getR(int internalIndex) {
-               
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
         return r[internalIndex];
     }
     
     public int getB(int internalIndex) {
-               
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
         return b[internalIndex];
     }
     
     public int getG(int internalIndex) {
-               
+
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
         return g[internalIndex];
     }
     
     public int getRGB(int col, int row) {
     
         int idx = getInternalIndex(col, row);
+        
+        if ((idx < 0) || (idx > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
         
         int rgb = (((r[idx] & 0x0ff) << 16) 
             | ((g[idx] & 0x0ff) << 8) | (b[idx] & 0x0ff));

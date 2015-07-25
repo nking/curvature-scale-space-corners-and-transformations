@@ -183,6 +183,11 @@ public class RANSACSolver {
 
         RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
 
+        /*
+        could consider a threshold max iteration based upon the image size such
+        as in (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
+        which uses 0.6% of the maximum image dimension.
+        */
         int nMaxIter = nEstimator.estimateNIterForFiftyPercentOutliersFor7Points(
             nSet);
 

@@ -332,6 +332,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
              
             List<PairIntArray> skyEdges = skylineExtractor.getSkylineEdges();
             
+            if (skyEdges == null) {
+                return new ArrayList<PairIntArray>();
+            }
+            
             Collections.sort(skyEdges, new PairIntArrayComparator());
 
             //reverse the list so the edges with largest numbers of points are

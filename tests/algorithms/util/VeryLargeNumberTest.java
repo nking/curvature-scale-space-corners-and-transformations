@@ -1,6 +1,7 @@
 package algorithms.util;
 
 import java.util.Arrays;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,20 +11,11 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class VeryLargeNumberTest {
+public class VeryLargeNumberTest extends TestCase {
     
     public VeryLargeNumberTest() {
     }
     
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-    
-    @Test
     public void testConstructor() {
                 
         // this one could require change w/ implementation
@@ -72,7 +64,6 @@ public class VeryLargeNumberTest {
         assertTrue(instance.isOdd());
     }
     
-    @Test
     public void testResetTo() {
                 
         VeryLargeNumber instance = new VeryLargeNumber(1294);
@@ -94,7 +85,6 @@ public class VeryLargeNumberTest {
         assertFalse(instance2.isOdd());
     }
     
-    @Test
     public void testCompareTo() {
                 
         VeryLargeNumber instance = new VeryLargeNumber(10);
@@ -148,7 +138,6 @@ public class VeryLargeNumberTest {
         assertTrue(comp == 0);
     }
 
-    @Test
     public void testAdd() {
                 
         //----------------------------------------------------------------
@@ -457,7 +446,6 @@ public class VeryLargeNumberTest {
         }         
     }
 
-    @Test
     public void testSubtract() {
                 
         VeryLargeNumber instance = new VeryLargeNumber(1294);
@@ -577,7 +565,6 @@ public class VeryLargeNumberTest {
         assertTrue(instance.getInternalArraySize() == 1);
     }
     
-    @Test
     public void testIncrement() {
                 
         VeryLargeNumber instance = new VeryLargeNumber(1294);
@@ -678,7 +665,6 @@ public class VeryLargeNumberTest {
         assertTrue(instance.getInternalArraySize() == 1);
     }
     
-    @Test
     public void testClone() throws Exception {
 
         VeryLargeNumber instance = new VeryLargeNumber(1294);
@@ -706,7 +692,6 @@ public class VeryLargeNumberTest {
             clone.getInternalArraySize());
     }
     
-    //@Test
     public void testInverseByEuclidean() {
         
         VeryLargeNumber instance = new VeryLargeNumber(4);
@@ -728,7 +713,6 @@ public class VeryLargeNumberTest {
         assertTrue(Math.abs(inverted - -0.25) < 0.01);        
     }
     
-    @Test
     public void testDivideByAndPrint() {
         
         VeryLargeNumber divisor = new VeryLargeNumber(10);        
@@ -779,7 +763,6 @@ public class VeryLargeNumberTest {
         //System.out.println("1294/7=" + str);       
     }
     
-    @Test
     public void testSplitAt() {
         
         VeryLargeNumber number;
@@ -805,7 +788,6 @@ public class VeryLargeNumberTest {
         
     }
     
-    @Test
     public void testKaratasuba() throws CloneNotSupportedException {
         
         VeryLargeNumber num1 = new VeryLargeNumber(0);
@@ -924,7 +906,6 @@ public class VeryLargeNumberTest {
         
     }
     
-    @Test
     public void testPow() {
         
         VeryLargeNumber instance = new VeryLargeNumber(2);
@@ -973,7 +954,6 @@ public class VeryLargeNumberTest {
         assertTrue(expected.compareTo(result) == 0);
     }
     
-    //@Test
     public void estDivideByAndPrint2() {
         
         //---------------------------------------------------------
@@ -1026,7 +1006,6 @@ public class VeryLargeNumberTest {
         
     }
     
-    @Test
     public void testMultiply() {
         
         VeryLargeNumber v = new VeryLargeNumber(0);

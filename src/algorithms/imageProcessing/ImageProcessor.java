@@ -847,6 +847,45 @@ public class ImageProcessor {
 
         return output;
     }
+    
+    /**
+     * multiply these images, that is pixel by pixel multiplication.
+     * No corrections are made for integer overflow.
+     * @param input1
+     * @param input2
+     * @return
+     */
+    public void multiply(Image input1, GreyscaleImage input2)  {
+
+        if (input1 == null) {
+            throw new IllegalArgumentException("input1 cannot be null");
+        }
+        if (input2 == null) {
+            throw new IllegalArgumentException("input2 cannot be null");
+        }
+        if (input1.getWidth() != input2.getWidth()) {
+            throw new IllegalArgumentException(
+            "input1 and input2 must have same widths");
+        }
+        if (input1.getHeight()!= input2.getHeight()) {
+            throw new IllegalArgumentException(
+            "input1 and input2 must have same heights");
+        }
+
+        for (int col = 0; col < input1.getWidth(); col++) {
+
+            for (int row = 0; row < input1.getHeight(); row++) {
+
+                int m = input2.getValue(col, row);
+                
+                int r = input1.getR(col, row) * m;
+                int g = input1.getG(col, row) * m;
+                int b = input1.getB(col, row) * m;
+                
+                input1.setRGB(col, row, r, g, b);
+            }
+        }
+    }
 
     /**
      * compare each pixel and set output to 0 if both inputs are 0, else set
@@ -1366,8 +1405,8 @@ public class ImageProcessor {
         int h1 = h0/binFactor;
 
         GreyscaleImage out = new GreyscaleImage(w1, h1);
-        out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/2.f));
-        out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/2.f));
+        out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/binFactor));
+        out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/binFactor));
 
         for (int i = 0; i < w1; i++) {
 
@@ -1431,8 +1470,8 @@ public class ImageProcessor {
         int h1 = h0/binFactor;
 
         GreyscaleImage out = new GreyscaleImage(w1, h1);
-        out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/2.f));
-        out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/2.f));
+        out.setXRelativeOffset(Math.round(img.getXRelativeOffset()/binFactor));
+        out.setYRelativeOffset(Math.round(img.getYRelativeOffset()/binFactor));
 
         for (int i = 0; i < w1; i++) {
 

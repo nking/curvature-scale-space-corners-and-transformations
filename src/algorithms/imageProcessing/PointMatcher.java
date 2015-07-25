@@ -62,7 +62,7 @@ public final class PointMatcher extends AbstractPointMatcher {
 
     protected int largeSearchLimit = 20;
 
-    protected float transDeltaPreSearch0 = 15;//50;
+    protected float transDeltaPreSearch0 = 4;//10;
     protected float rotDeltaPreSearch0 = 2;
 
     protected float rotHalfRangeInDegreesPreSearch1Alt2 = 10;
@@ -181,10 +181,22 @@ public final class PointMatcher extends AbstractPointMatcher {
         float rotationLowLimitInDegrees = 335;
         float rotationHighLimitInDegrees = 25;
 
-        TransformationPointFit fit = calculateEuclideanTransformation(
-            set1, set2, scale, rotationLowLimitInDegrees,
-            rotationHighLimitInDegrees);
-
+        TransformationPointFit fit = null;
+        
+        if (nPairPerm > 1e9) {
+            
+            log.warning("assuming scale=1 to solve." +
+            "currently not able to solve for scale too in large sets in reasonable time so " +
+            " you can reduce your set sizes or use vert trans methods for better solutions.");
+            fit = preSearch(set1, set2, scale, rotationLowLimitInDegrees,
+                rotationHighLimitInDegrees, useGreedyMatching);
+            
+        } else {
+            fit = calculateEuclideanTransformation(
+                set1, set2, scale, rotationLowLimitInDegrees,
+                rotationHighLimitInDegrees);
+        }
+        
         if (fit == null) {
             return null;
         }
@@ -408,17 +420,17 @@ public final class PointMatcher extends AbstractPointMatcher {
         for (int i = 0; i < fits.size(); ++i) {
 
             TransformationPointFit fit  = fits.get(i);
+           
+                TransformationPointFit fitA = evaluateForUnmatched(
+                    fit.getParameters(), corners1, corners2,
+                    generalTolerance, generalTolerance, useGreedyMatching);
 
-            TransformationPointFit fitA = evaluateForUnmatched(
-                fit.getParameters(), corners1, corners2,
-                generalTolerance, generalTolerance, useGreedyMatching);
+                log.info("test skyline params to corners=" + fitA.toString());
 
-            log.info("test fit w/ corners=" + fitA.toString());
-
-            if (fitIsBetter(bestFit, fitA)) {
-                bestFit = fitA;
-                generalTolerance = tols.get(i).floatValue();
-            }
+                if (fitIsBetter(bestFit, fitA)) {
+                    bestFit = fitA;
+                    generalTolerance = tols.get(i).floatValue();
+                }
         }
 
         log.info("best fitting to all corners from best fits="
@@ -3112,13 +3124,9 @@ if (compTol == 1) {
                         allPoints1Tr.add(xsr[i] + tx, ysr[i] + ty);
                     }
 
-                    TransformationParameters params = new TransformationParameters();
-                    params.setScale(scale);
-                    params.setRotationInDegrees(rotDeg);
+                    TransformationParameters params = rotScaleParams.copy();
                     params.setTranslationX(tx);
                     params.setTranslationY(ty);
-                    params.setOriginX(0);
-                    params.setOriginY(0);
 
                     TransformationPointFit fit2;
                     if (useGreedyMatching) {
@@ -3210,12 +3218,14 @@ if (compTol == 1) {
         centerTransX /= (float)count;
         centerTransY /= (float)count;
         float transXHalfRange = Math.abs(maxTransX - minTransX)/2.f;
+        transXHalfRange += this.transDeltaPreSearch0;
         float transYHalfRange = Math.abs(maxTransY - minTransY)/2.f;
+        transYHalfRange += this.transDeltaPreSearch0;
 
         TransformationPointFit[] fits2 = refineTransformationWithDownhillSimplex(
             fits, set1, set2,
             centerTransX, centerTransY, maxTolTransX, maxTolTransY,
-            transXHalfRange + 5, transYHalfRange + 5,
+            transXHalfRange, transYHalfRange,
             searchScaleToo, useGreedyMatching, false, 50);
 
         return fits2;
@@ -3243,9 +3253,39 @@ if (compTol == 1) {
         if ((set1.getN() < 3) || (set2.getN() < 3)) {
             return null;
         }
-
+        
         float startRotationInDegrees = 0;
         float stopRotationInDegrees = 359;
+        
+        return preSearch(set1, set2, scale, startRotationInDegrees,
+            stopRotationInDegrees, useGreedyMatching);
+    }
+    
+    /**
+     * method to narrow down all parameter space to a fit that is within
+     * +- 20 degrees in rotation and +- 50 pixels in translation in X and Y
+     * of the true Euclidean transformation.
+     * Note, these numbers are being learned in testing right now so may
+     * change.
+     *
+     * @param set1
+     * @param set2
+     * @param scale
+     * @param startRotationInDegrees
+     * @param useGreedyMatching
+     * @param stopRotationInDegrees
+     * @return
+     */
+    protected TransformationPointFit preSearch(PairIntArray set1,
+        PairIntArray set2, float scale, float startRotationInDegrees,
+        float stopRotationInDegrees, boolean useGreedyMatching) {
+
+        if ((set1 == null) || (set2 == null)) {
+            return null;
+        }
+        if ((set1.getN() < 3) || (set2.getN() < 3)) {
+            return null;
+        }
 
         TransformationPointFit[] starterPoints = preSearch0(set1, set2, scale,
             startRotationInDegrees, stopRotationInDegrees,
