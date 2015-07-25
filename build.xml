@@ -461,7 +461,7 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <echo message="${src.out.dir}/logging.properties"/>
-        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" 
+        <junit fork="no" showoutput="true" filtertrace="off" printsummary="yes" 
             haltonerror="true" haltonfailure="true">
             
             <assertions enablesystemassertions="true">
