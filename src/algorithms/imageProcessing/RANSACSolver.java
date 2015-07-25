@@ -1,19 +1,11 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
-import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
@@ -183,7 +175,6 @@ public class RANSACSolver {
         PairFloatArray xy2 = null;
 
         double tolerance = generalTolerance;
-        //double freqFractionToAddBackIn = 0.3;
 
         // ====== find matched pairs incremently, and best among only 7 point match ====
 
@@ -246,11 +237,12 @@ public class RANSACSolver {
             nIter++;
 
             if (fitIsBetter(bestFit, fit)) {
+                
                 bestFit = fit;
                 inlierIndexes = indexes;
 
-                if (hasConverged(bestFit, inlierIndexes.size())
-                    && (inlierIndexes.size() >= convergence)) {
+                if (false && hasConverged(bestFit) && 
+                    (inlierIndexes.size() >= convergence)) {
                     
                     break;
                 }
@@ -297,7 +289,7 @@ public class RANSACSolver {
         } else {
 
             SimpleMatrix finalFM = null;
-            if (matchedLeftXY.numCols() == 7) {
+            if (inliersLeftXY.numCols() == 7) {
                 List<SimpleMatrix> fms =
                     spTransformer.calculateEpipolarProjectionFor7Points(
                     inliersLeftXY, inliersRightXY);
@@ -328,209 +320,6 @@ public class RANSACSolver {
         }
 
         log.info("nIter=" + nIter);
-
-        log.info("best fit from 7-point: " + bestFit.toString());
-
-        log.info("final fit: " + finalFit.toString());
-
-        return finalFit;
-    }
-
-    /**
-     * calculate the epipolar projection among the given points with the
-     * assumption that some of the points in the matched lists are not
-     * true matches.  this has a frequency based approach if a critical
-     * limit consensus isn't found in the best fit.
-     *
-     * @param matchedLeftXY
-     * @param matchedRightXY
-     * @param outputLeftXY
-     * @param outputRightXY
-     * @return
-     * @throws NoSuchAlgorithmException
-     */
-    public StereoProjectionTransformerFit calculateEpipolarProjection2(
-        SimpleMatrix matchedLeftXY, SimpleMatrix matchedRightXY,
-        PairFloatArray outputLeftXY, PairFloatArray outputRightXY)
-        throws NoSuchAlgorithmException {
-
-        if (matchedLeftXY == null) {
-            throw new IllegalArgumentException("matchedLeftXY cannot be null");
-        }
-        if (matchedRightXY == null) {
-            throw new IllegalArgumentException("matchedRightXY cannot be null");
-        }
-        if (matchedLeftXY.numCols() < 7) {
-            // cannot use this algorithm.
-            throw new IllegalArgumentException(
-                "the algorithms require 7 or more points."
-                + " matchedLeftXY.n=" + matchedLeftXY.numCols());
-        }
-
-        int nSet = 7;
-
-        int nPoints = matchedLeftXY.numCols();
-
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.currentTimeMillis());
-
-        int[] selected = new int[nSet];
-
-        PairFloatArray xy1 = null;
-        PairFloatArray xy2 = null;
-
-        double tolerance = generalTolerance;
-        double limitFrac = 0.6;
-
-        // ====== find matched pairs incremently, and best among only 7 point match ====
-
-
-        StereoProjectionTransformerFit bestFit = null;
-        List<Integer> inlierIndexes = null;
-
-        // for each consensus member, increment the count for its index
-        Map<Integer, Integer> frequencyOfIndexes = new HashMap<Integer, Integer>();
-
-
-        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
-
-        int nMaxIter = nEstimator.estimateNIterForFiftyPercentOutliersFor7Points(
-            nSet);
-
-        int nIter = 0;
-
-        int nMaxMatchable = (matchedLeftXY.numCols() < matchedRightXY.numCols())
-            ? matchedLeftXY.numCols() : matchedRightXY.numCols();
-
-        for (int i = 0; i < nMaxIter; i++) {
-
-            //TODO: see comments above for implementing alternative random selections
-            MiscMath.chooseRandomly(sr, selected, nPoints);
-            xy1 = new PairFloatArray();
-            xy2 = new PairFloatArray();
-            for (int j = 0; j < selected.length; j++) {
-                int idx = selected[j];
-                xy1.add(
-                    (float)matchedLeftXY.get(0, idx),
-                    (float)matchedLeftXY.get(1, idx));
-                xy2.add(
-                    (float)matchedRightXY.get(0, idx),
-                    (float)matchedRightXY.get(1, idx));
-            }
-
-            StereoProjectionTransformer spTransformer = new
-                StereoProjectionTransformer();
-
-            // determine matrix from 7 points.
-            List<SimpleMatrix> fms =
-                spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);
-
-            if (fms == null || fms.isEmpty()) {
-                nIter++;
-                continue;
-            }
-
-            // since all 1 or 3 solutions returned were validated, will choose the first
-            SimpleMatrix fm = fms.get(0);
-
-            // evaluate fit against all points using tolerance to define inliers
-            StereoProjectionTransformerFit fit =
-                spTransformer.evaluateFitForAlreadyMatched(
-                fm, matchedLeftXY, matchedRightXY, tolerance);
-
-            List<Integer> indexes = fit.getInlierIndexes();
-            if (indexes != null) {
-                for (Integer index : indexes) {
-                    Integer freq = frequencyOfIndexes.get(index);
-                    if (freq == null) {
-                        frequencyOfIndexes.put(index, Integer.valueOf(1));
-                    } else {
-                        frequencyOfIndexes.put(index, Integer.valueOf(
-                            freq.intValue() + 1));
-                    }
-                }
-            }
-
-            if (fitIsBetter(bestFit, fit)) {
-                bestFit = fit;
-                inlierIndexes = indexes;
-
-                if (indexes.size() >= nMaxMatchable*0.8) {
-                    break;
-                }
-            }
-
-            nIter++;
-        }
-
-        if (bestFit == null) {
-            return null;
-        }
-
-        // store inliers in outputLeftXY and outputRightXY and redo the
-        // entire fit using only the inliers to determine the fundamental
-        // matrix.
-
-        int n = (int)Math.round(limitFrac*nMaxMatchable);
-
-        if (false && (inlierIndexes.size() >= n) || (frequencyOfIndexes.size() < n)) {
-            for (Integer idx : inlierIndexes) {
-                int idxInt = idx.intValue();
-                outputLeftXY.add(
-                    (float)matchedLeftXY.get(0, idxInt),
-                    (float)matchedLeftXY.get(1, idxInt));
-                outputRightXY.add(
-                    (float)matchedRightXY.get(0, idxInt),
-                    (float)matchedRightXY.get(1, idxInt));
-
-                frequencyOfIndexes.remove(idx);
-            }
-        } else {
-            int[] a1 = new int[frequencyOfIndexes.size()];
-            int[] a2 = new int[a1.length];
-
-            // examine which indexes are still in frequency map
-            Iterator<Entry<Integer, Integer> > iter = frequencyOfIndexes.entrySet().iterator();
-            int c = 0;
-            while (iter.hasNext()) {
-                Entry<Integer, Integer> entry = iter.next();
-                Integer index = entry.getKey();
-                int idx = index.intValue();
-                Integer freq = entry.getValue();
-                a1[c] = idx;
-                a2[c] = freq.intValue();
-                c++;
-
-            }
-
-            if (frequencyOfIndexes.size() < n) {
-                n = frequencyOfIndexes.size();
-            }
-
-            MultiArrayMergeSort.sortByDecr(a1, a2);
-            for (int ii = 0; ii < n; ii++) {
-                int idx = a1[ii];
-                outputLeftXY.add(
-                    (float) matchedLeftXY.get(0, idx),
-                    (float) matchedLeftXY.get(1, idx));
-                outputRightXY.add(
-                    (float) matchedRightXY.get(0, idx),
-                    (float) matchedRightXY.get(1, idx));
-            }
-        }
-
-        StereoProjectionTransformer spTransformer = new
-            StereoProjectionTransformer();
-
-        SimpleMatrix finalFM =
-            spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
-            outputLeftXY, outputRightXY);
-
-        StereoProjectionTransformerFit finalFit =
-            spTransformer.evaluateFitForAlreadyMatched(finalFM,
-            matchedLeftXY, matchedRightXY, tolerance);
-
-        log.info("nIter=" + nMaxIter);
 
         log.info("best fit from 7-point: " + bestFit.toString());
 
@@ -576,11 +365,11 @@ public class RANSACSolver {
         return false;
     }
 
-    private boolean hasConverged(StereoProjectionTransformerFit bestFit,
-        int nPoints) {
+    private boolean hasConverged(StereoProjectionTransformerFit bestFit) {
         if (bestFit == null) {
             return false;
         }
+        
         double limit = 0.2;
 
         if ((bestFit.getMeanDistance() < limit) && bestFit.getStDevFromMean() < limit) {
