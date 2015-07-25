@@ -175,7 +175,7 @@ public class Histogram {
         float minX = MiscMath.findMin(values);
         float maxX = MiscMath.findMax(values);
         
-        int nBins = (int)Math.ceil(((float)(maxX - minX))/binWidth);
+        int nBins = (int)Math.ceil(((maxX - minX))/binWidth);
 
         float[] minMax = MiscMath.calculateOuterRoundedMinAndMax(values);
         

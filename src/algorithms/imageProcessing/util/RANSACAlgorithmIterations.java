@@ -93,6 +93,47 @@ public class RANSACAlgorithmIterations {
     }
 
     /**
+     The estimate assumes that at least 50 percent of the nMatchedPoints
+     are outliers and determines the number of iterations needed for a 95%
+     certainty that 7 points drawn randomly from nMatchedPoints will all be
+     "true" matches, that is, not outliers.
+     
+     <pre>
+     It uses this table generated below following the statistics in the comments
+     at the end of this class.
+     
+                    | nInliers percentage of nTotal
+     nMatchedPoints |   50       75       100
+     ------------------------------------------------------
+       30   |       | 0.003  | 0.084  |  1.0
+       50   |       | 0.0048 | 0.10   |  1.0
+      100   |       | 0.006  | 0.124  |  1.0
+      500   |       | 0.0075 | 0.132  |  1.0
+     1000   |       | 0.0076 | 0.133  |  1.0
+     </pre>
+     
+     * @param nMatchedPoints
+     * @return 
+     */
+    public int estimateNIterForFiftyPercentOutliersFor7Points(int nMatchedPoints) {
+        
+        double p;
+        if (nMatchedPoints <= 30) {
+            p = 0.003;
+        } else if (nMatchedPoints <= 50) {
+            p = 0.0048;
+        } else if (nMatchedPoints <= 100) {
+            p = 0.006;
+        } else  {
+            p = 0.0075;
+        }
+        
+        int nIter = (int)Math.round(1./p);
+        
+        return nIter;
+    }
+
+    /**
      The estimate assumes that at least 15 percent of the nPoints
      are true matches with points in another set of points
      and determines the number of iterations needed for a 95%
@@ -262,12 +303,12 @@ def tbl() :
         for ii in range(0, fracLen):
             nF = nInFrac[ii]
             nI = nT * nF
-            f0 = factorialNDivNMinusK(nI, 8) * 1.0
-            f2 = factorialNDivNMinusK(nT, 8) * 1.0
-            f8 = factorial(8) * 1.0
-            numer = f0 / f8
-            denom = f2 / f8
-            p = numer / denom
+            f0 = factorialNDivNMinusK(nI, 7) * 1.0
+            f2 = factorialNDivNMinusK(nT, 7) * 1.0
+            f7 = factorial(7) * 1.0
+            p = f0 / f2
+            f0 = f0 / f7
+            f2 = f2 / f7
             print "nTotal=", nT, " nInliers fraction=", nF, " p=", p
     return;
 

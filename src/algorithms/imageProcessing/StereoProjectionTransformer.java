@@ -468,7 +468,7 @@ public class StereoProjectionTransformer {
      * @param pointsRightXY 
      * @return  
      */
-    public SimpleMatrix[] calculateEpipolarProjectionFor7Points(
+    public List<SimpleMatrix> calculateEpipolarProjectionFor7Points(
         PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
         
         if (pointsLeftXY == null) {
@@ -502,7 +502,7 @@ public class StereoProjectionTransformer {
      * @param theRightXY 
      * @return  
      */
-    public SimpleMatrix[] calculateEpipolarProjectionFor7Points(
+    public List<SimpleMatrix> calculateEpipolarProjectionFor7Points(
         SimpleMatrix theLeftXY, SimpleMatrix theRightXY) {
         
         if (theLeftXY == null) {
@@ -564,12 +564,11 @@ public class StereoProjectionTransformer {
         //    T_1 is normalizedXY1.getNormalizationMatrix();
         //    T2 is normalizedXY2.getNormalizationMatrix();
         
-        SimpleMatrix[] denormalizedSolutions = new SimpleMatrix[solutions.length];
+        List<SimpleMatrix> denormalizedSolutions = new ArrayList<SimpleMatrix>();
 
         SimpleMatrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
         SimpleMatrix t2 = normalizedXY2.getNormalizationMatrix(); 
         
-        int count = 0;
         for (SimpleMatrix solution : solutions) {
                         
             if (solution == null) {
@@ -582,21 +581,20 @@ public class StereoProjectionTransformer {
             denormFundamentalMatrix = denormFundamentalMatrix.scale(
                 1./denormFundamentalMatrix.get(2, 2));
             
-            denormalizedSolutions[count] = denormFundamentalMatrix.transpose();
+            denormFundamentalMatrix = denormFundamentalMatrix.transpose();
             
-            count++;
+            SimpleMatrix validated = validateSolution(denormFundamentalMatrix);
+            
+            if (validated != null) {
+                denormalizedSolutions.add(validated);
+            }
         }
 
-        // ======== validate the solutions ========
-        SimpleMatrix[] validatedSolutions = validateSolutions(
-            Arrays.copyOf(denormalizedSolutions, count));
-
-           
-        return validatedSolutions;
+        return denormalizedSolutions;
     }
     
-    /*
-     * the validation of the 7-point algorithm follows source code adapted 
+    /**
+     * The validation of the 7-point algorithm follows source code adapted 
      * from this site and license:
      * 
      * based upon code within  www.robots.ox.ac.uk/~vgg/hzbook/code/
@@ -627,6 +625,8 @@ public class StereoProjectionTransformer {
         * tort or otherwise, arising from, out of or in connection with the 
         * software or the use or other dealings in the software.
 
+       vgg_multiview/vgg_F_from_7pts_2img.m
+ 
        The method "signs_OK" validates the solution matrices:
     
         for i = 1:length(a)
@@ -647,56 +647,70 @@ public class StereoProjectionTransformer {
         e1 = v(:,3);
         l1 = vgg_contreps(e1)*x1;
         s = sum( (F*x2) .* l1 );
-        OK = all(s>0) | all(s<0);
+        OK = all(s>0) | all(s less than 0);
         return
         
     More on the subject is present in "Cheirality in Epipolar Geometry" by
     Werner & Pajdla, 2000 regarding realizability of two images.
     http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.32.9013&rep=rep1&type=pdf
         
+    Very clear paper on cheirality:
+    * http://users.cecs.anu.edu.au/~hartley/Papers/cheiral/revision/cheiral.pdf
+    * The cheirality of a point is whether it lies in front of or behind a given
+    * camera.  It's used to  distinguish between four different possible scene 
+    * reconstructions from two views.
+    * A transform is cheirality-reversing for a given point if it swaps the 
+    * point from the front to the back of the camera, or vice-versa. 
+    * Otherwise it is called cheirality-preserving.
     */
-    private SimpleMatrix[] validateSolutions(SimpleMatrix[] solutions) {
-        
-        SimpleMatrix[] validated = new SimpleMatrix[solutions.length];
-        
-        int count = 0;
-        for (SimpleMatrix solution : solutions) {
-            
-            boolean valid = true;
+    private SimpleMatrix validateSolution(SimpleMatrix solution) {
+                            
+        /*
+        function OK = signs_OK(F,x1,x2)
+        [u,s,v] = svd(F');
+        e1 = v(:,3);
+        l1 = vgg_contreps(e1)*x1;
+        s = sum( (F*x2) .* l1 );
+        OK = all(s>0) | all(s<0);
 
-            // === find epipoles ===
-            double[][] leftRightEpipoles = calculateEpipoles(solution);
-            
-            double[] testE1 = leftRightEpipoles[0];
-            double[] testE2 = leftRightEpipoles[1];
-                        
-            SimpleMatrix testRightEpipolarLines = solution.mult(leftXY);
-            SimpleMatrix testLeftEpipolarLines = solution.transpose().mult(rightXY);
-            
-            //(F*x2) .* l1 ==>  (solution * rightXY) .* (testE1 * leftXY)
-            // '.*' is mattlab notation to operate on each field
+        (F*x2) .* l1 ==>  (solution * rightXY) .* (testE1 * leftXY)
+        '.*' is mattlab notation to operate on each field
 
-            /* leftXY:
-            // column 0 is x
-            // column 1 is y
-            // column 2 is all 1's
-            */
-            SimpleMatrix t1 = solution.mult(rightXY);
-            
-            //(a*x1 +b*y1 + c)  (a*x2 + b*y2 + c)  (a*x3 + b*y3 + c)
-            //double[] t2 = MatrixUtil.multiply(leftXY.getArray(), testE1);
-            
-            double sum = 0;
-            
-            //TODO: finish this
-            
-            if (valid) {
-                validated[count] = solution;
-                count++;
+        'sum' is a matlab function to sum for each column
+
+        'all' is a function that returns '1' is all items are non-zero, else
+            returns 0
+        */
+
+        double[][] leftRightEpipoles = calculateEpipoles(solution);
+
+        double[] testE1 = leftRightEpipoles[0];
+
+        SimpleMatrix l1 = leftXY.copy();
+        for (int row = 0; row < testE1.length; ++row){
+            for (int col = 0; col < l1.numCols(); ++col) {
+                double value = testE1[row] * l1.get(row, col);
+                l1.set(row, col, value);
             }
         }
-        
-        return validated;
+
+        double[] sum = new double[l1.numCols()];
+        SimpleMatrix t1 = solution.mult(rightXY);
+        for (int row = 0; row < testE1.length; ++row){
+            for (int col = 0; col < t1.numCols(); ++col) {
+                double value = l1.get(row, col) * t1.get(row, col);
+                t1.set(row, col, value);
+                sum[col] += value;
+            }
+        }
+
+        for (int i = 0; i < sum.length; ++i) {
+            if (sum[i] == 0) {
+                return null;
+            }
+        }
+
+        return solution;        
     }
      
     SimpleMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
@@ -953,6 +967,20 @@ public class StereoProjectionTransformer {
         // 3x3        
         SimpleMatrix theFundamentalMatrix = svd.getU().mult(dDotV);
         
+        SimpleMatrix denormFundamentalMatrix = 
+            denormalizeTheFundamentalMatrix(theFundamentalMatrix, 
+                normalizedXY1, normalizedXY2);
+        
+       denormFundamentalMatrix = denormFundamentalMatrix.scale(
+            1./denormFundamentalMatrix.get(2, 2));
+        
+        return denormFundamentalMatrix;
+    }
+    
+    SimpleMatrix denormalizeTheFundamentalMatrix(
+        SimpleMatrix normalizedFundamentalMatrix,
+        NormalizedXY normalizedLeftXY, NormalizedXY normalizedRightXY) {
+        
         /*
         denormalize
             F = (T_1)^T * F * T_2  
@@ -960,15 +988,11 @@ public class StereoProjectionTransformer {
             and T2 is normalizedXY2.getNormalizationMatrix();
         */
         
-        // 3x3
-        SimpleMatrix t1Transpose = normalizedXY1.getNormalizationMatrix().transpose();
-        SimpleMatrix t2 = normalizedXY2.getNormalizationMatrix();
+        SimpleMatrix t1Transpose = normalizedLeftXY.getNormalizationMatrix().transpose();
+        SimpleMatrix t2 = normalizedRightXY.getNormalizationMatrix();
         
         SimpleMatrix denormFundamentalMatrix = t1Transpose.mult(
-            theFundamentalMatrix.mult(t2));
-        
-        denormFundamentalMatrix = denormFundamentalMatrix.scale(
-            1./denormFundamentalMatrix.get(2, 2));
+            normalizedFundamentalMatrix.mult(t2));
         
         return denormFundamentalMatrix;
     }
@@ -1918,7 +1942,7 @@ public class StereoProjectionTransformer {
                 Math.sqrt((aRev*aRev + bRev*bRev));
 
             float dist = (float)Math.sqrt(d*d + dRev*dRev);
-            
+
             if (dist > tolerance) {
                 continue;
             }
@@ -1945,12 +1969,7 @@ public class StereoProjectionTransformer {
                 Double.MAX_VALUE, Double.MAX_VALUE);
         }
         
-        int nMaxMatchable = leftPoints.numCols();
-        if (rightPoints.numCols() < nMaxMatchable) {
-            nMaxMatchable = rightPoints.numCols();
-        }
-        
-        fit.setNMaxMatchable(nMaxMatchable);
+        fit.setNMaxMatchable(leftPoints.numCols());
         
         fit.setInlierIndexes(inlierIndexes);
         
