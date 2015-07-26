@@ -126,7 +126,8 @@ public class ImageIOHelperTest extends TestCase {
         
         // the final vector is averaged from R, G and B
         
-        assertTrue(result.getValue(0, 0) == 131);
+        int v = result.getValue(0, 0);
+        assertTrue(v == 130);
         assertTrue(result.getValue(1, 0) > 0);
         assertTrue(result.getValue(1, 1) > 0);        
         assertTrue(result.getValue(0, 1) > 0);

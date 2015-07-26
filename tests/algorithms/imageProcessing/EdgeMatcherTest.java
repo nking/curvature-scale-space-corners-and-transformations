@@ -224,7 +224,7 @@ public class EdgeMatcherTest extends TestCase {
             diffTransY, nEps, diffN, (float) fit.getMeanDistFromModel()));
         
         float epsRot = 1;
-        float epsTrans = 2;
+        float epsTrans = 4;
         boolean converged = false;
         
         if ((diffN <= nEps) && (diffRotDeg <= epsRot)
