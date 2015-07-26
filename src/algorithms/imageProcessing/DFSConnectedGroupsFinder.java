@@ -71,6 +71,10 @@ public class DFSConnectedGroupsFinder {
     protected void findClustersIterative(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
         
+        if (points.isEmpty()) {
+            return;
+        }
+        
         java.util.Stack<PairInt> stack = new java.util.Stack<PairInt>();
         
         //O(N)
