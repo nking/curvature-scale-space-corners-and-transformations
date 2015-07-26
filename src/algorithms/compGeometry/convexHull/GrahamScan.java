@@ -166,4 +166,15 @@ public class GrahamScan {
         this.yHull[n-1] = points.getY(0);
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        if (xHull != null) {
+            for (int i = 0; i < xHull.length; ++i) {
+                sb.append(String.format("(%f,%f) ", xHull[i], yHull[i]));
+            }
+        }
+        return sb.toString();
+    }
+
 }

@@ -591,6 +591,122 @@ public class ImageIOHelper {
     }
     
     /**
+     * draw lines from points at index i to index i+1 in the requested color
+     * onto the input.
+     * 
+     * @param xVertexes
+     * @param yVertexes
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void drawLinesInImage(int[] xVertexes, int[] yVertexes, 
+        Image input, int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (xVertexes == null || yVertexes == null || input == null) {
+            return;
+        }
+        if (xVertexes.length != yVertexes.length) {
+            return;
+        }
+        
+        for (int i = 0; i < (xVertexes.length - 1); i++) {
+            
+            int x1 = xVertexes[i];
+            int y1 = yVertexes[i];
+            
+            int x2 = xVertexes[i + 1];
+            int y2 = yVertexes[i + 1];
+            
+            if (x2 < x1) {
+                int swap = x1;
+                x1 = x2;
+                x2 = swap;
+                swap = y1;
+                y1 = y2;
+                y2 = swap;
+            }
+            
+            int dx0 = x2 - x1;
+            int dy0 = y2 - y1;
+            int nLine = Math.round((float)Math.sqrt(dx0*dx0 + dy0*dy0));
+            
+            float slope = (dx0 > 0) ? (float)dy0/(float)dx0 : Float.POSITIVE_INFINITY;
+  int z = 1;          
+            for (int ii = 0; ii < nLine; ++ii) {
+            
+                int x = Float.isInfinite(slope) ? 0 : 
+                    (x1 + Math.round(dx0*((float)ii/(float)nLine)));
+                
+                int y = y1 + Math.round(slope * (x - x1));
+int z1 = 1;            
+                for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+
+                    float xx = x + dx;
+
+                    if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                        for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                            dy++) {
+
+                            float yy = y + dy;
+                            if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                                input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * draw lines from points at index i to index i+1 in the requested color
+     * onto the input.
+     * 
+     * @param xVertexes
+     * @param yVertexes
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void addCurveToImage(int[] xVertexes, int[] yVertexes, 
+        Image input, int nExtraForDot, int rClr, int gClr, int bClr) {
+        
+        if (xVertexes == null || yVertexes == null || input == null) {
+            return;
+        }
+        if (xVertexes.length != yVertexes.length) {
+            return;
+        }
+        
+        for (int i = 0; i < xVertexes.length; i++) {
+            
+            int x = xVertexes[i];
+            int y = yVertexes[i];
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+
+                float xx = x + dx;
+
+                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
+                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                        dy++) {
+
+                        float yy = y + dy;
+                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
+                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
      * draw the edge over the image using the given rgb colors and the size
      * of the dot beyond 1 pixel.
      * 

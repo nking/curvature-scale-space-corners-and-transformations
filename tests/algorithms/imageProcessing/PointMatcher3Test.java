@@ -34,7 +34,7 @@ public class PointMatcher3Test extends TestCase {
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
     
-    public void testCalculateEuclideanTransformation() throws Exception {
+    public void estCalculateEuclideanTransformation() throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -213,7 +213,7 @@ TransformationPointFit fit = fits.get(0);
         
     }
 
-    public void testCalculateEuclideanTransformation2()
+    public void estCalculateEuclideanTransformation2()
         throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -481,7 +481,7 @@ TransformationPointFit fit = fits.get(0);
         int z = 1;
     }*/
 
-    public void testSkyline() throws Exception {
+    public void estSkyline() throws Exception {
 
         String[] fileNames = new String[] {
             "brown_lowe_2003_image1.jpg",
@@ -713,7 +713,7 @@ TransformationPointFit fit = fits.get(0);
             image1Height, image2Width, image2Height, flNum);
     }
     
-    public void estShapeMatching() throws Exception {
+    public void testShapeMatching() throws Exception {
 
         /*
         tests skyline extractor, iterative corners, euclidean point matcher,
@@ -749,7 +749,7 @@ TransformationPointFit fit = fits.get(0);
             helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.multiply(img1, resultMask);
+        imageProcessor.multiplyBinary(img1, resultMask);
 
         helper = new ImageHelperForTests(img2, true);
         skylineExtractor = new SkylineExtractor();                    
@@ -758,7 +758,7 @@ TransformationPointFit fit = fits.get(0);
         resultMask = skylineExtractor.createBestSkyMask(
             helper.getTheta(), helper.getGradientXY(), img2,
             helper.getCannyEdgeFilterSettings(), outputSkyCentroid);
-        imageProcessor.multiply(img2, resultMask);
+        imageProcessor.multiplyBinary(img2, resultMask);
         
         PairIntArray outputMatchedScene = new PairIntArray();
         PairIntArray outputMatchedModel = new PairIntArray();
@@ -767,7 +767,9 @@ TransformationPointFit fit = fits.get(0);
         
         TransformationPointFit fit = shapeMatcher.findMatchingShapes(
             img1, img2, outputMatchedScene, outputMatchedModel);
-
+if (true) {
+    return;
+}
         Image image2 = ImageIOHelper.readImageAsGrayScale(filePath2);
 
         /*
