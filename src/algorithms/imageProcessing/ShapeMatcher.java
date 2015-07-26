@@ -141,7 +141,7 @@ ImageIOHelper.addCurveToImage(xy, imgW, 0, 0, 0, 255);
                             x[i] = xy.getX(i);
                             y[i] = xy.getY(i);
                         }
-                        
+
                         scan.computeHull(x, y);
 
                         listHulls.add(scan);
@@ -173,7 +173,7 @@ c++;
                 int[] y = new int[x.length];
                 for (int i = 0; i < x.length; ++i) {
                     x[i] = Math.round(hull.getXHull()[i]);
-                    y[i] = Math.round(hull.getYHull()[i]);
+                    y[i] = Math.round(hull.getYHull()[i]);                   
                 }
                 if (c == 0) {
                     //ImageIOHelper.addCurveToImage(x, y, img1W, 1, 255, 0, 0);

@@ -632,6 +632,9 @@ public class ImageIOHelper {
             int dx0 = x2 - x1;
             int dy0 = y2 - y1;
             int nLine = (int)Math.ceil(Math.sqrt(dx0*dx0 + dy0*dy0));
+            if (nLine == 1 && (dx0 > 0 || dy0 > 0)) {
+                nLine = 2;
+            }
 int z = 1;          
             for (int ii = 0; ii < nLine; ++ii) {
             
@@ -639,13 +642,13 @@ int z = 1;
                 
                 if (dx0 == 0) {
                     x = x1;
-                    y = (y1 + Math.round(dy0*((float)ii/(float)nLine)));
+                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));
                 } else if (dy0 == 0) {
-                    x = (x1 + Math.round(dx0*((float)ii/(float)nLine)));
+                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));
                     y = y1;
                 } else {
-                    x = (x1 + Math.round(dx0*((float)ii/(float)nLine)));
-                    y = (y1 + Math.round(dy0*((float)ii/(float)nLine)));
+                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));
+                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));
                 }                
 int z1 = 1;            
                 for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {

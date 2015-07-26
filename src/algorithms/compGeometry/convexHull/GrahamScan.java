@@ -114,9 +114,11 @@ public class GrahamScan {
             float topY = points.peekTopY();
             float nextToTopX = points.peekNextToTopX();
             float nextToTopY = points.peekNextToTopY();
+            float xi = x[i];
+            float yi = y[i];
 
             double direction = LinesAndAngles.direction(
-                nextToTopX, nextToTopY, topX, topY, x[i], y[i]);
+                nextToTopX, nextToTopY, topX, topY, xi, yi);
             
             while (direction <= 0) {
 
@@ -129,10 +131,12 @@ public class GrahamScan {
                 topX = points.peekTopX();
                 topY = points.peekTopY();
                 nextToTopX = points.peekNextToTopX();
-                nextToTopY = points.peekNextToTopX();
+                nextToTopY = points.peekNextToTopY();
+                xi = x[i];
+                yi = y[i];
                 
                 direction = LinesAndAngles.direction(
-                    nextToTopX, nextToTopY, topX, topY, x[i], y[i]);                
+                    nextToTopX, nextToTopY, topX, topY, xi, yi);                
             }
 
             points.push(x[i], y[i]);
