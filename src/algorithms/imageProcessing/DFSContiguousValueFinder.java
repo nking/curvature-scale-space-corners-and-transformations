@@ -346,7 +346,7 @@ public class DFSContiguousValueFinder {
         
         Set<Integer> indexes = getIndexes(groupId);
         
-        PairIntArray xy = new PairIntArray();
+        PairIntArray xy = new PairIntArray(indexes.size());
                 
         for (Integer index : indexes) {
                         

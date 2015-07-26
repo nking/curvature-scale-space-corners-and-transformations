@@ -87,8 +87,6 @@ public class GrahamScan {
         //     or the leftmost point if more than one w/ same minimum yCoord.
         MultiArrayMergeSort.sortBy1stArgThen2nd(y, x);
         
-        points = new XYStack(x.length);
-
         int p0Index = 0;
 
         // (2) let <p1, p2, ..., pm> be the remaining points in Q, sorted
@@ -99,36 +97,42 @@ public class GrahamScan {
         if (nPointsUsable < 3) {
 	        throw new GrahamScanTooFewPointsException("polar angle sorting has reduced the number of points to less than 3");
         }
-
-        points.push( x[p0Index], y[p0Index]);
-        points.push( x[1], y[1]);
-        //points.push( x[2], y[2]);
         
-        float topX, topY;
-
+        points = new XYStack(nPointsUsable);
+        
+        points.push(x[p0Index], y[p0Index]);
+        points.push(x[1], y[1]);
+        points.push(x[2], y[2]);
+        
         // for i = 3 to m
         //    while angle between next-to-top(S), top(S) and p_i makes a nonleft turn
         //        do pop(S)
         //    push(pi, S)
-        for (int i = 2; i < nPointsUsable; i++) {
-    
-            topX = points.peekTopX();
-            topY = points.peekTopY();
+        for (int i = 3; i < nPointsUsable; i++) {
             
-            double direction = LinesAndAngles.direction(
-                points.peekNextToTopX(), points.peekNextToTopY(), topX, topY,
-                x[i], y[i]);
-            
-            while (!points.isEmpty() /*&& !Double.isNaN(direction)*/ && (direction > 0)) {
+            float topX = points.peekTopX();
+            float topY = points.peekTopY();
+            float nextToTopX = points.peekNextToTopX();
+            float nextToTopY = points.peekNextToTopY();
 
-                points.pop();
+            double direction = LinesAndAngles.direction(
+                nextToTopX, nextToTopY, topX, topY, x[i], y[i]);
+            
+            while (direction <= 0) {
+
+                points.popWithoutReturn();
+                
+                if (points.getN() < 2) {
+                    break;
+                }
 
                 topX = points.peekTopX();
                 topY = points.peekTopY();
+                nextToTopX = points.peekNextToTopX();
+                nextToTopY = points.peekNextToTopX();
                 
                 direction = LinesAndAngles.direction(
-                    points.peekNextToTopX(), points.peekNextToTopY(), topX, topY,
-                    x[i], y[i]);                
+                    nextToTopX, nextToTopY, topX, topY, x[i], y[i]);                
             }
 
             points.push(x[i], y[i]);
@@ -151,13 +155,15 @@ public class GrahamScan {
             throw new GrahamScanTooFewPointsException("Points cannot be null.  Use computeHull first.");
         }
         
-        int n = points.getNPoints() + 1;
+        int n = points.getN() + 1;
 
-        this.xHull = Arrays.copyOf(points.x, n);
-        this.yHull = Arrays.copyOf(points.y, n);
+        this.xHull = new float[n];
+        this.yHull = new float[n];
+        System.arraycopy(points.getX(), 0, xHull, 0, points.getN());
+        System.arraycopy(points.getY(), 0, yHull, 0, points.getN());
 
-        this.xHull[n-1] = points.x[0];
-        this.yHull[n-1] = points.y[0];
+        this.xHull[n-1] = points.getX(0);
+        this.yHull[n-1] = points.getY(0);
     }
 
 }

@@ -850,12 +850,12 @@ public class ImageProcessor {
     
     /**
      * multiply these images, that is pixel by pixel multiplication.
-     * No corrections are made for integer overflow.
+     * input2 is assumed to be 0 or 1
      * @param input1
-     * @param input2
+     * @param input2 the mask of 0's and 1's to apply to input1
      * @return
      */
-    public void multiply(Image input1, GreyscaleImage input2)  {
+    public void multiplyBinary(Image input1, GreyscaleImage input2)  {
 
         if (input1 == null) {
             throw new IllegalArgumentException("input1 cannot be null");
@@ -878,11 +878,10 @@ public class ImageProcessor {
 
                 int m = input2.getValue(col, row);
                 
-                int r = input1.getR(col, row) * m;
-                int g = input1.getG(col, row) * m;
-                int b = input1.getB(col, row) * m;
+                if (m == 0) {
                 
-                input1.setRGB(col, row, r, g, b);
+                    input1.setRGB(col, row, 0, 0, 0);
+                }
             }
         }
     }

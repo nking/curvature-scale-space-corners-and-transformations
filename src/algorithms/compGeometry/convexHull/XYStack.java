@@ -1,5 +1,6 @@
 package algorithms.compGeometry.convexHull;
 
+import algorithms.util.PairFloatArray;
 import java.util.Arrays;
 
 /**
@@ -8,86 +9,85 @@ import java.util.Arrays;
  * under MIT License (MIT), Nichole King 2013
  * 
  */
-public class XYStack {
-
-    public float[] x = null;
-
-    public float[] y = null;
-
-    protected int nXY = 0;
+public class XYStack extends PairFloatArray {
 
     public XYStack(int capacity) {
-        x = new float[capacity];
-        y = new float[capacity];
-        nXY = 0;
+        super(capacity);
     }
+    
     public XYStack() {
-        x = new float[10];
-        y = new float[10];
-        nXY = 0;
+        super();
     }
 
+    /**
+     * push a value onto the stack.
+     * @param xPoint
+     * @param yPoint 
+     */
     public void push(float xPoint, float yPoint) {
-        if (nXY + 1 > (x.length - 1)) {
-            int n = (int) (2.5*x.length);
-            x = Arrays.copyOf(x, n);
-            y = Arrays.copyOf(y, n);
-        }
-
-        x[nXY] = xPoint;
-        y[nXY] = yPoint;
-        nXY++;
+        /*
+        value is physically at last used position in array
+        */
+        
+        add(xPoint, yPoint);
     }
 
     public float peekTopX() {
-        if (nXY == 0) {
+        if (this.n == 0) {
             return Float.NEGATIVE_INFINITY;
         }
-        return x[nXY-1];
+        return x[n - 1];
     }
 
     public float peekTopY() {
-        if (nXY == 0) {
+        if (this.n == 0) {
             return Float.NEGATIVE_INFINITY;
         }
-        return y[nXY-1];
+        return y[n - 1];
     }
     public float peekNextToTopX() {
-        if (nXY < 2) {
+        if (this.n < 2) {
             return Float.NEGATIVE_INFINITY;
         }
-        return x[nXY-2];
+        return x[n - 2];
     }
 
     public float peekNextToTopY() {
-        if (nXY < 2) {
+        if (n < 2) {
             return Float.NEGATIVE_INFINITY;
         }
-        return y[nXY-2];
+        return y[n - 2];
     }
 
     public float[] pop() {
-        if (nXY == 0) {
+        if (n == 0) {
             return null;
         }
-        float[] a = new float[]{x[nXY - 1], y[nXY - 1]};
-        nXY--;
+        
+        float[] a = new float[]{x[n - 1], y[n - 1]};
+        
+        removeRange(n - 1, n - 1);
+        
         return a;
+    }
+    
+    public void popWithoutReturn() {
+        if (n == 0) {
+            return;
+        }
+                
+        removeRange(n - 1, n - 1);        
     }
 
     public boolean isEmpty() {
-        return (nXY == 0);
+        return (n == 0);
     }
 
     public void compressArrays() {
-        if (nXY < x.length) {
-            x = Arrays.copyOf(x, nXY);
-            y = Arrays.copyOf(y, nXY);
+        if (n < x.length) {
+            x = Arrays.copyOf(x, n);
+            y = Arrays.copyOf(y, n);
         }
-    }
-
-    public int getNPoints() {
-        return nXY;
     }
 
 }

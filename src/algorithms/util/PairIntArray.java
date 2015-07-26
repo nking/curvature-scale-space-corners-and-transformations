@@ -142,6 +142,20 @@ public class PairIntArray {
         other.n = swap2;
     }
     
+    public void fillWith(int[] xOther, int[] yOther) {
+        
+        if (xOther == null || yOther == null) {
+            throw new IllegalArgumentException("arguments cannot be null");
+        }
+        if (xOther.length != yOther.length) {
+            throw new IllegalArgumentException("arguments must be same length");
+        }
+        
+        x = xOther;
+        y = yOther;
+        n = xOther.length;
+    }
+    
     public int getX(int index) {
         if (index > (n - 1)) {
             throw new IllegalArgumentException("index is out of range in getX");

@@ -1,6 +1,7 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairIntArray;
 
 import java.util.logging.Logger;
@@ -44,9 +45,10 @@ public class PolarAngleMergeSortTest extends TestCase {
     	float[] yy = new float[]{0,1,2,6,2};
 
         double[] ap = new double[xx.length];
-        for (int i = 0; i < xx.length; i++) {
-            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], 
-                yy[i]);
+        for (int i = 1; i < xx.length; i++) {
+            ap[i] = AngleUtil.polarAngleCCW(
+                (double)(xx[i] - xx[0]), 
+                (double)(yy[i] - yy[0]));
         }
 
         int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], 
@@ -69,19 +71,6 @@ public class PolarAngleMergeSortTest extends TestCase {
             xy.add(Math.round(xx[i]), Math.round(yy[i]));
         }
         
-        ap = new double[xx.length];
-        for (int i = 0; i < xx.length; i++) {
-            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], 
-                yy[i]);
-        }
-        
-        nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xy.getX(0), 
-            xy.getY(0), xy, ap);
-        
-        for (int i=0; i < nUsable; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
     }
 
     public void testReduceToUniquePolarAngles2() throws Exception {
@@ -106,8 +95,10 @@ public class PolarAngleMergeSortTest extends TestCase {
     	float[] yy = new float[]{1, 2, 3, 4, 2.5f};
 
         double[] ap = new double[xx.length];
-        for (int i = 0; i < xx.length; i++) {
-            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], yy[i]);
+        for (int i = 1; i < xx.length; i++) {
+            ap[i] = AngleUtil.polarAngleCCW(
+                (double)(xx[i] - xx[0]), 
+                (double)(yy[i] - yy[0]));
         }
 
         int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], yy[0], xx, yy, ap);
@@ -129,22 +120,6 @@ public class PolarAngleMergeSortTest extends TestCase {
             xy.add(Math.round(xx[i]), Math.round(yy[i]));
         }
         
-        ap = new double[xx.length];
-        for (int i = 0; i < xx.length; i++) {
-            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], 
-                yy[i]);
-        }
-        
-        nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xy.getX(0), 
-            xy.getY(0), xy, ap);
-        
-        expectedxx = new double[]{20, 50, 10};
-    	expectedyy = new double[]{10, 40, 25};
-        
-        for (int i=0; i < nUsable; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
     }
 
     public void testReduceToUniquePolarAngles3() throws Exception {
@@ -169,8 +144,10 @@ public class PolarAngleMergeSortTest extends TestCase {
     	float[] yy = new float[]{1, 3, 2, 3};
 
         double[] ap = new double[xx.length];
-        for (int i = 0; i < xx.length; i++) {
-            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], yy[i]);
+        for (int i = 1; i < xx.length; i++) {
+            ap[i] = AngleUtil.polarAngleCCW(
+                (double)(xx[i] - xx[0]), 
+                (double)(yy[i] - yy[0]));
         }
 
         int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], yy[0], xx, yy, ap);
@@ -193,19 +170,6 @@ public class PolarAngleMergeSortTest extends TestCase {
             xy.add(Math.round(xx[i]), Math.round(yy[i]));
         }
         
-        ap = new double[xx.length];
-        for (int i = 0; i < xx.length; i++) {
-            ap[i] = LinesAndAngles.calculatePolarSineTheta(xx[0], yy[0], xx[i], 
-                yy[i]);
-        }
-        
-        nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xy.getX(0), 
-            xy.getY(0), xy, ap);
-        
-        for (int i=0; i < nUsable; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
     }
 
     public void testSort1() {
@@ -239,12 +203,6 @@ public class PolarAngleMergeSortTest extends TestCase {
             xy.add(Math.round(xx[i]), Math.round(yy[i]));
         }
         
-        nUsable = PolarAngleMergeSort.sort(2, 0, xy);
-
-        for (int i=0; i < nUsable; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
         
     	// ======================================================================
     	/*            2,6
@@ -271,7 +229,11 @@ public class PolarAngleMergeSortTest extends TestCase {
         expectedyy = new float[]{0.0f, 1.0f, 2.0f, 2.0f, 6.0f, 2.0f};
         
         double[] polarAngle = new double[xx.length];
-    	PolarAngleMergeSort.sort(2.0f, 0.0f, xx, yy, 0, xx.length - 1, polarAngle);
+        for (int i = 1; i < xx.length; i++) {
+            polarAngle[i] = AngleUtil.polarAngleCCW((double)(xx[i] - xx[0]), 
+                (double)(yy[i] - yy[0]));
+        }
+    	PolarAngleMergeSort.sort(2.0f, 0.0f, xx, yy, 1, xx.length - 1, polarAngle);
         for (int i=0; i < nUsable; i++) {
             assertTrue( Math.abs(expectedxx[i] - xx[i]) < 0.01);
             assertTrue( Math.abs(expectedyy[i] - yy[i]) < 0.01);
@@ -289,12 +251,6 @@ public class PolarAngleMergeSortTest extends TestCase {
         expectedxx = new float[]{2.0f, 7.0f, 3.0f, 2.0f, 2.0f, 0.0f};
         expectedyy = new float[]{0.0f, 1.0f, 2.0f, 2.0f, 6.0f, 2.0f};
         
-        polarAngle = new double[xx.length];
-    	PolarAngleMergeSort.sort(2, 0, xy, 0, xy.getN() - 1, polarAngle);
-        for (int i=0; i < nUsable; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
         
         // ================================================
         
@@ -355,15 +311,6 @@ public class PolarAngleMergeSortTest extends TestCase {
             xy.add(Math.round(xx[i]), Math.round(yy[i]));
         }
         
-        nUsable = PolarAngleMergeSort.sort(20, 10, xy);
-        
-        expectedxx = new float[]{20, 50, 10};
-        expectedyy = new float[]{10, 40, 25};
-        
-        for (int i=0; i < nUsable; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
     }
 
     public void testSort3() {
@@ -412,12 +359,6 @@ public class PolarAngleMergeSortTest extends TestCase {
             xy.add(Math.round(xx[i]), Math.round(yy[i]));
         }
         
-        nUsable = PolarAngleMergeSort.sort(3, 1, xy);
-        
-        for (int i=0; i < nUsable; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
     }
 
     public void testSort3e() {
@@ -466,12 +407,6 @@ public class PolarAngleMergeSortTest extends TestCase {
             xy.add(Math.round(xx[i]), Math.round(yy[i]));
         }
         
-        nUsable = PolarAngleMergeSort.sort(3, 1, xy);
-        
-        for (int i=0; i < nUsable; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
     }
 
     public void testSort() {
@@ -503,12 +438,6 @@ public class PolarAngleMergeSortTest extends TestCase {
             xy.add(Math.round(xx[i]), Math.round(yy[i]));
         }
         
-        PolarAngleMergeSort.sort(2, 0, xy);
-        
-        for (int i=0; i < expectedxx.length; i++) {
-            assertTrue( Math.abs(expectedxx[i] - xy.getX(i)) < 0.01);
-            assertTrue( Math.abs(expectedyy[i] - xy.getY(i)) < 0.01);
-        }
     }
     
     public void testSortExceptions() {

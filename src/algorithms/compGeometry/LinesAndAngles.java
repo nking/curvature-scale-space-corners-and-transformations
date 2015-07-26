@@ -12,53 +12,6 @@ import java.util.Arrays;
  */
 public class LinesAndAngles {
     
-    public static double calculatePolarSineTheta(float x1, float y1, float x2, float y2) {
-        // log.info("(" + x1 + "," + y1 + ")," + "(" + x2 + "," + y2 + ")");
-        // determine quadrant of points
-        if (x2 == x1) {
-            if (y2 == y1) {
-                return 0.0f;
-            }
-                return 1.0;//0.0f??
-        } else if (x2 > x1) {
-             //
-             //       p2 o
-             //         /
-             //      c /       sin(t) = b/c
-             //       /   b
-             //      /
-             //  p1 o....
-             //
-             //   p1 o....
-             //       \   c
-             //      b \       sin(t) = b/c
-             //         \
-             //       p2 o
-             //
-            double c = lengthOfLine(x1, y1, x2, y2);
-            double b = lengthOfLine(x2, y1, x2, y2);
-            return (b/c);
-        } else {
-            //                                                       .
-            //   p2 o              p2 o
-            //       \                |\c        sin(t) = b/c + sin(pi)
-            //        \              b| \
-            //      p1 o------        ...o------
-            //                           p1
-            //            p1
-            //         .. o-----
-            //        b| /          sin(t) = b/c + sin(pi)
-            //         |/ c
-            //      p2 o
-           double c = lengthOfLine(x1, y1, x2, y2);
-           double b = lengthOfLine(x2, y1, x1, y1);
-
-           // the angle is actually (1-b/c) + sin90 = (1-b/c) + 1 = (b/c)
-
-           return (b/c) + 1.0;
-       }
-    }
-
     public static double lengthOfLine(double x1, double y1, double x2, double y2) {
         double d = Math.sqrt( distSquared( x1,  y1,  x2,  y2) );
         return d;
@@ -73,16 +26,31 @@ public class LinesAndAngles {
         return dx2 + dy2;
     }
     
+    /**
+     * calculate the direction of change for the 2 vectors 
+     * P1:P2 to P1:P3  returns negative when direction is clockwise,
+     * else if zero the vectors are collinear, else if positive the
+     * directions is counterclockwise.
+     * 
+     *           p2
+     *  p3      / 
+     *   \    /
+     *     p1
+     * 
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return 
+     */
     public static double direction(float x1, float y1, float x2, float y2, 
         float x3, float y3) {
 
-        double x31 = x3 - x1;
-        double y31 = y3 - y1;
-
-        double x21 = x2 - x1;
-        double y21 = y2 - y1;
-
-        return crossProduct(x31, y31, x21, y21);
+        double d = ((x2 - x1)*(y3 - y1)) - ((y2 - y1)*(x3 - x1));
+        
+        return d;
     }
     
     /**

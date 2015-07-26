@@ -116,6 +116,74 @@ public class AngleUtil {
         return t;  
     }
     
+    /**
+    calculates the polar theta given x and y w.r.t. origin.  theta increases
+    * in value in a counter clockwise direction (CCW).
+
+     * @param x
+     * @param y
+     * @return 
+     */
+    public static double polarAngleCCW(double x, double y) {
+        
+        /*
+                  +Y
+                 90
+        QII       |       QI
+                  |     
+                  |
+     180-------------------- +X  0, 360
+                  |   
+                  |      
+         QIII     |       QIV 
+                 270
+        */
+        
+        if (x == 0) {
+            if (y >= 0) {
+                return Math.PI/2;
+            }
+            return (3./2.)*Math.PI;
+        }
+        if (y == 0) {
+            if (x > 0) {
+                return 0;
+            }
+            return Math.PI;
+        }
+        /*
+                  +Y
+                 90
+        QII       |       QI
+                  |     
+                  |
+     180-------------------- +X  0, 360
+                  |   
+                  |      
+         QIII     |       QIV 
+                 270
+        */
+        double theta = Math.atan(y/x);
+
+        // Q1, Q2, Q3, Q4
+        int q = 1;
+        if ((x < 0) && (y >= 0)) {
+            q = 2;
+        } else if ((x < 0) && (y < 0)) {
+            q = 3;
+        } else if ((x >= 0) && (y < 0)) {
+            q = 4;
+        }
+        
+        if (q == 2 || q == 3) {
+            theta += Math.PI;
+        } else if (q == 4) {
+            theta = 2*Math.PI + theta;
+        }
+        
+        return theta;  
+    }
+    
     public static float getAngleDifference(float rotDegrees0, float rotDegrees1) {
          /*
          I  |  0

@@ -6,29 +6,18 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
 /**
  *
  * @author nichole
  */
-public class AngleUtilTest {
+public class AngleUtilTest extends TestCase {
     
     public AngleUtilTest() {
     }
     
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-    
-    @Test
     public void testSubtract() throws Exception {
         
         AngleUtil instance = new AngleUtil();
@@ -84,5 +73,46 @@ public class AngleUtilTest {
             }
         }
         
+    }
+    
+    public void testSubtract2() throws Exception {
+        
+        /*
+                  +Y
+                 90
+        QII       |       QI
+                  |     
+                  |
+     180-------------------- +X  0, 360
+                  |   
+                  |      
+         QIII     |       QIV 
+                 270
+        */
+        double x, y, expected, result;
+        
+        x = 10;
+        y = 10;
+        expected = 45.*Math.PI/180.;
+        result = AngleUtil.polarAngleCCW(x, y);
+        assertTrue(Math.abs(result - expected) < 0.1);
+        
+        x = -10;
+        y = 10;
+        expected = (45. + 90.)*Math.PI/180.;
+        result = AngleUtil.polarAngleCCW(x, y);
+        assertTrue(Math.abs(result - expected) < 0.1);
+        
+        x = -10;
+        y = -10;
+        expected = (45. + 180.)*Math.PI/180.;
+        result = AngleUtil.polarAngleCCW(x, y);
+        assertTrue(Math.abs(result - expected) < 0.1);
+        
+        x = 10;
+        y = -10;
+        expected = (45. + 270.)*Math.PI/180.;
+        result = AngleUtil.polarAngleCCW(x, y);
+        assertTrue(Math.abs(result - expected) < 0.1);
     }
 }

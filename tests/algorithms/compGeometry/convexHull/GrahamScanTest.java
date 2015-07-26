@@ -37,7 +37,7 @@ public class GrahamScanTest extends TestCase {
         /*            2,6
          *
          *
-         *     0,2    2,2 3,2
+         *     0,2   2,2 3,2
          *                      7,1
          *            2,0
          *    7
@@ -53,9 +53,9 @@ public class GrahamScanTest extends TestCase {
         float[] y = new float[]{2, 2, 1, 6, 0, 2};
 
         GrahamScan scan = new GrahamScan();
-        scan.computeHull(x,y);
-        float[] chx = scan.xHull;
-        float[] chy = scan.yHull;
+        scan.computeHull(x, y);
+        float[] chx = scan.getXHull();
+        float[] chy = scan.getYHull();
 
         assertTrue(chx.length == 5);
         assertTrue(chy.length == 5);
@@ -78,18 +78,6 @@ public class GrahamScanTest extends TestCase {
             xy.add(Math.round(x[i]), Math.round(y[i]));
         }
         
-        GrahamScanInt scanInt = new GrahamScanInt();
-        scanInt.computeHull(xy);
-        int[] chxint = scanInt.xHull;
-        int[] chyint = scanInt.yHull;
-
-        assertTrue(chxint.length == 5);
-        assertTrue(chyint.length == 5);
-        
-        for (int i = 0; i < expectedxx.length; i++) {
-            assertTrue(Math.abs(expectedxx[i] - chxint[i]) < 0.01);
-            assertTrue(Math.abs(expectedyy[i] - chyint[i]) < 0.01);
-        }
     }
     
     public void testScanExceptions() throws Exception {
@@ -190,13 +178,6 @@ public class GrahamScanTest extends TestCase {
 
             createRandomPointsAroundCenter(maxRadius, n, 600, 400, xy);
 
-            GrahamScanInt scanInt = new GrahamScanInt();
-            scanInt.computeHull(xy);
-            int[] xHull = scanInt.xHull;
-            int[] yHull = scanInt.yHull;
-
-            plotter.addPlot(xy.getX(), xy.getY(), xHull, yHull, "gs int");
-            plotter.writeFile();
         }
         
     }

@@ -84,8 +84,8 @@ public class XYStackTest extends TestCase {
             stack.push(i, i);
         }
         stack.compressArrays();
-        assertTrue(stack.getNPoints() == 10);
-        assertTrue(stack.x.length == 10);
+        assertTrue(stack.getN() == 10);
+        assertTrue(stack.getN() == 10);
     }
 
     public void testPush() {
@@ -93,8 +93,8 @@ public class XYStackTest extends TestCase {
         for (int i = 0; i < 11; i++) {
             stack.push(i, i);
         }
-        assertTrue(stack.getNPoints() == 11);
-        assertTrue(stack.x.length > 10);
+        assertTrue(stack.getN() == 11);
+        assertTrue(stack.getN() > 10);
     }
 
     protected float[] createRandomNumbers(SecureRandom sr, int n) {
