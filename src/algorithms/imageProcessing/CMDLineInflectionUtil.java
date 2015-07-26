@@ -318,6 +318,7 @@ public class CMDLineInflectionUtil {
             //double centroidX1 = img1.getWidth() >> 1;
             //double centroidY1 = img1.getHeight() >> 1;
 
+            
             CurvatureScaleSpaceInflectionMapper mapper = new 
                 CurvatureScaleSpaceInflectionMapper(img1, img2);
 
@@ -329,9 +330,9 @@ public class CMDLineInflectionUtil {
                 mapper.setToRefineTransformations();
             }
 
-            TransformationParameters transformationParams
-                = mapper.createEuclideanTransformation();
-                
+             TransformationParameters transformationParams = 
+                mapper.createEuclideanTransformation();
+            
             List<PairIntArray> edges1 = 
                 mapper.getEdges1InOriginalReferenceFrame();
 

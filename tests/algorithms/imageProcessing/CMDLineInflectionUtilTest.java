@@ -30,11 +30,10 @@ public class CMDLineInflectionUtilTest {
             "-image1=testresources/closed_curve.png",
             "-image2=testresources/closed_curve_translate_scale_rotate135.png",
             "-mark_image",
+            "-input_is_line_drawing",
             "-include_edges",
             "-text_output",
             "-refine_transformations"
-            //,"-input_is_line_drawing",
-            
         };
         
         CMDLineInflectionUtil.main(args);
