@@ -1406,7 +1406,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         assertTrue(!edges.isEmpty());
     }
     
-    public void testFindEdges2() throws Exception {
+    public void estFindEdges2() throws Exception {
                 
         //String fileName = "house.gif";
         String fileName = "lab.gif";
@@ -1491,51 +1491,6 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         
         //assertFalse(edges.isEmpty());
     }
-    
-    @Test
-    public void testRemoveEdgesShorterThan() {
-        
-        GreyscaleImage img = new GreyscaleImage(100, 100);
-        
-        List<PairIntArray> allEdges = new ArrayList<PairIntArray>();
-        
-        int minNumberOfPixelsInEdge = 10;
-        PairIntArray t = getSquare();
-        for (int j = 0; j < t.getN(); j++) {                
-            t.set(j, t.getX(j) + 50, t.getY(j));
-            img.setValue(t.getX(j), t.getY(j), 250);                
-        }
-        allEdges.add(t);
-        
-        t = new PairIntArray();
-        for (int i = 0; i < (minNumberOfPixelsInEdge - 1); i++) {
-            t.add(10, 10 + i);
-            img.setValue(t.getX(i), t.getY(i), 250);
-        }
-        allEdges.add(t);
-        
-        t = getSquare();
-        for (int j = 0; j < t.getN(); j++) {
-            t.set(j, t.getX(j), t.getY(j) + 50);
-            img.setValue(t.getX(j), t.getY(j), 250); 
-        }
-        allEdges.add(t);
-        
-        EdgeExtractor extractor = new EdgeExtractor(img);
-        
-        List<PairIntArray> result = extractor.findEdges();
-        
-        assertNotNull(result);
-        assertTrue(result.size() == 2);
-        
-        // assert that they are all connected
-        
-        assertTrue(allEdges.size() == 3);
-        extractor.removeEdgesShorterThan(allEdges, minNumberOfPixelsInEdge);
-        
-        assertNotNull(allEdges);
-        assertTrue(allEdges.size() == 2);        
-    }
 
     /**
       7    
@@ -1573,7 +1528,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
             
             EdgeExtractorTest test = new EdgeExtractorTest();
             
-            test.testFindEdges2();
+            //test.testFindEdges2();
             
         } catch (Exception e) {
             e.printStackTrace();
