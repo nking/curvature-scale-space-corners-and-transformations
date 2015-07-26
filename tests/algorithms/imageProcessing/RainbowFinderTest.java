@@ -91,18 +91,46 @@ public class RainbowFinderTest extends TestCase {
             
             // spot checks
             if (fileName.equals("sky_with_rainbow2.jpg")) {
-                assertTrue(rainbowPoints.contains(new PairInt(70, 237)));
-                assertTrue(rainbowPoints.contains(new PairInt(96, 192)));
-                assertTrue(rainbowPoints.contains(new PairInt(119, 162)));
-                assertTrue(rainbowPoints.contains(new PairInt(520, 168)));
-                assertTrue(rainbowPoints.contains(new PairInt(556, 218)));
+                /* because of random sampling, not all points are necessarily
+                present until the hull is constructed.
+                so check that most are found
+                */
+                int nFound = 0;
+                if (rainbowPoints.contains(new PairInt(70, 237))) {
+                    nFound++;
+                }
+                if (rainbowPoints.contains(new PairInt(96, 192))) {
+                    nFound++;
+                }
+                if (rainbowPoints.contains(new PairInt(119, 162))) {
+                    nFound++;
+                }
+                if (rainbowPoints.contains(new PairInt(520, 168))) {
+                    nFound++;
+                }
+                if (rainbowPoints.contains(new PairInt(556, 218))) {
+                    nFound++;
+                }
+                assertTrue(nFound >= 3);
                 assertFalse(rainbowPoints.contains(new PairInt(584, 252)));
             } else if (fileName.equals("sky_with_rainbow.jpg")) {
-                assertTrue(rainbowPoints.contains(new PairInt(14, 181)));
-                assertTrue(rainbowPoints.contains(new PairInt(85, 164)));
-                assertTrue(rainbowPoints.contains(new PairInt(295, 167)));
-                assertTrue(rainbowPoints.contains(new PairInt(458, 239)));
-                assertTrue(rainbowPoints.contains(new PairInt(556, 326)));
+                int nFound = 0;
+                if (rainbowPoints.contains(new PairInt(14, 181))) {
+                     nFound++;
+                }
+                if (rainbowPoints.contains(new PairInt(85, 164))) {
+                     nFound++;
+                }
+                if (rainbowPoints.contains(new PairInt(295, 167))) {
+                     nFound++;
+                }
+                if (rainbowPoints.contains(new PairInt(458, 239))) {
+                     nFound++;
+                }
+                if (rainbowPoints.contains(new PairInt(556, 326))) {
+                     nFound++;
+                }
+                assertTrue(nFound >= 3);
             }
                         
             // ------- rotate images by 90 ---------
@@ -259,7 +287,6 @@ public class RainbowFinderTest extends TestCase {
         
     }
    
-    @Test
     public void testPopulatePolygon2() throws Exception {
         
         /*

@@ -292,6 +292,8 @@ public class RainbowFinder {
         int[] minMaxXY = MiscMath.findMinMaxXY(rainbowPoints);
         log.fine("rainbow range in x: " + minMaxXY[0] + " to " + minMaxXY[1]);
         
+        //TODO: consider contiguous subsets at this point
+        
         PolynomialFitter polyFitter = new PolynomialFitter();
         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
         float[] coef = polyFitter.solveAfterRandomSampling(rainbowPoints);
@@ -450,19 +452,28 @@ log.fine(String.format(
 
             rainbowPoints.clear();
 
-            //TODO: this may need revision
-            if (nBroadlyRedFrac < 0.01) {
+            //TODO: this entire section could use more testing
+            
+            /* 
+            assert that orange and red are present
+            */
+            
+            if (nRed == 0 && nOranRed == 0 && nPurpRed == 0) {
                 return null;
             }
 
+            /*
+            would like to assert purple and green too.  difficult because
+            green was not included in the rainbow colored point gathering 
+            because so much of landscape is possibly green.
+            so assert yellow for greeen.
+            */
             float greenFraction = (float)nGreen/(float)bestFittingPoints.size();
+            float yellowFraction = (float)nYellow/(float)bestFittingPoints.size();
+            float purpleFraction = (float)nPurpRed/(float)bestFittingPoints.size();
             if ( 
-                (greenFraction < 0.01) ||
-                (
-                    (((float)nPurpRed/(float)bestFittingPoints.size()) < 0.05)
-                    &&
-                    (greenFraction < 0.03)
-                )
+                ((greenFraction < 0.01) && (yellowFraction < 0.05)) 
+                //|| ((purpleFraction < 0.05) && (greenFraction < 0.03))
             ) {
                 
                 return null;
@@ -470,21 +481,23 @@ log.fine(String.format(
             }/* else if ((cieXRange < 0.08) && (cieYRange < 0.08)) {
                 return null;
             }*/
+ 
+            float rdr = ((float)(nOranRed + nYellow))/(float)nPurpRed;
             
             //TODO: this could use alot of tests and revision
             if ((nGTX > 10) && 
                 ((nLTY > 10) || 
                   (!skyIsDarkGrey &&
                     (
-                        (((float)nOranRed/(float)nPurpRed) > 1.1)
-                        && (nGreen > nPurpRed))
+                        (rdr > 1.1) && (nGreen > nPurpRed))
                   )
-                  || (skyIsDarkGrey && (((float)nOranRed/(float)nPurpRed) > 1.1))
+                  || (skyIsDarkGrey && (rdr > 1.1))
                 )
                 ) {
                 
                 float frac = (float)(nGTX + nLTY)/(float)bestFittingPoints.size();
                 if (frac > 0.002) {
+                    //NOTE: this doesn't include the one excluded thru random sampling
                     rainbowPoints.addAll(bestFittingPoints);
                 }
             }

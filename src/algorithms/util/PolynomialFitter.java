@@ -524,12 +524,8 @@ public class PolynomialFitter {
         Map<CoefficientWrapper, IntArrayWrapper> subsetCoeffMap = new 
             HashMap<CoefficientWrapper, IntArrayWrapper>();
                 
-        int maxDimension = (imageWidth > imageHeight) ? imageWidth : imageHeight;
-        double c2Limit = (maxDimension < 10000) ? 1E-3 :  Math.pow(10.,
-            -1*Math.ceil(Math.log(maxDimension)/Math.log(10)));
-        
         //TODO: simplify the iteration thru subsets
-                        
+                       
         for (int k = n; k > 0; k--) {
             
             int[] selectedIndexes = new int[k];
@@ -563,8 +559,18 @@ public class PolynomialFitter {
                 double cost = (double)subset.size()/resid;
 
                 if (cost > bestCost) {
-                    // avoid straight lines  2nd coeff > 1E-3 for image ~ 1000 pix on side
-                    if (Math.abs(coeff[2]) > c2Limit) {
+
+                    // consider bounds of the subset to filter out straight lines 
+                    //     y = c0*1 + c1*x[i] + c2*x[i]*x[i]   
+                    // xMin, xMax, yMin, yMax  
+                    int[] minMaxes= MiscMath.findMinMaxXY(subset);
+                    int x = minMaxes[0];
+                    float yForXMin = coeff[0]*1 + coeff[1]*x + coeff[2]*x*x;
+                    x = minMaxes[1];
+                    float yForXMax = coeff[0]*1 + coeff[1]*x + coeff[2]*x*x;
+                    float xDiff = Math.abs(minMaxes[1] - minMaxes[0]);
+                    float yDiff = Math.abs(yForXMax - yForXMin);
+                    if ((xDiff > (0.05*imageWidth)) && (yDiff > (0.05*imageHeight))) {
                         bestCost = cost;
                         bestSubsetCoeff = coeff;
                     }
