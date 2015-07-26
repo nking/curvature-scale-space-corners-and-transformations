@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,17 +20,9 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class CurvatureScaleSpaceImageMakerTest {
+public class CurvatureScaleSpaceImageMakerTest extends TestCase {
     
     public CurvatureScaleSpaceImageMakerTest() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
     }
     
     private void addToPlot(PolygonAndPointPlotter plotter, float[]x, float[] y) 
@@ -54,7 +47,6 @@ public class CurvatureScaleSpaceImageMakerTest {
         int z = 1;
     }
     
-    @Test
     public void testCreateScaleSpaceMetricsForForEdge() throws Exception {
         
         // plot t vs sigma for a somewhat simple known curve
@@ -166,14 +158,12 @@ public class CurvatureScaleSpaceImageMakerTest {
         }
     }
     
-    @Test
     public void testCreateScaleSpaceMetricsForForEdge2() throws Exception {
 
         // plot t vs sigma for a somewhat simple known curve
 
         String filePath = ResourceFinder.findFileInTestResources(
-            //"closed_curve.png");
-            "closed_curve_translate_scale.png");
+            "closed_curve_translate_scale_rotate60.png");
         
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
@@ -192,7 +182,7 @@ public class CurvatureScaleSpaceImageMakerTest {
         
         //Collections.sort(curves, new PairIntArrayComparator());
         
-        assertTrue(curves.size() == 1);
+        assertTrue(curves.size() >= 1);
         
         boolean plotAs2 = false;
         
@@ -298,15 +288,13 @@ public class CurvatureScaleSpaceImageMakerTest {
         int z = 1;
     }
     
-    @Test
     public void testAlternateConstructor() throws Exception {
 
         // assert that using the image maker with already extracted edges,
         //   produces same results as when it invokes the edge extractor.
 
         String filePath = ResourceFinder.findFileInTestResources(
-            //"closed_curve.png");
-            "closed_curve_translate_scale.png");
+            "closed_curve_translate_scale_rotate60.png");
         
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
@@ -379,7 +367,6 @@ public class CurvatureScaleSpaceImageMakerTest {
             
             CurvatureScaleSpaceImageMakerTest test = 
                 new CurvatureScaleSpaceImageMakerTest();
-            
             
             test.testCreateScaleSpaceMetricsForForEdge2();
             
