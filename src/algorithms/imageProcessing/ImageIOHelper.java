@@ -631,16 +631,22 @@ public class ImageIOHelper {
             
             int dx0 = x2 - x1;
             int dy0 = y2 - y1;
-            int nLine = Math.round((float)Math.sqrt(dx0*dx0 + dy0*dy0));
-            
-            float slope = (dx0 > 0) ? (float)dy0/(float)dx0 : Float.POSITIVE_INFINITY;
-  int z = 1;          
+            int nLine = (int)Math.ceil(Math.sqrt(dx0*dx0 + dy0*dy0));
+int z = 1;          
             for (int ii = 0; ii < nLine; ++ii) {
             
-                int x = Float.isInfinite(slope) ? 0 : 
-                    (x1 + Math.round(dx0*((float)ii/(float)nLine)));
+                int x, y;
                 
-                int y = y1 + Math.round(slope * (x - x1));
+                if (dx0 == 0) {
+                    x = x1;
+                    y = (y1 + Math.round(dy0*((float)ii/(float)nLine)));
+                } else if (dy0 == 0) {
+                    x = (x1 + Math.round(dx0*((float)ii/(float)nLine)));
+                    y = y1;
+                } else {
+                    x = (x1 + Math.round(dx0*((float)ii/(float)nLine)));
+                    y = (y1 + Math.round(dy0*((float)ii/(float)nLine)));
+                }                
 int z1 = 1;            
                 for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
 
