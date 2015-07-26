@@ -71,7 +71,8 @@ public class RainbowFinder {
     
         rainbowCoeff = findRainbowPoints(skyPoints, 
             removedSets.getReflectedSunRemoved(), colorImg, 
-            xOffset, yOffset, skyIsDarkGrey, outputRainbowPoints);
+            xOffset, yOffset, imageWidth, imageHeight,
+            skyIsDarkGrey, outputRainbowPoints);
 
         if (outputRainbowPoints.size() < 10) {
             outputRainbowPoints.clear();
@@ -270,7 +271,9 @@ public class RainbowFinder {
      */
     float[] findRainbowPoints(Set<PairInt> skyPoints, 
         Set<PairInt> reflectedSunRemoved,
-        ImageExt colorImg, int xOffset, int yOffset, boolean skyIsDarkGrey,
+        ImageExt colorImg, int xOffset, int yOffset, 
+        int imageWidth, int imageHeight,
+        boolean skyIsDarkGrey,
         Set<PairInt> outputRainbowPoints) {
 
         Set<PairInt> rainbowPoints = findRainbowColoredPoints(colorImg, 
@@ -434,8 +437,17 @@ log.fine(String.format(
             float cieXRange = maxCIEX - minCIEX;
             float cieYRange = maxCIEY - minCIEY;
             
-            float nBroadlyRedFrac = 
-                ((float)nBroadlyRed/(float)bestFittingPoints.size());
+            float nTot = (float)bestFittingPoints.size();
+            
+            float nOrangeFrac = (float)nOranRed/nTot;
+            
+            float nPurpleRedFrac = (float)nPurpRed/nTot;
+            
+            float nGreenFrac = (float)nGreen/nTot;
+            
+            float nYellowFrac = (float)nYellow/nTot;
+            
+            float nBroadlyRedFrac = (float)nBroadlyRed/nTot;
     
             log.info("nGTX=" + nGTX + " nLTY=" + nLTY + " n=" 
                 + bestFittingPoints.size() + " "
@@ -445,61 +457,47 @@ log.fine(String.format(
                 + "\n nPurpRed=" + nPurpRed + " nOranRed=" + nOranRed
                 + " nYellow=" + nYellow + " nGreen=" + nGreen + " nRed=" + nRed
                 + " nOrange/nPurpRed=" + ((float)nOranRed/(float)nPurpRed)
-                + " nOrange/nTot=" + ((float)nOranRed/(float)bestFittingPoints.size())
-                + " nPurpRed/nTot=" + ((float)nPurpRed/(float)bestFittingPoints.size())
+                + " nOrange/nTot=" + nOrangeFrac
+                + " nPurpRed/nTot=" + nPurpleRedFrac
+                + " nGreen/nTot=" + nGreenFrac
+                + " nYellow/nTot=" + nYellowFrac
                 + " nBroadlyRed/nTot=" + nBroadlyRedFrac
             );
 
             rainbowPoints.clear();
 
             //TODO: this entire section could use more testing
-            
-            /* 
-            assert that orange and red are present
-            */
-            
-            if (nRed == 0 && nOranRed == 0 && nPurpRed == 0) {
-                return null;
-            }
+MiscDebug.plotPoints(bestFittingPoints, imageWidth, imageHeight, 
+MiscDebug.getCurrentTimeFormatted());
 
-            /*
-            would like to assert purple and green too.  difficult because
-            green was not included in the rainbow colored point gathering 
-            because so much of landscape is possibly green.
-            so assert yellow for greeen.
+            /*asserting that all rainbow colors are present but with caveat
+            that green wasn't included (to avoid adding common green foreground)
             */
-            float greenFraction = (float)nGreen/(float)bestFittingPoints.size();
-            float yellowFraction = (float)nYellow/(float)bestFittingPoints.size();
-            float purpleFraction = (float)nPurpRed/(float)bestFittingPoints.size();
-            if ( 
-                ((greenFraction < 0.01) && (yellowFraction < 0.05)) 
-                //|| ((purpleFraction < 0.05) && (greenFraction < 0.03))
-            ) {
-                
-                return null;
-                
-            }/* else if ((cieXRange < 0.08) && (cieYRange < 0.08)) {
-                return null;
-            }*/
- 
-            float rdr = ((float)(nOranRed + nYellow))/(float)nPurpRed;
+
+            boolean colorsAreNotRainbow = false;
             
-            //TODO: this could use alot of tests and revision
-            if ((nGTX > 10) && 
-                ((nLTY > 10) || 
-                  (!skyIsDarkGrey &&
-                    (
-                        (rdr > 1.1) && (nGreen > nPurpRed))
-                  )
-                  || (skyIsDarkGrey && (rdr > 1.1))
-                )
-                ) {
-                
-                float frac = (float)(nGTX + nLTY)/(float)bestFittingPoints.size();
-                if (frac > 0.002) {
-                    //NOTE: this doesn't include the one excluded thru random sampling
-                    rainbowPoints.addAll(bestFittingPoints);
+            if (skyIsDarkGrey) {
+                //TODO: this needs to be tested on more night images.
+                // rainbow: nOrange/nTot=0.36870417
+                //          nPurpRed/nTot=0.2621027
+                //          nBroadlyRed/nTot=0.65574574
+                //          nGreen/nTot=0.19
+                //          nYellow/nTot=0.44
+                if (nPurpleRedFrac < 0.1 && nOrangeFrac < 0.1 && nGreenFrac < 0.1) {
+                    colorsAreNotRainbow = true;
                 }
+            } else {
+                if (
+                    (nBroadlyRedFrac > 0.1 && nOrangeFrac > 0.05)
+                    || (nPurpleRedFrac < 0.005)
+                    || (nYellowFrac > 0.8)
+                    ){
+                    colorsAreNotRainbow = true;
+                }
+            }
+            
+            if (!colorsAreNotRainbow) {
+                rainbowPoints.addAll(bestFittingPoints);
             }
         }
         

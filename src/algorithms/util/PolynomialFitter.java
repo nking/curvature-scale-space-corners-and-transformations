@@ -563,6 +563,7 @@ public class PolynomialFitter {
                     // consider bounds of the subset to filter out straight lines 
                     //     y = c0*1 + c1*x[i] + c2*x[i]*x[i]   
                     // xMin, xMax, yMin, yMax  
+   // TODO: use median too... see rainbow hull code
                     int[] minMaxes= MiscMath.findMinMaxXY(subset);
                     int x = minMaxes[0];
                     float yForXMin = coeff[0]*1 + coeff[1]*x + coeff[2]*x*x;

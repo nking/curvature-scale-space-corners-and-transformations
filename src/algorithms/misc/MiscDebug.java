@@ -495,7 +495,9 @@ public class MiscDebug {
             
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
             
-            assert(!((colRanges == null) || colRanges.isEmpty()));
+            boolean empty = (colRanges == null) || colRanges.isEmpty();
+            
+            assert(!empty);
         }        
     }
 
@@ -696,6 +698,31 @@ public class MiscDebug {
                 x2, y2, "set2", "X", "Y");
             plotter.writeFile(Integer.valueOf(fileNumber + 1));
            
+        } catch (IOException e) {
+            
+            log.severe(e.getMessage());
+        }
+    }
+    
+    public static void plotPoints(Set<PairInt> set,
+        int imageWidth, int imageHeight, int fileNumber) {
+        
+        float[] x1 = new float[set.size()];
+        float[] y1 = new float[x1.length];
+        int i = 0;
+        for (PairInt p : set) {
+            x1[i] = p.getX();
+            y1[i] = p.getY();
+            i++;
+        }
+        
+        try {
+            ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+            
+            plotter.plot(0, imageWidth, 0, imageHeight, 
+                x1, y1, "points", "X", "Y");
+            plotter.writeFile(Integer.valueOf(fileNumber));
+            
         } catch (IOException e) {
             
             log.severe(e.getMessage());
