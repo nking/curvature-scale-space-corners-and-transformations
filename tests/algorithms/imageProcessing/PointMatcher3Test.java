@@ -34,7 +34,7 @@ public class PointMatcher3Test extends TestCase {
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
     
-    public void estCalculateEuclideanTransformation() throws Exception {
+    public void testCalculateEuclideanTransformation() throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -213,7 +213,7 @@ TransformationPointFit fit = fits.get(0);
         
     }
 
-    public void estCalculateEuclideanTransformation2()
+    public void testCalculateEuclideanTransformation2()
         throws Exception {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -481,7 +481,7 @@ TransformationPointFit fit = fits.get(0);
         int z = 1;
     }*/
 
-    public void estSkyline() throws Exception {
+    public void testSkyline() throws Exception {
 
         String[] fileNames = new String[] {
             "brown_lowe_2003_image1.jpg",

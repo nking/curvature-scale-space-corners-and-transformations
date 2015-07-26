@@ -225,18 +225,27 @@ c++;
     
         /*
         -- segmentation by cieXY color into 3 bands
-        -- dfs contiguous find of each of the 3 groups of sizes > <100?>
-           for the largest groups:
-              -- convex hull to make shapes.
-              -- compare the hulls to the other image:  
-                 -- by area and single pixel intensity?  (the cie xy histogram skipping
+        -- dfs contiguous find of each of the 3 intensity bands
+           -- convex hull of the groups
+           -- compare the hulls of one image to the hulls of the other image:  
+              -- by area and single pixel intensity?  (the cie xy histogram skipping
                     algorithm may assign different colors to same feature, so should
                     probably ignore intensity unless know the images are very similar).
-                 -- by shape
-                    -- furthest pairs?
-                    -- a description of ellipticity?
-                    -- points on the hull or centroid matching enough between 
-                       the 2 images to be used like "corners"?
+              -- by shape
+                -- furthest pairs?
+                -- a description of ellipticity?
+                -- points on the hull or centroid matching enough between 
+                   the 2 images to be used like "corners"?
+              -- by an increasing rotation and a fixed rotational range to
+                 only look at hulls that are within the projected beam of the
+                 hull in image1 under consideration?
+                 -- need to store the best for a hull and also the fits as the
+                    rotations are tried, that is, dynamic programming to avoid
+                    repeating calculations.
+                    -- then the best of each hull can be quickly looked up for
+                       the other hulls (i.e. was rotation=20 within top fits
+                       for the neighboring hulls and with consistent translation...)
+                       
         */
     }
 

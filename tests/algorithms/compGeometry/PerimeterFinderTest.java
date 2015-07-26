@@ -1306,7 +1306,6 @@ public class PerimeterFinderTest extends TestCase {
         . . . .   . .  2
         */
         Set<PairInt> expected = new HashSet<PairInt>();
-        expected.add(new PairInt(0, 0));
         expected.add(new PairInt(1, 1));
         expected.add(new PairInt(3, 0));
         expected.add(new PairInt(2, 1));

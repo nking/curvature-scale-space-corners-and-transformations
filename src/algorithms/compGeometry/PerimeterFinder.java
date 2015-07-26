@@ -975,13 +975,15 @@ public class PerimeterFinder {
         
         // ---- find nonMembers that are connected to the bounds of the -----
         // ---- region bounded by rowMinMax and colMinMax               -----
-        
+      
         Set<PairInt> nonMembersConnectedToBounds =
             findNonMembersConnectedToBounds(rowColRanges, rowMinMax, colMinMax, 
                 imageMaxColumn, imageMaxRow);
         
-        int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
-        int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        //int[] dxs = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+        //int[] dys = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+        int[] dxs = new int[]{-1, 0,  1, 0};
+        int[] dys = new int[]{ 0, -1, 0, 1};
         
         // --- for each member in colRanges, if it's adjacent to a point
         // --- in nonMembersConnectedToBounds it's a border point
@@ -1047,42 +1049,41 @@ public class PerimeterFinder {
             }
         }
         
-        if (colMinMax[0] > 0) {
-            for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
 
-                List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
 
-                if (colRanges == null || colRanges.isEmpty()) {
-                    throw new IllegalStateException(
-                    "each row should have a point in it, else not contiguous");
-                }
+            if (colRanges == null || colRanges.isEmpty()) {
+                throw new IllegalStateException(
+                "each row should have a point in it, else not contiguous");
+            }
 
-                int firstX = colRanges.get(0).getX();
-                
-                if (firstX == colMinMax[0]) {
-                    borderPixels.add(new PairInt(firstX, row));
-                }
+            int firstX = colRanges.get(0).getX();
+
+            if ((colMinMax[0] > 0) && (firstX == colMinMax[0])) {
+                borderPixels.add(new PairInt(firstX, row));
+            } else if ((colMinMax[0] == 0) && (firstX > colMinMax[0])) {
+                borderPixels.add(new PairInt(firstX, row));
             }
         }
-        
-        if (colMinMax[1] < imageMaxColumn) {
-            
-            for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
+                    
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; ++row) {
 
-                List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
 
-                if (colRanges == null || colRanges.isEmpty()) {
-                    throw new IllegalStateException(
-                    "each row should have a point in it, else not contiguous");
-                }
+            if (colRanges == null || colRanges.isEmpty()) {
+                throw new IllegalStateException(
+                "each row should have a point in it, else not contiguous");
+            }
 
-                int n = colRanges.size();
+            int n = colRanges.size();
 
-                int lastX = colRanges.get(n - 1).getY();
+            int lastX = colRanges.get(n - 1).getY();
 
-                if (lastX == colMinMax[1]) {
-                    borderPixels.add(new PairInt(lastX, row));
-                }
+            if ((colMinMax[1] < imageMaxColumn) && (lastX == colMinMax[1])) {
+                borderPixels.add(new PairInt(lastX, row));
+            } else if ((colMinMax[1] == imageMaxColumn) && (lastX < colMinMax[1])) {
+                borderPixels.add(new PairInt(lastX, row));
             }
         }
       
