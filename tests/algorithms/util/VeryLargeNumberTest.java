@@ -993,7 +993,7 @@ public class VeryLargeNumberTest extends TestCase {
         
         assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, a));
         
-        assertTrue(len == 0);
+        assertTrue(len == 5);
     }
     
     public void testShiftDown() {

@@ -311,6 +311,14 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
         nLen = moveUpIfStartsWithZeros(this.a, this.nLen);
     }
     
+    /**
+     * if the given array in starts with 0's, moves the elements below it
+     * (at higher indexes) up to remove the zero's and returns the new total
+     * length of the usable portion of array in (that is highIndex + 1).
+     * @param in
+     * @param length
+     * @return 
+     */
     static int moveUpIfStartsWithZeros(int[] in, int length) {
         
         // move up if needed

@@ -100,6 +100,8 @@ public class PointMatcher2Test extends TestCase {
                 int nPreferredCorners = 200;
                 int nCrit = 100;
 
+                log.info("fileName1=" + fileName1);
+                
                 CurvatureScaleSpaceCornerDetector detector = new
                     CurvatureScaleSpaceCornerDetector(img1);
                 detector.useOutdoorModeAndExtractSkyline();
