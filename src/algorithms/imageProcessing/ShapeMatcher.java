@@ -64,15 +64,6 @@ public class ShapeMatcher {
         hEq = new HistogramEqualization(img2Grey);
         hEq.applyFilter();
 
-        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true); 
-        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true); 
-
-        // TODO: choose kN=3 if either image has median < half of mean
-        //OR, use histogram equil before this?
-
-        log.info("stats1=" + stats1.toString());
-        log.info("stats2=" + stats2.toString());
-        
         if (performBinning) {
             binFactor1 = (int) Math.ceil(
                 Math.max((float)img1Grey.getWidth()/200.f,
