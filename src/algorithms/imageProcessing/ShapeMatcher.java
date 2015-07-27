@@ -54,8 +54,24 @@ public class ShapeMatcher {
         sizes to decide the range to keep.
         For now, choosing limits.
         */
-        int smallestGroupLimit = 50;
-        int largestGroupLimit = 2000;
+        int smallestGroupLimit = 100;
+        //TODO: consider scaling this by image size or by size and res if one
+        //  day that information is passed to this method
+        int largestGroupLimit = 1000;
+
+        HistogramEqualization hEq = new HistogramEqualization(img1Grey);
+        hEq.applyFilter();
+        hEq = new HistogramEqualization(img2Grey);
+        hEq.applyFilter();
+
+        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(img1Grey, true); 
+        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(img2Grey, true); 
+
+        // TODO: choose kN=3 if either image has median < half of mean
+        //OR, use histogram equil before this?
+
+        log.info("stats1=" + stats1.toString());
+        log.info("stats2=" + stats2.toString());
         
         if (performBinning) {
             binFactor1 = (int) Math.ceil(
@@ -71,8 +87,8 @@ public class ShapeMatcher {
             img1Grey = imageProcessor.binImage(img1Grey, binFactor1);
             img2Grey = imageProcessor.binImage(img2Grey, binFactor1);
         }
-        imageProcessor.applyImageSegmentation(img1Grey, 3);
-        imageProcessor.applyImageSegmentation(img2Grey, 3);
+        imageProcessor.applyImageSegmentation(img1Grey, 4);
+        imageProcessor.applyImageSegmentation(img2Grey, 4);
            
         Map<Integer, Integer> freqMap1 = Histogram.createAFrequencyMap(img1Grey);
         Map<Integer, Integer> freqMap2 = Histogram.createAFrequencyMap(img2Grey);
@@ -100,8 +116,6 @@ public class ShapeMatcher {
                 hulls = hulls2;
                 imgGrey = img2Grey;
             }
- Image imgW = ImageIOHelper.convertImage(imgGrey);
- int c = 0;
  
             for (Entry<Integer, Integer> entry : freqMap.entrySet()) {
 
@@ -118,13 +132,6 @@ public class ShapeMatcher {
                     PairIntArray xy = finder.getXY(i);
                     if (xy.getN() < largestGroupLimit) {
                         list.add(xy);
-if (c == 0) {
-ImageIOHelper.addCurveToImage(xy, imgW, 0, 255, 0, 0);
-} else if (c == 1) {
-ImageIOHelper.addCurveToImage(xy, imgW, 0, 200, 255, 150);
-} else  {
-ImageIOHelper.addCurveToImage(xy, imgW, 0, 0, 0, 255);
-}
                     }
                 }
                 Collections.sort(list, new PairIntArrayDescendingComparator());
@@ -150,16 +157,109 @@ ImageIOHelper.addCurveToImage(xy, imgW, 0, 0, 0, 255);
                     }                    
                 }
                 hulls.put(pixValue, listHulls);
-c++;
             }
- try {
-    String dirPath = ResourceFinder.findDirectory("bin");
-    ImageIOHelper.writeOutputImage(dirPath + "/img" + im + ".png", imgW);
-} catch (Exception e) {
-     e.printStackTrace();
-    log.severe("ERROR: " + e.getMessage());
-}
- 
+        }
+
+        // change the limits to get comparable numbers of features in both
+        // images and a workable number of features
+        int n1 = 0;
+        int n2 = 0;
+        int minSize1 = Integer.MAX_VALUE;
+        int maxSize1 = Integer.MIN_VALUE;
+        int minSize2 = Integer.MAX_VALUE;
+        int maxSize2 = Integer.MIN_VALUE;
+        float smallestGroupLimit1 = smallestGroupLimit;
+        float smallestGroupLimit2 = smallestGroupLimit;
+        float highLimit1 = largestGroupLimit;
+        float highLimit2 = largestGroupLimit;
+        int nIter = 0;
+        int nIterMax = 10;
+        while (((nIter == 0) || (n1 > 50) || (n2 > 50)) && (nIter < nIterMax)) {
+            for (int im = 0; im < 2; ++im) {
+                Map<Integer, List<GrahamScan>> hulls = hulls1;
+                Map<Integer, List<PairIntArray>> contigPoints = contigMap1;
+                float highLimit = highLimit1;
+                float lowLimit = smallestGroupLimit1;
+                if (im == 0) {
+                    if ((nIter > 0) && (n1 > 50)) {
+                        if ((nIter & 1) == 1) {
+                            highLimit1 = maxSize1 * 0.75f;
+                        } else {
+                            smallestGroupLimit1 = minSize1 * 1.3f;
+                        }
+                    }
+                    highLimit = highLimit1;
+                    lowLimit = smallestGroupLimit1;
+                    n1 = 0;
+                    minSize1 = Integer.MAX_VALUE;
+                    maxSize1 = Integer.MIN_VALUE;
+                } else if (im == 1) {
+                    if ((nIter > 0) && (n2 > 50)) {
+                        if ((nIter & 1) == 1) {
+                            highLimit2 = maxSize2 * 0.75f;
+                        } else {
+                            smallestGroupLimit2 = minSize2 * 1.3f;
+                        }
+                    }
+                    highLimit = highLimit2;
+                    lowLimit = smallestGroupLimit2;
+                    n2 = 0;
+                    minSize2 = Integer.MAX_VALUE;
+                    maxSize2 = Integer.MIN_VALUE;
+                    hulls = hulls2;
+                    contigPoints = contigMap2;
+                }
+                
+                for (Entry<Integer, List<GrahamScan>> entry : hulls.entrySet()) {
+                    
+                    List<Integer> rmIndexes = new ArrayList<Integer>();
+                    
+                    List<PairIntArray> contigPointList = contigPoints.get(entry.getKey());
+                    assert(contigPointList != null);
+                    List<GrahamScan> hullList = entry.getValue();
+                    
+                    for (int i = 0; i < contigPointList.size(); ++i) {
+                        PairIntArray p = contigPointList.get(i);
+                        int nP = p.getN();
+                        //if ((nP > highLimit) || (nP < lowLimit)) {
+                        if (nP < lowLimit) {
+                            rmIndexes.add(Integer.valueOf(i));
+                        } else {
+                            if (im == 0) {
+                                n1++;
+                                if (nP < minSize1) {
+                                    minSize1 = nP;
+                                }
+                                if (nP > maxSize1) {
+                                    maxSize1 = nP;
+                                }
+                            } else {
+                                n2++;
+                                if (nP < minSize2) {
+                                    minSize2 = nP;
+                                }
+                                if (nP > maxSize2) {
+                                    maxSize2 = nP;
+                                }
+                            }
+                        }
+                    }
+                    if (!rmIndexes.isEmpty()) {
+                        for (int i = (rmIndexes.size() - 1); i > -1; --i) {
+                            int rmIdx = rmIndexes.get(i).intValue();
+                            contigPointList.remove(rmIdx);
+                            hullList.remove(rmIdx);
+                        }
+                    }
+                }
+            }
+            
+            log.info(String.format("%d) image1: nHulls=%d, minNP=%d, maxNP=%d", 
+                nIter, n1, minSize1, maxSize1));
+            log.info(String.format("%d) image2: nHulls=%d, minNP=%d, maxNP=%d", 
+                nIter, n2, minSize2, maxSize2));
+            
+            nIter++;
         }
         
         Image img1W = ImageIOHelper.convertImage(img1Grey);
